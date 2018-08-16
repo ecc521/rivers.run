@@ -28,12 +28,12 @@ else {
     }
 }
 
-if (screen.width<560 && screen.hight>screen.width) {
+if (screen.width<560 && screen.height>screen.width) {
     GetId("RotateMobile").innerHTML = "Rotating your screen to landscape mode reccomended for optimal viewing experience"
     GetId("RotateMobile").hidden = ""
 }
 window.addEventListener("orientationchange", function() {
-if (screen.width<560 && screen.hight>screen.width) {
+if (screen.width<560 && screen.height>screen.width) {
     GetId("RotateMobile").innerHTML = "Rotating your screen to landscape mode reccomended for optimal viewing experience"
     GetId("RotateMobile").hidden = ""
 }
