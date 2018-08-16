@@ -101,7 +101,7 @@ var myNode = GetId("Rivers");
 while (myNode.firstChild) {
     myNode.removeChild(myNode.firstChild);
 }
-AddElement("River Name", "Section", "Difficulty", "Quality", "Letters in Writeup")
+AddElement("River Name", "Section", "Difficulty", "Quality", "Writeup Length")
 }
 
 
@@ -147,7 +147,7 @@ for (var i=0;i<RiverArray.length;i++) {
                 NewRiver.Difficulty = Event[2]
                 NewRiver.Quality = Event[3]
                 NewRiver.Writeup = (NewRiver.Name).slice(0,-1) + " Writeup:<br><br>" + Text.slice(Text.indexOf(Event[4])).split("\n").join("<br>")
-                NewRiver.WriteupLength = Text.slice(Text.indexOf(Event[4])).length
+                NewRiver.WriteupLength = Text.slice(Text.indexOf(Event[4])).length + " letters"
                 RiverArray.push(NewRiver)
                 CreateInitialList(RiverArray)
                 })
