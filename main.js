@@ -20,7 +20,7 @@ if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getIte
     window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: inline"})
     GetId("ReloadAllButton").addEventListener("click", ReloadAllCache)
     GetId("ReloadAllButton").value = "Update Now"
-    GetId("ReloadAllText").innerHTML = "You are viewing the offline version of this site from " + ((Date.now() - localStorage.getItem("TimeStamp"))/1000) + " seconds ago."
+    GetId("ReloadAllText").innerHTML = "You are viewing the offline version of this site from " + Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000) + " seconds ago."
 }
 else {
     if (localStorage.getItem("TimeStamp") === null) {
