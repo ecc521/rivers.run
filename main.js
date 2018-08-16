@@ -43,7 +43,7 @@ else {
 });
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('https://ecc521.github.io/rivers/serviceworker.js')
+  navigator.serviceWorker.register('https://riversoffline.github.io/serviceworker.js')
   .then(function(registration) {
   })
   .catch(function(error) {
