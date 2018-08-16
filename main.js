@@ -29,7 +29,7 @@ else {
 }
 
 if (screen.width<560 && screen.height>screen.width) {
-    GetId("RotateMobile").innerHTML = "<strong>Rotating your screen to landscape mode reccomended for optimal viewing experience</strong>"
+    GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
     GetId("RotateMobile").hidden = ""
 }
 window.addEventListener("orientationchange", function() {
