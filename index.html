@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<link rel="shortcut icon" type="image/x-icon" href="https://ecc521.github.io/rivers/image.png" />
+<link rel="manifest" href="https://ecc521.github.io/rivers/manifest.json">
+<meta name="theme-color" content="#317EFB"/>
+<meta name="Description" content="Rivers Offline contains helpful information for planning paddling trips (Kayak, Canoe, Raft, ext). The content is even cached so it can be viewed offline.">
+    
+    
+<title style="text-align: center">Rivers Offline</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+    <span style="text-align: center;display: block" id="ReloadAll" hidden="true">
+        <p style="display: inline" id="ReloadAllText">
+        </p>
+        <input style="display: none" type="button" hidden="true" id="ReloadAllButton">
+    </span>
+<h1 style="text-align: center">Rivers Offline</h1>
+<p style="text-align: center"><a href="https://docs.google.com/document/d/1tk0O3W7lAdzLmUsy4n-iaqJokA25nmmHL_16-oHZdKE/edit?usp=sharing" target="_blank" rel="noopener">Click here to learn how to help out with this site.</a></p>
+<p style="text-align:center;font-size:22px"><strong>Hint: Click on a River to see it's Writeup. (Site in Experimental)</strong></p>
+<p style="text-align: center;font-size:16px" id="RotateMobile" hidden="true"></p>
+<noscript>Error... This page needs JavaScript to function. Please enable JavaScript then try again</noscript>
+    
+<ul id="Rivers"> 
+    <li style="text-align: center">Loading Rivers...</li>
+</ul>    
+    
+<p style="text-align: center"><a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">You can report bugs and provide feedback here.</a></p>
+<p id="Errors"></p>
+<p style="text-align: center">Copyright © 2018 Tucker Willenborg. Some Rights Reserved.<br>By using this website, you agree to the <a href="https://ecc521.github.io/rivers/license.txt" target="_blank" rel="noopener">license.</a></p>
+   
+    
+    
+    
+    
+    
+    
+<head>
+<style>
+body {font-family: Arial, Helvetica, sans-serif;}  
+    
+    
+/* The Modal (background) */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+}
+
+/* The Close Button */
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+    
+* {
+    box-sizing: border-box;
+}
+
+    
+    
+    
+    
+    
+ 
+/* Remove margins and padding from the list */
+ul {
+    margin: 0;
+    padding: 0;
+}
+
+/* Style the list items */
+ul li {
+    cursor: pointer;
+    position: relative;
+    padding: 12px 0px 12px 0px/*12px 8px 12px 40px*/;
+    background: #eee;
+    font-size: 18px;
+    transition: 0.2s;
+
+    /* make the list items unselectable */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+
+ul li:nth-child(odd) {
+    background: #f0f0f0;
+}
+ul li:nth-child(even) {
+    background: #eaeaea;
+}
+ul li:nth-child(1) {
+    background: #77ff77;
+}
+ul li:hover {
+    background: #ddd;
+}
+ul li:nth-child(1):hover {
+    background: lightgreen;
+}
+ul li span{
+    display: inline-block;
+    text-align: center;
+    width: 20%;
+}
+    
+</style>
+</head>
+<body>
+
+<!-- The Modal -->
+<div id="myModal" class="modal">
+
+  <!-- Modal content -->
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <p id="PopupText"></p>
+  </div>
+
+</div>
+
+
+
+</body>
+    
+<script src="https://ecc521.github.io/rivers/main.js"></script>
+    
+</html>

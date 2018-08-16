@@ -1,0 +1,15 @@
+{
+  "short_name": "Rivers",
+  "name": "Rivers Offline",
+  "icons": [
+    { 
+      "src":"https://ecc521.github.io/rivers/image.png",
+      "sizes": "701x701",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "https://ecc521.github.io/rivers/",
+  "background_color": "#000",
+  "theme_color": "#536878",
+  "display": "standalone"
+}
