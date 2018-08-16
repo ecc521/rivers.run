@@ -106,8 +106,7 @@ AddElement("River Name", "Section", "Difficulty", "Quality", "Writeup Length")
 
 
 
-RiverArray = []//Global - For a reason
-
+//RiverArray is defined because of the other JavaScript file that was loaded.
 
 function CreateInitialList(RiverArray) {
 ClearList()
@@ -120,45 +119,4 @@ for (var i=0;i<RiverArray.length;i++) {
 }
 
 
-
-
-
-//Time to load the files... Oh no. This could be BAD.
-(async function LoadFiles() {        
-        //Use this to return the URL to fetch
-        function URLCreate(File_ID) {
-            var API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
-            return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=text%2Fplain&key=' + API_KEY       
-        }
-        
-        //Now we need to fetch the file ID file and split by newline. After this, what we will do is iterate through and fetch every resource.
-        
-        var FetchList = await (await fetch(URLCreate("19B237gWAoRLOzz5Hh4AO6nD1yxVWxL1LmTLgYkg8JrQ"))).text()
-        FetchList = FetchList.split("\n")
-        for (var i = 0;i<FetchList.length;i++) {
-            fetch(URLCreate(FetchList[i])).then(function(Event) {
-                Event = Event.text()
-                Event.then(function(Event) {
-                var Text = Event
-                Event = Event.split("\n",5)
-                var NewRiver = {}                    
-                NewRiver.Name = Event[0]
-                NewRiver.Section = Event[1]
-                NewRiver.Difficulty = Event[2]
-                NewRiver.Quality = Event[3]
-                NewRiver.Writeup = (NewRiver.Name).slice(0,-1) + " Writeup:<br><br>" + Text.slice(Text.indexOf(Event[4])).split("\n").join("<br>")
-                NewRiver.WriteupLength = Text.slice(Text.indexOf(Event[4])).length + " letters"
-                RiverArray.push(NewRiver)
-                CreateInitialList(RiverArray)
-                })
-            }).catch(function(Error) {
-                console.log(Error)
-                GetId("Errors").innerHTML += Error + "<br>"
-            })
-        }
-            
-        
-        
-        
-        
-}())
+CreateInitialList(RiverArray)
