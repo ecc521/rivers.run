@@ -3,12 +3,12 @@
   "name": "Rivers Offline",
   "icons": [
     { 
-      "src":"https://ecc521.github.io/rivers/image.png",
+      "src":"https://riversoffline.github.io/image.png",
       "sizes": "701x701",
       "type": "image/png"
     }
   ],
-  "start_url": "https://ecc521.github.io/rivers/",
+  "start_url": "https://riversoffline.github.io/",
   "background_color": "#000",
   "theme_color": "#536878",
   "display": "standalone"
