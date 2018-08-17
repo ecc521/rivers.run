@@ -127,7 +127,7 @@ function SortListGen() {
     for (var i = 0;i<RiverArray.length;i++) {
         var Obj = RiverArray[i]
         
-        if (Obj.Name..toLowerCase().indexOf(Text) !== -1) {
+        if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
             array.push(Obj)
         }
         else {
