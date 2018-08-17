@@ -125,7 +125,7 @@ function SortListGen() {
     var Text = GetId("SearchBox").value
     var array = []
     var array2 = []
-    for (var i = 0;i<RiverArray.length) {
+    for (var i = 0;i<RiverArray.length;i++) {
         var Obj = RiverArray[i]
         
         if (Obj.Name.indexOf(Text) !== -1) {
