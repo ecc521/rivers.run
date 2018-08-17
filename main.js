@@ -96,6 +96,7 @@ function AddElement(b,c,d,e,f,w) {
     GetId("Rivers").appendChild(li)
 }
 
+
 function ClearList() {
 var myNode = GetId("Rivers");
 while (myNode.firstChild) {
@@ -105,18 +106,20 @@ AddElement("River Name", "Section", "Difficulty", "Quality", "Writeup Length")
 }
 
 
-
-//RiverArray is defined because of the other JavaScript file that was loaded.
-
-function CreateInitialList(RiverArray) {
+function CreateList(array) {
 ClearList()
-
-for (var i=0;i<RiverArray.length;i++) {
-    var Obj = RiverArray[i]
+for (var i=0;i<array.length;i++) {
+    var Obj = array[i]
     AddElement(Obj.Name, Obj.Section, Obj.Difficulty, Obj.Quality, Obj.WriteupLength, Obj.Writeup)
 }
-
 }
 
+//RiverArray is defined because of the other JavaScript file that was loaded.
+CreateList(RiverArray)
+//That will be the initial list with everything in it.
 
-CreateInitialList(RiverArray)
+
+GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
+function SortListGen() {
+    var Text = GetId("SearchBox").value
+}
