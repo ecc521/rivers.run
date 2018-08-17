@@ -34,6 +34,12 @@ else {
     }
 }
 
+if (window.innerWidth<700) {
+    GetId("Rivers").style.setProperty('--textsize', '16px')
+    if (window.innerWidth<560) {
+    GetId("Rivers").style.setProperty('--textsize', '14px')
+    }
+}
 if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     if (window.innerWidth<300) {
     GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
@@ -60,6 +66,12 @@ else {
     GetId("RotateMobile").hidden = true
     }
     GetId("Rivers").style.setProperty('--textsize', '18px')
+    if (window.innerWidth<700) {
+    GetId("Rivers").style.setProperty('--textsize', '16px')
+    if (window.innerWidth<560) {
+    GetId("Rivers").style.setProperty('--textsize', '14px')
+    }
+}
 }
 };
 
