@@ -118,21 +118,20 @@ for (var i=0;i<array.length;i++) {
 CreateList(RiverArray)
 //That will be the initial list with everything in it.
 
-try {
 GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
 function SortListGen() {
-    var Text = (GetId("SearchBox").value).toLowerCase
+    var Text = (GetId("SearchBox").value).toLowerCase()
     var array = []
     var array2 = []
     for (var i = 0;i<RiverArray.length;i++) {
         var Obj = RiverArray[i]
         
-        if (Obj.Name.indexOf(Text) !== -1) {
+        if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
             array.push(Obj)
         }
         else {
             
-        if (Obj.Section.indexOf(Text) !== -1) {
+        if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
             array2.push(Obj)
         }   
         } 
@@ -146,8 +145,4 @@ function SortListGen() {
 AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found")
     }
 
-}
-}
-catch(e) {
-    console.log(e)
 }
