@@ -6,7 +6,7 @@ self.addEventListener('fetch', function(event) {
     var Request = fetch(event.request)
     
     Request.then(function(response) {
-          cache.put(event.request, response.clone());
+          caches.put(event.request, response.clone());
           return response;
     });
   
