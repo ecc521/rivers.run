@@ -51,7 +51,6 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
     GetId("RotateMobile").hidden = ""
     }
-        alert(window.innerWidth + " " + window.innerHeight)
 
     GetId("Rivers").style.setProperty('--textsize', '12px')
 
@@ -60,7 +59,6 @@ else {
     if (window.innerWidth > window.innerHeight) {
     GetId("RotateMobile").hidden = true
     }
-    alert(window.innerWidth + " " + window.innerHeight)
     GetId("Rivers").style.setProperty('--textsize', '18px')
 }
 };
