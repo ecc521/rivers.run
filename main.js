@@ -63,7 +63,7 @@ else {
     alert(window.innerWidth + " " + window.innerHeight)
     GetId("Rivers").style.setProperty('--textsize', '18px')
 }
-});
+};
 
 
 
