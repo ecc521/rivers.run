@@ -34,7 +34,7 @@ else {
     }
 }
 
-if (screen.width<560 && screen.height>screen.width) {
+if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     if (screen.width<300) {
     GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
     GetId("RotateMobile").hidden = ""
@@ -43,8 +43,8 @@ if (screen.width<560 && screen.height>screen.width) {
 
 }
 window.addEventListener("orientationchange", function() {
-if (screen.width<560 && screen.height>screen.width) {
-    if (screen.width < 300) {
+if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
+    if (window.innerWidth < 300) {
     GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
     GetId("RotateMobile").hidden = ""
     }
@@ -52,7 +52,7 @@ if (screen.width<560 && screen.height>screen.width) {
 
 }
 else {
-    if (screen.width > screen.height) {
+    if (window.innerWidth > window.innerHeight) {
     GetId("RotateMobile").hidden = true
     }
     GetId("Rivers").style.setProperty('--textsize', '18px')
