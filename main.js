@@ -42,7 +42,7 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     GetId("Rivers").style.setProperty('--textsize', '12px')
 
 }
-window.addEventListener("orientationchange", function() {
+window.addEventListener("orientationchange", setTimeout(function() {
 if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     if (window.innerWidth < 300) {
     GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
@@ -60,7 +60,7 @@ else {
     alert(window.innerWidth + " " + window.innerHeight)
     GetId("Rivers").style.setProperty('--textsize', '18px')
 }
-});
+}), 10);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('https://riversoffline.github.io/serviceworker.js')
