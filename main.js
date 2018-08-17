@@ -2,6 +2,8 @@ function GetId(Id) {
     return document.getElementById(Id)
 }
 function ReloadAllCache() {
+    "use strict";
+
     localStorage.setItem("TimeStamp", Date.now())
     
     navigator.serviceWorker.getRegistrations().then(function(registrations) {
