@@ -35,20 +35,26 @@ else {
 }
 
 if (screen.width<560 && screen.height>screen.width) {
+    if (screen.width<400) {
     GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
     GetId("RotateMobile").hidden = ""
+    }
     GetId("Rivers").style.setProperty('--textsize', '12px')
 
 }
 window.addEventListener("orientationchange", function() {
 if (screen.width<560 && screen.height>screen.width) {
+    if (screen.width < 400) {
     GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
     GetId("RotateMobile").hidden = ""
+    }
     GetId("Rivers").style.setProperty('--textsize', '12px')
 
 }
 else {
+    if (screen.width > screen.height) {
     GetId("RotateMobile").hidden = true
+    }
     GetId("Rivers").style.setProperty('--textsize', '18px')
 }
 });
