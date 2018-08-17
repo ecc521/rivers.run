@@ -121,7 +121,7 @@ CreateList(RiverArray)
 try {
 GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
 function SortListGen() {
-    
+    console.log("Hi")
     var Text = GetId("SearchBox").value
     var array = []
     var array2 = []
@@ -141,11 +141,13 @@ function SortListGen() {
     for (var i = 0; i<array2.length;i++) {
         array.push(array2[i])
     }
-    if (array.length = 0) {
-        var Obj = {}
-        Obj.Name = "Not Found"
-    }
+    console.log(array)
     CreateList(array)
+    
+    if (array.length = 0) {
+AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found")
+    }
+
 }
 }
 catch(e) {
