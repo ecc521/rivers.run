@@ -140,11 +140,11 @@ function SortListGen() {
         if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
             array3.push(Obj)
         }   
-        }
         else {
         if (Obj.Writeup.toLowerCase().indexOf(Text) !== -1) {
             array4.push(Obj)
         }   
+        }
         }
             
         } 
