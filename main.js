@@ -55,6 +55,7 @@ else {
     if (window.innerWidth > window.innerHeight) {
     GetId("RotateMobile").hidden = true
     }
+    alert(window.innerWidth + " " + window.innerHeight)
     GetId("Rivers").style.setProperty('--textsize', '18px')
 }
 });
