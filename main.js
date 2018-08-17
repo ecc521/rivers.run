@@ -123,6 +123,7 @@ function SortListGen() {
     var Text = (GetId("SearchBox").value).toLowerCase()
     var array = []
     var array2 = []
+    var array3 = []
     for (var i = 0;i<RiverArray.length;i++) {
         var Obj = RiverArray[i]
         
@@ -133,11 +134,21 @@ function SortListGen() {
             
         if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
             array2.push(Obj)
-        }   
+        }
+        else {
+        if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
+            array3.push(Obj)
+        }
+            
+        }
+            
         } 
     }
     for (var i = 0; i<array2.length;i++) {
         array.push(array2[i])
+    }
+    for (var i = 0; i<array3.length;i++) {
+        array.push(array3[i])
     }
     CreateList(array)
     
