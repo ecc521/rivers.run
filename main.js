@@ -17,7 +17,7 @@ function ReloadAllCache() {
     window.location.reload(true)
     })
 }
-if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 5000) {
+if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
     GetId("ReloadAll").hidden= ""
     if (navigator.onLine) {
     GetId("ReloadAllButton").style = "display: inline"
