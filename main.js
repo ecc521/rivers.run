@@ -121,5 +121,29 @@ CreateList(RiverArray)
 
 GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
 function SortListGen() {
+    
     var Text = GetId("SearchBox").value
+    var array = []
+    var array2 = []
+    for (var i = 0;i<RiverArray.length) {
+        var Obj = RiverArray[i]
+        
+        if (Obj.Name.indexOf(Text) !== -1) {
+            array.push(Obj)
+        }
+        else {
+            
+        if (Obj.Section.indexOf(Text) !== -1) {
+            array2.push(Obj)
+        }   
+        } 
+    }
+    for (var i = 0; i<array2.length;i++) {
+        array.push(array2[i])
+    }
+    if (array.length = 0) {
+        var Obj = {}
+        Obj.Name = "Not Found"
+    }
+    CreateList(array)
 }
