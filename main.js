@@ -121,18 +121,18 @@ CreateList(RiverArray)
 try {
 GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
 function SortListGen() {
-    var Text = GetId("SearchBox").value
+    var Text = (GetId("SearchBox").value).toLowerCase
     var array = []
     var array2 = []
     for (var i = 0;i<RiverArray.length;i++) {
         var Obj = RiverArray[i]
         
-        if (Obj.Name.indexOf(Text) !== -1) {
+        if (Obj.Name..toLowerCase().indexOf(Text) !== -1) {
             array.push(Obj)
         }
         else {
             
-        if (Obj.Section.indexOf(Text) !== -1) {
+        if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
             array2.push(Obj)
         }   
         } 
