@@ -118,7 +118,7 @@ for (var i=0;i<array.length;i++) {
 CreateList(RiverArray)
 //That will be the initial list with everything in it.
 
-
+try {
 GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
 function SortListGen() {
     
@@ -146,4 +146,8 @@ function SortListGen() {
         Obj.Name = "Not Found"
     }
     CreateList(array)
+}
+}
+catch(e) {
+    console.log(e)
 }
