@@ -124,6 +124,7 @@ function SortListGen() {
     var array = []
     var array2 = []
     var array3 = []
+    var array4 = []
     for (var i = 0;i<RiverArray.length;i++) {
         var Obj = RiverArray[i]
         
@@ -138,8 +139,12 @@ function SortListGen() {
         else {
         if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
             array3.push(Obj)
+        }   
         }
-            
+        else {
+        if (Obj.Writeup.toLowerCase().indexOf(Text) !== -1) {
+            array4.push(Obj)
+        }   
         }
             
         } 
@@ -149,6 +154,9 @@ function SortListGen() {
     }
     for (var i = 0; i<array3.length;i++) {
         array.push(array3[i])
+    }
+    for (var i = 0; i<array4.length;i++) {
+        array.push(array4[i])
     }
     CreateList(array)
     
