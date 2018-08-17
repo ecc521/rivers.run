@@ -121,7 +121,6 @@ CreateList(RiverArray)
 try {
 GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
 function SortListGen() {
-    console.log("Hi")
     var Text = GetId("SearchBox").value
     var array = []
     var array2 = []
@@ -141,7 +140,6 @@ function SortListGen() {
     for (var i = 0; i<array2.length;i++) {
         array.push(array2[i])
     }
-    console.log(array)
     CreateList(array)
     
     if (array.length = 0) {
