@@ -142,7 +142,7 @@ function SortListGen() {
     }
     CreateList(array)
     
-    if (array.length = 0) {
+    if (array.length === 0) {
 AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found")
     }
 
