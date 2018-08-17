@@ -60,7 +60,7 @@ else {
     alert(window.innerWidth + " " + window.innerHeight)
     GetId("Rivers").style.setProperty('--textsize', '18px')
 }
-}), 10);
+}), 100);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('https://riversoffline.github.io/serviceworker.js')
