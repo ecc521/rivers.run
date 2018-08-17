@@ -42,7 +42,7 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     GetId("Rivers").style.setProperty('--textsize', '12px')
 
 }
-window.addEventListener("orientationchange", setTimeout(RotateHandler, 100))
+window.addEventListener("orientationchange", function() {setTimeout(RotateHandler, 100)})
 
                         
 function RotateHandler() {
