@@ -8,7 +8,7 @@ function ReloadAllCache() {
  for(let registration of registrations) {
   registration.unregister()
 } })
-    
+    caches.delete('RiversOffline');
     window.location.reload(true)
 }
 if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 5000) {
