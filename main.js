@@ -179,21 +179,20 @@ function AddElement(b,c,d,e,f,w) {
      span = document.createElement("Span")
     var pic = document.createElement("img")  
 var Text;
-console.log(e)
 switch (e) {
-    case "1":
+    case 1:
         Text = "1Star";
         break;
-    case "2":
+    case 2:
         Text = "2Stars";
         break;
-    case "3":
+    case 3:
         Text = "3Stars";
         break;
-    case "4":
+    case 4:
         Text = "4Stars";
         break;
-    case "5":
+    case 5:
         Text = "5Stars";
         break;
     default:
@@ -233,7 +232,7 @@ function CreateList(array) {
 ClearList()
 for (var i=0;i<array.length;i++) {
     var Obj = array[i]
-    AddElement(Obj.Name, Obj.Section, Obj.Difficulty, Obj.Quality + "/10", Obj.Length, Obj.Writeup)
+    AddElement(Obj.Name, Obj.Section, Obj.Difficulty, parseInt(Obj.Quality), Obj.Length, Obj.Writeup)
 }
 }
 
