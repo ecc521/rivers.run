@@ -26,7 +26,7 @@ var Hours = Math.floor(Minutes/60)
 Minutes = Minutes%60 
 var Days = Math.floor(Hours/24)
 Hours = Hours%24
-var TimeStr
+var TimeStr = ""
 if (Days !== 0) {
     if (Days === 1) {
         TimeStr = TimeStr + Days + " day "
@@ -59,7 +59,7 @@ if (Seconds !== 0) {
         TimeStr = TimeStr + Seconds + " seconds"
     }
 }
-GetId("ReloadAllText").innerHTML = "You are viewing the offline version of this site from" + TimeStr + " ago."    
+GetId("ReloadAllText").innerHTML = "You are viewing the offline version of this site from " + TimeStr + " ago."    
 }
 }
 setInterval(UpdateTime, 1000)
