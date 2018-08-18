@@ -172,7 +172,36 @@ function AddElement(b,c,d,e,f,w) {
     A(b)
     A(c)
     A(d)
-    A(e)
+    
+     span = document.createElement("Span")
+    var pic = document.createElement("img")  
+var Text;
+switch (Stars) {
+    case 1:
+        Text = "1Star";
+        break;
+    case 2:
+        Text = "2Stars";
+        break;
+    case 3:
+        Text = "3Stars";
+        break;
+    case 4:
+        Text = "4Stars";
+        break;
+    case 5:
+        Text = "5Stars";
+        break;
+    default:
+        Text = "Error"
+}
+console.log(Text)
+pic.src = "https://riversoffline.github.io/" + Text + ".png"
+pic.alt = Text
+span.appendChild(pic)
+li.appendChild(span)
+    
+    
     A(f)
     if (w !== undefined) {
         li.addEventListener("click", function() {DisplayPopup(w)})
