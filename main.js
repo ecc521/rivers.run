@@ -62,8 +62,9 @@ if (Seconds !== 0) {
 GetId("ReloadAllText").innerHTML = "You are viewing the offline version of this site from " + TimeStr + " ago."    
 }
 }
-setInterval(UpdateTime, 1000)
 if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
+    UpdateTime()
+    setInterval(UpdateTime, 1000)
     GetId("ReloadAll").hidden= ""
     if (navigator.onLine) {
     GetId("ReloadAllButton").style = "display: inline"
