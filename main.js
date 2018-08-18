@@ -196,7 +196,7 @@ function CreateList(array) {
 ClearList()
 for (var i=0;i<array.length;i++) {
     var Obj = array[i]
-    AddElement(Obj.Name, Obj.Section, Obj.Difficulty, Obj.Quality + "/10", Obj.WriteupLength, Obj.Writeup)
+    AddElement(Obj.Name, Obj.Section, Obj.Difficulty, Obj.Quality + "/10", Obj.Length, Obj.Writeup)
 }
 }
 
