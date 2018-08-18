@@ -180,19 +180,19 @@ function AddElement(b,c,d,e,f,w) {
     var pic = document.createElement("img")  
 var Text;
 switch (e) {
-    case 1:
+    case "1":
         Text = "1Star";
         break;
-    case 2:
+    case "2":
         Text = "2Stars";
         break;
-    case 3:
+    case "3":
         Text = "3Stars";
         break;
-    case 4:
+    case "4":
         Text = "4Stars";
         break;
-    case 5:
+    case "5":
         Text = "5Stars";
         break;
     default:
