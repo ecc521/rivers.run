@@ -198,10 +198,15 @@ switch (e) {
     default:
         Text = "Error"
 }
+if (Text === "Error") {
+   A("Invalid Value") 
+}
+else {
 pic.src = "https://riversoffline.github.io/" + Text + ".png"
 pic.alt = Text
 span.appendChild(pic)
 li.appendChild(span)
+}
     }
     
     A(f)
