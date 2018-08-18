@@ -172,7 +172,10 @@ function AddElement(b,c,d,e,f,w) {
     A(b)
     A(c)
     A(d)
-    
+    if (e === "Quality") {
+        A(e)
+    }
+    else {
      span = document.createElement("Span")
     var pic = document.createElement("img")  
 var Text;
@@ -200,7 +203,7 @@ pic.src = "https://riversoffline.github.io/" + Text + ".png"
 pic.alt = Text
 span.appendChild(pic)
 li.appendChild(span)
-    
+    }
     
     A(f)
     if (w !== undefined) {
