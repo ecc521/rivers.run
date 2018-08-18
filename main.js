@@ -198,7 +198,6 @@ switch (e) {
     default:
         Text = "Error"
 }
-console.log(Text)
 pic.src = "https://riversoffline.github.io/" + Text + ".png"
 pic.alt = Text
 span.appendChild(pic)
