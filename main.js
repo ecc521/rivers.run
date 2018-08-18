@@ -176,7 +176,7 @@ function AddElement(b,c,d,e,f,w) {
      span = document.createElement("Span")
     var pic = document.createElement("img")  
 var Text;
-switch (Stars) {
+switch (e) {
     case 1:
         Text = "1Star";
         break;
