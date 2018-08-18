@@ -17,6 +17,52 @@ function ReloadAllCache() {
     window.location.reload(true)
     })
 }
+function UpdateTime () {
+if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
+var Seconds = Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000)
+var Minutes = Math.floor(Seconds/60)
+Seconds = Seconds%60
+var Hours = Math.floor(Minutes/60)
+Minutes = Minutes%60 
+var Days = Math.floor(Hours/24)
+Hours = Hours%24
+var TimeStr
+if (Days !== 0) {
+    if (Days === 1) {
+        TimeStr = TimeStr + Days + " day "
+    }
+    else {
+        TimeStr = TimeStr + Days + " days "
+    }
+}
+if (Hours !== 0) {
+    if (Hours === 1) {
+        TimeStr = TimeStr + Hours + " hour "
+    }
+    else {
+        TimeStr = TimeStr + Hours + " hours "
+    }
+}
+if (Minutes !== 0) {
+    if (Minutes === 1) {
+        TimeStr = TimeStr + Minutes + " minute "
+    }
+    else {
+        TimeStr = TimeStr + Minutes + " minutes "
+    }
+}
+if (Seconds !== 0) {
+    if (Seconds === 1) {
+        TimeStr = TimeStr + Seconds + " second"
+    }
+    else {
+        TimeStr = TimeStr + Seconds + " seconds"
+    }
+}
+GetId("ReloadAllText").innerHTML = "You are viewing the offline version of this site from" + TimeStr + " ago."    
+}
+}
+setInterval(UpdateTime, 1000)
 if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
     GetId("ReloadAll").hidden= ""
     if (navigator.onLine) {
