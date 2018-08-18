@@ -73,13 +73,14 @@ if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getIte
     window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: inline"})
     GetId("ReloadAllButton").addEventListener("click", ReloadAllCache)
     GetId("ReloadAllButton").value = "Update Now"
-    GetId("ReloadAllText").innerHTML = "You are viewing the offline version of this site from " + Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000) + " seconds ago."
+    UpdateTime()
 }
 else {
     if (localStorage.getItem("TimeStamp") === null) {
     localStorage.setItem("TimeStamp", Date.now())
     }
 }
+
 
 if (window.innerWidth<700) {
     GetId("Rivers").style.setProperty('--textsize', '16px')
