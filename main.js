@@ -188,7 +188,7 @@ var myNode = GetId("Rivers");
 while (myNode.firstChild) {
     myNode.removeChild(myNode.firstChild);
 }
-AddElement("River Name", "Section", "Difficulty", "Quality", "Writeup Length")
+AddElement("River Name", "Section", "Difficulty", "Quality", "Length")
 }
 
 
