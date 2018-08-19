@@ -200,8 +200,11 @@ if (px<14) {
 else if (px<16){
     Text = "14" + Text
 }
+else if (px<16) {
+    Text = "16" + Text
+}
 else {
-    Text = "14" + Text
+    Text = "16" + Text
 }
 pic.src = "https://riversoffline.github.io/" + Text + ".png"
 pic.alt = Text
