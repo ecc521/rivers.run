@@ -104,6 +104,9 @@ else {
     if (window.innerWidth > window.innerHeight) {
     GetId("RotateMobile").hidden = true
     }
+    if (window.innerWidth > 300) {
+    GetId("RotateMobile").hidden = true
+    }
     GetId("Rivers").style.setProperty('--textsize', '18px')
     if (window.innerWidth<700) {
     GetId("Rivers").style.setProperty('--textsize', '16px')
