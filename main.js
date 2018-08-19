@@ -204,7 +204,7 @@ if (px<14) {
 else if (px<16){
     Text = "14" + Text
 }
-else if (px<16) {
+else if (px<18) {
     Text = "16" + Text
 }
 else {
