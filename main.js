@@ -211,7 +211,6 @@ else {
     Text = "16" + Text
 }
 span.className = "img-" + px + Text
-pic.alt = Text
 li.appendChild(span)
 }
     }
