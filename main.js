@@ -208,7 +208,7 @@ else if (px<16) {
     Text = "16" + Text
 }
 else {
-    Text = "16" + Text
+    Text = "18" + Text
 }
 var div = document.createElement(div)
 div.className = "img-" + Text
