@@ -193,7 +193,7 @@ if (Text === "Error") {
    A("Invalid Value") 
 }
 else {
-var px = Math.floor(window.innerWidth/25)+2//Add 2 to make sure nothing overflows.
+var px = Math.floor(window.innerWidth/25)-2//Add 2 so images will never be too big, only ever too small.
 if (px<12) {
     Text = "12" + Text
 }
