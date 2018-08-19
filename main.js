@@ -210,7 +210,7 @@ else if (px<16) {
 else {
     Text = "16" + Text
 }
-span.className = "img-" + px + Text
+span.className = "img-" + Text
 li.appendChild(span)
 }
     }
