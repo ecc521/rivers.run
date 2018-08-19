@@ -211,6 +211,7 @@ else {
     Text = "16" + Text
 }
 span.className = "img-" + Text
+span.style.width = "20%"
 li.appendChild(span)
 }
     }
