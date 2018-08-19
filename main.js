@@ -203,7 +203,7 @@ if (Text === "Error") {
    A("Invalid Value") 
 }
 else {
-var px = Math.floor(window.innerWidth/25)
+var px = Math.floor(window.innerWidth/25)+2//Add 2 to make sure nothing overflows.
 if (px<12) {
     Text = "12" + Text
 }
