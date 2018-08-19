@@ -98,7 +98,9 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     }
 
     GetId("Rivers").style.setProperty('--textsize', '12px')
-
+    if (window.innerWidth > 300) {
+    GetId("RotateMobile").hidden = true
+    }
 }
 else {
     if (window.innerWidth > window.innerHeight) {
