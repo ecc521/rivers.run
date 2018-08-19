@@ -97,6 +97,7 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
 
 }
 window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
+window.addEventListener("resize", function() {setTimeout(SortListGen, 100)})
 
                         
 function RotateHandler() {
@@ -202,6 +203,16 @@ if (Text === "Error") {
    A("Invalid Value") 
 }
 else {
+var px = Math.floor(window.innerWidth/25)
+if (px<12) {
+    Text = "12" + Text
+}
+else if (px<14){
+    Text = "14" + Text
+}
+else {
+    Text = "14" + Text
+}
 pic.src = "https://riversoffline.github.io/" + Text + ".png"
 pic.alt = Text
 span.appendChild(pic)
