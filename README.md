@@ -2,7 +2,7 @@
 Offline writeups of rivers - Just don't clear your cache.
 
 
-Note: I am changing the star image, and adding larger sizes in the near future. The license will change.
+Note: I am changing the star image, and adding larger sizes in the near future (for bigger screens). The updated image will not be licensed under a special license.
 
 Attribution:
 The Star images used under quality are modifications of the star from https://commons.wikimedia.org/wiki/File:Gold_Star.svg
