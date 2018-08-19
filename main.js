@@ -173,7 +173,6 @@ function AddElement(b,c,d,e,f,w) {
     }
     else {
      span = document.createElement("Span")
-    var pic = document.createElement("img")  
 var Text;
 switch (e) {
     case 1:
@@ -211,9 +210,8 @@ else if (px<16) {
 else {
     Text = "16" + Text
 }
-pic.src = "https://riversoffline.github.io/" + Text + ".png"
+Span.className = "img-" + px + Text
 pic.alt = Text
-span.appendChild(pic)
 li.appendChild(span)
 }
     }
