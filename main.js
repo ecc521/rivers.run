@@ -295,4 +295,4 @@ AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found")
     }
 
 }
-console.log("There is a reasonable chance I just got 15 violations or so for preloading resources that where not used. Please note that the preloading was done because the page may need all those images in the future, and they total up to under 7 kilobytes")
+console.log("If there are 3 warnings below this for pre-loading non-used images, please note that they total to around 1KB and are intentionally pre-loaded in case of major screen resizes.")
