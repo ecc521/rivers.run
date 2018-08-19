@@ -32,7 +32,7 @@
 <p style="text-align: center;font-size:22px" id="RotateMobile" hidden="true"></p>
 
 <label for="SearchBox">
-<span hidden="true">Input Search Query Here</span></label>
+<span class="screenreader">Input Search Query Here</span></label>
 <br />
 <input type="text" id="SearchBox" placeholder="Type in here to search" style="width:100%">
 <br>
@@ -62,6 +62,16 @@
     --textsize: 18px;
 }
 body {font-family: Arial, Helvetica, sans-serif;}  
+    
+.screenreader {
+    position:absolute;
+    left:-10000px;
+    top:auto;
+    width:1px;
+    height:1px;
+    overflow:hidden;
+}
+    
     
 /* The Modal (background) */
 .modal {
