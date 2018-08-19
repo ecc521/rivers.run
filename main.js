@@ -19,9 +19,7 @@ function ReloadAllCache() {
 }
 function UpdateTime () {
 if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
-var Seconds = Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000)
-var Minutes = Math.floor(Seconds/60)
-Seconds = Seconds%60
+var Minutes = Math.floor(Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000)/60)
 var Hours = Math.floor(Minutes/60)
 Minutes = Minutes%60 
 var Days = Math.floor(Hours/24)
@@ -51,20 +49,12 @@ if (Minutes !== 0) {
         TimeStr = TimeStr + Minutes + " minutes "
     }
 }
-if (Seconds !== 0) {
-    if (Seconds === 1) {
-        TimeStr = TimeStr + Seconds + " second"
-    }
-    else {
-        TimeStr = TimeStr + Seconds + " seconds"
-    }
-}
-GetId("ReloadAllText").innerHTML = "You are viewing the offline version of this site from " + TimeStr + " ago."    
+GetId("ReloadAllText").innerHTML = "You're viewing a cached version of this site from " + TimeStr + " ago."    
 }
 }
 if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
     UpdateTime()
-    setInterval(UpdateTime, 1000)
+    setInterval(UpdateTime, 60000)
     GetId("ReloadAll").hidden= ""
     if (navigator.onLine) {
     GetId("ReloadAllButton").style = "display: inline"
