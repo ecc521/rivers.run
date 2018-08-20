@@ -133,7 +133,6 @@ if ('serviceWorker' in navigator) {
 }
 
 
-
 //Popup Text
 var modal = document.getElementById('myModal');
 var span = document.getElementsByClassName("close")[0];
@@ -150,6 +149,12 @@ function DisplayPopup(text) {
     GetId("PopupText").innerHTML = text
     modal.style.display = "block";
 }
+
+//TOS Handler
+GetId("TOSButton").addEventListener("click", function() {DisplayPopup("Rivers Offline Terms Of Service:\n\nIN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE WRITEUPS AND/OR SOFTWARE OR THE USE OR OTHER DEALINGS IN THE WRITEUPS AND/OR SOFTWARE.")})
+GetId("TOSButton").innerHTML = "<strong>Terms Of Service</strong>"
+
+
 
 function AddElement(b,c,d,e,f,w) {
     var li = document.createElement("li")
