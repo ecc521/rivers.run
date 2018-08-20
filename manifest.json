@@ -3,13 +3,13 @@
   "name": "Rivers Offline",
   "icons": [
     { 
-      "src":"https://riversoffline.github.io/resources/192pxDrop.png",
-      "sizes": "192x192",
+      "src":"https://riversoffline.github.io/resources/512pxDrop.png",
+      "sizes": "512x512",
       "type": "image/png"
     },
     { 
-      "src":"https://riversoffline.github.io/resources/512pxDrop.png",
-      "sizes": "512x512",
+      "src":"https://riversoffline.github.io/resources/192pxDrop.png",
+      "sizes": "192x192",
       "type": "image/png"
     }
   ],
