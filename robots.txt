@@ -1,0 +1,17 @@
+User-agent: *
+Disallow: /beta.html
+
+User-agent: *
+Disallow: /beta.js
+
+User-agent: *
+Disallow: /License.txt
+
+User-agent: *
+Disallow: /README.md
+
+User-agent: *
+Disallow: /TOS.txt
+
+User-agent: *
+Allow: /
