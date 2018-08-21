@@ -6,10 +6,6 @@ function ReloadAllCache() {
 
     localStorage.setItem("TimeStamp", Date.now())
     
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
- for(let registration of registrations) {
-  registration.unregister()
-} })
     caches.delete('RiversOffline').then(function(event) {
     window.location.reload(true)
     })
