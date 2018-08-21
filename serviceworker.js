@@ -1,6 +1,3 @@
-self.addEventListener('activate', function(event) {
-caches.delete('RiversOffline');
-});
 self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.open('RiversOffline').then(function(cache) {
