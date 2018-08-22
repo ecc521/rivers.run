@@ -117,3 +117,11 @@ else {
 }
 }
 };
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('https://riversoffline.github.io/serviceworker.js')
+  .then(function(registration) {
+  })
+  .catch(function(error) {
+  });
+}
