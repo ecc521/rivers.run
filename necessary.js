@@ -128,6 +128,25 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+
+//Popup Text
+var modal = document.getElementById('myModal');
+var span = document.getElementsByClassName("close")[0];
+span.onclick = function() {
+    modal.style.display = "none";
+}
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+
+function DisplayPopup(text) {
+    GetId("PopupText").innerHTML = text
+    modal.style.display = "block";
+}
+
+
 //TOS Handler
 GetId("TOSButton").addEventListener("click", function() {DisplayPopup("Rivers Offline Terms Of Service:<br><br>IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE WRITEUPS AND/OR SOFTWARE OR THE USE OR OTHER DEALINGS IN THE WRITEUPS AND/OR SOFTWARE.")})
 GetId("TOSButton").innerHTML = "<strong><em>Terms Of Service</em></strong>"
