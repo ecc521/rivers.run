@@ -1,3 +1,5 @@
+window.addEventListener("resize", function() {setTimeout(SortListGen, 100)})
+
 //Popup Text
 var modal = document.getElementById('myModal');
 var span = document.getElementsByClassName("close")[0];
