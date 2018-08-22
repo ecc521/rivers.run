@@ -82,9 +82,8 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     document.documentElement.style.setProperty('--textsize', '12px')
 
 }
-window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
-window.addEventListener("resize", function() {setTimeout(SortListGen, 100)})
 
+window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
                         
 function RotateHandler() {
 if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
