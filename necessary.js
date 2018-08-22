@@ -93,7 +93,10 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     GetId("RotateMobile").hidden = ""
     }
 
-    GetId("Rivers").style.setProperty('--textsize', '12px')
+    document.documentElement.style.setProperty('--textsize', '14px')
+    if (window.innerWidth<400) {
+    document.documentElement.style.setProperty('--textsize', '12px')
+    }
     if (window.innerWidth > 300) {
     GetId("RotateMobile").hidden = true
     }
@@ -105,14 +108,14 @@ else {
     if (window.innerWidth > 300) {
     GetId("RotateMobile").hidden = true
     }
-    GetId("Rivers").style.setProperty('--textsize', '18px')
+    document.documentElement.style.setProperty('--textsize', '18px')
     if (window.innerWidth<700) {
-    GetId("Rivers").style.setProperty('--textsize', '16px')
+    document.documentElement.style.setProperty('--textsize', '16px')
     if (window.innerWidth<560) {
-    GetId("Rivers").style.setProperty('--textsize', '14px')
+    document.documentElement.style.setProperty('--textsize', '14px')
     }
     if (window.innerWidth<400) {
-    GetId("Rivers").style.setProperty('--textsize', '12px')
+    document.documentElement.style.setProperty('--textsize', '12px')
     }
 }
 }
