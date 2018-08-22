@@ -69,9 +69,9 @@ else {
 
 
 if (window.innerWidth<700) {
-    GetId("Rivers").style.setProperty('--textsize', '16px')
+    document.documentElement.style.setProperty('--textsize', '16px')
     if (window.innerWidth<560) {
-    GetId("Rivers").style.setProperty('--textsize', '14px')
+    document.documentElement.style.setProperty('--textsize', '14px')
     }
 }
 if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
