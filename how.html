@@ -19,11 +19,43 @@
     
 <title style="text-align: center">Rivers Offline - Paddling and River Info</title>   
  
- <span class="Navigator">
-  <p>The developer is currently building a naviagtion menu.</p>
-  
-  
- </span>
+<div class="topnav">
+  <a href="#home" class="active">Home</a>
+  <a href="#news">News</a>
+  <a href="#contact">Contact</a>
+  <a href="#about">About</a>
+</div>
+    
+<style>
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+}
+
+.topnav a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.topnav .icon {
+  display: none;
+}    
+</style>
  
  
 <h1 style="text-align: center">Rivers Offline FAQ</h1>
@@ -79,9 +111,6 @@ for (i = 0; i < acc.length; i++) {
     
 <head>
 <style>
-:root {
-    --textsize: 18px;
-}
 body {font-family: Arial, Helvetica, sans-serif;}  
 
  
@@ -89,11 +118,7 @@ body {font-family: Arial, Helvetica, sans-serif;}
     text-align: center
 }
     
-.Navigator {
-    font-size: var(--textsize);
-    text-align: center;
-    display: block;
-}
+
 .TextButton {
     background:none;
     color: blue;
