@@ -251,7 +251,7 @@ CreateList(RiverArray)
 
 GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
 function SortListGen() {
-    var Text = (GetId("SearchBox").value).toLowerCase()
+    var Text = ((GetId("SearchBox").value).toLowerCase()).trim()
     var array = []
     var array2 = []
     var array3 = []
