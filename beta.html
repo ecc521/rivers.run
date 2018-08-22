@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--JavaScript. Needed for Website-->
-<link rel="preload" href="/necessary.js" as="script">
 <link rel="preload" href="/RiverArray.js" as="script">
-<link rel="preload" href="/beta.js" as="script">
+<link rel="preload" href="/main.js" as="script">
  
 <!--Star images. CSS deals with the rest-->
 <link rel="preload" href="/resources/185Stars.png" as="image">
@@ -25,27 +24,24 @@
 
     
     
-<title style="text-align: center">Rivers Offline - Paddling and River Info</title>   
+<title style="text-align: center">Rivers Offline - Paddling and River Info</title>
+    
     <span style="text-align: center;display: block" id="ReloadAll" hidden="true">
         <p style="display: inline" id="ReloadAllText">
         </p>
         <input style="display: none" type="button" hidden="true" id="ReloadAllButton">
     </span>
- 
- 
- <span class="Navigator">
-  <p>The developer is currently building a naviagtion menu.</p>
-  
-  
- </span>
- 
- 
 <h1 style="text-align: center">Rivers Offline (Beta)</h1>
 <p style="text-align: center"><a href="https://docs.google.com/document/d/1tk0O3W7lAdzLmUsy4n-iaqJokA25nmmHL_16-oHZdKE/edit?usp=sharing" target="_blank" rel="noopener">Click here to learn how to contribute to this site.</a></p>
     
 <p style="text-align:center;font-size:18px">Hint: Click on a River to see it's Writeup.</p>
 <p style="text-align: center;font-size:22px" id="RotateMobile" hidden="true"></p>
 
+<!--<label for="SearchBox">
+<span class="screenreader">Input Search Query Here</span></label>
+<br />
+I think Google is penalizing my site for this. Not sure, but that's my guess.
+-->
 <input type="text" id="SearchBox" placeholder="Type in here to search" style="width:100%">
 <br>
 <br>
@@ -62,7 +58,7 @@
 <p style="text-align: center"><strong><em>By using this website, you agree to the <button class = "TextButton" id = "TOSButton"><strong><a href="/TOS.txt" target="_blank" rel="noopener"><em>Terms of Service</em></a></strong></button><br><br><em><strong>NOTICE: </strong>I am not the author of these write-ups. Your use of their content is at your own risk.<strong> If a writeup should be changed or removed for any reason, you can contact me using our <a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">feedback form.</a></strong></em></p>
 <br>
 <p style="text-align: center">Copyright © 2018 Tucker Willenborg. All* Rights Reserved.</p>
-    <p style="text-align: center; font-size: 9px;"><strong>*Some River Writeup's are only licensed to me, not owned by me.</strong></p>
+    <p style="text-align: center; font-size="9px"><strong>*Some River Writeup's are only licensed to me, not owned by me.</strong></p>
    
     
     
@@ -77,11 +73,8 @@
 body {font-family: Arial, Helvetica, sans-serif;}  
 
  
-.Navigator {
-    font-size: var(--textsize);
-    text-align: center;
-    display: block;
-}
+ 
+ 
 .TextButton {
     background:none;
     color: blue;
@@ -91,11 +84,20 @@ body {font-family: Arial, Helvetica, sans-serif;}
     margin:0;
     padding:0;
 }
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
+ 
+ 
+.screenreader {
+    position:absolute;
+    left:-10000px;
+    top:auto;
+    width:1px;
+    height:1px;
+    overflow:hidden;
+}
+    
+ 
+ 
+ 
  
 /* The Modal (background) */
 .modal {
@@ -249,9 +251,8 @@ ul li span{
 
 
 </body>
-
-<script src="/necessary.js"></script>
+    
 <script src="/RiverArray.js"></script>
-<script src="/beta.js"></script>
+<script src="/main.js"></script>
     
 </html>
