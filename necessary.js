@@ -79,7 +79,7 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
     GetId("RotateMobile").hidden = ""
     }
-    GetId("Rivers").style.setProperty('--textsize', '12px')
+    document.documentElement.style.setProperty('--textsize', '12px')
 
 }
 window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
