@@ -146,6 +146,14 @@ function DisplayPopup(text) {
     modal.style.display = "block";
 }
 
+//Store all data in modal... Might allow Google to index content.
+var toadd = ""
+for (var count = 0;count<RiverArray.length;count++) {
+    toadd += (RiverArray[count].Writeup).split("<br>").join("\n") + "\n\n"
+}
+GetId("AllContent").value = toadd
+
+
 //TOS Handler
 GetId("TOSButton").addEventListener("click", function() {DisplayPopup("Rivers Offline Terms Of Service:<br><br>IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE WRITEUPS AND/OR SOFTWARE OR THE USE OR OTHER DEALINGS IN THE WRITEUPS AND/OR SOFTWARE.")})
 GetId("TOSButton").innerHTML = "<strong><em>Terms Of Service</em></strong>"
