@@ -149,7 +149,7 @@ function DisplayPopup(text) {
 //Store all data in modal... Might allow Google to index content.
 var toadd = ""
 for (var count = 0;count<RiverArray.length;count++) {
-    toadd += (RiverArray[count].Writeup).split("<br>").join("\n") + "\n\n"
+    toadd += (RiverArray[count].Writeup) + "<br><br><br>"
 }
 GetId("AllContent").innerHTML = toadd
 
