@@ -19,6 +19,87 @@
     
 <title style="text-align: center">Rivers Offline - Paddling and River Info</title>   
  
+<script>
+function GetId(Id) {
+    return document.getElementById(Id)
+}
+    
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('https://riversoffline.github.io/serviceworker.js')
+  .then(function(registration) {
+  })
+  .catch(function(error) {
+  });
+}
+    
+function ReloadAllCache() {
+    "use strict";
+
+    localStorage.setItem("TimeStamp", Date.now())
+    
+    caches.delete('RiversOffline').then(function(event) {
+    window.location.reload(true)
+    })
+    .catch(function(event) {
+    window.location.reload(true)
+    })
+}
+function UpdateTime () {
+if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
+var Minutes = Math.floor(Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000)/60)
+var Hours = Math.floor(Minutes/60)
+Minutes = Minutes%60 
+var Days = Math.floor(Hours/24)
+Hours = Hours%24
+var TimeStr = ""
+if (Days !== 0) {
+    if (Days === 1) {
+        TimeStr = TimeStr + Days + " day "
+    }
+    else {
+        TimeStr = TimeStr + Days + " days "
+    }
+}
+if (Hours !== 0) {
+    if (Hours === 1) {
+        TimeStr = TimeStr + Hours + " hour "
+    }
+    else {
+        TimeStr = TimeStr + Hours + " hours "
+    }
+}
+if (Minutes !== 0) {
+    if (Minutes === 1) {
+        TimeStr = TimeStr + Minutes + " minute "
+    }
+    else {
+        TimeStr = TimeStr + Minutes + " minutes "
+    }
+}
+GetId("ReloadAllText").innerHTML = "You're viewing a cached version of this site from " + TimeStr + " ago."    
+}
+}
+if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
+    UpdateTime()
+    setInterval(UpdateTime, 60000)
+    GetId("ReloadAll").hidden= ""
+    if (navigator.onLine) {
+    GetId("ReloadAllButton").style = "display: inline"
+    }
+    window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: none"})
+    window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: inline"})
+    GetId("ReloadAllButton").addEventListener("click", ReloadAllCache)
+    GetId("ReloadAllButton").value = "Update Now"
+    UpdateTime()
+}
+else {
+    if (localStorage.getItem("TimeStamp") === null) {
+    localStorage.setItem("TimeStamp", Date.now())
+    }
+}   
+</script>
+    
+    
 <div class="topnav">
   <a href="/" class="current">Home</a>
   <a href="/info.html">River Info</a>
@@ -77,21 +158,6 @@ Wondering how much content we have? You can see that below:<br>
   background-color: #ffffff;
 }
 </style>
-
-<script>
-function GetId(Id) {
-    return document.getElementById(Id)
-}
-    
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('https://riversoffline.github.io/serviceworker.js')
-  .then(function(registration) {
-  })
-  .catch(function(error) {
-  });
-}
-</script>
-
     
     
    
