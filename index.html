@@ -65,7 +65,18 @@ Rivers Offline is the go-to site for Paddling and River information!<br><br>
   
 Wondering how much content we have? You can see that below:<br>
 </p>
-
+<div id="AllContent" class="AllDataDiv">Loading Content...</div>
+ 
+<p id="Stats"></p>
+<style>
+.AllDataDiv {
+  position: relative;
+  overflow: scroll;
+  width: 100%;
+  height: 200px;
+  background-color: #ffffff;
+}
+</style>
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -120,7 +131,8 @@ var toadd = ""
 for (var count = 0;count<RiverArray.length;count++) {
     toadd += (RiverArray[count].Writeup) + "<br><br><br>"
 }
-GetId("AllContent").innerHTML = toadd    
+GetId("Stats").innerHTML = "Featuring " + RiverArray.length + "River Write-ups, containing a total of " + toadd.length  + " characters!"  
+GetId("AllContent").innerHTML = toadd  
 </script>
     
     
