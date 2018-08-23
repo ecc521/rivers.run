@@ -79,6 +79,10 @@ Wondering how much content we have? You can see that below:<br>
 </style>
 
 <script>
+function GetId(Id) {
+    return document.getElementById(Id)
+}
+    
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('https://riversoffline.github.io/serviceworker.js')
   .then(function(registration) {
