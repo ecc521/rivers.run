@@ -112,6 +112,17 @@ body {
 <body>     
 
 </body>
+  
+<script src="/RiverArray.js"></script>
+<script>
+//Store all data in div... Might allow Google to index content.
+var toadd = ""
+for (var count = 0;count<RiverArray.length;count++) {
+    toadd += (RiverArray[count].Writeup) + "<br><br><br>"
+}
+GetId("AllContent").innerHTML = toadd    
+</script>
+    
     
 <link rel="prerender" href="/info.html">
 <link rel="prerender" href="/FAQ.html">
