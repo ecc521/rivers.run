@@ -151,7 +151,7 @@ var toadd = ""
 for (var count = 0;count<RiverArray.length;count++) {
     toadd += (RiverArray[count].Writeup).split("<br>").join("\n") + "\n\n"
 }
-GetId("AllContent").value = toadd
+GetId("AllContent").innerHTML = toadd
 
 
 //TOS Handler
