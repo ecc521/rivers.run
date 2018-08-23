@@ -1,14 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--JavaScript. Needed for Website-->
-<link rel="preload" href="/RiverArray.js" as="script">
-<link rel="preload" href="/main.js" as="script">
- 
-<!--Star images. CSS deals with the rest-->
-<link rel="preload" href="/resources/185Stars.png" as="image">
-<link rel="preload" href="/resources/165Stars.png" as="image">
-<link rel="preload" href="/resources/145Stars.png" as="image">
-<link rel="preload" href="/resources/125Stars.png" as="image">
+
 
 <!--Favicon-->
 <link rel="shortcut icon" type="image/x-icon" href="/resources/32pxDrop.png" />
@@ -20,27 +13,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#317EFB"/>
 <meta name="Description" content="Every River at your Fingertips! Rivers Offline contains information for paddling trips, sourced from community experts! If you want whitewater, or just a flat stream, we've got you covered. Our River Data is cached so that you can view it wherever you are, even with no WiFi and no Cellular - because sometimes, thats the case.">
+<meta name="keywords" content="rivers, whitewater, river info, rivers offline, whitewater info, paddling, paddling info, kayak, canoe">
+
     
     
-<title style="text-align: center">Rivers Offline - Paddling and River Info</title>
-    
-    <span style="text-align: center;display: block" id="ReloadAll" hidden="true">
-        <p style="display: inline" id="ReloadAllText">
-        </p>
-        <input style="display: none" type="button" hidden="true" id="ReloadAllButton">
-    </span>
+<title style="text-align: center">Rivers Offline - Paddling and River Info</title>   
  
 <div class="topnav">
-  <a href="/">Home</a>
-  <a href="/info.html" class="current">River Info</a>
-  <a href="/FAQ.html">FAQ</a>
+  <a href="/">Home/River Info</a>
+  <a href="/FAQ.html" class="current">FAQ</a>
 </div>
- 
+    
 <style>
 .topnav {
   overflow: hidden;
   background-color: #24b9cc;
 }
+
 .topnav a {
   float: left;
   display: block;
@@ -50,62 +39,35 @@
   text-decoration: none;
   font-size: 17px;
 }
+
 .topnav a:hover {
   background-color: #359daa;
 }
+
 .current {
   background-color: #25d1a7;
 }
 </style>
  
-<h1 style="text-align: center">Rivers Offline (Beta)</h1>
-<p style="text-align: center"><a href="https://docs.google.com/document/d/1tk0O3W7lAdzLmUsy4n-iaqJokA25nmmHL_16-oHZdKE/edit?usp=sharing" target="_blank" rel="noopener">Click here to learn how to contribute to this site.</a></p>
+ 
+<h1 style="text-align: center">Rivers Offline FAQ</h1>
+<noscript>Error. This page needs JavaScript to function. Please enable JavaScript and try again.</noscript>
+
+
+
+
+<script>
+
+</script>
+
     
-<p style="text-align:center;font-size:18px">Hint: Click on a River to see it's Writeup.</p>
-<p style="text-align: center;font-size:22px" id="RotateMobile" hidden="true"></p>
-
-
-<input type="text" id="SearchBox" placeholder="Type in here to search" style="width:100%">
-<br>
-<br>
     
-<ul id="Rivers"> 
-    <li style="text-align: center">Loading Rivers...</li>
-</ul>    
-<noscript>Error... This page needs JavaScript to function. Please enable JavaScript then try again</noscript>
-
-    <p style="text-align: center;font-size:18px">Hundreds of River Write-ups to add. Check back in a few days to see what we've got!</p>
- <br>
- <p style="text-align: center">
-Rivers Offline is a wonderful site for finding information about paddling rivers, providing:<br><br>
-River Write-ups from paddling community experts and locals!<br>
-Information about Rivers - Sections, Difficulty, Length, Quality, and More!<br>
-Rivers and Sections you have never heard of - Find your new favorite river, or just mix it up.<br>
-A Search Tool, so that you can easily figure out what to paddle next.<br>
-Good functionalty on phones, tablets, and desktops, with reasonable cross browser support.<br><br>
-  
-The content of all of our Writeups is shown below:<br>
-</p>
- 
-<div id="AllContent" class="AllDataDiv">Loading Content...</div>
- 
-<style>
-.AllDataDiv {
-  position: relative;
-  overflow: scroll;
-  width: 100%;
-  height: 80px;
-  background-color: #ffffff;
-}
-</style>
- 
-<p style="text-align: center"><a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">You can report bugs and provide feedback here.</a></p>
-<p id="Errors"></p>
-<br><br>
-<p style="text-align: center"><strong><em>By using this website, you agree to the <button class = "TextButton" id = "TOSButton"><strong><a href="/TOS.txt" target="_blank" rel="noopener"><em>Terms of Service</em></a></strong></button><br><br><em><strong>NOTICE: </strong>I am not the author of these write-ups. Your use of their content is at your own risk.<strong> If a writeup should be changed or removed for any reason, you can contact me using our <a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">feedback form.</a></strong></em></p>
-<br>
-<p style="text-align: center">Copyright © 2018 Tucker Willenborg. All* Rights Reserved.</p>
-    <p style="text-align: center; font-size: 9px"><strong>*Some River Writeup's are only licensed to me, not owned by me.</strong></p>
+   
+    
+    
+    
+<p style="text-align: center"><strong><em>By using this website, you agree to the <strong><a href="/TOS.txt" target="_blank" rel="noopener"><em>Terms of Service</em></a></strong></p>
+<p style="text-align: center">Copyright © 2018 Tucker Willenborg. All Rights Reserved.</p>
    
     
     
@@ -114,193 +76,26 @@ The content of all of our Writeups is shown below:<br>
     
 <head>
 <style>
-:root {
-    --textsize: 18px;
-}
 body {font-family: Arial, Helvetica, sans-serif;}  
 
  
- 
- 
-.TextButton {
-    background:none;
-    color: blue;
-    background-color: transparent;
-    text-decoration: underline;
-    border:none;
-    margin:0;
-    padding:0;
+.p {
+    text-align: center
 }
- 
- 
-.screenreader {
-    position:absolute;
-    left:-10000px;
-    top:auto;
-    width:1px;
-    height:1px;
-    overflow:hidden;
-}
-    
- 
- 
- 
- 
-/* The Modal (background) */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
-    padding-top: 100px; /* Location of the box */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgb(0,0,0); /* Fallback color */
-    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-}
-
-/* Modal Content */
-.modal-content {
-    background-color: #fefefe;
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-}
-
-/* The Close Button */
-.close {
-    color: #aaaaaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close:hover,
-.close:focus {
-    color: #000;
-    text-decoration: none;
-    cursor: pointer;
-}
-    
-* {
-    box-sizing: border-box;
-}
-
     
     
     
 body {
     background-color: lightblue;
 }
-
-    
- 
-/* Remove margins and padding from the list */
-ul {
-    margin: 0;
-    padding: 0;
-}
-
-/* Style the list items */
-ul li {
-    cursor: pointer;
-    position: relative;
-    padding: 12px 0px 12px 0px/*12px 8px 12px 40px*/;
-    background: #eee;
-    font-size: var(--textsize);
-    transition: 0.2s;
-
-    /* make the list items unselectable */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-
-ul li:nth-child(odd) {
-    background: #f0f0f0;
-}
-ul li:nth-child(even) {
-    background: #eaeaea;
-}
-ul li:nth-child(1) {
-    background: #77ff77;
-}
-ul li:hover {
-    background: #ddd;
-}
-ul li:nth-child(1):hover {
-    background: lightgreen;
-}
-ul li span{
-    display: inline-block;
-    text-align: center;
-    width: 20%;
-}
-       
-.img-185Stars, .img-184Stars, .img-183Stars, .img-182Stars, .img-181Star
-{ display: inline-block; background: url('/resources/185Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
- 
-.img-185Stars { background-position: -0px -0px; width: 90px; height: 18px;}
-.img-184Stars { background-position: -0px -0px; width: 72px; height: 18px;}
-.img-183Stars { background-position: -0px -0px; width: 54px; height: 18px;}
-.img-182Stars { background-position: -0px -0px; width: 36px; height: 18px;}
-.img-181Star { background-position: -0px -0px; width: 18px; height: 18px;}
     
     
-.img-165Stars, .img-164Stars, .img-163Stars, .img-162Stars, .img-161Star
-{ display: inline-block; background: url('/resources/165Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
- 
-.img-165Stars { background-position: -0px -0px; width: 80px; height: 16px;}
-.img-164Stars { background-position: -0px -0px; width: 64px; height: 16px;}
-.img-163Stars { background-position: -0px -0px; width: 48px; height: 16px;}
-.img-162Stars { background-position: -0px -0px; width: 32px; height: 16px;}
-.img-161Star { background-position: -0px -0px; width: 16px; height: 16px;}
-    
-
-    
-.img-145Stars, .img-144Stars, .img-143Stars, .img-142Stars, .img-141Star
-{ display: inline-block; background: url('/resources/145Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
- 
-.img-145Stars { background-position: -0px -0px; width: 70px; height: 14px;}
-.img-144Stars { background-position: -0px -0px; width: 56px; height: 14px;}
-.img-143Stars { background-position: -0px -0px; width: 42px; height: 14px;}
-.img-142Stars { background-position: -0px -0px; width: 28px; height: 14px;}
-.img-141Star { background-position: -0px -0px; width: 14px; height: 14px;}
-    
-.img-125Stars, .img-124Stars, .img-123Stars, .img-122Stars, .img-121Star
-{ display: inline-block; background: url('/resources/125Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
- 
-.img-125Stars { background-position: -0px -0px; width: 60px; height: 12px;}
-.img-124Stars { background-position: -0px -0px; width: 48px; height: 12px;}
-.img-123Stars { background-position: -0px -0px; width: 36px; height: 12px;}
-.img-122Stars { background-position: -0px -0px; width: 24px; height: 12px;}
-.img-121Star { background-position: -0px -0px; width: 12px; height: 12px;}
 </style>
 </head>
 <body>     
-    
-<!-- The Modal -->
-<div id="myModal" class="modal">
-
-  <!-- Modal content -->
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <p id="PopupText"></p>
-  </div>
-
-</div>
-
-
 
 </body>
     
-<script src="/RiverArray.js"></script>
-<script src="/main.js"></script>
-<link rel="prerender" href="/FAQ.html">
-                     
+<link rel="prerender" href="/">
+    
 </html>
