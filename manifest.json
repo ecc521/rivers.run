@@ -18,7 +18,7 @@
       "type": "image/png"
     }
   ],
-  "start_url": "https://riversoffline.github.io",
+  "start_url": "https://riversoffline.github.io/info.html",
   "background_color": "#000",
   "theme_color": "#536878",
   "display": "standalone"
