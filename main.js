@@ -290,12 +290,4 @@ AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found")
     }
 
 }
-
-//Store all data in div... Might allow Google to index content.
-var toadd = ""
-for (var count = 0;count<RiverArray.length;count++) {
-    toadd += (RiverArray[count].Writeup) + "<br><br><br>"
-}
-GetId("AllContent").innerHTML = toadd
-
 console.log("If there are 3 warnings below this for pre-loading non-used images, please note that they total to around 1KB and are intentionally pre-loaded in case of major screen resizes.")
