@@ -150,7 +150,10 @@ function AddElement(Name, Section, Difficulty, Quality, Length, Writeup) {
     AddSpan(Section)
     AddSpan(Difficulty)
     
-    
+if (Quality === "Quality") {
+    AddSpan(Quality)
+}
+else {
 var Text, span;
 span = document.createElement("Span")
 switch (parseInt(Quality)) {
@@ -195,7 +198,7 @@ span.appendChild(div)
 span.className = "riverspan"
 Button.appendChild(span)
 }    
-    
+}   
     
     
     AddSpan(Length)
@@ -226,7 +229,7 @@ var myNode = GetId("Rivers");
 while (myNode.firstChild) {
     myNode.removeChild(myNode.firstChild);
 }
-AddElement("River Name", "Section", "Difficulty", "Quality", "Length (Miles)")
+AddElement("River Name", "Section", "Difficulty", "Quality", "Length (Miles)", "The River's Write-up will appear here.")
 }
 
 function CreateList(PassedList) {
@@ -294,7 +297,7 @@ function SortListGen() {
     CreateList(array)
     
     if (array.length === 0) {
-AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found")
+AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found", "No Rivers were found for your search query.")
     }
 
 }
