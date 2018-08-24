@@ -128,48 +128,35 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-
-//Popup Text
-var modal = document.getElementById('myModal');
-var span = document.getElementsByClassName("close")[0];
-span.onclick = function() {
-    modal.style.display = "none";
-}
-window.onclick = function(event) {
-    if (event.target == modal) {
-        modal.style.display = "none";
-    }
-}
-
-function DisplayPopup(text) {
-    GetId("PopupText").innerHTML = text
-    modal.style.display = "block";
-}
-
-function AddElement(b,c,d,e,f,w) {
-    var li = document.createElement("li")
-    var t,span;
+function AddElement(Name, Section, Difficulty, Quality, Length, Writeup) {
+    var Rivers = GetId("Rivers")
+    var Button = document.createElement("button")
+    Button.className = "accordion"
+    var Div = document.createElement("Div")
+    Div.className = "panel"
     
-    function A(g) {
-    if (g === undefined) {
-        g = "Missing Data"
+    function AddSpan(Content) {
+        var Span = document.createElement("Span")
+        if (Content !== undefined) {
+        Span.innerHTML = Content
+        }
+        else {
+        Span.innerHTML = "Not Found"
+        }
+        Span.className = "riverspan"
+        Button.appendChild(Span)
     }
-    t = document.createTextNode(g);
-    span = document.createElement("Span")
-    span.appendChild(t)
-    li.appendChild(span)
-    }
+    AddSpan(Name)
+    AddSpan(Section)
+    AddSpan(Difficulty)
     
-    A(b)
-    A(c)
-    A(d)
-    if (e === "Quality") {
-        A(e)
-    }
-    else {
-     span = document.createElement("Span")
-var Text;
-switch (e) {
+if (Quality === "Quality") {
+    AddSpan(Quality)
+}
+else {
+var Text, span;
+span = document.createElement("Span")
+switch (parseInt(Quality)) {
     case 1:
         Text = "1Star";
         break;
@@ -189,7 +176,7 @@ switch (e) {
         Text = "Error"
 }
 if (Text === "Error") {
-   A("Invalid Value") 
+   AddSpan("Invalid Value") 
 }
 else {
 var px = Math.floor(window.innerWidth/25)
@@ -208,34 +195,60 @@ else {
 var div = document.createElement(div)
 div.className = "img-" + Text
 span.appendChild(div)
-li.appendChild(span)
-}
+span.className = "riverspan"
+Button.appendChild(span)
+}    
+}   
+    
+    
+    AddSpan(Length)
+
+    if (Writeup !== undefined) {
+    Div.innerHTML = Writeup
+    }
+    else {
+    Div.innerHTML = "This River has no Writeup."
     }
     
-    A(f)
-    if (w !== undefined) {
-        li.addEventListener("click", function() {DisplayPopup(w)})
-    }
+    Button.addEventListener("click", function() {
+    this.classList.toggle("active");
+    var panel = this.nextElementSibling;
+    if (panel.style.maxHeight){
+      panel.style.maxHeight = null;
+      panel.style.padding = "0px"
+    } else {
+      panel.style.maxHeight = (panel.scrollHeight + 20) + "px";
+      panel.style.padding = "10px"
+    } 
+    });
     
-    
-    GetId("Rivers").appendChild(li)
+    Rivers.appendChild(Button)
+    Rivers.appendChild(Div)
 }
-
-
+ 
 function ClearList() {
 var myNode = GetId("Rivers");
 while (myNode.firstChild) {
     myNode.removeChild(myNode.firstChild);
 }
-AddElement("River Name", "Section", "Difficulty", "Quality", "Length (Miles)")
+AddElement("River Name", "Section", "Difficulty", "Quality", "Length (Miles)", "The River's Write-up will appear here.")
 }
 
-
-function CreateList(array) {
+function CreateList(PassedList) {
 ClearList()
-for (var i=0;i<array.length;i++) {
-    var Obj = array[i]
-    AddElement(Obj.Name, Obj.Section, Obj.Difficulty, parseInt(Obj.Quality), Obj.Length, Obj.Writeup)
+var i = 0;
+function AddMore() {
+    var c = i+40//Amount that is added each time
+    for (i;i<Math.min(c, PassedList.length);i++) {
+    var Elem = PassedList[i]
+    AddElement(Elem.Name, Elem.Section, Elem.Difficulty, Elem.Quality, Elem.Length, Elem.Writeup)
+    }
+    if (i < PassedList.length) {
+        setTimeout(function() {requestAnimationFrame(AddMore)}, 50/*Try and give time for response to user input*/)
+    }
+}
+if (PassedList.length > 0) {
+AddMore()
 }
 }
 
@@ -286,7 +299,7 @@ function SortListGen() {
     CreateList(array)
     
     if (array.length === 0) {
-AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found")
+AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found", "No Rivers were found for your search query.")
     }
 
 }
