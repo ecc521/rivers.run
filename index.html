@@ -171,7 +171,6 @@ Get out and get paddling - flatwater, whitewater, canoe, kayak, raft, whatever! 
     
     <p id="Stats" style="text-align: center"></p>
 <div id="AllContent" class="AllDataDiv">Loading Content...</div>
-<p style="text-align:center;font-size:11px">*Some overlap may cause actual number to be slightly lower. Future updates will reduce this overlap.</p>
 <br><br>
 <style>
 .AllDataDiv {
@@ -222,7 +221,7 @@ var toadd = ""
 for (var count = 0;count<RiverArray.length;count++) {
     toadd += (RiverArray[count].Name) + "<br>"+ (RiverArray[count].Section)  + "<br>"+ (RiverArray[count].Difficulty) + "<br>"+ (RiverArray[count].Quality) + "<br>"+ (RiverArray[count].Length) + "<br>"+ (RiverArray[count].Writeup) + "<br><br><br>"
 }
-GetId("Stats").innerHTML = "Featuring " + RiverArray.length + " River Write-ups and " + toadd.length  + " total characters*! Check it out below:"  
+GetId("Stats").innerHTML = "Featuring " + RiverArray.length + " River Write-ups (" + toadd.length  + " characters!) Check it out below:"  
 GetId("AllContent").innerHTML = toadd  
 </script>
     
