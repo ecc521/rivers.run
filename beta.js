@@ -179,7 +179,7 @@ if (Text === "Error") {
    AddSpan("Invalid Value") 
 }
 else {
-var px = Math.floor(window.innerWidth/25)-1//Subtract 1 just to try and prevent chopoffs.
+var px = Math.floor(window.innerWidth/25)-2//Subtract 2 just to try and prevent chopoffs.
 if (px<14) {
     Text = "12" + Text
 }
