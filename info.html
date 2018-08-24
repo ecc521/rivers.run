@@ -72,13 +72,14 @@
 <br>
 <br>
     
-<ul id="Rivers"> 
-    <li style="text-align: center">Loading Rivers...</li>
-</ul>    
+<div id="Rivers">
+</div>
+  
 <noscript>Error... This page needs JavaScript to function. Please enable JavaScript then try again</noscript>
+<br><br><br>
+
 
     <p style="text-align: center;font-size:18px">Hundreds of River Write-ups to add. Check back in a few days to see what we've got!</p>
- <br>
  
 <p style="text-align: center"><a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">You can report bugs and provide feedback here.</a></p>
 <p id="Errors"></p>
@@ -94,131 +95,13 @@
 <style>
 :root {
     --textsize: 18px;
+    --riverpadding: 8px;
 }
 body {font-family: Arial, Helvetica, sans-serif;}  
-
- 
- 
- 
-.TextButton {
-    background:none;
-    color: blue;
-    background-color: transparent;
-    text-decoration: underline;
-    border:none;
-    margin:0;
-    padding:0;
-}
- 
- 
-.screenreader {
-    position:absolute;
-    left:-10000px;
-    top:auto;
-    width:1px;
-    height:1px;
-    overflow:hidden;
-}
-    
- 
- 
- 
- 
-/* The Modal (background) */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
-    padding-top: 100px; /* Location of the box */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgb(0,0,0); /* Fallback color */
-    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-}
-
-/* Modal Content */
-.modal-content {
-    background-color: #fefefe;
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-}
-
-/* The Close Button */
-.close {
-    color: #aaaaaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close:hover,
-.close:focus {
-    color: #000;
-    text-decoration: none;
-    cursor: pointer;
-}
-    
-* {
-    box-sizing: border-box;
-}
-
-    
-    
     
 body {
     background-color: lightblue;
-}
-
-    
- 
-/* Remove margins and padding from the list */
-ul {
-    margin: 0;
-    padding: 0;
-}
-
-/* Style the list items */
-ul li {
-    cursor: pointer;
-    position: relative;
-    padding: 12px 0px 12px 0px/*12px 8px 12px 40px*/;
-    background: #eee;
-    font-size: var(--textsize);
-    transition: 0.2s;
-
-    /* make the list items unselectable */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-
-ul li:nth-child(odd) {
-    background: #f0f0f0;
-}
-ul li:nth-child(even) {
-    background: #eaeaea;
-}
-ul li:nth-child(1) {
-    background: #77ff77;
-}
-ul li:hover {
-    background: #ddd;
-}
-ul li:nth-child(1):hover {
-    background: lightgreen;
-}
-ul li span{
-    display: inline-block;
-    text-align: center;
-    width: 20%;
-}
+} 
        
 .img-185Stars, .img-184Stars, .img-183Stars, .img-182Stars, .img-181Star
 { display: inline-block; background: url('/resources/185Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
@@ -239,7 +122,6 @@ ul li span{
 .img-162Stars { background-position: -0px -0px; width: 32px; height: 16px;}
 .img-161Star { background-position: -0px -0px; width: 16px; height: 16px;}
     
-
     
 .img-145Stars, .img-144Stars, .img-143Stars, .img-142Stars, .img-141Star
 { display: inline-block; background: url('/resources/145Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
@@ -258,19 +140,69 @@ ul li span{
 .img-123Stars { background-position: -0px -0px; width: 36px; height: 12px;}
 .img-122Stars { background-position: -0px -0px; width: 24px; height: 12px;}
 .img-121Star { background-position: -0px -0px; width: 12px; height: 12px;}
+  
+.accordion {
+    background-color: #f0f0f0;
+    color: #444;
+    cursor: pointer;
+    padding: var(--riverpadding);
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: var(--textsize);
+    transition: 0.4s;
+}
+.active, .accordion:hover {
+    background-color: #d9d9d9;
+}
+.accordion:after {
+    content: '\002B';
+    color: green;
+    font-weight: bold;
+    float: right;
+    margin-left: 5px;
+}
+.active:after {
+    content: "\2212";
+    color:red;
+}
+.panel {
+    padding: 0 var(--riverpadding);
+    background-color: lightblue;
+    max-height: 0;
+    overflow: hidden;
+    /*transition: max-height 0.2s ease-out;
+    Looks nice, but lags bad with more elements.*/
+}
+
+.riverspan {
+    display: inline-block;
+    width:calc(20% - 5px);
+    overflow:hidden;
+    font-size: var(--textsize);
+    text-align: center;
+}
+ 
+/*Style the first Rivers element.*/
+button:nth-child(4n + 1) {
+    background-color: #e9e9e9;
+}   
+ 
+button:first-of-type {
+    background-color: #77ff77;
+}
+  
+button:first-of-type:hover {
+    background-color: lightgreen;
+}
+ 
+/*Test: Drop overflow for quality*/
+span:nth-child(4) {
+    overflow: visible;
+} 
 </style>    
     
-<!-- The Modal -->
-<div id="myModal" class="modal">
-
-  <!-- Modal content -->
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <p id="PopupText"></p>
-  </div>
-
-</div>
-
     
 <script src="/RiverArray.js"></script>
 <script src="/main.js"></script>
