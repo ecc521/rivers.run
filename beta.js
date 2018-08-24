@@ -215,8 +215,10 @@ Button.appendChild(span)
     var panel = this.nextElementSibling;
     if (panel.style.maxHeight){
       panel.style.maxHeight = null;
+      panel.style.padding = "0px"
     } else {
-      panel.style.maxHeight = (panel.scrollHeight + 30) + "px";
+      panel.style.maxHeight = (panel.scrollHeight + 20) + "px";
+      panel.style.padding = "10px"
     } 
     });
     
