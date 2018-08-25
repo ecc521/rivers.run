@@ -229,7 +229,7 @@ GetId("AllContent").innerHTML = toadd
 var ThisURL = window.location.href
 console.log(ThisURL)
 //Can I use PHP style variables in URL? Not on sub sites, but maybe on main.
-console.log(ThisURL.split(ThisURL.indexOf("?") + 1))
+console.log(ThisURL.slice(ThisURL.indexOf("?") + 1))
 </script>
     
 </body>
