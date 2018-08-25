@@ -226,9 +226,10 @@ GetId("Stats").innerHTML = "Featuring " + RiverArray.length + " River Write-ups 
 GetId("AllContent").innerHTML = toadd  
     
     
-    
-console.log(window.location)
+var ThisURL = window.location.href
+console.log(ThisURL)
 //Can I use PHP style variables in URL? Not on sub sites, but maybe on main.
+console.log(ThisURL.split(ThisURL.IndexOf("?")))
 </script>
     
 </body>
