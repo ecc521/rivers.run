@@ -2,6 +2,7 @@
 //Can I use PHP style variables in URL?
 
 var ThisURL = window.location.href
+ThisURL = decodeURIComponent(ThisURL)//URL Percent Encoding
 var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
 
 console.log(ThisURL)
