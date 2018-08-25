@@ -223,13 +223,7 @@ for (var count = 0;count<RiverArray.length;count++) {
     toadd += (RiverArray[count].Name) + "<br>"+ (RiverArray[count].Section)  + "<br>"+ (RiverArray[count].Difficulty) + "<br>"+ (RiverArray[count].Quality) + "<br>"+ (RiverArray[count].Length) + "<br>"+ (RiverArray[count].Writeup) + "<br><br><br>"
 }
 GetId("Stats").innerHTML = "Featuring " + RiverArray.length + " River Write-ups (" + toadd.length  + " characters!) Check it out below:"  
-GetId("AllContent").innerHTML = toadd  
-    
-    
-var ThisURL = window.location.href
-console.log(ThisURL)
-//Can I use PHP style variables in URL? Not on sub sites, but maybe on main.
-console.log(ThisURL.slice(ThisURL.indexOf("?") + 1))
+GetId("AllContent").innerHTML = toadd
 </script>
     
 </body>
