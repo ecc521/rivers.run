@@ -3,8 +3,6 @@
 var ThisURL = window.location.href
 ThisURL = decodeURIComponent(ThisURL)
 var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
-console.log(ThisURL)
-console.log(Query)
 if (ThisURL !== Query) {
   window.location = "https://riversoffline.github.io/info.html" + "?" + Query
 }
