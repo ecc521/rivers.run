@@ -272,9 +272,7 @@ function SortListGen() {
         if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
             array.push(Obj)
         }
-        else {
-            
-        if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
+        elif (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
             //Exact match is high priority
             if (Obj.Section.toLowerCase() === Text) {
             array2.push(Obj)
@@ -286,18 +284,12 @@ function SortListGen() {
                 }
             }
         }
-        else {
-        if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
+        elif (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
             array3.push(Obj)
         }   
-        else {
-        if (Obj.Writeup.toLowerCase().indexOf(Text) !== -1) {
+        elif (Obj.Writeup.toLowerCase().indexOf(Text) !== -1) {
             array4.push(Obj)
         }   
-        }
-        }
-            
-        } 
     }
     for (var i = 0; i<array2.length;i++) {
         array.push(array2[i])
