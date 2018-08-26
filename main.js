@@ -273,17 +273,17 @@ function SortListGen() {
             array.push(Obj)
         }
         else if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
-            //Exact match is highly relevant
-            if (Obj.Section.toLowerCase() === Text) {
             array2.push(Obj)
+        }
+        else if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
+           //Exact match is highly relevant
+            if (Obj.Difficulty.toLowerCase() === Text) {
+            array3.push(Obj)
             }
             else if (Obj.Writeup.toLowerCase().indexOf(Text) === -1) {
                     array4.push(Obj)
             //Not that relevant. Add to less relevant list if it won't be added later.    
             }
-        }
-        else if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
-            array3.push(Obj)
         }   
         else if (Obj.Writeup.toLowerCase().indexOf(Text) !== -1) {
             array4.push(Obj)
