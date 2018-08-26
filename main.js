@@ -222,6 +222,9 @@ Button.appendChild(span)
     } 
     });
     
+    if (Section === "Relevant") {
+        Button.id = "lessrelevant"
+    }
     Rivers.appendChild(Button)
     Rivers.appendChild(Div)
 }
