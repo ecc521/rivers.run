@@ -275,7 +275,16 @@ function SortListGen() {
         else {
             
         if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
+            //Exact match is high priority
+            if (Obj.Section.toLowerCase() === Text) {
             array2.push(Obj)
+            }
+            else {
+                //If it isn't in writeup, add to list. If it is, it will be added later.
+                if (Obj.Writeup.toLowerCase().indexOf(Text) === -1) {
+                    array4.push(Obj)
+                }
+            }
         }
         else {
         if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
