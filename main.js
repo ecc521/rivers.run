@@ -150,7 +150,7 @@ function AddElement(Name, Section, Difficulty, Quality, Length, Writeup) {
     AddSpan(Section)
     AddSpan(Difficulty)
     
-if (Quality === "Quality") {
+if (Quality === "Quality" || Quality === "Below" || Quality === "Not Found") {
     AddSpan(Quality)
 }
 else {
