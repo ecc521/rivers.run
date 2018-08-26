@@ -25,6 +25,14 @@
     </span>
     
 <script>
+//If they put a query in the url, redirect them to info page with that query.
+var ThisURL = window.location.href
+ThisURL = decodeURIComponent(ThisURL)
+var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
+if (ThisURL !== Query) {
+  window.location = "https://riversoffline.github.io/info.html" + "?" + Query
+}
+    
 function GetId(Id) {
     return document.getElementById(Id)
 }
