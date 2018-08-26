@@ -263,14 +263,17 @@ GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGe
 function SortListGen() {
     var Text = (GetId("SearchBox").value).toLowerCase()
     var array = []
+    var array1 = []
     var array2 = []
     var array3 = []
     var array4 = []
     for (var i = 0;i<RiverArray.length;i++) {
         var Obj = RiverArray[i]
-        
-        if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
+        if (Obj.Tags.toLowerCase().indexOf(Text) !== -1) {
             array.push(Obj)
+        }
+        else if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
+            array1.push(Obj)
         }
         else if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
             array2.push(Obj)
@@ -288,6 +291,9 @@ function SortListGen() {
         else if (Obj.Writeup.toLowerCase().indexOf(Text) !== -1) {
             array4.push(Obj)
         }   
+    }
+    for (var i = 0; i<array1.length;i++) {
+        array.push(array1[i])
     }
     for (var i = 0; i<array2.length;i++) {
         array.push(array2[i])
