@@ -296,8 +296,8 @@ function SortListGen() {
     for (var i = 0; i<array3.length;i++) {
         array.push(array3[i])
     }
-    if (array.length > 0) {
-    array.push({Name:"Less", Section: "Relevant", Difficulty: "Results", Length: "Below"})
+    if (array4.length > 0) {
+    array.push({Name:"Less", Section: "Relevant", Difficulty: "Results", Length: "Below", Writeup: "Results below contained the search query inside their writeup, but nowhere else. This means they are much less relevant."})
     }
     for (var i = 0; i<array4.length;i++) {
         array.push(array4[i])
