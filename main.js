@@ -277,7 +277,7 @@ function SortListGen() {
         }
         else if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
            //Exact match is highly relevant
-            if (Obj.Difficulty.toLowerCase() === Text) {
+            if (Obj.Difficulty.toLowerCase().indexOf(Text) === 0) {
             array3.push(Obj)
             }
             else if (Obj.Writeup.toLowerCase().indexOf(Text) === -1) {
