@@ -272,20 +272,20 @@ function SortListGen() {
         if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
             array.push(Obj)
         }
-        elif (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
+        else if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
             //Exact match is highly relevant
             if (Obj.Section.toLowerCase() === Text) {
             array2.push(Obj)
             }
-            elif (Obj.Writeup.toLowerCase().indexOf(Text) === -1) {
+            else if (Obj.Writeup.toLowerCase().indexOf(Text) === -1) {
                     array4.push(Obj)
             //Not that relevant. Add to less relevant list if it won't be added later.    
             }
         }
-        elif (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
+        else if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
             array3.push(Obj)
         }   
-        elif (Obj.Writeup.toLowerCase().indexOf(Text) !== -1) {
+        else if (Obj.Writeup.toLowerCase().indexOf(Text) !== -1) {
             array4.push(Obj)
         }   
     }
