@@ -293,7 +293,7 @@ function SortListGen() {
     for (var i = 0; i<array3.length;i++) {
         array.push(array3[i])
     }
-    if (array.length !== 0) {
+    if (array.length > 0) {
     array.push({Name:"Less", Section: "Relevant", Difficulty: "Results", Length: "Below"})
     }
     for (var i = 0; i<array4.length;i++) {
