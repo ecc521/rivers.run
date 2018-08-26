@@ -7,5 +7,11 @@ var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
 
 console.log(ThisURL)
 console.log(Query)
-alert("Your query was " + Query)
+if (ThisURL === Query) {
+  //Nothing
+}
+else {
+  window.location = "https://riversoffline.github.io/info.html" + "?" + Query
+}
+//alert("Your query was " + Query)
 </script>
