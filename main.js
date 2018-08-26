@@ -273,15 +273,13 @@ function SortListGen() {
             array.push(Obj)
         }
         elif (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
-            //Exact match is high priority
+            //Exact match is highly relevant
             if (Obj.Section.toLowerCase() === Text) {
             array2.push(Obj)
             }
-            else {
-                //If it isn't in writeup, add to list. If it is, it will be added later.
-                if (Obj.Writeup.toLowerCase().indexOf(Text) === -1) {
+            elif (Obj.Writeup.toLowerCase().indexOf(Text) === -1) {
                     array4.push(Obj)
-                }
+            //Not that relevant. Add to less relevant list if it won't be added later.    
             }
         }
         elif (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
