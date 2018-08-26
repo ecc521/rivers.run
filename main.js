@@ -73,6 +73,12 @@ if (window.innerWidth<700) {
     if (window.innerWidth<560) {
     GetId("Rivers").style.setProperty('--textsize', '14px')
     }
+    if (window.innerWidth<380) {
+    GetId("Rivers").style.setProperty('--textsize', '11px')
+    }
+    if (window.innerWidth<300) {
+    GetId("Rivers").style.setProperty('--textsize', '10px')
+    }
 }
 if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     if (window.innerWidth<300) {
@@ -80,6 +86,12 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     GetId("RotateMobile").hidden = ""
     }
     GetId("Rivers").style.setProperty('--textsize', '12px')
+    if (window.innerWidth<380) {
+    GetId("Rivers").style.setProperty('--textsize', '11px')
+    }
+    if (window.innerWidth<300) {
+    GetId("Rivers").style.setProperty('--textsize', '10px')
+    }
 
 }
 window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
@@ -94,6 +106,12 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     }
 
     GetId("Rivers").style.setProperty('--textsize', '12px')
+    if (window.innerWidth<380) {
+    GetId("Rivers").style.setProperty('--textsize', '11px')
+    }
+    if (window.innerWidth<300) {
+    GetId("Rivers").style.setProperty('--textsize', '10px')
+    }
     if (window.innerWidth > 300) {
     GetId("RotateMobile").hidden = true
     }
@@ -106,13 +124,19 @@ else {
     GetId("RotateMobile").hidden = true
     }
     GetId("Rivers").style.setProperty('--textsize', '18px')
-    if (window.innerWidth<700) {
+    if (window.innerWidth<750) {
     GetId("Rivers").style.setProperty('--textsize', '16px')
-    if (window.innerWidth<560) {
+    if (window.innerWidth<600) {
     GetId("Rivers").style.setProperty('--textsize', '14px')
     }
-    if (window.innerWidth<400) {
+    if (window.innerWidth<450) {
     GetId("Rivers").style.setProperty('--textsize', '12px')
+    }
+    if (window.innerWidth<380) {
+    GetId("Rivers").style.setProperty('--textsize', '11px')
+    }
+    if (window.innerWidth<300) {
+    GetId("Rivers").style.setProperty('--textsize', '10px')
     }
 }
 }
