@@ -35,7 +35,7 @@ var ThisURL = window.location.href
 ThisURL = decodeURIComponent(ThisURL)
 var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
 if (ThisURL !== Query) {
-  window.location = "https://riversoffline.github.io/info.html" + "?" + Query
+  window.location = "https://rivers.run/info.html" + "?" + Query
 }
     
     
@@ -44,7 +44,7 @@ function GetId(Id) {
 }
     
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('https://riversoffline.github.io/serviceworker.js')
+  navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
   .then(function(registration) {
   })
   .catch(function(error) {
