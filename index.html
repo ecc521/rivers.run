@@ -56,7 +56,7 @@ function ReloadAllCache() {
 
     localStorage.setItem("TimeStamp", Date.now())
     
-    caches.delete('RiversOffline').then(function(event) {
+    caches.delete('rivers.run').then(function(event) {
     window.location.reload(true)
     })
     .catch(function(event) {
