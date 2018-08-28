@@ -6,7 +6,7 @@ function ReloadAllCache() {
 
     localStorage.setItem("TimeStamp", Date.now())
     
-    caches.delete('RiversOffline').then(function(event) {
+    caches.delete('rivers.run').then(function(event) {
     window.location.reload(true)
     })
     .catch(function(event) {
@@ -145,7 +145,7 @@ else {
 
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('https://riversoffline.github.io/serviceworker.js')
+  navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
   .then(function(registration) {
   })
   .catch(function(error) {
