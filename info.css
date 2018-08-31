@@ -20,6 +20,14 @@ h1 {
 #ReloadAllButton {
     display: none;
 }
+
+#SearchBox {
+    width:100%;
+}
+
+
+
+
 .topnav {
   overflow: hidden;
   background-color: #24b9cc;
