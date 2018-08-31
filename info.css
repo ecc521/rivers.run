@@ -8,6 +8,18 @@ h1 {
     text-align: center
 }
 
+#ReloadAll {
+    text-align: center;
+    display: block;
+}
+
+#ReloadAllText {
+    display: inline;
+}
+
+#ReloadAllButton {
+    display: none;
+}
 .topnav {
   overflow: hidden;
   background-color: #24b9cc;
