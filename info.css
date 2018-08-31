@@ -1,1 +1,133 @@
+/*This contains all the style inside style tags. Still need to fix inline style*/
 
+.topnav {
+  overflow: hidden;
+  background-color: #24b9cc;
+}
+.topnav a {
+  float: left;
+  display: block;
+  color: black;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+.topnav a:hover {
+  background-color: #359daa;
+}
+.current {
+  background-color: #25d1a7;
+}
+
+:root {
+    --textsize: 18px;
+    --riverpadding: 0px;
+}
+body {font-family: Arial, Helvetica, sans-serif;}  
+    
+body {
+    background-color: lightblue;
+} 
+       
+.img-185Stars, .img-184Stars, .img-183Stars, .img-182Stars, .img-181Star
+{ display: inline-block; background: url('/resources/185Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
+ 
+.img-185Stars { background-position: -0px -0px; width: 90px; height: 18px;}
+.img-184Stars { background-position: -0px -0px; width: 72px; height: 18px;}
+.img-183Stars { background-position: -0px -0px; width: 54px; height: 18px;}
+.img-182Stars { background-position: -0px -0px; width: 36px; height: 18px;}
+.img-181Star { background-position: -0px -0px; width: 18px; height: 18px;}
+    
+    
+.img-165Stars, .img-164Stars, .img-163Stars, .img-162Stars, .img-161Star
+{ display: inline-block; background: url('/resources/165Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
+ 
+.img-165Stars { background-position: -0px -0px; width: 80px; height: 16px;}
+.img-164Stars { background-position: -0px -0px; width: 64px; height: 16px;}
+.img-163Stars { background-position: -0px -0px; width: 48px; height: 16px;}
+.img-162Stars { background-position: -0px -0px; width: 32px; height: 16px;}
+.img-161Star { background-position: -0px -0px; width: 16px; height: 16px;}
+    
+    
+.img-145Stars, .img-144Stars, .img-143Stars, .img-142Stars, .img-141Star
+{ display: inline-block; background: url('/resources/145Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
+ 
+.img-145Stars { background-position: -0px -0px; width: 70px; height: 14px;}
+.img-144Stars { background-position: -0px -0px; width: 56px; height: 14px;}
+.img-143Stars { background-position: -0px -0px; width: 42px; height: 14px;}
+.img-142Stars { background-position: -0px -0px; width: 28px; height: 14px;}
+.img-141Star { background-position: -0px -0px; width: 14px; height: 14px;}
+    
+.img-125Stars, .img-124Stars, .img-123Stars, .img-122Stars, .img-121Star
+{ display: inline-block; background: url('/resources/125Stars.png') no-repeat; overflow: hidden; text-indent: -9999px; text-align: left; }
+ 
+.img-125Stars { background-position: -0px -0px; width: 60px; height: 12px;}
+.img-124Stars { background-position: -0px -0px; width: 48px; height: 12px;}
+.img-123Stars { background-position: -0px -0px; width: 36px; height: 12px;}
+.img-122Stars { background-position: -0px -0px; width: 24px; height: 12px;}
+.img-121Star { background-position: -0px -0px; width: 12px; height: 12px;}
+  
+.accordion {
+    background-color: #f0f0f0;
+    color: #444;
+    cursor: pointer;
+    padding: var(--riverpadding);
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: var(--textsize);
+    transition: 0.4s;
+}
+.active, .accordion:hover {
+    background-color: #d9d9d9;
+}
+.accordion:after {
+    content: '\002B';
+    color: green;
+    font-weight: bold;
+    float: right;
+    margin-left: 5px;
+}
+.active:after {
+    content: "\2212";
+    color:red;
+}
+.panel {
+    padding: 0 var(--riverpadding);
+    background-color: lightblue;
+    max-height: 0;
+    overflow: hidden;
+    /*transition: max-height 0.2s ease-out;
+    Looks nice, but lags bad with more elements.*/
+}
+.riverspan {
+    display: inline-block;
+    width:calc(20% - 5px);
+    overflow:hidden;
+    font-size: var(--textsize);
+    text-align: center;
+}
+ 
+/*Style the first Rivers element.*/
+button:nth-child(4n + 1) {
+    background-color: #e9e9e9;
+}   
+ 
+button:first-of-type {
+    background-color: #77ff77;
+}
+  
+button:first-of-type:hover {
+    background-color: lightgreen;
+}
+ 
+/*Test: Drop overflow for quality*/
+span:nth-child(4) {
+    overflow: visible;
+} 
+ 
+#lessrelevant { 
+    background-color: #FF9999;
+}
