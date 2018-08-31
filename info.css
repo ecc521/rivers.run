@@ -25,7 +25,17 @@ h1 {
     width:100%;
 }
 
+.pixel18 {
+    font-size:18px;
+}
 
+.pixel22 {
+    font-size:22px;
+}
+
+.pixel9 {
+    font-size:9px;
+}
 
 
 .topnav {
