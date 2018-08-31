@@ -4,6 +4,14 @@ p {
     text-align: center;
 }
 
+title {
+    text-align: center
+}
+
+h1 {
+    text-align: center
+}
+
 .topnav {
   overflow: hidden;
   background-color: #24b9cc;
