@@ -1,5 +1,9 @@
 /*This contains all the style inside style tags. Still need to fix inline style*/
 
+p { 
+    text-align: center;
+}
+
 .topnav {
   overflow: hidden;
   background-color: #24b9cc;
