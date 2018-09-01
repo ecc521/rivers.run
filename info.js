@@ -14,6 +14,7 @@ function ReloadAllCache() {
     })
 }
 function UpdateTime () {
+try {
 if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
 var Minutes = Math.floor(Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000)/60)
 var Hours = Math.floor(Minutes/60)
@@ -65,6 +66,10 @@ else {
     if (localStorage.getItem("TimeStamp") === null) {
     localStorage.setItem("TimeStamp", Date.now())
     }
+}
+catch (e) {
+    console.log(e)
+}
 }
 
 
