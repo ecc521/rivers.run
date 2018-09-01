@@ -8,6 +8,9 @@ User-agent: *
 Disallow: /License.txt
 
 User-agent: *
+Disallow: /embeds
+
+User-agent: *
 Disallow: /README.md
 
 User-agent: *
