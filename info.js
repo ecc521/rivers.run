@@ -113,15 +113,15 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     GetId("Rivers").style.setProperty('--textsize', '10px')
     }
     if (window.innerWidth > 300) {
-    GetId("RotateMobile").hidden = true
+    GetId("RotateMobile").hidden = "hidden"
     }
 }
 else {
     if (window.innerWidth > window.innerHeight) {
-    GetId("RotateMobile").hidden = true
+    GetId("RotateMobile").hidden = "hidden"
     }
     if (window.innerWidth > 300) {
-    GetId("RotateMobile").hidden = true
+    GetId("RotateMobile").hidden = "hidden"
     }
     GetId("Rivers").style.setProperty('--textsize', '18px')
     if (window.innerWidth<750) {
