@@ -150,11 +150,16 @@ else {
 
 
 if ('serviceWorker' in navigator) {
+  try {
   navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
   .then(function(registration) {
   })
   .catch(function(error) {
   });
+  }
+  catch (e) {
+      console.log(e)
+  }
 }
 
 function AddElement(Name, Section, Difficulty, Quality, Length, Writeup) {
