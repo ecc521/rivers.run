@@ -344,7 +344,7 @@ AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found", "No 
 var ThisURL = window.location.href
 ThisURL = decodeURIComponent(ThisURL)
 var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
-if (Query.indexOf("q=cache:")) {
+if (Query.indexOf("q=cache:") === 0) {
     Query = ""
     alert("It appears that you have been redirected from Google's Webcache to this page. I can't say exactly why this happened, but you are now at the actual site.")
     //In case they try to visit the cached version.
