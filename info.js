@@ -76,7 +76,6 @@ else {
 catch (e) {
     console.log(e)
 }
-}
 
 
 if (window.innerWidth<700) {
