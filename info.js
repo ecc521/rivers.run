@@ -49,6 +49,11 @@ if (Minutes !== 0) {
 GetId("ReloadAllText").innerHTML = "You're viewing a cached version of this site from " + TimeStr + " ago."    
 }
 }
+catch (e) {
+    console.log(e)
+}
+}
+try {
 if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
     UpdateTime()
     setInterval(UpdateTime, 60000)
@@ -66,6 +71,7 @@ else {
     if (localStorage.getItem("TimeStamp") === null) {
     localStorage.setItem("TimeStamp", Date.now())
     }
+}
 }
 catch (e) {
     console.log(e)
