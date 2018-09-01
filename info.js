@@ -154,18 +154,18 @@ else {
 };
 
 
-
+try {
 if ('serviceWorker' in navigator) {
-  try {
   navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
   .then(function(registration) {
   })
   .catch(function(error) {
   });
-  }
-  catch (e) {
-      console.log(e)
-  }
+}
+}
+catch (e) {
+    console.log(e)
+    //This should only occour if the page is embedded and sandboxed.
 }
 
 function AddElement(Name, Section, Difficulty, Quality, Length, Writeup) {
