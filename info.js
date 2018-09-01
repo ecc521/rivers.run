@@ -293,10 +293,10 @@ function SortListGen() {
     var array4 = []
     for (var i = 0;i<RiverArray.length;i++) {
         var Obj = RiverArray[i]
-        if (Obj.Tags.toLowerCase().indexOf(Text) !== -1) {
+        if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
             array.push(Obj)
         }
-        else if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
+        else if (Obj.Tags.toLowerCase().indexOf(Text) !== -1) {
             array1.push(Obj)
         }
         else if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
