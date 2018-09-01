@@ -1,5 +1,9 @@
 /*This contains all the style inside style tags. Still need to fix remaining inline style*/
 
+label {
+   font-size: 12px 
+}
+
 p { 
     text-align: center;
 }
