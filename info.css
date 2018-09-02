@@ -1,8 +1,15 @@
 /*Embedded Frames*/
+
+/*Make height attribute work*/
+html,body{
+    height: 100%;
+}
+
 iframe {
     width:100%;
-    height:100%;
+    height:80%;
 }
+
 
 label {
    font-size: 12px 
