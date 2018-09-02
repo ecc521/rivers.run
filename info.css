@@ -1,13 +1,18 @@
-/*Embedded Frames*/
+:root {
+    --textsize: 18px;
+    --riverpadding: 0px;
+    --screenheight: 400;
+}
+
 
 /*Make height attribute work*/
 html,body{
     height: 100%;
 }
-
+/*Embedded Frames*/
 iframe {
     width:100%;
-    height:80%;
+    height:calc((var(--screenheight)/1.5)* "px");
 }
 
 
@@ -72,10 +77,6 @@ h1 {
   background-color: #25d1a7;
 }
 
-:root {
-    --textsize: 18px;
-    --riverpadding: 0px;
-}
 body {font-family: Arial, Helvetica, sans-serif;}  
     
 body {
