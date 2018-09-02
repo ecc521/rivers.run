@@ -1,5 +1,4 @@
 :root {
-    --textsize: 18px;
     --riverpadding: 0px;
     --screenheight: 300px;
 }
@@ -159,7 +158,7 @@ body {
     display: inline-block;
     width:calc(20% - 5px);
     overflow:hidden;
-    font-size: var(--textsize);
+    font-size: 2.40vw;
     text-align: center;
 }
  
