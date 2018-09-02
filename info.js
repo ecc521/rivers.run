@@ -221,7 +221,7 @@ function AddMore() {
     var c = i+40//Amount that is added each time
     for (i;i<Math.min(c, PassedList.length);i++) {
     var Elem = PassedList[i]
-    AddElement(Elem.Name, Elem.Section, Elem.Difficulty, Elem.Quality, Elem.Length, Elem.Writeup)
+    AddElement(Elem.Name, Elem.Section, Elem.Difficulty, Elem.Quality, Elem.Length + " miles", Elem.Writeup)
     }
     if (i < PassedList.length) {
         setTimeout(function() {requestAnimationFrame(AddMore)}, 50/*Try and give time for response to user input*/)
