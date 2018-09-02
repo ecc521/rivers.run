@@ -8,10 +8,10 @@ html,body{
     height: 100%;
 }
 
-/*body {
-    margin-right:0.4vw;
-    margin-left:0.4vw;
-}*/
+body {
+    margin-right:0/*.4vw*/;
+    margin-left:0/*.4vw*/;
+}
 
 /*Embedded Frames*/
 iframe {
