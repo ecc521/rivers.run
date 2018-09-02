@@ -136,15 +136,9 @@ body {
     background-color: #d9d9d9;
 }
 .accordion:after {
-    content: '\002B';
-    color: green;
     font-weight: bold;
     float: right;
     margin-left: 5px;
-}
-.active:after {
-    content: "\2212";
-    color:red;
 }
 .panel {
     padding: 0 var(--riverpadding);
