@@ -135,11 +135,6 @@ body {
 .active, .accordion:hover {
     background-color: #d9d9d9;
 }
-.accordion:after {
-    font-weight: bold;
-    float: right;
-    margin-left: 5px;
-}
 .panel {
     padding: 0 var(--riverpadding);
     background-color: lightblue;
@@ -150,7 +145,7 @@ body {
 }
 .riverspan {
     display: inline-block;
-    width:calc(20% - 5px);
+    width:20%;
     overflow:hidden;
     font-size: 2.40vw;
     text-align: left/*Used center earlier, and got complaints.*/;
