@@ -80,9 +80,6 @@ catch (e) {
 
 window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
 window.addEventListener("resize", function() {setTimeout(SortListGen, 100)})
-
-GetId("Rivers").style.setProperty('--textsize', "2.40vw")
-//Remove the CSS vars and inline them later to add IE support
                         
 function RotateHandler() {
 //Embedded Frames
