@@ -111,7 +111,8 @@ window.addEventListener("resize", function() {setTimeout(SortListGen, 100)})
                         
 function RotateHandler() {
 //Embedded Frames
-document.documentElement.style.setProperty('--screenheight', (window.innerHeight/1.1) + "px");
+//Divided by 1.2 prevents the frame from taking up the whole screen and blocking the user from scrolling off of it.
+document.documentElement.style.setProperty('--screenheight', (window.innerHeight/1.2) + "px");
     
 if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     if (window.innerWidth < 300) {
