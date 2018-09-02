@@ -7,6 +7,12 @@
 html,body{
     height: 100%;
 }
+
+body {
+    margin-right:0;
+    margin-left:0;
+}
+
 /*Embedded Frames*/
 iframe {
     width:100%;
