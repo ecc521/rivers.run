@@ -12,7 +12,7 @@ html,body{
 /*Embedded Frames*/
 iframe {
     width:100%;
-    height:calc((var(--screenheight)/1.5)* "px");
+    height:calc(calc(var(--screenheight)/2) * "px");
 }
 
 
