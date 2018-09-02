@@ -78,89 +78,18 @@ catch (e) {
 }
 
 
-if (window.innerWidth<700) {
-    GetId("Rivers").style.setProperty('--textsize', '16px')
-    if (window.innerWidth<560) {
-    GetId("Rivers").style.setProperty('--textsize', '14px')
-    }
-    if (window.innerWidth<380) {
-    GetId("Rivers").style.setProperty('--textsize', '11px')
-    }
-    if (window.innerWidth<300) {
-    GetId("Rivers").style.setProperty('--textsize', '10px')
-    }
-}
-if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
-    if (window.innerWidth<300) {
-    GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
-    GetId("RotateMobile").hidden = ""
-    }
-    GetId("Rivers").style.setProperty('--textsize', '12px')
-    if (window.innerWidth<380) {
-    GetId("Rivers").style.setProperty('--textsize', '11px')
-    }
-    if (window.innerWidth<300) {
-    GetId("Rivers").style.setProperty('--textsize', '10px')
-    }
-
-}
-
 window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
 window.addEventListener("resize", function() {setTimeout(SortListGen, 100)})
 
+GetId("Rivers").style.setProperty('--textsize', "2.40vw")
+//Remove the CSS vars and inline them later to add IE support
                         
 function RotateHandler() {
 //Embedded Frames
 //Divided by 1.2 prevents the frame from taking up the whole screen and blocking the user from scrolling off of it.
 document.documentElement.style.setProperty('--screenheight', (Math.floor(window.innerHeight/1.15)) + "px");
-    
-if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
-    if (window.innerWidth < 300) {
-    GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
-    GetId("RotateMobile").hidden = ""
-    }
+}
 
-    GetId("Rivers").style.setProperty('--textsize', '12px')
-    if (window.innerWidth<380) {
-    GetId("Rivers").style.setProperty('--textsize', '11px')
-    }
-    if (window.innerWidth<300) {
-    GetId("Rivers").style.setProperty('--textsize', '10px')
-    }
-    if (window.innerWidth > 300) {
-    GetId("RotateMobile").hidden = "hidden"
-    }
-}
-else {
-    if (window.innerWidth > window.innerHeight) {
-    GetId("RotateMobile").hidden = "hidden"
-    }
-    if (window.innerWidth > 300) {
-    GetId("RotateMobile").hidden = "hidden"
-    }
-    GetId("Rivers").style.setProperty('--textsize', '18px')
-    if (window.innerWidth<750) {
-    GetId("Rivers").style.setProperty('--textsize', '16px')
-    if (window.innerWidth<600) {
-    GetId("Rivers").style.setProperty('--textsize', '14px')
-    }
-    if (window.innerWidth<450) {
-    GetId("Rivers").style.setProperty('--textsize', '12px')
-    }
-    if (window.innerWidth<380) {
-    GetId("Rivers").style.setProperty('--textsize', '11px')
-    }
-    if (window.innerWidth<300) {
-    GetId("Rivers").style.setProperty('--textsize', '10px')
-    }
-}
-}
-GetId("Rivers").style.setProperty('--textsize', "2.43vw")
-//Expirament
-};
-
-GetId("Rivers").style.setProperty('--textsize', "2.43vw")
-//Expirament
 
 try {
 if ('serviceWorker' in navigator) {
