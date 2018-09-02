@@ -190,15 +190,18 @@ Button.appendChild(span)
     if (panel.style.maxHeight){
       panel.style.maxHeight = null;
       panel.style.padding = "0px"
+      panel.hidden = "hidden"
     } else {
       panel.style.maxHeight = "100%"/*(panel.scrollHeight + 20) + "px"*/;
       panel.style.padding = "10px"
+      panel.hidden = ""
     } 
     });
     
     if (Section === "Relevant") {
         Button.id = "lessrelevant"
     }
+    Div.hidden = "hidden" 
     Rivers.appendChild(Button)
     Rivers.appendChild(Div)
 }
