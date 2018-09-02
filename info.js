@@ -104,11 +104,15 @@ if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     }
 
 }
+
 window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
 window.addEventListener("resize", function() {setTimeout(SortListGen, 100)})
 
                         
 function RotateHandler() {
+//Embedded Frames
+document.documentElement.style.setProperty('--screenheight', window.innerHeight);
+    
 if (window.innerWidth<560 && window.innerHeight>window.innerWidth) {
     if (window.innerWidth < 300) {
     GetId("RotateMobile").innerHTML = "<span style=\"background-color: orange\"><strong>Rotating your display to Landscape mode is recommended.</strong></span>"
