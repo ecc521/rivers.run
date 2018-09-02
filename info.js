@@ -256,7 +256,7 @@ Button.appendChild(span)
       panel.style.maxHeight = null;
       panel.style.padding = "0px"
     } else {
-      panel.style.maxHeight = (panel.scrollHeight + 20) + "px";
+      panel.style.maxHeight = "100%"/*(panel.scrollHeight + 20) + "px"*/;
       panel.style.padding = "10px"
     } 
     });
