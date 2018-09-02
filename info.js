@@ -155,8 +155,12 @@ else {
     }
 }
 }
+GetId("Rivers").style.setProperty('--textsize', "2.43vw")
+//Expirament
 };
 
+GetId("Rivers").style.setProperty('--textsize', "2.43vw")
+//Expirament
 
 try {
 if ('serviceWorker' in navigator) {
