@@ -8,10 +8,10 @@ html,body{
     height: 100%;
 }
 
-body {
+/*body {
     margin-right:0.4vw;
     margin-left:0.4vw;
-}
+}*/
 
 /*Embedded Frames*/
 iframe {
@@ -151,6 +151,8 @@ body {
 .riverspan {
     display: inline-block;
     width:22%;
+    padding-left:0.4vw;
+    padding-right:0.4vw;
     overflow:hidden;
     font-size: 2.40vw;
     text-align: left/*Used center earlier, and got complaints.*/;
