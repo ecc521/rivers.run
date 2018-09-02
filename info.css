@@ -159,7 +159,7 @@ body {
     width:calc(20% - 5px);
     overflow:hidden;
     font-size: 2.40vw;
-    text-align: center;
+    text-align: left/*Used center earlier, and got complaints.*/;
 }
  
 /*Style the first Rivers element.*/
