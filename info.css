@@ -150,7 +150,7 @@ body {
 }
 .riverspan {
     display: inline-block;
-    width:20%;
+    width:22%;
     overflow:hidden;
     font-size: 2.40vw;
     text-align: left/*Used center earlier, and got complaints.*/;
@@ -159,6 +159,7 @@ body {
 /*Style the first Rivers element.*/
 button:nth-child(4n + 1) {
     background-color: #e9e9e9;
+    width:12%;
 }   
  
 button:first-of-type {
