@@ -314,5 +314,3 @@ if (ThisURL !== Query) {
   document.getElementById("SearchBox").value = Query
   SortListGen()
 }
-
-console.log("If there are 3 warnings below this for pre-loading non-used images, please note that they total to around 1KB and are intentionally pre-loaded in case of major screen resizes.")
