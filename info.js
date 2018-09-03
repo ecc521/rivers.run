@@ -146,8 +146,7 @@ if (Quality === "Quality" || Quality === "Below" || Quality === "Not Found") {
     AddSpan(Quality)
 }
 else {
-var Text, span;
-span = document.createElement("Span")
+var Text;
 switch (parseInt(Quality)) {
     case 1:
         Text = "1Star";
@@ -171,24 +170,11 @@ if (Text === "Error") {
    AddSpan("Invalid Value") 
 }
 else {
-var px = Math.floor(window.innerWidth/25)
-if (px<14) {
-    Text = "12" + Text
-}
-else if (px<16){
-    Text = "14" + Text
-}
-else if (px<18) {
-    Text = "16" + Text
-}
-else {
-    Text = "18" + Text
-}
-var div = document.createElement(div)
-div.className = "img-" + Text
-span.appendChild(div)
-span.className = "riverspan"
-Button.appendChild(span)
+var img = document.createElement("img")
+img.src = "https://rivers.run/resources/" + Text + ".png"
+
+//span.className = "riverspan"
+Button.appendChild(img)
 }    
 }   
     
