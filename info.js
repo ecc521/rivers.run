@@ -86,8 +86,19 @@ function RotateHandler() {
 //Divided by 1.2 prevents the frame from taking up the whole screen and blocking the user from scrolling off of it.
 document.documentElement.style.setProperty('--screenheight', (Math.floor(window.innerHeight/1.15)) + "px");
     
-//750 is arbitrary and picked by me
-var ScreenWidth = Math.sqrt(750/window.innerWidth)
+//750, 0.55, 0.5, 2.5, 2.4, 2.67 are arbitrary and picked by me
+var ScreenWidth = 750/window.innerWidth
+if (ScreenWidth < 1) {
+    ScreenWidth = ScreenWidth ** 0.55
+}
+else {
+    if (ScreenWidth < 2.5) {
+    ScreenWidth = ScreenWidth ** 0.5
+    }
+    else {
+    ScreenWidth = Math.max(ScreenWidth**0.5, 2.67**0.5)
+    }
+}
 ScreenWidth = (2.4 * ScreenWidth) + "vw"
 document.documentElement.style.setProperty('--textsize', ScreenWidth);
 //Set the textsize (relative) to a higher amount on smaller devices, and a lower amount on bigger devices.
