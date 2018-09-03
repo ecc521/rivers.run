@@ -1,1 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Block malicious user content from affecting page. -->
+<meta http-equiv="Content-Security-Policy" content="default-src https://rivers.run; block-all-mixed-content;">
+<!-- Just in case somebody removes it from a link -->
+<meta name="referrer" content="none">
+
+
+<!--JavaScript & CSS-->
+<link rel="preload" href="/info.css" as="style">
+<link rel="preload" href="/RiverArray.js" as="script">
+<link rel="preload" href="/mininfo.js" as="script">
+
+ 
+<!-- Star images -->
+<link rel="preload" href="/resources/1Star.png" as="image">
+<link rel="preload" href="/resources/2Stars.png" as="image">
+<link rel="preload" href="/resources/3Stars.png" as="image">
+<link rel="preload" href="/resources/4Stars.png" as="image">
+<link rel="preload" href="/resources/5Stars.png" as="image">
+
+<!-- Favicon -->
+<link rel="shortcut icon" type="image/x-icon" href="/resources/32pxDrop.png" />
+
+<!-- Progressive Web App Manifest -->
+<link rel="manifest" href="/manifest.json">
+    
+    
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#317EFB"/>
+<meta name="Description" content="Every River at your Fingertips! Rivers.run contains tons of write-ups from community experts to help you plan your next paddling trip. View our information here!">
+<meta name="keywords" content="rivers.run, rivers, whitewater, river info, whitewater info, paddling, paddling info, kayak, canoe">
+
+<title>Rivers.run - Paddling and River Info</title>
+
+</head>
+<body>         
+    <div id="ReloadAll" hidden="hidden">
+        <p id="ReloadAllText">
+        </p>
+        <input type="button" hidden="hidden" value="Reload All" id="ReloadAllButton">
+    </div>
+ 
+<div class="topnav">
+  <a href="/">Home</a>
+  <a href="/info.html" class="current">River Info</a>
+  <a href="/FAQ.html">FAQ</a>
+</div>
+ 
+<h1>River Information</h1>
+<p><a href="https://docs.google.com/document/d/1tk0O3W7lAdzLmUsy4n-iaqJokA25nmmHL_16-oHZdKE/edit?usp=sharing" target="_blank" rel="noopener">Click here to learn how to contribute to this site.</a></p>
+    
+<p class="pixel18"><em><strong>Hint: Click on a River to see it's Writeup.</strong></em></p>
+<p class="pixel22" id="RotateMobile" hidden="hidden"></p>
+
+<label for="SearchBox">Click Here and Type to Search</label>
+<input type="text" id="SearchBox" placeholder="Type in here to search">
+<br>
+<br>
+    
+<div id="Rivers">
+</div>
+  
+<noscript>Error... This page needs JavaScript to function. Please enable JavaScript then try again</noscript>
+<br><br><br>
+
+
+    <p class="pixel18">Hundreds of River Write-ups to add. Check back in a few days to see what we've got!</p>
+ 
+<p><a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">You can report bugs and provide feedback here.</a></p>
+<p id="Errors"></p>
+<br><br>
+<p><em><strong>By using this website, you agree to the <a href="/TOS.txt" target="_blank" rel="noopener">Terms of Service</a><br><br>NOTICE: </strong>I am not the author of these write-ups. Your use of their content is at your own risk.<strong> If a writeup should be changed or removed for any reason, you can contact me using our <a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">feedback form.</a></strong></em></p>
+<br>
+<p>Copyright © 2018 Tucker Willenborg. All* Rights Reserved.</p>
+    <p class="pixel9"><strong>*Some River Writeup's are only licensed to me, not owned by me.</strong></p>
+
+<link rel="stylesheet" href="/info.css">
+<script src="/RiverArray.js"></script>
+<script src="/mininfo.js"></script>
+
+<link rel="prerender" href="/FAQ.html">
+<link rel="prerender" href="/">
+<link rel="prefetch" href="/TOS.txt">
+ 
+</body>              
+</html>
 
