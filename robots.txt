@@ -14,7 +14,4 @@ User-agent: *
 Disallow: /README.md
 
 User-agent: *
-Disallow: /TOS.txt
-
-User-agent: *
 Allow: /
