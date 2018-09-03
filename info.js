@@ -170,11 +170,12 @@ if (Text === "Error") {
    AddSpan("Invalid Value") 
 }
 else {
+var span = document.createElement("span")
 var img = document.createElement("img")
 img.src = "https://rivers.run/resources/" + Text + ".png"
-
-//span.className = "riverspan"
-Button.appendChild(img)
+span.className = "riverspan"
+span.appendChild(img)
+Button.appendChild(span)
 }    
 }   
     
