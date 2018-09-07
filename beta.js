@@ -2,8 +2,6 @@ function GetId(Id) {
     return document.getElementById(Id)
 }
 function ReloadAllCache() {
-    "use strict";
-
     localStorage.setItem("TimeStamp", Date.now())
     
     caches.delete('rivers.run').then(function(event) {
@@ -218,23 +216,30 @@ while (myNode.firstChild) {
 }
 AddElement("River Name", "Section", "Difficulty", "Quality", "Length (Miles)", "The River's Write-up will appear here.")
 }
-
+var Updates = 0;
+//For locking out list. 
 function CreateList(PassedList) {
+var LockCounter = Updates
+Updates += 1
+
 ClearList()
 var i = 0;
-function AddMore() {
+function AddMore(LockCounter) {
     var c = i+40//Amount that is added each time
     for (i;i<Math.min(c, PassedList.length);i++) {
     var Elem = PassedList[i]
+    if (LockCounter === Updates) {
     AddElement(Elem.Name, Elem.Section, Elem.Difficulty, Elem.Quality, Elem.Length + " miles", Elem.Writeup)
     }
-    if (i < PassedList.length) {
-        setTimeout(function() {requestAnimationFrame(AddMore)}, 50/*Try and give time for response to user input*/)
+    }
+    if (i < PassedList.length && LockCounter === Updates) {
+        setTimeout(function() {requestAnimationFrame(function() {AddMore(LockCounter)})}, 50/*Try and give time for response to user input*/)
     }
 }
 if (PassedList.length > 0) {
-AddMore()
+AddMore(LockCounter)
 }
+    
 }
 
 //RiverArray is defined because of the other JavaScript file that was loaded.
