@@ -231,6 +231,8 @@ function AddMore(LockCounter) {
     if (LockCounter === Updates) {
     AddElement(Elem.Name, Elem.Section, Elem.Difficulty, Elem.Quality, Elem.Length + " miles", Elem.Writeup)
     }
+    console.log(LockCounter)
+    console.log(Updates)
     }
     if (i < PassedList.length && LockCounter === Updates) {
         setTimeout(function() {requestAnimationFrame(function() {AddMore(LockCounter)})}, 50/*Try and give time for response to user input*/)
