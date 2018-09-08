@@ -214,7 +214,7 @@ var myNode = GetId("Rivers");
 while (myNode.firstChild) {
     myNode.removeChild(myNode.firstChild);
 }
-AddElement("River Name", "Section", "Difficulty", "Quality", "Length (Miles)", "The River's Write-up will appear here.")
+AddElement("River Name", "Section", "Difficulty", "Quality", "Length", "The River's Write-up will appear here.")
 }
 var Updates = 0;
 //For locking out list. 
