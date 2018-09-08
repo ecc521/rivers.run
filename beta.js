@@ -165,7 +165,7 @@ switch (parseInt(Quality)) {
         Text = "Error"
 }
 if (Text === "Error") {
-   AddSpan("Invalid Value") 
+   AddSpan("Unknown") 
 }
 else {
 var span = document.createElement("span")
