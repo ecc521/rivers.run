@@ -13,5 +13,5 @@ if (event.request.url.indexOf("https://rivers.run") === 0) {
     })
   );
 }
-else {event.respondWith(return fetch(event.request))/*Fetch from network - AND DO NOT CACHE*/}  
+else {event.respondWith(fetch(event.request))/*Fetch from network - AND DO NOT CACHE*/}  
 });
