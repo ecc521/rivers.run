@@ -1,6 +1,6 @@
 self.addEventListener('fetch', function(event) {
+  console.log('Handling fetch event for', event.request.url);
   event.respondWith(
-    console.log(event.request)
     caches.open('rivers.run').then(function(cache) {
       return cache.match(event.request).then(function (response) {
         return response || fetch(event.request).then(function(response) {
