@@ -6,7 +6,7 @@
 /*Dynamic Images*/
 img {
     max-width: 100%;
-    max-height: 4vw;
+    max-height: 3vw;
     width: auto;
     height:auto;
 }
@@ -140,6 +140,12 @@ button:first-of-type:hover {
     background-color: lightgreen;
 }
   
+
+span:nth-child(4) {
+    width:12%;
+    /*Difficulty collum needs less space*/
+}
+
 span:nth-child(5) {
     width:12%;
     /*Length collum needs less space*/
