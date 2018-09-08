@@ -141,7 +141,7 @@ button:first-of-type:hover {
 }
   
 
-span:nth-child(4) {
+span:nth-child(3) {
     width:12%;
     /*Difficulty collum needs less space*/
 }
