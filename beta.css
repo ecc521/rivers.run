@@ -135,13 +135,6 @@ button:nth-child(4n + 1) {
 button:first-of-type {
     background-color: #77ff77;
 }
-
-/*block below may epically fail:*/
-button:first-of-type:nth-child(3) {
-    text-align: center;
-}
-
-
   
 button:first-of-type:hover {
     background-color: lightgreen;
