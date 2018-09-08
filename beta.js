@@ -219,8 +219,8 @@ AddElement("River Name", "Section", "Difficulty", "Quality", "Length (Miles)", "
 var Updates = 0;
 //For locking out list. 
 function CreateList(PassedList) {
-var LockCounter = Updates
 Updates += 1
+var LockCounter = Updates
 
 ClearList()
 var i = 0;
