@@ -48,7 +48,7 @@ GetId("ReloadAllText").innerHTML = "You're viewing a cached version of this site
 }
 }
 catch (e) {
-    console.log(e)
+    console.warn(e)
 }
 }
 try {
@@ -72,7 +72,7 @@ else {
 }
 }
 catch (e) {
-    console.log(e)
+    console.warn(e)
 }
 
 
@@ -114,7 +114,7 @@ if ('serviceWorker' in navigator) {
 }
 }
 catch (e) {
-    console.log(e)
+    console.warn(e)
     //This should only occour if the page is embedded and sandboxed.
 }
 
@@ -232,7 +232,7 @@ function AddMore(LockCounter) {
     AddElement(Elem.Name, Elem.Section, Elem.Difficulty, Elem.Quality, Elem.Length + " miles", Elem.Writeup)
     }
     else {
-      console.log("Locking mechanism triggered")  
+    break;  
     }
     }
     if (i < PassedList.length && LockCounter === Updates) {
