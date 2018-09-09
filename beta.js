@@ -716,7 +716,7 @@ canvas3.height = 800
 
 
 LoadAndRender(USGSNum, TextReport, canvas1, canvas2, canvas3, "#00AAFF80", "#0000FF80", "#0066FF80")
-GDivToAppend.appendChild(canvas1)
+DivToAppend.appendChild(canvas1)
     
 
 canvas2.style.display = "none"
