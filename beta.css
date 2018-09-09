@@ -3,6 +3,45 @@
     --screenheight: 300px;
 }
 
+/*Chart CSS*/
+canvas{
+    display: block;
+    margin: auto;
+    border: 1px solid black;
+    width: 90vw;
+    max-width: 150vh;
+    height: 80vw;
+    max-height: 90vh;
+    
+}
+  
+.canvasbuttons {
+    text-align: center;
+}
+
+.FlowButton {
+    background-Image: linear-gradient(to right, #00AAFF80 , #0000FF80);
+    border: 0;
+    color: white;
+}
+    
+.TempButton {
+    background-Image: linear-gradient(to right, red , blue);
+    border: 0;
+    color: white;
+}
+    
+.PrecipButton {
+    background-color: #0066FF80;
+    border: 0;
+    color: white;
+}
+    
+.Unselected {
+    border: 0;
+}
+
+
 /*Dynamic Images*/
 img {
     max-width: 100%;
