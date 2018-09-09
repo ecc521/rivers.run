@@ -859,9 +859,6 @@ Button.appendChild(span)
         Button.appendChild(RiverGageSpan)
         Div.appendChild(CreateGraphs(Div, USGS, RiverGageSpan))
     }
-    else {
-        AddSpan("Missing Gage")
-    }
 
     
     Button.addEventListener("click", function() {
