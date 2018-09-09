@@ -1,6 +1,7 @@
+if (navigator.onLine) {
 caches.delete('USGS')
 //This will race other code... And a cache should delete way before the JavaScript execution AND network request finish.
-
+}
 
 function GetId(Id) {
     return document.getElementById(Id)
