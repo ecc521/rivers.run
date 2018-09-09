@@ -696,7 +696,7 @@ function ToPrecip(idMake) {
     
     
     
-function CreateGraphs(USGSNum, TextReport) {
+function CreateGraphs(DivToAppend, USGSNum, TextReport) {
 var idMake = ""
 for (var i = 0;i<10;i++) {
 idMake += String(Math.random()*(2**53))
@@ -716,15 +716,15 @@ canvas3.height = 800
 
 
 LoadAndRender(USGSNum, TextReport, canvas1, canvas2, canvas3, "#00AAFF80", "#0000FF80", "#0066FF80")
-GetId("Charts").appendChild(canvas1)
+GDivToAppend.appendChild(canvas1)
     
 
 canvas2.style.display = "none"
 canvas3.style.display = "none"
 
     
-GetId("Charts").appendChild(canvas2)
-GetId("Charts").appendChild(canvas3)
+DivToAppend.appendChild(canvas2)
+DivToAppend.appendChild(canvas3)
 canvas1.id = idMake + "canvas1"    
 canvas2.id = idMake + "canvas2"    
 canvas3.id = idMake + "canvas3"    
@@ -854,7 +854,7 @@ Button.appendChild(span)
         var RiverGageSpan = document.createElement("span")
         RiverGageSpan.className = "riverspan"
         Button.appendChild(RiverGageSpan)
-        Div.appendChild(CreateGraphs(USGS, RiverGageSpan))
+        Div.appendChild(CreateGraphs(Div, USGS, RiverGageSpan))
     }
 
     
