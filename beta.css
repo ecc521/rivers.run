@@ -172,11 +172,20 @@ button:nth-child(4n + 1) {
     background-color: #e9e9e9;
 }   
  
-button:first-of-type {
+/*button:first-of-type {
     background-color: #77ff77;
 }
   
 button:first-of-type:hover {
+    background-color: lightgreen;
+}*/
+
+/*Test. If it fails, revert to previous code*/
+button:only-of-type {
+    background-color: #77ff77;
+}
+  
+button:only-of-type:hover {
     background-color: lightgreen;
 }
   
