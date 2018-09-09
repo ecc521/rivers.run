@@ -537,7 +537,9 @@ ctx.fillStyle = grd;
 }
  
 ctx.fillStyle = "black"
-ctx.fillText("Gage: " + Source, 150 , canvas.height-10);  
+ctx.textAlign = "center"; 
+ctx.fillText("Gage: " + Source, canvas.width/2 , canvas.height-10);  
+ctx.textAlign = "start"; 
     
 
     
