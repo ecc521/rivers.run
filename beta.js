@@ -852,6 +852,7 @@ Button.appendChild(span)
     }
     else if (String(USGS).length < 15 && USGS !== undefined) {
         var RiverGageSpan = document.createElement("span")
+        RiverGageSpan.className = "riverspan"
         Button.appendChild(RiverGageSpan)
         GetId(Div).appendChild(CreateGraphs(USGS, RiverGageSpan))
     }
