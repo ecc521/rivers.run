@@ -14,7 +14,7 @@ if (event.request.url.indexOf("https://rivers.run") === 0) {
 }
 else {
 event.respondWith(
-  /*USGS cache will need to be deleted on every page reload*/
+  /*USGS cache is deleted on every page reload*/
     caches.open('USGS').then(function(cache) {
       return cache.match(event.request).then(function (response) {
         return response || fetch(event.request).then(function(response) {
