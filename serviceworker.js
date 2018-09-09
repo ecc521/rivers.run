@@ -1,4 +1,7 @@
-self.addEventListener('fetch', function(event) {
+self.addEventListener('fetch', function(event) {  
+    
+//Only cache rivers.run resources - don't cache other resources such as USGS gage data. That will uselessly fill up cache with dynamic URL's.
+if (event.request.url.indexOf("https://rivers.run") === 0) {
   event.respondWith(
     caches.open('rivers.run').then(function(cache) {
       return cache.match(event.request).then(function (response) {
@@ -9,4 +12,6 @@ self.addEventListener('fetch', function(event) {
       });
     })
   );
+}
+else {event.respondWith(fetch(event.request))/*Fetch from network - AND DO NOT CACHE*/}  
 });
