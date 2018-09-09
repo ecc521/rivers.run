@@ -850,7 +850,7 @@ Button.appendChild(span)
     if (USGS === "Flow Info") {
         AddSpan(USGS)
     }
-    else if (String(USGS).length < 15 && USGS !== undefined) {
+    else if (String(USGS).length < 15 && USGS !== undefined && Number(USUS) !== 0) {
         var RiverGageSpan = document.createElement("span")
         RiverGageSpan.className = "riverspan"
         Button.appendChild(RiverGageSpan)
