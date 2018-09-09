@@ -172,13 +172,13 @@ button:nth-child(4n + 1) {
     background-color: #e9e9e9;
 }   
  
-button:first-of-type {
+#LabelRow {
     background-color: #77ff77;
     padding-top: 8px;
     padding-bottom: 8px;
 }
   
-button:first-of-type:hover {
+#LabelRow:hover {
     background-color: lightgreen;
 }
   
