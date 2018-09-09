@@ -854,7 +854,7 @@ Button.appendChild(span)
         var RiverGageSpan = document.createElement("span")
         RiverGageSpan.className = "riverspan"
         Button.appendChild(RiverGageSpan)
-        GetId(Div).appendChild(CreateGraphs(USGS, RiverGageSpan))
+        Div.appendChild(CreateGraphs(USGS, RiverGageSpan))
     }
 
     
