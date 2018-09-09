@@ -176,6 +176,8 @@ button:nth-child(4n + 1) {
  
 button:first-of-type {
     background-color: #77ff77;
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
   
 button:first-of-type:hover {
