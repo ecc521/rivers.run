@@ -394,7 +394,7 @@ for(var i = 1;i<11;i++) {
         Text = Math.round(Text)
     }
     else {
-    try {Text = Text.toFixed(3-String(Math.round(Text)).length)}catch (e) {console.log(e)}
+    try {Text = Text.toFixed(3-String(Math.round(Text)).length)}catch (e) {console.log(e);console.log(Text)}
     if (Number(Text) === Math.round(Text)) {
     Text = Math.round(Text)
     }
