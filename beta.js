@@ -598,7 +598,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     }
     }
     catch (e) {}
-    var Check2 = 
+    var Check2 = 1
     try {
     for (var i = 0;i<Result.height.length;i++) {
         if (Result.height[i] !== undefined) {
