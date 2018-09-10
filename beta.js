@@ -309,7 +309,7 @@ async function FetchData(SiteNumber) {
         //If you specify 0 or do not pass a value, the line's scale will be on the left side of the graph.
         //If you specify 1, the line's scale will be on the right side of the graph.
     
-function AddLine(Timezone, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
+function AddLine(GraphName, Timezone, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
 if (graphtype === 3) {
     var endcolor = numplace
 }
@@ -495,6 +495,7 @@ else if (graphtype === 3) {
 ctx.fillText("Tempreture (°F)", start+5, (canvas.height*(11/12)));    
 }
 else {
+if (GraphName === "Precipitation") {
 ctx.fillText("Precipitation (Inches)", start+5, (canvas.height*(11/12))); 
 var fulldayprecip = 0
 var halfdayprecip = 0
@@ -514,7 +515,16 @@ halfdayprecip = halfdayprecip.toFixed(2)
     
 ctx.fillText("Last 24 Hours: " + fulldayprecip + " in", canvas.width-700, (canvas.height*(11/12))); 
 ctx.fillText("Last 12 Hours: " + halfdayprecip + " in", canvas.width-330, (canvas.height*(11/12))); 
-
+}
+else if (GraphName === "cfs") {
+ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
+}
+else if (GraphName === "height") {
+ctx.fillText("Gage Height (Feet)", start+5, (canvas.height*(11/12)));    
+}
+else {
+ctx.fillText("Labeling Error...", start+5, (canvas.height*(11/12)));    
+}    
 }
 
 //set it back    
@@ -614,17 +624,17 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
         
     if (Check2 === 0) {
     TextReport.innerHTML += ", " + Result.height[Result.height.length - 1] + " feet"
-    AddLine(Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1, 2)
-    AddLine(Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2, 2, 1)
+    AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1, 2)
+    AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2, 2, 1)
     }
     else {
-    AddLine(Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1)
+    AddLine("cfs", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1)
     }
         
     }
     else {
     if (Check2 === 0) {
-    AddLine(Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2)
+    AddLine("height", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2)
     TextReport.innerHTML = Result.height[Result.height.length - 1] + " feet"
     }
     }
@@ -647,7 +657,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     Result.temp = Result.temp.map(function(value) {
         return (value*1.8)+32
     })
-    AddLine(Result.Timezone, Result.timeframe, Result.Source, tempcanvas, 0, Result.temp, "#FF0000", 3, "#0000FF")
+    AddLine("", Result.Timezone, Result.timeframe, Result.Source, tempcanvas, 0, Result.temp, "#FF0000", 3, "#0000FF")
     }
     else {
     var ctx = tempcanvas.getContext('2d')
@@ -667,7 +677,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     }
     catch (e) {}
     if (Check === 0) {
-    AddLine(Result.Timezone, Result.timeframe, Result.Source, precipcanvas, 0, Result.precip, color3)
+    AddLine("Precipitation", Result.Timezone, Result.timeframe, Result.Source, precipcanvas, 0, Result.precip, color3)
     }
     else {
     var ctx = precipcanvas.getContext('2d')
