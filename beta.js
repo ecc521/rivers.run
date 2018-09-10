@@ -764,7 +764,9 @@ canvas3.height = 800
 LoadAndRender(USGSNum, TextReport, canvas1, canvas2, canvas3, "#00AAFF80", "#0000FF80", "#0066FF80").catch(function(event) {
     RiverGageSpan.innerHTML = "Error..."
     console.log(event)
-    return document.createElement("p").innerHTML = "Error fetching and graphing USGS gage data."
+    var toreturn = document.createElement("p")
+    toreturn.innerHTML = "Error fetching and graphing USGS gage data."
+    return toreturn
 })
 DivToAppend.appendChild(canvas1)
     
