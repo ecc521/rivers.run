@@ -331,10 +331,6 @@ async function FetchData(SiteNumber) {
         //If you specify 1, the line's scale will be on the right side of the graph.
     
 function AddLine(Timezone, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
-if (Number(vertical) === NaN) {
-    console.log(vertical)
-}
-    
 if (graphtype === 3) {
     var endcolor = numplace
 }
