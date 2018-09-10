@@ -477,12 +477,7 @@ ctx.fillText(endtime + " (" + Timezone + ")", canvas.width-275, (canvas.height*(
   
 ctx.textAlign = "center"; 
 ctx.fillText(midtime + " (" + Timezone + ")", canvas.width/2, (canvas.height*(11/12))-(canvas.height*0.06)-12)
-ctx.textAlign = "start"; 
-
-//ctx.fillText("Data Timeframe: " + starttime + " (" + Timezone + ")" + " to " + endtime + " (" + Timezone + ")", 200 , canvas.height-10);
-    
-    
-    
+ctx.textAlign = "start";     
     
     
     
