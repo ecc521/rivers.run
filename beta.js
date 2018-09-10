@@ -586,9 +586,52 @@ ctx.stroke()
     
 async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipcanvas, color1, color2, color3) {
     var Result = await FetchData(number)
-    TextReport.innerHTML = Result.cfs[Result.cfs.length - 1] + " cfs, " + Result.height[Result.height.length - 1] + " feet"
+    
+    
+    var Check = 1
+    try {
+    for (var i = 0;i<Result.cfs.length;i++) {
+        if (Result.cfs[i] !== undefined) {
+            Check = 0
+            break;
+        }
+    }
+    }
+    catch (e) {}
+    var Check2 = 
+    try {
+    for (var i = 0;i<Result.height.length;i++) {
+        if (Result.height[i] !== undefined) {
+            Check2 = 0
+            break;
+        }
+    }
+    }
+    catch (e) {}
+    
+    if (Check === 0) {
+    TextReport.innerHTML = Result.cfs[Result.cfs.length - 1] + " cfs" 
+        
+    if (Check2 === 0) {
+    TextReport.innerHTML += ", " + Result.height[Result.height.length - 1] + " feet"
     AddLine(Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1, 2)
     AddLine(Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2, 2, 1)
+    }
+    else {
+    AddLine(Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1)
+    }
+        
+    }
+    else {
+    if (Check2 === 0) {
+    AddLine(Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2)
+    TextReport.innerHTML = Result.height[Result.height.length - 1] + " feet"
+    }
+    }
+    
+
+    
+    
     var Check = 1
     try {
     for (var i = 0;i<Result.temp.length;i++) {
