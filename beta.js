@@ -414,7 +414,7 @@ if (Number(Text) === Math.round(Text)) {
 Text = Math.round(Text)
 }
 }
-ctx.fillText(Text, start, 40);
+ctx.fillText(Text, start, 25);
    
 
     
