@@ -415,7 +415,7 @@ if (Number(Text) === Math.round(Text)) {
 Text = Math.round(Text)
 }
 }
-ctx.fillText(Text, start, 25);
+ctx.fillText(Text, start, 27);
    
 
     
@@ -648,7 +648,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     var ctx = watercanvas.getContext('2d')
     ctx.textAlign = "center"; 
     ctx.font= tempcanvas.width/35 + "px Arial"; 
-    ctx.fillText("No Temperature Data Avalible for this Site (" +  number + ")",watercanvas.width/2, watercanvas.height/2);  
+    ctx.fillText("No Flow Data Currently Avalible for this Site (" +  number + ")",watercanvas.width/2, watercanvas.height/2);  
     }
     }
     
@@ -676,7 +676,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     var ctx = tempcanvas.getContext('2d')
     ctx.textAlign = "center"; 
     ctx.font= tempcanvas.width/35 + "px Arial"; 
-    ctx.fillText("No Temperature Data Avalible for this Site (" +  number + ")",tempcanvas.width/2, tempcanvas.height/2);  
+    ctx.fillText("No Temperature Data Currently Avalible for this Site (" +  number + ")",tempcanvas.width/2, tempcanvas.height/2);  
     }
     
     Check = 1
@@ -696,7 +696,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     var ctx = precipcanvas.getContext('2d')
     ctx.font= precipcanvas.width/35 + "px Arial"; 
     ctx.textAlign = "center";     
-    ctx.fillText("No Precipitation Data Avalible for this Site (" +  number + ")",precipcanvas.width/2, precipcanvas.height/2);  
+    ctx.fillText("No Precipitation Data Currently Avalible for this Site (" +  number + ")",precipcanvas.width/2, precipcanvas.height/2);  
     }
     
 }
