@@ -414,9 +414,11 @@ if (Number(Text) === Math.round(Text)) {
 Text = Math.round(Text)
 }
 }
-ctx.fillText(Text, start, canvas.height-10);
+ctx.fillText(Text, start, 10);
    
 
+    
+    
     
 var px = Math.floor(((canvas.width)*0.07)/2.8)
 ctx.font = (px + 'px serif')
