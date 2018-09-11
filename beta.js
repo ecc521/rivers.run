@@ -644,6 +644,12 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     AddLine("height", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2)
     TextReport.innerHTML = Result.height[Result.height.length - 1] + " feet"
     }
+    else {
+    var ctx = watercanvas.getContext('2d')
+    ctx.textAlign = "center"; 
+    ctx.font= tempcanvas.width/35 + "px Arial"; 
+    ctx.fillText("No Temperature Data Avalible for this Site (" +  number + ")",watercanvas.width/2, watercanvas.height/2);  
+    }
     }
     
 
