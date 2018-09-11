@@ -420,7 +420,7 @@ if (Number(Text) === Math.round(Text)) {
 Text = Math.round(Text)
 }
 }
-ctx.fillText(Text, start, 10);
+ctx.fillText(Text, start, 40);
    
 
     
