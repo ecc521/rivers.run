@@ -394,7 +394,13 @@ for(var i = 1;i<11;i++) {
         Text = Math.round(Text)
     }
     else {
-    try {Text = Text.toFixed(3-String(Math.round(Text)).length)}catch (e) {console.log(e);console.log(Text)}
+    try {
+        Text = Text.toFixed(3-String(Math.round(Text)).length)
+    }
+    catch (e) {
+        console.log(e)
+        console.log(Text)
+    }
     if (Number(Text) === Math.round(Text)) {
     Text = Math.round(Text)
     }
@@ -466,10 +472,13 @@ if (String(time3.getMinutes()).length < 2) {
 midtime += " " + (time3.getMonth()+1) + "/" + time3.getDate() + "/" +time3.getFullYear()
     
 ctx.fillText(starttime + " (" + Timezone + ")", 10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
-ctx.fillText(endtime + " (" + Timezone + ")", canvas.width-275, (canvas.height*(11/12))-(canvas.height*0.06)-12)
+
+ctx.textAlign = "end"; 
+ctx.fillText(endtime + " (" + Timezone + ")", canvas.width-10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
   
 ctx.textAlign = "center"; 
 ctx.fillText(midtime + " (" + Timezone + ")", canvas.width/2, (canvas.height*(11/12))-(canvas.height*0.06)-12)
+
 ctx.textAlign = "start";     
     
     
