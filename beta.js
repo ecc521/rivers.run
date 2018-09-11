@@ -603,7 +603,7 @@ ctx.stroke()
     
 async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipcanvas, color1, color2, color3) {
     var Result = await FetchData(number)
-    TextReport.innerHTML = "Unavailable"
+    TextReport.innerHTML = "Data Unavailable"
     
     var Check = 1
     try {
