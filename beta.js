@@ -1,7 +1,11 @@
+try {
 if (navigator.onLine) {
 caches.delete('USGS')
 //This will race other code... And a cache should delete way before the JavaScript execution AND network request finish.
 //If it doesn't, hopefully the user will refresh page.
+}
+catch (e) {
+console.warn(e)
 }
 
 function GetId(Id) {
@@ -775,7 +779,7 @@ canvas3.height = 800
 
 LoadAndRender(USGSNum, TextReport, canvas1, canvas2, canvas3, "#00AAFF80", "#0000FF80", "#0066FF80").catch(function(event) {
     TextReport.innerHTML = "Error..."
-    console.log(event)
+    console.warn(event)
 })
 DivToAppend.appendChild(canvas1)
     
