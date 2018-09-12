@@ -1,5 +1,12 @@
 <p>404 - Not Found<br>
 This might be my fault, it might be yours, however I am afraid that there was an issue trying to find the file you requested.<br>
 You can see the main page below, and navigate around.</p>
-<iframe style="width:100%;height:100%" onLoad="console.log(this.contentWindow.location.href)" src="https://rivers.run"></iframe>
+<iframe style="width:100%;height:100%" onLoad="Reload(this.contentWindow.location.href)" src="https://rivers.run"></iframe>
 
+<script>
+function Reload(URL) {
+  if (URL !== "https://rivers.run/") {
+    window.location = URL
+  }
+}
+</script>
