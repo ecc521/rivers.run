@@ -172,7 +172,7 @@ if (Text === "Error") {
 else {
 var span = document.createElement("span")
 var img = document.createElement("img")
-img.src = "https://rivers.run/resources/" + Text + ".png"
+img.src = "https://resources.rivers.run/" + Text + ".png"
 span.className = "riverspan"
 span.appendChild(img)
 Button.appendChild(span)
