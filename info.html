@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Block malicious user content from affecting page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src https://rivers.run https://resources.rivers.run https://embeds.rivers.run; block-all-mixed-content;">
-<!-- Just in case somebody removes it from a link -->
+<!-- Secure page against user generated content -->
+<meta http-equiv="Content-Security-Policy" content="default-src https://rivers.run https://resources.rivers.run https://embeds.rivers.run;connect-src https://waterdata.usgs.gov;block-all-mixed-content;">
 <meta name="referrer" content="none">
 
 
@@ -52,7 +51,7 @@
 <p><a href="https://docs.google.com/document/d/1tk0O3W7lAdzLmUsy4n-iaqJokA25nmmHL_16-oHZdKE/edit?usp=sharing" target="_blank" rel="noopener">Click here to learn how to contribute to this site.</a></p>
     
 <p class="pixel18"><em><strong>Hint: Click on a River to see it's Writeup.</strong></em></p>
-<p class="pixel22" id="RotateMobile" hidden="hidden"></p>
+<p class="pixel18"><strong>Disclaimer: USGS Gage data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>
 
 <label for="SearchBox">Click Here and Type to Search</label>
 <input type="text" id="SearchBox" placeholder="Type in here to search">
@@ -80,8 +79,8 @@
 <script src="/RiverArray.js"></script>
 <script src="/info.js"></script>
 
-<link rel="prerender" href="/FAQ.html">
-<link rel="prerender" href="/">
+<link rel="prefetch" href="/FAQ.html">
+<link rel="prefetch" href="/">
 <link rel="prefetch" href="/TOS.txt">
  
 </body>              
