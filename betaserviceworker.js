@@ -29,12 +29,8 @@ cache.put(event.request, thiscache.clone())
 return thiscache
 }
   
+}()))
 }
-
-}()))  
-}
-  
-  
 })
 
 
