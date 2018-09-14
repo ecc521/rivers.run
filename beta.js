@@ -118,7 +118,7 @@ document.documentElement.style.setProperty('--textsize', ScreenWidth);
 
 try {
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
+  navigator.serviceWorker.register('https://rivers.run/betaserviceworker.js')
   .then(function(registration) {
   })
   .catch(function(error) {
