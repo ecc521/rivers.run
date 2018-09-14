@@ -904,7 +904,7 @@ Button.appendChild(span)
         AddSpan(USGS)
         Button.id = "LabelRow"
     }
-    else if (String(USGS).length < 15 && USGS !== undefined && Number(USGS) !== 0) {
+    else if (String(USGS).length < 16 && USGS !== undefined && Number(USGS) !== 0) {
         var RiverGageSpan = document.createElement("span")
         RiverGageSpan.className = "riverspan"
         RiverGageSpan.innerHTML = "Loading From USGS..."
