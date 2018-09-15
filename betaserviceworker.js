@@ -23,8 +23,9 @@ event.respondWith(
 else {
   
 event.respondWith((async function() {
-//Verify List Age - I'll Give It 30 Seconds. If it is older, dump it.
-if (Date.now() - Age > 30*1000) {
+//Verify List Age - I'll Give It 60 Seconds. If it is older, dump it.
+if (Date.now() - Age > 60*1000) {
+console.log("Deleting List. It is " + (Date.now() - Age)/1000 + " seconds old.")
 List = {}
 List.url = []
 List.values = []
@@ -34,17 +35,17 @@ Age = Date.now()
 if (List.url.indexOf(event.request.url) === -1) {
     List.url.push(event.request.url)
     //This cache is deleted on every page load if the user is online
-    var cache = await caches.open("Temporary")
-    var response = await cache.match(event.request)
-    if (!response) {
+    //var cache = await caches.open("Temporary")
+    //var response = await cache.match(event.request)
+    //if (!response) {
     console.log("Loading from network")
-    response = await fetch(event.request)
-    }
-    else {
-    console.log("Loaded from cache")
+    var response = await fetch(event.request)
+    //}
+    //else {
+    //console.log("Loaded from cache")
     }
     List.values.push(response.clone())
-    cache.put(event.request, response.clone())
+    //cache.put(event.request, response.clone())
     //not sure that does anything.... but why not...
     return response
 }
