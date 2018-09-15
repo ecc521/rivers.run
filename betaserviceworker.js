@@ -37,7 +37,11 @@ if (List.url.indexOf(event.request.url) === -1) {
     var cache = await caches.open("Temporary")
     var response = await cache.match(event.request)
     if (!response) {
+    console.log("Loading from network")
     response = await fetch(event.request)
+    }
+    else {
+    console.log("Loaded from cache")
     }
     List.values.push(response.clone())
     cache.put(event.request, response.clone())
@@ -48,6 +52,7 @@ else {
     for (var i = 0;i<150;i++) {
     await new Promise(resolve => setTimeout(resolve, 100));
     if (List.values[List.url.indexOf(event.request.url)] !== undefined) {
+    console.log("Loaded from list")
     break;
     }
     }
