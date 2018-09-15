@@ -990,7 +990,7 @@ function AddMore(LockCounter) {
     }
     }
     if (i < PassedList.length && LockCounter === Updates) {
-        setTimeout(function() {requestAnimationFrame(function() {AddMore(LockCounter)})}, 50/*Try and give time for response to user input*/)
+        setTimeout(function() {requestAnimationFrame(function() {AddMore(LockCounter)})}, 30/*Try and give time for response to user input*/)
     }
 }
 if (PassedList.length > 0) {
