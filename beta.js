@@ -365,9 +365,10 @@ for (var i = 0;i<vertical.length;i++) {
 if (String(Number(vertical[i])) !== "NaN" && (vertical[i]) !== "") {
     calcvertical.push(vertical[i])
 }
-else {
-    console.warn("Element " + i + " in list is an invalid number. It had a value of: " + vertical[i])
-}
+//else {
+    //This is a valid warning - It just got TOO ANNOYING
+    //console.warn("Element " + i + " in list is an invalid number. It had a value of: " + vertical[i])
+//}
 }
     
 var vscale = Math.max(...calcvertical) - Math.min(...calcvertical)
