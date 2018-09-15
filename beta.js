@@ -2,7 +2,7 @@ function GetId(Name) {
   return document.getElementById(Name)
 }
 
-function River(name, section, difficulty, quality, length, writeup, usgs, idbase) {
+function River(name, section, difficulty, quality, length, writeup, usgs, base) {
   this.name = name
   this.section = section
   this.difficulty = difficulty
@@ -10,11 +10,11 @@ function River(name, section, difficulty, quality, length, writeup, usgs, idbase
   this.length = length
   this.writeup = writeup
   this.usgs = usgs
-  this.base = "b" + idbase
+  this.base = "b" + base
   
   this.display = function () {
     var button = document.createElement("button")
-    button.className = this.base + 1
+    button.id = this.base + 1
     
     
   }
