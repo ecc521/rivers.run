@@ -25,11 +25,13 @@ else {
 event.respondWith((async function() {
 //Verify List Age - I'll Give It 60 Seconds. If it is older, dump it.
 if (Date.now() - Age > 60*1000) {
+if (navigator.onLine) {
 console.log("Deleting List. It is " + (Date.now() - Age)/1000 + " seconds old.")
 List = {}
 List.url = []
 List.values = []
 Age = Date.now()
+}
 }
 
 if (List.url.indexOf(event.request.url) === -1) {
