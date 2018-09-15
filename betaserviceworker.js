@@ -41,8 +41,8 @@ Age = Date.now()
 
     
 if (List.url.indexOf(event.request.url) === -1) {
-    response = await fetch(event.request)
     List.url.push(event.request.url)
+    response = await fetch(event.request)
     List.values.push(response.clone())
     cache.put(event.request, response.clone())
     return response
