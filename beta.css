@@ -57,10 +57,12 @@ html,body{
     height: 100%;
 }
 
-body {
+/*body {
     margin-right:0.4vw;
     margin-left:0.4vw;
 }
+
+Not sure it is needed*/
 
 /*Embedded Frames*/
 iframe {
