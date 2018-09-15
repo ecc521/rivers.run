@@ -1020,11 +1020,13 @@ GetId("SearchBox").addEventListener("keydown", PrepSort)
 async function PrepSort() {
   var wait = ms => new Promise((r, j)=>setTimeout(r, ms))
   await wait(20)
-  var value = GetId("SearchBox").value
+  var value = GetId("SearchBox").value.trim()
   await wait(40)
   //Initialize sorting if no change within 40 milliseconds
-  var value2 = GetId("SearchBox").value
+  var value2 = GetId("SearchBox").value.trim()
   if (value2 === value) {
+    console.log(value)
+    console.log(value2)
     SortListGen()
   }
 }
