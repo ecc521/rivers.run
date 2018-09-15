@@ -1013,7 +1013,16 @@ RotateHandler()
 //Resize text initially
 
 
-GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
+GetId("SearchBox").addEventListener("keydown", PrepSort(this.value))
+async function PrepSort(value) {
+  var wait = ms => new Promise((r, j)=>setTimeout(r, ms))
+  await wait(40)
+  //Initialize sorting if no keypress within 40 milliseconds
+  var value2 = GetId("SearchBox").value
+  if (value2 === value) {
+    SortListGen()
+  }
+}
 function SortListGen() {
     var Text = (GetId("SearchBox").value).toLowerCase().trim()
     var array = []
