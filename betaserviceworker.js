@@ -48,17 +48,34 @@ if (List.url.indexOf(event.request.url) === -1) {
     }
     List.values.push(response.clone())
     cache.put(event.request, response.clone())
-    //not sure that does anything... But if the list variable doesn't persist offline that will. It will need testing.
+    //Having two backups is better than one.
     return response
 }
 else {
-    for (var i = 0;i<150;i++) {
+    //Having two backups is better than one.
+    var cache = await caches.open("Temporary")
+    var response = await cache.match(event.request)
+    if (response) {
+    return response.clone()
+    }
+    else {
+    for (var i = 0;i<100;i++) {
     await new Promise(resolve => setTimeout(resolve, 100));
     if (List.values[List.url.indexOf(event.request.url)] !== undefined) {
     console.log("Loaded from list")
-    break;
-    }
-    }
-    
     return List.values[List.url.indexOf(event.request.url)].clone()
+    }
+    }
+        
+        
+    //Check again - just in case
+    cache = await caches.open("Temporary")
+    response = await cache.match(event.request)
+    if (response) {
+    return response.clone()
+    }
+        
+    //It's not in cache, it's not in the list, and we have waited 10 seconds. Just send it.
+    return fetch(event.request)
+    }
 }}()))}})
