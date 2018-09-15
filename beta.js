@@ -215,9 +215,9 @@ function RemoveTimeZone(Array) {
     })
 }
     
-function Objectify(Array, GageName, Timezone) {
+function Objectify(Array, GaugeName, Timezone) {
     var data = {}
-    data.Source = GageName
+    data.Source = GaugeName
     data.Timezone = Timezone
     
     data.timeframe = Array.map(function(value){
@@ -306,10 +306,10 @@ function Objectify(Array, GageName, Timezone) {
 }
 async function FetchData(SiteNumber) {
     var FetchedFromUSGS = await LoadStringData(CreateURL(SiteNumber))
-    var GageName = FetchedFromUSGS.split("\n")[16].slice(1).trim()
+    var GaugeName = FetchedFromUSGS.split("\n")[16].slice(1).trim()
     var Data = TrimExtraData2(TrimExtraData1(Expand(TrimTopStuff(FetchedFromUSGS))))
     var Timezone = (CheckTimeZone(Data))
-    return Objectify(RemoveTimeZone(Data), GageName, Timezone)
+    return Objectify(RemoveTimeZone(Data), GaugeName, Timezone)
 
 }  
 //AddLine(canvas, horizontal, vertical, color, graphtype, numplace)
@@ -509,7 +509,7 @@ if (numplace === 0 || numplace === undefined) {
 ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
 }
 else {
-ctx.fillText("Gage Height (Feet)", start-195, (canvas.height*(11/12)));    
+ctx.fillText("Gauge Height (Feet)", start-195, (canvas.height*(11/12)));    
 } 
 }
 else if (graphtype === 3) {
@@ -541,7 +541,7 @@ else if (GraphName === "cfs") {
 ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
 }
 else if (GraphName === "height") {
-ctx.fillText("Gage Height (Feet)", start+5, (canvas.height*(11/12)));    
+ctx.fillText("Gauge Height (Feet)", start+5, (canvas.height*(11/12)));    
 }
 else {
 ctx.fillText("Labeling Error...", start+5, (canvas.height*(11/12)));    
@@ -930,15 +930,15 @@ Button.appendChild(span)
     else if (String(USGS).length < 16 && USGS !== undefined && Number(USGS) !== 0 && !isNaN(Number(USGS))) {
         //This means that it is a valid number, is not undefined, is under 16 digits, and is not zero
         //Thats about as much error checking as I can give it
-        var RiverGageSpan = document.createElement("span")
-        RiverGageSpan.className = "riverspan"
-        RiverGageSpan.innerHTML = "Loading From USGS..."
-        Button.appendChild(RiverGageSpan)
-        Div.appendChild(CreateGraphs(Div, USGS, RiverGageSpan))
+        var RiverGaugeSpan = document.createElement("span")
+        RiverGaugeSpan.className = "riverspan"
+        RiverGaugeSpan.innerHTML = "Loading From USGS..."
+        Button.appendChild(RiverGaugeSpan)
+        Div.appendChild(CreateGraphs(Div, USGS, RiverGaugeSpan))
     }
     else if (USGS !== undefined && Number(USGS) !== 0){
         //Only add bad gage number if it is not undefined or 0, and failed the test above.
-        AddSpan("Bad Gage #")
+        AddSpan("Bad Gauge #")
     }
 
     
