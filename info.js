@@ -1,13 +1,44 @@
-try {
+'use strict'; 
+
 if (navigator.onLine) {
-caches.delete('USGS')
-//This will race other code... And a cache should delete way before the JavaScript execution AND network request finish.
-//If it doesn't, hopefully the user will refresh page.
+var dc = caches.delete('Temporary')
+dc.then(LoadSW())
+dc.catch(function(event){
+console.warn(event) 
+LoadSW()
+})
+}
+else {
+LoadSW()
+}
+
+function LoadSW() {
+if ('serviceWorker' in navigator) {
+  var sw = navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
+  sw.then(function() {
+      console.log("ServiceWorker Registered!")
+        var ld = navigator.serviceWorker.ready
+        ld.then(function() {
+          console.log("ServiceWorker Ready!")
+          MainCode()
+        })  
+        ld.catch(MainCode())
+    
+  })
+  sw.catch(function(error) {
+      console.warn(error)
+      MainCode()
+  });
+}
+else {
+    console.log("No ServiceWorker Support")
+    MainCode()
 }
 }
-catch (e) {
-console.warn(e)
-}
+
+
+
+function MainCode() {
 
 function GetId(Id) {
     return document.getElementById(Id)
@@ -88,46 +119,21 @@ catch (e) {
 
 
 window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
-//window.addEventListener("resize", function() {setTimeout(SortListGen, 100)})
-//Don't think it is needed anymore 
 
 function RotateHandler() {
-//Embedded Frames
-//Divided by 1.2 prevents the frame from taking up the whole screen and blocking the user from scrolling off of it.
+//Embedded Frames - Reduce height slightly so it doesn't look fullscreen
 document.documentElement.style.setProperty('--screenheight', (Math.floor(window.innerHeight/1.15)) + "px");
     
 //values arbitrary and picked by me
 var ScreenWidth = 750/window.innerWidth
 if (ScreenWidth < 1) {
-    ScreenWidth = ScreenWidth ** 0.55
+    ScreenWidth = ScreenWidth ** 0.7
 }
 else {
-    if (ScreenWidth < 2.5) {
-    ScreenWidth = ScreenWidth ** 0.6
-    }
-    else {
-    ScreenWidth = Math.max(ScreenWidth**0.6, 2.67**0.6)
-    }
+  ScreenWidth = 1.2
 }
 ScreenWidth = (2.4 * ScreenWidth) + "vw"
-document.documentElement.style.setProperty('--textsize', ScreenWidth);
-//Set the textsize (relative) to a higher amount on smaller devices, and a lower amount on bigger devices.
-    
-}
-
-
-try {
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
-  .then(function(registration) {
-  })
-  .catch(function(error) {
-  });
-}
-}
-catch (e) {
-    console.warn(e)
-    //This should only occour if the page is embedded and sandboxed.
+document.documentElement.style.setProperty('--textsize', ScreenWidth);    
 }
 
 
@@ -207,9 +213,9 @@ function RemoveTimeZone(Array) {
     })
 }
     
-function Objectify(Array, GageName, Timezone) {
+function Objectify(Array, GaugeName, Timezone) {
     var data = {}
-    data.Source = GageName
+    data.Source = GaugeName
     data.Timezone = Timezone
     
     data.timeframe = Array.map(function(value){
@@ -280,7 +286,7 @@ function Objectify(Array, GageName, Timezone) {
     
     if (tempnum !== undefined) {
     data.temp =  Array.map(function(value) {
-    if (String(Number(value[tempnum])) !== "NaN" && value[tempnum] !== "") {
+    if (!isNaN(Number(value[tempnum])) && value[tempnum] !== "") {
     return value[tempnum]
     }
     else{
@@ -298,10 +304,10 @@ function Objectify(Array, GageName, Timezone) {
 }
 async function FetchData(SiteNumber) {
     var FetchedFromUSGS = await LoadStringData(CreateURL(SiteNumber))
-    var GageName = FetchedFromUSGS.split("\n")[16].slice(1).trim()
+    var GaugeName = FetchedFromUSGS.split("\n")[16].slice(1).trim()
     var Data = TrimExtraData2(TrimExtraData1(Expand(TrimTopStuff(FetchedFromUSGS))))
     var Timezone = (CheckTimeZone(Data))
-    return Objectify(RemoveTimeZone(Data), GageName, Timezone)
+    return Objectify(RemoveTimeZone(Data), GaugeName, Timezone)
 
 }  
 //AddLine(canvas, horizontal, vertical, color, graphtype, numplace)
@@ -356,12 +362,13 @@ width = width*0.93
 
 var calcvertical = []
 for (var i = 0;i<vertical.length;i++) {
-if (String(Number(vertical[i])) !== "NaN" && (vertical[i]) !== "") {
+if (!isNaN(Number(vertical[i])) && (vertical[i]) !== "") {
     calcvertical.push(vertical[i])
 }
-else {
-    console.warn("Element " + i + " in list is an invalid number. It had a value of: " + vertical[i])
-}
+//else {
+    //This is a valid warning - It just got TOO ANNOYING
+    //console.warn("Element " + i + " in list is an invalid number. It had a value of: " + vertical[i])
+//}
 }
     
 var vscale = Math.max(...calcvertical) - Math.min(...calcvertical)
@@ -388,10 +395,10 @@ ctx.fillStyle = grd;
 }    
 
 if (numplace === 0 || numplace === undefined) {
-    start = 1
+    var start = 1
 }
 else {
-    start = canvas.width-(canvas.width*0.07)
+    var start = canvas.width-(canvas.width*0.07)
 }
 for(var i = 1;i<11;i++) {
     var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
@@ -500,11 +507,13 @@ if (numplace === 0 || numplace === undefined) {
 ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
 }
 else {
-ctx.fillText("Gage Height (Feet)", start-195, (canvas.height*(11/12)));    
+ctx.textAlign = "right"; 
+ctx.fillText("Gauge Height (Feet)", start-5, (canvas.height*(11/12)));
+ctx.textAlign = "start"; 
 } 
 }
 else if (graphtype === 3) {
-ctx.fillText("Tempreture (°F)", start+5, (canvas.height*(11/12)));    
+ctx.fillText("Water Temperature (°F)", start+5, (canvas.height*(11/12)));    
 }
 else {
 if (GraphName === "Precipitation") {
@@ -532,7 +541,7 @@ else if (GraphName === "cfs") {
 ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
 }
 else if (GraphName === "height") {
-ctx.fillText("Gage Height (Feet)", start+5, (canvas.height*(11/12)));    
+ctx.fillText("Gauge Height (Feet)", start+5, (canvas.height*(11/12)));    
 }
 else {
 ctx.fillText("Labeling Error...", start+5, (canvas.height*(11/12)));    
@@ -550,7 +559,7 @@ ctx.fillStyle = grd;
  
 ctx.fillStyle = "black"
 ctx.textAlign = "center"; 
-ctx.fillText("Gage: " + Source, canvas.width/2 , canvas.height-10);  
+ctx.fillText(Source, canvas.width/2 , canvas.height-10);  
 ctx.textAlign = "start"; 
     
 
@@ -566,7 +575,7 @@ function V(Value) {
 
 
 for (var p = 0;p<Math.min(vertical.length, horizontal.length);p++) {
-if (String(Number(vertical[p])) !== "NaN" && vertical[p] !== "") {
+if (!isNaN(Number(vertical[p])) && vertical[p] !== "") {
 ctx.moveTo(H(horizontal[p]), V(vertical[p]))
 break;
 }    
@@ -576,7 +585,7 @@ break;
 var valid = 1
  
 for (var i = p;i<Math.min(vertical.length, horizontal.length);i++) {
-    if (String(Number(vertical[i])) !== "NaN" && vertical[i] !== "") {
+    if (!isNaN(Number(vertical[i])) && vertical[i] !== "") {
     if (valid === 1) {
     ctx.lineTo(H(horizontal[i]), V(vertical[i]))
     }
@@ -632,10 +641,18 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     catch (e) {}
     
     if (Check === 0) {
-    TextReport.innerHTML = Result.cfs[Result.cfs.length - 1] + " cfs" 
+        for (var d = Result.cfs.length - 1;d>=0;d--) {if (!isNaN(Number(Result.cfs[d])) && Number(Result.cfs[d]) !== 0 && Result.cfs[d] !== undefined) {
+        TextReport.innerHTML = Result.cfs[d] + " cfs";
+        break;}
+        }
         
     if (Check2 === 0) {
-    TextReport.innerHTML += ", " + Result.height[Result.height.length - 1] + " feet"
+    TextReport.innerHTML += ", "
+        for (var d = Result.height.length - 1;d>=0;d--) {if (!isNaN(Number(Result.height[d])) && Number(Result.height[d]) !== 0 && Result.height[d] !== undefined) {
+        TextReport.innerHTML += Result.height[d] + " feet";
+        break;}
+        }
+
     AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1, 2)
     AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2, 2, 1)
     }
@@ -647,7 +664,12 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     else {
     if (Check2 === 0) {
     AddLine("height", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2)
-    TextReport.innerHTML = Result.height[Result.height.length - 1] + " feet"
+    
+        for (var d = Result.height.length - 1;d>=0;d--) {if (!isNaN(Number(Result.height[d])) && Number(Result.height[d]) !== 0 && Result.height[d] !== undefined) {
+        TextReport.innerHTML = Result.height[d] + " feet";
+        break;}
+        }
+        
     }
     else {
     var ctx = watercanvas.getContext('2d')
@@ -681,7 +703,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     var ctx = tempcanvas.getContext('2d')
     ctx.textAlign = "center"; 
     ctx.font= tempcanvas.width/35 + "px Arial"; 
-    ctx.fillText("No Temperature Data Currently Avalible for this Site (" +  number + ")",tempcanvas.width/2, tempcanvas.height/2);  
+    ctx.fillText("No Water Temperature Data Currently Avalible for this Site (" +  number + ")",tempcanvas.width/2, tempcanvas.height/2);  
     }
     
     Check = 1
@@ -795,7 +817,9 @@ canvas1.id = idMake + "canvas1"
 canvas2.id = idMake + "canvas2"    
 canvas3.id = idMake + "canvas3"    
     
-    
+canvas1.className = "ToDeleteLater"
+canvas2.className = "ToDeleteLater"
+canvas3.className = "ToDeleteLater"
 
 var button1 = document.createElement("button")
 button1.innerHTML = "Flow Info"
@@ -804,7 +828,7 @@ button1.className = "FlowButton"
 button1.id = idMake + "button1"   
 
 var button2 = document.createElement("button")
-button2.innerHTML = "Tempreture"
+button2.innerHTML = "Water Temperature"
 button2.addEventListener("click", function() {ToTemp(this.id)})
 button2.className = "Unselected"
 button2.id = idMake + "button2"   
@@ -823,7 +847,7 @@ Div.appendChild(button1)
 Div.appendChild(button3)
 Div.appendChild(button2)
 
-Div.className = "canvasbuttons"
+Div.className = "canvasbuttons ToDeleteLater"
 return Div
 }
 //End of Graph Code
@@ -884,6 +908,7 @@ else {
 var span = document.createElement("span")
 var img = document.createElement("img")
 img.src = "https://resources.rivers.run/" + Text + ".png"
+img.alt = Text[0] + " Stars"
 span.className = "riverspan"
 span.appendChild(img)
 Button.appendChild(span)
@@ -904,12 +929,18 @@ Button.appendChild(span)
         AddSpan(USGS)
         Button.id = "LabelRow"
     }
-    else if (String(USGS).length < 16 && USGS !== undefined && Number(USGS) !== 0) {
-        var RiverGageSpan = document.createElement("span")
-        RiverGageSpan.className = "riverspan"
-        RiverGageSpan.innerHTML = "Loading From USGS..."
-        Button.appendChild(RiverGageSpan)
-        Div.appendChild(CreateGraphs(Div, USGS, RiverGageSpan))
+    else if (String(USGS).length < 16 && USGS !== undefined && Number(USGS) !== 0 && !isNaN(Number(USGS))) {
+        //This means that it is a valid number, is not undefined, is under 16 digits, and is not zero
+        //Thats about as much error checking as I can give it
+        var RiverGaugeSpan = document.createElement("span")
+        RiverGaugeSpan.className = "riverspan"
+        RiverGaugeSpan.innerHTML = "Loading..."
+        Button.appendChild(RiverGaugeSpan)
+        Div.appendChild(CreateGraphs(Div, USGS, RiverGaugeSpan))
+    }
+    else if (USGS !== undefined && Number(USGS) !== 0){
+        //Only add bad gage number if it is not undefined or 0, and failed the test above.
+        AddSpan("Bad Gauge #")
     }
 
     
@@ -936,6 +967,12 @@ Button.appendChild(span)
 }
  
 function ClearList() {
+document.querySelectorAll(".Unselected").forEach(e => e.parentNode.removeChild(e));
+document.querySelectorAll(".FlowButton").forEach(e => e.parentNode.removeChild(e));
+document.querySelectorAll(".PrecipButton").forEach(e => e.parentNode.removeChild(e));
+document.querySelectorAll(".TempButton").forEach(e => e.parentNode.removeChild(e));
+document.querySelectorAll(".ToDeleteLater").forEach(e => e.parentNode.removeChild(e));
+
 var myNode = GetId("Rivers");
 while (myNode.firstChild) {
     myNode.removeChild(myNode.firstChild);
@@ -962,7 +999,7 @@ function AddMore(LockCounter) {
     }
     }
     if (i < PassedList.length && LockCounter === Updates) {
-        setTimeout(function() {requestAnimationFrame(function() {AddMore(LockCounter)})}, 50/*Try and give time for response to user input*/)
+        setTimeout(function() {requestAnimationFrame(function() {AddMore(LockCounter)})}, 60/*Try and give time for response to user input*/)
     }
 }
 if (PassedList.length > 0) {
@@ -978,7 +1015,19 @@ RotateHandler()
 //Resize text initially
 
 
-GetId("SearchBox").addEventListener("keydown", function() {setTimeout(SortListGen, 20)})
+GetId("SearchBox").addEventListener("keydown", PrepSort)
+var SearchStore = ""
+  
+async function PrepSort() {
+  var wait = ms => new Promise((r, j)=>setTimeout(r, ms))
+  await wait(20)
+  
+  var value = GetId("SearchBox").value.trim()
+  if (!(value === SearchStore)) {
+    SortListGen()
+  }
+}
+  
 function SortListGen() {
     var Text = (GetId("SearchBox").value).toLowerCase().trim()
     var array = []
@@ -1052,6 +1101,8 @@ if (Query.indexOf("q=cache:") === 0) {
 if (ThisURL !== Query) {
   document.getElementById("SearchBox").value = Query
   SortListGen()
+  SearchStore = Query
 }
-
-
+    
+    
+}
