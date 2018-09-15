@@ -1,7 +1,9 @@
 //Currently returns protocol, subdomain, domain name, tld, and query
 function URL(a){var b={};a=a.trim(),b.url=a,b.query=a.slice(a.indexOf("?")+1),b.query===a&&(b.query=void 0),0===a.indexOf("https://")?(b.protocol="https://",a=a.slice(8)):0===a.indexOf("http://")?(b.protocol="http://",a=a.slice(7)):b.protocol=void 0;var c=Math.min(a.indexOf("/"),a.indexOf("?"));return-1===c&&(c=Math.max(a.indexOf("/"),a.indexOf("?"))),c=-1===c?a:a.slice(0,c),b.domain=c,b.tld=c.slice(c.lastIndexOf(".")),c=c.slice(0,c.lastIndexOf(".")),b.rootdomain=c.slice(c.lastIndexOf(".")+1)+b.tld,b.subdomain=c.slice(0,c.lastIndexOf(".")+1),b}
 
-var List = []
+var List = {}
+List.url = []
+List.values = []
 var Age = Date.now()
 
 
@@ -21,11 +23,7 @@ event.respondWith(
 else {
   
 event.respondWith((async function() {
-//console.log(List)
-if (List.indexOf(event.request.url) === -1) {
-    List.push(event.request.url)
-    //console.log(event.request.url)
-}
+
 //This cache is deleted on every page load if the user is online
 var cache = await caches.open("Temporary")
 var response = await cache.match(event.request)
@@ -39,13 +37,20 @@ if (Date.now() - Age > 30*1000) {
     Age = Date.now()
 }
 
-if (List.indexOf(event.request.url) !== -1) {
-    console.log("Requesting again for " + event.request.url)
+    
+if (List.url.indexOf(event.request.url) === -1) {
+    response = await fetch(event.request)
+    List.url.push(event.request.url)
+    List.values.push(response.clone())
+    cache.put(event.request, response.clone())
+    return response
 }
-console.log(List.indexOf(event.request.url))
-response = await fetch(event.request)
-cache.put(event.request, response.clone())
-return response
+else {
+    return List.values[List.url.indexOf(event.request.url)].clone()
+}
+    
+    
+
 }
   
 }()))
