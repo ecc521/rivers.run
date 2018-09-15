@@ -26,7 +26,7 @@ if (List.indexOf(event.request.url) === -1) {
 }
 //This cache is deleted on every page load if the user is online
 var cache = await caches.open("Temporary")
-var response = await thiscache.match(event.request)
+var response = await cache.match(event.request)
 if (response) {
 return response
 }
