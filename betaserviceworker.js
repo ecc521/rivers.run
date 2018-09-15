@@ -50,10 +50,10 @@ if (List.url.indexOf(event.request.url) === -1) {
 else {
     for (var i = 0;i<150;i++) {
     await new Promise(resolve => setTimeout(resolve, 100));
-    //console.log(List.values[List.url.indexOf(event.request.url)].clone())
-    //console.log(List.values[List.url.indexOf(event.request.url)].clone() !== undefined)
-    console.log(List.values[List.url.indexOf(event.request.url)])
-    console.log(List.values[List.url.indexOf(event.request.url)] !== undefined)
+    if (List.values[List.url.indexOf(event.request.url)] !== undefined) {
+    console.log("Served from serviceworker list")
+    break;
+    }
     }
     
     return List.values[List.url.indexOf(event.request.url)].clone()
