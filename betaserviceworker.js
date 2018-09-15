@@ -1,6 +1,8 @@
 //Currently returns protocol, subdomain, domain name, tld, and query
 function URL(a){var b={};a=a.trim(),b.url=a,b.query=a.slice(a.indexOf("?")+1),b.query===a&&(b.query=void 0),0===a.indexOf("https://")?(b.protocol="https://",a=a.slice(8)):0===a.indexOf("http://")?(b.protocol="http://",a=a.slice(7)):b.protocol=void 0;var c=Math.min(a.indexOf("/"),a.indexOf("?"));return-1===c&&(c=Math.max(a.indexOf("/"),a.indexOf("?"))),c=-1===c?a:a.slice(0,c),b.domain=c,b.tld=c.slice(c.lastIndexOf(".")),c=c.slice(0,c.lastIndexOf(".")),b.rootdomain=c.slice(c.lastIndexOf(".")+1)+b.tld,b.subdomain=c.slice(0,c.lastIndexOf(".")+1),b}
 
+var List = []
+
 self.addEventListener('fetch', function(event) {
 if (URL(event.request.url).rootdomain === "rivers.run") {
 event.respondWith(
@@ -17,6 +19,11 @@ event.respondWith(
 else {
   
 event.respondWith((async function() {
+console.log(List)
+if (List.indexOf(event.request) === -1) {
+    List.push(event.request)
+    console.log(event.request)
+}
 //This cache is deleted on every page load if the user is online
 var cache = await caches.open("Temporary")
 var response = await thiscache.match(event.request)
