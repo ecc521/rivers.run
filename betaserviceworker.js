@@ -8,7 +8,7 @@ var Age = Date.now()
 
 
 self.addEventListener('fetch', function(event) {
-if (URL(event.request.url).rootdomain === "rivers.run") {
+if (URL(event.request.url).rootdomain === "rivers.run" || URL(event.request.url).domain === "ecc521.github.io") {
 event.respondWith(
     caches.open('rivers.run').then(function(cache) {
       return cache.match(event.request).then(function (response) {
