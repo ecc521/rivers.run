@@ -513,7 +513,7 @@ ctx.fillText("Gage Height (Feet)", start-195, (canvas.height*(11/12)));
 } 
 }
 else if (graphtype === 3) {
-ctx.fillText("Tempreture (°F)", start+5, (canvas.height*(11/12)));    
+ctx.fillText("Water Temperature (°F)", start+5, (canvas.height*(11/12)));    
 }
 else {
 if (GraphName === "Precipitation") {
@@ -559,7 +559,7 @@ ctx.fillStyle = grd;
  
 ctx.fillStyle = "black"
 ctx.textAlign = "center"; 
-ctx.fillText("Gage: " + Source, canvas.width/2 , canvas.height-10);  
+ctx.fillText(Source, canvas.width/2 , canvas.height-10);  
 ctx.textAlign = "start"; 
     
 
@@ -703,7 +703,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     var ctx = tempcanvas.getContext('2d')
     ctx.textAlign = "center"; 
     ctx.font= tempcanvas.width/35 + "px Arial"; 
-    ctx.fillText("No Temperature Data Currently Avalible for this Site (" +  number + ")",tempcanvas.width/2, tempcanvas.height/2);  
+    ctx.fillText("No Water Temperature Data Currently Avalible for this Site (" +  number + ")",tempcanvas.width/2, tempcanvas.height/2);  
     }
     
     Check = 1
@@ -826,7 +826,7 @@ button1.className = "FlowButton"
 button1.id = idMake + "button1"   
 
 var button2 = document.createElement("button")
-button2.innerHTML = "Tempreture"
+button2.innerHTML = "Water Temperature"
 button2.addEventListener("click", function() {ToTemp(this.id)})
 button2.className = "Unselected"
 button2.id = idMake + "button2"   
