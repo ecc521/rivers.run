@@ -909,12 +909,17 @@ Button.appendChild(span)
         AddSpan(USGS)
         Button.id = "LabelRow"
     }
-    else if (String(USGS).length < 16 && USGS !== undefined && Number(USGS) !== 0) {
+    else if (String(USGS).length < 16 && USGS !== undefined && Number(USGS) !== 0 && !isNaN(Number(USGS))) {
+        //This means that it is a valid number, is not undefined, is under 16 digits, and is not zero
+        //Thats about as much error checking as I can give it
         var RiverGageSpan = document.createElement("span")
         RiverGageSpan.className = "riverspan"
         RiverGageSpan.innerHTML = "Loading From USGS..."
         Button.appendChild(RiverGageSpan)
         Div.appendChild(CreateGraphs(Div, USGS, RiverGageSpan))
+    }
+    else {
+        AddSpan("Bad Gage #")
     }
 
     
