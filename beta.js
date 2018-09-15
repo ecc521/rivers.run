@@ -1013,7 +1013,7 @@ async function PrepSort() {
   await wait(20)
   
   var value = GetId("SearchBox").value.trim()
-  if (!(value === SearchStore.trim())) {
+  if (!(value === SearchStore)) {
     await wait(20)
     if (value === GetId("SearchBox").value.trim()) {
       SearchStore = GetId("SearchBox.value.trim()")
