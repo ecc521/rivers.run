@@ -20,9 +20,9 @@ else {
   
 event.respondWith((async function() {
 console.log(List)
-if (List.indexOf(event.request) === -1) {
-    List.push(event.request)
-    console.log(event.request)
+if (List.indexOf(event.request.url) === -1) {
+    List.push(event.request.url)
+    console.log(event.request.url)
 }
 //This cache is deleted on every page load if the user is online
 var cache = await caches.open("Temporary")
