@@ -1006,18 +1006,19 @@ RotateHandler()
 
 
 GetId("SearchBox").addEventListener("keydown", PrepSort)
+var SearchStore;
   
 async function PrepSort() {
   var wait = ms => new Promise((r, j)=>setTimeout(r, ms))
   await wait(20)
+  
   var value = GetId("SearchBox").value.trim()
-  await wait(40)
-  //Initialize sorting if no change within 40 milliseconds
-  var value2 = GetId("SearchBox").value.trim()
-  if (value2 === value) {
-    console.log(value)
-    console.log(value2)
-    SortListGen()
+  if (!(value === SearchStore.trim())) {
+    await wait(20)
+    if (value === GetId("SearchBox").value.trim()) {
+      SearchStore = GetId("SearchBox.value.trim()")
+      SortListGen()
+    }
   }
 }
 function SortListGen() {
@@ -1093,6 +1094,7 @@ if (Query.indexOf("q=cache:") === 0) {
 if (ThisURL !== Query) {
   document.getElementById("SearchBox").value = Query
   SortListGen()
+  SearchStore = Query
 }
     
     
