@@ -395,10 +395,10 @@ ctx.fillStyle = grd;
 }    
 
 if (numplace === 0 || numplace === undefined) {
-    start = 1
+    var start = 1
 }
 else {
-    start = canvas.width-(canvas.width*0.07)
+    var start = canvas.width-(canvas.width*0.07)
 }
 for(var i = 1;i<11;i++) {
     var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
