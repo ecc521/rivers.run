@@ -117,31 +117,21 @@ catch (e) {
 
 
 window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
-//window.addEventListener("resize", function() {setTimeout(SortListGen, 100)})
-//Don't think it is needed anymore 
 
 function RotateHandler() {
-//Embedded Frames
-//Divided by 1.2 prevents the frame from taking up the whole screen and blocking the user from scrolling off of it.
+//Embedded Frames - Reduce height slightly so it doesn't look fullscreen
 document.documentElement.style.setProperty('--screenheight', (Math.floor(window.innerHeight/1.15)) + "px");
     
 //values arbitrary and picked by me
 var ScreenWidth = 750/window.innerWidth
 if (ScreenWidth < 1) {
-    ScreenWidth = ScreenWidth ** 0.55
+    ScreenWidth = ScreenWidth ** 0.7
 }
 else {
-    if (ScreenWidth < 2.5) {
-    ScreenWidth = ScreenWidth ** 0.6
-    }
-    else {
-    ScreenWidth = Math.max(ScreenWidth**0.6, 2.67**0.6)
-    }
+  ScreenWidth = 1.2
 }
 ScreenWidth = (2.4 * ScreenWidth) + "vw"
-document.documentElement.style.setProperty('--textsize', ScreenWidth);
-//Set the textsize (relative) to a higher amount on smaller devices, and a lower amount on bigger devices.
-    
+document.documentElement.style.setProperty('--textsize', ScreenWidth);    
 }
 
 
