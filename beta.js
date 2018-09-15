@@ -515,7 +515,9 @@ if (numplace === 0 || numplace === undefined) {
 ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
 }
 else {
-ctx.fillText("Gauge Height (Feet)", start-195, (canvas.height*(11/12)));    
+ctx.textAlign = "right"; 
+ctx.fillText("Gauge Height (Feet)", start-5, (canvas.height*(11/12)));
+ctx.textAlign = "start"; 
 } 
 }
 else if (graphtype === 3) {
