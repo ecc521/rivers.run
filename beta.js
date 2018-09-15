@@ -1,14 +1,16 @@
-try {
 if (navigator.onLine) {
-caches.delete('Temporary')
-//This will race other code... And a cache should delete way before the JavaScript execution AND network request finish.
-//If it doesn't, hopefully the user will refresh page.
+var dc = caches.delete('Temporary')
+dc.then(LoadSW())
+dc.catch(function(event){
+console.warn(event) 
+LoadSW()
+})
 }
-}
-catch (e) {
-console.warn(e)
+else {
+LoadSW()
 }
 
+function LoadSW() {
 if ('serviceWorker' in navigator) {
   var sw = navigator.serviceWorker.register('https://rivers.run/betaserviceworker.js')
   sw.then(function(registration) {
@@ -24,7 +26,7 @@ else {
     console.log("No ServiceWorker Support")
     MainCode()
 }
-
+}
 
 
 
