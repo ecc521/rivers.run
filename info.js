@@ -14,7 +14,7 @@ LoadSW()
 
 function LoadSW() {
 if ('serviceWorker' in navigator) {
-  var sw = navigator.serviceWorker.register('https://rivers.run/betaserviceworker.js')
+  var sw = navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
   sw.then(function() {
       console.log("ServiceWorker Registered!")
         var ld = navigator.serviceWorker.ready
