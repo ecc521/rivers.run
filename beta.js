@@ -938,7 +938,7 @@ Button.appendChild(span)
         //Thats about as much error checking as I can give it
         var RiverGaugeSpan = document.createElement("span")
         RiverGaugeSpan.className = "riverspan"
-        RiverGaugeSpan.innerHTML = "Loading From USGS..."
+        RiverGaugeSpan.innerHTML = "Loading..."
         Button.appendChild(RiverGaugeSpan)
         Div.appendChild(CreateGraphs(Div, USGS, RiverGaugeSpan))
     }
