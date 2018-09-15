@@ -817,7 +817,9 @@ canvas1.id = idMake + "canvas1"
 canvas2.id = idMake + "canvas2"    
 canvas3.id = idMake + "canvas3"    
     
-    
+canvas1.className = "ToDeleteLater"
+canvas2.className = "ToDeleteLater"
+canvas3.className = "ToDeleteLater"
 
 var button1 = document.createElement("button")
 button1.innerHTML = "Flow Info"
@@ -845,7 +847,7 @@ Div.appendChild(button1)
 Div.appendChild(button3)
 Div.appendChild(button2)
 
-Div.className = "canvasbuttons"
+Div.className = "canvasbuttons ToDeleteLater"
 return Div
 }
 //End of Graph Code
@@ -969,6 +971,7 @@ document.querySelectorAll(".Unselected").forEach(e => e.parentNode.removeChild(e
 document.querySelectorAll(".FlowButton").forEach(e => e.parentNode.removeChild(e));
 document.querySelectorAll(".PrecipButton").forEach(e => e.parentNode.removeChild(e));
 document.querySelectorAll(".TempButton").forEach(e => e.parentNode.removeChild(e));
+document.querySelectorAll(".ToDeleteLater").forEach(e => e.parentNode.removeChild(e));
 
 var myNode = GetId("Rivers");
 while (myNode.firstChild) {
