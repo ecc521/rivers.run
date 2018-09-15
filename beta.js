@@ -1,6 +1,6 @@
 try {
 if (navigator.onLine) {
-caches.delete('USGS')
+caches.delete('Temporary')
 //This will race other code... And a cache should delete way before the JavaScript execution AND network request finish.
 //If it doesn't, hopefully the user will refresh page.
 }
