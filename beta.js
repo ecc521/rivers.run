@@ -9,6 +9,27 @@ catch (e) {
 console.warn(e)
 }
 
+if ('serviceWorker' in navigator) {
+  var sw = navigator.serviceWorker.register('https://rivers.run/betaserviceworker.js')
+  sw.then(function(registration) {
+      console.log("Registered and Ready!")
+      MainCode()
+  })
+  sw.catch(function(error) {
+      console.warn(error)
+      MainCode()
+  });
+}
+else {
+    console.log("No ServiceWorker Support")
+    MainCode()
+}
+
+
+
+
+function MainCode() {
+
 function GetId(Id) {
     return document.getElementById(Id)
 }
@@ -113,21 +134,6 @@ ScreenWidth = (2.4 * ScreenWidth) + "vw"
 document.documentElement.style.setProperty('--textsize', ScreenWidth);
 //Set the textsize (relative) to a higher amount on smaller devices, and a lower amount on bigger devices.
     
-}
-
-
-try {
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('https://rivers.run/betaserviceworker.js')
-  .then(function(registration) {
-  })
-  .catch(function(error) {
-  });
-}
-}
-catch (e) {
-    console.warn(e)
-    //This should only occour if the page is embedded and sandboxed.
 }
 
 
@@ -1071,4 +1077,7 @@ if (Query.indexOf("q=cache:") === 0) {
 if (ThisURL !== Query) {
   document.getElementById("SearchBox").value = Query
   SortListGen()
+}
+    
+    
 }
