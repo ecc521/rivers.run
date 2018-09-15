@@ -288,7 +288,7 @@ function Objectify(Array, GageName, Timezone) {
     
     if (tempnum !== undefined) {
     data.temp =  Array.map(function(value) {
-    if (String(Number(value[tempnum])) !== "NaN" && value[tempnum] !== "") {
+    if (!isNaN(Number(value[tempnum])) && value[tempnum] !== "") {
     return value[tempnum]
     }
     else{
@@ -364,7 +364,7 @@ width = width*0.93
 
 var calcvertical = []
 for (var i = 0;i<vertical.length;i++) {
-if (String(Number(vertical[i])) !== "NaN" && (vertical[i]) !== "") {
+if (!isNaN(Number(vertical[i])) && (vertical[i]) !== "") {
     calcvertical.push(vertical[i])
 }
 //else {
@@ -575,7 +575,7 @@ function V(Value) {
 
 
 for (var p = 0;p<Math.min(vertical.length, horizontal.length);p++) {
-if (String(Number(vertical[p])) !== "NaN" && vertical[p] !== "") {
+if (!isNaN(Number(vertical[p])) && vertical[p] !== "") {
 ctx.moveTo(H(horizontal[p]), V(vertical[p]))
 break;
 }    
@@ -585,7 +585,7 @@ break;
 var valid = 1
  
 for (var i = p;i<Math.min(vertical.length, horizontal.length);i++) {
-    if (String(Number(vertical[i])) !== "NaN" && vertical[i] !== "") {
+    if (!isNaN(Number(vertical[i])) && vertical[i] !== "") {
     if (valid === 1) {
     ctx.lineTo(H(horizontal[i]), V(vertical[i]))
     }
