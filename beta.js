@@ -965,6 +965,11 @@ Button.appendChild(span)
 }
  
 function ClearList() {
+document.querySelectorAll(".Unselected").forEach(e => e.parentNode.removeChild(e));
+document.querySelectorAll(".FlowButton").forEach(e => e.parentNode.removeChild(e));
+document.querySelectorAll(".PrecipButton").forEach(e => e.parentNode.removeChild(e));
+document.querySelectorAll(".TempButton").forEach(e => e.parentNode.removeChild(e));
+
 var myNode = GetId("Rivers");
 while (myNode.firstChild) {
     myNode.removeChild(myNode.firstChild);
