@@ -633,9 +633,12 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     
     if (Check === 0) {
     TextReport.innerHTML = Result.cfs[Result.cfs.length - 1] + " cfs" 
-        
+    console.log(Result.cfs)
+    console.log[Result.cfs.length -1]
     if (Check2 === 0) {
     TextReport.innerHTML += ", " + Result.height[Result.height.length - 1] + " feet"
+    console.log(Result.height)
+    console.log[Result.height.length -1]
     AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1, 2)
     AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2, 2, 1)
     }
@@ -647,6 +650,8 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     else {
     if (Check2 === 0) {
     AddLine("height", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2)
+    console.log(Result.height)
+    console.log[Result.height.length -1]
     TextReport.innerHTML = Result.height[Result.height.length - 1] + " feet"
     }
     else {
