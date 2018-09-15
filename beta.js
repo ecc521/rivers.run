@@ -9,6 +9,8 @@ catch (e) {
 console.warn(e)
 }
 
+console.log(fetch("https://rivers.run/RiverArray.js"))
+
 function GetId(Id) {
     return document.getElementById(Id)
 }
