@@ -35,18 +35,18 @@ Age = Date.now()
 if (List.url.indexOf(event.request.url) === -1) {
     List.url.push(event.request.url)
     //This cache is deleted on every page load if the user is online
-    //var cache = await caches.open("Temporary")
-    //var response = await cache.match(event.request)
-    //if (!response) {
+    var cache = await caches.open("Temporary")
+    var response = await cache.match(event.request)
+    if (!response) {
     console.log("Loading from network")
-    var response = await fetch(event.request)
-    //}
-    //else {
-    //console.log("Loaded from cache")
+    response = await fetch(event.request)
+    }
+    else {
+    console.log("Loaded from cache")
     }
     List.values.push(response.clone())
-    //cache.put(event.request, response.clone())
-    //not sure that does anything.... but why not...
+    cache.put(event.request, response.clone())
+    //not sure that does anything... But if the list variable doesn't persist offline that will. It will need testing.
     return response
 }
 else {
