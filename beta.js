@@ -906,6 +906,7 @@ else {
 var span = document.createElement("span")
 var img = document.createElement("img")
 img.src = "https://resources.rivers.run/" + Text + ".png"
+img.alt = Text[0] + " Stars"
 span.className = "riverspan"
 span.appendChild(img)
 Button.appendChild(span)
@@ -990,7 +991,7 @@ function AddMore(LockCounter) {
     }
     }
     if (i < PassedList.length && LockCounter === Updates) {
-        setTimeout(function() {requestAnimationFrame(function() {AddMore(LockCounter)})}, 30/*Try and give time for response to user input*/)
+        setTimeout(function() {requestAnimationFrame(function() {AddMore(LockCounter)})}, 60/*Try and give time for response to user input*/)
     }
 }
 if (PassedList.length > 0) {
