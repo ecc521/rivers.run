@@ -1,3 +1,5 @@
+'use strict'; 
+
 if (navigator.onLine) {
 var dc = caches.delete('Temporary')
 dc.then(LoadSW())
