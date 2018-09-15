@@ -918,7 +918,8 @@ Button.appendChild(span)
         Button.appendChild(RiverGageSpan)
         Div.appendChild(CreateGraphs(Div, USGS, RiverGageSpan))
     }
-    else {
+    else if (USGS !== undefined && Number(USGS) !== 0){
+        //Only add bad gage number if it is not undefined or 0, and failed the test above.
         AddSpan("Bad Gage #")
     }
 
