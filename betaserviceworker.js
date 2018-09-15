@@ -33,11 +33,10 @@ if (response) {
 return response
 }
 else {
-//Verify List Age - I'll Give It 30 Seconds
+//Verify List Age - I'll Give It 30 Seconds. If it is older, dump it.
 if (Date.now() - Age > 30*1000) {
     List = []
     Age = Date.now()
-    //Reset them
 }
 
 if (List.indexOf(event.request.url) !== 0) {
