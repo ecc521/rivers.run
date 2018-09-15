@@ -26,7 +26,6 @@ event.respondWith((async function() {
 //Verify List Age - I'll Give It 60 Seconds. If it is older, dump it.
 if (Date.now() - Age > 60*1000) {
 if (navigator.onLine) {
-console.log("Deleting List. It is " + (Date.now() - Age)/1000 + " seconds old.")
 List = {}
 List.url = []
 List.values = []
@@ -40,11 +39,7 @@ if (List.url.indexOf(event.request.url) === -1) {
     var cache = await caches.open("Temporary")
     var response = await cache.match(event.request)
     if (!response) {
-    console.log("Loading from network")
     response = await fetch(event.request)
-    }
-    else {
-    console.log("Loaded from cache")
     }
     List.values.push(response.clone())
     cache.put(event.request, response.clone())
@@ -56,14 +51,12 @@ else {
     var cache = await caches.open("Temporary")
     var response = await cache.match(event.request)
     if (response) {
-    console.log("Loaded from cache")
     return response.clone()
     }
     else {
     for (var i = 0;i<100;i++) {
     await new Promise(resolve => setTimeout(resolve, 100));
     if (List.values[List.url.indexOf(event.request.url)] !== undefined) {
-    console.log("Loaded from list")
     return List.values[List.url.indexOf(event.request.url)].clone()
     }
     }
@@ -73,12 +66,10 @@ else {
     cache = await caches.open("Temporary")
     response = await cache.match(event.request)
     if (response) {
-    console.log("Loaded from cache")
     return response.clone()
     }
         
     //It's not in cache, it's not in the list, and we have waited 10 seconds. Just send it.
-    console.log("Final attempt - network")
     return fetch(event.request)
     }
 }}()))}})
