@@ -632,19 +632,10 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     catch (e) {}
     
     if (Check === 0) {
-    for (var d = Result.cfs.length-1;d>=0;d--) {
-        if (Result.cfs[d] !== undefined && !isNaN(Number(Result.cfs[d]))) {
-            TextReport.innerHTML = Result.cfs[d] + " cfs" 
-            break;
-        }
-    }
+    TextReport.innerHTML = Result.cfs[Result.cfs.length - 1] + " cfs" 
+        
     if (Check2 === 0) {
-    for (var d = Result.height.length-1;d>=0;d--) {
-        if (Result.height[d] !== undefined && !isNaN(Number(Result.height[d]))) {
-            TextReport.innerHTML = Result.height[d] + " feet" 
-            break;
-        }
-    }
+    TextReport.innerHTML += ", " + Result.height[Result.height.length - 1] + " feet"
     AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1, 2)
     AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2, 2, 1)
     }
@@ -656,12 +647,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
     else {
     if (Check2 === 0) {
     AddLine("height", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2)
-    for (var d = Result.height.length-1;d>=0;d--) {
-        if (Result.height[d] !== undefined && !isNaN(Number(Result.height[d]))) {
-            TextReport.innerHTML = Result.height[d] + " feet" 
-            break;
-        }
-    }
+    TextReport.innerHTML = Result.height[Result.height.length - 1] + " feet"
     }
     else {
     var ctx = watercanvas.getContext('2d')
@@ -1067,5 +1053,3 @@ if (ThisURL !== Query) {
   document.getElementById("SearchBox").value = Query
   SortListGen()
 }
-
-
