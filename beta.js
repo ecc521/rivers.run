@@ -640,7 +640,7 @@ async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipc
         }
         
     if (Check2 === 0) {
-    TextReport.innerHTML += ","
+    TextReport.innerHTML += ", "
         for (var d = Result.height.length - 1;d>=0;d--) {if (!isNaN(Number(Result.height[d])) && Number(Result.height[d]) !== 0 && Result.height[d] !== undefined) {
         TextReport.innerHTML += Result.height[d] + " feet";
         break;}
