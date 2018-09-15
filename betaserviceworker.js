@@ -52,6 +52,8 @@ else {
     await new Promise(resolve => setTimeout(resolve, 100));
     console.log(List.values[List.url.indexOf(event.request.url)].clone())
     console.log(List.values[List.url.indexOf(event.request.url)].clone() !== undefined)
+    console.log(List.values[List.url.indexOf(event.request.url)])
+    console.log(List.values[List.url.indexOf(event.request.url)] !== undefined)
     }
     
     return List.values[List.url.indexOf(event.request.url)].clone()
