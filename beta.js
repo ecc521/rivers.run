@@ -9,10 +9,6 @@ catch (e) {
 console.warn(e)
 }
 
-for (var i = 0;i<10;i++) {
-console.log(fetch("https://embeds.rivers.run/index.js"))
-}
-
 function GetId(Id) {
     return document.getElementById(Id)
 }
