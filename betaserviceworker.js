@@ -39,6 +39,9 @@ if (List.url.indexOf(event.request.url) === -1) {
     if (!response) {
     response = await fetch(event.request)
     }
+    else {
+    console.log("Served from cache") 
+    }
     List.values.push(response.clone())
     cache.put(event.request, response.clone())
     //not sure that does anything.... but why not...
