@@ -39,9 +39,10 @@ if (Date.now() - Age > 30*1000) {
     Age = Date.now()
 }
 
-if (List.indexOf(event.request.url) !== 0) {
+if (List.indexOf(event.request.url) !== -1) {
     console.log("Requesting again for " + event.request.url)
 }
+console.log(List.indexOf(event.request.url))
 response = await fetch(event.request)
 cache.put(event.request, response.clone())
 return response
