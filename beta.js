@@ -1006,7 +1006,7 @@ RotateHandler()
 
 
 GetId("SearchBox").addEventListener("keydown", PrepSort)
-var SearchStore;
+var SearchStore = ""
   
 async function PrepSort() {
   var wait = ms => new Promise((r, j)=>setTimeout(r, ms))
