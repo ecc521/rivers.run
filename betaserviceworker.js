@@ -18,15 +18,15 @@ else {
   
 event.respondWith((async function() {
 //This cache is deleted on every page load if the user is online
-var thiscache = await caches.open("Temporary")
-thiscache = await thiscache.match(event.request)
-if (thiscache) {
-return thiscache
+var cache = await caches.open("Temporary")
+var response = await thiscache.match(event.request)
+if (response) {
+return response
 }
 else {
-thiscache = await fetch(event.request)
-cache.put(event.request, thiscache.clone())
-return thiscache
+response = await fetch(event.request)
+cache.put(event.request, response.clone())
+return response
 }
   
 }()))
