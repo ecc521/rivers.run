@@ -56,6 +56,7 @@ else {
     var cache = await caches.open("Temporary")
     var response = await cache.match(event.request)
     if (response) {
+    console.log("Loaded from cache")
     return response.clone()
     }
     else {
@@ -72,10 +73,12 @@ else {
     cache = await caches.open("Temporary")
     response = await cache.match(event.request)
     if (response) {
+    console.log("Loaded from cache")
     return response.clone()
     }
         
     //It's not in cache, it's not in the list, and we have waited 10 seconds. Just send it.
+    console.log("Final attempt - network")
     return fetch(event.request)
     }
 }}()))}})
