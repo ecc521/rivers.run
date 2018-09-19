@@ -33,8 +33,8 @@ Age = Date.now()
 }
 }
 
-console.log(List.values.length)
-console.log(List.url.length)
+//console.log(List.values.length)
+//console.log(List.url.length)
     
 if (List.url.indexOf(event.request.url) === -1) {
     List.url.push(event.request.url)
