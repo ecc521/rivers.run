@@ -1,8 +1,5 @@
 User-agent: *
-Disallow: /embeds
-
-User-agent: *
-Disallow: /README.md
+Noindex: /DISCLAIMER.txt
 
 User-agent: *
 Allow: /
