@@ -1,224 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Secure page against user generated content -->
+<meta http-equiv="Content-Security-Policy" content="default-src https://rivers.run https://*.rivers.run;connect-src https://rivers.run https://*.rivers.run https://waterdata.usgs.gov;block-all-mixed-content;">
+<meta name="referrer" content="no-referrer">
 
-<!--Favicon-->
+ 
+<!-- USGS Gauges Preconnect -->
+<link rel="preconnect" href="https://waterdata.usgs.gov" crossorigin>
+
+<!--JavaScript & CSS-->
+<link rel="preload" href="/index.css" as="style">
+<link rel="preload" href="/RiverArray.js" as="script">
+<link rel="preload" href="/serviceworker.js" as="script">
+<link rel="preload" href="/index.js" as="script">
+
+ 
+<!-- Star images -->
+<link rel="preload" href="https://resources.rivers.run/1Star.png" as="image">
+<link rel="preload" href="https://resources.rivers.run/2Stars.png" as="image">
+<link rel="preload" href="https://resources.rivers.run/3Stars.png" as="image">
+<link rel="preload" href="https://resources.rivers.run/4Stars.png" as="image">
+<link rel="preload" href="https://resources.rivers.run/5Stars.png" as="image">
+
+<!-- Favicon -->
 <link rel="shortcut icon" type="image/x-icon" href="https://resources.rivers.run/32pxDrop.png" />
 
-<!--Web App Manifest-->
+<!-- Progressive Web App Manifest -->
 <link rel="manifest" href="/manifest.json">
     
     
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#317EFB"/>
-<meta name="Description" content="Every River at your Fingertips! rivers.run helps you find the Rivers you want to paddle using information sourced from community experts! For Whitewater, Flatwater, and anything in-between, rivers.run has information for you. rivers.run even works offline - read our FAQ for details.">
+<meta name="Description" content="Every River at your Fingertips! Rivers.run contains tons of write-ups from community experts to help you plan your next paddling trip. View our information here!">
 <meta name="keywords" content="rivers.run, rivers, whitewater, river info, whitewater info, paddling, paddling info, kayak, canoe">
 
-<title style="text-align: center">Rivers.run - Paddling and River Info - Home</title>   
+<title>Rivers.run - Paddling and River Info</title>
 
 </head>
-<body>
-    
-    
-    
-    
-    
-    
-    <div style="text-align: center;display: block" id="ReloadAll" hidden="hidden">
-        <p style="display: inline" id="ReloadAllText">
+<body>         
+    <div id="ReloadAll" hidden="hidden">
+        <p id="ReloadAllText">
         </p>
-        <input style="display: none" type="button" value="Reload All" hidden="hidden" id="ReloadAllButton">
+        <input type="button" hidden="hidden" value="Reload All" id="ReloadAllButton">
     </div>
-    
-<script>
-//If they put a query in the url, redirect them to info page with that query.
-var ThisURL = window.location.href
-ThisURL = decodeURIComponent(ThisURL)
-var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
-if (ThisURL !== Query) {
-  window.location = "https://rivers.run/info.html" + "?" + Query
-}
-    
-    
-function GetId(Id) {
-    return document.getElementById(Id)
-}
-    
-try {
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
-  .then(function(registration) {
-  })
-  .catch(function(error) {
-  });
-}
-}
-catch (e) {
-    console.log(e)
-    //This should only occour if the page is embedded and sandboxed.
-}
  
-function ReloadAllCache() {
-    "use strict";
-
-    localStorage.setItem("TimeStamp", Date.now())
-    
-    caches.delete('rivers.run').then(function(event) {
-    window.location.reload(true)
-    })
-    .catch(function(event) {
-    window.location.reload(true)
-    })
-}
-function UpdateTime () {
-try {
-if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
-var Minutes = Math.floor(Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000)/60)
-var Hours = Math.floor(Minutes/60)
-Minutes = Minutes%60 
-var Days = Math.floor(Hours/24)
-Hours = Hours%24
-var TimeStr = ""
-if (Days !== 0) {
-    if (Days === 1) {
-        TimeStr = TimeStr + Days + " day "
-    }
-    else {
-        TimeStr = TimeStr + Days + " days "
-    }
-}
-if (Hours !== 0) {
-    if (Hours === 1) {
-        TimeStr = TimeStr + Hours + " hour "
-    }
-    else {
-        TimeStr = TimeStr + Hours + " hours "
-    }
-}
-if (Minutes !== 0) {
-    if (Minutes === 1) {
-        TimeStr = TimeStr + Minutes + " minute "
-    }
-    else {
-        TimeStr = TimeStr + Minutes + " minutes "
-    }
-}
-GetId("ReloadAllText").innerHTML = "You're viewing a cached version of this site from " + TimeStr + " ago."    
-}
-}
-catch (e) {
-    console.log(e)
-}
-}
-try {
-if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
-    UpdateTime()
-    setInterval(UpdateTime, 60000)
-    GetId("ReloadAll").hidden= ""
-    if (navigator.onLine) {
-    GetId("ReloadAllButton").style = "display: inline"
-    }
-    window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: none"})
-    window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: inline"})
-    GetId("ReloadAllButton").addEventListener("click", ReloadAllCache)
-    GetId("ReloadAllButton").value = "Update Now"
-    UpdateTime()
-}
-else {
-    if (localStorage.getItem("TimeStamp") === null) {
-    localStorage.setItem("TimeStamp", Date.now())
-    }
-}
-}
-catch (e) {
-    console.log(e)
-}
-</script>
-    
-    
 <div class="topnav">
-  <a href="/" class="current">Home</a>
-  <a href="/info.html">River Info</a>
+  <a href="/" class="current">River Info</a>
+  <a href="/about.html">About</a>
   <a href="/FAQ.html">FAQ</a>
 </div>
+ 
+<h1>River Information</h1>
+<p><a href="https://docs.google.com/document/d/1tk0O3W7lAdzLmUsy4n-iaqJokA25nmmHL_16-oHZdKE/edit?usp=sharing" target="_blank" rel="noopener">Click here to learn how to contribute to this site.</a></p>
     
-<style>
-.topnav {
-  overflow: hidden;
-  background-color: #24b9cc;
-}
+<p class="pixel18"><em><strong>Hint: Click on a River to see it's Writeup.</strong></em></p>
+<p class="pixel18"><strong>Disclaimer: USGS Gauge data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>
 
-.topnav a {
-  float: left;
-  display: block;
-  color: black;
-  text-align: center;
-  padding: 14px 16px;
-  text-decoration: none;
-  font-size: 17px;
-}
-
-.topnav a:hover {
-  background-color: #359daa;
-}
-
-.current {
-  background-color: #25d1a7;
-}
-</style>
- 
- 
-<h1 style="text-align: center">Rivers.run</h1>
-<noscript>Error. This page needs JavaScript to function. Please enable JavaScript and try again.</noscript>
-<h2 style="text-align: center">The Go-To site for Paddling and River information!</h2>
+<label for="SearchBox">Click Here and Type to Search</label>
+<input type="text" id="SearchBox" placeholder="Type in here to search">
 <br>
-<p style="text-align: center">
-<strong>River Write-ups from paddling community experts and locals!<br><br>
-Information about Rivers - Sections, Difficulty, Length, Quality, and More!<br><br>
-Rivers and Sections you have never heard of - Find your new favorite river, or just mix it up.<br><br>
-A Search Tool, so that you can easily figure out what to paddle next.<br><br>
-Good functionalty on phones, tablets, and desktops</strong><br><br>
-</p>    
-<p style="text-align: center;font-size: 60px"><strong><em><a href="/info.html">Select Your Next River!</a></em></strong></p>
-<p style="text-align: center">
-rivers.run is built with paddling in mind - Rivers can be in the middle of nowhere. In order to deal with this possibility,
-rivers.run's content is cached in your browser, meaning that is can be viewed anywhere,
- even if you are offline. <a href="/FAQ.html">View our FAQ page to learn more.</a><br><br>
+<br>
     
-Get out and get paddling - flatwater, whitewater, canoe, kayak, raft, whatever! rivers.run will be there for you when you need River Info.
-</p>    
-    
-    
-    
-<br><br>
-<p style="text-align: center"><strong><em>By using this website, you agree to the <a href="/TOS.txt" target="_blank" rel="noopener">Terms of Service</a></em></strong></p>
-<p style="text-align: center">Copyright © 2018 Tucker Willenborg. All* Rights Reserved.</p>
-<p style="text-align: center; font-size: 9px"><strong>*Some River Writeup's are only licensed to me, not owned by me.</strong></p>
-    
-    
-    
-    
-    
-<style>
-body {font-family: Arial, Helvetica, sans-serif;}  
+<div id="Rivers">
+</div>
+  
+<noscript>Error... This page needs JavaScript to function. Please enable JavaScript then try again</noscript>
+<br><br><br>
 
+
+    <p class="pixel18">Hundreds of River Write-ups to add. Check back in a few days to see what we've got!</p>
  
-.p {
-    text-align: center
-}
-    
-    
-    
-body {
-    background-color: lightblue;
-}
-    
-    
-</style>
+<p><a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">You can report bugs and provide feedback here.</a></p>
+<p id="Errors"></p>
+<br><br>
+<p><em><strong>By using this website, you agree to the <a href="/TOS.txt" target="_blank" rel="noopener">Terms of Service</a><br><br>NOTICE: </strong>I am not the author of these write-ups. Your use of their content is at your own risk.<strong> If a writeup should be changed or removed for any reason, you can contact me using our <a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">feedback form.</a></strong></em></p>
+<br>
+<p>Copyright © 2018 Tucker Willenborg. All* Rights Reserved.</p>
+    <p class="pixel9"><strong>*Some River Writeup's are only licensed to me, not owned by me.</strong></p>
 
-    
-<link rel="prerender" href="/info.html">
-<link rel="prerender" href="/FAQ.html">
-   
-</body>
+<link rel="stylesheet" href="/index.css">
+<script src="/RiverArray.js"></script>
+<script src="/index.js"></script>
+
+<link rel="prefetch" href="/FAQ.html">
+<link rel="prefetch" href="/">
+<link rel="prefetch" href="/TOS.txt">
+ 
+</body>              
 </html>

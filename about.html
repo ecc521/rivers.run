@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <!--Favicon-->
 <link rel="shortcut icon" type="image/x-icon" href="https://resources.rivers.run/32pxDrop.png" />
 
@@ -10,17 +11,23 @@
     
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#317EFB"/>
-<meta name="Description" content="Ever wonder how rivers.run works without Wifi or Cellular? Our FAQ page can help with this question, AND others. If you have questions about rivers.run, check here (our FAQ) to see if it has already been answered.">
-<meta name="keywords" content="rivers.run, FAQ, rivers.run FAQ">
-    
-<title style="text-align: center">Rivers.run - FAQ</title>   
+<meta name="Description" content="Every River at your Fingertips! rivers.run helps you find the Rivers you want to paddle using information sourced from community experts! For Whitewater, Flatwater, and anything in-between, rivers.run has information for you. rivers.run even works offline - read our FAQ for details.">
+<meta name="keywords" content="rivers.run, rivers, whitewater, river info, whitewater info, paddling, paddling info, kayak, canoe">
+
+<title style="text-align: center">Rivers.run - Paddling and River Info - Home</title>   
 
 </head>
 <body>
-     
+    
+    
+    
+    
+    
+    
     <div style="text-align: center;display: block" id="ReloadAll" hidden="hidden">
-        <p style="display: inline" id="ReloadAllText"></p>
-        <input style="display: none" type="button"  value="Reload All" hidden="hidden" id="ReloadAllButton">
+        <p style="display: inline" id="ReloadAllText">
+        </p>
+        <input style="display: none" type="button" value="Reload All" hidden="hidden" id="ReloadAllButton">
     </div>
     
 <script>
@@ -31,6 +38,7 @@ var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
 if (ThisURL !== Query) {
   window.location = "https://rivers.run/info.html" + "?" + Query
 }
+    
     
 function GetId(Id) {
     return document.getElementById(Id)
@@ -49,9 +57,10 @@ catch (e) {
     console.log(e)
     //This should only occour if the page is embedded and sandboxed.
 }
-    
+ 
 function ReloadAllCache() {
     "use strict";
+
     localStorage.setItem("TimeStamp", Date.now())
     
     caches.delete('rivers.run').then(function(event) {
@@ -126,12 +135,12 @@ catch (e) {
 }
 </script>
     
+    
 <div class="topnav">
   <a href="/">River Info</a>
-  <a href="/about.html">About</a>
-  <a href="/FAQ.html" class="current">FAQ</a>
+  <a href="/about.html" class="current">About</a>
+  <a href="/FAQ.html">FAQ</a>
 </div>
-
     
 <style>
 .topnav {
@@ -159,69 +168,32 @@ catch (e) {
 </style>
  
  
-<h1 style="text-align: center">Frequently Asked Questions:</h1>
+<h1 style="text-align: center">Rivers.run</h1>
 <noscript>Error. This page needs JavaScript to function. Please enable JavaScript and try again.</noscript>
-<p style="text-align: center">Click on the question to see or hide the answer.</p>
-
-<button class="accordion">Where can I contact you?</button>
-<div class="panel">
-<p>You can use the <a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">Feedback Form</a>, or you can email me at <a href="mailto:contact@rivers.run" target="_blank" rel="noopener">contact@rivers.run</a></p>
-</div>
+<h2 style="text-align: center">The Go-To site for Paddling and River information!</h2>
+<br>
+<p style="text-align: center">
+<strong>River Write-ups from paddling community experts and locals!<br><br>
+Information about Rivers - Sections, Difficulty, Length, Quality, and More!<br><br>
+Rivers and Sections you have never heard of - Find your new favorite river, or just mix it up.<br><br>
+A Search Tool, so that you can easily figure out what to paddle next.<br><br>
+Good functionalty on phones, tablets, and desktops</strong><br><br>
+</p>    
+<p style="text-align: center;font-size: 60px"><strong><em><a href="/info.html">Select Your Next River!</a></em></strong></p>
+<p style="text-align: center">
+rivers.run is built with paddling in mind - Rivers can be in the middle of nowhere. In order to deal with this possibility,
+rivers.run's content is cached in your browser, meaning that is can be viewed anywhere,
+ even if you are offline. <a href="/FAQ.html">View our FAQ page to learn more.</a><br><br>
     
-<button class="accordion">How does this Website work Offline?</button>
-<div class="panel">
-<p>This website utilizes your browsers cache to store the contents of this site - So whenever rivers.run is in cache, you can visit it, even offline.<em> If you any reason your cache is cleared, then you will be unable to visit rivers.run without internet.</em> Whenever you visit the site without rivers.run in cache, rivers.run is loaded into cache, making it available offline again.</p>
-</div>
-    
-<button class="accordion">X-axis of your graphs is showing a bunch of NaN's</button>
-<div class="panel">
-<p>It is a Safari bug - This bug is not currently present on Chrome, Opera, or Firefox</p>
-</div>
-
-<button class="accordion">Your river info page is not showing any rivers</button>
-<div class="panel">
-<p><a href="https://lefunny.net/wp-content/uploads/2014/02/Funny-internet-explorer-comic.jpg" rel="noopener" target="_blank">If you are using Internet Explorer, this comic (opens in new tab) shows why is isn't working</a><br>
-If you aren't using Internet Explorer, your browser may be too old. The site has been tested in latest versions of Chrome, Firefox, Opera, and Safari (one bug in Safari).<br>
-More support will hopefully be coming soon as I plan to diagnose issues in Chrome 63 and earlier, as well as in Safari 9.
-</p>
-</div>
-    
-<button class="accordion">Can I embed a website or HTML</button>
-<div class="panel">
-<p>Yes you can - Put the following HTML code into your writeup:<br>
-&lt;iframe src="embeds.rivers.run?Put the URL or HTML code to embed here"&gt;&lt;/iframe&gt;<br>
-Embeds are still receiving some major updates, so it is not reccomended to use them yet.<br></p>
-</div>    
-    
-
-
-
-<script>
-var acc = document.getElementsByClassName("accordion");
-var i;
-
-for (i = 0; i < acc.length; i++) {
-  acc[i].addEventListener("click", function() {
-    this.classList.toggle("active");
-    var panel = this.nextElementSibling;
-    if (panel.style.maxHeight){
-      panel.style.maxHeight = null;
-    } else {
-      panel.style.maxHeight = panel.scrollHeight + "px";
-    } 
-  });
-}
-</script>
-
-    
-    
-   
+Get out and get paddling - flatwater, whitewater, canoe, kayak, raft, whatever! rivers.run will be there for you when you need River Info.
+</p>    
     
     
     
+<br><br>
 <p style="text-align: center"><strong><em>By using this website, you agree to the <a href="/TOS.txt" target="_blank" rel="noopener">Terms of Service</a></em></strong></p>
-<p style="text-align: center">Copyright © 2018 Tucker Willenborg. All Rights Reserved.</p>
-   
+<p style="text-align: center">Copyright © 2018 Tucker Willenborg. All* Rights Reserved.</p>
+<p style="text-align: center; font-size: 9px"><strong>*Some River Writeup's are only licensed to me, not owned by me.</strong></p>
     
     
     
@@ -234,44 +206,7 @@ body {font-family: Arial, Helvetica, sans-serif;}
 .p {
     text-align: center
 }
- 
-.accordion {
-    background-color: #f0f0f0;
-    color: #444;
-    cursor: pointer;
-    padding: 18px;
-    width: 100%;
-    border: none;
-    text-align: left;
-    outline: none;
-    font-size: 15px;
-    transition: 0.4s;
-}
-
-.active, .accordion:hover {
-    background-color: #d9d9d9;
-}
-
-.accordion:after {
-    content: '\002B';
-    color: green;
-    font-weight: bold;
-    float: right;
-    margin-left: 5px;
-}
-
-.active:after {
-    content: "\2212";
-    color:red;
-}
-
-.panel {
-    padding: 0 18px;
-    background-color: lightblue;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.2s ease-out;
-}
+    
     
     
 body {
@@ -280,9 +215,10 @@ body {
     
     
 </style>
-    
-<link rel="prerender" href="/">
-<link rel="prerender" href="/info.html">
 
+    
+<link rel="prerender" href="/info.html">
+<link rel="prerender" href="/FAQ.html">
+   
 </body>
 </html>
