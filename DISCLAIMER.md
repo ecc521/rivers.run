@@ -1,12 +1,10 @@
 # DISCLAIMER:
 
 Much of the content of this site is User-Generated. 
-NO GUARANTEE CAN BE MADE FOR THE ACCURACY OR COMPLETENESS CONTENT. 
+### NO GUARANTEE CAN BE MADE FOR THE ACCURACY OR COMPLETENESS CONTENT. 
 Your use of this content is AT YOUR OWN RISK.
 
-Information on current river conditions (Gauge Height, Flow Rate, Precipitation, and Temperature) is sometimes provided.
-This data is retrieved from USGS (United States Geological Survey). 
-THE DATA IS PROVISIONAL, WHICH CAN BE INCORRECT AND MAY BE SIGNIFICANTLY REVISED AT A LATER DATE. IT SHOULD NOT BE TAKEN AS A GUARANTEE OF CONDITIONS.
+**Current river conditions (Such as Gauge Height, Flow Rate, Precipitation, and Temperature) are provisional - they may be incorrect. Read more about provisional data at [USGS](https://water.usgs.gov/data/provisional.html)**
 
 The content of this site is not necessarily created or representative of the views, thoughts, and/or opinions of Rivers.run authors, administrators, developers, copyright holders, and/or contributors.
 
