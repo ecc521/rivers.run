@@ -6,7 +6,7 @@
 
 1. Data about current river conditions is [provisional](https://water.usgs.gov/data/provisional.html) and **may be incorrect.**
 
-1. Just because a river is deemed "runnable" **does not mean:**
+1. Just because a river is deemed "runnable" **does *not* mean:**
    1. The river is safe to run.
    1. The river is actually "runnable
    
