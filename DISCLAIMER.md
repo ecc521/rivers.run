@@ -3,10 +3,10 @@
 
 1. This site includes user generated content, which **may be incorrect**. 
 2. Data about current river conditions is [provisional](https://water.usgs.gov/data/provisional.html) and **may be incorrect.**
-3. Just because a river is deemed "runnable" does not mean:
+3. Just because a river is deemed "runnable" **does not mean:**
   1. The river is safe to run.
   2. The river is actually "runnable"
-4. No liability is accepted in any way, shape, or form.
+4. **No liability is accepted in any way, shape, or form.**
 
 
 
