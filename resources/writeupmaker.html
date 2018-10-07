@@ -1,0 +1,147 @@
+<p>Your progress in creating this writeup is automatically saved. It will be available the next time this page is loaded, unless one of the following occours:<br>
+1. localStorage is cleared. Browsers may do this if you click "clear cache" or "clear cookies and other side data".<br>
+2. Multiple tabs of this page open at once - The tabs will overwrite each other.</p>
+<br><br>
+
+<p>The 3 Fields below this may not apply to all rivers. Don't worry. You can leave them blank.</p>
+<input id="usgs" type="text" placeholder="USGS Gage Number" onkeydown="setTimeout(UpdateWriteup, 30)">
+<br>
+<p>Use Decimal Format for Longitude and Latitude (ex. 32.53521523, -82.93201727, -74.37283910, 41.52318192) </p>
+<input id="plat" type="text" placeholder="Put-in GPS Latitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="plon" type="text" placeholder="Put-in GPS Longitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="tlat" type="text" placeholder="Take-out GPS Latitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="tlon" type="text" placeholder="Take-out GPS Longitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<p><strong>IF YOU DID NOT INPUT PUT-IN OR TAKEOUT GPS:</strong></p>
+<input id="hidlat" type="text" placeholder="Approxtimate GPS Longitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="hidlon" type="text" placeholder="Approxtimate GPS Longitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<p>GPS coordinites that you input in the 2 boxes above will not be shown to the user, however will be used in GPS sorting.</p>
+<br><br>
+<input id="aw" type="text" placeholder="AW River Number (Not currently being used)" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="tags" type="text" placeholder="Input Tags Here, seperated by commas" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<p>Tag Examples: CCCWOR, Ice-Cream, Monacacy, NC, PA, TN, CA, MI, WV, ext.
+<br>
+Put C1 after the tag if you can get to the river within an hour from that area (ex. CCCWORC1), put C if you can get to the river in 1-2 hours from that area (ex. CCCWORC), and put nothing if it takes 2+ hours (ex. CCCWOR). Do not put the tag if it is unreasonable to paddle the river from the area.</p>
+<br>
+<input id="state" type="text" placeholder="State that the river is in (if multiple, separate with commas)" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="name" type="text" placeholder="River Name" onkeydown="setTimeout(UpdateWriteup, 30)">
+<br>
+<input id="section" placeholder="Section Name" type="text" onkeydown="setTimeout(UpdateWriteup, 30)">
+<br>
+<select id="skill" onchange="UpdateWriteup()">
+  <option value="">Skill</option>
+  <option value="1">Flat Water</option>
+  <option value="2">Beginner</option>
+  <option value="3">Novice</option>
+  <option value="4">Low-Intermediate</option>
+  <option value="5">Intermediate</option>
+  <option value="6">High-Intermediate</option>
+  <option value="7">Advanced</option>
+  <option value="8">Expert</option>
+</select>
+<br>
+<select id="rating" onchange="UpdateWriteup()">
+  <option value="">Rating</option>
+  <option value="1">1</option>
+  <option value="2">2</option>
+  <option value="3">3</option>
+  <option value="4">4</option>
+  <option value="5">5</option>
+</select>
+<br>
+<input id="length" type="text" placeholder="Section Length" onkeydown="setTimeout(UpdateWriteup, 30)">
+<br><br>
+<textarea id="writeup" placeholder="Writeup Content" rows="10" style="width:100%;" onkeydown="setTimeout(UpdateWriteup, 30)"></textarea>
+<p>Here is what your writeup looks like::</p>
+<p id="WriteupExample"></p>
+<br>
+<p>Link Creator:</p>
+<input type="text" id="LinkURL" onfocus="if(this.value.length === 0) {this.value='https://'}" placeholder="Link URL"style="width:100%" onkeydown="setTimeout(LinkUpdate, 20)">
+<input type="text" id="LinkText" placeholder="Link Text"style="width:100%" onkeydown="setTimeout(LinkUpdate, 20)">
+<p id="LinkShow">Your link looks like this: </p>
+<p>Copy and paste the following code into your writeup:</p>
+<p id="LinkResult"></p>
+
+<br><br><br>
+<input type="button" value="Copy Output To Clipboard" onclick="copyStringToClipboard()">
+<textarea id="Output" readonly="" placeholder="Output Will Appear Here. Copy and Paste it into the Google Doc."rows = "25" style="width:100%"></textarea>
+<br>
+
+
+
+<script>    
+function copyStringToClipboard() {
+   var str = document.getElementById("Output").value
+   // Create new element
+   var el = document.createElement('textarea');
+   // Set value (string to be copied)
+   el.value = str;
+   // Set non-editable to avoid focus and move outside of view
+   el.setAttribute('readonly', '');
+   el.style = {position: 'absolute', left: '-9999px'};
+   document.body.appendChild(el);
+   // Select text inside element
+   el.select();
+   // Copy text to clipboard
+   document.execCommand('copy');
+   // Remove temporary element
+   document.body.removeChild(el);
+}
+  
+function GetId(Name) {
+    return document.getElementById(Name)
+}
+  //state, hidlat, hidlon
+var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state"
+List = List.split(",")
+List = List.map(function(value){
+  return value.trim()
+})
+  
+List.forEach(function(value){
+  console.log(value)
+  console.log(GetId(value))
+  GetId(value).value = localStorage.getItem(value)
+})  
+    
+function LinkUpdate() {
+  var Text = GetId("LinkURL").value
+  if (Text.trim().indexOf("https://") !== 0) {
+    GetId("LinkURL").value = "https://"
+    Text = "https://"
+  }
+  Text = "<a href=\"" + Text + "\" target=\"_blank\" rel=\"noopener\">" + GetId("LinkText").value + "</a>"
+  GetId("LinkResult").innerText = Text
+  GetId("LinkShow").innerHTML = "Your link looks like this: \"" + Text + "\""
+}
+function UpdateWriteup() {
+    List.forEach(function(value){
+      localStorage.setItem(value, GetId(value).value.trim())
+    })  
+  
+    var Text = ""
+    var EndText = ""
+    List.forEach(function(value, index){
+      if (value !== "writeup") {
+      Text += "\n" + value + ": " + GetId(value).value.trim()
+      }
+      else {
+      EndText = "\n" + GetId(value).value.trim()
+      }
+    })
+  
+    Text = Text + EndText
+    Text = Text.trim()
+  
+    GetId("Output").value = Text
+    GetId("WriteupExample").innerHTML = GetId("writeup").value.split("\n").join("<br>")
+}
+UpdateWriteup()
+//Initial update
+</script>
