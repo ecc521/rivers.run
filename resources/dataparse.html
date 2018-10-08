@@ -17,17 +17,12 @@ var blob = new Blob([csvContent],{
     type: "text/js;charset=utf-8;"
 });
 
-if(window.navigator.msSaveOrOpenBlob) {
-        window.navigator.msSaveBlob(blob, "RiverArray.js");
-    }
-    else{
         var elem = window.document.createElement('a');
         elem.href = window.URL.createObjectURL(blob);
-        elem.download = "RiverArray.js";        
+        elem.download = "riverarray.js";        
         document.body.appendChild(elem);
         elem.click();        
         document.body.removeChild(elem);
-    }
 
 }
     
@@ -136,7 +131,7 @@ var GoogleCloudRequestRate = 10-1//Subtracted 1 as buffer
                 Event = Event.split("\n")
                 var NewRiver = {}      
                 
-                var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state"
+                var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun"
                 
                 //awnum should not exist. It is being added for backwards compatability.
                 List += ", awnum"
