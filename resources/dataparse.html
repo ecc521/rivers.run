@@ -1,4 +1,4 @@
-<input type="button" id="Download" hidden="true" value="Download RiverArray.js File (For uploading to Github)" onclick="Download()">
+<input type="button" id="Download" hidden="true" value="Download riverarray.js File (For uploading to Github)" onclick="Download()">
 <br><br>
 <p style="display: inline; font-size:22px" id="status"></p>
 <input style="display: none" type="button" id="Loaded" value="This file has been loaded into Github" onclick="SetNew()">
@@ -10,7 +10,7 @@
 FetchList = []
 function Download() {
 var data = document.getElementById("output").value
-data = "RiverArray =" + JSON.stringify(RiverArray)
+data = "riverarray =" + JSON.stringify(riverarray)
     
 var csvContent=data; //here we load our csv data 
 var blob = new Blob([csvContent],{
@@ -27,11 +27,11 @@ var blob = new Blob([csvContent],{
 }
     
     
-RiverArray = []
+riverarray = []
 Complete = 0
     
 function SetNew() {
-   localStorage.setItem("Data", JSON.stringify(RiverArray).length) 
+   localStorage.setItem("Data", JSON.stringify(riverarray).length) 
    document.getElementById("Loaded").style.display = "none"
    document.getElementById("status").innerHTML = ""
 
@@ -61,15 +61,15 @@ function StringedJSON(str) {
 
     
     console.log("The following two arrays should match:")
-    console.log(RiverArray)
-    var NewRiverArray = (JSON.parse(str))
-    console.log(NewRiverArray)
+    console.log(riverarray)
+    var newriverarray = (JSON.parse(str))
+    console.log(newriverarray)
     document.getElementById("Download").hidden = ""
 
 }
   
 function Check() {
-    if (RiverArray.length === (FetchList.length)) {
+    if (riverarray.length === (FetchList.length)) {
             //LETS DELETE NewRiver.OrderNum and sort them
     function Orderer(a,b) {
         a = parseInt(a.OrderNum)
@@ -77,14 +77,14 @@ function Check() {
         return a-b    
     }
     
-    RiverArray.sort(Orderer)
+    riverarray.sort(Orderer)
     
-    for (var i = 0; i<RiverArray.length;i++) {
-    delete RiverArray[i].OrderNum
+    for (var i = 0; i<riverarray.length;i++) {
+    delete riverarray[i].OrderNum
     }
         
         //Call function
-       StringedJSON(JSON.stringify(RiverArray)) 
+       StringedJSON(JSON.stringify(riverarray)) 
     }
     
 }    
@@ -224,7 +224,7 @@ var GoogleCloudRequestRate = 10-1//Subtracted 1 as buffer
                 //For Ordering at end
                 console.log(NewRiver.OrderNum)
                 document.getElementById("Progress").innerHTML = "Just completed what appears to be request number " + NewRiver.OrderNum 
-                RiverArray.push(NewRiver)
+                riverarray.push(NewRiver)
                 Complete += 1
                 Check()
 
