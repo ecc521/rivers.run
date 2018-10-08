@@ -6,7 +6,7 @@
 
     
 <div class="searchcontain">
-<img id="searchimg" src="https://resources.rivers.run/SearchIcon.png">
+<img id="searchimg" src="https://rivers.run/resources/SearchIcon.png">
 <input id="searchbox" type="text" placeholder="Search..">
 <p class="advancedsearch"> Open Advanced Search</p>
 </div>  
@@ -117,25 +117,39 @@ html, body {
     margin:0;
     transition: 0.2s;
     text-align:left;
-    font-size: 2.4vw;
+    font-size: 2.9vw;
 }
    
     
-/*Controlling font size smoothly based on screen size - sets minimum size.*/
-/*Maximum size only affects a range - it then transitions into relative to avoid text appearing too small.*/
-@media screen and (min-width: 792px) {
+/*Controlling font size smoothly based on screen size*/
+@media screen and (min-width: 500px) {
     .riverbutton {
-    font-size: 19px;
+    font-size: 2.6vw;
+    }
+}
+@media screen and (min-width: 600px) {
+    .riverbutton {
+    font-size: 2.3vw;
+    }
+}
+@media screen and (min-width: 700px) {
+    .riverbutton {
+    font-size: 2.0vw;
+    }
+}
+@media screen and (min-width: 800px) {
+    .riverbutton {
+    font-size: 1.7vw;
+    }
+}
+@media screen and (min-width: 1000px) {
+    .riverbutton {
+    font-size: 1.5vw;
     }
 }
 @media screen and (min-width: 1500px) {
     .riverbutton {
     font-size: 1.27vw;
-    }
-}
-@media screen and (max-width: 500px) {
-    .riverbutton {
-    font-size: 12px
     }
 }
     
@@ -337,7 +351,7 @@ function River(locate, name, section, skill, rating, length, writeup, tags, usgs
     }
     else {
     let img = document.createElement("img")
-    img.src = "https://resources.rivers.run/" + this.rating + ".png"
+    img.src = "https://rivers.run/resources/" + this.rating + ".png"
     img.alt = this.rating[0] + " Stars"
     img.className = "starimg"
     let span = document.createElement("span")
@@ -432,7 +446,7 @@ var sites = ["03069500", "03081500"]
 var reply = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-1000*86400).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
     
 reply = await fetch(reply)
-//var reply = await fetch("https://resources.rivers.run/USGSTesting.json")
+//var reply = await fetch("https://rivers.run/resources/USGSTesting.json")
 reply = await reply.json()
     
   
