@@ -3,12 +3,12 @@
   "name": "rivers.run",
   "icons": [
     { 
-      "src":"https://resources.rivers.run/512pxDrop.png",
+      "src":"https://rivers.run/resources/512pxDrop.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     { 
-      "src":"https://resources.rivers.run/192pxDrop.png",
+      "src":"https://rivers.run/resources/192pxDrop.png",
       "sizes": "192x192",
       "type": "image/png"
     }
