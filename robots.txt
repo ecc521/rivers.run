@@ -1,5 +1,2 @@
 User-agent: *
-Noindex: /DISCLAIMER.txt
-
-User-agent: *
 Allow: /
