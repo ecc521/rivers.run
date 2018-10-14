@@ -681,6 +681,8 @@ element.hidden = ""
 async function locationmanager(){
 let response = await getlocation()
 console.log(response)
+latitude = response.latitude
+longitude = response.longitude
 console.log(latitude)
 console.log(longitude)
 
