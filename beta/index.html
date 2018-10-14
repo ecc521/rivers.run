@@ -343,9 +343,9 @@ function River(locate, event) {
     button.appendChild(span)
     }
             
-    AddSpan(name)
-    AddSpan(section)
-    AddSpan(skill)
+    AddSpan(this.name)
+    AddSpan(this.section)
+    AddSpan(this.skill)
     
     //Star images for rating
     if (this.rating === "Error") {
@@ -363,7 +363,7 @@ function River(locate, event) {
     }
       
       
-    AddSpan(length)
+    AddSpan(this.length)
     button.className = "riverbutton"
       
     
