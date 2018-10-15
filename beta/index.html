@@ -617,13 +617,16 @@ function NewList(query, type, reverse) {
         OrderedList = oldresult
     }
     
-    OrderedList = OrderedList.map(function(value){
+    var nlist = []
+    OrderedList.forEach(function(value){
         if (value.plat && value.plon) {
              if (distanceto(value.plat, value.plon) < query) {
-                 return value
+                 nlist.push(value)
              }
         }
     })
+    OrderedList = nlist
+
     
     }
         
