@@ -340,21 +340,21 @@ function NewList(query, type, reverse) {
     }
     //Location searching uses numbers.
     
-    let OrderedList = ItemHolder;
+    let orderedlist = ItemHolder;
     if (!(String(query).length === 0 || !query || !type)) {
     if (type === "sort") {
     //Obey other filters
     if (oldresult) {
-        OrderedList = oldresult
+        orderedlist = oldresult
     }   
     if (query === "alphabetical") {
-      OrderedList = alphabeticalsort(OrderedList, reverse)
+      orderedlist = alphabeticalsort(orderedlist, reverse)
     }
     else if (query === "rating") {
-      OrderedList = ratingsort(orderedlist, reverse)
+      orderedlist = ratingsort(orderedlist, reverse)
     }
     else if (query === "skill") {
-    OrderedList.sort(function(a,b) {
+    orderedlist.sort(function(a,b) {
     
     function ToNum(value) {
 
@@ -392,9 +392,9 @@ function NewList(query, type, reverse) {
     })
         
     if (reverse) {
-    OrderedList.reverse()
-    while (OrderedList[0].skill === "?") {
-        OrderedList.push(OrderedList.shift())
+    orderedlist.reverse()
+    while (orderedlist[0].skill === "?") {
+        orderedlist.push(orderedlist.shift())
     }
     }      
     }      
@@ -403,7 +403,7 @@ function NewList(query, type, reverse) {
         
     if (type === "normal") {
         let l = [[],[],[],[],[]]
-        OrderedList.forEach(function(event){
+        orderedlist.forEach(function(event){
             if(event.tags.toLowerCase().indexOf(query) !== -1) {
                 if (event.name.toLowerCase().indexOf(query) !== -1) {
                     l[0].push(event)
@@ -423,10 +423,10 @@ function NewList(query, type, reverse) {
             }
         })
         
-        OrderedList = l[0].concat(l[1],l[2],l[3])
+        orderedlist = l[0].concat(l[1],l[2],l[3])
         
         //Add the less relevant results below
-        OrderedList = OrderedList.concat(l[4])
+        orderedlist = orderedlist.concat(l[4])
         
         
         
@@ -440,18 +440,18 @@ function NewList(query, type, reverse) {
         
     if (type === "location") {
     if (oldresult) {
-        OrderedList = oldresult
+        orderedlist = oldresult
     }
     
     var nlist = []
-    OrderedList.forEach(function(value){
+    orderedlist.forEach(function(value){
         if (value.plat && value.plon) {
              if (distanceto(value.plat, value.plon) < query) {
                  nlist.push(value)
              }
         }
     })
-    OrderedList = nlist
+    orderedlist = nlist
 
     
     }
@@ -467,12 +467,12 @@ function NewList(query, type, reverse) {
     //Append New
     var div = GetId("Rivers")
     //Everything else    
-    OrderedList.forEach(function(event){
+    orderedlist.forEach(function(event){
         div.appendChild(event.create())
     })
      
     if (type !== "sort") {
-        oldresult = OrderedList
+        oldresult = orderedlist
     }
     console.timeEnd("Redraw Table")    
 }
