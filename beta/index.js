@@ -296,6 +296,7 @@ riverarray.map(function(event, index) {
     
 
 function alphabeticalsort(orderedlist, reverse) {
+  
     function compare(a,b) {
     if (a.name < b.name)
         return -1;
@@ -320,25 +321,43 @@ function ratingsort(orderedlist, reverse) {
         return 1;
     return 0;
     }
-  
     orderedlist.sort(compare);
-  
     if (reverse) {
          orderedlist.reverse()
     }
-  
     //Move error values to end
     while (orderedlist[0].rating === "Error") {
         orderedlist.push(orderedlist.shift())
     }  
-  
     return orderedlist
+  
 }
-   
-function skillsort(orderedlist, reverse) {
-    function compare(a,b) {
-    //Convert skill values to numbers
+    
+var oldresult;    
+function NewList(query, type, reverse) {
+    if (typeof(query) === "string") {
+    query = query.toLowerCase()
+    }
+    //Location searching uses numbers.
+    
+    let OrderedList = ItemHolder;
+    if (!(String(query).length === 0 || !query || !type)) {
+    if (type === "sort") {
+    //Obey other filters
+    if (oldresult) {
+        OrderedList = oldresult
+    }   
+    if (query === "alphabetical") {
+      OrderedList = alphabeticalsort(OrderedList, reverse)
+    }
+    else if (query === "rating") {
+      OrderedList = ratingsort(orderedlist, reverse)
+    }
+    else if (query === "skill") {
+    OrderedList.sort(function(a,b) {
+    
     function ToNum(value) {
+
     switch (value.skill) {
     case "FW":
         value = 1;
@@ -367,44 +386,18 @@ function skillsort(orderedlist, reverse) {
     default:
         value = 9;
     }
-    return value//Skill as Number
+    return value
     }       
-    return ToNum(a)-ToNum(b)//Return the compared skill levels
-    }
-    orderedlist.sort(compare)
-  
+        return ToNum(a)-ToNum(b)
+    })
+        
     if (reverse) {
-    orderedlist.reverse()
-    //Move unknown skill values to end
-    while (orderedlist[0].skill === "?") {
-        orderedlist.push(orderedlist.shift())
+    OrderedList.reverse()
+    while (OrderedList[0].skill === "?") {
+        OrderedList.push(OrderedList.shift())
     }
-    }
-    return orderedlist;
-}
-
-var oldresult;    
-function NewList(query, type, reverse) {
-    if (typeof(query) === "string") {
-    query = query.toLowerCase()
-    }
-    //Location searching uses numbers.
-    
-    let OrderedList = ItemHolder;
-    if (!(String(query).length === 0 || !query || !type)) {
-    if (type === "sort") {
-    //Obey other filters
-    if (oldresult) {
-        OrderedList = oldresult
-    }   
-    if (query === "alphabetical") {
-      OrderedList = alphabeticalsort(OrderedList, reverse)
-    }
-    else if (query === "rating") {
-      OrderedList = ratingsort(OrderedList, reverse)
-    }
-    else if (query === "skill") {
-      skillsort(OrderedList, reverse)   
+    }      
+    }      
     }
         
         
