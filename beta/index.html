@@ -1,6 +1,6 @@
 <html>
     <head></head><body>    
-<script src="https://rivers.run/RiverArray.js"></script>
+<script src="https://rivers.run/riverarray.js"></script>
 
 <div hidden="hidden" id="geolocate"></div>
 
@@ -293,12 +293,12 @@ function TopBar() {
   
     
     
-function River(locate, name, section, skill, rating, length, writeup, tags, usgs, plat, plon, tlat, tlon) {
-  this.name = name
-  this.section = section
-  this.skill = skill
+function River(locate, event) {
+  this.name = event.name
+  this.section = event.section
+  this.skill = event.skill
     
-  switch (Number(rating)) {
+  switch (Number(event.rating)) {
     case 1:
         rating = "1Star";
         break;
@@ -306,7 +306,7 @@ function River(locate, name, section, skill, rating, length, writeup, tags, usgs
     case 3:
     case 4:
     case 5:
-        this.rating = rating + "Stars";
+        this.rating = event.rating + "Stars";
         break;
     default:
         this.rating = "Error"
@@ -315,18 +315,20 @@ function River(locate, name, section, skill, rating, length, writeup, tags, usgs
       this.rating = "Error"
   }
 
-  this.length = length
-  this.writeup = writeup
-  this.tags = tags||""
-  this.usgs = usgs
+  this.length = event.length
+  this.writeup = event.writeup
+  this.tags = event.tags || ""
+  this.usgs = event.usgs
+  this.plat = event.plat
+  this.plon = event.plon
+  this.tlat = event.tlat
+  this.tlon = event.tlon
+  this.aw = event.aw
   this.base = "b" + locate
   this.expanded = 0
   this.index = locate
     
-  this.plat = plat
-  this.plon = plon
-  this.tlat = tlat
-  this.tlon = tlon
+
     
   this.create = function () {
     //Only create the button once - It's about 3 times faster.
@@ -341,9 +343,9 @@ function River(locate, name, section, skill, rating, length, writeup, tags, usgs
     button.appendChild(span)
     }
             
-    AddSpan(name)
-    AddSpan(section)
-    AddSpan(skill)
+    AddSpan(this.name)
+    AddSpan(this.section)
+    AddSpan(this.skill)
     
     //Star images for rating
     if (this.rating === "Error") {
@@ -361,7 +363,7 @@ function River(locate, name, section, skill, rating, length, writeup, tags, usgs
     }
       
       
-    AddSpan(length)
+    AddSpan(this.length)
     button.className = "riverbutton"
       
     
@@ -475,8 +477,8 @@ reply.value.timeSeries.forEach(function(event){
     
 //ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list. 
 var ItemHolder = []
-RiverArray.map(function(event, index) {
-    ItemHolder[index] = new River(index, event.Name, event.Section, event.Difficulty, event.Quality, event.Length, event.Writeup, event.tags, event.USGS, event.platitude, event.plongitude, event.tlatitude, event.tlongitude)
+riverarray.map(function(event, index) {
+    ItemHolder[index] = new River(index, event)
 })
     
 
