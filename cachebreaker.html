@@ -1,9 +1,10 @@
-<p>Cache should clear in 2.5 seconds.</p>
+<p>Please close any rivers.run tabs with the exception of this one.<br>
+Your cache should automatically clear.</p>
 
 <script>
 
-    caches.delete('rivers.run').then(function(event) {
-    })
+    var a = caches.delete('rivers.run')
+    a.then(function(event){})
     
     navigator.serviceWorker.getRegistrations().then(function(registrations) {
      for(var registration of registrations) {
