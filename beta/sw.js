@@ -17,7 +17,7 @@ const preloadurls = []
 //END OF NOT YET IMPLEMENTED
 
 //Milliseconds to wait for network response before using cache
-const waitperiod = 1600
+const waitperiod = 1800
 
 
 
@@ -42,13 +42,8 @@ function fetchevent(event) {
                 cache.put(event.request, response.clone())
                 return response
             }
-            else if (naviagtor.onLine === false) {
-                //Looks like we are offline and should reply with cached data now
-                console.log("Offline. Using cached data")
-                return fromcache    
-            }
             else {
-                //Looks like we have an internet connection and cached data
+                //We have cached data
                 
                 return new Promise(function(resolve, reject){
                     
@@ -56,6 +51,13 @@ function fetchevent(event) {
                     fromnetwork.then(function(response){
                         cache.put(event.request, response.clone())
                         resolve(response)
+                    })
+                    
+                    //If the fetch event fails (ex. offline), return cached immediately
+                    fromnetwork.catch(function(e){
+                        console.log("Using cached data due to the following error:")
+                        console.error(e)
+                        resolve(fromcache)
                     })
                     
                     //If the network doesn't respond quickly enough, use cached data
