@@ -16,12 +16,9 @@ function GetId(Name) {
             sites.push(val)
         }
     }
-    console.log(sites)
     let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-1000*86400).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
-    console.log(url)
 
     let response = await fetch(url)
-    console.log(response.clone())
     let usgsdata = await response.json()    
 
     self.usgsarray = {}
@@ -43,7 +40,6 @@ function GetId(Name) {
         usgsarray[event.sourceInfo.siteCode[0].value][event.variable.variableCode[0].value] = obj2
     })
     
-    console.log(usgsarray)
 }())
 
 
@@ -253,8 +249,7 @@ function River(locate, event) {
             let cfs = data["00060"]
             let height = data["00065"]
 
-            console.log(data)
-
+            
             //Auxillary Function
             function toparts(arr) {
                 let values = []
