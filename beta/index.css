@@ -4,7 +4,20 @@ html, body {
     height:100%;
     background-color:#cceeff;
 }
+
+/*Chart CSS*/
+canvas{
+    display: block;
+    margin: auto;
+    border: 1px solid black;
+    width: 90vw;
+    max-width: 150vh;
+    height: 80vw;
+    max-height: 90vh;
+    background-color: white;
     
+}
+
 #geolocate {
     padding: 10px;
     text-align:center;
