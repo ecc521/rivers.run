@@ -10,7 +10,7 @@ function GetId(Name) {
     
     var sites = []
     for (let i=0;i<riverarray.length;i++) {
-        let val = riverarray.usgs
+        let val = riverarray[i].usgs
         //Check for accuracy
         if (val && val.length > 7 && val.length < 16) {
             sites.push(val)
