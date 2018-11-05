@@ -48,11 +48,13 @@ function TopBar() {
         let button = document.createElement("button")
         button.id = "topbar"
         button.className = "riverbutton"
+      
+        //Auxillary Function
         function NewSpan(Text) {
-        let span = document.createElement("span")
-        span.className = "riverspan"
-        span.innerHTML = Text
-        return span
+          let span = document.createElement("span")
+          span.className = "riverspan"
+          span.innerHTML = Text
+          return span
         }
         
         let span = NewSpan("River ")
