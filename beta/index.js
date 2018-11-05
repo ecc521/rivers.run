@@ -4,8 +4,13 @@ function GetId(Name) {
   return document.getElementById(Name)
 }
 
-//Fetch data from USGS
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/beta/sw.js');
+  });
+}
 
+//Fetch data from USGS
 (async function() {
     
     var sites = []
