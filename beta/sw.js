@@ -40,7 +40,7 @@ function fetchevent(event) {
                 //No cache. All we can do is return network response
                 let response = await fromnetwork
                 cache.put(event.request, response.clone())
-                return reponse
+                return response
             }
             else if (naviagtor.onLine === false) {
                 //Looks like we are offline and should reply with cached data now
