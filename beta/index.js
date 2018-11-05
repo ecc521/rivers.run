@@ -270,11 +270,15 @@ function River(locate, event) {
                 return {values:values,timestamps:timestamps}
             }
 
-
-            if (cfs||height) {
+            //Auxillary Function
+            function createcanvas() {
                 let canvas = document.createElement("canvas")
                 canvas.width = 1200
-                canvas.height = 800
+                canvas.height = 800 
+                return canvas
+            }
+            if (cfs||height) {
+                let canvas = createcanvas()
 
                 if (cfs) {
                     let parts = toparts(cfs.values)
@@ -288,9 +292,8 @@ function River(locate, event) {
             }
 
             if (temp) {
-                let canvas = document.createElement("canvas")
-                canvas.width = 1200
-                canvas.height = 800    
+                let canvas = createcanvas()
+  
 
                 let parts = toparts(temp.values)
                 AddLine("", parts.timestamps, data.name, canvas, 0, parts.values, "#FF0000", 3, "#0000FF")
@@ -298,9 +301,7 @@ function River(locate, event) {
             }
 
             if (precip) {
-                let canvas = document.createElement("canvas")
-                canvas.width = 1200
-                canvas.height = 800    
+                let canvas = createcanvas() 
 
                 let parts = toparts(precip.values)
                 AddLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0066FF80")
