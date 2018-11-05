@@ -1,20 +1,56 @@
 <html>
-    <head></head><body>    
-<script src="https://rivers.run/riverarray.js"></script>
+    <head>
+		<!-- Secure page against user generated content -->
+		<meta http-equiv="Content-Security-Policy" content="default-src https://rivers.run https://*.rivers.run;connect-src https://rivers.run https://*.rivers.run https://waterdata.usgs.gov;upgrade-insecure-requests;">
+		<meta name="referrer" content="no-referrer">
 
-<div hidden="hidden" id="geolocate"></div>
 
-    
-<div class="searchcontain">
-<img id="searchimg" src="https://rivers.run/resources/SearchIcon.png">
-<input id="searchbox" type="text" placeholder="Search..">
-<p class="advancedsearch"> Open Advanced Search</p>
-</div>  
-    
-<div id="Rivers"></div>    
-    
-<link rel="stylesheet" type="text/css" href="https://rivers.run/beta/index.css">  
-<script src="https://rivers.run/beta/index.js"></script> 
+		<!-- USGS Gauges Preconnect -->
+		<link rel="preconnect" href="https://waterdata.usgs.gov" crossorigin>
+
+		<!--JavaScript & CSS-->
+		<link rel="preload" href="/index.css" as="style">
+		<link rel="preload" href="/RiverArray.js" as="script">
+		<link rel="preload" href="/index.js" as="script">
+
+
+		<!-- Star images -->
+		<link rel="preload" href="https://rivers.run/resources/1Star.png" as="image">
+		<link rel="preload" href="https://rivers.run/resources/2Stars.png" as="image">
+		<link rel="preload" href="https://rivers.run/resources/3Stars.png" as="image">
+		<link rel="preload" href="https://rivers.run/resources/4Stars.png" as="image">
+		<link rel="preload" href="https://rivers.run/resources/5Stars.png" as="image">
+
+		<!-- Favicon -->
+		<link rel="shortcut icon" type="image/x-icon" href="https://rivers.run/resources/32pxDrop.png" />
+
+		<!-- Progressive Web App Manifest -->
+		<link rel="manifest" href="/manifest.json">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="theme-color" content="#317EFB"/>
+		<meta name="Description" content="Every River at your Fingertips! Rivers.run contains tons of write-ups from community experts to help you plan your next paddling trip. View our information here!">
+		<meta name="keywords" content="rivers.run, rivers, whitewater, river info, whitewater info, paddling, paddling info, kayak, canoe">
+
+		<title>Rivers.run - Paddling and River Info</title>
+	</head>
 	
-</body>  
+	<body>    
+		<script src="https://rivers.run/riverarray.js"></script>
+
+		<div hidden="hidden" id="geolocate"></div>
+
+
+		<div class="searchcontain">
+		<img id="searchimg" src="https://rivers.run/resources/SearchIcon.png">
+		<input id="searchbox" type="text" placeholder="Search..">
+		<p class="advancedsearch"> Open Advanced Search</p>
+		</div>  
+
+		<div id="Rivers"></div>    
+
+		<link rel="stylesheet" type="text/css" href="https://rivers.run/beta/index.css">  
+		<script src="https://rivers.run/beta/index.js"></script> 
+
+	</body>  
 </html>
