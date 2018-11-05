@@ -227,16 +227,15 @@ function River(locate, event) {
         if (river.expanded === 0) {
         river.expanded = 1
         var div = document.createElement("div")
-        div.innerHTML = river.writeup
-            
+        div.innerHTML = river.writeup + "<br>"
+                  
         if (river.plat && river.plon) {
-            div.innerHTML += "Put-In GPS Coordinates: "
+            div.innerHTML += "<br>Put-In GPS Coordinates: " + river.plat + ", " + river.plon
         }
         
         if (river.tlat && river.tlon) {
-            div.innerHTML += ""
+            div.innerHTML += "<br>Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon
         }
-            
             
         if (river.aw) {
             div.innerHTML += "<br><br><a href='https://www.americanwhitewater.org/content/River/detail/id/" + river.aw + "'>Click here to visit this site on American Whitewater</a>"
@@ -272,6 +271,7 @@ function River(locate, event) {
 
             //Auxillary Function
             function createcanvas() {
+                div.innerHTML += "<br><br>" //Let's Space the Canvas
                 let canvas = document.createElement("canvas")
                 canvas.width = 1200
                 canvas.height = 800 
