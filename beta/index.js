@@ -47,6 +47,32 @@ if ('serviceWorker' in navigator) {
     
 }())
 
+//Auxillary Function        
+//True means pointing up, false means pointing down
+function triangle(facing) {
+  let scale = screen.width/650 //650 is Arbitrary
+      
+  let div = document.createElement("div")
+  div.style.width = 0;
+  div.style.height = 0;
+  div.style.display = "inline-block";
+  div.style.borderLeft = 4*scale + "px"
+  div.style.borderRight = 4*scale + "px"
+  //If triangle is pointing up
+  if (facing) {
+    div.style.borderBottom = 8*scale + "px"
+  }
+  else {
+    div.style.borderTop = 8*scale + "px"
+  }
+  return div;
+}
+
+//Testing
+document.body.appendChild(triangle(true))
+document.body.appendChild(triangle(false))
+//End of Testing
+
 
 function TopBar() {
     this.create = function() {
@@ -64,7 +90,7 @@ function TopBar() {
         
         let span = NewSpan("River ")
         span.onclick = function() {
-            if (this.value) {
+          if (this.value) {
                 if (this.value === 1) {
                     NewList("alphabetical", "sort", true)
                     this.innerHTML = "River " + "<div class='triangle-down'></div>"
