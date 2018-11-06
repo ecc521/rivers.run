@@ -53,6 +53,8 @@ function triangle(facing) {
   let scale = screen.width/750 //750 is Arbitrary
   scale = scale ** 0.5 //Square Root to make difference smaller
   
+  if (scale > 1) {scale = scale**0.5} //Reduce it's size even more on large devices
+  
   let div = document.createElement("div")
   div.style.width = 0;
   div.style.height = 0;
@@ -92,14 +94,14 @@ function TopBar() {
 
         span.onclick = function() {
           if (this.value) {
-            span.lastChild.remove()
-            span.appendChild(triangle(false))
+            this.lastChild.remove()
+            this.appendChild(triangle(false))
             NewList("alphabetical", "sort", true)
             this.value = 0
           }
           else {
-            span.lastChild.remove()
-            span.appendChild(triangle(true))
+            this.lastChild.remove()
+            this.appendChild(triangle(true))
             NewList("alphabetical", "sort")
             this.value = 1
           }
