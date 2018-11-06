@@ -56,14 +56,14 @@ function triangle(facing) {
   div.style.width = 0;
   div.style.height = 0;
   div.style.display = "inline-block";
-  div.style.borderLeft = 4*scale + "px"
-  div.style.borderRight = 4*scale + "px"
+  div.style.borderLeft = 4*scale + "px solid transparent"
+  div.style.borderRight = 4*scale + "px solid transparent"
   //If triangle is pointing up
   if (facing) {
-    div.style.borderBottom = 8*scale + "px"
+    div.style.borderBottom = 8*scale + "px solid black"
   }
   else {
-    div.style.borderTop = 8*scale + "px"
+    div.style.borderTop = 8*scale + "px solid black"
   }
   return div;
 }
