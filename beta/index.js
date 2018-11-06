@@ -51,7 +51,8 @@ if ('serviceWorker' in navigator) {
 //True means pointing up, false means pointing down
 function triangle(facing) {
   let scale = screen.width/650 //650 is Arbitrary
-      
+  scale = scale ** 0.5 //Square Root to make difference smaller
+  
   let div = document.createElement("div")
   div.style.width = 0;
   div.style.height = 0;
