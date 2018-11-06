@@ -50,7 +50,7 @@ if ('serviceWorker' in navigator) {
 //Auxillary Function        
 //True means pointing up, false means pointing down
 function triangle(facing) {
-  let scale = screen.width/650 //650 is Arbitrary
+  let scale = screen.width/750 //750 is Arbitrary
   scale = scale ** 0.5 //Square Root to make difference smaller
   
   let div = document.createElement("div")
@@ -69,10 +69,7 @@ function triangle(facing) {
   return div;
 }
 
-//Testing
-document.body.appendChild(triangle(true))
-document.body.appendChild(triangle(false))
-//End of Testing
+
 
 
 function TopBar() {
