@@ -86,28 +86,25 @@ function TopBar() {
           return span
         }
         
-        let span = NewSpan("River ")
+        let span = NewSpan("River")
+        span.appendChild(triangle(true))
+      //NewList("alphabetical", "sort", false/true)
+
         span.onclick = function() {
           if (this.value) {
-                if (this.value === 1) {
-                    NewList("alphabetical", "sort", true)
-                    this.innerHTML = "River " + "<div class='triangle-down'></div>"
-                    this.value = 0
-                }
-                else {
-                    NewList("alphabetical", "sort")
-                    this.innerHTML = "River " + "<div class='triangle-up'></div>"
-                    this.value = 1
-                }
-            }
-            else {
+            span.lastChild.remove()
+            span.appendChild(triangle(false))
+            NewList("alphabetical", "sort", true)
+            this.value = 0
+          }
+          else {
+            span.lastChild.remove()
+            span.appendChild(triangle(true))
             NewList("alphabetical", "sort")
-            this.innerHTML = "River " + "<div class='triangle-up'></div>"
             this.value = 1
-            }
+          }
         }
         span.value = 1//Starts sorted alphabetically, a-z. The first sort needs to flip that.
-        span.innerHTML += "<div class='triangle-up'></div>"
         button.appendChild(span)
         
         
