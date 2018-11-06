@@ -83,28 +83,7 @@ canvas{
 /*Not used yet*/
 .riverspan:nth-child(6) {
     width:21%;
-}
-    
-.triangle-up {
-	width: 0;
-	height: 0;
-    display: inline-block;
-	border-left: 4px solid transparent;
-	border-right: 4px solid transparent;
-	border-bottom: 8px solid black;
-}
-    
-.triangle-down {
-	width: 0;
-	height: 0;
-    display:inline-block;
-	border-left: 4px solid transparent;
-	border-right: 4px solid transparent;
-	border-top: 8px solid black;
-}
-    
-    
-    
+}   
     
 .riverbutton {
     width:100%;
