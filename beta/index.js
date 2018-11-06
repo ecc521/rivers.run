@@ -95,18 +95,19 @@ function TopBar() {
           elem.appendChild(triangle(facing))
         }
       
+      
         let span = NewSpan("River ")
         span.appendChild(triangle(true))
       //NewList("alphabetical", "sort", false/true)
 
         span.onclick = function() {
           if (this.value) {
-            this.settri(this, false)
+            settri(this, false)
             NewList("alphabetical", "sort", true)
             this.value = 0
           }
           else {
-            this.settri(this, true)
+            settri(this, true)
             NewList("alphabetical", "sort")
             this.value = 1
           }
@@ -119,53 +120,41 @@ function TopBar() {
 
         
         span = NewSpan("Skill ")
+        span.appendChild(triangle(true))
         span.onclick = function() {
-            if (this.value) {
-                if (this.value === 1) {
-                    NewList("skill", "sort", true)
-                    this.innerHTML = "Skill " + "<div class='triangle-down'></div>"
-                    this.value = 0
-                }
-                else {
-                    NewList("skill", "sort")
-                    this.innerHTML = "Skill " + "<div class='triangle-up'></div>"
-                    this.value = 1
-                }
+            if (this.value === 1) {
+                NewList("skill", "sort", true)
+                settri(this, false)
+                this.value = 0
             }
             else {
-            NewList("skill", "sort")
-            this.innerHTML = "Skill " + "<div class='triangle-up'></div>"
-            this.value = 1
+                NewList("skill", "sort")
+                settri(this, true)
+                this.value = 1
             }
         }
-        span.innerHTML += "<div class='triangle-up'></div>"
+        span.value = 0
         button.appendChild(span) 
         
         span = NewSpan("Rating ")
+        span.appendChild(triangle(true))
+
         span.onclick = function() {
-            if (this.value) {
                 if (this.value === 1) {
                     NewList("rating", "sort", true)
-                    this.innerHTML = "Rating " + "<div class='triangle-up'></div>"
+                    settri(this, true)
                     this.value = 0
                 }
                 else {
                     NewList("rating", "sort")
-                    this.innerHTML = "Rating " + "<div class='triangle-down'></div>"
+                    settri(this, false)
                     this.value = 1
                 }
-            }
-            else {
-            NewList("rating", "sort")
-            this.innerHTML = "Rating " + "<div class='triangle-down'></div>"
-            this.value = 1
-            }
         }
-        span.innerHTML += "<div class='triangle-down'></div>"
+        span.value = 0
         button.appendChild(span) 
         
         button.appendChild(NewSpan("Miles"))
-
         return button
     }
     
