@@ -453,7 +453,7 @@ function NewList(query, type, reverse) {
     }
     //Location searching uses numbers.
     
-    let orderedlist = ItemHolder;
+    let orderedlist = ItemHolder.slice(0); //Clone the array
     if (!(String(query).length === 0 || !query || !type)) {
     if (type === "sort") {
     //Obey other filters
