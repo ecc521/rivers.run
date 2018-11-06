@@ -60,8 +60,8 @@ canvas{
 .riverspan {
     display:inline-block;
     margin:2px;
-    overflow:scroll;
-    /*A bug in Chrome is causing black boxes to appear when overflow:scroll is used. Add it back in when bug fixed.*/
+    /*overflow:scroll;*/
+    /*Scrollbars showing when not needed in Safari desktop. Need to debug*/
 }
    
     
