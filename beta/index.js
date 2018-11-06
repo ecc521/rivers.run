@@ -51,10 +51,10 @@ if ('serviceWorker' in navigator) {
 //True means pointing up, false means pointing down
 function triangle(facing) {
   let scale = screen.width/750 //750 is Arbitrary
-  scale = scale ** 0.5 //Square Root to make difference smaller
+  scale = scale ** 0.6 //Square Root to make difference smaller
   
-  if (scale > 1) {scale = scale**0.5} //Reduce it's size even more on large devices
-  
+  if (scale > 1) {scale = scale**0.5} //Reduce size even more on large devices
+  console.log(scale)
   let div = document.createElement("div")
   div.style.width = 0;
   div.style.height = 0;
@@ -88,20 +88,25 @@ function TopBar() {
           return span
         }
         
-        let span = NewSpan("River")
+        //Auxillary Function
+        //Elem is the span element. If facing is true, set triangle to up, else down
+        function settri(elem, facing) {
+          elem.lastChild.remove()
+          elem.appendChild(triangle(facing))
+        }
+      
+        let span = NewSpan("River ")
         span.appendChild(triangle(true))
       //NewList("alphabetical", "sort", false/true)
 
         span.onclick = function() {
           if (this.value) {
-            this.lastChild.remove()
-            this.appendChild(triangle(false))
+            this.settri(this, false)
             NewList("alphabetical", "sort", true)
             this.value = 0
           }
           else {
-            this.lastChild.remove()
-            this.appendChild(triangle(true))
+            this.settri(this, true)
             NewList("alphabetical", "sort")
             this.value = 1
           }
