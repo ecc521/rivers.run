@@ -48,16 +48,22 @@ if ('serviceWorker' in navigator) {
     //Add USGS Data to Graph
     for (let i=0;i<ItemHolder.length;i++) {
       let item = ItemHolder[i]
+      console.log(item)
       let data = usgsarray[item.usgs]
-
+      console.log(data)
+      
       if (data) {
         let cfs = data["00060"]
+        console.log(cfs)
         let feet = data["00065"]
+        console.log(feet)
         
         //Prevent "TypeError: Can't Read Property 'values' of undefined"
         if (cfs) {cfs = cfs.values}
+        console.log(cfs)
         if (feet) {feet = feet.values}
-
+        console.log(feet)
+        
         if (cfs && feet) {
           item.flow = cfs[-1] + " cfs, " + feet[-1] + " feet"
         }
