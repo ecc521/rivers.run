@@ -64,7 +64,7 @@ if ('serviceWorker' in navigator) {
         //Prevent "TypeError: Can't Read Property 'values' of undefined"
         if (cfs) {cfs = cfs.values}
         if (feet) {feet = feet.values}
-        try{
+
         if (cfs && feet) {
           console.log(cfs[cfs.length - 1])
           console.log(feet[feet.length - 1])
@@ -81,7 +81,6 @@ if ('serviceWorker' in navigator) {
         //Replace the current button so that the flow info shows 
         let elem = GetId(item.base + "1")
         elem.parentNode.replaceChild(item.create(true), elem)
-        }catch(e){console.warn("Encountered an error. Skippe displaying info. " + e)}
       }
     }
     
