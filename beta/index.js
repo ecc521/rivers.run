@@ -45,9 +45,10 @@ if ('serviceWorker' in navigator) {
         usgsarray[event.sourceInfo.siteCode[0].value][event.variable.variableCode[0].value] = obj2
     })
   
+    //Add USGS Data to Graph
     for (let i=0;i<ItemHolder.length;i++) {
       let item = ItemHolder[i]
-      data = usgsarray[item.usgs]
+      let data = usgsarray[item.usgs]
 
       if (data) {
         let cfs = data["00060"]
@@ -63,8 +64,8 @@ if ('serviceWorker' in navigator) {
         }
 
         ItemHolder[i].create(true) //Force Recreation
+        console.log(ItemHolder[i])
       }
-      NewList("alphabetical", "sort")
     }
     
 }())
