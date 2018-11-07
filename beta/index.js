@@ -31,7 +31,12 @@ if ('serviceWorker' in navigator) {
     usgsdata.value.timeSeries.forEach(function(event){
         let obj2 = {}
         obj2.values = event.values[0].value //The values - ex. Gauge Height Array
-
+      
+        if (obj2.values.length === 0) {
+          console.log("Empty Array. Skipping")
+          return;
+        }
+      
         obj2.units = event.variable.variableDescription //Units of values
         
         //See if the site is already in the array.
@@ -59,10 +64,7 @@ if ('serviceWorker' in navigator) {
         //Prevent "TypeError: Can't Read Property 'values' of undefined"
         if (cfs) {cfs = cfs.values}
         if (feet) {feet = feet.values}
-        
-        console.log(feet)
-        console.log(cfs)
-        
+        try{
         if (cfs && feet) {
           console.log(cfs[cfs.length - 1])
           console.log(feet[feet.length - 1])
@@ -79,6 +81,7 @@ if ('serviceWorker' in navigator) {
         //Replace the current button so that the flow info shows 
         let elem = GetId(item.base + "1")
         elem.parentNode.replaceChild(item.create(true), elem)
+        }catch(e){console.warn("Encountered an error. Skippe displaying info. " + e)}
       }
     }
     
