@@ -60,6 +60,7 @@ function fetchevent(event) {
                     
                     //If the network doesn't respond quickly enough, use cached data
                     setTimeout(function(){
+                        console.log("Network took too long")
                         resolve(fromcache)
                     }, waitperiod)
                 })  
