@@ -54,24 +54,20 @@ if ('serviceWorker' in navigator) {
       
       if (data) {
         let cfs = data["00060"]
-        console.log(cfs)
         let feet = data["00065"]
-        console.log(feet)
         
         //Prevent "TypeError: Can't Read Property 'values' of undefined"
         if (cfs) {cfs = cfs.values}
-        console.log(cfs)
         if (feet) {feet = feet.values}
-        console.log(feet)
         
         if (cfs && feet) {
-          item.flow = cfs[-1] + " cfs, " + feet[-1] + " feet"
+          item.flow = cfs[-1].value + " cfs, " + feet[-1].value + " feet"
         }
         else if (cfs) {
-          item.flow = cfs[-1] + " cfs"
+          item.flow = cfs[-1].value + " cfs"
         }
         else if (feet) {
-          item.flow = feet[-1] + " feet" 
+          item.flow = feet[-1].value + " feet" 
         }
 
         //item.create(true) will force regeneration of the button
