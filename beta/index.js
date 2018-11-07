@@ -348,7 +348,7 @@ function River(locate, event) {
                     AddLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFF80")
                 }
                 else {
-                    parts = toparts(height.values)
+                    let parts = toparts(height.values)
                     AddLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#0000FF80")    
                 }
                 div.appendChild(canvas)
