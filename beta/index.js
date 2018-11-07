@@ -63,8 +63,10 @@ if ('serviceWorker' in navigator) {
           item.flow = feet[0] + " feet" 
         }
 
-        ItemHolder[i].create(true) //Force Recreation
-        console.log(ItemHolder[i])
+        //item.create(true) will force regeneration of the button
+        //Replace the current button so that the flow info shows 
+        let elem = GetId(item.base + "1")
+        elem.parentNode.replaceChild(item.create(true), elem)
       }
     }
     
