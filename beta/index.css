@@ -81,7 +81,6 @@ canvas{
     width:9%;
 }
 .riverspan:nth-child(6) {
-    /*text-align:center;*//*Prevent bleedover from miles*/
     width:21%;
 }   
     
