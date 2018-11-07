@@ -53,9 +53,7 @@ if ('serviceWorker' in navigator) {
     //Add USGS Data to Graph
     for (let i=0;i<ItemHolder.length;i++) {
       let item = ItemHolder[i]
-      console.log(item)
       let data = usgsarray[item.usgs]
-      console.log(data)
       
       if (data) {
         let cfs = data["00060"]
@@ -66,8 +64,6 @@ if ('serviceWorker' in navigator) {
         if (feet) {feet = feet.values}
 
         if (cfs && feet) {
-          console.log(cfs[cfs.length - 1])
-          console.log(feet[feet.length - 1])
           item.flow = cfs[cfs.length - 1].value + " cfs, " + feet[feet.length - 1].value + " ft"
         }
         else if (cfs) {
