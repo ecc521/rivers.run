@@ -60,6 +60,7 @@ function triangle(facing) {
   div.style.display = "inline-block";
   div.style.borderLeft = 4*scale + "px solid transparent"
   div.style.borderRight = 4*scale + "px solid transparent"
+  div.style.paddingLeft = 2*scale + "px"
   //If triangle is pointing up
   if (facing) {
     div.style.borderBottom = 8*scale + "px solid black"
@@ -95,7 +96,7 @@ function TopBar() {
         }
       
       
-        let span = NewSpan("River ")
+        let span = NewSpan("River")
         span.appendChild(triangle(true))
       //NewList("alphabetical", "sort", false/true)
 
@@ -118,7 +119,7 @@ function TopBar() {
         button.appendChild(NewSpan("Section"))
 
         
-        span = NewSpan("Skill ")
+        span = NewSpan("Skill")
         span.appendChild(triangle(true))
         span.onclick = function() {
             if (this.value === 1) {
@@ -135,7 +136,7 @@ function TopBar() {
         span.value = 0
         button.appendChild(span) 
         
-        span = NewSpan("Rating ")
+        span = NewSpan("Rating")
         span.appendChild(triangle(true))
 
         span.onclick = function() {
@@ -154,6 +155,8 @@ function TopBar() {
         button.appendChild(span) 
         
         button.appendChild(NewSpan("Miles"))
+        button.appendChild(NewSpan("Flow Info"))
+
         return button
     }
     
