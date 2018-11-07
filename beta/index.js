@@ -358,6 +358,8 @@ function River(locate, event) {
                     let parts = toparts(height.values)
                     AddLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#0000FF80")    
                 }
+                console.log(canvas)
+                window.testc1 = canvas
                 div.appendChild(canvas)
             }
 
@@ -366,6 +368,8 @@ function River(locate, event) {
   
                 let parts = toparts(temp.values)
                 AddLine("", parts.timestamps, data.name, canvas, 0, parts.values, "#FF0000", 3, "#0000FF")
+                console.log(canvas)
+                window.testc2 = canvas
                 div.appendChild(canvas)
             }
 
@@ -374,6 +378,8 @@ function River(locate, event) {
 
                 let parts = toparts(precip.values)
                 AddLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0066FF80")
+                console.log(canvas)
+                window.testc3 = canvas
                 div.appendChild(canvas)
             } 
         }
