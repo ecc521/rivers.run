@@ -60,7 +60,12 @@ if ('serviceWorker' in navigator) {
         if (cfs) {cfs = cfs.values}
         if (feet) {feet = feet.values}
         
+        console.log(feet)
+        console.log(cfs)
+        
         if (cfs && feet) {
+          console.log(cfs[-1])
+          console.log(feet[-1])
           item.flow = cfs[-1].value + " cfs, " + feet[-1].value + " feet"
         }
         else if (cfs) {
