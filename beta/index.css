@@ -59,7 +59,7 @@ canvas{
     
 .riverspan {
     display:inline-block;
-    margin:2px;
+    margin:0px; /*Used 2px, but not enough space*/
     /*overflow:scroll;*/
     /*Scrollbars showing when not needed in Safari desktop. Need to debug*/
 }
@@ -78,9 +78,8 @@ canvas{
     width:15%;
 }
 .riverspan:nth-child(5) {
-    width:9%;
+    width:7%;
 }
-/*Not used yet*/
 .riverspan:nth-child(6) {
     width:21%;
 }   
