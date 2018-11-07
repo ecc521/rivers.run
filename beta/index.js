@@ -44,6 +44,28 @@ if ('serviceWorker' in navigator) {
         //Add the values onto the site code object
         usgsarray[event.sourceInfo.siteCode[0].value][event.variable.variableCode[0].value] = obj2
     })
+  
+    for (let i=0;i<ItemHolder.length;i++) {
+      let item = ItemHolder[i]
+      data = usgsarray[item.usgs]
+
+      if (data) {
+        let cfs = data["00060"]
+        let feet = data["00060"]
+        if (cfs && feet) {
+          item.flow = cfs[0] + " cfs, " + feet[0] + " feet"
+        }
+        else if (cfs) {
+          item.flow = cfs[0] + " cfs"
+        }
+        else if (feet) {
+          item.flow = feet[0] + " feet" 
+        }
+
+        ItemHolder[i].create(true) //Force Recreation
+      }
+      NewList("alphabetical", "sort")
+    }
     
 }())
 
@@ -99,7 +121,6 @@ function TopBar() {
       
         let span = NewSpan("River")
         span.appendChild(triangle(true))
-      //NewList("alphabetical", "sort", false/true)
 
         span.onclick = function() {
           if (this.value) {
@@ -595,12 +616,7 @@ function NewList(query, type, reverse) {
 
 GetId("Rivers").appendChild(new TopBar().create())
 NewList("alphabetical", "sort")
-/*NewList("alphabetical", "sort")
-NewList("alphabetical", "sort", true)
-NewList("rating", "sort")
-NewList("rating", "sort", true)
-NewList("skill", "sort")
-NewList("skill", "sort", true)*/
+
    
 GetId("searchbox").addEventListener("keydown", function() {setTimeout(function(){NewList(GetId("searchbox").value, "normal")}, 20)})
 
