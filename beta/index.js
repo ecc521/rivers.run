@@ -108,6 +108,20 @@ function triangle(facing) {
 }
 
 
+function clonecanvas(oldCanvas) {
+    let newCanvas = document.createElement('canvas');
+    let context = newCanvas.getContext('2d');
+
+    //set dimensions
+    newCanvas.width = oldCanvas.width;
+    newCanvas.height = oldCanvas.height;
+
+    //apply the old canvas to the new one
+    context.drawImage(oldCanvas, 0, 0);
+
+    //return the new canvas
+    return newCanvas;
+}
 
 
 function TopBar() {
@@ -355,8 +369,8 @@ function River(locate, event) {
                     let parts = toparts(height.values)
                     AddLine("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
                 }
-                console.log(canvas1)
-                div.appendChild(canvas1)
+                console.log(clonecanvas(canvas1))
+                div.appendChild(clonecanvas(canvas1))
             }
 
             if (temp) {
