@@ -339,45 +339,42 @@ function River(locate, event) {
             }
           
             if (cfs||height) {
-                let canvas = createcanvas()
+                let canvas1 = createcanvas()
 
                 if (cfs && height) {
                     let parts = toparts(cfs.values)
-                    AddLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFF80", 2)
+                    AddLine("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80", 2)
                     parts = toparts(height.values)
-                    AddLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#0000FF80", 2, 1)                
+                    AddLine("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80", 2, 1)                
                 }
                 else if (cfs) {
                     let parts = toparts(cfs.values)
-                    AddLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFF80")
+                    AddLine("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80")
                 }
                 else {
                     let parts = toparts(height.values)
-                    AddLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#0000FF80")    
+                    AddLine("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
                 }
-                console.log(canvas)
-                canvas.className = "c1"
-                div.appendChild(canvas)
+                console.log(canvas1)
+                div.appendChild(canvas1)
             }
 
             if (temp) {
-                let canvas = createcanvas()
+                let canvas2 = createcanvas()
   
                 let parts = toparts(temp.values)
-                AddLine("", parts.timestamps, data.name, canvas, 0, parts.values, "#FF0000", 3, "#0000FF")
-                console.log(canvas)
-                canvas.className = "c2"
-                div.appendChild(canvas)
+                AddLine("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
+                console.log(canvas2)
+                div.appendChild(canvas2)
             }
 
             if (precip) {
-                let canvas = createcanvas() 
+                let canvas3 = createcanvas() 
 
                 let parts = toparts(precip.values)
-                AddLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0066FF80")
-                console.log(canvas)
-                canvas.className = "c3"
-                div.appendChild(canvas)
+                AddLine("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
+                console.log(canvas3)
+                div.appendChild(canvas3)
             } 
         }
         //End of Graph
