@@ -107,23 +107,6 @@ function triangle(facing) {
   return div;
 }
 
-
-function clonecanvas(oldCanvas) {
-    let newCanvas = document.createElement('canvas');
-    let context = newCanvas.getContext('2d');
-
-    //set dimensions
-    newCanvas.width = oldCanvas.width;
-    newCanvas.height = oldCanvas.height;
-
-    //apply the old canvas to the new one
-    context.drawImage(oldCanvas, 0, 0);
-
-    //return the new canvas
-    return newCanvas;
-}
-
-
 function TopBar() {
     this.create = function() {
         let button = document.createElement("button")
@@ -369,8 +352,9 @@ function River(locate, event) {
                     let parts = toparts(height.values)
                     AddLine("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
                 }
-                console.log(clonecanvas(canvas1))
-                div.appendChild(clonecanvas(canvas1))
+              
+                console.log(canvas1.toDataURL("image/png"))
+                div.appendChild(canvas1)
             }
 
             if (temp) {
@@ -378,7 +362,7 @@ function River(locate, event) {
   
                 let parts = toparts(temp.values)
                 AddLine("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
-                console.log(canvas2)
+                console.log(canvas2.toDataURL("image/png"))
                 div.appendChild(canvas2)
             }
 
@@ -387,7 +371,7 @@ function River(locate, event) {
 
                 let parts = toparts(precip.values)
                 AddLine("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
-                console.log(canvas3)
+                console.log(canvas3.toDataURL("image/png"))
                 div.appendChild(canvas3)
             } 
         }
