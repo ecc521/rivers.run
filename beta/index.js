@@ -352,8 +352,12 @@ function River(locate, event) {
                     AddLine("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
                 }
               
+                //For some reason, only the last canvas was showing. Use images
+                //Images also allow "Save Image As"
                 let img = document.createElement("img")
+                img.className = "graph"
                 img.src = canvas1.toDataURL("image/png")
+                
                 div.appendChild(img)
             }
 
@@ -363,7 +367,10 @@ function River(locate, event) {
                 let parts = toparts(temp.values)
                 AddLine("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
               
+                //For some reason, only the last canvas was showing. Use images
+                //Images also allow "Save Image As"
                 let img = document.createElement("img")
+                img.className = "graph"
                 img.src = canvas2.toDataURL("image/png")
                 div.appendChild(img)
             }
@@ -374,7 +381,10 @@ function River(locate, event) {
                 let parts = toparts(precip.values)
                 AddLine("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
 
+                //For some reason, only the last canvas was showing. Use images
+                //Images also allow "Save Image As"
                 let img = document.createElement("img")
+                img.className = "graph"
                 img.src = canvas3.toDataURL("image/png")
                 div.appendChild(img)
             } 
