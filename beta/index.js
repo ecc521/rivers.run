@@ -50,7 +50,8 @@ if ('serviceWorker' in navigator) {
 //Auxillary Function        
 //True means pointing up, false means pointing down
 function triangle(facing) {
-  let scale = window.innerWidth/750 //750 is Arbitrary
+  //Most values in this function are arbitrary
+  let scale = window.innerWidth/750
   scale = scale ** 0.5 //Square Root to make difference smaller
   
   console.log(scale)
@@ -60,7 +61,7 @@ function triangle(facing) {
   div.style.display = "inline-block";
   div.style.borderLeft = 4*scale + "px solid transparent"
   div.style.borderRight = 4*scale + "px solid transparent"
-  div.style.paddingLeft = 2*scale + "px"
+  div.style.marginLeft = 1.5*scale + "px"
   //If triangle is pointing up
   if (facing) {
     div.style.borderBottom = 8*scale + "px solid black"
