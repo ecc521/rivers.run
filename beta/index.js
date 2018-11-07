@@ -374,7 +374,9 @@ function River(locate, event) {
                 let parts = toparts(precip.values)
                 AddLine("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
 
-                div.appendChild(canvas3)
+                let img = document.createElement("img")
+                img.src = canvas3.toDataURL("image/png")
+                div.appendChild(img)
             } 
         }
         //End of Graph
