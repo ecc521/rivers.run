@@ -59,13 +59,13 @@ if ('serviceWorker' in navigator) {
         if (feet) {feet = feet.values}
 
         if (cfs && feet) {
-          item.flow = cfs[0] + " cfs, " + feet[0] + " feet"
+          item.flow = cfs[-1] + " cfs, " + feet[-1] + " feet"
         }
         else if (cfs) {
-          item.flow = cfs[0] + " cfs"
+          item.flow = cfs[-1] + " cfs"
         }
         else if (feet) {
-          item.flow = feet[0] + " feet" 
+          item.flow = feet[-1] + " feet" 
         }
 
         //item.create(true) will force regeneration of the button
