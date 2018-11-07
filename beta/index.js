@@ -208,9 +208,9 @@ function River(locate, event) {
   this.index = locate
     
     
-  this.create = function () {
+  this.create = function (forceregenerate) {
     //Only create the button once - It's about 3 times faster.
-    if (!this.finished) {
+    if (!this.finished || forceregenerate) {
     var button = document.createElement("button")
     button.id = this.base + 1
       
@@ -242,6 +242,10 @@ function River(locate, event) {
       
       
     AddSpan(this.length)
+      
+    if (this.flow) {
+      AddSpan(this.flow)
+    }
     button.className = "riverbutton"
       
     
