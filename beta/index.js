@@ -354,7 +354,7 @@ function River(locate, event) {
                 }
               
                 let img = document.createElement("img")
-                img.src = canvas1.toDataURL("image/png"))
+                img.src = canvas1.toDataURL("image/png")
                 div.appendChild(img)
             }
 
@@ -365,7 +365,7 @@ function River(locate, event) {
                 AddLine("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
               
                 let img = document.createElement("img")
-                img.src = canvas2.toDataURL("image/png"))
+                img.src = canvas2.toDataURL("image/png")
                 div.appendChild(img)
             }
 
