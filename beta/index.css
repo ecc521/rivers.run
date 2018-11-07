@@ -6,7 +6,7 @@ html, body {
 }
 
 /*Chart CSS*/
-canvas{
+.graph {
     display: block;
     margin: auto;
     border: 1px solid black;
@@ -14,8 +14,7 @@ canvas{
     max-width: 150vh;
     height: 80vw;
     max-height: 90vh;
-    background-color: white;
-    
+    background-color: white;  
 }
 
 #geolocate {
