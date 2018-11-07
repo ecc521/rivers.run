@@ -52,7 +52,12 @@ if ('serviceWorker' in navigator) {
 
       if (data) {
         let cfs = data["00060"]
-        let feet = data["00060"]
+        let feet = data["00065"]
+        
+        //Prevent "TypeError: Can't Read Property 'values' of undefined"
+        if (cfs) {cfs = cfs.values}
+        if (feet) {feet = feet.values}
+
         if (cfs && feet) {
           item.flow = cfs[0] + " cfs, " + feet[0] + " feet"
         }
