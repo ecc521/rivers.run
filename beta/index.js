@@ -356,8 +356,8 @@ function River(locate, event) {
                     AddLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#0000FF80")    
                 }
                 console.log(canvas)
-                window.testc1 = canvas
-                div.appendChild(testc1)
+                canvas.className = "c1"
+                div.appendChild(canvas)
             }
 
             if (temp) {
@@ -366,8 +366,8 @@ function River(locate, event) {
                 let parts = toparts(temp.values)
                 AddLine("", parts.timestamps, data.name, canvas, 0, parts.values, "#FF0000", 3, "#0000FF")
                 console.log(canvas)
-                window.testc2 = canvas
-                div.appendChild(testc2)
+                canvas.className = "c2"
+                div.appendChild(canvas)
             }
 
             if (precip) {
@@ -376,8 +376,8 @@ function River(locate, event) {
                 let parts = toparts(precip.values)
                 AddLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0066FF80")
                 console.log(canvas)
-                window.testc3 = canvas
-                div.appendChild(testc3)
+                canvas.className = "c3"
+                div.appendChild(canvas)
             } 
         }
         //End of Graph
