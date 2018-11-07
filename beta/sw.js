@@ -26,51 +26,45 @@ self.addEventListener("fetch", fetchevent)
 self.addEventListener("activate", activateevent)
 
 function fetchevent(event) {
-    event.respondWith(
-        (async function(){
+    event.respondWith((async function(){
+        let fromnetwork = fetch(event.request)
+        let cache = await caches.open(cachename)
+
+        let url = event.request.url
+        url = url.slice(0, url.indexOf("?")) //Eliminate Query Parameter
+          
+        let fromcache = await caches.match(url)
             
-            let fromnetwork = fetch(event.request)
-            let cache = await caches.open(cachename)
-            let fromcache = await caches.match(event.request, {
-                ignoreSearch: true //Ignore query parameters
-            })
             
-            
-            if (!fromcache) {
-                //No cache. All we can do is return network response
-                let response = await fromnetwork
-                cache.put(event.request, response.clone())
-                return response
-            }
-            else {
-                //We have cached data
+        if (!fromcache) {
+            //No cache. All we can do is return network response
+            let response = await fromnetwork
+            cache.put(url, response.clone())
+            return response
+        }
+        else {
                 
-                return new Promise(function(resolve, reject){
+            //We have cached data
+            return new Promise(function(resolve, reject){
                     
-                    //Fetch from network and update cache
-                    fromnetwork.then(function(response){
-                        cache.put(event.request, response.clone())
-                        resolve(response)
-                    })
+                //Fetch from network and update cache
+                fromnetwork.then(function(response){
+                    cache.put(url, response.clone())
+                    resolve(response)
+                })
                     
-                    //If the fetch event fails (ex. offline), return cached immediately
-                    fromnetwork.catch(function(e){
-                        console.log("Using cached data due to the following error:")
-                        console.error(e)
-                        resolve(fromcache)
-                    })
+                //If the fetch event fails (ex. offline), return cached immediately
+                fromnetwork.catch(function(e){
+                    resolve(fromcache)
+                })
                     
                     //If the network doesn't respond quickly enough, use cached data
                     setTimeout(function(){
                         resolve(fromcache)
                     }, waitperiod)
-                    
-                })
-                
+                })  
             }
-            
-        }())
-    )
+    }()))
 }
 
 
