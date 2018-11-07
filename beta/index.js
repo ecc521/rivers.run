@@ -328,7 +328,6 @@ function River(locate, event) {
 
             //Auxillary Function
             function createcanvas() {
-                div.innerHTML += "<br>" //Let's Space the Canvas
                 let canvas = document.createElement("canvas")
                 canvas.width = 1200
                 canvas.height = 800 
