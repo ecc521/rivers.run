@@ -224,7 +224,7 @@ function River(locate, event) {
     AddSpan(this.name)
     AddSpan(this.section)
     AddSpan(this.skill)
-    
+      
     //Star images for rating
     if (this.rating === "Error") {
         AddSpan("???") 
@@ -293,7 +293,7 @@ function River(locate, event) {
 
             //Auxillary Function
             function createcanvas() {
-                div.innerHTML += "<br><br>" //Let's Space the Canvas
+                div.innerHTML += "<br>" //Let's Space the Canvas
                 let canvas = document.createElement("canvas")
                 canvas.width = 1200
                 canvas.height = 800 
@@ -302,13 +302,19 @@ function River(locate, event) {
             if (cfs||height) {
                 let canvas = createcanvas()
 
-                if (cfs) {
+                if (cfs && height) {
                     let parts = toparts(cfs.values)
                     AddLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFF80", 2)
+                    parts = toparts(height.values)
+                    AddLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#0000FF80", 2, 1)                
                 }
-                if (height) {
-                    let parts = toparts(height.values)
-                    AddLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#0000FF80", 2, 1)
+                else if (cfs) {
+                    let parts = toparts(cfs.values)
+                    AddLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFF80")
+                }
+                else {
+                    parts = toparts(height.values)
+                    AddLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#0000FF80")    
                 }
                 div.appendChild(canvas)
             }
@@ -316,7 +322,6 @@ function River(locate, event) {
             if (temp) {
                 let canvas = createcanvas()
   
-
                 let parts = toparts(temp.values)
                 AddLine("", parts.timestamps, data.name, canvas, 0, parts.values, "#FF0000", 3, "#0000FF")
                 div.appendChild(canvas)
