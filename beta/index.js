@@ -410,13 +410,7 @@ function River(locate, event) {
     //It can safely be removed.
       
         
-    }
-     
-    if (forceregenerate && this.expanded) {
-      button.dispatchEvent(new Event("click"))
-      button.dispatchEvent(new Event("click"))
-    }
-    
+    }    
     
     //Return finished button
     return this.finished
