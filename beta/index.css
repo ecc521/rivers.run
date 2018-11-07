@@ -78,10 +78,10 @@ canvas{
     width:15%;
 }
 .riverspan:nth-child(5) {
-    width:7%;
+    width:9%;
 }
 .riverspan:nth-child(6) {
-    text-align:center;/*Prevent bleedover from miles*/
+    /*text-align:center;*//*Prevent bleedover from miles*/
     width:21%;
 }   
     
