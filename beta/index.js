@@ -353,8 +353,9 @@ function River(locate, event) {
                     AddLine("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
                 }
               
-                console.log(canvas1.toDataURL("image/png"))
-                div.appendChild(canvas1)
+                let img = document.createElement("img")
+                img.src = canvas1.toDataURL("image/png"))
+                div.appendChild(img)
             }
 
             if (temp) {
@@ -362,8 +363,10 @@ function River(locate, event) {
   
                 let parts = toparts(temp.values)
                 AddLine("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
-                console.log(canvas2.toDataURL("image/png"))
-                div.appendChild(canvas2)
+              
+                let img = document.createElement("img")
+                img.src = canvas2.toDataURL("image/png"))
+                div.appendChild(img)
             }
 
             if (precip) {
@@ -371,7 +374,7 @@ function River(locate, event) {
 
                 let parts = toparts(precip.values)
                 AddLine("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
-                console.log(canvas3.toDataURL("image/png"))
+
                 div.appendChild(canvas3)
             } 
         }
