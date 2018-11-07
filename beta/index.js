@@ -64,15 +64,15 @@ if ('serviceWorker' in navigator) {
         console.log(cfs)
         
         if (cfs && feet) {
-          console.log(cfs[-1])
-          console.log(feet[-1])
-          item.flow = cfs[-1].value + " cfs, " + feet[-1].value + " feet"
+          console.log(cfs[cfs.length - 1])
+          console.log(feet[feet.length - 1])
+          item.flow = cfs[cfs.length - 1].value + " cfs, " + feet[feet.length - 1].value + " feet"
         }
         else if (cfs) {
-          item.flow = cfs[-1].value + " cfs"
+          item.flow = cfs[cfs.length - 1].value + " cfs"
         }
         else if (feet) {
-          item.flow = feet[-1].value + " feet" 
+          item.flow = feet[feet.length - 1].value + " feet" 
         }
 
         //item.create(true) will force regeneration of the button
