@@ -411,7 +411,13 @@ function River(locate, event) {
       
         
     }
-      
+     
+    if (forceregenerate && this.expanded) {
+      button.dispatchEvent(new Event("click"))
+      button.dispatchEvent(new Event("click"))
+    }
+    
+    
     //Return finished button
     return this.finished
       
