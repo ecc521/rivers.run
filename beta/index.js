@@ -331,7 +331,13 @@ function River(locate, event) {
                 let canvas = document.createElement("canvas")
                 canvas.width = 1200
                 canvas.height = 800 
-                return canvas
+              
+                //Set background to white
+                let ctx = canvas.getContext("2d");
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+              
+              return canvas
             }
           
             if (cfs||height) {
