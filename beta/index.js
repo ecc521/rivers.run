@@ -659,23 +659,8 @@ GetId("searchbox").addEventListener("keydown", function() {setTimeout(function()
 
 var latitude, longitude, latmiles, longmiles;
 
-//Check for Auto Location
-(async function () {
-let status = await navigator.permissions.query({name:'geolocation'})
-let element = GetId("geolocate")
-if (status.state === "granted") {
-element.innerHTML = "Click here to configure GPS Sorting"
-}
-else if (status.state === "prompt") {
-element.innerHTML = "Click here to set up GPS sorting"
-}
-else {
-element.innerHTML = "Allow location permission to set up GPS sorting"
-}
-element.addEventListener("click", locationmanager)
-element.hidden = ""
-    
-}());
+
+
 
 async function locationmanager(){
 let response = await getlocation()
