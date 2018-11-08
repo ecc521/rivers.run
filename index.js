@@ -1,1108 +1,661 @@
-'use strict'; 
+'use strict';
 
-if (navigator.onLine) {
-var dc = caches.delete('Temporary')
-dc.then(LoadSW())
-dc.catch(function(event){
-console.warn(event) 
-LoadSW()
-})
-}
-else {
-LoadSW()
+//This code has 2 dependencies:
+//graph.js
+//riverarray.js
+
+function GetId(Name) {
+  return document.getElementById(Name)
 }
 
-function LoadSW() {
 if ('serviceWorker' in navigator) {
-  var sw = navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
-  sw.then(function() {
-      console.log("ServiceWorker Registered!")
-        var ld = navigator.serviceWorker.ready
-        ld.then(function() {
-          console.log("ServiceWorker Ready!")
-          MainCode()
-        })  
-        ld.catch(MainCode())
-    
-  })
-  sw.catch(function(error) {
-      console.warn(error)
-      MainCode()
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/beta/sw.js');
   });
 }
-else {
-    console.log("No ServiceWorker Support")
-    MainCode()
-}
-}
 
-
-
-function MainCode() {
-
-function GetId(Id) {
-    return document.getElementById(Id)
-}
-function ReloadAllCache() {
-    localStorage.setItem("TimeStamp", Date.now())
+//Fetch data from USGS
+(async function() {
     
-    caches.delete('rivers.run').then(function(event) {
-    window.location.reload(true)
-    })
-    .catch(function(event) {
-    window.location.reload(true)
-    })
-}
-function UpdateTime () {
-try {
-if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
-var Minutes = Math.floor(Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000)/60)
-var Hours = Math.floor(Minutes/60)
-Minutes = Minutes%60 
-var Days = Math.floor(Hours/24)
-Hours = Hours%24
-var TimeStr = ""
-if (Days !== 0) {
-    if (Days === 1) {
-        TimeStr = TimeStr + Days + " day "
+    var sites = []
+    for (let i=0;i<riverarray.length;i++) {
+        let val = riverarray[i].usgs
+        //Check for accuracy
+        if (val && val.length > 7 && val.length < 16) {
+            sites.push(val)
+        }
     }
-    else {
-        TimeStr = TimeStr + Days + " days "
-    }
-}
-if (Hours !== 0) {
-    if (Hours === 1) {
-        TimeStr = TimeStr + Hours + " hour "
-    }
-    else {
-        TimeStr = TimeStr + Hours + " hours "
-    }
-}
-if (Minutes !== 0) {
-    if (Minutes === 1) {
-        TimeStr = TimeStr + Minutes + " minute "
-    }
-    else {
-        TimeStr = TimeStr + Minutes + " minutes "
-    }
-}
-GetId("ReloadAllText").innerHTML = "You're viewing a cached version of this site from " + TimeStr + " ago."    
-}
-}
-catch (e) {
-    console.warn(e)
-}
-}
-try {
-if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
-    UpdateTime()
-    setInterval(UpdateTime, 60000)
-    GetId("ReloadAll").hidden= ""
-    if (navigator.onLine) {
-    GetId("ReloadAllButton").style = "display: inline"
-    }
-    window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: none"})
-    window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: inline"})
-    GetId("ReloadAllButton").addEventListener("click", ReloadAllCache)
-    GetId("ReloadAllButton").value = "Update Now"
-    UpdateTime()
-}
-else {
-    if (localStorage.getItem("TimeStamp") === null) {
-    localStorage.setItem("TimeStamp", Date.now())
-    }
-}
-}
-catch (e) {
-    console.warn(e)
-}
+    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-1000*86400).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
 
+    let response = await fetch(url)
+    let usgsdata = await response.json()    
 
-window.addEventListener("resize", function() {setTimeout(RotateHandler, 100)})
-
-function RotateHandler() {
-//Embedded Frames - Reduce height slightly so it doesn't look fullscreen
-document.documentElement.style.setProperty('--screenheight', (Math.floor(window.innerHeight/1.15)) + "px");
-    
-//values arbitrary and picked by me
-var ScreenWidth = 750/window.innerWidth
-if (ScreenWidth < 1) {
-    ScreenWidth = ScreenWidth ** 0.7
-}
-else {
-  ScreenWidth = 1.2
-}
-ScreenWidth = (2.4 * ScreenWidth) + "vw"
-document.documentElement.style.setProperty('--textsize', ScreenWidth);    
-}
-
-
-
-//Graph Code
-function CreateURL(SiteNumber) {
-if (typeof(SiteNumber) === "number") {
-console.warn("A number (" + SiteNumber + ") was passed where a string is needed. If the number contained leading zeros that CreateURL is unable to replace, you may get an error.")
-}
-SiteNumber = String(SiteNumber)
-if (SiteNumber.length < 8) {
-var OldNum = SiteNumber
-SiteNumber = "0".repeat(8-SiteNumber.length) + SiteNumber
-console.warn("Changed " + OldNum + " to " + SiteNumber + ". It is reccomended to pass strings instead of integers so that modification is not required.")
-}
-var DaysBack = 1//Days of history to load.
-var time = new Date(Date.now())
-var Str1 = time.getFullYear() + "-" + (time.getMonth()+1) + "-" + time.getDate()
-time = new Date(Date.now() - 86400000*DaysBack)
-var Str2 = time.getFullYear() + "-" + (time.getMonth()+1) + "-" + time.getDate()
-return "https://waterdata.usgs.gov/nwis/uv?cb_00045=on&cb_00010=on&cb_00045=on&cb_00060=on&cb_00065=on&format=rdb&site_no=" + SiteNumber + "&period=&begin_date=" + Str2 + "&end_date=" + Str1
-}
-
-
-    
-async function LoadStringData(URL) {
-    var Response = await fetch(URL)
-    Response = await Response.text()
-    return Response
-}
-    
-function TrimTopStuff(StringData) {
-    StringData = StringData.split("\n")
-    while (StringData[0][0] === "#") {
-        StringData.shift()
-    }
-    return StringData
-}
+    self.usgsarray = {}
+    //Iterate through all known conditions
+    usgsdata.value.timeSeries.forEach(function(event){
+        let obj2 = {}
+        obj2.values = event.values[0].value //The values - ex. Gauge Height Array
       
-function Expand(DataArray) {
-    return DataArray.map(function(value) {
-        return value.split("	")
-    })
-}
-    
-function TrimExtraData1(Array) {
-    return Array.map(function(value) {
-        value.splice(0,2)
-        return value
-    })
-}
-    
-function TrimExtraData2(Array) {
-    return Array.map(function(value) {
-        for (var count = 3; count<value.length;count=count+1) {
-            value.splice(count, 1)
+        if (obj2.values.length === 0) {
+          console.log("Empty Array. Skipping")
+          return;
         }
-        return value
-    })
-}
-    
-function CheckTimeZone(Check) {
-    var Checker = Check[2][1]
-    Check = Check.splice(2, Array.length-3)
-    Check.map(function(value) {
-        if (value[1] !== Checker) {
-            throw ("Time zones " + Checker + " and " + value[1] + " do not match!")
-        }
-    })
-    return Checker
-}
-    
-function RemoveTimeZone(Array) {
-    return Array.map(function(value) {
-        value.splice(1,1)
-        return value
-    })
-}
-    
-function Objectify(Array, GaugeName, Timezone) {
-    var data = {}
-    data.Source = GaugeName
-    data.Timezone = Timezone
-    
-    data.timeframe = Array.map(function(value){
-        return value[0]
-    })
-    data.timeframe.splice(0,2)
-    data.timeframe.pop()
-    
-    Array.pop()
-    var cfsnum;
-    for (var i = 0;i<Array[0].length;i++) {
-        if (Array[0][i].indexOf("00060") !== -1) {
-            cfsnum = i
-            break;
-        }    
-    }
-    
-    var heightnum;
-    for (var i = 0;i<Array[0].length;i++) {
-        if (Array[0][i].indexOf("00065") !== -1) {
-            heightnum = i
-            break;
-        }    
-    }
-    
-    var precipnum;
-    for (var i = 0;i<Array[0].length;i++) {        
-        if (Array[0][i].indexOf("00045") !== -1) {
-            precipnum = i
-            break;
-        }    
-    }
-    
-    var tempnum;
-    for (var i = 0;i<Array[0].length;i++) {
-        if (Array[0][i].indexOf("00010") !== -1) {
-            tempnum = i
-            break;
-        }    
-    }    
-    
-    
-    if (cfsnum !== undefined) {
-    data.cfs = Array.map(function(value) {
-        return value[cfsnum]
-    })
-    data.cfs.splice(0,2)
-    }
-    
-    
-    
-    if (heightnum !== undefined) {
-    data.height =  Array.map(function(value) {
-        return value[heightnum]
-    })
-    data.height.splice(0,2)
-    }
-  
-    
-    
-    if (precipnum !== undefined) {
-    data.precip =  Array.map(function(value) {
-        return value[precipnum]
-    })
-    data.precip.splice(0,2)
-    }
-    
-    
-    if (tempnum !== undefined) {
-    data.temp =  Array.map(function(value) {
-    if (!isNaN(Number(value[tempnum])) && value[tempnum] !== "") {
-    return value[tempnum]
-    }
-    else{
-    return NaN
-    }
-    })
-    data.temp.splice(0,2)
-    }
-    
-    
-    //data.all = Array
-    
-
-    return data
-}
-async function FetchData(SiteNumber) {
-    var FetchedFromUSGS = await LoadStringData(CreateURL(SiteNumber))
-    var GaugeName = FetchedFromUSGS.split("\n")[16].slice(1).trim()
-    var Data = TrimExtraData2(TrimExtraData1(Expand(TrimTopStuff(FetchedFromUSGS))))
-    var Timezone = (CheckTimeZone(Data))
-    return Objectify(RemoveTimeZone(Data), GaugeName, Timezone)
-
-}  
-//AddLine(canvas, horizontal, vertical, color, graphtype, numplace)
-    
-//canvas - HTML canvas element
-//horizontal - array of horizontal values. Pass 0 and it will evenly space.
-//vertical - array of vertical values
-    
-//color - Optional. Color of line. Default black
-//graphtype - Optional. Specify 2 to put 2 lines and 2 scales on one graph. See numplace below
-    //numplace - Use only if you are using graphtype = 2. 
-        //If you specify 0 or do not pass a value, the line's scale will be on the left side of the graph.
-        //If you specify 1, the line's scale will be on the right side of the graph.
-    
-function AddLine(GraphName, Timezone, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
-if (graphtype === 3) {
-    var endcolor = numplace
-}
-if (graphtype !== 2) {
-    numplace = 0
-}
-var height = canvas.height*0.80
-var width = canvas.width
-
-var ctx = canvas.getContext('2d');  
-    
-    
-    
-if (!isNaN(Number(horizontal))) {
-    horizontal = []
-    for (var i = 0;i<vertical.length;i++) {
-        horizontal.push(i*width)
-    }
-}
-if (horizontal.length !== vertical.length) {
-    console.warn("Uneven amount of datapoints. " + horizontal.length + " horizontal points found, but " + vertical.length + " vertical points found.")
-}
-
-if (color === undefined) {
-    color = "#000000"
-}
-ctx.strokeStyle = color
-ctx.lineWidth = Math.ceil(Math.min(width, height)/120)
-ctx.beginPath();
-
-if (graphtype === 2) {
-width = width*0.86
-}
-else {
-width = width*0.93
-}
-
-var calcvertical = []
-for (var i = 0;i<vertical.length;i++) {
-if (!isNaN(Number(vertical[i])) && (vertical[i]) !== "") {
-    calcvertical.push(vertical[i])
-}
-//else {
-    //This is a valid warning - It just got TOO ANNOYING
-    //console.warn("Element " + i + " in list is an invalid number. It had a value of: " + vertical[i])
-//}
-}
-    
-var vscale = Math.max(...calcvertical) - Math.min(...calcvertical)
-var hscale = Math.max(...horizontal) - Math.min(...horizontal)
-vscale = height/vscale
-hscale = width/hscale
-var voffset = Math.min(...calcvertical)
-var hoffset = Math.min(...horizontal)
-
-hoffset -= (Math.max(...horizontal) - Math.min(...horizontal))*0.07
-
-var px = Math.floor(((canvas.width)*0.07)/2.6)
-ctx.font = (px + 'px serif')
-if (color.length === 9) {
-    color = color.slice(0,7)
-}
-ctx.fillStyle = color
-if (graphtype === 3) {
-var grd = ctx.createLinearGradient(0, 0, 0, height);
-grd.addColorStop(0, color);   
-grd.addColorStop(1, endcolor);
-ctx.strokeStyle = grd;
-ctx.fillStyle = grd;
-}    
-
-if (numplace === 0 || numplace === undefined) {
-    var start = 1
-}
-else {
-    var start = canvas.width-(canvas.width*0.07)
-}
-for(var i = 1;i<11;i++) {
-    var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
-    
-    if (Text >= 1000) {
-        Text = Math.round(Text)
-    }
-    else {
-    Text = Text.toFixed(3-String(Math.round(Text)).length)
-    if (Number(Text) === Math.round(Text)) {
-    Text = Math.round(Text)
-    }
-    }
-    
-    ctx.fillText(Text, start, (height*(11-i))/10-5);
-}
-  
-//Top one
-Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
-if (Text >= 1000) {
-Text = Math.round(Text)
-}
-else {
-Text = Text.toFixed(3-String(Math.round(Text)).length)
-if (Number(Text) === Math.round(Text)) {
-Text = Math.round(Text)
-}
-}
-ctx.fillText(Text, start, 27);
-   
-
-    
-    
-    
-var px = Math.floor(((canvas.width)*0.07)/2.8)
-ctx.font = (px + 'px serif')
-if (color.length === 9) {
-    color = color.slice(0,7)
-}
-ctx.fillStyle = "black"
-    
-    
-    
-    
-var time1 = new Date(timeframe[0])
-var time2 = new Date(timeframe[timeframe.length - 1])
-var time3 = new Date(((time2-time1)/2)+time1.getTime())
-var starttime = time1.getHours()
-var endtime = time2.getHours()
-var midtime = time3.getHours()
-if (String(time1.getHours()).length < 2) {
-    starttime = starttime + "0"
-}
-starttime += ":" + time1.getMinutes()
-if (String(time1.getMinutes()).length < 2) {
-    starttime = starttime + "0"
-}
-starttime += " " + (time1.getMonth()+1) + "/" + time1.getDate() + "/" +time1.getFullYear()
-
-    
-if (String(time2.getHours()).length < 2) {
-    endtime = endtime + "0"
-}
-endtime += ":" + time2.getMinutes()
-if (String(time2.getMinutes()).length < 2) {
-    endtime = endtime + "0"
-}
-endtime += " " + (time2.getMonth()+1) + "/" + time2.getDate() + "/" +time2.getFullYear()
-
-    
-if (String(time3.getHours()).length < 2) {
-    midtime = midtime + "0"
-}
-midtime += ":" + time3.getMinutes()
-if (String(time3.getMinutes()).length < 2) {
-    midtime = midtime + "0"
-}
-midtime += " " + (time3.getMonth()+1) + "/" + time3.getDate() + "/" +time3.getFullYear()
-    
-ctx.fillText(starttime + " (" + Timezone + ")", 10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
-
-ctx.textAlign = "end"; 
-ctx.fillText(endtime + " (" + Timezone + ")", canvas.width-10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
-  
-ctx.textAlign = "center"; 
-ctx.fillText(midtime + " (" + Timezone + ")", canvas.width/2, (canvas.height*(11/12))-(canvas.height*0.06)-12)
-
-ctx.textAlign = "start";     
-    
-    
-    
-var px = Math.floor(((canvas.width)*0.07)/2.4)
-ctx.font = (px + 'px serif')
-ctx.fillStyle = color
-//because a bit of text is smaller than the whole graph
-if (graphtype === 3) {
-var grd = ctx.createLinearGradient(0, height, 200, height);
-grd.addColorStop(0, color);   
-grd.addColorStop(1, endcolor);
-ctx.strokeStyle = grd;
-ctx.fillStyle = grd;
-}
-
-if (graphtype === 2) {
-if (numplace === 0 || numplace === undefined) {
-ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
-}
-else {
-ctx.textAlign = "right"; 
-ctx.fillText("Gauge Height (Feet)", start-5, (canvas.height*(11/12)));
-ctx.textAlign = "start"; 
-} 
-}
-else if (graphtype === 3) {
-ctx.fillText("Water Temperature (°F)", start+5, (canvas.height*(11/12)));    
-}
-else {
-if (GraphName === "Precipitation") {
-ctx.fillText("Precipitation (Inches)", start+5, (canvas.height*(11/12))); 
-var fulldayprecip = 0
-var halfdayprecip = 0
-var preciplist = vertical.slice(-96)
-var preciplist = preciplist.map(Number)
-//convert strings to numbers
-preciplist.forEach(function(value){
-    fulldayprecip += value
-})
-preciplist = preciplist.slice(-48)
-preciplist.forEach(function(value){
-    halfdayprecip += value
-})
-    
-fulldayprecip = fulldayprecip.toFixed(2)
-halfdayprecip = halfdayprecip.toFixed(2)
-    
-ctx.fillText("Last 24 Hours: " + fulldayprecip + " in", canvas.width-700, (canvas.height*(11/12))); 
-ctx.fillText("Last 12 Hours: " + halfdayprecip + " in", canvas.width-330, (canvas.height*(11/12))); 
-}
-else if (GraphName === "cfs") {
-ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
-}
-else if (GraphName === "height") {
-ctx.fillText("Gauge Height (Feet)", start+5, (canvas.height*(11/12)));    
-}
-else {
-ctx.fillText("Labeling Error...", start+5, (canvas.height*(11/12)));    
-}    
-}
-
-//set it back    
-if (graphtype === 3) {
-var grd = ctx.createLinearGradient(0, 0, 0, canvas.height);
-grd.addColorStop(0, color);   
-grd.addColorStop(1, endcolor);
-ctx.strokeStyle = grd;
-ctx.fillStyle = grd;
-}
- 
-ctx.fillStyle = "black"
-ctx.textAlign = "center"; 
-ctx.fillText(Source, canvas.width/2 , canvas.height-10);  
-ctx.textAlign = "start"; 
-    
-
-    
-    
-function H(Value) {
-    return Math.round((Value-hoffset)*hscale)
-}
-
-function V(Value) {
-    return Math.round(height-((Value-voffset)*vscale))
-}
-
-
-for (var p = 0;p<Math.min(vertical.length, horizontal.length);p++) {
-if (!isNaN(Number(vertical[p])) && vertical[p] !== "") {
-ctx.moveTo(H(horizontal[p]), V(vertical[p]))
-break;
-}    
-}
-    
-
-var valid = 1
- 
-for (var i = p;i<Math.min(vertical.length, horizontal.length);i++) {
-    if (!isNaN(Number(vertical[i])) && vertical[i] !== "") {
-    if (valid === 1) {
-    ctx.lineTo(H(horizontal[i]), V(vertical[i]))
-    }
-    else {
-    ctx.moveTo(H(horizontal[i]), V(vertical[i])+10)
-    ctx.lineTo(H(horizontal[i]), V(vertical[i]))
-    valid = 1
-    }
-    }
-    else {
-    valid = 0
-    }
-}
-  
-    
-ctx.stroke();
-ctx.beginPath()
-    
-ctx.lineWidth = Math.ceil(ctx.lineWidth/10)
-ctx.strokeStyle = "#000000AA"
-for (var i = 1;i<11;i++) {
-    ctx.moveTo(0, height*(11-i)/10)
-    ctx.lineTo(canvas.width, height*(11-i)/10)
-}
-ctx.stroke()
-}    
-    
-    
-    
-async function LoadAndRender(number, TextReport,watercanvas, tempcanvas, precipcanvas, color1, color2, color3) {
-    var Result = await FetchData(number)
-    TextReport.innerHTML = "---"
-    
-    var Check = 1
-    try {
-    for (var i = 0;i<Result.cfs.length;i++) {
-        if (Result.cfs[i] !== undefined) {
-            Check = 0
-            break;
-        }
-    }
-    }
-    catch (e) {}
-    var Check2 = 1
-    try {
-    for (var i = 0;i<Result.height.length;i++) {
-        if (Result.height[i] !== undefined) {
-            Check2 = 0
-            break;
-        }
-    }
-    }
-    catch (e) {}
-    
-    if (Check === 0) {
-        for (var d = Result.cfs.length - 1;d>=0;d--) {if (!isNaN(Number(Result.cfs[d])) && Number(Result.cfs[d]) !== 0 && Result.cfs[d] !== undefined) {
-        TextReport.innerHTML = Result.cfs[d] + " cfs";
-        break;}
-        }
+      
+        obj2.units = event.variable.variableDescription //Units of values
         
-    if (Check2 === 0) {
-    TextReport.innerHTML += ", "
-        for (var d = Result.height.length - 1;d>=0;d--) {if (!isNaN(Number(Result.height[d])) && Number(Result.height[d]) !== 0 && Result.height[d] !== undefined) {
-        TextReport.innerHTML += Result.height[d] + " feet";
-        break;}
+        //See if the site is already in the array.
+        //If the site code is not in the array, add it. 
+        if (!usgsarray[event.sourceInfo.siteCode[0].value]) {
+            let obj3 = {}
+            obj3.name = event.sourceInfo.siteName
+            usgsarray[event.sourceInfo.siteCode[0].value] = obj3
         }
-
-    AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1, 2)
-    AddLine("", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2, 2, 1)
-    }
-    else {
-    AddLine("cfs", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.cfs, color1)
-    }
-        
-    }
-    else {
-    if (Check2 === 0) {
-    AddLine("height", Result.Timezone, Result.timeframe, Result.Source, watercanvas, 0, Result.height, color2)
-    
-        for (var d = Result.height.length - 1;d>=0;d--) {if (!isNaN(Number(Result.height[d])) && Number(Result.height[d]) !== 0 && Result.height[d] !== undefined) {
-        TextReport.innerHTML = Result.height[d] + " feet";
-        break;}
-        }
-        
-    }
-    else {
-    var ctx = watercanvas.getContext('2d')
-    ctx.textAlign = "center"; 
-    ctx.font= tempcanvas.width/35 + "px Arial"; 
-    ctx.fillText("No Flow Data Currently Avalible for this Site (" +  number + ")",watercanvas.width/2, watercanvas.height/2);  
-    }
-    }
-    
-
-    
-    
-    var Check = 1
-    try {
-    for (var i = 0;i<Result.temp.length;i++) {
-        if (Result.temp[i] !== undefined) {
-            Check = 0
-            break;
-        }
-    }
-    }
-    catch (e) {}
-    if (Check === 0) {
-    //Convert to fahrenheit
-    Result.temp = Result.temp.map(function(value) {
-        return (value*1.8)+32
+        //Add the values onto the site code object
+        usgsarray[event.sourceInfo.siteCode[0].value][event.variable.variableCode[0].value] = obj2
     })
-    AddLine("", Result.Timezone, Result.timeframe, Result.Source, tempcanvas, 0, Result.temp, "#FF0000", 3, "#0000FF")
-    }
-    else {
-    var ctx = tempcanvas.getContext('2d')
-    ctx.textAlign = "center"; 
-    ctx.font= tempcanvas.width/35 + "px Arial"; 
-    ctx.fillText("No Water Temperature Data Currently Avalible for this Site (" +  number + ")",tempcanvas.width/2, tempcanvas.height/2);  
-    }
-    
-    Check = 1
-    try {
-    for (var i = 0;i<Result.precip.length;i++) {
-        if (Result.precip[i] !== undefined) {
-            Check = 0
-            break;
-        }
-    }
-    }
-    catch (e) {}
-    if (Check === 0) {
-    AddLine("Precipitation", Result.Timezone, Result.timeframe, Result.Source, precipcanvas, 0, Result.precip, color3)
-    }
-    else {
-    var ctx = precipcanvas.getContext('2d')
-    ctx.font= precipcanvas.width/35 + "px Arial"; 
-    ctx.textAlign = "center";     
-    ctx.fillText("No Precipitation Data Currently Avalible for this Site (" +  number + ")",precipcanvas.width/2, precipcanvas.height/2);  
-    }
-    
-}
-    
-    
-    
-function ToFlow(idMake) {
-    var id = idMake.slice(0,-7)
-    var canvas1 = GetId(id + "canvas1")
-    var canvas2 = GetId(id + "canvas2")
-    var canvas3 = GetId(id + "canvas3")
-    var button1 = GetId(id + "button1")
-    var button2 = GetId(id + "button2")
-    var button3 = GetId(id + "button3")
-    canvas1.style.display="block"
-    canvas2.style.display="none"
-    canvas3.style.display="none"
-    button1.className = "FlowButton"
-    button2.className = "Unselected"
-    button3.className = "Unselected"
-}
-    
-function ToTemp(idMake) {
-    var id = idMake.slice(0,-7)
-    var canvas1 = GetId(id + "canvas1")
-    var canvas2 = GetId(id + "canvas2")
-    var canvas3 = GetId(id + "canvas3")
-    var button1 = GetId(id + "button1")
-    var button2 = GetId(id + "button2")
-    var button3 = GetId(id + "button3")
-    canvas2.style.display="block"
-    canvas1.style.display="none"
-    canvas3.style.display="none"
-    button1.className = "Unselected"
-    button2.className = "TempButton"
-    button3.className = "Unselected"
-}
-    
-function ToPrecip(idMake) {
-    var id = idMake.slice(0,-7)
-    var canvas1 = GetId(id + "canvas1")
-    var canvas2 = GetId(id + "canvas2")
-    var canvas3 = GetId(id + "canvas3")
-    var button1 = GetId(id + "button1")
-    var button2 = GetId(id + "button2")
-    var button3 = GetId(id + "button3")
-    canvas3.style.display="block"
-    canvas2.style.display="none"
-    canvas1.style.display="none"
-    button1.className = "Unselected"
-    button2.className = "Unselected"
-    button3.className = "PrecipButton"
-}
-   
-    
-    
-    
-function CreateGraphs(DivToAppend, USGSNum, TextReport) {
-var idMake = ""
-for (var i = 0;i<10;i++) {
-idMake += String(Math.random()*(2**53))
-}
-
-    
-var canvas1 = document.createElement("canvas")
-var canvas2 = document.createElement("canvas")
-var canvas3 = document.createElement("canvas")
-canvas1.width = 1200
-canvas2.width = 1200
-canvas3.width = 1200
-canvas1.height = 800
-canvas2.height = 800
-canvas3.height = 800
-    
-
-
-LoadAndRender(USGSNum, TextReport, canvas1, canvas2, canvas3, "#00AAFF80", "#0000FF80", "#0066FF80").catch(function(event) {
-    TextReport.innerHTML = "Error..."
-    console.warn(event)
-})
-DivToAppend.appendChild(canvas1)
-    
-
-canvas2.style.display = "none"
-canvas3.style.display = "none"
-
-    
-DivToAppend.appendChild(canvas2)
-DivToAppend.appendChild(canvas3)
-canvas1.id = idMake + "canvas1"    
-canvas2.id = idMake + "canvas2"    
-canvas3.id = idMake + "canvas3"    
-    
-canvas1.className = "ToDeleteLater"
-canvas2.className = "ToDeleteLater"
-canvas3.className = "ToDeleteLater"
-
-var button1 = document.createElement("button")
-button1.innerHTML = "Flow Info"
-button1.addEventListener("click", function() {ToFlow(this.id)})
-button1.className = "FlowButton"
-button1.id = idMake + "button1"   
-
-var button2 = document.createElement("button")
-button2.innerHTML = "Water Temperature"
-button2.addEventListener("click", function() {ToTemp(this.id)})
-button2.className = "Unselected"
-button2.id = idMake + "button2"   
-    
-    
-var button3 = document.createElement("button")
-button3.innerHTML = "Precipitation"
-button3.addEventListener("click", function() {ToPrecip(this.id)})  
-button3.className = "Unselected"
-button3.id = idMake + "button3"   
-    
-    
-var Div = document.createElement("div")
- 
-Div.appendChild(button1)
-Div.appendChild(button3)
-Div.appendChild(button2)
-
-Div.className = "canvasbuttons ToDeleteLater"
-return Div
-}
-//End of Graph Code
-
-
-
-
-function AddElement(Name, Section, Difficulty, Quality, Length, USGS, Writeup) {
-    var Rivers = GetId("Rivers")
-    var Button = document.createElement("button")
-    Button.className = "accordion"
-    var Div = document.createElement("Div")
-    Div.className = "panel"
-    
-    function AddSpan(Content) {
-        var Span = document.createElement("Span")
-        if (Content !== undefined) {
-        Span.innerHTML = Content
-        }
-        else {
-        Span.innerHTML = "Not Found"
-        }
-        Span.className = "riverspan"
-        Button.appendChild(Span)
-    }
-    AddSpan(Name)
-    AddSpan(Section)
-    AddSpan(Difficulty)
-    
-if (Quality === "Rating" || Quality === "Below" || Quality === "Not Found") {
-    AddSpan(Quality)
-}
-else {
-var Text;
-switch (parseInt(Quality)) {
-    case 1:
-        Text = "1Star";
-        break;
-    case 2:
-        Text = "2Stars";
-        break;
-    case 3:
-        Text = "3Stars";
-        break;
-    case 4:
-        Text = "4Stars";
-        break;
-    case 5:
-        Text = "5Stars";
-        break;
-    default:
-        Text = "Error"
-}
-if (Text === "Error") {
-   AddSpan("???") 
-}
-else {
-var span = document.createElement("span")
-var img = document.createElement("img")
-img.src = "https://rivers.run/resources/" + Text + ".png"
-img.alt = Text[0] + " Stars"
-span.className = "riverspan"
-span.appendChild(img)
-Button.appendChild(span)
-}    
-}   
-    
-    
-    AddSpan(Length)
-    
-    if (Writeup !== undefined) {
-    Div.innerHTML = Writeup
-    }
-    else {
-    Div.innerHTML = "This River has no Writeup."
-    }
-    
-    if (USGS === "Flow Info") {
-        AddSpan(USGS)
-        Button.id = "LabelRow"
-    }
-    else if (String(USGS).length < 16 && USGS !== undefined && Number(USGS) !== 0 && !isNaN(Number(USGS))) {
-        //This means that it is a valid number, is not undefined, is under 16 digits, and is not zero
-        //Thats about as much error checking as I can give it
-        var RiverGaugeSpan = document.createElement("span")
-        RiverGaugeSpan.className = "riverspan"
-        RiverGaugeSpan.innerHTML = "Loading..."
-        Button.appendChild(RiverGaugeSpan)
-        Div.appendChild(CreateGraphs(Div, USGS, RiverGaugeSpan))
-    }
-    else if (USGS !== undefined && Number(USGS) !== 0){
-        //Only add bad gage number if it is not undefined or 0, and failed the test above.
-        AddSpan("Bad Gauge #")
-    }
-
-    
-    Button.addEventListener("click", function() {
-    this.classList.toggle("active");
-    var panel = this.nextElementSibling;
-    if (panel.style.maxHeight){
-      panel.style.maxHeight = null;
-      panel.style.padding = "0px"
-      panel.hidden = "hidden"
-    } else {
-      panel.style.maxHeight = "100%"/*(panel.scrollHeight + 20) + "px"*/;
-      panel.style.padding = "10px"
-      panel.hidden = ""
-    } 
-    });
-    
-    if (Section === "Relevant") {
-        Button.id = "lessrelevant"
-    }
-    Div.hidden = "hidden" 
-    Rivers.appendChild(Button)
-    Rivers.appendChild(Div)
-}
- 
-function ClearList() {
-document.querySelectorAll(".Unselected").forEach(e => e.parentNode.removeChild(e));
-document.querySelectorAll(".FlowButton").forEach(e => e.parentNode.removeChild(e));
-document.querySelectorAll(".PrecipButton").forEach(e => e.parentNode.removeChild(e));
-document.querySelectorAll(".TempButton").forEach(e => e.parentNode.removeChild(e));
-document.querySelectorAll(".ToDeleteLater").forEach(e => e.parentNode.removeChild(e));
-
-var myNode = GetId("Rivers");
-while (myNode.firstChild) {
-    myNode.removeChild(myNode.firstChild);
-}
-AddElement("River Name", "Section", "Skill", "Rating", "Length", "Flow Info", "The River's Write-up will appear here.")
-}
-var Updates = 0;
-//For locking out list. 
-function CreateList(PassedList) {
-Updates += 1
-var LockCounter = Updates
-
-ClearList()
-var i = 0;
-function AddMore(LockCounter) {
-    var c = i+40//Amount that is added each time
-    for (i;i<Math.min(c, PassedList.length);i++) {
-    var Elem = PassedList[i]
-    if (LockCounter === Updates) {
-    AddElement(Elem.Name, Elem.Section, Elem.Difficulty, Elem.Quality, Elem.Length + " miles", Elem.USGS, Elem.Writeup)
-    }
-    else {
-    break;  
-    }
-    }
-    if (i < PassedList.length && LockCounter === Updates) {
-        setTimeout(function() {requestAnimationFrame(function() {AddMore(LockCounter)})}, 60/*Try and give time for response to user input*/)
-    }
-}
-if (PassedList.length > 0) {
-AddMore(LockCounter)
-}
-    
-}
-
-//RiverArray is defined because of the other JavaScript file that was loaded.
-CreateList(RiverArray)
-//That will be the initial list with everything in it.
-RotateHandler()
-//Resize text initially
-
-
-GetId("SearchBox").addEventListener("keydown", PrepSort)
-var SearchStore = ""
   
-async function PrepSort() {
-  var wait = ms => new Promise((r, j)=>setTimeout(r, ms))
-  await wait(20)
+    //Add USGS Data to Graph
+    for (let i=0;i<ItemHolder.length;i++) {
+      let item = ItemHolder[i]
+      let data = usgsarray[item.usgs]
+      
+      if (data) {
+        let cfs = data["00060"]
+        let feet = data["00065"]
+        
+        //Prevent "TypeError: Can't Read Property 'values' of undefined"
+        if (cfs) {cfs = cfs.values}
+        if (feet) {feet = feet.values}
+
+        if (cfs && feet) {
+          item.flow = cfs[cfs.length - 1].value + " cfs, " + feet[feet.length - 1].value + " ft"
+        }
+        else if (cfs) {
+          item.flow = cfs[cfs.length - 1].value + " cfs"
+        }
+        else if (feet) {
+          item.flow = feet[feet.length - 1].value + " ft" 
+        }
+
+        //item.create(true) will force regeneration of the button
+        //Replace the current button so that the flow info shows 
+        let elem = GetId(item.base + "1")
+        elem.parentNode.replaceChild(item.create(true), elem)
+      }
+    }
+    
+}())
+
+//Auxillary Function        
+//True means pointing up, false means pointing down
+function triangle(facing) {
+  //Most values in this function are arbitrary
+  let scale = window.innerWidth/750
+  scale = scale ** 0.5 //Square Root to make difference smaller
   
-  var value = GetId("SearchBox").value.trim()
-  if (!(value === SearchStore)) {
-    SortListGen()
+  let div = document.createElement("div")
+  div.style.width = 0;
+  div.style.height = 0;
+  div.style.display = "inline-block";
+  div.style.borderLeft = 4*scale + "px solid transparent"
+  div.style.borderRight = 4*scale + "px solid transparent"
+  div.style.marginLeft = 1.5*scale + "px"
+  //If triangle is pointing up
+  if (facing) {
+    div.style.borderBottom = 8*scale + "px solid black"
   }
+  else {
+    div.style.borderTop = 8*scale + "px solid black"
+  }
+  return div;
 }
-  
-function SortListGen() {
-    var Text = (GetId("SearchBox").value).toLowerCase().trim()
-    var array = []
-    var array1 = []
-    var array2 = []
-    var array3 = []
-    var array4 = []
-    for (var i = 0;i<RiverArray.length;i++) {
-        var Obj = RiverArray[i]
-        if (Obj.Tags.toLowerCase().indexOf(Text) !== -1) {
-            if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
-            array.splice(0,0,Obj)
+
+function TopBar() {
+    this.create = function() {
+        let button = document.createElement("button")
+        button.id = "topbar"
+        button.className = "riverbutton"
+      
+        //Auxillary Function
+        function NewSpan(Text) {
+          let span = document.createElement("span")
+          span.className = "riverspan"
+          span.innerHTML = Text
+          return span
+        }
+        
+        //Auxillary Function
+        //Elem is the span element. If facing is true, set triangle to up, else down
+        function settri(elem, facing) {
+          elem.lastChild.remove()
+          elem.appendChild(triangle(facing))
+        }
+      
+      
+        let span = NewSpan("River")
+        span.appendChild(triangle(true))
+
+        span.onclick = function() {
+          if (this.value) {
+            settri(this, false)
+            NewList("alphabetical", "sort", true)
+            this.value = 0
+          }
+          else {
+            settri(this, true)
+            NewList("alphabetical", "sort")
+            this.value = 1
+          }
+        }
+        span.value = 1//Starts sorted alphabetically, a-z. The first sort needs to flip that.
+        button.appendChild(span)
+        
+        
+        button.appendChild(NewSpan("Section"))
+
+        
+        span = NewSpan("Skill")
+        span.appendChild(triangle(true))
+        span.onclick = function() {
+            if (this.value === 1) {
+                NewList("skill", "sort", true)
+                settri(this, false)
+                this.value = 0
             }
             else {
-            array.push(Obj)
+                NewList("skill", "sort")
+                settri(this, true)
+                this.value = 1
             }
         }
-        else if (Obj.Name.toLowerCase().indexOf(Text) !== -1) {
-            array1.push(Obj)
+        span.value = 0
+        button.appendChild(span) 
+        
+        span = NewSpan("Rating")
+        span.appendChild(triangle(true))
+
+        span.onclick = function() {
+                if (this.value === 1) {
+                    NewList("rating", "sort", true)
+                    settri(this, true)
+                    this.value = 0
+                }
+                else {
+                    NewList("rating", "sort")
+                    settri(this, false)
+                    this.value = 1
+                }
         }
-        else if (Obj.Section.toLowerCase().indexOf(Text) !== -1) {
-            array2.push(Obj)
+        span.value = 0
+        button.appendChild(span) 
+        
+        button.appendChild(NewSpan("Miles"))
+        button.appendChild(NewSpan("Flow Info"))
+
+        return button
+    }
+    
+    this.delete = function() {
+        let Node = GetId("topbar")
+        if (Node) {
+            Node.parentNode.removeChild(Node)
         }
-        else if (Obj.Difficulty.toLowerCase().indexOf(Text) !== -1) {
-           //Exact match is highly relevant
-            if (Obj.Difficulty.toLowerCase().indexOf(Text) === 0) {
-            array3.push(Obj)
+    }
+}
+    
+  
+    
+    
+function River(locate, event) {
+  this.name = event.name
+  this.section = event.section
+  this.skill = event.skill
+    
+  switch (Number(event.rating)) {
+    case 1:
+        this.rating = "1Star";
+        break;
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+        this.rating = event.rating + "Stars";
+        break;
+    default:
+        this.rating = "Error"
+  }
+  if (!this.rating) {
+      this.rating = "Error"
+  }
+
+  this.length = event.length
+  this.writeup = event.writeup
+  this.tags = event.tags || ""
+  this.usgs = event.usgs
+  this.plat = event.plat
+  this.plon = event.plon
+  this.tlat = event.tlat
+  this.tlon = event.tlon
+  this.aw = event.aw
+  this.base = "b" + locate
+  this.expanded = 0
+  this.index = locate
+    
+    
+  this.create = function (forceregenerate) {
+    //Only create the button once - It's about 3 times faster.
+    if (!this.finished || forceregenerate) {
+    var button = document.createElement("button")
+    button.id = this.base + 1
+      
+    function AddSpan(text) {
+    let span = document.createElement("span")
+    span.innerHTML = text
+    span.className = "riverspan"
+    button.appendChild(span)
+    }
+            
+    AddSpan(this.name)
+    AddSpan(this.section)
+    AddSpan(this.skill)
+      
+    //Star images for rating
+    if (this.rating === "Error") {
+        AddSpan("???") 
+    }
+    else {
+    let img = document.createElement("img")
+    img.src = "https://rivers.run/resources/" + this.rating + ".png"
+    img.alt = this.rating[0] + " Stars"
+    img.className = "starimg"
+    let span = document.createElement("span")
+    span.appendChild(img)
+    span.className = "riverspan"
+    button.appendChild(span)
+    }
+      
+      
+    AddSpan(this.length)
+      
+    if (this.flow) {
+      AddSpan(this.flow)
+    }
+    button.className = "riverbutton"
+      
+    
+    button.onclick = function () {
+        let river = ItemHolder[locate]
+        if (river.expanded === 0) {
+        river.expanded = 1
+        var div = document.createElement("div")
+        div.innerHTML = river.writeup + "<br>"
+                  
+        if (river.plat && river.plon) {
+            div.innerHTML += "<br>Put-In GPS Coordinates: " + river.plat + ", " + river.plon
+        }
+        
+        if (river.tlat && river.tlon) {
+            div.innerHTML += "<br>Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon
+        }
+            
+        if (river.aw) {
+            div.innerHTML += "<br><br><a href='https://www.americanwhitewater.org/content/River/detail/id/" + river.aw + "'>Click here to visit this site on American Whitewater</a>"
+        }
+
+        //Graph
+        let data;
+        if (self.usgsarray) {
+          data = self.usgsarray[river.usgs] 
+        }
+          
+        if (data) {
+            div.innerHTML += "<br><br>" //Space the first canvas
+          
+            let temp = data["00010"]
+            let precip = data["00045"]
+            let cfs = data["00060"]
+            let height = data["00065"]
+
+            
+            //Auxillary Function
+            function toparts(arr) {
+                let values = []
+                let timestamps = []
+
+                for (let i=0;i<arr.length;i++) {
+                    let obj = arr[i]
+                    values.push(obj.value)
+                    timestamps.push(obj.dateTime)
+                }
+
+                return {values:values,timestamps:timestamps}
             }
-            else if (Obj.Writeup.toLowerCase().indexOf(Text) === -1) {
-                    array4.push(Obj)
-            //Not that relevant. Add to less relevant list if it won't be added later.    
+
+            //Auxillary Function
+            function createcanvas() {
+                let canvas = document.createElement("canvas")
+                canvas.width = 1200
+                canvas.height = 800 
+              
+                //Set background to white
+                let ctx = canvas.getContext("2d");
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+              
+              return canvas
             }
-        }   
-        else if (Obj.Writeup.toLowerCase().indexOf(Text) !== -1) {
-            array4.push(Obj)
-        }   
-    }
-    for (var i = 0; i<array1.length;i++) {
-        array.push(array1[i])
-    }
-    for (var i = 0; i<array2.length;i++) {
-        array.push(array2[i])
-    }
-    for (var i = 0; i<array3.length;i++) {
-        array.push(array3[i])
-    }
-    if (array4.length > 0) {
-    array.push({Name:"Less", Section: "Relevant", Difficulty: "Results", Quality: "Below", Length: "", Writeup: "Results below contained the search query, but not in a way that was clearly related to the search query. The results shown below may not be what you are looking for."})
-    }
-    for (var i = 0; i<array4.length;i++) {
-        array.push(array4[i])
-    }
-    CreateList(array)
-    
-    if (array.length === 0) {
-AddElement("Not Found", "Not Found", "Not Found", "Not Found", "Not Found", "No Rivers were found for your search query.")
-    }
+          
+            if (cfs||height) {
+                let canvas1 = createcanvas()
 
-}
+                if (cfs && height) {
+                    let parts = toparts(cfs.values)
+                    addline("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80", 2)
+                    parts = toparts(height.values)
+                    addline("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80", 2, 1)                
+                }
+                else if (cfs) {
+                    let parts = toparts(cfs.values)
+                    addline("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80")
+                }
+                else {
+                    let parts = toparts(height.values)
+                    addline("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
+                }
+              
+                //For some reason, only the last canvas was showing. Use images
+                //Images also allow "Save Image As"
+                let img = document.createElement("img")
+                img.className = "graph"
+                img.src = canvas1.toDataURL("image/png")
+                
+                div.appendChild(img)
+            }
 
+            if (temp) {
+                let canvas2 = createcanvas()
+  
+                let parts = toparts(temp.values)
+                addline("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
+              
+                //For some reason, only the last canvas was showing. Use images
+                //Images also allow "Save Image As"
+                let img = document.createElement("img")
+                img.className = "graph"
+                img.src = canvas2.toDataURL("image/png")
+                div.appendChild(img)
+            }
 
-//Query Handler
-var ThisURL = window.location.href
-ThisURL = decodeURIComponent(ThisURL)
-var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
-if (Query.indexOf("q=cache:") === 0) {
-    Query = ""
-    setTimeout(function(){alert("It appears that you have been redirected from Google's Webcache to this page. You are now at the actual site.")}, 1000)
-    //In case they try to visit the cached version.
-}
-if (ThisURL !== Query) {
-  document.getElementById("SearchBox").value = Query
-  SortListGen()
-  SearchStore = Query
+            if (precip) {
+                let canvas3 = createcanvas() 
+
+                let parts = toparts(precip.values)
+                addline("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
+
+                //For some reason, only the last canvas was showing. Use images
+                //Images also allow "Save Image As"
+                let img = document.createElement("img")
+                img.className = "graph"
+                img.src = canvas3.toDataURL("image/png")
+                div.appendChild(img)
+            } 
+        }
+        //End of Graph
+            
+        div.style.padding = "6px"
+        div.id = river.base + 2
+        button.style.backgroundColor = "#e3e3e3"
+        button.parentNode.insertBefore(div, button.nextSibling)
+        }
+        else {
+        river.expanded = 0
+        button.style.backgroundColor = ""
+        var elem = GetId(river.base + 2)
+        if (elem) {
+        elem.parentNode.removeChild(elem)
+        }
+            
+        }        
+    }
+        
+    //Store button for reuse later   
+    this.finished = button
+    
+    //Make content available to Googlebot for indexing
+    if (navigator.userAgent.indexOf("Google") !== -1) {
+        try {
+            setTimeout(function(){button.dispatchEvent(new Event("click"))}, 100)
+        }
+        catch(e) {}
+    }
+    //The code directly above this is used to allow Googlebot to index content. 
+    //Shall it result in an SEO hit, or shall Googlebot be improved to handle content inside of JavaScript,
+    //It can safely be removed.
+      
+        
+    }    
+    
+    //Return finished button
+    return this.finished
+      
+  }
+  this.delete = function () {
+    let river = ItemHolder[locate]
+    function Remove(Code) {
+        let ToDelete = GetId(river.base + Code)
+        if (ToDelete) {
+            ToDelete.parentNode.removeChild(ToDelete)
+        }
+    }
+      
+    //Reset background color
+    let reset = GetId(river.base + 1)
+    if (reset) {
+        reset.style.backgroundColor = ""
+    }
+      
+    Remove(2)
+    Remove(1)   
+      
+  } 
 }
     
+
     
+    
+    
+//ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list. 
+var ItemHolder = []
+riverarray.map(function(event, index) {
+    ItemHolder[index] = new River(index, event)
+})
+    
+
+function alphabeticalsort(orderedlist, reverse) {
+  
+    function compare(a,b) {
+    if (a.name < b.name)
+        return -1;
+    if (a.name > b.name)
+        return 1;
+    return 0;
+    }
+  
+    orderedlist.sort(compare);
+    if (reverse) {
+        orderedlist.reverse()
+    }
+  
+    return orderedlist
 }
+
+function ratingsort(orderedlist, reverse) {
+    function compare(a,b) {
+    if (a.rating > b.rating)
+        return -1;
+    if (a.rating < b.rating)
+        return 1;
+    return 0;
+    }
+    orderedlist.sort(compare);
+    if (reverse) {
+         orderedlist.reverse()
+    }
+    //Move error values to end
+    while (orderedlist[0].rating === "Error") {
+        orderedlist.push(orderedlist.shift())
+    }  
+    return orderedlist
+  
+}
+    
+var oldresult;    
+function NewList(query, type, reverse) {
+    if (typeof(query) === "string") {
+    query = query.toLowerCase()
+    }
+    //Location searching uses numbers.
+    
+    let orderedlist = ItemHolder.slice(0); //Clone the array
+    if (!(String(query).length === 0 || !query || !type)) {
+    if (type === "sort") {
+    //Obey other filters
+    if (oldresult) {
+        orderedlist = oldresult
+    }   
+    if (query === "alphabetical") {
+      orderedlist = alphabeticalsort(orderedlist, reverse)
+    }
+    else if (query === "rating") {
+      orderedlist = ratingsort(orderedlist, reverse)
+    }
+    else if (query === "skill") {
+    orderedlist.sort(function(a,b) {
+    
+    function ToNum(value) {
+
+    switch (value.skill) {
+    case "FW":
+        value = 1;
+        break;
+    case "B":
+        value = 2;
+        break;
+    case "N":
+        value = 3;
+        break;
+    case "LI":
+        value = 4;
+        break;
+    case "I":
+        value = 5;
+        break;
+    case "HI":
+        value = 6;
+        break;
+    case "A":
+        value = 7;
+        break;
+    case "E":
+        value = 8;
+        break;
+    default:
+        value = 9;
+    }
+    return value
+    }       
+        return ToNum(a)-ToNum(b)
+    })
+        
+    if (reverse) {
+    orderedlist.reverse()
+    while (orderedlist[0].skill === "?") {
+        orderedlist.push(orderedlist.shift())
+    }
+    }      
+    }      
+    }
+        
+        
+    if (type === "normal") {
+        let l = [[],[],[],[],[]]
+        orderedlist.forEach(function(event){
+            if(event.tags.toLowerCase().indexOf(query) !== -1) {
+                if (event.name.toLowerCase().indexOf(query) !== -1) {
+                    l[0].push(event)
+                }
+                else {
+                    l[1].push(event)
+                }
+            }
+            else if (event.name.toLowerCase().indexOf(query) !== -1) {
+                l[2].push(event)
+            }
+            else if (event.section.toLowerCase().indexOf(query) !== -1) {
+                l[3].push(event)
+            }
+            else if (event.writeup.toLowerCase().indexOf(query) !== -1) {
+                l[4].push(event)
+            }
+        })
+        
+        orderedlist = l[0].concat(l[1],l[2],l[3])
+        
+        //Add the less relevant results below
+        orderedlist = orderedlist.concat(l[4])
+        
+        
+        
+    }
+        
+        
+        
+        
+    if (type === "advanced") {  
+    }    
+        
+    if (type === "location") {
+    if (oldresult) {
+        orderedlist = oldresult
+    }
+    
+    var nlist = []
+    orderedlist.forEach(function(value){
+        if (value.plat && value.plon) {
+             if (distanceto(value.plat, value.plon) < query) {
+                 nlist.push(value)
+             }
+        }
+    })
+    orderedlist = nlist
+
+    
+    }
+        
+        
+    }//Closing for if a query is present
+    
+    //Clear Current
+    ItemHolder.forEach(function(event) {
+        event.delete()
+    }) 
+    //Append New
+    var div = GetId("Rivers")
+    //Everything else    
+    orderedlist.forEach(function(event){
+        div.appendChild(event.create())
+    })
+     
+    if (type !== "sort") {
+        oldresult = orderedlist
+    }
+}
+    
+
+GetId("Rivers").appendChild(new TopBar().create())
+NewList("alphabetical", "sort")
+
+   
+GetId("searchbox").addEventListener("keydown", function() {setTimeout(function(){NewList(GetId("searchbox").value, "normal")}, 20)})
+
+    
