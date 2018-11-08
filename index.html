@@ -37,14 +37,14 @@
 	</head>
 	
 	<body>    
-		<!-- These scripts can be at the top. They don't modify the DOM-->
+		<!-- These can be at the top. They don't modify the DOM-->
 		<script src="/riverarray.js"></script>
 		<script src="/graph.js"></script> 
+		<link rel="stylesheet" type="text/css" href="/index.css">  
 
+		
 		<h1 class="center">River Information</h1>
-		
 
-		
 		<div class="searchcontain">
 		<img id="searchimg" src="/resources/SearchIcon.png">
 		<input id="searchbox" type="text" placeholder="Search..">
@@ -54,7 +54,8 @@
 		<p class="pixel18 center"><strong>Disclaimer: USGS Gauge data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>
 		<div id="Rivers"></div>    
 
+		
+		<!-- Scripts that modify DOM -->
 		<script src="/index.js"></script> 
-		<link rel="stylesheet" type="text/css" href="/index.css">  
 	</body>  
 </html>
