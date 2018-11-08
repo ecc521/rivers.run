@@ -47,7 +47,8 @@ h1 {
 }
  
 .advancedsearch {
-   display:inline-block; 
+   /*display:inline-block;*/
+    display:none; /*Advanced Search is Unfinished*/
 }
     
 #searchbox{
