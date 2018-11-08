@@ -10,7 +10,7 @@ function GetId(Name) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/beta/sw.js');
+    navigator.serviceWorker.register('/sw.js');
   });
 }
 
