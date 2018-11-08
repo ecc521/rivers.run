@@ -89,7 +89,6 @@ function triangle(facing) {
   let scale = window.innerWidth/750
   scale = scale ** 0.5 //Square Root to make difference smaller
   
-  console.log(scale)
   let div = document.createElement("div")
   div.style.width = 0;
   div.style.height = 0;
@@ -632,7 +631,6 @@ function NewList(query, type, reverse) {
         
     }//Closing for if a query is present
     
-    console.time("Redraw Table")
     //Clear Current
     ItemHolder.forEach(function(event) {
         event.delete()
@@ -647,7 +645,6 @@ function NewList(query, type, reverse) {
     if (type !== "sort") {
         oldresult = orderedlist
     }
-    console.timeEnd("Redraw Table")    
 }
     
 
