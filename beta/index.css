@@ -5,7 +5,7 @@ html, body {
     background-color:#dffaff;
 }
 
-h1 {
+.center {
     text-align:center;
 }
 
@@ -22,7 +22,6 @@ h1 {
     
 .pixel18 {
     font-size:18px;
-    text-align:center;
 }
 
 .starimg {
