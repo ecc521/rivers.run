@@ -5,6 +5,10 @@ html, body {
     background-color:#dffaff;
 }
 
+h1 {
+    text-align:center;
+}
+
 /*Chart CSS*/
 .graph {
     display: block;
@@ -18,6 +22,7 @@ html, body {
     
 .pixel18 {
     font-size:18px;
+    text-align:center;
 }
 
 .starimg {
