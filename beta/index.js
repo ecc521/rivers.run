@@ -1,5 +1,9 @@
 'use strict';
 
+//This code has 2 dependencies:
+//graph.js
+//riverarray.js
+
 function GetId(Name) {
   return document.getElementById(Name)
 }
