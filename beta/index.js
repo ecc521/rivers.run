@@ -306,7 +306,7 @@ function River(locate, event) {
         }
           
         if (data) {
-            div.innerHTML += "<br>" //Space the first canvas
+            div.innerHTML += "<br><br>" //Space the first canvas
           
             let temp = data["00010"]
             let precip = data["00045"]
