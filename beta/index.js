@@ -350,17 +350,17 @@ function River(locate, event) {
 
                 if (cfs && height) {
                     let parts = toparts(cfs.values)
-                    AddLine("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80", 2)
+                    addline("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80", 2)
                     parts = toparts(height.values)
-                    AddLine("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80", 2, 1)                
+                    addline("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80", 2, 1)                
                 }
                 else if (cfs) {
                     let parts = toparts(cfs.values)
-                    AddLine("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80")
+                    addline("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80")
                 }
                 else {
                     let parts = toparts(height.values)
-                    AddLine("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
+                    addline("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
                 }
               
                 //For some reason, only the last canvas was showing. Use images
@@ -376,7 +376,7 @@ function River(locate, event) {
                 let canvas2 = createcanvas()
   
                 let parts = toparts(temp.values)
-                AddLine("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
+                addline("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
               
                 //For some reason, only the last canvas was showing. Use images
                 //Images also allow "Save Image As"
@@ -390,7 +390,7 @@ function River(locate, event) {
                 let canvas3 = createcanvas() 
 
                 let parts = toparts(precip.values)
-                AddLine("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
+                addline("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
 
                 //For some reason, only the last canvas was showing. Use images
                 //Images also allow "Save Image As"
