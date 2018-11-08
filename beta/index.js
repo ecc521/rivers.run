@@ -657,63 +657,6 @@ NewList("alphabetical", "sort")
    
 GetId("searchbox").addEventListener("keydown", function() {setTimeout(function(){NewList(GetId("searchbox").value, "normal")}, 20)})
 
-var latitude, longitude, latmiles, longmiles;
-
-
-
-
-async function locationmanager(){
-let response = await getlocation()
-console.log(response)
-latitude = response.latitude
-longitude = response.longitude
-console.log(latitude)
-console.log(longitude)
-
-NewList(100, "location")
-}
-    
-
-function haversine(lat1, lon1, lat2, lon2) { 
-  //Haversine Fourmula
-  let R = 3959 //Earth's radius in miles
-  let dLat = (lat2 - lat1) * Math.PI / 180;
-  let dLon = (lon2 - lon1) * Math.PI / 180;
-  let a =
-    0.5 - Math.cos(dLat) / 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    (1 - Math.cos(dLon)) / 2;
-
-  return R * 2 * Math.asin(Math.sqrt(a));
-}
-    
-function distanceto(lat2, lon2, lat1, lon1) {
-    if (isNaN(Number(lat1))) {
-      var lat1 = latitude
-    }
-    if (isNaN(Number(lon1))) {
-      var lon1 = longitude
-    }
-    
-    return haversine(lat1, lon1, lat2, lon2)
-}
-
-console.log(distanceto(35,-77,-89,-78))
-console.log(haversine(35,-77,-89,-78))
-    
-console.log(distanceto(0,-90,0,90))
-console.log(haversine(0,-90,0,90))
-
-    
-function locationpromise() {
-   return new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject)
-   });
-}
-    
-async function getlocation() { 
-    return locationpromise()
-}
     
 
 //Graph Code
