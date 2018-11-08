@@ -15,13 +15,6 @@ html, body {
     height: 80vw;
     max-height: 90vh;
 }
-
-#geolocate {
-    padding: 10px;
-    text-align:center;
-    background-color: purple;
-    color: white;
-}
     
 .starimg {
     max-width: 100%;
