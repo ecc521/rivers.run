@@ -24,109 +24,6 @@
         <input style="display: none" type="button"  value="Reload All" hidden="hidden" id="ReloadAllButton">
     </div>
     
-<script>
-//If they put a query in the url, redirect them to info page with that query.
-var ThisURL = window.location.href
-ThisURL = decodeURIComponent(ThisURL)
-var Query = ThisURL.slice(ThisURL.indexOf("?") + 1)
-if (ThisURL !== Query) {
-  window.location = "https://rivers.run/info.html" + "?" + Query
-}
-    
-function GetId(Id) {
-    return document.getElementById(Id)
-}
-    
-try {
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('https://rivers.run/serviceworker.js')
-  .then(function(registration) {
-  })
-  .catch(function(error) {
-  });
-}
-}
-catch (e) {
-    console.log(e)
-    //This should only occour if the page is embedded and sandboxed.
-}
-    
-function ReloadAllCache() {
-    "use strict";
-    localStorage.setItem("TimeStamp", Date.now())
-    
-    caches.delete('rivers.run').then(function(event) {
-    window.location.reload(true)
-    })
-    .catch(function(event) {
-    window.location.reload(true)
-    })
-}
-function UpdateTime () {
-try {
-if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
-var Minutes = Math.floor(Math.floor((Date.now() - localStorage.getItem("TimeStamp"))/1000)/60)
-var Hours = Math.floor(Minutes/60)
-Minutes = Minutes%60 
-var Days = Math.floor(Hours/24)
-Hours = Hours%24
-var TimeStr = ""
-if (Days !== 0) {
-    if (Days === 1) {
-        TimeStr = TimeStr + Days + " day "
-    }
-    else {
-        TimeStr = TimeStr + Days + " days "
-    }
-}
-if (Hours !== 0) {
-    if (Hours === 1) {
-        TimeStr = TimeStr + Hours + " hour "
-    }
-    else {
-        TimeStr = TimeStr + Hours + " hours "
-    }
-}
-if (Minutes !== 0) {
-    if (Minutes === 1) {
-        TimeStr = TimeStr + Minutes + " minute "
-    }
-    else {
-        TimeStr = TimeStr + Minutes + " minutes "
-    }
-}
-GetId("ReloadAllText").innerHTML = "You're viewing a cached version of this site from " + TimeStr + " ago."    
-}
-}
-catch (e) {
-    console.log(e)
-}
-}
-try {
-if (localStorage.getItem("TimeStamp") !== null && Date.now()-localStorage.getItem("TimeStamp") > 600000) {
-    UpdateTime()
-    setInterval(UpdateTime, 60000)
-    GetId("ReloadAll").hidden= ""
-    if (navigator.onLine) {
-    GetId("ReloadAllButton").style = "display: inline"
-    }
-    window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: none"})
-    window.addEventListener("offline", function() {GetId("ReloadAllButton").style = "display: inline"})
-    GetId("ReloadAllButton").addEventListener("click", ReloadAllCache)
-    GetId("ReloadAllButton").value = "Update Now"
-    UpdateTime()
-}
-else {
-    if (localStorage.getItem("TimeStamp") === null) {
-    localStorage.setItem("TimeStamp", Date.now())
-    }
-}
-}
-catch (e) {
-    console.log(e)
-}
-</script>
-    
 <div class="topnav">
   <a href="/">River Info</a>
   <a href="/about">About</a>
@@ -282,8 +179,5 @@ body {
     
 </style>
     
-<link rel="prerender" href="/">
-<link rel="prefetch" href="/about">
-
 </body>
 </html>
