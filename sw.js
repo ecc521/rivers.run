@@ -17,7 +17,7 @@ const preloadurls = []
 //END OF NOT YET IMPLEMENTED
 
 //Milliseconds to wait for network response before using cache
-const waitperiod = 1800
+const waitperiod = 2000
 
 
 
@@ -49,18 +49,21 @@ function fetchevent(event) {
                     
                 //Fetch from network and update cache
                 fromnetwork.then(function(response){
+                    console.log(url + " has been loaded from the network")
                     cache.put(url, response.clone())
+                    console.log(url + " has been put into cache")
                     resolve(response)
                 })
                     
                 //If the fetch event fails (ex. offline), return cached immediately
                 fromnetwork.catch(function(e){
+                    console.log(url + " errored when fetching from network. Using cache")
                     resolve(fromcache)
                 })
                     
                     //If the network doesn't respond quickly enough, use cached data
                     setTimeout(function(){
-                        console.log("Network took too long")
+                        console.log(url + " took too long to load from network. Using cache")
                         resolve(fromcache)
                     }, waitperiod)
                 })  
