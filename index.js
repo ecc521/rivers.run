@@ -299,7 +299,7 @@ function River(locate, event) {
         }
             
         if (river.aw) {
-            div.innerHTML += "<br><br><a href='https://www.americanwhitewater.org/content/River/detail/id/" + river.aw + "'>Click here to visit this site on American Whitewater</a>"
+            div.innerHTML += "<br><br><a href='https://www.americanwhitewater.org/content/River/detail/id/" + river.aw + "'>Click here to view this river on American Whitewater</a>"
         }
 
         //Graph
