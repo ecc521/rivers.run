@@ -5,9 +5,28 @@ html, body {
     background-color:#dffaff;
 }
 
-.center {
-    text-align:center;
+/*topnav is the bar at the very top that allows you to navigate to FAQ, About, River Info, ext.*/
+.topnav {
+  overflow: hidden;
+  background-color: #24b9cc;
 }
+.topnav a {
+  float: left;
+  display: block;
+  color: black;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+.topnav a:hover {
+  background-color: #359daa;
+}
+.topnavcurrent {
+  background-color: #25d1a7;
+}
+/*End of topnav style*/
+
 
 /*Chart CSS*/
 .graph {
@@ -20,9 +39,6 @@ html, body {
     max-height: 90vh;
 }
     
-.pixel18 {
-    font-size:18px;
-}
 
 .starimg {
     max-width: 100%;
@@ -56,15 +72,17 @@ html, body {
     vertical-align:middle;
     width:30%
 }
-    
+  
+/*riverspans are the spans that actually hold the information - there are 6 riverspans for each river. 
+Those include name,section,skill,quality,length, and flow info*/
+
 .riverspan {
     display:inline-block;
     margin:0px; /*Used 2px, but not enough space*/
     /*overflow:scroll;*/
     /*Scrollbars showing when not needed in Safari desktop. Need to debug*/
 }
-   
-    
+      
 .riverspan:nth-child(1) {
     width:20%;
 }
@@ -83,7 +101,9 @@ html, body {
 .riverspan:nth-child(6) {
     width:21%;
 }   
-    
+/*End of riverspan style*/    
+
+/*riverbutton is the element that holds all the riverspans*/
 .riverbutton {
     width:100%;
     border:0;
@@ -92,8 +112,20 @@ html, body {
     text-align:left;
     font-size: 2.9vw;
 }
-   
     
+.riverbutton:nth-child(even) {
+    background-color: #f4f4f4;
+}
+.riverbutton:nth-child(odd) {
+    background-color: #f7f7f7;
+}
+.riverbutton:focus {
+    outline:0;
+}   
+.riverbutton:hover {
+    background-color: #e3e3e3;
+}
+
 /*Controlling font size smoothly based on screen size*/
 @media screen and (min-width: 500px) {
     .riverbutton {
@@ -125,30 +157,27 @@ html, body {
     font-size: 1.27vw;
     }
 }
+/*End of riverbutton style*/    
     
-    
-    
+/*topbar is the header element for all the rivers. You can click it to order alphabetically, by quality, skill, ext.*/
 #topbar {
     background-color:#77ff77;
     width:100%;
     padding:10px;
     border:0;
 }
+
 #topbar:hover {
     background-color:#77ff77;
 }    
-    
-.riverbutton:nth-child(even) {
-    background-color: #f4f4f4;
-}
-.riverbutton:nth-child(odd) {
-    background-color: #f7f7f7;
-}
-.riverbutton:focus {
-    outline:0;
+/*End of topbar style*/
+
+
+/*Utilities Stuff - To avoid inline CSS*/
+.center {
+    text-align:center;
 }
 
-    
-.riverbutton:hover {
-    background-color: #e3e3e3;
+.pixel18 {
+    font-size:18px;
 }
