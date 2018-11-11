@@ -307,99 +307,103 @@ function River(locate, event) {
         if (self.usgsarray) {
           data = self.usgsarray[river.usgs] 
         }
-          
-        if (data) {
-            div.innerHTML += "<br><br>" //Space the first canvas
-          
-            let temp = data["00010"]
-            let precip = data["00045"]
-            let cfs = data["00060"]
-            let height = data["00065"]
+        
+        //Put the whole canvas code in a try statement
+        //If not, USGS gauge errors will prevent river from opening when clicked
+        try {
+          if (data) {
+              div.innerHTML += "<br><br>" //Space the first canvas
 
-            
-            //Auxillary Function
-            function toparts(arr) {
-                let values = []
-                let timestamps = []
+              let temp = data["00010"]
+              let precip = data["00045"]
+              let cfs = data["00060"]
+              let height = data["00065"]
 
-                for (let i=0;i<arr.length;i++) {
-                    let obj = arr[i]
-                    values.push(obj.value)
-                    timestamps.push(obj.dateTime)
-                }
 
-                return {values:values,timestamps:timestamps}
-            }
+              //Auxillary Function
+              function toparts(arr) {
+                  let values = []
+                  let timestamps = []
 
-            //Auxillary Function
-            function createcanvas() {
-                let canvas = document.createElement("canvas")
-                canvas.width = 1200
-                canvas.height = 800 
-              
-                //Set background to white
-                let ctx = canvas.getContext("2d");
-                ctx.fillStyle = "white";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-              
-              return canvas
-            }
-          
-            if (cfs||height) {
-                let canvas1 = createcanvas()
+                  for (let i=0;i<arr.length;i++) {
+                      let obj = arr[i]
+                      values.push(obj.value)
+                      timestamps.push(obj.dateTime)
+                  }
 
-                if (cfs && height) {
-                    let parts = toparts(cfs.values)
-                    addline("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80", 2)
-                    parts = toparts(height.values)
-                    addline("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80", 2, 1)                
-                }
-                else if (cfs) {
-                    let parts = toparts(cfs.values)
-                    addline("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80")
-                }
-                else {
-                    let parts = toparts(height.values)
-                    addline("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
-                }
-              
-                //For some reason, only the last canvas was showing. Use images
-                //Images also allow "Save Image As"
-                let img = document.createElement("img")
-                img.className = "graph"
-                img.src = canvas1.toDataURL("image/png")
-                
-                div.appendChild(img)
-            }
+                  return {values:values,timestamps:timestamps}
+              }
 
-            if (temp) {
-                let canvas2 = createcanvas()
-  
-                let parts = toparts(temp.values)
-                addline("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
-              
-                //For some reason, only the last canvas was showing. Use images
-                //Images also allow "Save Image As"
-                let img = document.createElement("img")
-                img.className = "graph"
-                img.src = canvas2.toDataURL("image/png")
-                div.appendChild(img)
-            }
+              //Auxillary Function
+              function createcanvas() {
+                  let canvas = document.createElement("canvas")
+                  canvas.width = 1200
+                  canvas.height = 800 
 
-            if (precip) {
-                let canvas3 = createcanvas() 
+                  //Set background to white
+                  let ctx = canvas.getContext("2d");
+                  ctx.fillStyle = "white";
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                let parts = toparts(precip.values)
-                addline("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
+                return canvas
+              }
 
-                //For some reason, only the last canvas was showing. Use images
-                //Images also allow "Save Image As"
-                let img = document.createElement("img")
-                img.className = "graph"
-                img.src = canvas3.toDataURL("image/png")
-                div.appendChild(img)
-            } 
-        }
+              if (cfs||height) {
+                  let canvas1 = createcanvas()
+
+                  if (cfs && height) {
+                      let parts = toparts(cfs.values)
+                      addline("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80", 2)
+                      parts = toparts(height.values)
+                      addline("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80", 2, 1)                
+                  }
+                  else if (cfs) {
+                      let parts = toparts(cfs.values)
+                      addline("cfs", parts.timestamps, data.name, canvas1, 0, parts.values, "#00AAFF80")
+                  }
+                  else {
+                      let parts = toparts(height.values)
+                      addline("height", parts.timestamps, data.name, canvas1, 0, parts.values, "#0000FF80")    
+                  }
+
+                  //For some reason, only the last canvas was showing. Use images
+                  //Images also allow "Save Image As"
+                  let img = document.createElement("img")
+                  img.className = "graph"
+                  img.src = canvas1.toDataURL("image/png")
+
+                  div.appendChild(img)
+              }
+
+              if (temp) {
+                  let canvas2 = createcanvas()
+
+                  let parts = toparts(temp.values)
+                  addline("", parts.timestamps, data.name, canvas2, 0, parts.values, "#FF0000", 3, "#0000FF")
+
+                  //For some reason, only the last canvas was showing. Use images
+                  //Images also allow "Save Image As"
+                  let img = document.createElement("img")
+                  img.className = "graph"
+                  img.src = canvas2.toDataURL("image/png")
+                  div.appendChild(img)
+              }
+
+              if (precip) {
+                  let canvas3 = createcanvas() 
+
+                  let parts = toparts(precip.values)
+                  addline("Precipitation", parts.timestamps, data.name, canvas3, 0, parts.values, "#0066FF80")
+
+                  //For some reason, only the last canvas was showing. Use images
+                  //Images also allow "Save Image As"
+                  let img = document.createElement("img")
+                  img.className = "graph"
+                  img.src = canvas3.toDataURL("image/png")
+                  div.appendChild(img)
+              } 
+          }
+        }catch(e){console.warn("Graphing Error: " + e)}
         //End of Graph
             
         div.style.padding = "6px"
