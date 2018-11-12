@@ -31,7 +31,9 @@ function fetchevent(event) {
         let cache = await caches.open(cachename)
 
         let url = event.request.url
-        url = url.slice(0, url.indexOf("?")) //Eliminate Query Parameter
+        let end = url.indexOf("?")
+        if (end === -1) {end = url.length}
+        url = url.slice(0, end) //Eliminate Query Parameter
           
         let fromcache = await caches.match(url)
             
