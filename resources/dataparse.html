@@ -141,10 +141,8 @@ var GoogleCloudRequestRate = 10-1//Subtracted 1 as buffer
                 })
                     
 
-                if (!Event[0]) {
-                    console.log(FetchedURL)
-                    console.log(Event)
-                }
+                console.log(FetchedURL)
+                console.log(Event)
                     
                 //HORRIBLE
                 while (List.indexOf(Event[0].trim().toLowerCase().slice(0, Event[0].indexOf(":"))) !== -1) {
