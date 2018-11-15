@@ -95,6 +95,13 @@
                         let name = prop.slice(0,prop.indexOf(":"))
                         name = name.toLowerCase()
                         let value = prop.slice(prop.indexOf(":") + 1)
+                        
+                        //Google Docs adds \r terminators to the end
+                        if (value.endsWith("\r")) {
+                                value = value.slice(0,-1)
+                                value = value.trim()
+                        }
+                        
                         if (String(value).length !== 0) {
                                 obj[name] = value
                         }
