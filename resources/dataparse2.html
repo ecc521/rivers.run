@@ -54,7 +54,7 @@
         self.complete = []
         self.failed = []
 
-        window.load = function(id) {
+        window.load = async function(id) {
                 let request = await fetch(urlcreate(id))
                 if (request.ok) {
                         request = await request.text()
