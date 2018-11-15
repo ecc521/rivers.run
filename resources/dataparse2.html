@@ -106,7 +106,8 @@
                                 value = value.trim()
                         }
                         
-                        if (String(value).length !== 0) {
+                        let keepnames = ["name", "section", "tags", "writeup"] //Some need to be defined in file
+                        if (String(value).length !== 0 || keepnames.includes(name)) {
                                 obj[name] = value
                         }
                 }
