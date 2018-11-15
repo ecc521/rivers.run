@@ -59,12 +59,16 @@
                 if (request.ok) {
                         request = await request.text()
                         complete.push(request)
+                        console.log(complete.length + " items have now been loaded successfully!")
                 }
                 else if (request.status == 403) {
                         retry.push(id)
+                        console.log("403 error requesting the file with a file id of " + id)
                 }
                 else {
                         failed.push(id)
+                        console.warn("Requesting the file with a fild id of " + id + " failed. The response is below")
+                        console.warn(request)
                 }
         }
                 
