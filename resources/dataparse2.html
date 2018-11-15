@@ -1,1 +1,62 @@
 
+<script>
+        function download(name, data, mimetype) {
+
+        let stuff = data;
+        let blob = new Blob([stuff],{
+            type: mimetype
+        });
+
+        if(window.navigator.msSaveOrOpenBlob) {
+                window.navigator.msSaveBlob(blob, name);
+            }
+            else{
+                let elem = window.document.createElement('a');
+                elem.href = window.URL.createObjectURL(blob);
+                elem.download = name;        
+                document.body.appendChild(elem);
+                elem.click();        
+                document.body.removeChild(elem);
+            }
+
+        }
+  
+      
+      
+  
+        let googlecloudrequestrate = 10;
+        
+        function urlcreate(File_ID) {
+            let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+            return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=text%2Fplain&key=' + API_KEY       
+        }
+
+        function wait (ms) {
+          return new Promise(resolve => {
+            setTimeout(resolve, ms);
+          });
+        }
+
+        (async function() {
+        let fileidcontent = await fetch(urlcreate("19B237gWAoRLOzz5Hh4AO6nD1yxVWxL1LmTLgYkg8JrQ"))
+        fileidcontent = await fileidcontent.text()
+        fileidcontent = fileidcontent.split("\n")
+        
+        let fileids = []
+        for (var i=0;i<fileidcontent.length;i++) {
+          if (i%2 === 1) {
+            fileids.push(fileidcontent[i])
+          }
+        }
+        
+        console.log(fileids)
+        
+        
+        
+        
+        }())
+  
+        
+
+
+</script>
