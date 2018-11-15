@@ -77,7 +77,7 @@
                 
         for (let i=0;i<retry.length;i++) {
                 load(fileids[i])
-                //Use 2000 - I want the retries to never 403
+                //Use 2000 instead of the 1000 it should be- I want the retries to never 403
                 await wait(2000/googlecloudrequestrate)
         }                
                 
