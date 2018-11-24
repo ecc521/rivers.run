@@ -4,6 +4,8 @@
 //graph.js
 //riverarray.js
 
+//It may work without graph.js, but will log lots of errors to console
+
 function GetId(Name) {
   return document.getElementById(Name)
 }
@@ -60,7 +62,7 @@ if ('serviceWorker' in navigator) {
             obj2.values[i] = obj2.values[i] * 1.8 + 32
           }
           
-          ubj2.units = "Temperature, water, degrees Fahrenheit"
+          obj2.units = "Temperature, water, degrees Fahrenheit"
         }
       
          
