@@ -205,7 +205,6 @@ function TopBar() {
         span.value = 0
         button.appendChild(span) 
         
-        button.appendChild(NewSpan("Miles"))
         button.appendChild(NewSpan("Flow Info"))
 
         return button
@@ -244,7 +243,6 @@ function River(locate, event) {
       this.rating = "Error"
   }
 
-  this.length = event.length
   this.writeup = event.writeup
   this.tags = event.tags || ""
   this.usgs = event.usgs
@@ -291,7 +289,6 @@ function River(locate, event) {
     }
       
       
-    AddSpan(this.length)
       
     if (this.flow) {
       AddSpan(this.flow)
