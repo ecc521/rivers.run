@@ -43,15 +43,30 @@ if ('serviceWorker' in navigator) {
       
         obj2.units = event.variable.variableDescription //Units of values
         
+        let sitecode = event.sourceInfo.siteCode[0].value
         //See if the site is already in the array.
         //If the site code is not in the array, add it. 
-        if (!usgsarray[event.sourceInfo.siteCode[0].value]) {
+        if (!usgsarray[sitecode]) {
             let obj3 = {}
             obj3.name = event.sourceInfo.siteName
-            usgsarray[event.sourceInfo.siteCode[0].value] = obj3
+            usgsarray[sitecode] = obj3
         }
+      
+      
+        //Convert celcius to farenheight
+        if (variablecode === "00010" && obj2.units === "Temperature, water, degrees Celsius") {
+          for (let i=0;i<obj2.values.length;i++) {
+            obj2.values[i] = obj2.values[i] * 1.8 + 32
+          }
+          
+          ubj2.units = "Temperature, water, degrees Fahrenheit"
+        }
+      
+      
+        let variablecode = event.variable.variableCode[0].value
+   
         //Add the values onto the site code object
-        usgsarray[event.sourceInfo.siteCode[0].value][event.variable.variableCode[0].value] = obj2
+        usgsarray[sitecode][variablecode] = obj2
     })
   
     //Add USGS Data to Graph
