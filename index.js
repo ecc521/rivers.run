@@ -52,7 +52,8 @@ if ('serviceWorker' in navigator) {
             usgsarray[sitecode] = obj3
         }
       
-      
+        let variablecode = event.variable.variableCode[0].value
+
         //Convert celcius to farenheight
         if (variablecode === "00010" && obj2.units === "Temperature, water, degrees Celsius") {
           for (let i=0;i<obj2.values.length;i++) {
@@ -62,9 +63,7 @@ if ('serviceWorker' in navigator) {
           ubj2.units = "Temperature, water, degrees Fahrenheit"
         }
       
-      
-        let variablecode = event.variable.variableCode[0].value
-   
+         
         //Add the values onto the site code object
         usgsarray[sitecode][variablecode] = obj2
     })
