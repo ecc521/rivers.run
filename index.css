@@ -77,7 +77,7 @@ html, body {
 }
   
 /*riverspans are the spans that actually hold the information - there are 6 riverspans for each river. 
-Those include name,section,skill,quality,length, and flow info*/
+Those include name,section,skill,quality, and flow info*/
 
 .riverspan {
     display:inline-block;
@@ -99,9 +99,6 @@ Those include name,section,skill,quality,length, and flow info*/
     width:15%;
 }
 .riverspan:nth-child(5) {
-    width:9%;
-}
-.riverspan:nth-child(6) {
     width:21%;
 }   
 /*End of riverspan style*/    
