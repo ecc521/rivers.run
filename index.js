@@ -59,7 +59,7 @@ if ('serviceWorker' in navigator) {
         //Convert celcius to farenheight
         if (variablecode === "00010" && obj2.units === "Temperature, water, degrees Celsius") {
           for (let i=0;i<obj2.values.length;i++) {
-            obj2.values[i] = obj2.values[i] * 1.8 + 32
+            obj2.values[i].value = obj2.values[i].value * 1.8 + 32
           }
           
           obj2.units = "Temperature, water, degrees Fahrenheit"
