@@ -1,248 +1,127 @@
-<input type="button" id="Download" hidden="true" value="Download riverarray.js File (For uploading to Github)" onclick="Download()">
-<br><br>
-<p style="display: inline; font-size:22px" id="status"></p>
-<input style="display: none" type="button" id="Loaded" value="This file has been loaded into Github" onclick="SetNew()">
-<p id="Progress"></p>
-<p>The example shown below is not the actual file, only a slightly modified version of it made easier to read. IT MAY TAKE A WHILE TO LOAD</p>
-<textarea id="output" style="width:100%" rows="100" readOnly = "true"></textarea>
 
 <script>
-FetchList = []
-function Download() {
-var data = document.getElementById("output").value
-data = "riverarray =" + JSON.stringify(riverarray)
-    
-var csvContent=data; //here we load our csv data 
-var blob = new Blob([csvContent],{
-    type: "text/js;charset=utf-8;"
-});
+        function download(name, data, mimetype) {
 
-        var elem = window.document.createElement('a');
-        elem.href = window.URL.createObjectURL(blob);
-        elem.download = "riverarray.js";        
-        document.body.appendChild(elem);
-        elem.click();        
-        document.body.removeChild(elem);
+        let stuff = data;
+        let blob = new Blob([stuff],{
+            type: mimetype
+        });
 
-}
-    
-    
-riverarray = []
-Complete = 0
-    
-function SetNew() {
-   localStorage.setItem("Data", JSON.stringify(riverarray).length) 
-   document.getElementById("Loaded").style.display = "none"
-   document.getElementById("status").innerHTML = ""
+        if(window.navigator.msSaveOrOpenBlob) {
+                window.navigator.msSaveBlob(blob, name);
+            }
+            else{
+                let elem = window.document.createElement('a');
+                elem.href = window.URL.createObjectURL(blob);
+                elem.download = name;        
+                document.body.appendChild(elem);
+                elem.click();        
+                document.body.removeChild(elem);
+            }
 
-}
-    
-    
-function StringedJSON(str) {
-    document.getElementById("output").innerHTML = str.split("<br>").join("\n").split("{\"Name\":").join("\n\n\n\n\n{\"Name\":").split("[\n\n\n\n\n").join("[")
-    try {
-    if (parseInt(localStorage.getItem("Data")) !== str.length) {
-   document.getElementById("status").innerHTML = "Changed since last time! "
-           document.getElementById("Loaded").style.display = "inline"
-
-    }
-    }
-    catch (e) {
-        if (e.message.indexOf("null") === -1) {
-            throw e
         }
-        else {
-           document.getElementById("status").innerHTML = "Changed since last time! "
-           document.getElementById("Loaded").style.display = "inline"    
-        }
-    }
-
-    
-
-    
-    console.log("The following two arrays should match:")
-    console.log(riverarray)
-    var newriverarray = (JSON.parse(str))
-    console.log(newriverarray)
-    document.getElementById("Download").hidden = ""
-
-}
   
-function Check() {
-    if (riverarray.length === (FetchList.length)) {
-            //LETS DELETE NewRiver.OrderNum and sort them
-    function Orderer(a,b) {
-        a = parseInt(a.OrderNum)
-        b = parseInt(b.OrderNum)
-        return a-b    
-    }
-    
-    riverarray.sort(Orderer)
-    
-    for (var i = 0; i<riverarray.length;i++) {
-    delete riverarray[i].OrderNum
-    }
+      
+      
+  
+        let googlecloudrequestrate = 10;
         
-        //Call function
-       StringedJSON(JSON.stringify(riverarray)) 
-    }
-    
-}    
-    
-    
-    
-    
-
-    
-//Time to load the files... Oh no. This could be BAD.
-(async function LoadFiles() {        
-        //Use this to return the URL to fetch
-        function URLCreate(File_ID) {
-            var API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+        function urlcreate(File_ID) {
+            let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
             return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=text%2Fplain&key=' + API_KEY       
         }
-        
-        //Now we need to fetch the file ID file and split by newline. After this, what we will do is iterate through and fetch every resource.
-function Wait (ms) {
-  return new Promise(resolve => {
-    setTimeout(resolve, ms);
-  });
-}
-var GoogleCloudRequestRate = 10-1//Subtracted 1 as buffer
 
-    
-        FetchList = await (await fetch(URLCreate("19B237gWAoRLOzz5Hh4AO6nD1yxVWxL1LmTLgYkg8JrQ"))).text()
-        FetchList = FetchList.split("\n")
-        var FetchList2 = []
-        for (var i = 1;i<FetchList.length;i+=2) {
-            FetchList2.push(FetchList[i])
+        window.wait = function(ms) {
+          return new Promise(resolve => {
+            setTimeout(resolve, ms);
+          });
+        };
+
+        (async function() {
+        let fileidcontent = await fetch(urlcreate("19B237gWAoRLOzz5Hh4AO6nD1yxVWxL1LmTLgYkg8JrQ"))
+        fileidcontent = await fileidcontent.text()
+        fileidcontent = fileidcontent.split("\n")
+        
+        let fileids = []
+        for (var i=0;i<fileidcontent.length;i++) {
+          if (i%2 === 1) {
+            fileids.push(fileidcontent[i])
+          }
         }
-        //console.log(FetchList)
-        FetchList = FetchList2
-            //console.log(FetchList)
-        URLCodeList = FetchList
-        for (var i = 0;i<FetchList.length;i++) {
-            await Wait(1000/GoogleCloudRequestRate)
-            fetch(URLCreate(FetchList[i])).then(function(Event) {
-                var FetchedURL = Event.url
-                Event = Event.text()
-                Event.then(function(Event) {
-                var Text = Event.trim()
-                Event = Event.split("\n")
-                var NewRiver = {}      
-                
-                var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun"
-                
-                //awnum should not exist. It is being added for backwards compatability.
-                List += ", awnum"
-                List = List.toLowerCase().split(",")
-                List = List.map(function(value){
-                 return value.trim()
-                })
-                    
+        
+        
+        self.retry  = []
+        self.complete = []
+        self.failed = []
 
-                    
-                //HORRIBLE
-                while (List.indexOf(Event[0].trim().toLowerCase().slice(0, Event[0].indexOf(":"))) !== -1) {
-                    NewRiver[Event[0].trim().toLowerCase().slice(0, Event[0].indexOf(":"))] = Event[0].slice(Event[0].indexOf(":")+1).trim()
-                    Event.shift()
-                    if (Event.length === 0) {break;}
+        window.load = async function(id) {
+                let request = await fetch(urlcreate(id))
+                if (request.ok) {
+                        request = await request.text()
+                        complete.push(request)
+                        console.log(complete.length + " items have now been loaded successfully!")
                 }
-                
-                
-                //awnum should not exist. It is being added for backwards compatability.
-                if (NewRiver.awnum !== undefined) {
-                    NewRiver.aw = NewRiver.awnum
+                else if (request.status == 403) {
+                        retry.push(id)
+                        console.log("403 error requesting the file with a file id of " + id)
                 }
-                delete NewRiver.awnum
-                    
-                if (!NewRiver.name) {
-                NewRiver.name = (Event[0]).trim()
+                else {
+                        failed.push(id)
+                        console.warn("Requesting the file with a fild id of " + id + " failed. The response is below")
+                        console.warn(request)
                 }
-                if (!NewRiver.section) {
-                NewRiver.section = (Event[1]).trim()
-                }                
-                if (!NewRiver.skill) {
-                NewRiver.skill = (Event[2]).trim()
-                }                
-                if (!NewRiver.rating) {
-                NewRiver.rating = (Event[3]).trim()
-                }                
-                if (!NewRiver.length) {
-                NewRiver.length = (Event[4]).trim()
-                }
-                
-                //Convert number to words
-                switch (parseInt(NewRiver.skill)) {
-                case 1:
-                    NewRiver.skill = "FW";
-                    break; 
-                case 2:
-                    NewRiver.skill = "B";
-                    break;
-                case 3:
-                    NewRiver.skill = "N";
-                    break;
-                case 4:
-                    NewRiver.skill = "LI";
-                    break;
-                case 5:
-                    NewRiver.skill = "I";
-                    break;
-                case 6:
-                    NewRiver.skill = "HI";
-                    break;
-                case 7:
-                    NewRiver.skill = "A";
-                    break;
-                case 8:
-                    NewRiver.skill = "E"; 
-                    break;
-                default: 
-                    NewRiver.skill = "?"
-                }
-                    
-                    
-                NewRiver.writeup = ""
-                    
-                for (var i = 5; i<Event.length;i++) {
-                    NewRiver.writeup += Event[i]
-                }
-                    
-                NewRiver.writeup = NewRiver.writeup.trim().split("\n").join("<br>").split("\r").join("<br>")
-                    
-                   
-                    
-                    
-                var Source = FetchedURL.slice(FetchedURL.indexOf("files/")+6, FetchedURL.indexOf("/export"))
-                
-                for (var index = 0; index<URLCodeList.length;index++) {
-                    var Current = String(URLCodeList[index]).trim()
-                    var Search = String(Source)
-                    if (Current === Search) {
-                        NewRiver.OrderNum = index
-                    }
-                }
-                    
-                //For Ordering at end
-                console.log(NewRiver.OrderNum)
-                document.getElementById("Progress").innerHTML = "Just completed what appears to be request number " + NewRiver.OrderNum 
-                riverarray.push(NewRiver)
-                Complete += 1
-                Check()
-
-                })
-            }).catch(function(Error) {
-                console.warn(Error)                
-            })
         }
-            
+                
+        for (let i=0;i<fileids.length;i++) {
+                load(fileids[i])
+                await wait(1000/googlecloudrequestrate)
+        }
         
+        await wait(1000) //Let quota refresh
+                
+        for (let i=0;i<retry.length;i++) {
+                load(fileids[i])
+                //Use 2000 instead of the 1000 it should be- I want the retries to never 403
+                await wait(2000/googlecloudrequestrate)
+        }                
+                
+        for (let i=0;i<failed.length;i++) {
+                console.error("Loading of file with file id of " + failed[i] + " failed.")
+        }
+              
+        await wait(500) //Let requests finish
+
+        for (let i=0;i<complete.length;i++) {
+                let item = complete[i].split("\n")
+                let obj = {}
+                for (let i=0;i<item.length;i++) {
+                        let prop = item[i]
+                        let name = prop.slice(0,prop.indexOf(":"))
+                        name = name.toLowerCase()
+                        let value = prop.slice(prop.indexOf(":") + 1)
+                        
+                        //Google Docs adds \r terminators to the end
+                        if (value.endsWith("\r")) {
+                                value = value.slice(0,-1)
+                                value = value.trim()
+                        }
+                        
+                        let keepnames = ["name", "section", "tags", "writeup"] //Some need to be defined in file
+                        if (String(value).length !== 0 || keepnames.includes(name)) {
+                                obj[name] = value
+                        }
+                }
+                complete[i] = obj    
+        }        
+                
+        console.log(complete)      
+        let string = "riverarray = " + JSON.stringify(complete)
+        download("riverarray.js", string, "application/json")
+                
+                
+        }())
+  
         
-        
-        
-}())
-    
-    
+
 
 </script>
