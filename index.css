@@ -87,10 +87,10 @@ Those include name,section,skill,quality, and flow info*/
 }
       
 .riverspan:nth-child(1) {
-    width:21%;
+    width:22%;
 }
 .riverspan:nth-child(2) {
-    width:32%;
+    width:31%;
 }
 .riverspan:nth-child(3) {
     width:8%;
