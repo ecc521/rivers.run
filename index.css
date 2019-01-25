@@ -87,7 +87,7 @@ Those include name,section,skill,quality, and flow info*/
 }
       
 .riverspan:nth-child(1) {
-    width:22%;
+    width:23%;
 }
 .riverspan:nth-child(2) {
     width:31%;
@@ -96,14 +96,14 @@ Those include name,section,skill,quality, and flow info*/
     width:8%;
 }
 .riverspan:nth-child(4) {
-    width:15%;
+    width:14%;
 }
 .riverspan:nth-child(5) {
     width:21%;
 }
 .riverspan:nth-child(6) {
     /*This will be for the up/down flow arrow*/
-    width:4%;
+    width:3%;
 }
 /*End of riverspan style*/    
 
