@@ -87,10 +87,10 @@ Those include name,section,skill,quality, and flow info*/
 }
       
 .riverspan:nth-child(1) {
-    width:20%;
+    width:21%;
 }
 .riverspan:nth-child(2) {
-    width:27%;
+    width:32%;
 }
 .riverspan:nth-child(3) {
     width:8%;
@@ -100,7 +100,11 @@ Those include name,section,skill,quality, and flow info*/
 }
 .riverspan:nth-child(5) {
     width:21%;
-}   
+}
+.riverspan:nth-child(6) {
+    /*This will be for the up/down flow arrow*/
+    width:4%;
+}
 /*End of riverspan style*/    
 
 /*riverbutton is the element that holds all the riverspans*/
@@ -110,7 +114,7 @@ Those include name,section,skill,quality, and flow info*/
     margin:0;
     transition: 0.2s;
     text-align:left;
-    font-size: 2.9vw;
+    font-size: 3.0vw;
 }
     
 .riverbutton:nth-child(even) {
