@@ -14,7 +14,7 @@
         //If you specify 0 or do not pass a value, the line's scale will be on the left side of the graph.
         //If you specify 1, the line's scale will be on the right side of the graph.
     
-function addline(GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
+module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
 if (graphtype === 3) {
     var endcolor = numplace
 }

@@ -2,7 +2,14 @@
 <html lang="en">
     <head>
 		<!-- Secure page against user generated content -->
-		<meta http-equiv="Content-Security-Policy" content="default-src https://rivers.run https://*.rivers.run;connect-src https://rivers.run https://*.rivers.run https://waterservices.usgs.gov;img-src https: data:;upgrade-insecure-requests;">
+		<meta http-equiv="Content-Security-Policy" content="
+            default-src https://rivers.run https://*.rivers.run http://127.0.0.1:* ;
+            connect-src https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov;
+            img-src https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;
+            upgrade-insecure-requests;"
+        >
+        <!-- Curently the img-src can be bypassed with a Data URL. This should be changed so that cannot be done-->
+        
 		<meta name="referrer" content="no-referrer">
 
 
@@ -10,18 +17,18 @@
 		<link rel="preconnect" href="https://waterservices.usgs.gov" crossorigin>
 
 		<!--JavaScript & CSS-->
-		<link rel="preload" href="/index.css" as="style">
-		<link rel="preload" href="/riverarray.js" as="script">
-		<link rel="preload" href="/graph.js" as="script">
-		<link rel="preload" href="/index.js" as="script">
+		<link rel="preload" href="index.css" as="style">
+		<link rel="preload" href="riverarray.js" as="script">
+		<link rel="preload" href="graph.js" as="script">
+		<link rel="preload" href="index.js" as="script">
 
 
 		<!-- Star images -->
-		<link rel="preload" href="/resources/1Star.png" as="image">
-		<link rel="preload" href="/resources/2Stars.png" as="image">
-		<link rel="preload" href="/resources/3Stars.png" as="image">
-		<link rel="preload" href="/resources/4Stars.png" as="image">
-		<link rel="preload" href="/resources/5Stars.png" as="image">
+		<link rel="preload" href="resources/1Star.png" as="image">
+		<link rel="preload" href="resources/2Stars.png" as="image">
+		<link rel="preload" href="resources/3Stars.png" as="image">
+		<link rel="preload" href="resources/4Stars.png" as="image">
+		<link rel="preload" href="resources/5Stars.png" as="image">
 
 		<!-- Progressive Web App Manifest -->
 		<link rel="manifest" href="/manifest.json">
@@ -64,10 +71,10 @@
 	</head>
 	
 	<body>    
-		
-		<!-- These can be at the top. They don't modify the DOM-->
+        
+        <!-- These can be at the top. They don't modify the DOM-->
 		<script src="/riverarray.js"></script>
-		<script src="/graph.js"></script> 
+        
 		<link rel="stylesheet" type="text/css" href="/index.css"> 
 		
 		<div class="topnav">
@@ -92,6 +99,6 @@
 
 		
 		<!-- Scripts that modify DOM -->
-		<script src="/index.js"></script> 
+		<script src="/package.js"></script> 
 	</body>  
 </html>
