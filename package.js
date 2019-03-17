@@ -91,11 +91,34 @@
 "use strict";
 
 
-//This code has 2 dependencies:
-//graph.js
-//riverarray.js
+//Determine if the user wants dark mode
+//If prefers-color-scheme does not exist, the user needs to manually select dark/light mode
+//If prefers-color-scheme does exist, we follow it, unless the user wants to override it
+window.darkMode = localStorage.getItem("prefersDarkMode")
+//Convert string to boolean
+if (window.darkMode === "null") {window.darkMode = null}
+if (window.darkMode === "false") {window.darkMode = false}
+if (window.darkMode === "true") {window.darkMode = true}
 
-//It may work without graph.js, but will log lots of errors to console
+
+if (window.darkMode === null) {
+    window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
+//Override browser to engage or disengage dark mode
+//This is extremely sensitive to the design of the CSS
+//The @media query must be last rule in first stylesheet for this to work
+let styleSheet = document.styleSheets[0]
+if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
+    let darkModeRules = styleSheet.rules[styleSheet.rules.length-1].cssText.slice(16,-1).trim().split("\n")
+    for (let i=0;i<darkModeRules.length;i++) {styleSheet.insertRule(darkModeRules[i], styleSheet.rules.length)}    
+}
+
+if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
+    styleSheet.removeRule(styleSheet.rules.length - 1)
+}
+
+
 
 self.addLine = __webpack_require__(1).addLine
 
@@ -405,7 +428,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
     }
 
 
-    if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (!window.darkMode) {
         ctx.fillStyle = "black"
     }
     else {
@@ -530,7 +553,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
         ctx.fillStyle = grd;
     }
 
-    if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (!window.darkMode) {
         ctx.fillStyle = "black"
     }
     else {
@@ -586,7 +609,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
     ctx.lineWidth = Math.ceil(ctx.lineWidth/10)
 
-    if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (!window.darkMode) {
         ctx.strokeStyle = "000000AA"
     }
     else {
@@ -867,7 +890,7 @@ module.exports.River = function(locate, event) {
                   
                   //Make sure the background is not transparent
                   let ctx = canvas.getContext("2d");
-                  if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  if (!window.darkMode) {
                       ctx.fillStyle = "white";
                   }
                   else {
@@ -948,7 +971,7 @@ module.exports.River = function(locate, event) {
             
         div.style.padding = "6px"
         div.id = river.base + 2
-        if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        if (!window.darkMode) {
             button.style.backgroundColor = "#e3e3e3"
         }
         else {

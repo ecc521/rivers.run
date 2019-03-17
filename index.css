@@ -187,13 +187,9 @@ Those include name,section,skill,quality, and flow info*/
 }
 
 
-
-
-
-/* Dark mode */
 @media (prefers-color-scheme: dark) {
     html, body {
-        background-color: #101033;
+        background-color: #090920;
         color: #cccccc;
     }
     .riverbutton:nth-child(even) {
@@ -221,7 +217,7 @@ Those include name,section,skill,quality, and flow info*/
     
     /* unvisited link */
     a:link {
-      color: #5555FF;
+      color: #3333FF;
     }
 
     /* visited link */
@@ -238,5 +234,4 @@ Those include name,section,skill,quality, and flow info*/
     a:active {
       color: red;
     }
-    
 }

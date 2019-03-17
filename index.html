@@ -3,8 +3,9 @@
     <head>
 		<!-- Secure page against user generated content -->
         <!-- upgrade-insecure-requests should also be used, but it messed up development. It will be added back at some point-->
+        <!-- I would like to be able to use blobs for the images instead of data urls as they are faster and would prevent people from adding incredibly long data urls directly into their river writeups. The issue is that the current design for opening a river writeup is synchronus, and canvas.toBlob is asynchronus -->
 		<meta http-equiv="Content-Security-Policy" content="
-            default-src https://rivers.run https://*.rivers.run http://127.0.0.1:* ;
+            default-src https://rivers.run https://*.rivers.run http://127.0.0.1:*;
             connect-src https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov;
             img-src https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;"
         >
@@ -19,8 +20,7 @@
 		<!--JavaScript & CSS-->
 		<link rel="preload" href="index.css" as="style">
 		<link rel="preload" href="riverarray.js" as="script">
-		<link rel="preload" href="graph.js" as="script">
-		<link rel="preload" href="index.js" as="script">
+		<link rel="preload" href="package.js" as="script">
 
 
 		<!-- Star images -->
@@ -71,12 +71,7 @@
 	</head>
 	
 	<body>    
-        
-        <!-- These can be at the top. They don't modify the DOM-->
-		<script src="riverarray.js"></script>
-        
-		<link rel="stylesheet" type="text/css" href="index.css"> 
-		
+        		
 		<div class="topnav">
 		  <a href="/" class="topnavcurrent">River Info</a>
 		  <a href="about">About</a>
@@ -84,7 +79,6 @@
 		</div>		
 		
  
-
 		
 		<h1 class="center">River Information</h1>
 
@@ -98,7 +92,8 @@
 		<div id="Rivers"></div>    
 
 		
-		<!-- Scripts that modify DOM -->
-		<script src="package.js"></script> 
+		<script src="riverarray.js"></script>
+		<link rel="stylesheet" type="text/css" href="index.css">
+        <script src="package.js"></script> 
 	</body>  
 </html>

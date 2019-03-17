@@ -132,7 +132,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
     }
 
 
-    if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (!window.darkMode) {
         ctx.fillStyle = "black"
     }
     else {
@@ -257,7 +257,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
         ctx.fillStyle = grd;
     }
 
-    if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (!window.darkMode) {
         ctx.fillStyle = "black"
     }
     else {
@@ -313,7 +313,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
     ctx.lineWidth = Math.ceil(ctx.lineWidth/10)
 
-    if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (!window.darkMode) {
         ctx.strokeStyle = "000000AA"
     }
     else {

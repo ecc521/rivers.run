@@ -133,7 +133,7 @@ module.exports.River = function(locate, event) {
                   
                   //Make sure the background is not transparent
                   let ctx = canvas.getContext("2d");
-                  if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  if (!window.darkMode) {
                       ctx.fillStyle = "white";
                   }
                   else {
@@ -214,7 +214,7 @@ module.exports.River = function(locate, event) {
             
         div.style.padding = "6px"
         div.id = river.base + 2
-        if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        if (!window.darkMode) {
             button.style.backgroundColor = "#e3e3e3"
         }
         else {
