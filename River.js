@@ -219,8 +219,7 @@ module.exports.River = function(locate, event) {
         }
         else {
             //Dark Mode
-            //We can't make it too dark yet - because the black text would be invisible.
-            button.style.backgroundColor = "#888888"
+            button.style.backgroundColor = "#333333"
         }
         button.parentNode.insertBefore(div, button.nextSibling)
         }
