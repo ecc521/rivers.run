@@ -338,13 +338,13 @@ let styleSheet = document.styleSheets[0]
 //If there are no rules in styleSheet, the index is negative, causing an error
 styleSheet.addRule(".topnav", "overflow: hidden", Math.max(styleSheet.rules.length - 1, 0))
 styleSheet.addRule(".topnav", "background-color: #24b9cc", styleSheet.rules.length - 1)
-styleSheet.addRule(".topnav", "margin:8px", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav", "margin:0px", styleSheet.rules.length - 1)
 
 styleSheet.addRule(".topnav a", "float: left", styleSheet.rules.length - 1)
 styleSheet.addRule(".topnav a", "display: block", styleSheet.rules.length - 1)
 styleSheet.addRule(".topnav a", "color: black", styleSheet.rules.length - 1)
 styleSheet.addRule(".topnav a", "text-align: center", styleSheet.rules.length - 1)
-styleSheet.addRule(".topnav a", "padding: 14px 16px", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav a", "padding: 12px 13px", styleSheet.rules.length - 1)
 //Not sure what the one below is for
 styleSheet.addRule(".topnav a", "text-decoration: none", styleSheet.rules.length - 1)
 styleSheet.addRule(".topnav a", "font-size: 17px", styleSheet.rules.length - 1)
