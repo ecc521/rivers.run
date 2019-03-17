@@ -2,11 +2,11 @@
 <html lang="en">
     <head>
 		<!-- Secure page against user generated content -->
+        <!-- upgrade-insecure-requests should also be used, but it messed up development. It will be added back at some point-->
 		<meta http-equiv="Content-Security-Policy" content="
             default-src https://rivers.run https://*.rivers.run http://127.0.0.1:* ;
             connect-src https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov;
-            img-src https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;
-            upgrade-insecure-requests;"
+            img-src https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;"
         >
         <!-- Curently the img-src can be bypassed with a Data URL. This should be changed so that cannot be done-->
         
@@ -31,7 +31,7 @@
 		<link rel="preload" href="resources/5Stars.png" as="image">
 
 		<!-- Progressive Web App Manifest -->
-		<link rel="manifest" href="/manifest.json">
+		<link rel="manifest" href="manifest.json">
 
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<meta name="theme-color" content="#317EFB"/>
@@ -40,28 +40,28 @@
 
 	    
 	  <!-- Images -->
-	  <link rel="shortcut icon" type="image/png" sizes="16x16" href="/resources/icons/16x16-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="24x24" href="/resources/icons/24x24-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="32x32" href="/resources/icons/32x32-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="64x64" href="/resources/icons/64x64-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="96x96" href="/resources/icons/96x96-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="160x160" href="/resources/icons/160x160-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="196x196" href="/resources/icons/196x196-Water-Drop.png"/>
+	  <link rel="shortcut icon" type="image/png" sizes="16x16" href="resources/icons/16x16-Water-Drop.png"/>
+	  <link rel="shortcut icon" type="image/png" sizes="24x24" href="resources/icons/24x24-Water-Drop.png"/>
+	  <link rel="shortcut icon" type="image/png" sizes="32x32" href="resources/icons/32x32-Water-Drop.png"/>
+	  <link rel="shortcut icon" type="image/png" sizes="64x64" href="resources/icons/64x64-Water-Drop.png"/>
+	  <link rel="shortcut icon" type="image/png" sizes="96x96" href="resources/icons/96x96-Water-Drop.png"/>
+	  <link rel="shortcut icon" type="image/png" sizes="160x160" href="resources/icons/160x160-Water-Drop.png"/>
+	  <link rel="shortcut icon" type="image/png" sizes="196x196" href="resources/icons/196x196-Water-Drop.png"/>
 
 	  <!-- iOS is WAY too picky -->
-	  <link rel="apple-touch-icon" type="image/png" href="/resources/icons/57x57-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="114x114" href="/resources/icons/114x114-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="144x144" href="/resources/icons/144x144-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="/resources/icons/60x60-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="/resources/icons/120x120-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="/resources/icons/76x76-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="152x152" href="/resources/icons/152x152-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="/resources/icons/180x180-Water-Drop.png"/>
+	  <link rel="apple-touch-icon" type="image/png" href="resources/icons/57x57-Water-Drop.png"/>
+	  <link rel="apple-touch-icon" type="image/png" sizes="114x114" href="resources/icons/114x114-Water-Drop.png"/>
+	  <link rel="apple-touch-icon" type="image/png" sizes="144x144" href="resources/icons/144x144-Water-Drop.png"/>
+	  <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="resources/icons/60x60-Water-Drop.png"/>
+	  <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="resources/icons/120x120-Water-Drop.png"/>
+	  <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="resources/icons/76x76-Water-Drop.png"/>
+	  <link rel="apple-touch-icon" type="image/png" sizes="152x152" href="resources/icons/152x152-Water-Drop.png"/>
+	  <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="resources/icons/180x180-Water-Drop.png"/>
 
 	  <!-- Make sure we have a launch image and can be added -->
 	  <meta name="apple-mobile-web-app-capable" content="yes">
 	  <meta name="apple-mobile-web-app-title" content="rivers.run">
-	  <link rel="apple-touch-startup-image" href="/resources/icons/512x512-Water-Drop.png">
+	  <link rel="apple-touch-startup-image" href="resources/icons/512x512-Water-Drop.png">
 	  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
 	  <!-- End of Images -->	    
@@ -73,14 +73,14 @@
 	<body>    
         
         <!-- These can be at the top. They don't modify the DOM-->
-		<script src="/riverarray.js"></script>
+		<script src="riverarray.js"></script>
         
-		<link rel="stylesheet" type="text/css" href="/index.css"> 
+		<link rel="stylesheet" type="text/css" href="index.css"> 
 		
 		<div class="topnav">
 		  <a href="/" class="topnavcurrent">River Info</a>
-		  <a href="/about">About</a>
-		  <a href="/FAQ">FAQ</a>
+		  <a href="about">About</a>
+		  <a href="FAQ">FAQ</a>
 		</div>		
 		
  
@@ -89,7 +89,7 @@
 		<h1 class="center">River Information</h1>
 
 		<div class="searchcontain">
-		<img id="searchimg" alt="Search Icon" src="/resources/SearchIcon.png">
+		<img id="searchimg" alt="Search Icon" src="resources/SearchIcon.png">
 		<input id="searchbox" type="text" aria-label="Type in the box to search for a river" placeholder="Search..">
 		<p class="advancedsearch"> Open Advanced Search</p>
 		</div>  
@@ -99,6 +99,6 @@
 
 		
 		<!-- Scripts that modify DOM -->
-		<script src="/package.js"></script> 
+		<script src="package.js"></script> 
 	</body>  
 </html>

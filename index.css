@@ -185,3 +185,58 @@ Those include name,section,skill,quality, and flow info*/
 .pixel18 {
     font-size:18px;
 }
+
+
+
+
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    html, body {
+        background-color: #101033;
+        color: #cccccc;
+    }
+    .riverbutton:nth-child(even) {
+        background-color: #333333;
+    }
+    .riverbutton:nth-child(odd) {
+        background-color: #3a3a3a;
+    }
+    .riverbutton {
+        color:#cccccc;
+    }
+    .riverbutton:hover {
+        background-color: #444444;
+    }   
+    
+    #searchbox {
+        background-color:#666666;
+    }
+    
+    #topbar {
+        color:black;
+    }
+    
+    /*Links didn't show up in dark mode. Style so they do*/
+    
+    /* unvisited link */
+    a:link {
+      color: red;
+    }
+
+    /* visited link */
+    a:visited {
+      color: green;
+    }
+
+    /* mouse over link */
+    a:hover {
+      color: hotpink;
+    }
+
+    /* selected link */
+    a:active {
+      color: blue;
+    }
+    
+}

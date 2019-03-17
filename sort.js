@@ -37,7 +37,7 @@ function ratingsort(orderedlist, reverse) {
 }
 
 
-function skillsort(orderedlist) {
+function skillsort(orderedlist, reverse) {
         orderedlist.sort(function(a,b) {
     
     function ToNum(value) {

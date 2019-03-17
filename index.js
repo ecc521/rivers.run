@@ -43,7 +43,7 @@ riverarray.map(function(event, index) {
     
     
 var oldresult;    
-function NewList(query, type, reverse) {
+window.NewList = function(query, type, reverse) {
     if (typeof(query) === "string") {
     query = query.toLowerCase()
     }
