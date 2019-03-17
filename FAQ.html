@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <!--Favicon-->
+        <link rel="shortcut icon" type="image/x-icon" href="https://rivers.run/resources/32pxDrop.png" />
+
+        <!--Web App Manifest-->
+        <link rel="manifest" href="/manifest.json">
+
+
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#317EFB"/>
+        <meta name="Description" content="Ever wonder how rivers.run works without Wifi or Cellular? Our FAQ page can help with this question, AND others. If you have questions about rivers.run, check here (our FAQ) to see if it has already been answered.">
+        <meta name="keywords" content="rivers.run, FAQ, rivers.run FAQ">
+
+        <title style="text-align: center">Rivers.run - FAQ</title>   
+
+    </head>
+    <body>
+
+
+
+        <h1 style="text-align: center">Frequently Asked Questions:</h1>
+        <noscript>Error. This page needs JavaScript to function. Please enable JavaScript and try again.</noscript>
+        <p style="text-align: center">Click on the question to see or hide the answer.</p>
+
+        <button class="accordion">Where can I contact you?</button>
+        <div class="panel">
+            <p>You can use the <a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">Feedback Form</a>, or you can email me at <a href="mailto:contact@rivers.run" target="_blank" rel="noopener">contact@rivers.run</a></p>
+        </div>
+
+        <button class="accordion">How does this Website work Offline?</button>
+        <div class="panel">
+            <p>This website utilizes your browsers cache to store the contents of this site - So whenever rivers.run is in cache, you can visit it, even offline.<em> If you any reason your cache is cleared, then you will be unable to visit rivers.run without internet.</em> Whenever you visit the site without rivers.run in cache, rivers.run is loaded into cache, making it available offline again.</p>
+        </div>
+
+        <button class="accordion">X-axis of your graphs is showing a bunch of NaN's</button>
+        <div class="panel">
+            <p>It is a Safari bug - This bug is not currently present on Chrome, Opera, or Firefox</p>
+        </div>
+
+        <button class="accordion">Your river info page is not showing any rivers</button>
+        <div class="panel">
+            <p><a href="https://lefunny.net/wp-content/uploads/2014/02/Funny-internet-explorer-comic.jpg" rel="noopener" target="_blank">If you are using Internet Explorer, this comic (opens in new tab) shows why is isn't working</a><br>
+                If you aren't using Internet Explorer, your browser may be too old. The site has been tested in latest versions of Chrome, Firefox, Opera, and Safari (one bug in Safari).<br>
+                More support will hopefully be coming soon as I plan to diagnose issues in Chrome 63 and earlier, as well as in Safari 9.
+            </p>
+        </div>
+
+        <button class="accordion">Can I embed a website or HTML</button>
+        <div class="panel">
+            <p>Yes you can - Put the following HTML code into your writeup:<br>
+                &lt;iframe src="embeds.rivers.run?Put the URL or HTML code to embed here"&gt;&lt;/iframe&gt;<br>
+                Embeds are still receiving some major updates, so it is not reccomended to use them yet.<br></p>
+        </div>    
+
+
+
+
+        <script>
+            var acc = document.getElementsByClassName("accordion");
+            var i;
+
+            for (i = 0; i < acc.length; i++) {
+                acc[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    var panel = this.nextElementSibling;
+                    if (panel.style.maxHeight){
+                        panel.style.maxHeight = null;
+                    } else {
+                        panel.style.maxHeight = panel.scrollHeight + "px";
+                    } 
+                });
+            }
+        </script>
+
+
+
+
+
+
+
+        <p style="text-align: center"><strong><em>By using this website, you agree to the <a href="/DISCLAIMER.txt" target="_blank" rel="noopener">Terms of Service</a></em></strong></p>
+        <p style="text-align: center">Copyright © 2018 Tucker Willenborg. All Rights Reserved.</p>
+
+
+
+
+
+
+        <style>
+            body {font-family: Arial, Helvetica, sans-serif;}  
+
+
+            .p {
+                text-align: center
+            }
+
+            .accordion {
+                background-color: #f0f0f0;
+                color: #444;
+                cursor: pointer;
+                padding: 18px;
+                width: 100%;
+                border: none;
+                text-align: left;
+                outline: none;
+                font-size: 15px;
+                transition: 0.4s;
+            }
+
+            .active, .accordion:hover {
+                background-color: #d9d9d9;
+            }
+
+            .accordion:after {
+                content: '\002B';
+                color: green;
+                font-weight: bold;
+                float: right;
+                margin-left: 5px;
+            }
+
+            .active:after {
+                content: "\2212";
+                color:red;
+            }
+
+            .panel {
+                padding: 0 18px;
+                background-color: lightblue;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.2s ease-out;
+            }
+
+
+            body {
+                background-color: lightblue;
+            }
+
+
+        </style>
+
+        <script src="createNavbar.js"></script>    
+
+    </body>
+</html>

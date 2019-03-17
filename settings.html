@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    </head>
+    <body>
+        <style>
+        </style>
+        <script src="createNavbar.js"></script>
+
+        <h3>Theme (Requires Refresh)</h3>
+        <select id="theme">
+            <option value="null">Default</option>
+            <option value="false">Light</option>
+            <option value="true">Dark</option>
+        </select>
+        <p id="darkModeDefaultExplaination">Default: Use browser/os theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your browser provides a color scheme to use)</p>
+        
+        <script>
+            document.getElementById("theme").addEventListener("change", function(event) {
+                localStorage.setItem("prefersDarkMode", event.target.value)
+            })
+            
+            document.getElementById("theme").value = localStorage.getItem("prefersDarkMode")
+
+            let explaination = document.getElementById("darkModeDefaultExplaination")
+            let browserSupportsDarkMode = window.matchMedia('(prefers-color-scheme: dark)').media !== "not all"
+            if (browserSupportsDarkMode) {
+                let currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark": "light"
+                explaination.innerHTML = "Selecting Default causes rivers.run to use the theme provided by your browser (" + currentTheme + ")"
+            }
+            else {
+                explaination.innerHTML = "Selecting Default causes rivers.run to use the light theme - your browser does not provide rivers.run the theme to use"
+            }
+
+
+
+        </script>
+    </body>
+</html>

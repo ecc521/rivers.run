@@ -1,5 +1,7 @@
 'use strict';
 
+require("./createNavbar.js")
+
 //Determine if the user wants dark mode
 //If prefers-color-scheme does not exist, the user needs to manually select dark/light mode
 //If prefers-color-scheme does exist, we follow it, unless the user wants to override it

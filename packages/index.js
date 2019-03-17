@@ -91,6 +91,8 @@
 "use strict";
 
 
+__webpack_require__(1)
+
 //Determine if the user wants dark mode
 //If prefers-color-scheme does not exist, the user needs to manually select dark/light mode
 //If prefers-color-scheme does exist, we follow it, unless the user wants to override it
@@ -120,15 +122,15 @@ if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)
 
 
 
-self.addLine = __webpack_require__(1).addLine
+self.addLine = __webpack_require__(2).addLine
 
 //Defines self.TopBar and self.triangle
-Object.assign(self, __webpack_require__(2))
+Object.assign(self, __webpack_require__(3))
 
-self.River = __webpack_require__(3).River
+self.River = __webpack_require__(4).River
 
 //Defines self.alphabeticalsort and self.ratingsort
-Object.assign(self, __webpack_require__(4))
+Object.assign(self, __webpack_require__(5))
 
 
 
@@ -270,7 +272,7 @@ GetId("searchbox").addEventListener("keydown", function() {setTimeout(function()
 
 //Fetch data from USGS
 //Put this at the bottom to make sure ItemHolder is filled
-__webpack_require__(5).loadUSGS()
+__webpack_require__(6).loadUSGS()
 
 
 
@@ -292,6 +294,68 @@ if (window.location.hash.length > 0) {
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports) {
+
+//Crwate navigation bar
+let topnav = document.createElement("div")
+topnav.className = "topnav"
+
+let items = []
+
+let item1 = document.createElement("a")
+item1.href = "/"
+item1.innerHTML = "River Info"
+items.push(item1)
+
+let item2 = document.createElement("a")
+item2.href = "about.html"
+item2.innerHTML = "About"
+items.push(item2)
+
+let item3 = document.createElement("a")
+item3.href = "FAQ.html"
+item3.innerHTML = "FAQ"
+items.push(item3)
+
+let item4 = document.createElement("a")
+item4.href = "settings.html"
+item4.innerHTML = "Settings"
+items.push(item4)
+
+
+for (let i=0;i<items.length;i++) {
+    let item = items[i]
+    if (new URL(item.href).pathname === window.location.pathname) {
+        console.log(item.href, window.location.pathname.slice(1))
+        item.className = "topnavcurrent"
+    }
+    topnav.appendChild(item)
+}
+
+document.body.insertBefore(topnav, document.body.firstChild)
+
+let styleSheet = document.styleSheets[0]
+//If there are no rules in styleSheet, the index is negative, causing an error
+styleSheet.addRule(".topnav", "overflow: hidden", Math.max(styleSheet.rules.length - 1, 0))
+styleSheet.addRule(".topnav", "background-color: #24b9cc", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav", "margin:8px", styleSheet.rules.length - 1)
+
+styleSheet.addRule(".topnav a", "float: left", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav a", "display: block", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav a", "color: black", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav a", "text-align: center", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav a", "padding: 14px 16px", styleSheet.rules.length - 1)
+//Not sure what the one below is for
+styleSheet.addRule(".topnav a", "text-decoration: none", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav a", "font-size: 17px", styleSheet.rules.length - 1)
+
+
+styleSheet.addRule(".topnav a:hover", "background-color: #359daa", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnavcurrent", "background-color: #25d1a7", styleSheet.rules.length - 1)
+
+
+/***/ }),
+/* 2 */
 /***/ (function(module, exports) {
 
 //Graph Code
@@ -626,7 +690,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports) {
 
 //Auxillary Function        
@@ -752,7 +816,7 @@ module.exports = {
 }
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports) {
 
     
@@ -1038,7 +1102,7 @@ module.exports.River = function(locate, event) {
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports) {
 
 function alphabeticalsort(orderedlist, reverse) {
@@ -1138,7 +1202,7 @@ module.exports = {
 }
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports) {
 
 module.exports.loadUSGS = async function() {
@@ -1242,4 +1306,4 @@ module.exports.loadUSGS = async function() {
 
 /***/ })
 /******/ ]);
-//# sourceMappingURL=package.js.map
+//# sourceMappingURL=index.js.map

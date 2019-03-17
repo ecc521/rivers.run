@@ -7,30 +7,6 @@ html, body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
-/*topnav is the bar at the very top that allows you to navigate to FAQ, About, River Info, ext.*/
-.topnav {
-  overflow: hidden;
-  background-color: #24b9cc;
-  margin:8px;
-}
-.topnav a {
-  float: left;
-  display: block;
-  color: black;
-  text-align: center;
-  padding: 14px 16px;
-  text-decoration: none;
-  font-size: 17px;
-}
-.topnav a:hover {
-  background-color: #359daa;
-}
-.topnavcurrent {
-  background-color: #25d1a7;
-}
-/*End of topnav style*/
-
-
 /*Chart CSS*/
 .graph {
     display: block;

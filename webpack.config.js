@@ -2,12 +2,14 @@ const path = require("path")
 
 module.exports = {
     mode: "production", //Build for production
-    entry: __dirname, //Bundle all files in directory
+    entry: {
+        index: "./index.js"
+    },
     target: "web",
     devtool: "source-map",
     output: {
-        path: __dirname,
-        filename: "package.js",
+        path: path.join(__dirname, "packages"),
+        filename: "[name].js",
     },
 	optimization: {
 		minimize: false
