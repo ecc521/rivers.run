@@ -306,6 +306,19 @@ try {
         if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
             styleSheet.removeRule(styleSheet.cssRules.length - 1)
         }
+		
+		if (window.darkMode) {
+			//Style links so that they are visible in dark mode
+			
+			//Unvisited Link
+			styleSheet.insertRule("a:link {color: #3333FF;}", styleSheet.cssRules.length)
+			//Visited link
+			styleSheet.insertRule("a:visited {color: purple;}", styleSheet.cssRules.length)
+			//Hovering over link
+			styleSheet.insertRule("a:hover {color: green;}", styleSheet.cssRules.length)
+			//Quick flash of color when link clicked
+			styleSheet.insertRule("a:active {color: red;}", styleSheet.cssRules.length)
+		}
     }
 }
 catch (e) {
