@@ -89,6 +89,7 @@ Those include name,section,skill,quality, and flow info*/
     transition: 0.2s;
     text-align:left;
     font-size: 3.0vw;
+	display: block; /*This bug took me hours to find. If this is not included, spaces appear between buttons in list on smaller devices*/
 }
     
 .riverbutton:nth-child(even) {
