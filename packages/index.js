@@ -276,43 +276,49 @@ let styleSheet = document.styleSheets[0]
 //If prefers-color-scheme does not exist, the user needs to manually select dark/light mode
 //If prefers-color-scheme does exist, we follow it, unless the user wants to override it
 
-//Basic checking to make sure we don't mess with/error on pages that don't support dark mode
-if (styleSheet.rules[styleSheet.rules.length - 1] instanceof CSSMediaRule) {
-    window.darkMode = localStorage.getItem("prefersDarkMode")
-    //Convert string to boolean
-    if (window.darkMode === "null") {window.darkMode = null}
-    if (window.darkMode === "false") {window.darkMode = false}
-    if (window.darkMode === "true") {window.darkMode = true}
+try {
+    //Basic checking to make sure we don't mess with/error on pages that don't support dark mode
+    if (styleSheet.cssRules[styleSheet.cssRules.length - 1] instanceof CSSMediaRule) {
+        window.darkMode = localStorage.getItem("prefersDarkMode")
+        //Convert string to boolean
+        if (window.darkMode === "null") {window.darkMode = null}
+        if (window.darkMode === "false") {window.darkMode = false}
+        if (window.darkMode === "true") {window.darkMode = true}
 
 
-    if (window.darkMode === null) {
-        window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (window.darkMode === null) {
+            window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+        }
+
+        //Override browser to engage or disengage dark mode
+        if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
+            let cssText = styleSheet.cssRules[styleSheet.cssRules.length-1].cssText
+            //Trim off the @media ... { and trailing }
+            cssText = cssText.slice(cssText.indexOf("{") + 1, -1)
+            let darkModeRules = cssText.split("\n")
+            for (let i=0;i<darkModeRules.length;i++) {
+                let rule = darkModeRules[i]
+                if (rule.trim() === "") {continue}
+                styleSheet.insertRule(rule, styleSheet.cssRules.length)
+            }    
+        }
+
+        if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
+            styleSheet.removeRule(styleSheet.cssRules.length - 1)
+        }
     }
-
-    //Override browser to engage or disengage dark mode
-    if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
-        let cssText = styleSheet.rules[styleSheet.rules.length-1].cssText
-        //Trim off the @media ... { and trailing }
-        cssText = cssText.slice(cssText.indexOf("{") + 1, -1)
-        let darkModeRules = cssText.split("\n")
-        for (let i=0;i<darkModeRules.length;i++) {
-            let rule = darkModeRules[i]
-            if (rule === "") {continue;}
-            styleSheet.insertRule(rule, styleSheet.rules.length)
-        }    
-    }
-
-    if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
-        styleSheet.removeRule(styleSheet.rules.length - 1)
-    }
+}
+catch (e) {
+    console.error(e)
 }
 
 
 
 
 
+
 //Make sure I don't hate the font
-styleSheet.addRule("html body", "font-family: Arial, Helvetica, sans-serif", styleSheet.rules.length)
+styleSheet.insertRule("html body {font-family: Arial, Helvetica, sans-serif}", styleSheet.cssRules.length)
 
 
 
@@ -354,22 +360,22 @@ for (let i=0;i<items.length;i++) {
 
 document.body.insertBefore(topnav, document.body.firstChild)
 
-styleSheet.addRule(".topnav", "overflow: hidden", styleSheet.rules.length)
-styleSheet.addRule(".topnav", "background-color: #24b9cc", styleSheet.rules.length)
-styleSheet.addRule(".topnav", "margin:0px", styleSheet.rules.length)
+styleSheet.insertRule(".topnav {overflow: hidden}", styleSheet.cssRules.length)
+styleSheet.insertRule(".topnav {background-color: #24b9cc}", styleSheet.cssRules.length)
+styleSheet.insertRule(".topnav {margin:0px}", styleSheet.cssRules.length)
 
-styleSheet.addRule(".topnav a", "float: left", styleSheet.rules.length)
-styleSheet.addRule(".topnav a", "display: block", styleSheet.rules.length)
-styleSheet.addRule(".topnav a", "color: black", styleSheet.rules.length)
-styleSheet.addRule(".topnav a", "text-align: center", styleSheet.rules.length)
-styleSheet.addRule(".topnav a", "padding: 12px 13px", styleSheet.rules.length)
+styleSheet.insertRule(".topnav a {float: left}", styleSheet.cssRules.length)
+styleSheet.insertRule(".topnav a {display: block}", styleSheet.cssRules.length)
+styleSheet.insertRule(".topnav a {color: black}", styleSheet.cssRules.length)
+styleSheet.insertRule(".topnav a {text-align: center}", styleSheet.cssRules.length)
+styleSheet.insertRule(".topnav a {padding: 12px 13px}", styleSheet.cssRules.length)
 //Not sure what the one below is for
-styleSheet.addRule(".topnav a", "text-decoration: none", styleSheet.rules.length)
-styleSheet.addRule(".topnav a", "font-size: 17px", styleSheet.rules.length)
+styleSheet.insertRule(".topnav a {text-decoration: none}", styleSheet.cssRules.length)
+styleSheet.insertRule(".topnav a {font-size: 17px}", styleSheet.cssRules.length)
 
 
-styleSheet.addRule(".topnav a:hover", "background-color: #359daa", styleSheet.rules.length - 1)
-styleSheet.addRule(".topnavcurrent", "background-color: #25d1a7", styleSheet.rules.length - 1)
+styleSheet.insertRule(".topnav a:hover {background-color: #359daa}", styleSheet.cssRules.length)
+styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.cssRules.length)
 
 
 
