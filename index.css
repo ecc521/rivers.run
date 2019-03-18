@@ -3,8 +3,6 @@ html, body {
     border:0;
     height:100%;
     background-color:#dffaff;
-    /*Make sure I don't hate the font*/
-    font-family: Arial, Helvetica, sans-serif;
 }
 
 /*Chart CSS*/
@@ -45,7 +43,7 @@ html, body {
     display:none; /*Advanced Search is Unfinished*/
 }
     
-#searchbox{
+#searchbox {
     display:inline-block;
     padding:12px;
     vertical-align:middle;
@@ -210,4 +208,14 @@ Those include name,section,skill,quality, and flow info*/
     a:active {
       color: red;
     }
+    
+    #searchbox {
+        border: none;
+    }
+    
+    #searchbox::placeholder {
+        color: #cccccc;
+    }
+        
+        
 }

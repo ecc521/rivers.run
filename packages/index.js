@@ -93,34 +93,6 @@
 
 __webpack_require__(1)
 
-//Determine if the user wants dark mode
-//If prefers-color-scheme does not exist, the user needs to manually select dark/light mode
-//If prefers-color-scheme does exist, we follow it, unless the user wants to override it
-window.darkMode = localStorage.getItem("prefersDarkMode")
-//Convert string to boolean
-if (window.darkMode === "null") {window.darkMode = null}
-if (window.darkMode === "false") {window.darkMode = false}
-if (window.darkMode === "true") {window.darkMode = true}
-
-
-if (window.darkMode === null) {
-    window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
-}
-
-//Override browser to engage or disengage dark mode
-//This is extremely sensitive to the design of the CSS
-//The @media query must be last rule in first stylesheet for this to work
-let styleSheet = document.styleSheets[0]
-if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
-    let darkModeRules = styleSheet.rules[styleSheet.rules.length-1].cssText.slice(16,-1).trim().split("\n")
-    for (let i=0;i<darkModeRules.length;i++) {styleSheet.insertRule(darkModeRules[i], styleSheet.rules.length)}    
-}
-
-if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
-    styleSheet.removeRule(styleSheet.rules.length - 1)
-}
-
-
 
 self.addLine = __webpack_require__(2).addLine
 
@@ -131,8 +103,6 @@ self.River = __webpack_require__(4).River
 
 //Defines self.alphabeticalsort and self.ratingsort
 Object.assign(self, __webpack_require__(5))
-
-
 
 
 
@@ -296,6 +266,57 @@ if (window.location.hash.length > 0) {
 /* 1 */
 /***/ (function(module, exports) {
 
+//This is extremely sensitive to the design of the CSS
+//The @media query must be last rule in first stylesheet for this to work
+let styleSheet = document.styleSheets[0]
+
+
+
+//Determine if the user wants dark mode
+//If prefers-color-scheme does not exist, the user needs to manually select dark/light mode
+//If prefers-color-scheme does exist, we follow it, unless the user wants to override it
+
+//Basic checking to make sure we don't mess with/error on pages that don't support dark mode
+if (styleSheet.rules[styleSheet.rules.length - 1] instanceof CSSMediaRule) {
+    window.darkMode = localStorage.getItem("prefersDarkMode")
+    //Convert string to boolean
+    if (window.darkMode === "null") {window.darkMode = null}
+    if (window.darkMode === "false") {window.darkMode = false}
+    if (window.darkMode === "true") {window.darkMode = true}
+
+
+    if (window.darkMode === null) {
+        window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    }
+
+    //Override browser to engage or disengage dark mode
+    if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
+        let cssText = styleSheet.rules[styleSheet.rules.length-1].cssText
+        //Trim off the @media ... { and trailing }
+        cssText = cssText.slice(cssText.indexOf("{") + 1, -1)
+        let darkModeRules = cssText.split("\n")
+        for (let i=0;i<darkModeRules.length;i++) {
+            let rule = darkModeRules[i]
+            if (rule === "") {continue;}
+            styleSheet.insertRule(rule, styleSheet.rules.length)
+        }    
+    }
+
+    if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
+        styleSheet.removeRule(styleSheet.rules.length - 1)
+    }
+}
+
+
+
+
+
+//Make sure I don't hate the font
+styleSheet.addRule("html body", "font-family: Arial, Helvetica, sans-serif", styleSheet.rules.length)
+
+
+
+
 //Crwate navigation bar
 let topnav = document.createElement("div")
 topnav.className = "topnav"
@@ -326,7 +347,6 @@ items.push(item4)
 for (let i=0;i<items.length;i++) {
     let item = items[i]
     if (new URL(item.href).pathname === window.location.pathname) {
-        console.log(item.href, window.location.pathname.slice(1))
         item.className = "topnavcurrent"
     }
     topnav.appendChild(item)
@@ -334,24 +354,27 @@ for (let i=0;i<items.length;i++) {
 
 document.body.insertBefore(topnav, document.body.firstChild)
 
-let styleSheet = document.styleSheets[0]
-//If there are no rules in styleSheet, the index is negative, causing an error
-styleSheet.addRule(".topnav", "overflow: hidden", Math.max(styleSheet.rules.length - 1, 0))
-styleSheet.addRule(".topnav", "background-color: #24b9cc", styleSheet.rules.length - 1)
-styleSheet.addRule(".topnav", "margin:0px", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav", "overflow: hidden", styleSheet.rules.length)
+styleSheet.addRule(".topnav", "background-color: #24b9cc", styleSheet.rules.length)
+styleSheet.addRule(".topnav", "margin:0px", styleSheet.rules.length)
 
-styleSheet.addRule(".topnav a", "float: left", styleSheet.rules.length - 1)
-styleSheet.addRule(".topnav a", "display: block", styleSheet.rules.length - 1)
-styleSheet.addRule(".topnav a", "color: black", styleSheet.rules.length - 1)
-styleSheet.addRule(".topnav a", "text-align: center", styleSheet.rules.length - 1)
-styleSheet.addRule(".topnav a", "padding: 12px 13px", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav a", "float: left", styleSheet.rules.length)
+styleSheet.addRule(".topnav a", "display: block", styleSheet.rules.length)
+styleSheet.addRule(".topnav a", "color: black", styleSheet.rules.length)
+styleSheet.addRule(".topnav a", "text-align: center", styleSheet.rules.length)
+styleSheet.addRule(".topnav a", "padding: 12px 13px", styleSheet.rules.length)
 //Not sure what the one below is for
-styleSheet.addRule(".topnav a", "text-decoration: none", styleSheet.rules.length - 1)
-styleSheet.addRule(".topnav a", "font-size: 17px", styleSheet.rules.length - 1)
+styleSheet.addRule(".topnav a", "text-decoration: none", styleSheet.rules.length)
+styleSheet.addRule(".topnav a", "font-size: 17px", styleSheet.rules.length)
 
 
 styleSheet.addRule(".topnav a:hover", "background-color: #359daa", styleSheet.rules.length - 1)
 styleSheet.addRule(".topnavcurrent", "background-color: #25d1a7", styleSheet.rules.length - 1)
+
+
+
+
+
 
 
 /***/ }),
@@ -878,7 +901,7 @@ module.exports.River = function(locate, event) {
     }
     else {
     let img = document.createElement("img")
-    img.src = "https://rivers.run/resources/" + this.rating + ".png"
+    img.src = "resources/" + this.rating + ".png"
     img.alt = this.rating[0] + " Stars"
     img.className = "starimg"
     let span = document.createElement("span")

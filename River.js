@@ -57,7 +57,7 @@ module.exports.River = function(locate, event) {
     }
     else {
     let img = document.createElement("img")
-    img.src = "https://rivers.run/resources/" + this.rating + ".png"
+    img.src = "resources/" + this.rating + ".png"
     img.alt = this.rating[0] + " Stars"
     img.className = "starimg"
     let span = document.createElement("span")

@@ -8,17 +8,25 @@
         <meta name="theme-color" content="#317EFB"/>        
     </head>
     <body>
-        <style>
-        </style>
-        <script src="createNavbar.js"></script>
 
         <h3>Theme (Requires Refresh)</h3>
+        <p>Note: If you choose a theme other than the default, you may see a little flash when the theme is changed during page load</p>
         <select id="theme">
             <option value="null">Default</option>
             <option value="false">Light</option>
             <option value="true">Dark</option>
         </select>
         <p id="darkModeDefaultExplaination">Default: Use browser/os theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your browser provides a color scheme to use)</p>
+        
+        
+        <style>
+            @media (prefers-color-scheme: dark) {
+                html, body {
+                    background-color: black;
+                    color: #cccccc;
+                }
+            }
+        </style>
         
         <script>
             document.getElementById("theme").addEventListener("change", function(event) {
@@ -40,5 +48,7 @@
 
 
         </script>
+        
+        <script src="allPages.js"></script>
     </body>
 </html>
