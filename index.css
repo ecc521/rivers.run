@@ -186,29 +186,7 @@ Those include name,section,skill,quality, and flow info*/
     #topbar {
         color:black;
     }
-    
-    /*Links didn't show up in dark mode. Style so they do*/
-    
-    /* unvisited link */
-    a:link {
-      color: #3333FF;
-    }
-
-    /* visited link */
-    a:visited {
-      color: purple;
-    }
-
-    /* mouse over link */
-    a:hover {
-      color: green;
-    }
-
-    /* selected link */
-    a:active {
-      color: red;
-    }
-    
+        
     #searchbox {
         border: none;
     }
