@@ -49,6 +49,12 @@ html, body {
     vertical-align:middle;
     width:30%
 }
+
+#searchbox::placeholder {
+	/*Make the text show up a little better.*/
+	font-size: 1.1em; 
+	font-weight: bold;
+}
   
 /*riverspans are the spans that actually hold the information - there are 6 riverspans for each river. 
 Those include name,section,skill,quality, and flow info*/
@@ -181,7 +187,7 @@ Those include name,section,skill,quality, and flow info*/
     }   
     
     #searchbox {
-        background-color:#666666;
+        background-color:#606060;
     }
     
     #topbar {
@@ -193,7 +199,7 @@ Those include name,section,skill,quality, and flow info*/
     }
     
     #searchbox::placeholder {
-        color: #cccccc;
+        color: #dddddd;
     }
         
         
