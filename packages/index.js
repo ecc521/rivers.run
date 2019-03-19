@@ -108,111 +108,111 @@ Object.assign(self, __webpack_require__(6))
 
 
 self.GetId = function(Name) {
-  return document.getElementById(Name)
+    return document.getElementById(Name)
 }
 
 
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/sw.js');
-  });
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js');
+    });
 }
 
-    
-    
+
+
 //ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list. 
 self.ItemHolder = []
 riverarray.map(function(event, index) {
     ItemHolder[index] = new River(index, event)
 })
-    
-    
+
+
 var oldresult;    
 window.NewList = function(query, type, reverse) {
     if (typeof(query) === "string") {
-    query = query.toLowerCase()
+        query = query.toLowerCase()
     }
     //Location searching uses numbers.
-    
+
     let orderedlist = ItemHolder.slice(0); //Clone the array
     if (!(String(query).length === 0 || !query || !type)) {
-    
-    if (type === "sort") {
-        //Obey other filters
-        if (oldresult) {
-            orderedlist = oldresult
-        }   
-        if (query === "alphabetical") {
-          orderedlist = alphabeticalsort(orderedlist, reverse)
-        }
-        else if (query === "rating") {
-          orderedlist = ratingsort(orderedlist, reverse)
-        }
-        else if (query === "skill") {
-          orderedlist = skillsort(orderedlist, reverse)
-        }      
-    }
-        
-        
-    if (type === "normal") {
-        let l = [[],[],[],[],[]]
-        orderedlist.forEach(function(event){
-            if(event.tags.toLowerCase().indexOf(query) !== -1) {
-                if (event.name.toLowerCase().indexOf(query) !== -1) {
-                    l[0].push(event)
-                }
-                else {
-                    l[1].push(event)
-                }
-            }
-            else if (event.name.toLowerCase().indexOf(query) !== -1) {
-                l[2].push(event)
-            }
-            else if (event.section.toLowerCase().indexOf(query) !== -1) {
-                l[3].push(event)
-            }
-            else if (event.writeup.toLowerCase().indexOf(query) !== -1) {
-                l[4].push(event)
-            }
-        })
-        
-        orderedlist = l[0].concat(l[1],l[2],l[3])
-        
-        //Add the less relevant results below
-        orderedlist = orderedlist.concat(l[4])
-        
-        
-        
-    }
-        
-        
-        
-        
-    if (type === "advanced") {  
-    }    
-        
-    if (type === "location") {
-    if (oldresult) {
-        orderedlist = oldresult
-    }
-    
-    var nlist = []
-    orderedlist.forEach(function(value){
-        if (value.plat && value.plon) {
-             if (distanceto(value.plat, value.plon) < query) {
-                 nlist.push(value)
-             }
-        }
-    })
-    orderedlist = nlist
 
-    
-    }
-        
-        
+        if (type === "sort") {
+            //Obey other filters
+            if (oldresult) {
+                orderedlist = oldresult
+            }   
+            if (query === "alphabetical") {
+                orderedlist = alphabeticalsort(orderedlist, reverse)
+            }
+            else if (query === "rating") {
+                orderedlist = ratingsort(orderedlist, reverse)
+            }
+            else if (query === "skill") {
+                orderedlist = skillsort(orderedlist, reverse)
+            }      
+        }
+
+
+        if (type === "normal") {
+            let l = [[],[],[],[],[]]
+            orderedlist.forEach(function(event){
+                if(event.tags.toLowerCase().indexOf(query) !== -1) {
+                    if (event.name.toLowerCase().indexOf(query) !== -1) {
+                        l[0].push(event)
+                    }
+                    else {
+                        l[1].push(event)
+                    }
+                }
+                else if (event.name.toLowerCase().indexOf(query) !== -1) {
+                    l[2].push(event)
+                }
+                else if (event.section.toLowerCase().indexOf(query) !== -1) {
+                    l[3].push(event)
+                }
+                else if (event.writeup.toLowerCase().indexOf(query) !== -1) {
+                    l[4].push(event)
+                }
+            })
+
+            orderedlist = l[0].concat(l[1],l[2],l[3])
+
+            //Add the less relevant results below
+            orderedlist = orderedlist.concat(l[4])
+
+
+
+        }
+
+
+
+
+        if (type === "advanced") {  
+        }    
+
+        if (type === "location") {
+            if (oldresult) {
+                orderedlist = oldresult
+            }
+
+            var nlist = []
+            orderedlist.forEach(function(value){
+                if (value.plat && value.plon) {
+                    if (distanceto(value.plat, value.plon) < query) {
+                        nlist.push(value)
+                    }
+                }
+            })
+            orderedlist = nlist
+
+
+        }
+
+
     }//Closing for if a query is present
-    
+
     //Clear Current
     ItemHolder.forEach(function(event) {
         event.delete()
@@ -223,20 +223,20 @@ window.NewList = function(query, type, reverse) {
     orderedlist.forEach(function(event){
         div.appendChild(event.create())
     })
-     
+
     if (type !== "sort") {
         oldresult = orderedlist
     }
 }
-    
+
 
 GetId("Rivers").appendChild(new TopBar().create())
 NewList("alphabetical", "sort")
 
-   
+
 GetId("searchbox").addEventListener("keydown", function() {setTimeout(function(){NewList(GetId("searchbox").value, "normal")}, 20)})
 
-    
+
 
 
 
@@ -1169,92 +1169,92 @@ module.exports.addGraphs = function(div, data) {
 /* 6 */
 /***/ (function(module, exports) {
 
-function alphabeticalsort(orderedlist, reverse) {
-  
-    function compare(a,b) {
-    if (a.name < b.name)
-        return -1;
-    if (a.name > b.name)
-        return 1;
-    return 0;
-    }
-  
-    orderedlist.sort(compare);
-    if (reverse) {
-        orderedlist.reverse()
-    }
-  
-    return orderedlist
+function simpleSort(list, propertyName) {
+    list.sort(function(a,b) {
+        if (a[propertyName] > b[propertyName]) {
+            return -1;
+        }
+        if (a[propertyName] < [propertyName]) {
+            return 1;
+        }
+        return 0;
+    })
+    return list
 }
 
-function ratingsort(orderedlist, reverse) {
-    function compare(a,b) {
-    if (a.rating > b.rating)
-        return -1;
-    if (a.rating < b.rating)
-        return 1;
-    return 0;
-    }
-    orderedlist.sort(compare);
+
+function alphabeticalsort(list, reverse) {
+    list = simpleSort(list, "name")
+
     if (reverse) {
-         orderedlist.reverse()
+        list.reverse()
+    }
+
+    return list
+}
+
+function ratingsort(list, reverse) {
+    list = simpleSort(list, "rating")
+
+    if (reverse) {
+        list.reverse()
     }
     //Move error values to end
-    while (orderedlist[0].rating === "Error") {
-        orderedlist.push(orderedlist.shift())
+    while (list[0].rating === "Error") {
+        list.push(list.shift())
     }  
-    return orderedlist
-  
+    return list
+
 }
 
 
-function skillsort(orderedlist, reverse) {
-        orderedlist.sort(function(a,b) {
-    
-    function ToNum(value) {
-        
-        switch (value.skill) {
-            case "FW":
-                value = 1;
-                break;
-            case "B":
-                value = 2;
-                break;
-            case "N":
-                value = 3;
-                break;
-            case "LI":
-                value = 4;
-                break;
-            case "I":
-                value = 5;
-                break;
-            case "HI":
-                value = 6;
-                break;
-            case "A":
-                value = 7;
-                break;
-            case "E":
-                value = 8;
-                break;
-            default:
-                value = 9;
-        }
-        return value
-    }       
+function skillsort(list, reverse) {
+    list.sort(function(a,b) {
+
+        function ToNum(value) {
+
+            switch (value.skill) {
+                case "FW":
+                    value = 1;
+                    break;
+                case "B":
+                    value = 2;
+                    break;
+                case "N":
+                    value = 3;
+                    break;
+                case "LI":
+                    value = 4;
+                    break;
+                case "I":
+                    value = 5;
+                    break;
+                case "HI":
+                    value = 6;
+                    break;
+                case "A":
+                    value = 7;
+                    break;
+                case "E":
+                    value = 8;
+                    break;
+                default:
+                    value = 9;
+            }
+            return value
+        }       
         return ToNum(a)-ToNum(b)
     })
-    
-    
+
+
     if (reverse) {
-        orderedlist.reverse()
-        while (orderedlist[0].skill === "?") {
-            orderedlist.push(orderedlist.shift())
+        list.reverse()
+        while (list[0].skill === "?") {
+            list.push(list.shift())
         }
     }
-    
-    return orderedlist
+
+    return list
 }
 
 
