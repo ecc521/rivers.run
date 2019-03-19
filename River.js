@@ -44,7 +44,7 @@ function addClickHandler(button, locate) {
         else {
             river.expanded = 0
             button.style.backgroundColor = ""//Let the button inherit the default color
-            var elem = GetId(river.base + 2)
+            var elem = document.getElementById(river.base + 2)
             if (elem) {
                 elem.parentNode.removeChild(elem)
             }
@@ -157,14 +157,14 @@ module.exports.River = function(locate, event) {
     this.delete = function () {
         let river = ItemHolder[locate]
         function Remove(Code) {
-            let ToDelete = GetId(river.base + Code)
+            let ToDelete = document.getElementById(river.base + Code)
             if (ToDelete) {
                 ToDelete.parentNode.removeChild(ToDelete)
             }
         }
 
         //Reset background color
-        let reset = GetId(river.base + 1)
+        let reset = document.getElementById(river.base + 1)
         if (reset) {
             reset.style.backgroundColor = ""
         }

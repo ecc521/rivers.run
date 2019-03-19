@@ -10,15 +10,11 @@ Object.assign(self, require("./TopBar.js"))
 
 self.River = require("./River.js").River
 
-//Defines self.alphabeticalsort and self.ratingsort
-Object.assign(self, require("./sort.js"))
+self.sort = require("./sort.js").sort
 
+//Defines self.normalSearch and self.advanedSearch
+Object.assign(self, require("./search.js"))
 
-
-
-self.GetId = function(Name) {
-    return document.getElementById(Name)
-}
 
 
 
@@ -51,56 +47,16 @@ window.NewList = function(query, type, reverse) {
             //Obey other filters
             if (oldresult) {
                 orderedlist = oldresult
-            }   
-            if (query === "alphabetical") {
-                orderedlist = alphabeticalsort(orderedlist, reverse)
             }
-            else if (query === "rating") {
-                orderedlist = ratingsort(orderedlist, reverse)
-            }
-            else if (query === "skill") {
-                orderedlist = skillsort(orderedlist, reverse)
-            }      
+            
+            orderedlist = sort(query, orderedlist, reverse)
         }
-
-
         if (type === "normal") {
-            let l = [[],[],[],[],[]]
-            orderedlist.forEach(function(event){
-                if(event.tags.toLowerCase().indexOf(query) !== -1) {
-                    if (event.name.toLowerCase().indexOf(query) !== -1) {
-                        l[0].push(event)
-                    }
-                    else {
-                        l[1].push(event)
-                    }
-                }
-                else if (event.name.toLowerCase().indexOf(query) !== -1) {
-                    l[2].push(event)
-                }
-                else if (event.section.toLowerCase().indexOf(query) !== -1) {
-                    l[3].push(event)
-                }
-                else if (event.writeup.toLowerCase().indexOf(query) !== -1) {
-                    l[4].push(event)
-                }
-            })
-
-            orderedlist = l[0].concat(l[1],l[2],l[3])
-
-            //Add the less relevant results below
-            orderedlist = orderedlist.concat(l[4])
-
-
-
+            orderedlist = normalSearch(orderedlist, query)
         }
-
-
-
-
-        if (type === "advanced") {  
+        if (type === "advanced") { 
+            orderedlist = advancedSearch(orderedlist, query)
         }    
-
         if (type === "location") {
             if (oldresult) {
                 orderedlist = oldresult
@@ -115,8 +71,6 @@ window.NewList = function(query, type, reverse) {
                 }
             })
             orderedlist = nlist
-
-
         }
 
 
@@ -127,7 +81,7 @@ window.NewList = function(query, type, reverse) {
         event.delete()
     }) 
     //Append New
-    var div = GetId("Rivers")
+    var div = document.getElementById("Rivers")
     //Everything else    
     orderedlist.forEach(function(event){
         div.appendChild(event.create())
@@ -139,11 +93,11 @@ window.NewList = function(query, type, reverse) {
 }
 
 
-GetId("Rivers").appendChild(new TopBar().create())
+document.getElementById("Rivers").appendChild(new TopBar().create())
 NewList("alphabetical", "sort")
 
 
-GetId("searchbox").addEventListener("keydown", function() {setTimeout(function(){NewList(GetId("searchbox").value, "normal")}, 20)})
+document.getElementById("searchbox").addEventListener("keydown", function() {setTimeout(function(){NewList(document.getElementById("searchbox").value, "normal")}, 20)})
 
 
 
@@ -164,7 +118,7 @@ require("./loadUSGS.js").loadUSGS()
 //Check if there is a search query
 if (window.location.hash.length > 0) {
     let search = window.location.hash.slice(1)
-    GetId("searchbox").value = search
+    document.getElementById("searchbox").value = search
     NewList(search, "normal")
 }
 

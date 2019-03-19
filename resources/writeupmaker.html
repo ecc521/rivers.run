@@ -102,7 +102,7 @@ function copyStringToClipboard() {
    document.body.removeChild(el);
 }
   
-function GetId(Name) {
+function document.getElementById(Name) {
     return document.getElementById(Name)
 }
   //state, hidlat, hidlon
@@ -114,41 +114,41 @@ List = List.map(function(value){
   
 List.forEach(function(value){
   console.log(value)
-  console.log(GetId(value))
-  GetId(value).value = localStorage.getItem(value)
+  console.log(document.getElementById(value))
+  document.getElementById(value).value = localStorage.getItem(value)
 })  
     
 function LinkUpdate() {
-  var Text = GetId("LinkURL").value
+  var Text = document.getElementById("LinkURL").value
   if (Text.trim().indexOf("https://") !== 0) {
-    GetId("LinkURL").value = "https://"
+    document.getElementById("LinkURL").value = "https://"
     Text = "https://"
   }
-  Text = "<a href=\"" + Text + "\" target=\"_blank\" rel=\"noopener\">" + GetId("LinkText").value + "</a>"
-  GetId("LinkResult").innerText = Text
-  GetId("LinkShow").innerHTML = "Your link looks like this: \"" + Text + "\""
+  Text = "<a href=\"" + Text + "\" target=\"_blank\" rel=\"noopener\">" + document.getElementById("LinkText").value + "</a>"
+  document.getElementById("LinkResult").innerText = Text
+  document.getElementById("LinkShow").innerHTML = "Your link looks like this: \"" + Text + "\""
 }
 function UpdateWriteup() {
     List.forEach(function(value){
-      localStorage.setItem(value, GetId(value).value.trim())
+      localStorage.setItem(value, document.getElementById(value).value.trim())
     })  
   
     var Text = ""
     var EndText = ""
     List.forEach(function(value, index){
       if (value !== "writeup") {
-      Text += "\n" + value + ": " + GetId(value).value.trim()
+      Text += "\n" + value + ": " + document.getElementById(value).value.trim()
       }
       else {
-      EndText = "\n" + GetId(value).value.trim()
+      EndText = "\n" + document.getElementById(value).value.trim()
       }
     })
   
     Text = Text + EndText
     Text = Text.trim()
   
-    GetId("Output").value = Text
-    GetId("WriteupExample").innerHTML = GetId("writeup").value.split("\n").join("<br>")
+    document.getElementById("Output").value = Text
+    document.getElementById("WriteupExample").innerHTML = document.getElementById("writeup").value.split("\n").join("<br>")
 }
 UpdateWriteup()
 //Initial update

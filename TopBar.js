@@ -98,7 +98,7 @@ function TopBar() {
     }
 
     this.delete = function() {
-        let Node = GetId("topbar")
+        let Node = document.getElementById("topbar")
         if (Node) {
             Node.parentNode.removeChild(Node)
         }

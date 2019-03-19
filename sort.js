@@ -88,8 +88,27 @@ function skillsort(list, reverse) {
 
 
 
+
+function sort(method, list, reverse) {
+    if (method === "alphabetical") {
+        list = alphabeticalsort(list, reverse)
+    }
+    else if (method === "rating") {
+        list = ratingsort(list, reverse)
+    }
+    else if (method === "skill") {
+        list = skillsort(list, reverse)
+    }
+    else {
+        throw "Unknown sorting method " + method
+    }
+    return list
+}
+
+
 module.exports = {
     ratingsort,
     alphabeticalsort,
     skillsort,
+    sort
 }

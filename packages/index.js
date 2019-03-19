@@ -101,15 +101,11 @@ Object.assign(self, __webpack_require__(3))
 
 self.River = __webpack_require__(4).River
 
-//Defines self.alphabeticalsort and self.ratingsort
-Object.assign(self, __webpack_require__(6))
+self.sort = __webpack_require__(6).sort
 
+//Defines self.normalSearch and self.advanedSearch
+Object.assign(self, __webpack_require__(7))
 
-
-
-self.GetId = function(Name) {
-    return document.getElementById(Name)
-}
 
 
 
@@ -142,56 +138,16 @@ window.NewList = function(query, type, reverse) {
             //Obey other filters
             if (oldresult) {
                 orderedlist = oldresult
-            }   
-            if (query === "alphabetical") {
-                orderedlist = alphabeticalsort(orderedlist, reverse)
             }
-            else if (query === "rating") {
-                orderedlist = ratingsort(orderedlist, reverse)
-            }
-            else if (query === "skill") {
-                orderedlist = skillsort(orderedlist, reverse)
-            }      
+            
+            orderedlist = sort(query, orderedlist, reverse)
         }
-
-
         if (type === "normal") {
-            let l = [[],[],[],[],[]]
-            orderedlist.forEach(function(event){
-                if(event.tags.toLowerCase().indexOf(query) !== -1) {
-                    if (event.name.toLowerCase().indexOf(query) !== -1) {
-                        l[0].push(event)
-                    }
-                    else {
-                        l[1].push(event)
-                    }
-                }
-                else if (event.name.toLowerCase().indexOf(query) !== -1) {
-                    l[2].push(event)
-                }
-                else if (event.section.toLowerCase().indexOf(query) !== -1) {
-                    l[3].push(event)
-                }
-                else if (event.writeup.toLowerCase().indexOf(query) !== -1) {
-                    l[4].push(event)
-                }
-            })
-
-            orderedlist = l[0].concat(l[1],l[2],l[3])
-
-            //Add the less relevant results below
-            orderedlist = orderedlist.concat(l[4])
-
-
-
+            orderedlist = normalSearch(orderedlist, query)
         }
-
-
-
-
-        if (type === "advanced") {  
+        if (type === "advanced") { 
+            orderedlist = advancedSearch(orderedlist, query)
         }    
-
         if (type === "location") {
             if (oldresult) {
                 orderedlist = oldresult
@@ -206,8 +162,6 @@ window.NewList = function(query, type, reverse) {
                 }
             })
             orderedlist = nlist
-
-
         }
 
 
@@ -218,7 +172,7 @@ window.NewList = function(query, type, reverse) {
         event.delete()
     }) 
     //Append New
-    var div = GetId("Rivers")
+    var div = document.getElementById("Rivers")
     //Everything else    
     orderedlist.forEach(function(event){
         div.appendChild(event.create())
@@ -230,11 +184,11 @@ window.NewList = function(query, type, reverse) {
 }
 
 
-GetId("Rivers").appendChild(new TopBar().create())
+document.getElementById("Rivers").appendChild(new TopBar().create())
 NewList("alphabetical", "sort")
 
 
-GetId("searchbox").addEventListener("keydown", function() {setTimeout(function(){NewList(GetId("searchbox").value, "normal")}, 20)})
+document.getElementById("searchbox").addEventListener("keydown", function() {setTimeout(function(){NewList(document.getElementById("searchbox").value, "normal")}, 20)})
 
 
 
@@ -242,7 +196,7 @@ GetId("searchbox").addEventListener("keydown", function() {setTimeout(function()
 
 //Fetch data from USGS
 //Put this at the bottom to make sure ItemHolder is filled
-__webpack_require__(7).loadUSGS()
+__webpack_require__(8).loadUSGS()
 
 
 
@@ -255,7 +209,7 @@ __webpack_require__(7).loadUSGS()
 //Check if there is a search query
 if (window.location.hash.length > 0) {
     let search = window.location.hash.slice(1)
-    GetId("searchbox").value = search
+    document.getElementById("searchbox").value = search
     NewList(search, "normal")
 }
 
@@ -835,7 +789,7 @@ function TopBar() {
     }
 
     this.delete = function() {
-        let Node = GetId("topbar")
+        let Node = document.getElementById("topbar")
         if (Node) {
             Node.parentNode.removeChild(Node)
         }
@@ -898,7 +852,7 @@ function addClickHandler(button, locate) {
         else {
             river.expanded = 0
             button.style.backgroundColor = ""//Let the button inherit the default color
-            var elem = GetId(river.base + 2)
+            var elem = document.getElementById(river.base + 2)
             if (elem) {
                 elem.parentNode.removeChild(elem)
             }
@@ -1011,14 +965,14 @@ module.exports.River = function(locate, event) {
     this.delete = function () {
         let river = ItemHolder[locate]
         function Remove(Code) {
-            let ToDelete = GetId(river.base + Code)
+            let ToDelete = document.getElementById(river.base + Code)
             if (ToDelete) {
                 ToDelete.parentNode.removeChild(ToDelete)
             }
         }
 
         //Reset background color
-        let reset = GetId(river.base + 1)
+        let reset = document.getElementById(river.base + 1)
         if (reset) {
             reset.style.backgroundColor = ""
         }
@@ -1265,14 +1219,79 @@ function skillsort(list, reverse) {
 
 
 
+
+function sort(method, list, reverse) {
+    if (method === "alphabetical") {
+        list = alphabeticalsort(list, reverse)
+    }
+    else if (method === "rating") {
+        list = ratingsort(list, reverse)
+    }
+    else if (method === "skill") {
+        list = skillsort(list, reverse)
+    }
+    else {
+        throw "Unknown sorting method " + method
+    }
+    return list
+}
+
+
 module.exports = {
     ratingsort,
     alphabeticalsort,
     skillsort,
+    sort
 }
 
 /***/ }),
 /* 7 */
+/***/ (function(module, exports) {
+
+function normalSearch(list, query) {
+    let l = [[],[],[],[],[]]
+    list.forEach(function(event){
+        if(event.tags.toLowerCase().indexOf(query) !== -1) {
+            if (event.name.toLowerCase().indexOf(query) !== -1) {
+                l[0].push(event)
+            }
+            else {
+                l[1].push(event)
+            }
+        }
+        else if (event.name.toLowerCase().indexOf(query) !== -1) {
+            l[2].push(event)
+        }
+        else if (event.section.toLowerCase().indexOf(query) !== -1) {
+            l[3].push(event)
+        }
+        else if (event.writeup.toLowerCase().indexOf(query) !== -1) {
+            l[4].push(event)
+        }
+    })
+
+    list = l[0].concat(l[1],l[2],l[3])
+
+    //Add the less relevant results below
+    list = list.concat(l[4])
+    
+    return list
+}
+
+function advancedSearch(list) {
+    //Passthrough function
+    return list
+}
+
+
+
+module.exports = {
+    normalSearch,
+    advancedSearch
+}
+
+/***/ }),
+/* 8 */
 /***/ (function(module, exports) {
 
 module.exports.loadUSGS = async function() {
@@ -1353,7 +1372,7 @@ module.exports.loadUSGS = async function() {
 
         //item.create(true) will force regeneration of the button
         //Replace the current button so that the flow info shows 
-        let elem = GetId(item.base + "1")
+        let elem = document.getElementById(item.base + "1")
         let expanded = item.expanded
         console.log(expanded)
         let replacement = item.create(true) //Update the version in cache

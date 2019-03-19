@@ -76,7 +76,7 @@ module.exports.loadUSGS = async function() {
 
         //item.create(true) will force regeneration of the button
         //Replace the current button so that the flow info shows 
-        let elem = GetId(item.base + "1")
+        let elem = document.getElementById(item.base + "1")
         let expanded = item.expanded
         console.log(expanded)
         let replacement = item.create(true) //Update the version in cache
