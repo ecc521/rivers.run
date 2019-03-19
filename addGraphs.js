@@ -38,32 +38,34 @@ function toparts(arr) {
 
 function addFlowGraph(div, cfs, height) {
     //Make sure we actually have some data, and don't create an empty graph
-    if (cfs || height) {
-        let canvas = createcanvas()
-        if (cfs && height) {
-            let parts = toparts(cfs.values)
-            addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFFa0", 2)
-            parts = toparts(height.values)
-            addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FFa0", 2, 1)                
-        }
-        else if (cfs) {
-            let parts = toparts(cfs.values)
-            addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFF")
-        }
-        else {
-            let parts = toparts(height.values)
-            addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FF")    
-        }
+    if (!(cfs || height)) {return}
 
-        //For some reason, only the last canvas was showing. Use images
-        //Images also allow "Save Image As"
-        let img = document.createElement("img")
-        img.className = "graph"
-        //Blobs may be faster - but I don't know of a synchronus method
-        img.src = canvas.toDataURL("image/png")
-
-        div.appendChild(img)
+    let canvas = createcanvas()
+    //Time to create a dual lined graph!
+    if (cfs && height) {
+        let parts = toparts(cfs.values)
+        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFFa0", 2)
+        parts = toparts(height.values)
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FFa0", 2, 1)                
     }
+    //We won't have both cfs and height. Draw a single line graph for whichever we have.
+    else if (cfs) {
+        let parts = toparts(cfs.values)
+        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFF")
+    }
+    else {
+        let parts = toparts(height.values)
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FF")    
+    }
+
+    //For some reason, only the last canvas was showing. Use images
+    //Images also allow "Save Image As"
+    let img = document.createElement("img")
+    img.className = "graph"
+    //Blobs may be faster - but I don't know of a synchronus method
+    img.src = canvas.toDataURL("image/png")
+
+    div.appendChild(img)
 }
 
 
