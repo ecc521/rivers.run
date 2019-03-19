@@ -188,7 +188,8 @@ document.getElementById("Rivers").appendChild(new TopBar().create())
 NewList("alphabetical", "sort")
 
 
-document.getElementById("searchbox").addEventListener("keydown", function() {setTimeout(function(){NewList(document.getElementById("searchbox").value, "normal")}, 20)})
+let searchbox = document.getElementById("searchbox")
+searchbox.addEventListener("keydown", function() {setTimeout(function(){NewList(searchbox.value, "normal")}, 20)})
 
 
 
