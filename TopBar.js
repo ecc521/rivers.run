@@ -1,27 +1,3 @@
-//Auxillary Function        
-//True means pointing up, false means pointing down
-function triangle(facing) {
-  //Most values in this function are arbitrary
-  let scale = window.innerWidth/750
-  scale = scale ** 0.5 //Square Root to make difference smaller
-  
-  let div = document.createElement("div")
-  div.style.width = 0;
-  div.style.height = 0;
-  div.style.display = "inline-block";
-  div.style.borderLeft = 4*scale + "px solid transparent"
-  div.style.borderRight = 4*scale + "px solid transparent"
-  div.style.marginLeft = 1.5*scale + "px"
-  //If triangle is pointing up
-  if (facing) {
-    div.style.borderBottom = 8*scale + "px solid black"
-  }
-  else {
-    div.style.borderTop = 8*scale + "px solid black"
-  }
-  return div;
-}
-
 function TopBar() {
     this.create = function() {
         let button = document.createElement("button")
@@ -37,15 +13,26 @@ function TopBar() {
         }
         
         //Auxillary Function
-        //Elem is the span element. If facing is true, set triangle to up, else down
-        function settri(elem, facing) {
-          elem.lastChild.remove()
-          elem.appendChild(triangle(facing))
+        function settri(elem, facingUpwards) {
+            let upArrow = "⬆"
+            let downArrow = "⬇"
+            let lastChar = elem.innerHTML.slice(-1)
+            
+          //Make sure there is a triangle first.
+          if (lastChar === upArrow || lastChar === downArrow) {
+           elem.innerHTML = elem.innerHTML.slice(0,-1)
+          }
+          if (facingUpwards) {
+            elem.innerHTML += upArrow
+          }
+          else {
+            elem.innerHTML += downArrow
+          }
         }
       
       
         let span = NewSpan("River")
-        span.appendChild(triangle(true))
+        settri(span, true)
 
         span.onclick = function() {
           if (this.value) {
@@ -67,7 +54,7 @@ function TopBar() {
 
         
         span = NewSpan("Skill")
-        span.appendChild(triangle(true))
+        settri(span, true)
         span.onclick = function() {
             if (this.value === 1) {
                 NewList("skill", "sort", true)
@@ -84,7 +71,7 @@ function TopBar() {
         button.appendChild(span) 
         
         span = NewSpan("Rating")
-        span.appendChild(triangle(true))
+        settri(span, true)
 
         span.onclick = function() {
                 if (this.value === 1) {
@@ -116,6 +103,5 @@ function TopBar() {
 
 
 module.exports = {
-    triangle,
     TopBar
 }
