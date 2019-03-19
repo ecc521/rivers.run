@@ -13,17 +13,20 @@ function TopBar() {
         }
         
         //Auxillary Function
-        //Elem is the span element. If facing is true, set triangle to up, else down
-        function settri(elem, facing) {
+        function settri(elem, facingUpwards) {
+            let upArrow = "⬆"
+            let downArrow = "⬇"
+            let lastChar = elem.innerHTML.slice(-1)
+            
           //Make sure there is a triangle first.
-          if (elem.innerHTML.slice(-1) === "▲" || elem.innerHTML.slice(-1) === "▼") {
+          if (lastChar === upArrow || lastChar === downArrow) {
            elem.innerHTML = elem.innerHTML.slice(0,-1)
           }
-          if (facing) {
-            elem.innerHTML += "▲"
+          if (facingUpwards) {
+            elem.innerHTML += upArrow
           }
           else {
-            elem.innerHTML += "▼"
+            elem.innerHTML += downArrow
           }
         }
       
