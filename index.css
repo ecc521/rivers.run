@@ -185,21 +185,18 @@ Those include name,section,skill,quality, and flow info*/
     .riverbutton:hover {
         background-color: #333333;
     }   
-    
-    #searchbox {
-        background-color:#606060;
-    }
-    
+
     #topbar {
         color:black;
     }
         
     #searchbox {
+        background-color:#545454;
         border: none;
     }
     
     #searchbox::placeholder {
-        color: #dddddd;
+        color: #FAFAFA;
     }
         
         
