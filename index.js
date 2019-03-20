@@ -33,6 +33,11 @@ riverarray.map(function(event, index) {
 })
 
 
+//Fetch data from USGS
+//ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise self.usgsarray is undefined)
+require("./loadUSGS.js").loadUSGS()
+
+
 var oldresult;    
 window.NewList = function(query, type, reverse) {
     if (typeof(query) === "string") {
@@ -99,16 +104,6 @@ NewList("alphabetical", "sort")
 
 let searchbox = document.getElementById("searchbox")
 searchbox.addEventListener("keydown", function() {setTimeout(function(){NewList(searchbox.value, "normal")}, 20)})
-
-
-
-
-
-//Fetch data from USGS
-//Put this at the bottom to make sure ItemHolder is filled
-require("./loadUSGS.js").loadUSGS()
-
-
 
 
 
