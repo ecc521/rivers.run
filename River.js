@@ -55,11 +55,13 @@ function addClickHandler(button, locate) {
 
 
 module.exports.River = function(locate, event) {
-    this.name = event.name
-    this.section = event.section
-    this.skill = event.skill
-
-    switch (Number(event.rating)) {
+	
+	//Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw
+	Object.assign(this, event)
+	//tags needs to be a string
+    this.tags = this.tags || ""
+	//Convert the numeric value to the filename
+    switch (Number(this.rating)) {
         case 1:
             this.rating = "1Star";
             break;
@@ -76,14 +78,7 @@ module.exports.River = function(locate, event) {
         this.rating = "Error"
     }
 
-    this.writeup = event.writeup
-    this.tags = event.tags || ""
-    this.usgs = event.usgs
-    this.plat = event.plat
-    this.plon = event.plon
-    this.tlat = event.tlat
-    this.tlon = event.tlon
-    this.aw = event.aw
+
     this.base = "b" + locate
     this.expanded = 0
     this.index = locate
