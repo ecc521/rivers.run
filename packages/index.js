@@ -124,6 +124,11 @@ riverarray.map(function(event, index) {
 })
 
 
+//Fetch data from USGS
+//ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise self.usgsarray is undefined)
+__webpack_require__(8).loadUSGS()
+
+
 var oldresult;    
 window.NewList = function(query, type, reverse) {
     if (typeof(query) === "string") {
@@ -190,16 +195,6 @@ NewList("alphabetical", "sort")
 
 let searchbox = document.getElementById("searchbox")
 searchbox.addEventListener("keydown", function() {setTimeout(function(){NewList(searchbox.value, "normal")}, 20)})
-
-
-
-
-
-//Fetch data from USGS
-//Put this at the bottom to make sure ItemHolder is filled
-__webpack_require__(8).loadUSGS()
-
-
 
 
 
@@ -886,6 +881,52 @@ module.exports.River = function(locate, event) {
             if (this.flow) {
                 AddSpan(this.flow)
             }
+            
+	let usgsData = usgsarray[this.usgs]
+	if (usgsData) {
+		let data;
+		
+		if (usgsData["00060"]) {data = usgsData["00060"].values}
+		else if (usgsData["00065"]) {data = usgsData["00065"].values}
+		
+		if (data) {
+			let current;
+			let previous;
+			
+			//We will go back 4 datapoints (1 hour) if possible. 
+			//Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
+			let stop = Math.max(data.length-5, 0)
+			for (let i=data.length;i>stop;i--) {
+				let item = data[i]
+				if (!item) {continue}
+				let value = item.value
+				if (!current) {
+					current = value
+				}
+				else {
+					previous = value
+				}
+			}
+			
+			console.log(data)
+			console.log(current, previous)
+			if (current > previous) {
+				//Water level rising
+				AddSpan("⬆")
+			}
+			else if (previous > current) {
+				//Water level falling
+				AddSpan("⬇")
+			}
+			else if (current === previous) {
+				//Water level stable
+				AddSpan("-")
+			}
+			
+		}
+	}
+            
+            
             button.className = "riverbutton"
             //Add the click handler
             addClickHandler(button, locate)
@@ -1245,6 +1286,8 @@ module.exports = {
 /* 8 */
 /***/ (function(module, exports) {
 
+self.usgsarray = {} 
+
 module.exports.loadUSGS = async function() {
     
     var sites = []
@@ -1260,7 +1303,6 @@ module.exports.loadUSGS = async function() {
     let response = await fetch(url)
     let usgsdata = await response.json()    
 
-    self.usgsarray = {}
     //Iterate through all known conditions
     usgsdata.value.timeSeries.forEach(function(event){
         let obj2 = {}
@@ -1343,6 +1385,7 @@ module.exports.loadUSGS = async function() {
     }
     
 }
+
 
 /***/ })
 /******/ ]);
