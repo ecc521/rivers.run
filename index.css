@@ -193,6 +193,7 @@ Those include name,section,skill,quality, and flow info*/
     #searchbox {
         background-color:#545454;
         border: none;
+	color: #FAFAFA;
     }
     
     #searchbox::placeholder {
