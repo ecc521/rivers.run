@@ -1,10 +1,10 @@
 function simpleSort(list, propertyName) {
     list.sort(function(a,b) {
         if (a[propertyName] > b[propertyName]) {
-            return -1;
+            return 1;
         }
         if (a[propertyName] < [propertyName]) {
-            return 1;
+            return -1;
         }
         return 0;
     })
@@ -18,7 +18,7 @@ function alphabeticalsort(list, reverse) {
     if (reverse) {
         list.reverse()
     }
-
+    
     return list
 }
 
@@ -33,7 +33,6 @@ function ratingsort(list, reverse) {
         list.push(list.shift())
     }  
     return list
-
 }
 
 
