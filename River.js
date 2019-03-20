@@ -126,6 +126,52 @@ module.exports.River = function(locate, event) {
             if (this.flow) {
                 AddSpan(this.flow)
             }
+            
+	let usgsData = usgsarray[this.usgs]
+	if (usgsData) {
+		let data;
+		
+		if (usgsData["00060"]) {data = usgsData["00060"].values}
+		else if (usgsData["00065"]) {data = usgsData["00065"].values}
+		
+		if (data) {
+			let current;
+			let previous;
+			
+			//We will go back 4 datapoints (1 hour) if possible. 
+			//Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
+			let stop = Math.max(data.length-5, 0)
+			for (let i=data.length;i>stop;i--) {
+				let item = data[i]
+				if (!item) {continue}
+				let value = item.value
+				if (!current) {
+					current = value
+				}
+				else {
+					previous = value
+				}
+			}
+			
+			console.log(data)
+			console.log(current, previous)
+			if (current > previous) {
+				//Water level rising
+				AddSpan("⬆")
+			}
+			else if (previous > current) {
+				//Water level falling
+				AddSpan("⬇")
+			}
+			else if (current === previous) {
+				//Water level stable
+				AddSpan("-")
+			}
+			
+		}
+	}
+            
+            
             button.className = "riverbutton"
             //Add the click handler
             addClickHandler(button, locate)
