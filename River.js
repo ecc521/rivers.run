@@ -54,11 +54,64 @@ function addClickHandler(button, locate) {
 }
 
 
+
+
+function calculateDirection(usgsNumber) {
+	let usgsData = usgsarray[usgsNumber]
+	if (usgsData) {
+		let data;
+		
+		if (usgsData["00060"]) {data = usgsData["00060"].values}
+		else if (usgsData["00065"]) {data = usgsData["00065"].values}
+		
+		if (data) {
+			let current;
+			let previous;
+			
+			//We will go back 4 datapoints (1 hour) if possible. 
+			//Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
+			let stop = Math.max(data.length-5, 0)
+			for (let i=data.length;i>stop;i--) {
+				let item = data[i]
+				if (!item) {continue}
+				let value = item.value
+				if (!current) {
+					current = value
+				}
+				else {
+					previous = value
+				}
+			}
+			
+			if (current > previous) {
+				//Water level rising
+				return "⬆"
+			}
+			else if (previous > current) {
+				//Water level falling
+				return "⬇"
+			}
+			else if (current === previous) {
+				//Water level stable
+				return "-"
+			}
+			
+		}
+	}
+	return; //If we got here, there is not enough USGS data. 
+}
+
+
+
+
+
+
+
 module.exports.River = function(locate, event) {
 	
 	//Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw
 	Object.assign(this, event)
-	//tags needs to be a string
+	//tags needs to be a string. It can't be undefined
     this.tags = this.tags || ""
 	//Convert the numeric value to the filename
     switch (Number(this.rating)) {
@@ -122,49 +175,11 @@ module.exports.River = function(locate, event) {
                 AddSpan(this.flow)
             }
             
-	let usgsData = usgsarray[this.usgs]
-	if (usgsData) {
-		let data;
-		
-		if (usgsData["00060"]) {data = usgsData["00060"].values}
-		else if (usgsData["00065"]) {data = usgsData["00065"].values}
-		
-		if (data) {
-			let current;
-			let previous;
+			let direction = calculateDirection(this.usgs)
 			
-			//We will go back 4 datapoints (1 hour) if possible. 
-			//Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
-			let stop = Math.max(data.length-5, 0)
-			for (let i=data.length;i>stop;i--) {
-				let item = data[i]
-				if (!item) {continue}
-				let value = item.value
-				if (!current) {
-					current = value
-				}
-				else {
-					previous = value
-				}
+			if (direction) {
+				AddSpan(direction)
 			}
-			
-			console.log(data)
-			console.log(current, previous)
-			if (current > previous) {
-				//Water level rising
-				AddSpan("⬆")
-			}
-			else if (previous > current) {
-				//Water level falling
-				AddSpan("⬇")
-			}
-			else if (current === previous) {
-				//Water level stable
-				AddSpan("-")
-			}
-			
-		}
-	}
             
             
             button.className = "riverbutton"
