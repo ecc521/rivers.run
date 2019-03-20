@@ -1,3 +1,5 @@
+self.usgsarray = {} 
+
 module.exports.loadUSGS = async function() {
     
     var sites = []
@@ -13,7 +15,6 @@ module.exports.loadUSGS = async function() {
     let response = await fetch(url)
     let usgsdata = await response.json()    
 
-    self.usgsarray = {}
     //Iterate through all known conditions
     usgsdata.value.timeSeries.forEach(function(event){
         let obj2 = {}
