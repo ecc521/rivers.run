@@ -172,15 +172,10 @@ module.exports.River = function(locate, event) {
 
 
             if (this.flow) {
-                AddSpan(this.flow)
+                AddSpan(this.flow + " " + calculateDirection(this.usgs))
             }
             
-			let direction = calculateDirection(this.usgs)
-			
-			if (direction) {
-				AddSpan(direction)
-			}
-            
+
             
             button.className = "riverbutton"
             //Add the click handler
