@@ -43,7 +43,7 @@ function TopBar() {
         span.value = 1 //We want greatest first, not least first, on the first sort
         button.appendChild(span) 
 
-        button.appendChild(NewSpan("Flow Info"))
+        button.appendChild(NewSpan("Flow Info/Trend"))
 
         return button
     }
