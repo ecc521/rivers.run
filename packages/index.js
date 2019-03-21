@@ -730,7 +730,7 @@ function TopBar() {
         span.value = 1 //We want greatest first, not least first, on the first sort
         button.appendChild(span) 
 
-        button.appendChild(NewSpan("Flow Info"))
+        button.appendChild(NewSpan("Flow Info/Trend"))
 
         return button
     }
@@ -809,12 +809,67 @@ function addClickHandler(button, locate) {
 }
 
 
-module.exports.River = function(locate, event) {
-    this.name = event.name
-    this.section = event.section
-    this.skill = event.skill
 
-    switch (Number(event.rating)) {
+
+function calculateDirection(usgsNumber) {
+	let usgsData = usgsarray[usgsNumber]
+	if (usgsData) {
+		let data;
+		
+		if (usgsData["00060"]) {data = usgsData["00060"].values}
+		else if (usgsData["00065"]) {data = usgsData["00065"].values}
+		
+		if (data) {
+			let current;
+			let previous;
+			
+			//We will go back 4 datapoints (1 hour) if possible. 
+			//Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
+			let stop = Math.max(data.length-5, 0)
+			for (let i=data.length;i>stop;i--) {
+				let item = data[i]
+				if (!item) {continue}
+				let value = item.value
+				if (!current) {
+					current = value
+				}
+				else {
+					previous = value
+				}
+			}
+			
+			if (current > previous) {
+				//Water level rising
+				return "⬆"
+			}
+			else if (previous > current) {
+				//Water level falling
+				return "⬇"
+			}
+			else if (current === previous) {
+				//Water level stable
+				return "-"
+			}
+			
+		}
+	}
+	return; //If we got here, there is not enough USGS data. 
+}
+
+
+
+
+
+
+
+module.exports.River = function(locate, event) {
+	
+	//Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw
+	Object.assign(this, event)
+	//tags needs to be a string. It can't be undefined
+    this.tags = this.tags || ""
+	//Convert the numeric value to the filename
+    switch (Number(this.rating)) {
         case 1:
             this.rating = "1Star";
             break;
@@ -831,14 +886,7 @@ module.exports.River = function(locate, event) {
         this.rating = "Error"
     }
 
-    this.writeup = event.writeup
-    this.tags = event.tags || ""
-    this.usgs = event.usgs
-    this.plat = event.plat
-    this.plon = event.plon
-    this.tlat = event.tlat
-    this.tlon = event.tlon
-    this.aw = event.aw
+
     this.base = "b" + locate
     this.expanded = 0
     this.index = locate
@@ -879,53 +927,10 @@ module.exports.River = function(locate, event) {
 
 
             if (this.flow) {
-                AddSpan(this.flow)
+                AddSpan(this.flow + " " + calculateDirection(this.usgs))
             }
             
-	let usgsData = usgsarray[this.usgs]
-	if (usgsData) {
-		let data;
-		
-		if (usgsData["00060"]) {data = usgsData["00060"].values}
-		else if (usgsData["00065"]) {data = usgsData["00065"].values}
-		
-		if (data) {
-			let current;
-			let previous;
-			
-			//We will go back 4 datapoints (1 hour) if possible. 
-			//Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
-			let stop = Math.max(data.length-5, 0)
-			for (let i=data.length;i>stop;i--) {
-				let item = data[i]
-				if (!item) {continue}
-				let value = item.value
-				if (!current) {
-					current = value
-				}
-				else {
-					previous = value
-				}
-			}
-			
-			console.log(data)
-			console.log(current, previous)
-			if (current > previous) {
-				//Water level rising
-				AddSpan("⬆")
-			}
-			else if (previous > current) {
-				//Water level falling
-				AddSpan("⬇")
-			}
-			else if (current === previous) {
-				//Water level stable
-				AddSpan("-")
-			}
-			
-		}
-	}
-            
+
             
             button.className = "riverbutton"
             //Add the click handler
