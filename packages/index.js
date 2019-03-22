@@ -286,36 +286,46 @@ styleSheet.insertRule("html body {font-family: Arial, Helvetica, sans-serif}", s
 
 
 
-//Crwate navigation bar
+//Create navigation bar
+//Where rivers.run is located
+//This should allow rivers.run to the run from a directory
+let root = window.location.href
+root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
+	
 let topnav = document.createElement("div")
 topnav.className = "topnav"
 
 let items = []
 
 let item1 = document.createElement("a")
-item1.href = "/"
+item1.href = root
 item1.innerHTML = "River Info"
 items.push(item1)
 
 let item2 = document.createElement("a")
-item2.href = "about.html"
+item2.href = root + "about.html"
 item2.innerHTML = "About"
 items.push(item2)
 
 let item3 = document.createElement("a")
-item3.href = "FAQ.html"
+item3.href = root + "FAQ.html"
 item3.innerHTML = "FAQ"
 items.push(item3)
 
 let item4 = document.createElement("a")
-item4.href = "settings.html"
+item4.href = root + "settings.html"
 item4.innerHTML = "Settings"
 items.push(item4)
 
 
 for (let i=0;i<items.length;i++) {
     let item = items[i]
-    if (new URL(item.href).pathname === window.location.pathname) {
+
+	let target = item.href.slice(root.length)
+	let location = window.location.href.slice(root.length)
+	
+	
+    if (target === location) {
         item.className = "topnavcurrent"
     }
     topnav.appendChild(item)

@@ -5,9 +5,9 @@
         <!-- upgrade-insecure-requests should also be used, but it messed up development. It will be added back at some point-->
         <!-- I would like to be able to use blobs for the images instead of data urls as they are faster and would prevent people from adding incredibly long data urls directly into their river writeups. The issue is that the current design for opening a river writeup is synchronus, and canvas.toBlob is asynchronus -->
 		<meta http-equiv="Content-Security-Policy" content="
-            default-src https://rivers.run https://*.rivers.run http://127.0.0.1:*;
-            connect-src https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov;
-            img-src https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;"
+            default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:*;
+            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov;
+            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;"
         >
         <!-- Curently the img-src can be bypassed with a Data URL. This should be changed so that cannot be done-->
         
