@@ -457,30 +457,20 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
     for(var i = 1;i<11;i++) {
         var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
 
-        if (Text >= 1000) {
-            Text = Math.round(Text)
-        }
-        else {
-            Text = Text.toFixed(3-String(Math.round(Text)).length)
-            if (Number(Text) === Math.round(Text)) {
-                Text = Math.round(Text)
-            }
-        }
+        let precision = Math.max(0, 3-String(Math.round(Text)).length)
+        
+        Text = Number(Text.toFixed(precision))
 
         ctx.fillText(Text, start, (height*(11-i))/10-5);
     }
 
     //Top one
     Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
-    if (Text >= 1000) {
-        Text = Math.round(Text)
-    }
-    else {
-        Text = Text.toFixed(3-String(Math.round(Text)).length)
-        if (Number(Text) === Math.round(Text)) {
-            Text = Math.round(Text)
-        }
-    }
+    
+    let precision = Math.max(0, 3-String(Math.round(Text)).length)
+        
+    Text = Number(Text.toFixed(precision))
+    
     ctx.fillText(Text, start, 27);
 
 
