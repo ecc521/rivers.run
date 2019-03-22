@@ -132,40 +132,27 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
 
 
+	function formatDate(date) {
+    	var time = String(date.getHours())
+	
+		if (date.getHours() < 10) {
+			time += "0"
+		}
+		time += ":" + date.getMinutes()
+		if (date.getMinutes() < 10) {
+			time += "0"
+		}
+		time += " " + (date.getMonth()+1) + "/" + date.getDate() + "/" +date.getFullYear()
+		return time
+	}
+	
     var time1 = new Date(timeframe[0])
     var time2 = new Date(timeframe[timeframe.length - 1])
     var time3 = new Date(((time2-time1)/2)+time1.getTime())
-    var starttime = time1.getHours()
-    var endtime = time2.getHours()
-    var midtime = time3.getHours()
-    if (String(time1.getHours()).length < 2) {
-        starttime = starttime + "0"
-    }
-    starttime += ":" + time1.getMinutes()
-    if (String(time1.getMinutes()).length < 2) {
-        starttime = starttime + "0"
-    }
-    starttime += " " + (time1.getMonth()+1) + "/" + time1.getDate() + "/" +time1.getFullYear()
-
-
-    if (String(time2.getHours()).length < 2) {
-        endtime = endtime + "0"
-    }
-    endtime += ":" + time2.getMinutes()
-    if (String(time2.getMinutes()).length < 2) {
-        endtime = endtime + "0"
-    }
-    endtime += " " + (time2.getMonth()+1) + "/" + time2.getDate() + "/" +time2.getFullYear()
-
-
-    if (String(time3.getHours()).length < 2) {
-        midtime = midtime + "0"
-    }
-    midtime += ":" + time3.getMinutes()
-    if (String(time3.getMinutes()).length < 2) {
-        midtime = midtime + "0"
-    }
-    midtime += " " + (time3.getMonth()+1) + "/" + time3.getDate() + "/" +time3.getFullYear()
+	
+    var starttime = formatDate(time1)
+    var endtime = formatDate(time2)
+    var midtime = formatDate(time3)
 
     ctx.fillText(starttime, 10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
 
