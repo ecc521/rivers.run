@@ -1,3 +1,8 @@
+//This JavaScript file should run on all pages
+//It defines global CSS rules, allows for forcing dark mode, and
+//defines the river-overview DOM element
+
+
 //This is extremely sensitive to the design of the CSS
 //The @media query must be last rule in first stylesheet for this to work
 let styleSheet = document.styleSheets[0]
@@ -140,3 +145,108 @@ styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.c
 
 
 
+
+
+//The remaining code is for the river-overview tags
+
+//Add the modal styles
+styleSheet.insertRule(`
+.modal {
+    display: none; 
+    position:fixed; 
+    z-index:1; 
+    padding-top: 5%;
+    left:0;
+    top:0;
+    width:100%;
+    height: 100%;
+    overflow:auto;
+    background-color: rgba(0,0,0,0.4);
+}`, styleSheet.cssRules.length)
+
+styleSheet.insertRule(`
+.modal-content {
+    color:black;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%;
+}`,styleSheet.cssRules.length)
+
+styleSheet.insertRule(`
+.modal-close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}`,styleSheet.cssRules.length)
+
+styleSheet.insertRule(`
+.modal-close:hover, .modal-close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}`,styleSheet.cssRules.length)
+
+
+
+//Create the modal element
+let overview_modal = document.createElement("div")
+overview_modal.className = "modal"
+
+let modal_content = document.createElement("div")
+modal_content.className = "modal-content"
+
+let overview_modal_close = document.createElement("span")
+overview_modal_close.className = "modal-close"
+overview_modal_close.innerHTML = "×"
+
+let overview_modal_text = document.createElement("p")
+
+overview_modal.appendChild(modal_content)
+modal_content.appendChild(overview_modal_close)
+modal_content.appendChild(overview_modal_text)
+
+document.body.appendChild(overview_modal)
+
+
+
+//Make the modal disappear when the close button is clicked, or when area outside content is clicked
+overview_modal_close.onclick = function() {
+	overview_modal.style.display = "none"
+}
+
+overview_modal.onclick = function() {
+    this.style.display = "none"
+}
+
+	
+//Create the river-overview element
+class RiverOverview extends HTMLElement {
+  constructor() {
+	  super();
+
+	  function openOverview() {
+		  let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a programming or data entry error"
+		  if (window.overviews && window.overviews[this.innerHTML]) {
+		  	text = window.overviews[this.innerHTML]
+		  }
+	  	
+          overview_modal_text.innerHTML = text
+          overview_modal.style.display = "block"
+          
+	  }
+	  
+	  
+	  //Style so that text looks like a link/button
+	  this.style.cursor = "pointer"
+	  this.style.color = "blue"
+	  this.style.textDecoration = "underline"
+
+	  this.addEventListener("click", openOverview)
+	
+  }
+}
+
+customElements.define('river-overview', RiverOverview);

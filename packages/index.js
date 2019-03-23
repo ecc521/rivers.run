@@ -93,19 +93,17 @@
 
 __webpack_require__(1)
 
-__webpack_require__(2)
-
-self.addLine = __webpack_require__(3).addLine
+self.addLine = __webpack_require__(2).addLine
 
 //Defines self.TopBar and self.triangle
-Object.assign(self, __webpack_require__(4))
+Object.assign(self, __webpack_require__(3))
 
-self.River = __webpack_require__(5).River
+self.River = __webpack_require__(4).River
 
-self.sort = __webpack_require__(7).sort
+self.sort = __webpack_require__(6).sort
 
 //Defines self.normalSearch and self.advanedSearch
-Object.assign(self, __webpack_require__(8))
+Object.assign(self, __webpack_require__(7))
 
 
 
@@ -127,7 +125,7 @@ riverarray.map(function(event, index) {
 
 //Fetch data from USGS
 //ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise self.usgsarray is undefined)
-__webpack_require__(9).loadUSGS()
+__webpack_require__(8).loadUSGS()
 
 
 var oldresult;    
@@ -223,7 +221,7 @@ function getAdvancedSearchParameters() {
 
 document.getElementById("performadvancedsearch").addEventListener("click", function() {
     let query = getAdvancedSearchParameters()
-    
+
     //Add link to this search
     //This should run before NewList - otherwise the entire content is added to the object and URL
     //Find where rivers.run is located
@@ -232,7 +230,7 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
     root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
     let link = encodeURI(root + "#" + JSON.stringify(query))
     document.getElementById("searchlink").innerHTML = "Link to this search: <a href=\"" + link + "\">" + link + "</a>"
-    
+
     NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
 })
 
@@ -241,15 +239,15 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 //Check if there is a search query
 if (window.location.hash.length > 0) {
     let search = decodeURI(window.location.hash.slice(1))
-    
+
     try {
         //Do an advanced search if the query if an advanced search
         let query = JSON.parse(search)
-        
+
         //TODO: Set the advanced search areas to the query. 
         NewList(query, "advanced")
-        
-        
+
+
     }
     catch (e) {
         //Looks like we have a normal search query
@@ -265,6 +263,11 @@ if (window.location.hash.length > 0) {
 /***/ }),
 /* 1 */
 /***/ (function(module, exports) {
+
+//This JavaScript file should run on all pages
+//It defines global CSS rules, allows for forcing dark mode, and
+//defines the river-overview DOM element
+
 
 //This is extremely sensitive to the design of the CSS
 //The @media query must be last rule in first stylesheet for this to work
@@ -410,36 +413,95 @@ styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.c
 
 
 
-/***/ }),
-/* 2 */
-/***/ (function(module, exports) {
+//The remaining code is for the river-overview tags
 
-let overview_modal = document.getElementById('overview-modal');
+//Add the modal styles
+styleSheet.insertRule(`
+.modal {
+    display: none; 
+    position:fixed; 
+    z-index:1; 
+    padding-top: 5%;
+    left:0;
+    top:0;
+    width:100%;
+    height: 100%;
+    overflow:auto;
+    background-color: rgba(0,0,0,0.4);
+}`, styleSheet.cssRules.length)
 
-let span = document.getElementById("overview-modal-close").onclick = function() {
+styleSheet.insertRule(`
+.modal-content {
+    color:black;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%;
+}`,styleSheet.cssRules.length)
+
+styleSheet.insertRule(`
+.modal-close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}`,styleSheet.cssRules.length)
+
+styleSheet.insertRule(`
+.modal-close:hover, .modal-close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}`,styleSheet.cssRules.length)
+
+
+
+//Create the modal element
+let overview_modal = document.createElement("div")
+overview_modal.className = "modal"
+
+let modal_content = document.createElement("div")
+modal_content.className = "modal-content"
+
+let overview_modal_close = document.createElement("span")
+overview_modal_close.className = "modal-close"
+overview_modal_close.innerHTML = "×"
+
+let overview_modal_text = document.createElement("p")
+
+overview_modal.appendChild(modal_content)
+modal_content.appendChild(overview_modal_close)
+modal_content.appendChild(overview_modal_text)
+
+document.body.appendChild(overview_modal)
+
+
+
+//Make the modal disappear when the close button is clicked, or when area outside content is clicked
+overview_modal_close.onclick = function() {
 	overview_modal.style.display = "none"
 }
 
-window.onclick = function(event) {
-  if (event.target == overview_modal) {
-    overview_modal.style.display = "none";
-  }
+overview_modal.onclick = function() {
+    this.style.display = "none"
 }
 
-
 	
+//Create the river-overview element
 class RiverOverview extends HTMLElement {
   constructor() {
 	  super();
 
 	  function openOverview() {
-		  let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a data entry error"
+		  let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a programming or data entry error"
 		  if (window.overviews && window.overviews[this.innerHTML]) {
 		  	text = window.overviews[this.innerHTML]
 		  }
 	  	
-		  document.getElementById("overview-modal-text").innerHTML = text
-		  document.getElementById("overview-modal").style.display = "block"
+          overview_modal_text.innerHTML = text
+          overview_modal.style.display = "block"
+          
 	  }
 	  
 	  
@@ -457,7 +519,7 @@ customElements.define('river-overview', RiverOverview);
 
 
 /***/ }),
-/* 3 */
+/* 2 */
 /***/ (function(module, exports) {
 
 //Graph Code
@@ -769,7 +831,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
 
 /***/ }),
-/* 4 */
+/* 3 */
 /***/ (function(module, exports) {
 
 function NewSpan(Text) {
@@ -837,11 +899,11 @@ module.exports = {
 
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-let addGraphs = __webpack_require__(6).addGraphs
+let addGraphs = __webpack_require__(5).addGraphs
 
 
 
@@ -1071,7 +1133,7 @@ module.exports.River = function(locate, event) {
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, exports) {
 
 
@@ -1216,7 +1278,7 @@ module.exports.addGraphs = function(div, data) {
 
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports) {
 
 function simpleSort(list, propertyName) {
@@ -1334,7 +1396,7 @@ module.exports = {
 }
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, exports) {
 
 function normalSearch(list, query) {
@@ -1450,10 +1512,8 @@ let span = document.getElementById("advanced-search-modal-close").onclick = func
 	advanced_search_modal.style.display = "none"
 }
 
-window.onclick = function(event) {
-  if (event.target == advanced_search_modal) {
-    advanced_search_modal.style.display = "none";
-  }
+advanced_search_modal.onclick = function() {
+    this.style.display = "none"
 }
 
 document.getElementById("advancedsearch").addEventListener("click", function() {
@@ -1466,7 +1526,7 @@ document.getElementById("advancedsearch").addEventListener("click", function() {
 
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports) {
 
 self.usgsarray = {} 

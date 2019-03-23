@@ -2,8 +2,6 @@
 
 require("./allPages.js")
 
-require("./overview.js")
-
 self.addLine = require("./graph.js").addLine
 
 //Defines self.TopBar and self.triangle
@@ -132,7 +130,7 @@ function getAdvancedSearchParameters() {
 
 document.getElementById("performadvancedsearch").addEventListener("click", function() {
     let query = getAdvancedSearchParameters()
-    
+
     //Add link to this search
     //This should run before NewList - otherwise the entire content is added to the object and URL
     //Find where rivers.run is located
@@ -141,7 +139,7 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
     root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
     let link = encodeURI(root + "#" + JSON.stringify(query))
     document.getElementById("searchlink").innerHTML = "Link to this search: <a href=\"" + link + "\">" + link + "</a>"
-    
+
     NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
 })
 
@@ -150,15 +148,15 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 //Check if there is a search query
 if (window.location.hash.length > 0) {
     let search = decodeURI(window.location.hash.slice(1))
-    
+
     try {
         //Do an advanced search if the query if an advanced search
         let query = JSON.parse(search)
-        
+
         //TODO: Set the advanced search areas to the query. 
         NewList(query, "advanced")
-        
-        
+
+
     }
     catch (e) {
         //Looks like we have a normal search query

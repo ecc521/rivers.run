@@ -20,6 +20,7 @@
         <!--JavaScript & CSS-->
         <link rel="preload" href="index.css" as="style">
         <link rel="preload" href="riverarray.js" as="script">
+        <link rel="preload" href="overviews.js" as="script">
         <link rel="preload" href="packages/index.js" as="script">
 
 
@@ -86,16 +87,10 @@
         <div id="Rivers"></div>    
 
         
-        <div id="overview-modal" class="overview-modal">
-            <div class="overview-modal-content">
-                <span id="overview-modal-close">&times;</span>
-                <p id="overview-modal-text"></p>
-            </div>
-        </div>		
 
-        <div id="advanced-search-modal" class="advanced-search-modal">
-            <div class="advanced-search-modal-content">
-                <span id="advanced-search-modal-close">&times;</span>
+        <div id="advanced-search-modal" class="modal">
+            <div class="modal-content">
+                <span id="advanced-search-modal-close" class="modal-close">&times;</span>
 
                 <p>Note: Advanced Search is a new feature, and is incomplete</p>
                 <p>Empty Search Queries will be Ignored</p>
@@ -128,6 +123,7 @@
 
 
         <script src="riverarray.js"></script>
+        <script src="overviews.js"></script>
         <script src="packages/index.js"></script> 
 
     </body>  
