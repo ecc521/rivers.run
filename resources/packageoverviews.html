@@ -1,0 +1,136 @@
+
+<script>
+        function download(name, data, mimetype) {
+
+        let stuff = data;
+        let blob = new Blob([stuff],{
+            type: mimetype
+        });
+
+        if(window.navigator.msSaveOrOpenBlob) {
+                window.navigator.msSaveBlob(blob, name);
+            }
+            else{
+                let elem = window.document.createElement('a');
+                elem.href = window.URL.createObjectURL(blob);
+                elem.download = name;        
+                document.body.appendChild(elem);
+                elem.click();        
+                document.body.removeChild(elem);
+            }
+
+        }
+  
+      
+      
+  
+        let googlecloudrequestrate = 10;
+        let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+
+			
+        function urlcreate(File_ID) {
+            return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=text%2Fplain&key=' + API_KEY       
+        }
+
+        window.wait = function(ms) {
+          return new Promise(resolve => {
+            setTimeout(resolve, ms);
+          });
+        };
+
+        (async function() {
+			
+			//This is a bit *TOO* synchronus. All requests should be sent at once, then waited for
+			async function getFilesInFolder(output, id) {
+				let response = await fetch("https://www.googleapis.com/drive/v3/files?q='" + id + "'+in+parents&key=" + API_KEY)
+				let obj = await response.json()
+				
+				if (obj.incompleteSearch) {console.warn("Search may have been incomplete")}
+				
+				let files = obj.files
+				
+				for (let i=0;i<files.length;i++) {
+					let file = files[i]
+					if (file.mimeType === "application/vnd.google-apps.folder") {
+						await getFilesInFolder(output, file.id)
+					}
+					else if (file.mimeType === "application/vnd.google-apps.document") {
+						output.push({name: file.name, id: file.id})
+					}
+					else {
+						console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
+					}
+				}
+				
+			}
+			
+			let overviewFolder = "1U3S5oxwqtnKJrIy7iDChmak2hvjekBBr"
+			let files = []
+			await getFilesInFolder(files, overviewFolder)
+        			
+			
+			
+        
+        self.retry  = []
+        self.complete = []
+        self.failed = []
+
+        window.load = async function(obj) {
+				let id = obj.id
+				let name = obj.name
+				
+                let request = await fetch(urlcreate(id))
+                if (request.ok) {
+                        request = await request.text()
+						//Convert Google Doc line ending to HTML line breaks
+						request = request.split("\n").join("<br>").split("\r").join("")
+                        complete.push({name, request})
+                        console.log(complete.length + " items have now been loaded successfully!")
+                }
+                else if (request.status == 403) {
+                        retry.push(obj)
+                        console.log("403 error requesting the file with a file id of " + id)
+                }
+                else {
+                        failed.push(obj)
+                        console.warn("Requesting the file with a fild id of " + id + " and a name of " + name + " failed. The response is below")
+                        console.warn(request)
+                }
+        }
+                
+        for (let i=0;i<files.length;i++) {
+                load(files[i])
+                await wait(1000/googlecloudrequestrate)
+        }
+        
+        await wait(1000) //Let quota refresh
+                
+        for (let i=0;i<retry.length;i++) {
+                load(files[i])
+                //Use 2000 instead of the 1000 it should be- I want the retries to never 403
+                await wait(2000/googlecloudrequestrate)
+        }                
+                
+        for (let i=0;i<failed.length;i++) {
+                console.error("Loading of file with file id of " + failed[i] + " failed.")
+        }
+              
+        await wait(500) //Let requests finish
+
+			let result = {}
+        for (let i=0;i<complete.length;i++) {
+			let item = complete[i]
+			result[item.name] = item.request
+        }        
+                
+        console.log(result)      
+        let string = "window.overviews = " + JSON.stringify(result)
+        download("overviews.js", string, "application/json")
+                
+                
+        }())
+  
+        
+
+
+</script>

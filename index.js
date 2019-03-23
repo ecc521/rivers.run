@@ -2,6 +2,7 @@
 
 require("./allPages.js")
 
+require("./overview.js")
 
 self.addLine = require("./graph.js").addLine
 

@@ -75,7 +75,7 @@
 		<link rel="stylesheet" type="text/css" href="index.css">
 
 		<h1 class="center">River Information</h1>
-
+		
 		<div class="searchcontain">
 		<img id="searchimg" alt="Search Icon" src="resources/SearchIcon.png">
 		<input id="searchbox" type="text" aria-label="Type in the box to search for a river" placeholder="Search..">
@@ -85,6 +85,12 @@
 		<p class="pixel18 center"><strong>Disclaimer: USGS Gauge data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>
 		<div id="Rivers"></div>    
 
+		<div id="overview-modal" class="overview-modal">
+		  <div class="overview-modal-content">
+		    <span id="overview-modal-close">&times;</span>
+		    <p id="overview-modal-text"></p>
+		  </div>
+		</div>		
 		
 		<script src="riverarray.js"></script>
         	<script src="packages/index.js"></script> 
