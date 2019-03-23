@@ -145,7 +145,7 @@ window.NewList = function(query, type, reverse) {
             if (oldresult) {
                 orderedlist = oldresult
             }
-            
+
             orderedlist = sort(query, orderedlist, reverse)
         }
         if (type === "normal") {
@@ -198,16 +198,65 @@ let searchbox = document.getElementById("searchbox")
 searchbox.addEventListener("keydown", function() {setTimeout(function(){NewList(searchbox.value, "normal")}, 20)})
 
 
+//Generate advanced search parameters from menu
+function getAdvancedSearchParameters() {
+    let parameters = {}
+
+    parameters.name = {
+        type: document.getElementById("nameType").value,
+        query: document.getElementById("nameQuery").value
+    }
+
+    parameters.section  = {
+        type: document.getElementById("sectionType").value,
+        query: document.getElementById("sectionQuery").value
+    }
+
+    parameters.writeup = {
+        type: document.getElementById("writeupType").value,
+        query: document.getElementById("writeupQuery").value
+    }
+
+    return parameters
+}
 
 
+document.getElementById("performadvancedsearch").addEventListener("click", function() {
+    let query = getAdvancedSearchParameters()
+    
+    //Add link to this search
+    //This should run before NewList - otherwise the entire content is added to the object and URL
+    //Find where rivers.run is located
+    //This should allow rivers.run to the run from a directory   
+    let root = window.location.href
+    root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
+    let link = encodeURI(root + "#" + JSON.stringify(query))
+    document.getElementById("searchlink").innerHTML = "Link to this search: <a href=\"" + link + "\">" + link + "</a>"
+    
+    NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
+})
 
 
 
 //Check if there is a search query
 if (window.location.hash.length > 0) {
-    let search = window.location.hash.slice(1)
-    document.getElementById("searchbox").value = search
-    NewList(search, "normal")
+    let search = decodeURI(window.location.hash.slice(1))
+    
+    try {
+        //Do an advanced search if the query if an advanced search
+        let query = JSON.parse(search)
+        
+        //TODO: Set the advanced search areas to the query. 
+        NewList(query, "advanced")
+        
+        
+    }
+    catch (e) {
+        //Looks like we have a normal search query
+        document.getElementById("searchbox").value = search
+        NewList(search, "normal")
+    }
+
 }
 
 
@@ -319,14 +368,18 @@ item4.innerHTML = "Settings"
 items.push(item4)
 
 
+let currentPage = window.location.href.slice(root.length)
+if (currentPage.indexOf("#") !== -1) {
+    currentPage = currentPage.slice(0, currentPage.indexOf("#"))
+}
+
+
 for (let i=0;i<items.length;i++) {
     let item = items[i]
 
-	let target = item.href.slice(root.length)
-	let location = window.location.href.slice(root.length)
+	let target = item.href.slice(root.length)	
 	
-	
-    if (target === location) {
+    if (target === currentPage) {
         item.className = "topnavcurrent"
     }
     topnav.appendChild(item)
@@ -1129,6 +1182,11 @@ function addPrecipGraph(div, precip) {
 
 module.exports.addGraphs = function(div, data) {
 
+    //Avoid erroring
+    if (!data) {
+        return;
+    }
+    
     //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
     //for a specific river due to gauge problems.
     //Each canvas is wrapped individually because sometimes only some graphs have invalid data
@@ -1309,10 +1367,69 @@ function normalSearch(list, query) {
     return list
 }
 
-function advancedSearch(list) {
-    //Passthrough function
+
+function matchesQuery(parameters) {
+    
+    let content = parameters.content
+    let query = parameters.query
+    
+    //Ignore case by default
+    if (!parameters.matchCase) {
+        content = content.toLowerCase()
+        query = query.toLowerCase()
+    }
+    
+    if (parameters.type === "contains") {
+        return content.includes(query)
+    }
+    else if (parameters.type === "matches") {
+        return content === query
+    }
+    else {
+        throw "Unknown Search Type " + parameters.type
+    }
+}
+
+
+//Query is in form of:
+//{
+  //  name: {
+    //    type: "matches",
+    //    query: "potomac"
+    //},
+    //section: {
+    //    type: "contains",
+    //    query: "something"
+  //  }
+//}
+
+//This doesn't work for difficulty and rating - no greater than or equal to.
+//That needs to be added
+function advancedSearch(list, query) {
+    
+    console.log(query)
+
+    for (let property in query) {
+        let parameters = query[property]        
+        
+        //Since we may be deleting elements in the list, items will be skipped if we use array.length
+        for (let item in list) {
+            //Parameters currently contains the query parameters and types.
+            //We need to add the content
+            parameters.content = list[item][property]
+            let passes = matchesQuery(parameters)
+            if (!passes) {
+                //Remove the item if it fails
+                delete list[item]
+            }
+        }
+    }
+    
     return list
 }
+
+
+
 
 
 
@@ -1320,6 +1437,33 @@ module.exports = {
     normalSearch,
     advancedSearch
 }
+
+
+
+
+
+
+//Prepare the Advanced Search button
+let advanced_search_modal = document.getElementById('advanced-search-modal');
+
+let span = document.getElementById("advanced-search-modal-close").onclick = function() {
+	advanced_search_modal.style.display = "none"
+}
+
+window.onclick = function(event) {
+  if (event.target == advanced_search_modal) {
+    advanced_search_modal.style.display = "none";
+  }
+}
+
+document.getElementById("advancedsearch").addEventListener("click", function() {
+    advanced_search_modal.style.display = "block"
+})
+
+
+
+
+
 
 /***/ }),
 /* 9 */

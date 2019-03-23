@@ -100,14 +100,18 @@ item4.innerHTML = "Settings"
 items.push(item4)
 
 
+let currentPage = window.location.href.slice(root.length)
+if (currentPage.indexOf("#") !== -1) {
+    currentPage = currentPage.slice(0, currentPage.indexOf("#"))
+}
+
+
 for (let i=0;i<items.length;i++) {
     let item = items[i]
 
-	let target = item.href.slice(root.length)
-	let location = window.location.href.slice(root.length)
+	let target = item.href.slice(root.length)	
 	
-	
-    if (target === location) {
+    if (target === currentPage) {
         item.className = "topnavcurrent"
     }
     topnav.appendChild(item)

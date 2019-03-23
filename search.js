@@ -28,10 +28,69 @@ function normalSearch(list, query) {
     return list
 }
 
-function advancedSearch(list) {
-    //Passthrough function
+
+function matchesQuery(parameters) {
+    
+    let content = parameters.content
+    let query = parameters.query
+    
+    //Ignore case by default
+    if (!parameters.matchCase) {
+        content = content.toLowerCase()
+        query = query.toLowerCase()
+    }
+    
+    if (parameters.type === "contains") {
+        return content.includes(query)
+    }
+    else if (parameters.type === "matches") {
+        return content === query
+    }
+    else {
+        throw "Unknown Search Type " + parameters.type
+    }
+}
+
+
+//Query is in form of:
+//{
+  //  name: {
+    //    type: "matches",
+    //    query: "potomac"
+    //},
+    //section: {
+    //    type: "contains",
+    //    query: "something"
+  //  }
+//}
+
+//This doesn't work for difficulty and rating - no greater than or equal to.
+//That needs to be added
+function advancedSearch(list, query) {
+    
+    console.log(query)
+
+    for (let property in query) {
+        let parameters = query[property]        
+        
+        //Since we may be deleting elements in the list, items will be skipped if we use array.length
+        for (let item in list) {
+            //Parameters currently contains the query parameters and types.
+            //We need to add the content
+            parameters.content = list[item][property]
+            let passes = matchesQuery(parameters)
+            if (!passes) {
+                //Remove the item if it fails
+                delete list[item]
+            }
+        }
+    }
+    
     return list
 }
+
+
+
 
 
 
@@ -39,3 +98,29 @@ module.exports = {
     normalSearch,
     advancedSearch
 }
+
+
+
+
+
+
+//Prepare the Advanced Search button
+let advanced_search_modal = document.getElementById('advanced-search-modal');
+
+let span = document.getElementById("advanced-search-modal-close").onclick = function() {
+	advanced_search_modal.style.display = "none"
+}
+
+window.onclick = function(event) {
+  if (event.target == advanced_search_modal) {
+    advanced_search_modal.style.display = "none";
+  }
+}
+
+document.getElementById("advancedsearch").addEventListener("click", function() {
+    advanced_search_modal.style.display = "block"
+})
+
+
+
+

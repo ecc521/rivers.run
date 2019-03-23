@@ -15,7 +15,7 @@ html, body {
     height: 80vw;
     max-height: 90vh;
 }
-    
+
 
 .starimg {
     max-width: 100%;
@@ -23,12 +23,12 @@ html, body {
     width:auto;
     height:auto;
 }
- 
+
 .searchcontain {
     margin-bottom:18px;
     margin-left:4px;
 }
-    
+
 #searchimg {
     display:inline-block;
     max-width:43px;
@@ -37,12 +37,13 @@ html, body {
     height:auto;
     vertical-align:middle;
 }
- 
-.advancedsearch {
-   /*display:inline-block;*/
-    display:none; /*Advanced Search is Unfinished*/
+
+#advancedsearch {
+    display:inline-block;
+    text-decoration: underline;
+    cursor: pointer;
 }
-    
+
 #searchbox {
     display:inline-block;
     padding:12px;
@@ -51,11 +52,11 @@ html, body {
 }
 
 #searchbox::placeholder {
-	/*Make the text show up a little better.*/
-	font-size: 1.1em; 
-	font-weight: bold;
+    /*Make the text show up a little better.*/
+    font-size: 1.1em; 
+    font-weight: bold;
 }
-  
+
 /*riverspans are the spans that actually hold the information - there are 6 riverspans for each river. 
 Those include name,section,skill,quality, and flow info*/
 
@@ -65,7 +66,7 @@ Those include name,section,skill,quality, and flow info*/
     /*overflow:scroll;*/
     /*Scrollbars showing when not needed in Safari desktop. Need to debug*/
 }
-      
+
 .riverspan:nth-child(1) {
     width:23%;
 }
@@ -91,9 +92,9 @@ Those include name,section,skill,quality, and flow info*/
     transition: 0.2s;
     text-align:left;
     font-size: 3.0vw;
-	display: block; /*This bug took me hours to find. If this is not included, spaces appear between buttons in list on smaller devices*/
+    display: block; /*This bug took me hours to find. If this is not included, spaces appear between buttons in list on smaller devices*/
 }
-    
+
 .riverbutton:nth-child(even) {
     background-color: #f4f4f4;
 }
@@ -110,36 +111,36 @@ Those include name,section,skill,quality, and flow info*/
 /*Controlling font size smoothly based on screen size*/
 @media screen and (min-width: 500px) {
     .riverbutton {
-    font-size: 2.6vw;
+        font-size: 2.6vw;
     }
 }
 @media screen and (min-width: 600px) {
     .riverbutton {
-    font-size: 2.3vw;
+        font-size: 2.3vw;
     }
 }
 @media screen and (min-width: 700px) {
     .riverbutton {
-    font-size: 2.0vw;
+        font-size: 2.0vw;
     }
 }
 @media screen and (min-width: 800px) {
     .riverbutton {
-    font-size: 1.7vw;
+        font-size: 1.7vw;
     }
 }
 @media screen and (min-width: 1000px) {
     .riverbutton {
-    font-size: 1.5vw;
+        font-size: 1.5vw;
     }
 }
 @media screen and (min-width: 1500px) {
     .riverbutton {
-    font-size: 1.27vw;
+        font-size: 1.27vw;
     }
 }
 /*End of riverbutton style*/    
-    
+
 /*topbar is the header element for all the rivers. You can click it to order alphabetically, by quality, skill, ext.*/
 #topbar {
     background-color:#77ff77;
@@ -153,45 +154,48 @@ Those include name,section,skill,quality, and flow info*/
 }    
 /*End of topbar style*/
 
+
 /*Area overview styles*/
 /* The Modal (background) */
-.overview-modal {
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
-  padding-top: 5%; /* Location of the box */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(0,0,0); /* Fallback color */
-  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+.overview-modal, .advanced-search-modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 5%; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
 }
 
 /* Modal Content */
-.overview-modal-content {
-  background-color: #fefefe;
-  margin: auto;
-  padding: 20px;
-  border: 1px solid #888;
-  width: 90%;
+.overview-modal-content, .advanced-search-modal-content {
+    color:black;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%;
 }
 
 /* The Close Button */
-#overview-modal-close {
-  color: #aaaaaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
+#overview-modal-close, #advanced-search-modal-close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
 }
 
-#overview-modal-close:hover, #overview-modal-close:focus {
-  color: #000;
-  text-decoration: none;
-  cursor: pointer;
+#overview-modal-close:hover, #overview-modal-close:focus, #advanced-search-modal-close:hover, #advanced-search-modal-close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
 }
 /*End of area overview styles*/
+
 
 
 /*Utilities Stuff - To avoid inline CSS*/
@@ -225,16 +229,16 @@ Those include name,section,skill,quality, and flow info*/
     #topbar {
         color:black;
     }
-        
+
     #searchbox {
         background-color:#545454;
         border: none;
-	color: #FAFAFA;
+        color: #FAFAFA;
     }
-    
+
     #searchbox::placeholder {
         color: #FAFAFA;
     }
-        
-        
+
+
 }

@@ -1,99 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-		<!-- Secure page against user generated content -->
+        <!-- Secure page against user generated content -->
         <!-- upgrade-insecure-requests should also be used, but it messed up development. It will be added back at some point-->
         <!-- I would like to be able to use blobs for the images instead of data urls as they are faster and would prevent people from adding incredibly long data urls directly into their river writeups. The issue is that the current design for opening a river writeup is synchronus, and canvas.toBlob is asynchronus -->
-		<meta http-equiv="Content-Security-Policy" content="
-            default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:*;
-            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov;
-            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;"
-        >
+        <meta http-equiv="Content-Security-Policy" content="
+                                                            default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:*;
+                                                            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov;
+                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;"
+              >
         <!-- Curently the img-src can be bypassed with a Data URL. This should be changed so that cannot be done-->
+
+        <meta name="referrer" content="no-referrer">
+
+
+        <!-- USGS Gauges Preconnect -->
+        <link rel="preconnect" href="https://waterservices.usgs.gov" crossorigin>
+
+        <!--JavaScript & CSS-->
+        <link rel="preload" href="index.css" as="style">
+        <link rel="preload" href="riverarray.js" as="script">
+        <link rel="preload" href="packages/index.js" as="script">
+
+
+        <!-- Star images -->
+        <link rel="preload" href="resources/1Star.png" as="image">
+        <link rel="preload" href="resources/2Stars.png" as="image">
+        <link rel="preload" href="resources/3Stars.png" as="image">
+        <link rel="preload" href="resources/4Stars.png" as="image">
+        <link rel="preload" href="resources/5Stars.png" as="image">
+
+        <!-- Progressive Web App Manifest -->
+        <link rel="manifest" href="manifest.json">
+
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#317EFB"/>
+        <meta name="Description" content="Every River at your Fingertips! Rivers.run contains tons of write-ups from community experts to help you plan your next paddling trip. View our information here!">
+        <meta name="keywords" content="rivers.run, rivers, whitewater, river info, whitewater info, paddling, paddling info, kayak, canoe">
+
+
+        <!-- Images -->
+        <link rel="shortcut icon" type="image/png" sizes="16x16" href="resources/icons/16x16-Water-Drop.png"/>
+        <link rel="shortcut icon" type="image/png" sizes="24x24" href="resources/icons/24x24-Water-Drop.png"/>
+        <link rel="shortcut icon" type="image/png" sizes="32x32" href="resources/icons/32x32-Water-Drop.png"/>
+        <link rel="shortcut icon" type="image/png" sizes="64x64" href="resources/icons/64x64-Water-Drop.png"/>
+        <link rel="shortcut icon" type="image/png" sizes="96x96" href="resources/icons/96x96-Water-Drop.png"/>
+        <link rel="shortcut icon" type="image/png" sizes="160x160" href="resources/icons/160x160-Water-Drop.png"/>
+        <link rel="shortcut icon" type="image/png" sizes="196x196" href="resources/icons/196x196-Water-Drop.png"/>
+
+        <!-- iOS is WAY too picky -->
+        <link rel="apple-touch-icon" type="image/png" href="resources/icons/57x57-Water-Drop.png"/>
+        <link rel="apple-touch-icon" type="image/png" sizes="114x114" href="resources/icons/114x114-Water-Drop.png"/>
+        <link rel="apple-touch-icon" type="image/png" sizes="144x144" href="resources/icons/144x144-Water-Drop.png"/>
+        <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="resources/icons/60x60-Water-Drop.png"/>
+        <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="resources/icons/120x120-Water-Drop.png"/>
+        <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="resources/icons/76x76-Water-Drop.png"/>
+        <link rel="apple-touch-icon" type="image/png" sizes="152x152" href="resources/icons/152x152-Water-Drop.png"/>
+        <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="resources/icons/180x180-Water-Drop.png"/>
+
+        <!-- Make sure we have a launch image and can be added -->
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-title" content="rivers.run">
+        <link rel="apple-touch-startup-image" href="resources/icons/512x512-Water-Drop.png">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+        <!-- End of Images -->	    
+
+
+        <title>Rivers.run - Paddling and River Info</title>
+    </head>
+
+    <body>    
+
+        <link rel="stylesheet" type="text/css" href="index.css">
+
+        <h1 class="center">River Information</h1>
+
+        <div class="searchcontain">
+            <img id="searchimg" alt="Search Icon" src="resources/SearchIcon.png">
+            <input id="searchbox" type="text" aria-label="Type in the box to search for a river" placeholder="Search..">
+            <p id="advancedsearch"> Open Advanced Search</p>
+        </div>  
+
+        <p class="pixel18 center"><strong>Disclaimer: USGS Gauge data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>
+        <div id="Rivers"></div>    
+
         
-		<meta name="referrer" content="no-referrer">
+        <div id="overview-modal" class="overview-modal">
+            <div class="overview-modal-content">
+                <span id="overview-modal-close">&times;</span>
+                <p id="overview-modal-text"></p>
+            </div>
+        </div>		
+
+        <div id="advanced-search-modal" class="advanced-search-modal">
+            <div class="advanced-search-modal-content">
+                <span id="advanced-search-modal-close">&times;</span>
+
+                <p>Note: Advanced Search is a new feature, and is incomplete</p>
+                <p>Empty Search Queries will be Ignored</p>
+                Name 
+                <select id="nameType">
+                    <option value="contains">Contains</option>
+                    <option value="matches">Matches</option>
+                </select>
+                <input id="nameQuery" type="text" placeholder="Search Query">
+                <br>
+                Section 
+                <select id="sectionType">
+                    <option value="contains">Contains</option>
+                    <option value="matches">Matches</option>
+                </select>
+                <input id="sectionQuery" type="text" placeholder="Search Query">
+                <br>
+                Writeup 
+                <select id="writeupType">
+                    <option value="contains">Contains</option>
+                    <option value="matches">Matches</option>
+                </select>
+                <input id="writeupQuery" type="text" placeholder="Search Query">
+                <br>
+                <button id="performadvancedsearch">Search</button>
+                <p id="searchlink"></p>
+            </div>
+        </div>	
+        
 
 
-		<!-- USGS Gauges Preconnect -->
-		<link rel="preconnect" href="https://waterservices.usgs.gov" crossorigin>
+        <script src="riverarray.js"></script>
+        <script src="packages/index.js"></script> 
 
-		<!--JavaScript & CSS-->
-		<link rel="preload" href="index.css" as="style">
-		<link rel="preload" href="riverarray.js" as="script">
-		<link rel="preload" href="packages/index.js" as="script">
-
-
-		<!-- Star images -->
-		<link rel="preload" href="resources/1Star.png" as="image">
-		<link rel="preload" href="resources/2Stars.png" as="image">
-		<link rel="preload" href="resources/3Stars.png" as="image">
-		<link rel="preload" href="resources/4Stars.png" as="image">
-		<link rel="preload" href="resources/5Stars.png" as="image">
-
-		<!-- Progressive Web App Manifest -->
-		<link rel="manifest" href="manifest.json">
-
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<meta name="theme-color" content="#317EFB"/>
-		<meta name="Description" content="Every River at your Fingertips! Rivers.run contains tons of write-ups from community experts to help you plan your next paddling trip. View our information here!">
-		<meta name="keywords" content="rivers.run, rivers, whitewater, river info, whitewater info, paddling, paddling info, kayak, canoe">
-
-	    
-	  <!-- Images -->
-	  <link rel="shortcut icon" type="image/png" sizes="16x16" href="resources/icons/16x16-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="24x24" href="resources/icons/24x24-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="32x32" href="resources/icons/32x32-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="64x64" href="resources/icons/64x64-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="96x96" href="resources/icons/96x96-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="160x160" href="resources/icons/160x160-Water-Drop.png"/>
-	  <link rel="shortcut icon" type="image/png" sizes="196x196" href="resources/icons/196x196-Water-Drop.png"/>
-
-	  <!-- iOS is WAY too picky -->
-	  <link rel="apple-touch-icon" type="image/png" href="resources/icons/57x57-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="114x114" href="resources/icons/114x114-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="144x144" href="resources/icons/144x144-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="resources/icons/60x60-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="resources/icons/120x120-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="resources/icons/76x76-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="152x152" href="resources/icons/152x152-Water-Drop.png"/>
-	  <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="resources/icons/180x180-Water-Drop.png"/>
-
-	  <!-- Make sure we have a launch image and can be added -->
-	  <meta name="apple-mobile-web-app-capable" content="yes">
-	  <meta name="apple-mobile-web-app-title" content="rivers.run">
-	  <link rel="apple-touch-startup-image" href="resources/icons/512x512-Water-Drop.png">
-	  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-
-	  <!-- End of Images -->	    
-	    
-	    
-		<title>Rivers.run - Paddling and River Info</title>
-	</head>
-	
-	<body>    
-		
-		<link rel="stylesheet" type="text/css" href="index.css">
-
-		<h1 class="center">River Information</h1>
-		
-		<div class="searchcontain">
-		<img id="searchimg" alt="Search Icon" src="resources/SearchIcon.png">
-		<input id="searchbox" type="text" aria-label="Type in the box to search for a river" placeholder="Search..">
-		<p class="advancedsearch"> Open Advanced Search</p>
-		</div>  
-
-		<p class="pixel18 center"><strong>Disclaimer: USGS Gauge data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>
-		<div id="Rivers"></div>    
-
-		<div id="overview-modal" class="overview-modal">
-		  <div class="overview-modal-content">
-		    <span id="overview-modal-close">&times;</span>
-		    <p id="overview-modal-text"></p>
-		  </div>
-		</div>		
-		
-		<script src="riverarray.js"></script>
-        	<script src="packages/index.js"></script> 
-		
-	</body>  
+    </body>  
 </html>
