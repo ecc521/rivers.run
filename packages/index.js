@@ -93,18 +93,19 @@
 
 __webpack_require__(1)
 
+__webpack_require__(2)
 
-self.addLine = __webpack_require__(2).addLine
+self.addLine = __webpack_require__(3).addLine
 
 //Defines self.TopBar and self.triangle
-Object.assign(self, __webpack_require__(3))
+Object.assign(self, __webpack_require__(4))
 
-self.River = __webpack_require__(4).River
+self.River = __webpack_require__(5).River
 
-self.sort = __webpack_require__(6).sort
+self.sort = __webpack_require__(7).sort
 
 //Defines self.normalSearch and self.advanedSearch
-Object.assign(self, __webpack_require__(7))
+Object.assign(self, __webpack_require__(8))
 
 
 
@@ -126,7 +127,7 @@ riverarray.map(function(event, index) {
 
 //Fetch data from USGS
 //ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise self.usgsarray is undefined)
-__webpack_require__(8).loadUSGS()
+__webpack_require__(9).loadUSGS()
 
 
 var oldresult;    
@@ -358,6 +359,52 @@ styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.c
 
 /***/ }),
 /* 2 */
+/***/ (function(module, exports) {
+
+let overview_modal = document.getElementById('overview-modal');
+
+let span = document.getElementById("overview-modal-close").onclick = function() {
+	overview_modal.style.display = "none"
+}
+
+window.onclick = function(event) {
+  if (event.target == overview_modal) {
+    overview_modal.style.display = "none";
+  }
+}
+
+
+	
+class RiverOverview extends HTMLElement {
+  constructor() {
+	  super();
+
+	  function openOverview() {
+		  let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a data entry error"
+		  if (window.overviews && window.overviews[this.innerHTML]) {
+		  	text = window.overviews[this.innerHTML]
+		  }
+	  	
+		  document.getElementById("overview-modal-text").innerHTML = text
+		  document.getElementById("overview-modal").style.display = "block"
+	  }
+	  
+	  
+	  //Style so that text looks like a link/button
+	  this.style.cursor = "pointer"
+	  this.style.color = "blue"
+	  this.style.textDecoration = "underline"
+
+	  this.addEventListener("click", openOverview)
+	
+  }
+}
+
+customElements.define('river-overview', RiverOverview);
+
+
+/***/ }),
+/* 3 */
 /***/ (function(module, exports) {
 
 //Graph Code
@@ -669,7 +716,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports) {
 
 function NewSpan(Text) {
@@ -737,11 +784,11 @@ module.exports = {
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-let addGraphs = __webpack_require__(5).addGraphs
+let addGraphs = __webpack_require__(6).addGraphs
 
 
 
@@ -971,7 +1018,7 @@ module.exports.River = function(locate, event) {
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports) {
 
 
@@ -1111,7 +1158,7 @@ module.exports.addGraphs = function(div, data) {
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports) {
 
 function simpleSort(list, propertyName) {
@@ -1229,7 +1276,7 @@ module.exports = {
 }
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
 function normalSearch(list, query) {
@@ -1275,7 +1322,7 @@ module.exports = {
 }
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 self.usgsarray = {} 
