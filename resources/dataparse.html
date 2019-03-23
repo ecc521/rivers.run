@@ -25,9 +25,10 @@
       
   
         let googlecloudrequestrate = 10;
-        
+        let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+
+			
         function urlcreate(File_ID) {
-            let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
             return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=text%2Fplain&key=' + API_KEY       
         }
 
@@ -38,17 +39,35 @@
         };
 
         (async function() {
-        let fileidcontent = await fetch(urlcreate("19B237gWAoRLOzz5Hh4AO6nD1yxVWxL1LmTLgYkg8JrQ"))
-        fileidcontent = await fileidcontent.text()
-        fileidcontent = fileidcontent.split("\n")
-        
-        let fileids = []
-        for (var i=0;i<fileidcontent.length;i++) {
-          if (i%2 === 1) {
-            fileids.push(fileidcontent[i])
-          }
-        }
-        
+			
+			//This is a bit *TOO* synchronus. All requests should be sent at once, then waited for
+			async function getFilesInFolder(output, id) {
+				let response = await fetch("https://www.googleapis.com/drive/v3/files?q='" + id + "'+in+parents&key=" + API_KEY)
+				let obj = await response.json()
+				
+				if (obj.incompleteSearch) {console.warn("Search may have been incomplete")}
+				
+				let files = obj.files
+				
+				for (let i=0;i<files.length;i++) {
+					let file = files[i]
+					if (file.mimeType === "application/vnd.google-apps.folder") {
+						await getFilesInFolder(output, file.id)
+					}
+					else if (file.mimeType === "application/vnd.google-apps.document") {
+						output.push(file.id)
+					}
+					else {
+						console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
+					}
+				}
+				
+			}
+			
+			let writeupFolder = "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof"
+			let fileids = []
+			await getFilesInFolder(fileids, writeupFolder)
+        			
         
         self.retry  = []
         self.complete = []
