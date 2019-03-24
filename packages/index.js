@@ -273,6 +273,12 @@ if (window.location.hash.length > 0) {
 //The @media query must be last rule in first stylesheet for this to work
 let styleSheet = document.styleSheets[0]
 
+if (!styleSheet) {
+    console.warn("No stylesheet available. There must be an existing stylesheet in order for allPages.js to function properly without inline style allowed or without document.body.")
+    let style = document.createElement("style")
+    document.body.appendChild(style)
+    styleSheet = document.styleSheets[0]
+}
 
 
 //Determine if the user wants dark mode
@@ -507,7 +513,7 @@ class RiverOverview extends HTMLElement {
 	  
 	  //Style so that text looks like a link/button
 	  this.style.cursor = "pointer"
-	  this.style.color = "blue"
+	  this.style.color = "rgb(51, 51, 255)"
 	  this.style.textDecoration = "underline"
 
 	  this.addEventListener("click", openOverview)
