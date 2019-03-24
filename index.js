@@ -2,7 +2,6 @@
 
 require("./allPages.js")
 
-
 self.addLine = require("./graph.js").addLine
 
 //Defines self.TopBar and self.triangle
@@ -53,7 +52,7 @@ window.NewList = function(query, type, reverse) {
             if (oldresult) {
                 orderedlist = oldresult
             }
-            
+
             orderedlist = sort(query, orderedlist, reverse)
         }
         if (type === "normal") {
@@ -106,16 +105,65 @@ let searchbox = document.getElementById("searchbox")
 searchbox.addEventListener("keydown", function() {setTimeout(function(){NewList(searchbox.value, "normal")}, 20)})
 
 
+//Generate advanced search parameters from menu
+function getAdvancedSearchParameters() {
+    let parameters = {}
+
+    parameters.name = {
+        type: document.getElementById("nameType").value,
+        query: document.getElementById("nameQuery").value
+    }
+
+    parameters.section  = {
+        type: document.getElementById("sectionType").value,
+        query: document.getElementById("sectionQuery").value
+    }
+
+    parameters.writeup = {
+        type: document.getElementById("writeupType").value,
+        query: document.getElementById("writeupQuery").value
+    }
+
+    return parameters
+}
 
 
+document.getElementById("performadvancedsearch").addEventListener("click", function() {
+    let query = getAdvancedSearchParameters()
+
+    //Add link to this search
+    //This should run before NewList - otherwise the entire content is added to the object and URL
+    //Find where rivers.run is located
+    //This should allow rivers.run to the run from a directory   
+    let root = window.location.href
+    root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
+    let link = encodeURI(root + "#" + JSON.stringify(query))
+    document.getElementById("searchlink").innerHTML = "Link to this search: <a href=\"" + link + "\">" + link + "</a>"
+
+    NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
+})
 
 
 
 //Check if there is a search query
 if (window.location.hash.length > 0) {
-    let search = window.location.hash.slice(1)
-    document.getElementById("searchbox").value = search
-    NewList(search, "normal")
+    let search = decodeURI(window.location.hash.slice(1))
+
+    try {
+        //Do an advanced search if the query if an advanced search
+        let query = JSON.parse(search)
+
+        //TODO: Set the advanced search areas to the query. 
+        NewList(query, "advanced")
+
+
+    }
+    catch (e) {
+        //Looks like we have a normal search query
+        document.getElementById("searchbox").value = search
+        NewList(search, "normal")
+    }
+
 }
 
 

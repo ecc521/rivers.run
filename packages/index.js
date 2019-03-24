@@ -93,7 +93,6 @@
 
 __webpack_require__(1)
 
-
 self.addLine = __webpack_require__(2).addLine
 
 //Defines self.TopBar and self.triangle
@@ -144,7 +143,7 @@ window.NewList = function(query, type, reverse) {
             if (oldresult) {
                 orderedlist = oldresult
             }
-            
+
             orderedlist = sort(query, orderedlist, reverse)
         }
         if (type === "normal") {
@@ -197,16 +196,65 @@ let searchbox = document.getElementById("searchbox")
 searchbox.addEventListener("keydown", function() {setTimeout(function(){NewList(searchbox.value, "normal")}, 20)})
 
 
+//Generate advanced search parameters from menu
+function getAdvancedSearchParameters() {
+    let parameters = {}
+
+    parameters.name = {
+        type: document.getElementById("nameType").value,
+        query: document.getElementById("nameQuery").value
+    }
+
+    parameters.section  = {
+        type: document.getElementById("sectionType").value,
+        query: document.getElementById("sectionQuery").value
+    }
+
+    parameters.writeup = {
+        type: document.getElementById("writeupType").value,
+        query: document.getElementById("writeupQuery").value
+    }
+
+    return parameters
+}
 
 
+document.getElementById("performadvancedsearch").addEventListener("click", function() {
+    let query = getAdvancedSearchParameters()
+
+    //Add link to this search
+    //This should run before NewList - otherwise the entire content is added to the object and URL
+    //Find where rivers.run is located
+    //This should allow rivers.run to the run from a directory   
+    let root = window.location.href
+    root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
+    let link = encodeURI(root + "#" + JSON.stringify(query))
+    document.getElementById("searchlink").innerHTML = "Link to this search: <a href=\"" + link + "\">" + link + "</a>"
+
+    NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
+})
 
 
 
 //Check if there is a search query
 if (window.location.hash.length > 0) {
-    let search = window.location.hash.slice(1)
-    document.getElementById("searchbox").value = search
-    NewList(search, "normal")
+    let search = decodeURI(window.location.hash.slice(1))
+
+    try {
+        //Do an advanced search if the query if an advanced search
+        let query = JSON.parse(search)
+
+        //TODO: Set the advanced search areas to the query. 
+        NewList(query, "advanced")
+
+
+    }
+    catch (e) {
+        //Looks like we have a normal search query
+        document.getElementById("searchbox").value = search
+        NewList(search, "normal")
+    }
+
 }
 
 
@@ -215,6 +263,11 @@ if (window.location.hash.length > 0) {
 /***/ }),
 /* 1 */
 /***/ (function(module, exports) {
+
+//This JavaScript file should run on all pages
+//It defines global CSS rules, allows for forcing dark mode, and
+//defines the river-overview DOM element
+
 
 //This is extremely sensitive to the design of the CSS
 //The @media query must be last rule in first stylesheet for this to work
@@ -318,14 +371,18 @@ item4.innerHTML = "Settings"
 items.push(item4)
 
 
+let currentPage = window.location.href.slice(root.length)
+if (currentPage.indexOf("#") !== -1) {
+    currentPage = currentPage.slice(0, currentPage.indexOf("#"))
+}
+
+
 for (let i=0;i<items.length;i++) {
     let item = items[i]
 
-	let target = item.href.slice(root.length)
-	let location = window.location.href.slice(root.length)
+	let target = item.href.slice(root.length)	
 	
-	
-    if (target === location) {
+    if (target === currentPage) {
         item.className = "topnavcurrent"
     }
     topnav.appendChild(item)
@@ -354,6 +411,111 @@ styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.c
 
 
 
+
+
+//The remaining code is for the river-overview tags
+
+//Add the modal styles
+styleSheet.insertRule(`
+.modal {
+    display: none; 
+    position:fixed; 
+    z-index:1; 
+    padding-top: 5%;
+    left:0;
+    top:0;
+    width:100%;
+    height: 100%;
+    overflow:auto;
+    background-color: rgba(0,0,0,0.4);
+}`, styleSheet.cssRules.length)
+
+styleSheet.insertRule(`
+.modal-content {
+    color:black;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%;
+}`,styleSheet.cssRules.length)
+
+styleSheet.insertRule(`
+.modal-close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}`,styleSheet.cssRules.length)
+
+styleSheet.insertRule(`
+.modal-close:hover, .modal-close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}`,styleSheet.cssRules.length)
+
+
+
+//Create the modal element
+let overview_modal = document.createElement("div")
+overview_modal.className = "modal"
+
+let modal_content = document.createElement("div")
+modal_content.className = "modal-content"
+
+let overview_modal_close = document.createElement("span")
+overview_modal_close.className = "modal-close"
+overview_modal_close.innerHTML = "×"
+
+let overview_modal_text = document.createElement("p")
+
+overview_modal.appendChild(modal_content)
+modal_content.appendChild(overview_modal_close)
+modal_content.appendChild(overview_modal_text)
+
+document.body.appendChild(overview_modal)
+
+
+
+//Make the modal disappear when the close button is clicked, or when area outside content is clicked
+overview_modal_close.onclick = function() {
+	overview_modal.style.display = "none"
+}
+
+overview_modal.onclick = function() {
+    this.style.display = "none"
+}
+
+	
+//Create the river-overview element
+class RiverOverview extends HTMLElement {
+  constructor() {
+	  super();
+
+	  function openOverview() {
+		  let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a programming or data entry error"
+		  if (window.overviews && window.overviews[this.innerHTML]) {
+		  	text = window.overviews[this.innerHTML]
+		  }
+	  	
+          overview_modal_text.innerHTML = text
+          overview_modal.style.display = "block"
+          
+	  }
+	  
+	  
+	  //Style so that text looks like a link/button
+	  this.style.cursor = "pointer"
+	  this.style.color = "blue"
+	  this.style.textDecoration = "underline"
+
+	  this.addEventListener("click", openOverview)
+	
+  }
+}
+
+customElements.define('river-overview', RiverOverview);
 
 
 /***/ }),
@@ -457,30 +619,20 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
     for(var i = 1;i<11;i++) {
         var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
 
-        if (Text >= 1000) {
-            Text = Math.round(Text)
-        }
-        else {
-            Text = Text.toFixed(3-String(Math.round(Text)).length)
-            if (Number(Text) === Math.round(Text)) {
-                Text = Math.round(Text)
-            }
-        }
+        let precision = Math.max(0, 3-String(Math.round(Text)).length)
+        
+        Text = Number(Text.toFixed(precision))
 
         ctx.fillText(Text, start, (height*(11-i))/10-5);
     }
 
     //Top one
     Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
-    if (Text >= 1000) {
-        Text = Math.round(Text)
-    }
-    else {
-        Text = Text.toFixed(3-String(Math.round(Text)).length)
-        if (Number(Text) === Math.round(Text)) {
-            Text = Math.round(Text)
-        }
-    }
+    
+    let precision = Math.max(0, 3-String(Math.round(Text)).length)
+        
+    Text = Number(Text.toFixed(precision))
+    
     ctx.fillText(Text, start, 27);
 
 
@@ -504,40 +656,27 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
 
 
+	function formatDate(date) {
+    	var time = String(date.getHours())
+	
+		if (date.getHours() < 10) {
+			time += "0"
+		}
+		time += ":" + date.getMinutes()
+		if (date.getMinutes() < 10) {
+			time += "0"
+		}
+		time += " " + (date.getMonth()+1) + "/" + date.getDate() + "/" +date.getFullYear()
+		return time
+	}
+	
     var time1 = new Date(timeframe[0])
     var time2 = new Date(timeframe[timeframe.length - 1])
     var time3 = new Date(((time2-time1)/2)+time1.getTime())
-    var starttime = time1.getHours()
-    var endtime = time2.getHours()
-    var midtime = time3.getHours()
-    if (String(time1.getHours()).length < 2) {
-        starttime = starttime + "0"
-    }
-    starttime += ":" + time1.getMinutes()
-    if (String(time1.getMinutes()).length < 2) {
-        starttime = starttime + "0"
-    }
-    starttime += " " + (time1.getMonth()+1) + "/" + time1.getDate() + "/" +time1.getFullYear()
-
-
-    if (String(time2.getHours()).length < 2) {
-        endtime = endtime + "0"
-    }
-    endtime += ":" + time2.getMinutes()
-    if (String(time2.getMinutes()).length < 2) {
-        endtime = endtime + "0"
-    }
-    endtime += " " + (time2.getMonth()+1) + "/" + time2.getDate() + "/" +time2.getFullYear()
-
-
-    if (String(time3.getHours()).length < 2) {
-        midtime = midtime + "0"
-    }
-    midtime += ":" + time3.getMinutes()
-    if (String(time3.getMinutes()).length < 2) {
-        midtime = midtime + "0"
-    }
-    midtime += " " + (time3.getMonth()+1) + "/" + time3.getDate() + "/" +time3.getFullYear()
+	
+    var starttime = formatDate(time1)
+    var endtime = formatDate(time2)
+    var midtime = formatDate(time3)
 
     ctx.fillText(starttime, 10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
 
@@ -1105,6 +1244,11 @@ function addPrecipGraph(div, precip) {
 
 module.exports.addGraphs = function(div, data) {
 
+    //Avoid erroring
+    if (!data) {
+        return;
+    }
+    
     //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
     //for a specific river due to gauge problems.
     //Each canvas is wrapped individually because sometimes only some graphs have invalid data
@@ -1285,10 +1429,69 @@ function normalSearch(list, query) {
     return list
 }
 
-function advancedSearch(list) {
-    //Passthrough function
+
+function matchesQuery(parameters) {
+    
+    let content = parameters.content
+    let query = parameters.query
+    
+    //Ignore case by default
+    if (!parameters.matchCase) {
+        content = content.toLowerCase()
+        query = query.toLowerCase()
+    }
+    
+    if (parameters.type === "contains") {
+        return content.includes(query)
+    }
+    else if (parameters.type === "matches") {
+        return content === query
+    }
+    else {
+        throw "Unknown Search Type " + parameters.type
+    }
+}
+
+
+//Query is in form of:
+//{
+  //  name: {
+    //    type: "matches",
+    //    query: "potomac"
+    //},
+    //section: {
+    //    type: "contains",
+    //    query: "something"
+  //  }
+//}
+
+//This doesn't work for difficulty and rating - no greater than or equal to.
+//That needs to be added
+function advancedSearch(list, query) {
+    
+    console.log(query)
+
+    for (let property in query) {
+        let parameters = query[property]        
+        
+        //Since we may be deleting elements in the list, items will be skipped if we use array.length
+        for (let item in list) {
+            //Parameters currently contains the query parameters and types.
+            //We need to add the content
+            parameters.content = list[item][property]
+            let passes = matchesQuery(parameters)
+            if (!passes) {
+                //Remove the item if it fails
+                delete list[item]
+            }
+        }
+    }
+    
     return list
 }
+
+
+
 
 
 
@@ -1296,6 +1499,31 @@ module.exports = {
     normalSearch,
     advancedSearch
 }
+
+
+
+
+
+
+//Prepare the Advanced Search button
+let advanced_search_modal = document.getElementById('advanced-search-modal');
+
+let span = document.getElementById("advanced-search-modal-close").onclick = function() {
+	advanced_search_modal.style.display = "none"
+}
+
+advanced_search_modal.onclick = function() {
+    this.style.display = "none"
+}
+
+document.getElementById("advancedsearch").addEventListener("click", function() {
+    advanced_search_modal.style.display = "block"
+})
+
+
+
+
+
 
 /***/ }),
 /* 8 */

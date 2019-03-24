@@ -1,4 +1,4 @@
-<h1>CURRENTLY THIS PROGRAM GENERATES FILES WITH THE OLD FORMAT. PLEASE WAIT UNTIL THIS PROGRAM IS UPDATED</h1>
+<h2>Notice: This may generate an invalid writeup. It has not yet been tested.</h2>
 
 
 <p>Your progress in creating this writeup is automatically saved. It will be available the next time this page is loaded, unless one of the following occours:<br>
@@ -44,14 +44,14 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <br>
 <select id="skill" onchange="UpdateWriteup()">
   <option value="">Skill</option>
-  <option value="1">Flat Water</option>
-  <option value="2">Beginner</option>
-  <option value="3">Novice</option>
-  <option value="4">Low-Intermediate</option>
-  <option value="5">Intermediate</option>
-  <option value="6">High-Intermediate</option>
-  <option value="7">Advanced</option>
-  <option value="8">Expert</option>
+  <option value="FW">Flat Water</option>
+  <option value="B">Beginner</option>
+  <option value="N">Novice</option>
+  <option value="LI">Low-Intermediate</option>
+  <option value="I">Intermediate</option>
+  <option value="HI">High-Intermediate</option>
+  <option value="A">Advanced</option>
+  <option value="E">Expert</option>
 </select>
 <br>
 <select id="rating" onchange="UpdateWriteup()">
@@ -101,10 +101,7 @@ function copyStringToClipboard() {
    // Remove temporary element
    document.body.removeChild(el);
 }
-  
-function document.getElementById(Name) {
-    return document.getElementById(Name)
-}
+
   //state, hidlat, hidlon
 var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun"
 List = List.split(",")
@@ -119,15 +116,12 @@ List.forEach(function(value){
 })  
     
 function LinkUpdate() {
-  var Text = document.getElementById("LinkURL").value
-  if (Text.trim().indexOf("https://") !== 0) {
-    document.getElementById("LinkURL").value = "https://"
-    Text = "https://"
-  }
+  var Text = document.getElementById("LinkURL").value.trim()
   Text = "<a href=\"" + Text + "\" target=\"_blank\" rel=\"noopener\">" + document.getElementById("LinkText").value + "</a>"
   document.getElementById("LinkResult").innerText = Text
   document.getElementById("LinkShow").innerHTML = "Your link looks like this: \"" + Text + "\""
 }
+	
 function UpdateWriteup() {
     List.forEach(function(value){
       localStorage.setItem(value, document.getElementById(value).value.trim())
@@ -140,13 +134,12 @@ function UpdateWriteup() {
       Text += "\n" + value + ": " + document.getElementById(value).value.trim()
       }
       else {
-      EndText = "\n" + document.getElementById(value).value.trim()
+      Text += "\n" + value + ": " + document.getElementById(value).value.trim().split("\n").join("<br>")
       }
     })
-  
-    Text = Text + EndText
-    Text = Text.trim()
-  
+    
+	Text.trim()
+	
     document.getElementById("Output").value = Text
     document.getElementById("WriteupExample").innerHTML = document.getElementById("writeup").value.split("\n").join("<br>")
 }

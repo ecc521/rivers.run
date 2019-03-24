@@ -106,6 +106,11 @@ function addPrecipGraph(div, precip) {
 
 module.exports.addGraphs = function(div, data) {
 
+    //Avoid erroring
+    if (!data) {
+        return;
+    }
+    
     //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
     //for a specific river due to gauge problems.
     //Each canvas is wrapped individually because sometimes only some graphs have invalid data
