@@ -489,9 +489,11 @@ overview_modal_close.onclick = function() {
 	overview_modal.style.display = "none"
 }
 
-overview_modal.onclick = function() {
-    this.style.display = "none"
-}
+window.addEventListener("click", function(event) {
+    if (event.target === overview_modal) {
+        overview_modal.style.display = "none"
+    }
+})
 
 	
 //Create the river-overview element
@@ -1518,9 +1520,11 @@ let span = document.getElementById("advanced-search-modal-close").onclick = func
 	advanced_search_modal.style.display = "none"
 }
 
-advanced_search_modal.onclick = function() {
-    this.style.display = "none"
-}
+window.addEventListener("click", function(event) {
+    if (event.target === advanced_search_modal) {
+        advanced_search_modal.style.display = "none"
+    }
+})
 
 document.getElementById("advancedsearch").addEventListener("click", function() {
     advanced_search_modal.style.display = "block"

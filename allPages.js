@@ -223,9 +223,11 @@ overview_modal_close.onclick = function() {
 	overview_modal.style.display = "none"
 }
 
-overview_modal.onclick = function() {
-    this.style.display = "none"
-}
+window.addEventListener("click", function(event) {
+    if (event.target === overview_modal) {
+        overview_modal.style.display = "none"
+    }
+})
 
 	
 //Create the river-overview element
