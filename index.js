@@ -171,7 +171,7 @@ async function calculateCoordinates() {
 	clearInterval(progress)
 	document.getElementById("latitudeQuery").innerHTML = coords.latitude
 	document.getElementById("longitudeQuery").innerHTML = coords.longitude
-	status.innerHTML = "You are within " + coords.accuracy + "meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
+	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
 }
 
 document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
