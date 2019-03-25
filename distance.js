@@ -1,8 +1,6 @@
 function haversine(lat1, lon1, lat2, lon2) { 
 	//Haversine formula
-	//Based off of the Spherical Law of Cosines. Was much more accurate with small distances when using 32 bit floats
-	//No significant difference now
-	
+	//Based off the Spherical Law of Cosines
 	let radius = 3958.8 //Earth's mean radius in miles
 	lat1 = lat1 * Math.PI / 180
 	lon1 = lon1 * Math.PI / 180
@@ -28,6 +26,8 @@ function cosines(lat1, lon1, lat2, lon2) {
 	lon1 = lon1 * Math.PI / 180
 	lat2 = lat2 * Math.PI / 180
 	lon2 = lon2 * Math.PI / 180
+	//With 32 bit floats, limited precision could cause Math.acos() to give wrong outputs on small distances
+	//The haversine formula fixes this issue - and so do 64 bit floats (unless the distances are REALLY small)
 	return Math.acos(Math.sin(lat1) * Math.sin(lat2) + Math.cos(lat1) * Math.cos(lat2) * Math.cos(lon2-lon1))*radius
 }
 
