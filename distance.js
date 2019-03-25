@@ -34,7 +34,7 @@ function cosines(lat1, lon1, lat2, lon2) {
 
 
 function lambert(lat1, lon1, lat2, lon2) {
-	//Should be accurate to around 10 meters
+	//Should be accurate to <100 meters
 	
 	//Parameters from WGS-84
 	let radius = 3963.1905919430524 //Equatorial radius in miles
