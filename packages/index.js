@@ -125,7 +125,7 @@ riverarray.map(function(event, index) {
 
 //Fetch data from USGS
 //ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise self.usgsarray is undefined)
-__webpack_require__(8).loadUSGS()
+__webpack_require__(9).loadUSGS()
 
 
 var oldresult;    
@@ -214,6 +214,34 @@ function getAdvancedSearchParameters() {
         type: document.getElementById("writeupType").value,
         query: document.getElementById("writeupQuery").value
     }
+	
+	let distance = document.getElementById("distanceQuery").value
+	if (distance.length > 0) {
+		distance = Number(distance)
+		if (distance <= 0 || isNaN(distance)) {alert("Distance must be a number greater than 0")}
+		
+		if (document.getElementById("locationType").value === "mylocation") {
+			alert("GPS not yet implemented")
+		}
+		else {
+			let lat = document.getElementById("latitudeQuery").value
+			let lon = document.getElementById("longitudeQuery").value
+			
+			//TODO: Parse other latitude and longitude formats
+			lat = Number(lat)
+			lon = Number(lon)
+			
+			
+			if (lat && lon) {
+				parameters.location = {
+					lat,
+					lon,
+					distance
+				}
+			}
+			else {alert("Please enter a longitude and a latitude")}
+		}
+	}
 
     return parameters
 }
@@ -1405,7 +1433,7 @@ module.exports = {
 
 /***/ }),
 /* 7 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
 function normalSearch(list, query) {
     let l = [[],[],[],[],[]]
@@ -1438,7 +1466,16 @@ function normalSearch(list, query) {
 }
 
 
-function matchesQuery(parameters) {
+
+
+
+
+
+
+
+
+
+function stringQuery(parameters) {
     
     let content = parameters.content
     let query = parameters.query
@@ -1461,6 +1498,71 @@ function matchesQuery(parameters) {
 }
 
 
+function stringFilter(list, property, parameters) {
+		//Filter out the elements that fail the test
+        //Since we may be deleting elements in the list, items will be skipped if we use array.length
+        for (let item in list) {
+			parameters.content = list[item][property]
+            let passes = stringQuery(parameters)
+            if (!passes) {
+                //Remove the item if it fails
+                delete list[item]
+            }
+        }
+	return list
+}
+
+
+
+
+function skillFilter(list, parameters) {
+
+}
+
+function ratingFilter(list, parameters) {
+
+}
+
+
+
+
+let calculateDistance = __webpack_require__(8).lambert //Lambert formula
+
+function locationFilter(list, parameters) {
+	
+	let maxDistance = parameters.distance
+	let lat1 = parameters.lat
+	let lon1 = parameters.lon
+	
+		//Filter out the elements that fail the test
+        //Since we may be deleting elements in the list, items will be skipped if we use array.length
+        for (let item in list) {
+			let river = list[item]
+			
+			let lat2 = river.plat || river.tlat || river.hidlat
+			let lon2 = river.plon || river.tlon || river.hidlon
+			
+			
+			let passes;
+			if (lat2 && lon2) {
+				let distance = calculateDistance(lat1, lon1, lat2, lon2)
+				
+				passes = distance < maxDistance
+			}
+			else {
+				//TODO: If we only have one of two coordinates, we may still be able to eliminate it
+				passes = parameters.includeUnknown
+			}
+
+            if (!passes) {
+                //Remove the item if it fails
+                delete list[item]
+            }
+        }
+	return list
+	
+}
+
 //Query is in form of:
 //{
   //  name: {
@@ -1470,29 +1572,58 @@ function matchesQuery(parameters) {
     //section: {
     //    type: "contains",
     //    query: "something"
-  //  }
+  //  },
+// skill: {
+//	type:"" //easier harder exactly from
+//	value: 3 //An array of 2 if from
+//from is inclusive (From medium to hard)
+//},
+//location:{
+//	distance: 100 //Maximum distance in miles
+//	lat: 78//Starting latitude
+//	lon:-56 //Starting londitude
+//	includeUnknown: false //Do not eliminate if location not known 
 //}
+//}
+
+
 
 //This doesn't work for difficulty and rating - no greater than or equal to.
 //That needs to be added
 function advancedSearch(list, query) {
-    
+    //List is the array of river elements that we are searching
+	//Query is the search parameters
     console.log(query)
 
     for (let property in query) {
-        let parameters = query[property]        
-        
-        //Since we may be deleting elements in the list, items will be skipped if we use array.length
-        for (let item in list) {
-            //Parameters currently contains the query parameters and types.
-            //We need to add the content
-            parameters.content = list[item][property]
-            let passes = matchesQuery(parameters)
-            if (!passes) {
-                //Remove the item if it fails
-                delete list[item]
-            }
-        }
+		//Iterate through each part of the query
+		
+		let parameters = query[property]
+		
+		
+		if (["name", "section", "writeup"].includes(property)) {
+			stringFilter(list, property, parameters)
+		}
+		else if (property === "skill") {
+			skillFilter(list, parameters)
+		}
+		else if (property === "rating") {
+			ratingFilter(list, parameters)
+		}
+		else if (property === "location") {
+			locationFilter(list, parameters)
+		}
+		else if (property === "sort") {
+			
+		}
+		else {
+			alert("Unable to search based on " + property)
+		}
+		
+		
+
+		
+		
     }
     
     return list
@@ -1537,6 +1668,79 @@ document.getElementById("advancedsearch").addEventListener("click", function() {
 
 /***/ }),
 /* 8 */
+/***/ (function(module, exports) {
+
+function haversine(lat1, lon1, lat2, lon2) { 
+	//Haversine formula
+	//Based off the Spherical Law of Cosines
+	let radius = 3958.8 //Earth's mean radius in miles
+	lat1 = lat1 * Math.PI / 180
+	lon1 = lon1 * Math.PI / 180
+	lat2 = lat2 * Math.PI / 180
+	lon2 = lon2 * Math.PI / 180  
+  //1 - Math.cos() is a versine - half of that is a haversine
+  let dLat = lat2 - lat1;
+  let dLon = lon2 - lon1;
+  let a =
+    0.5 - Math.cos(dLat) / 2 +
+    Math.cos(lat1) * Math.cos(lat2) *
+    (1 - Math.cos(dLon)) / 2;
+
+  return radius * 2 * Math.asin(Math.sqrt(a));
+}
+    
+
+function cosines(lat1, lon1, lat2, lon2) {
+	//Spherical Law of Cosines
+	let radius = 3958.8 //Earth's mean radius in miles
+
+	lat1 = lat1 * Math.PI / 180
+	lon1 = lon1 * Math.PI / 180
+	lat2 = lat2 * Math.PI / 180
+	lon2 = lon2 * Math.PI / 180
+	//With 32 bit floats, limited precision could cause Math.acos() to give wrong outputs on small distances
+	//The haversine formula fixes this issue - and so do 64 bit floats (unless the distances are REALLY small)
+	return Math.acos(Math.sin(lat1) * Math.sin(lat2) + Math.cos(lat1) * Math.cos(lat2) * Math.cos(lon2-lon1))*radius
+}
+
+
+
+function lambert(lat1, lon1, lat2, lon2) {
+	//Should be accurate to <100 meters
+	
+	//Parameters from WGS-84
+	let radius = 3963.1905919430524 //Equatorial radius in miles
+	let flattening = 0.0033528106647474805
+
+	lat1 = lat1 * Math.PI / 180
+	lon1 = lon1 * Math.PI / 180
+	lat2 = lat2 * Math.PI / 180
+	lon2 = lon2 * Math.PI / 180
+
+	let ratio = 1-flattening
+	
+	let reducedLat1 = Math.atan(ratio*Math.tan(lat1))
+	let reducedLat2 = Math.atan(ratio*Math.tan(lat2))
+	
+	let angle = Math.acos(Math.sin(reducedLat1) * Math.sin(reducedLat2) + Math.cos(reducedLat1) * Math.cos(reducedLat2) * Math.cos(lon2-lon1))
+	
+	let p = (reducedLat1+reducedLat2)/2
+	let q = (reducedLat2-reducedLat1)/2
+	let x = (angle - Math.sin(angle)) * (((Math.sin(p)**2)*(Math.cos(q)**2))/(Math.cos(angle/2)**2))
+	let y = (angle + Math.sin(angle)) *(((Math.cos(p)**2)*(Math.sin(q)**2))/(Math.sin(angle/2)**2))
+	return radius*(angle-((flattening/2)*(x+y)))	
+}
+
+
+module.exports = {
+  lambert,
+  cosines,
+  haversine
+}
+
+
+/***/ }),
+/* 9 */
 /***/ (function(module, exports) {
 
 self.usgsarray = {} 
