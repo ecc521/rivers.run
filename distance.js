@@ -60,7 +60,6 @@ function lambert(lat1, lon1, lat2, lon2) {
 }
 
 
-//Vincenty's formula was just too much... ~10 meters from lambert is accurate enough
 module.exports = {
   lambert,
   cosines,
