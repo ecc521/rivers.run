@@ -37,7 +37,7 @@ function lambert(lat1, lon1, lat2, lon2) {
 	//Should be accurate to around 10 meters
 	
 	//Parameters from WGS-84
-	let radius = 3963.1905919430274 //Equatorial radius in miles
+	let radius = 3963.1905919430524 //Equatorial radius in miles
 	let flattening = 0.0033528106647474805
 
 	lat1 = lat1 * Math.PI / 180
