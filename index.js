@@ -129,10 +129,7 @@ function getAdvancedSearchParameters() {
 		distance = Number(distance)
 		if (distance <= 0 || isNaN(distance)) {alert("Distance must be a number greater than 0")}
 		
-		if (document.getElementById("locationType").value === "mylocation") {
-			alert("GPS not yet implemented")
-		}
-		else {
+
 			let lat = document.getElementById("latitudeQuery").value
 			let lon = document.getElementById("longitudeQuery").value
 			
@@ -149,11 +146,37 @@ function getAdvancedSearchParameters() {
 				}
 			}
 			else {alert("Please enter a longitude and a latitude")}
-		}
 	}
 
     return parameters
 }
+
+
+async function calculateCoordinates() {
+	
+	let status = document.getElementById("locationProgress")
+	let num = 0
+	let progress = setInterval(function() {
+		num = (num+1)%4
+		status.innerHTML = "Calculating your Approximate Location (Expect this to take 15-60 seconds)" + ".".repeat(num)
+	}, 500)
+	
+	
+	let position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject)
+   });
+	
+	let coords = position.coords
+	
+	clearInterval(progress)
+	document.getElementById("latitudeQuery").innerHTML = coords.latitude
+	document.getElementById("longitudeQuery").innerHTML = coords.longitude
+	status.innerHTML = "You are within " + coords.accuracy + "meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
+}
+
+document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
+
+
 
 
 document.getElementById("performadvancedsearch").addEventListener("click", function() {
