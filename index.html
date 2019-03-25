@@ -94,6 +94,8 @@
 
                 <p>Note: Advanced Search is a new feature, and is incomplete</p>
                 <p>Empty Search Queries will be Ignored</p>
+				
+				
                 Name 
                 <select id="nameType">
                     <option value="contains">Contains</option>
@@ -101,6 +103,8 @@
                 </select>
                 <input id="nameQuery" type="text" placeholder="Search Query">
                 <br>
+				
+				
                 Section 
                 <select id="sectionType">
                     <option value="contains">Contains</option>
@@ -108,6 +112,8 @@
                 </select>
                 <input id="sectionQuery" type="text" placeholder="Search Query">
                 <br>
+				
+				
                 Writeup 
                 <select id="writeupType">
                     <option value="contains">Contains</option>
@@ -115,7 +121,23 @@
                 </select>
                 <input id="writeupQuery" type="text" placeholder="Search Query">
                 <br>
-                <button id="performadvancedsearch">Search</button>
+				
+				
+                Located within 
+				<input id="distanceQuery" type="number" placeholder="Distance in Miles"> 
+				miles of
+				<select id="locationType">
+					<option value="mylocation">My Location</option>
+					<option value="coordinates">Coordinates</option>
+				</select>
+				<input id="latitudeQuery" type="text" placeholder="Degrees Latitude"> 
+				,
+				<input id="longitudeQuery" type="text" placeholder="Degrees Longitude"> 
+				<br>
+				
+				
+				
+				<button id="performadvancedsearch">Search</button>
                 <p id="searchlink"></p>
             </div>
         </div>	

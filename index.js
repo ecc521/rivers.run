@@ -123,6 +123,34 @@ function getAdvancedSearchParameters() {
         type: document.getElementById("writeupType").value,
         query: document.getElementById("writeupQuery").value
     }
+	
+	let distance = document.getElementById("distanceQuery").value
+	if (distance.length > 0) {
+		distance = Number(distance)
+		if (distance <= 0 || isNaN(distance)) {alert("Distance must be a number greater than 0")}
+		
+		if (document.getElementById("locationType").value === "mylocation") {
+			alert("GPS not yet implemented")
+		}
+		else {
+			let lat = document.getElementById("latitudeQuery").value
+			let lon = document.getElementById("longitudeQuery").value
+			
+			//TODO: Parse other latitude and longitude formats
+			lat = Number(lat)
+			lon = Number(lon)
+			
+			
+			if (lat && lon) {
+				parameters.location = {
+					lat,
+					lon,
+					distance
+				}
+			}
+			else {alert("Please enter a longitude and a latitude")}
+		}
+	}
 
     return parameters
 }
