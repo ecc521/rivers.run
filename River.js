@@ -110,6 +110,107 @@ function calculateDirection(usgsNumber) {
 
 
 
+function calculateColor(river) {
+	//hsla color values
+	//hsl(hue, saturation, lightness, opacity)
+	//Saturation hue is 0 red 120 green 240 blue
+	//Saturation - use 100%
+	//Lightness - use 50%
+	//Opacity - Percentage
+	
+
+	let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
+	
+	let type; //Currently, we skip a value if one datapoint is cfs and another feet
+	
+	for (let i=0;i<values.length;i++) {
+		
+		let str = river[values[i]]
+		if (!str) {
+			values[i] = undefined
+			continue;
+		}
+		
+		let value = parseFloat(str)
+		let currentType = str.match(/[^0-9]+/)
+		
+		if (currentType) {
+			currentType = currentType[0].trim() //Match a string of non-digits
+		}
+		
+		if (!type && currentType) {
+			type = currentType
+		}
+		else if (type === currentType) {}
+		else {
+			values[i] = undefined
+			continue;
+		}
+		
+		values[i] = value
+	}
+	
+	let flow;
+	if (type === "cfs") {
+		flow = river.cfs
+	}
+	else if (type === "feet") {
+		flow = river.feet
+	}
+	
+	
+	if (flow < values[0]) {
+		return "hsl(0,100%,50%,30%)"
+	}
+	else if (flow > values[4]) {
+		return "hsl(240,100%,50%,30%)"
+	}
+	else {
+		//If we don't have some values, fill them in using logarithms
+		//TODO: Do some analyzsis and figure out the best way to do these calculations
+		
+		let minrun = values[0]
+		let maxrun = values[4]
+		let midflow = values[2] || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
+		let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
+		let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
+		
+		
+		console.log(minrun, lowflow, midflow, highflow, maxrun)
+		
+		function calculateRatio(low, high, current) {
+			low = Math.log(low)
+			high = Math.log(high)
+			
+			current = Math.log(current)
+			
+			
+			let range = high-low
+			let value = current-low
+			
+			return value/range
+			
+		}
+		
+		
+		if (flow < lowflow) {
+			return "hsl(" + (48 + 48*calculateRatio(minrun, lowflow, flow)) + ",100%,50%,30%"
+		}
+		else if (flow < midflow) {
+			return "hsl(" + (96 + 48*calculateRatio(lowflow, midflow, flow)) + ",100%,50%,30%"
+		}
+		else if (flow < highflow) {
+			return "hsl(" + (144 + 48*calculateRatio(midflow, highflow, flow)) + ",100%,50%,30%"
+		}
+		else {
+			return "hsl(" + (192 + 48*calculateRatio(highflow, maxrun, flow)) + ",100%,50%,30%"
+		}
+	}
+}
+
+
+
+
 
 
 
@@ -154,6 +255,7 @@ module.exports.River = function(locate, event) {
                 span.innerHTML = text
                 span.className = "riverspan"
                 button.appendChild(span)
+				return span
             }
 
             AddSpan(this.name)
@@ -178,7 +280,11 @@ module.exports.River = function(locate, event) {
 
 
             if (this.flow) {
-                AddSpan(this.flow + " " + calculateDirection(this.usgs))
+                let flowSpan = AddSpan(this.flow + " " + calculateDirection(this.usgs))
+				if (this.minrun && this.maxrun) {
+					flowSpan.style.backgroundColor = calculateColor(this)
+				}
+				
             }
             
 
