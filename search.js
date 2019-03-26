@@ -77,13 +77,92 @@ function stringFilter(list, property, parameters) {
 
 
 
-
-function skillFilter(list, parameters) {
-
+function skillToNumber(skill) {
+	let value
+            switch (skill) {
+                case "FW":
+                    value = 1;
+                    break;
+                case "B":
+                    value = 2;
+                    break;
+                case "N":
+                    value = 3;
+                    break;
+                case "LI":
+                    value = 4;
+                    break;
+                case "I":
+                    value = 5;
+                    break;
+                case "HI":
+                    value = 6;
+                    break;
+                case "A":
+                    value = 7;
+                    break;
+                case "E":
+                    value = 8;
+            }
+	return value
 }
 
-function ratingFilter(list, parameters) {
 
+
+
+
+
+function skillFilter(list, parameters) {
+	
+	let query = parameters.query
+	let type = parameters.type
+	
+        for (let item in list) {
+
+			let passes = false;
+			let skill = skillToNumber(list[item].skill)
+			
+			if (type === "max") {
+				if (skill <= query) {
+					passes = true
+				}
+			}
+			else if (type === "min") {
+				if (skill >= query) {
+					passes = true
+				}
+			}
+			else if (type === "exactly") {
+				if (skill === query) {
+					passes = true
+				}
+			}
+			else if (type === "from") {
+				if (skill >= query[0] && skill <= query[1]) {
+					passes = true
+				}
+			}
+			else {throw "Unknown search type" + type}
+			
+			
+            if (!passes) {
+                //Remove the item if it fails
+                delete list[item]
+            }
+        }	
+}
+
+
+
+
+
+
+
+
+
+
+function ratingFilter(list, parameters) {
+	
 }
 
 

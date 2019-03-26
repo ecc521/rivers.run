@@ -148,7 +148,15 @@ function getAdvancedSearchParameters() {
 			}
 			else {alert("Please enter a longitude and a latitude")}
 	}
-
+	
+	
+	//TODO: Add from queries
+    parameters.skill = {
+        type: document.getElementById("skillType").value,
+        query: Number(document.getElementById("skillQuery").value)
+    }
+	
+	
     return parameters
 }
 

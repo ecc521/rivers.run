@@ -119,8 +119,19 @@
                 <input id="sectionQuery" type="text" placeholder="Search Query">
                 <br>
 				
+                Skill 
+                <select id="skillType">
+                    <option value="max">at most</option>
+                    <option value="min">at least</option>
+                    <option value="exactly">is</option>
+                    <option value="matches" disabled>from</option>
+                </select>
+				<!-- TODO: Make this a dropdown so people don't need to know the numbers. Consider reusing skillToNumber code to avoid excessive duplication-->
+                <input id="skillQuery" type="text" placeholder="Search Query">
+                <br>
 				
-                Writeup 
+				
+				Writeup 
                 <select id="writeupType">
                     <option value="contains">Contains</option>
                     <option value="matches">Matches</option>
