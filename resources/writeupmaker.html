@@ -14,6 +14,12 @@
 <br>
 <input id="maxrun" type="text" placeholder="Maximum runnable water level" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
 <br>
+<input id="lowflow" type="text" placeholder="Low Water" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="medflow" type="text" placeholder="Ideal Level" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="highflow" type="text" placeholder="High Water" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
 <p>Use Decimal Format for Longitude and Latitude (ex. 32.53521523, -82.93201727, -74.37283910, 41.52318192) </p>
 <input id="plat" type="text" placeholder="Put-in GPS Latitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
 <br>
@@ -103,7 +109,7 @@ function copyStringToClipboard() {
 }
 
   //state, hidlat, hidlon
-var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun"
+var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun, lowflow, medflow, highflow"
 List = List.split(",")
 List = List.map(function(value){
   return value.trim()
