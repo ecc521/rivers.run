@@ -233,7 +233,8 @@ function getAdvancedSearchParameters() {
 				parameters.location = {
 					lat,
 					lon,
-					distance
+					distance,
+					includeUnknown: document.getElementById("includeUnknown").checked
 				}
 			}
 			else {alert("Please enter a longitude and a latitude")}
@@ -248,7 +249,7 @@ async function calculateCoordinates() {
 	let status = document.getElementById("locationProgress")
 	let num = 0
 	let progress = setInterval(function() {
-		num = (num+1)%4
+		num = (num+1)%6
 		status.innerHTML = "Calculating your Approximate Location (Expect this to take 15-60 seconds)" + ".".repeat(num)
 	}, 500)
 	
@@ -260,9 +261,9 @@ async function calculateCoordinates() {
 	let coords = position.coords
 	
 	clearInterval(progress)
-	document.getElementById("latitudeQuery").innerHTML = coords.latitude
-	document.getElementById("longitudeQuery").innerHTML = coords.longitude
-	status.innerHTML = "You are within " + coords.accuracy + "meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
+	document.getElementById("latitudeQuery").value = coords.latitude
+	document.getElementById("longitudeQuery").value = coords.longitude
+	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
 }
 
 document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
@@ -512,6 +513,14 @@ styleSheet.insertRule(`
     cursor: pointer;
 }`,styleSheet.cssRules.length)
 
+
+if (window.darkMode) {
+	styleSheet.insertRule(`	
+.modal-content {
+	background-color:black;
+	color:#cfcfcf;
+}`, styleSheet.cssRules.length)
+}
 
 
 //Create the modal element
@@ -984,7 +993,13 @@ function addClickHandler(button, locate) {
             }
 
             if (river.aw) {
-                div.innerHTML += "<br><br><a href='https://www.americanwhitewater.org/content/River/detail/id/" + river.aw + "'>Click here to view this river on American Whitewater</a>"
+				//Adding to div.innerHTML works, but logs CSP errors
+				div.appendChild(document.createElement("br"))
+				div.appendChild(document.createElement("br"))
+				let link = document.createElement("a")
+				link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
+				link.innerHTML = "Click here to view this river on American Whitewater"
+				div.appendChild(link)
             }
 
             //USGS data may not have loaded yet
@@ -1311,13 +1326,18 @@ module.exports.addGraphs = function(div, data) {
     //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
     //for a specific river due to gauge problems.
     //Each canvas is wrapped individually because sometimes only some graphs have invalid data
-    div.innerHTML += "<br><br>" //Space the first canvas
 
-    let temp = data["00010"]
+	let temp = data["00010"]
     let precip = data["00045"]
     let cfs = data["00060"]
     let height = data["00065"]
-
+	
+	
+	//Space the first canvas
+	//div.innerHTML += "<br><br>" works, but logs CSP errors
+    div.appendChild(document.createElement("br"))
+    div.appendChild(document.createElement("br"))
+	
 
     try {
         addFlowGraph(div, cfs, height)

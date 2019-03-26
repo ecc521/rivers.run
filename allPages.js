@@ -196,6 +196,14 @@ styleSheet.insertRule(`
 }`,styleSheet.cssRules.length)
 
 
+if (window.darkMode) {
+	styleSheet.insertRule(`	
+.modal-content {
+	background-color:black;
+	color:#cfcfcf;
+}`, styleSheet.cssRules.length)
+}
+
 
 //Create the modal element
 let overview_modal = document.createElement("div")

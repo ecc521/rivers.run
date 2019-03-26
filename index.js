@@ -142,7 +142,8 @@ function getAdvancedSearchParameters() {
 				parameters.location = {
 					lat,
 					lon,
-					distance
+					distance,
+					includeUnknown: document.getElementById("includeUnknown").checked
 				}
 			}
 			else {alert("Please enter a longitude and a latitude")}
@@ -157,7 +158,7 @@ async function calculateCoordinates() {
 	let status = document.getElementById("locationProgress")
 	let num = 0
 	let progress = setInterval(function() {
-		num = (num+1)%4
+		num = (num+1)%6
 		status.innerHTML = "Calculating your Approximate Location (Expect this to take 15-60 seconds)" + ".".repeat(num)
 	}, 500)
 	
@@ -169,8 +170,8 @@ async function calculateCoordinates() {
 	let coords = position.coords
 	
 	clearInterval(progress)
-	document.getElementById("latitudeQuery").innerHTML = coords.latitude
-	document.getElementById("longitudeQuery").innerHTML = coords.longitude
+	document.getElementById("latitudeQuery").value = coords.latitude
+	document.getElementById("longitudeQuery").value = coords.longitude
 	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
 }
 

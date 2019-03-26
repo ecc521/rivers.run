@@ -21,7 +21,13 @@ function addClickHandler(button, locate) {
             }
 
             if (river.aw) {
-                div.innerHTML += "<br><br><a href='https://www.americanwhitewater.org/content/River/detail/id/" + river.aw + "'>Click here to view this river on American Whitewater</a>"
+				//Adding to div.innerHTML works, but logs CSP errors
+				div.appendChild(document.createElement("br"))
+				div.appendChild(document.createElement("br"))
+				let link = document.createElement("a")
+				link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
+				link.innerHTML = "Click here to view this river on American Whitewater"
+				div.appendChild(link)
             }
 
             //USGS data may not have loaded yet
