@@ -158,12 +158,12 @@ function calculateColor(river) {
 		flow = river.feet
 	}
 	
-	
+	//TODO: It is difficult to tell when the minimum has not bee reached or the maximum has been exceeded. Make that easy
 	if (flow < values[0]) {
-		return "hsl(0,100%,50%,30%)"
+		return "hsl(0,100%,50%,100%)"
 	}
 	else if (flow > values[4]) {
-		return "hsl(240,100%,50%,30%)"
+		return "hsl(240,100%,50%,60%)"
 	}
 	else {
 		//If we don't have some values, fill them in using logarithms
