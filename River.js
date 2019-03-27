@@ -38,19 +38,10 @@ function addClickHandler(button, locate) {
 
             div.style.padding = "6px"
             div.id = river.base + 2
-			//TODO: This removes the coloring for flow info
-            if (!window.darkMode) {
-                button.style.backgroundColor = "#e3e3e3"
-            }
-            else {
-                //Dark Mode
-                button.style.backgroundColor = "#333333"
-            }
             button.parentNode.insertBefore(div, button.nextSibling)
         }
         else {
             river.expanded = 0
-            button.style.backgroundColor = ""//Let the button inherit the default color
             var elem = document.getElementById(river.base + 2)
             if (elem) {
                 elem.parentNode.removeChild(elem)
@@ -111,7 +102,7 @@ function calculateDirection(usgsNumber) {
 
 
 
-function calculateColor(river) {
+function calculateColor(river, options) {
 	//hsla color values
 	//hsl(hue, saturation, lightness, opacity)
 	//Saturation hue is 0 red 120 green 240 blue
@@ -159,12 +150,14 @@ function calculateColor(river) {
 		flow = river.feet
 	}
 	
+	let lightness = (options && options.lightness) || "50%"
+	
 	//TODO: It is difficult to tell when the minimum has not bee reached or the maximum has been exceeded. Make that easy
 	if (flow < values[0]) {
-		return "hsl(0,100%,50%,100%)"
+		return "hsl(0,100%," + lightness + ",100%)"
 	}
 	else if (flow > values[4]) {
-		return "hsl(240,100%,50%,60%)"
+		return "hsl(240,100%," + lightness + ",50%,60%)"
 	}
 	else {
 		//If we don't have some values, fill them in using logarithms
@@ -176,9 +169,7 @@ function calculateColor(river) {
 		let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
 		let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
 		
-		
-		console.log(minrun, lowflow, midflow, highflow, maxrun)
-		
+				
 		function calculateRatio(low, high, current) {
 			low = Math.log(low)
 			high = Math.log(high)
@@ -195,16 +186,16 @@ function calculateColor(river) {
 		
 		
 		if (flow < lowflow) {
-			return "hsl(" + (0 + 60*calculateRatio(minrun, lowflow, flow)) + ",100%,50%,30%"
+			return "hsl(" + (0 + 60*calculateRatio(minrun, lowflow, flow)) + ",100%," + lightness + ",30%"
 		}
 		else if (flow < midflow) {
-			return "hsl(" + (60 + 60*calculateRatio(lowflow, midflow, flow)) + ",100%,50%,30%"
+			return "hsl(" + (60 + 60*calculateRatio(lowflow, midflow, flow)) + ",100%," + lightness + ",30%"
 		}
 		else if (flow < highflow) {
-			return "hsl(" + (120 + 60*calculateRatio(midflow, highflow, flow)) + ",100%,50%,30%"
+			return "hsl(" + (120 + 60*calculateRatio(midflow, highflow, flow)) + ",100%," + lightness + ",30%"
 		}
 		else {
-			return "hsl(" + (180 + 60*calculateRatio(highflow, maxrun, flow)) + ",100%,50%,30%"
+			return "hsl(" + (180 + 60*calculateRatio(highflow, maxrun, flow)) + ",100%," + lightness + ",30%"
 		}
 	}
 }
@@ -248,9 +239,13 @@ module.exports.River = function(locate, event) {
     this.create = function (forceregenerate) {
         //Only create the button once - It's about 3 times faster.
         if (!this.finished || forceregenerate) {
+			
             var button = document.createElement("button")
             button.id = this.base + 1
 
+			button.normalColor = window.darkMode ? "" : "" //Inherit from CSS
+			button.focusedColor = window.darkMode ? "#333333" : "#e3e3e3"
+			
             function AddSpan(text) {
                 let span = document.createElement("span")
                 span.innerHTML = text
@@ -278,14 +273,13 @@ module.exports.River = function(locate, event) {
                 button.appendChild(span)
             }
 
-
-
             if (this.flow) {
                 let flowSpan = AddSpan(this.flow + " " + calculateDirection(this.usgs))
 				if (this.minrun && this.maxrun) {
-					button.style.backgroundColor = calculateColor(this)
+					button.normalColor = calculateColor(this)
+					button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})
+					button.style.backgroundColor = button.normalColor
 				}
-				
             }
             
 
@@ -294,6 +288,10 @@ module.exports.River = function(locate, event) {
             //Add the click handler
             addClickHandler(button, locate)
 
+			
+			button.addEventListener("mouseover", function(){this.style.backgroundColor = this.focusedColor})
+			button.addEventListener("mouseout", function(){this.style.backgroundColor = this.normalColor})
+			
 
             //Make content available to Googlebot for indexing
             if (navigator.userAgent.toLowerCase().indexOf("google") !== -1) {

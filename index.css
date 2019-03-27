@@ -104,9 +104,7 @@ Those include name,section,skill,quality, and flow info*/
 .riverbutton:focus {
     outline:0;
 }   
-.riverbutton:hover {
-    background-color: #e3e3e3;
-}
+
 
 /*Controlling font size smoothly based on screen size*/
 @media screen and (min-width: 500px) {
@@ -211,9 +209,6 @@ Those include name,section,skill,quality, and flow info*/
     .riverbutton {
         color:#cccccc;
     }
-    .riverbutton:hover {
-        background-color: #333333;
-    }   
 
     #topbar {
         color:black;
