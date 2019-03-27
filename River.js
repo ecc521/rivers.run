@@ -157,7 +157,7 @@ function calculateColor(river, options) {
 		return "hsl(0,100%," + lightness + ",100%)"
 	}
 	else if (flow > values[4]) {
-		return "hsl(240,100%," + lightness + ",50%,60%)"
+		return "hsl(240,100%," + lightness + ",60%)"
 	}
 	else {
 		//If we don't have some values, fill them in using logarithms

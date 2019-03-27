@@ -208,6 +208,53 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 
 
 
+
+
+	let canvas = document.getElementById("legend-gradient")
+	//These don't really matter. It will be stretched or compressed anyways	
+	canvas.width = 1000
+	canvas.height = 75
+	
+	let context = canvas.getContext("2d")
+	
+	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
+	
+	gradient.addColorStop(0, "hsl(0,100%,50%,100%)")
+	gradient.addColorStop(0.08, "hsl(0,100%,50%,100%)")
+	
+	let start = 0.08
+	let end = 0.92
+	
+	let range = end-start
+	//240 is number of whole number hsl values
+		
+	for (let i=0;i<=240;i++) {
+		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
+	}
+	
+	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
+	gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
+
+	context.fillStyle = gradient
+	context.fillRect(0,0,canvas.width,canvas.height)
+	
+	canvas.style.width = "100vw"
+	canvas.style.height = canvas.height + "px"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //Check if there is a search query
 if (window.location.hash.length > 0) {
     let search = decodeURI(window.location.hash.slice(1))
