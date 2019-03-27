@@ -1262,7 +1262,7 @@ module.exports.River = function(locate, event) {
             if (this.flow) {
                 let flowSpan = AddSpan(this.flow + " " + calculateDirection(this.usgs))
 				if (this.minrun && this.maxrun) {
-					flowSpan.style.backgroundColor = calculateColor(this)
+					button.style.backgroundColor = calculateColor(this)
 				}
 				
             }
