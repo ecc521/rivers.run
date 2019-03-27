@@ -38,6 +38,7 @@ function addClickHandler(button, locate) {
 
             div.style.padding = "6px"
             div.id = river.base + 2
+			//TODO: This removes the coloring for flow info
             if (!window.darkMode) {
                 button.style.backgroundColor = "#e3e3e3"
             }
@@ -194,16 +195,16 @@ function calculateColor(river) {
 		
 		
 		if (flow < lowflow) {
-			return "hsl(" + (48 + 48*calculateRatio(minrun, lowflow, flow)) + ",100%,50%,30%"
+			return "hsl(" + (0 + 60*calculateRatio(minrun, lowflow, flow)) + ",100%,50%,30%"
 		}
 		else if (flow < midflow) {
-			return "hsl(" + (96 + 48*calculateRatio(lowflow, midflow, flow)) + ",100%,50%,30%"
+			return "hsl(" + (60 + 60*calculateRatio(lowflow, midflow, flow)) + ",100%,50%,30%"
 		}
 		else if (flow < highflow) {
-			return "hsl(" + (144 + 48*calculateRatio(midflow, highflow, flow)) + ",100%,50%,30%"
+			return "hsl(" + (120 + 60*calculateRatio(midflow, highflow, flow)) + ",100%,50%,30%"
 		}
 		else {
-			return "hsl(" + (192 + 48*calculateRatio(highflow, maxrun, flow)) + ",100%,50%,30%"
+			return "hsl(" + (180 + 60*calculateRatio(highflow, maxrun, flow)) + ",100%,50%,30%"
 		}
 	}
 }
