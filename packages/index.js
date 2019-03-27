@@ -1261,7 +1261,6 @@ module.exports.River = function(locate, event) {
 				if (this.minrun && this.maxrun) {
 					button.normalColor = calculateColor(this)
 					button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})
-					button.style.backgroundColor = button.normalColor
 				}
             }
             
@@ -1293,6 +1292,8 @@ module.exports.River = function(locate, event) {
 
         }    
 
+		this.finished.style.backgroundColor = this.finished.normalColor
+		
         //Return finished button
         return this.finished
 
