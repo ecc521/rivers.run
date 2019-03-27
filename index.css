@@ -156,6 +156,35 @@ Those include name,section,skill,quality, and flow info*/
 
 
 
+/*The flow level highlighting legend*/
+#legend {
+	height:70px;
+	text-align:center;
+}
+
+#legend > * {
+	height:inherit;
+	display:inline-block;
+}
+
+#tooLow {
+	background-color:hsl(0,100%,50%,100%);
+	width:8%
+}
+
+#inBetween {
+	background: linear-gradient(90deg, hsl(0,100%,50%,30%) 0%, hsl(120,100%,50%,0.3) 50%, hsl(240,100%,50%,30%) 100%);
+	width:80%;
+}
+
+#tooHigh {
+	background-color:hsl(240,100%,50%,60%);
+	width:8%;
+}
+/*End of legend styling*/
+
+
+
 
 /*Utilities Stuff - To avoid inline CSS*/
 .center {
@@ -165,6 +194,7 @@ Those include name,section,skill,quality, and flow info*/
 .pixel18 {
     font-size:18px;
 }
+
 
 
 @media (prefers-color-scheme: dark) {

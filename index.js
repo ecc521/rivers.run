@@ -205,6 +205,9 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 
 
 
+
+
+
 //Check if there is a search query
 if (window.location.hash.length > 0) {
     let search = decodeURI(window.location.hash.slice(1))
