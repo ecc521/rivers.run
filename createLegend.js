@@ -6,7 +6,7 @@ function drawColors(canvas) {
 	
 	//These don't really matter. It will be stretched or compressed anyways	
 	canvas.width = window.innerWidth
-	canvas.height = 75
+	canvas.height = 40
 	
 	//The 51%'s are actually 30% on the riverbuttons
 	//At 30%, it wouldn't show up for some reason.
@@ -74,6 +74,21 @@ function drawText(canvas) {
 }
 
 
+function makeSticky(canvas) {
+	//Make the legend stick to the top of the screen
+	
+	let yOffest = canvas.offsetTop
+	window.addEventListener("scroll", function() {
+		if (window.pageYOffset > yOffest) {
+			canvas.style.position = "fixed"
+			canvas.style.top = 0
+		}
+		else {
+			canvas.style.position = ""
+			canvas.style.top = ""			
+		}
+	})
+}
 
 
 
@@ -84,6 +99,7 @@ function updateLegend() {
 	
 	drawColors(canvas)
 	drawText(canvas)
+	makeSticky(canvas)
 	
 }
 
