@@ -91,19 +91,31 @@
                 }
         }
                 
+			
+		let promises = []
         for (let i=0;i<fileids.length;i++) {
-                load(fileids[i])
+                promises.push(load(fileids[i]))
                 await wait(1000/googlecloudrequestrate)
         }
         
+        for (let i=0;i<promises.length;i++) {
+                await promises[i]
+        }
+		promises = []
+			
         await wait(1000) //Let quota refresh
                 
         for (let i=0;i<retry.length;i++) {
-                load(fileids[i])
+                promises.push(load(fileids[i]))
                 //Use 2000 instead of the 1000 it should be- I want the retries to never 403
                 await wait(2000/googlecloudrequestrate)
         }                
                 
+        for (let i=0;i<promises.length;i++) {
+                await promises[i]
+        }
+		promises = []			
+			
         for (let i=0;i<failed.length;i++) {
                 console.error("Loading of file with file id of " + failed[i] + " failed.")
         }
