@@ -184,7 +184,6 @@ function locationFilter(list, parameters) {
 			let lat2 = river.plat || river.tlat || river.hidlat
 			let lon2 = river.plon || river.tlon || river.hidlon
 			
-			
 			let passes;
 			if (lat2 && lon2) {
 				let distance = calculateDistance(lat1, lon1, lat2, lon2)

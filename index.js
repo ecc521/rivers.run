@@ -14,8 +14,7 @@ self.sort = require("./sort.js").sort
 //Defines self.normalSearch and self.advanedSearch
 Object.assign(self, require("./search.js"))
 
-
-
+require("./createLegend.js")
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -202,54 +201,6 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 
     NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
 })
-
-
-
-
-
-
-
-
-	let canvas = document.getElementById("legend-gradient")
-	//These don't really matter. It will be stretched or compressed anyways	
-	canvas.width = 1000
-	canvas.height = 75
-	
-	let context = canvas.getContext("2d")
-	
-	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
-	
-	let redLightness = window.darkMode ? "35%":"65%"
-	let redColor = "hsl(0,100%," + redLightness + ",60%)"
-	
-	gradient.addColorStop(0, redColor)
-	gradient.addColorStop(0.08, redColor)
-	
-	let start = 0.08
-	let end = 0.92
-	
-	let range = end-start
-	//240 is number of whole number hsl values
-		
-	for (let i=0;i<=240;i++) {
-		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
-	}
-	
-	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
-	gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
-
-	context.fillStyle = gradient
-	context.fillRect(0,0,canvas.width,canvas.height)
-	
-	canvas.style.width = "100vw"
-	canvas.style.height = canvas.height + "px"
-
-
-
-
-
-
-
 
 
 

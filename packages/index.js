@@ -105,8 +105,7 @@ self.sort = __webpack_require__(6).sort
 //Defines self.normalSearch and self.advanedSearch
 Object.assign(self, __webpack_require__(7))
 
-
-
+__webpack_require__(9)
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -125,7 +124,7 @@ riverarray.map(function(event, index) {
 
 //Fetch data from USGS
 //ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise self.usgsarray is undefined)
-__webpack_require__(9).loadUSGS()
+__webpack_require__(10).loadUSGS()
 
 
 var oldresult;    
@@ -293,54 +292,6 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 
     NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
 })
-
-
-
-
-
-
-
-
-	let canvas = document.getElementById("legend-gradient")
-	//These don't really matter. It will be stretched or compressed anyways	
-	canvas.width = 1000
-	canvas.height = 75
-	
-	let context = canvas.getContext("2d")
-	
-	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
-	
-	let redLightness = window.darkMode ? "35%":"65%"
-	let redColor = "hsl(0,100%," + redLightness + ",60%)"
-	
-	gradient.addColorStop(0, redColor)
-	gradient.addColorStop(0.08, redColor)
-	
-	let start = 0.08
-	let end = 0.92
-	
-	let range = end-start
-	//240 is number of whole number hsl values
-		
-	for (let i=0;i<=240;i++) {
-		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
-	}
-	
-	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
-	gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
-
-	context.fillStyle = gradient
-	context.fillRect(0,0,canvas.width,canvas.height)
-	
-	canvas.style.width = "100vw"
-	canvas.style.height = canvas.height + "px"
-
-
-
-
-
-
-
 
 
 
@@ -1190,7 +1141,7 @@ function calculateColor(river, options) {
 	//TODO: It is difficult to tell when the minimum has not bee reached or the maximum has been exceeded. Make that easy
 	if (flow < values[0]) {
 		//Too low
-		let lightness = (options && options.lightness) || "50%"//window.darkMode ? "35%":"65%"
+		let lightness = (options && options.lightness) || "50%"
 		return "hsl(0,100%," + lightness + ",60%)"
 	}
 	else if (flow > values[4]) {
@@ -1836,7 +1787,6 @@ function locationFilter(list, parameters) {
 			let lat2 = river.plat || river.tlat || river.hidlat
 			let lon2 = river.plon || river.tlon || river.hidlon
 			
-			
 			let passes;
 			if (lat2 && lon2) {
 				let distance = calculateDistance(lat1, lon1, lat2, lon2)
@@ -2035,6 +1985,88 @@ module.exports = {
 
 /***/ }),
 /* 9 */
+/***/ (function(module, exports) {
+
+	
+
+function drawColors(canvas) {
+
+	let context = canvas.getContext("2d")	
+	
+	//These don't really matter. It will be stretched or compressed anyways	
+	canvas.width = window.innerWidth
+	canvas.height = 75
+
+	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
+	
+	let redLightness = window.darkMode ? "35%":"65%"
+	let redColor = "hsl(0,100%," + redLightness + ",60%)"
+	
+	gradient.addColorStop(0, redColor)
+	gradient.addColorStop(0.08, redColor)
+	
+	let start = 0.08
+	let end = 0.92
+	
+	let range = end-start
+	//240 is number of whole number hsl values
+		
+	for (let i=0;i<=240;i++) {
+		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
+	}
+	
+	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
+	gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
+
+	context.fillStyle = gradient
+	context.fillRect(0,0,canvas.width,canvas.height)	
+	
+}
+
+
+
+function drawText(canvas) {
+	
+	let context = canvas.getContext("2d")	
+	context.fillStyle = window.darkMode ? "white" : "black" 
+	
+	//The fourth parameter is the maximum width of the text in pixels
+	
+	let height = 14
+	
+	context.font = "14px Arial"
+	
+	context.textAlign = "start"
+	context.fillText("Too Low", 0, height)
+	
+	context.textAlign = "center"
+	context.fillText("Low Flow", canvas.width*0.28, height)
+	context.fillText("Mid Flow", canvas.width/2, height)
+	context.fillText("High Flow", canvas.width*0.72, height)
+	
+	context.textAlign = "end"
+	context.fillText("Too High", canvas.width, height, canvas.width*0.2)
+
+}
+
+
+
+
+
+function updateLegend() {
+	let canvas = document.getElementById("legend")
+
+	canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)
+	
+	drawColors(canvas)
+	drawText(canvas)
+}
+
+window.addEventListener("resize", updateLegend)
+updateLegend()
+
+/***/ }),
+/* 10 */
 /***/ (function(module, exports) {
 
 self.usgsarray = {} 
