@@ -239,4 +239,5 @@ if (window.location.hash.length > 0) {
         //Looks like we have a normal search query
         document.getElementById("searchbox").value = search
         NewList(search, "normal")
-    
+	}
+}

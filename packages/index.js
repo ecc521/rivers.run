@@ -263,22 +263,23 @@ async function calculateCoordinates() {
 		status.innerHTML = "Calculating your Approximate Location (Expect this to take 15-60 seconds)" + ".".repeat(num)
 	}, 500)
 	
-	let position;
 	
 	try {
-		position = await new Promise((resolve, reject) => {
+		let position = await new Promise((resolve, reject) => {
 			navigator.geolocation.getCurrentPosition(resolve, reject)
 	   });
 	}
 	catch(e) {
 		let output = "Error code " + e.code + " occoured when getting your location. The error message is: " + e.message 
 		alert(output)
+		clearInterval(progress)
 		status.innerHTML = output
 	}
-	finally {clearInterval(progress)}
+
 
 	let coords = position.coords
 	
+		clearInterval(progress)
 	
 	document.getElementById("latitudeQuery").value = coords.latitude
 	document.getElementById("longitudeQuery").value = coords.longitude
@@ -329,12 +330,8 @@ if (window.location.hash.length > 0) {
         //Looks like we have a normal search query
         document.getElementById("searchbox").value = search
         NewList(search, "normal")
-    }
-
+	}
 }
-
-
-
 
 /***/ }),
 /* 1 */
@@ -2012,13 +2009,10 @@ function drawColors(canvas) {
 	//The 51%'s are actually 30% on the riverbuttons
 	//At 30%, it wouldn't show up for some reason.
 	
-	//66%'s are actually 60% on the riverbuttons
-	//Trying to make them show up with above
-	
 	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 	
 	let redLightness = "50%"
-	let redColor = "hsl(0,100%," + redLightness + ",66%)"
+	let redColor = "hsl(0,100%," + redLightness + ",60%)"
 		
 	
 	gradient.addColorStop(0, redColor)
@@ -2034,8 +2028,8 @@ function drawColors(canvas) {
 		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,51%)")	
 	}
 	
-	gradient.addColorStop(0.92, "hsla(240,100%,50%,66%)")
-	gradient.addColorStop(1, "hsla(240,100%,50%,66%)")
+	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
+	gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
 
 	context.fillStyle = gradient
 	context.fillRect(0,0,canvas.width,canvas.height)	
