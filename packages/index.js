@@ -263,20 +263,23 @@ async function calculateCoordinates() {
 		status.innerHTML = "Calculating your Approximate Location (Expect this to take 15-60 seconds)" + ".".repeat(num)
 	}, 500)
 	
+	let position;
 	
 	try {
-		let position = await new Promise((resolve, reject) => {
+		position = await new Promise((resolve, reject) => {
 			navigator.geolocation.getCurrentPosition(resolve, reject)
 	   });
 	}
 	catch(e) {
-		alert("Error code " + e.code + " occoured when getting your location. The error message is: " + e.message)
+		let output = "Error code " + e.code + " occoured when getting your location. The error message is: " + e.message 
+		alert(output)
+		status.innerHTML = output
 	}
-	
-	
+	finally {clearInterval(progress)}
+
 	let coords = position.coords
 	
-	clearInterval(progress)
+	
 	document.getElementById("latitudeQuery").value = coords.latitude
 	document.getElementById("longitudeQuery").value = coords.longitude
 	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."

@@ -179,13 +179,17 @@ async function calculateCoordinates() {
 	   });
 	}
 	catch(e) {
-		alert("Error code " + e.code + " occoured when getting your location. The error message is: " + e.message)
+		let output = "Error code " + e.code + " occoured when getting your location. The error message is: " + e.message 
+		alert(output)
+		clearInterval(progress)
+		status.innerHTML = output
 	}
-	
-	
+
+
 	let coords = position.coords
 	
-	clearInterval(progress)
+		clearInterval(progress)
+	
 	document.getElementById("latitudeQuery").value = coords.latitude
 	document.getElementById("longitudeQuery").value = coords.longitude
 	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
@@ -235,8 +239,4 @@ if (window.location.hash.length > 0) {
         //Looks like we have a normal search query
         document.getElementById("searchbox").value = search
         NewList(search, "normal")
-    }
-
-}
-
-
+    
