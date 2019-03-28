@@ -2000,10 +2000,13 @@ function drawColors(canvas) {
 	//The 51%'s are actually 30% on the riverbuttons
 	//At 30%, it wouldn't show up for some reason.
 	
+	//66%'s are actually 60% on the riverbuttons
+	//Trying to make them show up with above
+	
 	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 	
 	let redLightness = "50%"
-	let redColor = "hsl(0,100%," + redLightness + ",60%)"
+	let redColor = "hsl(0,100%," + redLightness + ",66%)"
 		
 	
 	gradient.addColorStop(0, redColor)
@@ -2019,8 +2022,8 @@ function drawColors(canvas) {
 		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,51%)")	
 	}
 	
-	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
-	gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
+	gradient.addColorStop(0.92, "hsla(240,100%,50%,66%)")
+	gradient.addColorStop(1, "hsla(240,100%,50%,66%)")
 
 	context.fillStyle = gradient
 	context.fillRect(0,0,canvas.width,canvas.height)	
