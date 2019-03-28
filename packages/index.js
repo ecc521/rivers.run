@@ -1190,7 +1190,7 @@ function calculateColor(river, options) {
 	//TODO: It is difficult to tell when the minimum has not bee reached or the maximum has been exceeded. Make that easy
 	if (flow < values[0]) {
 		//Too low
-		let lightness = window.darkMode ? "35%":"65%"
+		let lightness = (options && options.lightness) || "50%"//window.darkMode ? "35%":"65%"
 		return "hsl(0,100%," + lightness + ",60%)"
 	}
 	else if (flow > values[4]) {
