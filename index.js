@@ -123,21 +123,26 @@ function getAdvancedSearchParameters() {
         query: document.getElementById("writeupQuery").value
     }
 	
-	let distance = document.getElementById("distanceQuery").value
-	if (distance.length > 0) {
-		distance = Number(distance)
-		if (distance <= 0 || isNaN(distance)) {alert("Distance must be a number greater than 0")}
-		
-
+	
+	
+	let distance = Number(document.getElementById("distanceQuery").value)
+	
 			let lat = document.getElementById("latitudeQuery").value
 			let lon = document.getElementById("longitudeQuery").value
 			
 			//TODO: Parse other latitude and longitude formats
 			lat = Number(lat)
 			lon = Number(lon)
-			
-			
-			if (lat && lon) {
+	
+	
+	
+if (!(distance > 0) && lat && lon) {
+	alert("Distance must be a number greater than 0 to use location sorting")
+}
+else if (distance > 0 && !(lat && lon)) {
+	alert("You must enter a latitude and longitude (Get the coordinates from GPS by pressing Calculate my Location)")
+}
+else if (distance > 0 && lat && lon) {
 				parameters.location = {
 					lat,
 					lon,
@@ -145,8 +150,6 @@ function getAdvancedSearchParameters() {
 					includeUnknown: document.getElementById("includeUnknown").checked
 				}
 			}
-			else {alert("Please enter a longitude and a latitude")}
-	}
 	
 	
 	//TODO: Add from queries
