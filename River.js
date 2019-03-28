@@ -146,7 +146,7 @@ function calculateColor(river, options) {
 	if (type === "cfs") {
 		flow = river.cfs
 	}
-	else if (type === "feet") {
+	else if (type === "feet" || type==="ft") {
 		flow = river.feet
 	}
 	
