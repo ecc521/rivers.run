@@ -310,8 +310,11 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 	
 	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 	
-	gradient.addColorStop(0, "hsl(0,100%,50%,100%)")
-	gradient.addColorStop(0.08, "hsl(0,100%,50%,100%)")
+	let redLightness = window.darkMode ? "35%":"65%"
+	let redColor = "hsl(0,100%," + redLightness + ",60%)"
+	
+	gradient.addColorStop(0, redColor)
+	gradient.addColorStop(0.08, redColor)
 	
 	let start = 0.08
 	let end = 0.92
@@ -1186,9 +1189,12 @@ function calculateColor(river, options) {
 	
 	//TODO: It is difficult to tell when the minimum has not bee reached or the maximum has been exceeded. Make that easy
 	if (flow < values[0]) {
-		return "hsl(0,100%," + lightness + ",100%)"
+		//Too low
+		let lightness = window.darkMode ? "35%":"65%"
+		return "hsl(0,100%," + lightness + ",60%)"
 	}
 	else if (flow > values[4]) {
+		//Too high
 		return "hsl(240,100%," + lightness + ",60%)"
 	}
 	else {

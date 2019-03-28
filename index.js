@@ -219,8 +219,11 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 	
 	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 	
-	gradient.addColorStop(0, "hsl(0,100%,50%,100%)")
-	gradient.addColorStop(0.08, "hsl(0,100%,50%,100%)")
+	let redLightness = window.darkMode ? "35%":"65%"
+	let redColor = "hsl(0,100%," + redLightness + ",60%)"
+	
+	gradient.addColorStop(0, redColor)
+	gradient.addColorStop(0.08, redColor)
 	
 	let start = 0.08
 	let end = 0.92
