@@ -123,8 +123,9 @@ function calculateColor(river, options) {
 			continue;
 		}
 		
+		str = str.trim()
 		let value = parseFloat(str)
-		let currentType = str.match(/[^0-9]+/)
+		let currentType = str.match(/[^\d|.]+/) //Match the integer or decimal number
 		
 		if (currentType) {
 			currentType = currentType[0].trim() //Match a string of non-digits
@@ -135,6 +136,7 @@ function calculateColor(river, options) {
 		}
 		else if (type === currentType) {}
 		else {
+			console.warn(values[i] + " on " + river.name + " " + river.section + " has a different extension and has been skipped")
 			values[i] = undefined
 			continue;
 		}
