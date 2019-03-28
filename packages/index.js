@@ -1996,16 +1996,15 @@ function drawColors(canvas) {
 	//These don't really matter. It will be stretched or compressed anyways	
 	canvas.width = window.innerWidth
 	canvas.height = 75
-
 	
-	//These values do not correlate with values on the riverbuttons
-	//This is because the riverbutton's spans inherit the color.
-	//The opacitys combine - ex. 30% opacity -> 30% + 30% of remaining (70%) = 51%  
+	//The 51%'s are actually 30% on the riverbuttons
+	//At 30%, it wouldn't show up for some reason.
 	
 	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 	
 	let redLightness = "50%"
-	let redColor = "hsl(0,100%," + redLightness + ",84%)"
+	let redColor = "hsl(0,100%," + redLightness + ",60%)"
+		
 	
 	gradient.addColorStop(0, redColor)
 	gradient.addColorStop(0.08, redColor)
@@ -2020,8 +2019,8 @@ function drawColors(canvas) {
 		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,51%)")	
 	}
 	
-	gradient.addColorStop(0.92, "hsla(240,100%,50%,84%)")
-	gradient.addColorStop(1, "hsla(240,100%,50%,84%)")
+	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
+	gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
 
 	context.fillStyle = gradient
 	context.fillRect(0,0,canvas.width,canvas.height)	
