@@ -2006,9 +2006,6 @@ function drawColors(canvas) {
 	canvas.width = window.innerWidth
 	canvas.height = 40
 	
-	//The 51%'s are actually 30% on the riverbuttons
-	//At 30%, it wouldn't show up for some reason.
-	
 	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 	
 	let redLightness = "50%"
@@ -2025,7 +2022,7 @@ function drawColors(canvas) {
 	//240 is number of whole number hsl values
 		
 	for (let i=0;i<=240;i++) {
-		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,51%)")	
+		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
 	}
 	
 	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
