@@ -2066,17 +2066,19 @@ function drawText(canvas) {
 function makeSticky(canvas) {
 	//Make the legend stick to the top of the screen
 	
-	let yOffest = canvas.offsetTop
+	let elementOffset = canvas.offsetTop
 	window.addEventListener("scroll", function() {
-		if (window.pageYOffset > yOffest) {
+		let pageOffset = window.pageYOffset
+		
+		if (pageOffset > elementOffset) {
 			canvas.style.position = "fixed"
 			canvas.style.top = 0
+			document.body.style.paddingTop = canvas.height + "px" //Avoid sudden jerk in page content
 		}
 		else {
 			canvas.style.position = ""
 			canvas.style.top = ""
-			
-			console.log("deleted")
+			document.body.style.paddingTop = 0
 		}
 	})
 }
@@ -2087,6 +2089,8 @@ function updateLegend() {
 	let canvas = document.getElementById("legend")
 
 	canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)
+	
+	canvas.style.backgroundColor = window.getComputedStyle(document.body).getPropertyValue("background-color")
 	
 	drawColors(canvas)
 	drawText(canvas)
