@@ -8,10 +8,15 @@ function drawColors(canvas) {
 	canvas.width = window.innerWidth
 	canvas.height = 75
 
+	
+	//These values do not correlate with values on the riverbuttons
+	//This is because the riverbutton's spans inherit the color.
+	//The opacitys combine - ex. 30% opacity -> 30% + 30% of remaining (70%) = 51%  
+	
 	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 	
-	let redLightness = window.darkMode ? "35%":"65%"
-	let redColor = "hsl(0,100%," + redLightness + ",60%)"
+	let redLightness = "50%"
+	let redColor = "hsl(0,100%," + redLightness + ",84%)"
 	
 	gradient.addColorStop(0, redColor)
 	gradient.addColorStop(0.08, redColor)
@@ -23,11 +28,11 @@ function drawColors(canvas) {
 	//240 is number of whole number hsl values
 		
 	for (let i=0;i<=240;i++) {
-		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
+		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,51%)")	
 	}
 	
-	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
-	gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
+	gradient.addColorStop(0.92, "hsla(240,100%,50%,84%)")
+	gradient.addColorStop(1, "hsla(240,100%,50%,84%)")
 
 	context.fillStyle = gradient
 	context.fillRect(0,0,canvas.width,canvas.height)	
@@ -37,13 +42,15 @@ function drawColors(canvas) {
 
 
 function drawText(canvas) {
-	
+		
 	let context = canvas.getContext("2d")	
-	context.fillStyle = window.darkMode ? "white" : "black" 
-	
+	context.fillStyle = window.darkMode ? "white" : "black"
+
 	//The fourth parameter is the maximum width of the text in pixels
+	//rivers.run may want to use it
 	
 	let height = 14
+	
 	
 	context.font = "14px Arial"
 	
@@ -54,6 +61,10 @@ function drawText(canvas) {
 	context.fillText("Low Flow", canvas.width*0.28, height)
 	context.fillText("Mid Flow", canvas.width/2, height)
 	context.fillText("High Flow", canvas.width*0.72, height)
+	
+	
+	//Black text on blue is near inivisible - so use white text on blue
+	if (!window.darkMode) {context.fillStyle = "white"} 
 	
 	context.textAlign = "end"
 	context.fillText("Too High", canvas.width, height, canvas.width*0.2)
@@ -71,6 +82,7 @@ function updateLegend() {
 	
 	drawColors(canvas)
 	drawText(canvas)
+	
 }
 
 window.addEventListener("resize", updateLegend)
