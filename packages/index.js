@@ -264,9 +264,15 @@ async function calculateCoordinates() {
 	}, 500)
 	
 	
-	let position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject)
-   });
+	try {
+		let position = await new Promise((resolve, reject) => {
+			navigator.geolocation.getCurrentPosition(resolve, reject)
+	   });
+	}
+	catch(e) {
+		alert("Error code " + e.code + " occoured when getting your location. The error message is: " + e.message)
+	}
+	
 	
 	let coords = position.coords
 	
