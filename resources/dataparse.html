@@ -137,8 +137,10 @@
                                 value = value.trim()
                         }
                         
-                        let keepnames = ["name", "section", "tags", "writeup"] //Some need to be defined in file
-                        if (String(value).length !== 0 || keepnames.includes(name)) {
+                        let allowed = ["name","section","skill","rating","length","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","state","maxrun","minrun","lowflow","medflow","highflow"] //Property values to be included in output file
+                        
+                        let keepnames = ["name", "section", "tags", "writeup"] //Some need to be defined in file, even if empty
+                        if (allowed.includes(name) && (String(value).length !== 0 || keepnames.includes(name))) {
                                 obj[name] = value
                         }
                 }

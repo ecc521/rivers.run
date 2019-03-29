@@ -2113,6 +2113,9 @@ function updateLegend() {
 }
 
 window.addEventListener("resize", updateLegend)
+//orientationchange should be fired on resize, but some browsers (such as Safari) do not
+window.addEventListener("orientationchange", updateLegend)
+
 updateLegend()
 
 /***/ }),
