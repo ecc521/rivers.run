@@ -265,4 +265,15 @@ class RiverOverview extends HTMLElement {
   }
 }
 
-customElements.define('river-overview', RiverOverview);
+try {
+	customElements.define('river-overview', RiverOverview);
+}
+catch (e) {
+	console.error(e)
+	//Alert firefox users about the flag
+	if (navigator.userAgent.includes("Firefox")) {
+		setTimeout(function() {
+			alert("In order to view area overviews, you will need a browser that supports DOM customElements. You may be able to enable customElements in about:config")
+		},4000)
+	}
+}

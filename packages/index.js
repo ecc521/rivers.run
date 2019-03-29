@@ -263,9 +263,9 @@ async function calculateCoordinates() {
 		status.innerHTML = "Calculating your Approximate Location (Expect this to take 15-60 seconds)" + ".".repeat(num)
 	}, 500)
 	
-	
+	let position;
 	try {
-		let position = await new Promise((resolve, reject) => {
+		position = await new Promise((resolve, reject) => {
 			navigator.geolocation.getCurrentPosition(resolve, reject)
 	   });
 	}
@@ -604,7 +604,18 @@ class RiverOverview extends HTMLElement {
   }
 }
 
-customElements.define('river-overview', RiverOverview);
+try {
+	customElements.define('river-overview', RiverOverview);
+}
+catch (e) {
+	console.error(e)
+	//Alert firefox users about the flag
+	if (navigator.userAgent.includes("Firefox")) {
+		setTimeout(function() {
+			alert("In order to view area overviews, you will need a browser that supports DOM customElements. You may be able to enable customElements in about:config")
+		},4000)
+	}
+}
 
 
 /***/ }),

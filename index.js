@@ -172,9 +172,9 @@ async function calculateCoordinates() {
 		status.innerHTML = "Calculating your Approximate Location (Expect this to take 15-60 seconds)" + ".".repeat(num)
 	}, 500)
 	
-	
+	let position;
 	try {
-		let position = await new Promise((resolve, reject) => {
+		position = await new Promise((resolve, reject) => {
 			navigator.geolocation.getCurrentPosition(resolve, reject)
 	   });
 	}
