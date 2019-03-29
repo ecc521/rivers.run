@@ -2012,13 +2012,14 @@ module.exports = {
 function drawColors(canvas) {
 
 	let context = canvas.getContext("2d")	
-	
-	//These don't really matter. It will be stretched or compressed anyways	
-    //Take the smallest - otherwise the window may be expanded to handle the width of the legend
-    //Then the legend doesn't resize (because the window has resized to it)
+	    
+    //Some browsers flip screen.width and screen.height on rotation - some don't
     
-    //Consider using availWidth
-	canvas.width = Math.min(window.innerWidth, screen.width)
+    //window.innerWidth fails - the window is expanded to handle the width of the legend
+    //Then the legend doesn't resize (because the window has resized to it) 
+    
+    //This seems to be the only cross browser solution
+    canvas.width = document.documentElement.clientWidth
 	canvas.height = 40
 	
 	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
@@ -2109,11 +2110,11 @@ function updateLegend() {
 	canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)
 	
 	canvas.style.backgroundColor = window.getComputedStyle(document.body).getPropertyValue("background-color")
-	
+    
 	drawColors(canvas)
 	drawText(canvas)
 	makeSticky(canvas)
-	
+    	
 }
 
 window.addEventListener("resize", updateLegend)
