@@ -109,6 +109,11 @@ function calculateColor(river, options) {
     //Saturation - use 100%
     //Lightness - use 50%
     //Opacity - Percentage
+    
+    
+    //Defines river.running
+    //0-4
+    //0 is too low, 4 is too high, other values in between
 
 
     let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
@@ -154,14 +159,17 @@ function calculateColor(river, options) {
 
     let lightness = (options && options.lightness) || "50%"
 
-    //TODO: It is difficult to tell when the minimum has not bee reached or the maximum has been exceeded. Make that easy
+
+    
     if (flow < values[0]) {
         //Too low
+        river.running = 0
         let lightness = (options && options.lightness) || "50%"
         return "hsl(0,100%," + lightness + ",60%)"
     }
     else if (flow > values[4]) {
         //Too high
+        river.running = 4
         return "hsl(240,100%," + lightness + ",60%)"
     }
     else {
@@ -188,20 +196,21 @@ function calculateColor(river, options) {
             return value/range
 
         }
-
-
+        
         if (flow < lowflow) {
-            return "hsl(" + (0 + 60*calculateRatio(minrun, lowflow, flow)) + ",100%," + lightness + ",30%"
+            river.running = calculateRatio(minrun, lowflow, flow)
         }
         else if (flow < midflow) {
-            return "hsl(" + (60 + 60*calculateRatio(lowflow, midflow, flow)) + ",100%," + lightness + ",30%"
+            river.running = 1+calculateRatio(lowflow, midflow, flow)
         }
         else if (flow < highflow) {
-            return "hsl(" + (120 + 60*calculateRatio(midflow, highflow, flow)) + ",100%," + lightness + ",30%"
+            river.running = 2+calculateRatio(midflow, highflow, flow)
         }
         else {
-            return "hsl(" + (180 + 60*calculateRatio(highflow, maxrun, flow)) + ",100%," + lightness + ",30%"
+            river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
+        
+        return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ",30%"
     }
 }
 

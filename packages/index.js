@@ -979,7 +979,10 @@ function TopBar() {
         span.value = 1 //We want greatest first, not least first, on the first sort
         button.appendChild(span) 
 
-        button.appendChild(NewSpan("Flow Info/Trend"))
+        span = NewSpan("Flow Info/Trend⇅")
+        addSorting(span, "running")
+        span.value = 1 //Show highest flow first, instead of lowest
+        button.appendChild(span)
 
         return button
     }
@@ -1113,6 +1116,11 @@ function calculateColor(river, options) {
     //Saturation - use 100%
     //Lightness - use 50%
     //Opacity - Percentage
+    
+    
+    //Defines river.running
+    //0-4
+    //0 is too low, 4 is too high, other values in between
 
 
     let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
@@ -1158,14 +1166,17 @@ function calculateColor(river, options) {
 
     let lightness = (options && options.lightness) || "50%"
 
-    //TODO: It is difficult to tell when the minimum has not bee reached or the maximum has been exceeded. Make that easy
+
+    
     if (flow < values[0]) {
         //Too low
+        river.running = 0
         let lightness = (options && options.lightness) || "50%"
         return "hsl(0,100%," + lightness + ",60%)"
     }
     else if (flow > values[4]) {
         //Too high
+        river.running = 4
         return "hsl(240,100%," + lightness + ",60%)"
     }
     else {
@@ -1192,20 +1203,21 @@ function calculateColor(river, options) {
             return value/range
 
         }
-
-
+        
         if (flow < lowflow) {
-            return "hsl(" + (0 + 60*calculateRatio(minrun, lowflow, flow)) + ",100%," + lightness + ",30%"
+            river.running = calculateRatio(minrun, lowflow, flow)
         }
         else if (flow < midflow) {
-            return "hsl(" + (60 + 60*calculateRatio(lowflow, midflow, flow)) + ",100%," + lightness + ",30%"
+            river.running = 1+calculateRatio(lowflow, midflow, flow)
         }
         else if (flow < highflow) {
-            return "hsl(" + (120 + 60*calculateRatio(midflow, highflow, flow)) + ",100%," + lightness + ",30%"
+            river.running = 2+calculateRatio(midflow, highflow, flow)
         }
         else {
-            return "hsl(" + (180 + 60*calculateRatio(highflow, maxrun, flow)) + ",100%," + lightness + ",30%"
+            river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
+        
+        return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ",30%"
     }
 }
 
@@ -1508,7 +1520,7 @@ function simpleSort(list, propertyName) {
         if (a[propertyName] > b[propertyName]) {
             return 1;
         }
-        if (a[propertyName] < [propertyName]) {
+        if (a[propertyName] < b[propertyName]) {
             return -1;
         }
         return 0;
@@ -1592,6 +1604,41 @@ function skillsort(list, reverse) {
 
 
 
+function runningSort(list, reverse) {
+    
+    let noData = []
+    let hasGauge = []
+    let knownState = []
+    
+    list.forEach((item) => {
+        if (item.running !== undefined) {knownState.push(item)}
+        //If there is gauge data, the user may be able to determine level themselves
+        //As such, put rivers with gauges second
+        else if (item.flow) {hasGauge.push(item)}
+        else {noData.push(item)}
+    })
+    
+    knownState = simpleSort(knownState, "running")
+    
+    if (reverse) {
+        knownState.reverse()
+    }
+
+    knownState.concat(hasGauge)
+    knownState.concat(noData)
+    
+    if (knownState.length !== 0) {
+        return knownState
+    }
+    else {
+        alert("Flow data has not yet loaded.")
+        return list
+    }
+}
+
+
+
+
 
 function sort(method, list, reverse) {
     if (method === "alphabetical") {
@@ -1602,6 +1649,9 @@ function sort(method, list, reverse) {
     }
     else if (method === "skill") {
         list = skillsort(list, reverse)
+    }
+    else if (method === "running") {
+        list = runningSort(list, reverse)      
     }
     else {
         throw "Unknown sorting method " + method
