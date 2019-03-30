@@ -131,9 +131,29 @@ Those include name,section,skill,quality, and flow info*/
         font-size: 1.5vw;
     }
 }
-@media screen and (min-width: 1500px) {
+@media screen and (min-width: 1250px) {
     .riverbutton {
-        font-size: 1.27vw;
+        font-size: 1.4vw;
+    }
+}
+@media screen and (min-width: 1350px) {
+    .riverbutton {
+        font-size: 1.35vw;
+    }
+}
+@media screen and (min-width: 1450px) {
+    .riverbutton {
+        font-size: 1.24vw;
+    }
+}
+@media screen and (min-width: 1600px) {
+    .riverbutton {
+        font-size: 1.15vw;
+    }
+}
+@media screen and (min-width: 1900px) {
+    .riverbutton {
+        font-size: 21px;
     }
 }
 /*End of riverbutton style*/    
