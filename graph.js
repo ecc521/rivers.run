@@ -96,7 +96,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
         var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
 
         let precision = Math.max(0, 3-String(Math.round(Text)).length)
-        
+
         Text = Number(Text.toFixed(precision))
 
         ctx.fillText(Text, start, (height*(11-i))/10-5);
@@ -104,11 +104,11 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
     //Top one
     Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
-    
+
     let precision = Math.max(0, 3-String(Math.round(Text)).length)
-        
+
     Text = Number(Text.toFixed(precision))
-    
+
     ctx.fillText(Text, start, 27);
 
 
@@ -132,24 +132,24 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
 
 
-	function formatDate(date) {
-    	var time = String(date.getHours())
-	
-		if (date.getHours() < 10) {
-			time += "0"
-		}
-		time += ":" + date.getMinutes()
-		if (date.getMinutes() < 10) {
-			time += "0"
-		}
-		time += " " + (date.getMonth()+1) + "/" + date.getDate() + "/" +date.getFullYear()
-		return time
-	}
-	
+    function formatDate(date) {
+        var time = String(date.getHours())
+
+        if (date.getHours() < 10) {
+            time += "0"
+        }
+        time += ":" + date.getMinutes()
+        if (date.getMinutes() < 10) {
+            time += "0"
+        }
+        time += " " + (date.getMonth()+1) + "/" + date.getDate() + "/" +date.getFullYear()
+        return time
+    }
+
     var time1 = new Date(timeframe[0])
     var time2 = new Date(timeframe[timeframe.length - 1])
     var time3 = new Date(((time2-time1)/2)+time1.getTime())
-	
+
     var starttime = formatDate(time1)
     var endtime = formatDate(time2)
     var midtime = formatDate(time3)

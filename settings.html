@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-       <!--Web App Manifest-->
+        <!--Web App Manifest-->
         <link rel="manifest" href="manifest.json">
 
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,8 +17,8 @@
             <option value="true">Dark</option>
         </select>
         <p id="darkModeDefaultExplaination">Default: Use browser/os theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your browser provides a color scheme to use)</p>
-        
-        
+
+
         <style>
             @media (prefers-color-scheme: dark) {
                 html, body {
@@ -27,12 +27,12 @@
                 }
             }
         </style>
-        
+
         <script>
             document.getElementById("theme").addEventListener("change", function(event) {
                 localStorage.setItem("prefersDarkMode", event.target.value)
             })
-            
+
             document.getElementById("theme").value = localStorage.getItem("prefersDarkMode")
 
             let explaination = document.getElementById("darkModeDefaultExplaination")
@@ -48,7 +48,7 @@
 
 
         </script>
-        
+
         <script src="allPages.js"></script>
     </body>
 </html>

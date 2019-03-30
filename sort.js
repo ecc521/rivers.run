@@ -18,7 +18,7 @@ function alphabeticalsort(list, reverse) {
     if (reverse) {
         list.reverse()
     }
-    
+
     return list
 }
 
