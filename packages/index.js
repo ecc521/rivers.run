@@ -388,19 +388,19 @@ try {
         if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
             styleSheet.removeRule(styleSheet.cssRules.length - 1)
         }
-		
-		if (window.darkMode) {
-			//Style links so that they are visible in dark mode
-			
-			//Unvisited Link
-			styleSheet.insertRule("a:link {color: #3333FF;}", styleSheet.cssRules.length)
-			//Visited link
-			styleSheet.insertRule("a:visited {color: purple;}", styleSheet.cssRules.length)
-			//Hovering over link
-			styleSheet.insertRule("a:hover {color: green;}", styleSheet.cssRules.length)
-			//Quick flash of color when link clicked
-			styleSheet.insertRule("a:active {color: red;}", styleSheet.cssRules.length)
-		}
+
+        if (window.darkMode) {
+            //Style links so that they are visible in dark mode
+
+            //Unvisited Link
+            styleSheet.insertRule("a:link {color: #3333FF;}", styleSheet.cssRules.length)
+            //Visited link
+            styleSheet.insertRule("a:visited {color: purple;}", styleSheet.cssRules.length)
+            //Hovering over link
+            styleSheet.insertRule("a:hover {color: green;}", styleSheet.cssRules.length)
+            //Quick flash of color when link clicked
+            styleSheet.insertRule("a:active {color: red;}", styleSheet.cssRules.length)
+        }
     }
 }
 catch (e) {
@@ -423,7 +423,7 @@ styleSheet.insertRule("html body {font-family: Arial, Helvetica, sans-serif}", s
 //This should allow rivers.run to the run from a directory
 let root = window.location.href
 root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
-	
+
 let topnav = document.createElement("div")
 topnav.className = "topnav"
 
@@ -459,8 +459,8 @@ if (currentPage.indexOf("#") !== -1) {
 for (let i=0;i<items.length;i++) {
     let item = items[i]
 
-	let target = item.href.slice(root.length)	
-	
+    let target = item.href.slice(root.length)	
+
     if (target === currentPage) {
         item.className = "topnavcurrent"
     }
@@ -497,49 +497,49 @@ styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.c
 //Add the modal styles
 styleSheet.insertRule(`
 .modal {
-    display: none; 
-    position:fixed; 
-    z-index:1; 
-    padding-top: 5%;
-    left:0;
-    top:0;
-    width:100%;
-    height: 100%;
-    overflow:auto;
-    background-color: rgba(0,0,0,0.4);
+display: none; 
+position:fixed; 
+z-index:1; 
+padding-top: 5%;
+left:0;
+top:0;
+width:100%;
+height: 100%;
+overflow:auto;
+background-color: rgba(0,0,0,0.4);
 }`, styleSheet.cssRules.length)
 
 styleSheet.insertRule(`
 .modal-content {
-    color:black;
-    background-color: #fefefe;
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 90%;
+color:black;
+background-color: #fefefe;
+margin: auto;
+padding: 20px;
+border: 1px solid #888;
+width: 90%;
 }`,styleSheet.cssRules.length)
 
 styleSheet.insertRule(`
 .modal-close {
-    color: #aaaaaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
+color: #aaaaaa;
+float: right;
+font-size: 28px;
+font-weight: bold;
 }`,styleSheet.cssRules.length)
 
 styleSheet.insertRule(`
 .modal-close:hover, .modal-close:focus {
-    color: #000;
-    text-decoration: none;
-    cursor: pointer;
+color: #000;
+text-decoration: none;
+cursor: pointer;
 }`,styleSheet.cssRules.length)
 
 
 if (window.darkMode) {
-	styleSheet.insertRule(`	
+    styleSheet.insertRule(`	
 .modal-content {
-	background-color:black;
-	color:#cfcfcf;
+background-color:black;
+color:#cfcfcf;
 }`, styleSheet.cssRules.length)
 }
 
@@ -567,7 +567,7 @@ document.body.appendChild(overview_modal)
 
 //Make the modal disappear when the close button is clicked, or when area outside content is clicked
 overview_modal_close.onclick = function() {
-	overview_modal.style.display = "none"
+    overview_modal.style.display = "none"
 }
 
 window.addEventListener("click", function(event) {
@@ -576,45 +576,45 @@ window.addEventListener("click", function(event) {
     }
 })
 
-	
+
 //Create the river-overview element
 class RiverOverview extends HTMLElement {
-  constructor() {
-	  super();
+    constructor() {
+        super();
 
-	  function openOverview() {
-		  let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a programming or data entry error"
-		  if (window.overviews && window.overviews[this.innerHTML]) {
-		  	text = window.overviews[this.innerHTML]
-		  }
-	  	
-          overview_modal_text.innerHTML = text
-          overview_modal.style.display = "block"
-          
-	  }
-	  
-	  
-	  //Style so that text looks like a link/button
-	  this.style.cursor = "pointer"
-	  this.style.color = "rgb(51, 51, 255)"
-	  this.style.textDecoration = "underline"
+        function openOverview() {
+            let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a programming or data entry error"
+            if (window.overviews && window.overviews[this.innerHTML]) {
+                text = window.overviews[this.innerHTML]
+            }
 
-	  this.addEventListener("click", openOverview)
-	
-  }
+            overview_modal_text.innerHTML = text
+            overview_modal.style.display = "block"
+
+        }
+
+
+        //Style so that text looks like a link/button
+        this.style.cursor = "pointer"
+        this.style.color = "rgb(51, 51, 255)"
+        this.style.textDecoration = "underline"
+
+        this.addEventListener("click", openOverview)
+
+    }
 }
 
 try {
-	customElements.define('river-overview', RiverOverview);
+    customElements.define('river-overview', RiverOverview);
 }
 catch (e) {
-	console.error(e)
-	//Alert firefox users about the flag
-	if (navigator.userAgent.includes("Firefox")) {
-		setTimeout(function() {
-			alert("In order to view area overviews, you will need a browser that supports DOM customElements. You may be able to enable customElements in about:config")
-		},4000)
-	}
+    console.error(e)
+    //Alert firefox users about the flag
+    if (navigator.userAgent.includes("Firefox")) {
+        setTimeout(function() {
+            alert("In order to view area overviews, you will need a browser that supports DOM customElements. You may be able to enable customElements in about:config")
+        },4000)
+    }
 }
 
 
@@ -720,7 +720,7 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
         var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
 
         let precision = Math.max(0, 3-String(Math.round(Text)).length)
-        
+
         Text = Number(Text.toFixed(precision))
 
         ctx.fillText(Text, start, (height*(11-i))/10-5);
@@ -728,11 +728,11 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
     //Top one
     Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
-    
+
     let precision = Math.max(0, 3-String(Math.round(Text)).length)
-        
+
     Text = Number(Text.toFixed(precision))
-    
+
     ctx.fillText(Text, start, 27);
 
 
@@ -756,24 +756,24 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
 
 
 
-	function formatDate(date) {
-    	var time = String(date.getHours())
-	
-		if (date.getHours() < 10) {
-			time += "0"
-		}
-		time += ":" + date.getMinutes()
-		if (date.getMinutes() < 10) {
-			time += "0"
-		}
-		time += " " + (date.getMonth()+1) + "/" + date.getDate() + "/" +date.getFullYear()
-		return time
-	}
-	
+    function formatDate(date) {
+        var time = String(date.getHours())
+
+        if (date.getHours() < 10) {
+            time += "0"
+        }
+        time += ":" + date.getMinutes()
+        if (date.getMinutes() < 10) {
+            time += "0"
+        }
+        time += " " + (date.getMonth()+1) + "/" + date.getDate() + "/" +date.getFullYear()
+        return time
+    }
+
     var time1 = new Date(timeframe[0])
     var time2 = new Date(timeframe[timeframe.length - 1])
     var time3 = new Date(((time2-time1)/2)+time1.getTime())
-	
+
     var starttime = formatDate(time1)
     var endtime = formatDate(time2)
     var midtime = formatDate(time3)
@@ -1025,13 +1025,13 @@ function addClickHandler(button, locate) {
             }
 
             if (river.aw) {
-				//Adding to div.innerHTML works, but logs CSP errors
-				div.appendChild(document.createElement("br"))
-				div.appendChild(document.createElement("br"))
-				let link = document.createElement("a")
-				link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
-				link.innerHTML = "Click here to view this river on American Whitewater"
-				div.appendChild(link)
+                //Adding to div.innerHTML works, but logs CSP errors
+                div.appendChild(document.createElement("br"))
+                div.appendChild(document.createElement("br"))
+                let link = document.createElement("a")
+                link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
+                link.innerHTML = "Click here to view this river on American Whitewater"
+                div.appendChild(link)
             }
 
             //USGS data may not have loaded yet
@@ -1059,154 +1059,154 @@ function addClickHandler(button, locate) {
 
 
 function calculateDirection(usgsNumber) {
-	let usgsData = usgsarray[usgsNumber]
-	if (usgsData) {
-		let data;
-		
-		if (usgsData["00060"]) {data = usgsData["00060"].values}
-		else if (usgsData["00065"]) {data = usgsData["00065"].values}
-		
-		if (data) {
-			let current;
-			let previous;
-			
-			//We will go back 4 datapoints (1 hour) if possible. 
-			//Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
-			let stop = Math.max(data.length-5, 0)
-			for (let i=data.length;i>stop;i--) {
-				let item = data[i]
-				if (!item) {continue}
-				let value = item.value
-				if (!current) {
-					current = value
-				}
-				else {
-					previous = value
-				}
-			}
-			
-			if (current > previous) {
-				//Water level rising
-				return "⬆"
-			}
-			else if (previous > current) {
-				//Water level falling
-				return "⬇"
-			}
-			else if (current === previous) {
-				//Water level stable
-				return "-"
-			}
-			
-		}
-	}
-	return; //If we got here, there is not enough USGS data. 
+    let usgsData = usgsarray[usgsNumber]
+    if (usgsData) {
+        let data;
+
+        if (usgsData["00060"]) {data = usgsData["00060"].values}
+        else if (usgsData["00065"]) {data = usgsData["00065"].values}
+
+        if (data) {
+            let current;
+            let previous;
+
+            //We will go back 4 datapoints (1 hour) if possible. 
+            //Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
+            let stop = Math.max(data.length-5, 0)
+            for (let i=data.length;i>stop;i--) {
+                let item = data[i]
+                if (!item) {continue}
+                let value = item.value
+                if (!current) {
+                    current = value
+                }
+                else {
+                    previous = value
+                }
+            }
+
+            if (current > previous) {
+                //Water level rising
+                return "⬆"
+            }
+            else if (previous > current) {
+                //Water level falling
+                return "⬇"
+            }
+            else if (current === previous) {
+                //Water level stable
+                return "-"
+            }
+
+        }
+    }
+    return; //If we got here, there is not enough USGS data. 
 }
 
 
 
 
 function calculateColor(river, options) {
-	//hsla color values
-	//hsl(hue, saturation, lightness, opacity)
-	//Saturation hue is 0 red 120 green 240 blue
-	//Saturation - use 100%
-	//Lightness - use 50%
-	//Opacity - Percentage
-	
+    //hsla color values
+    //hsl(hue, saturation, lightness, opacity)
+    //Saturation hue is 0 red 120 green 240 blue
+    //Saturation - use 100%
+    //Lightness - use 50%
+    //Opacity - Percentage
 
-	let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
-	
-	let type; //Currently, we skip a value if one datapoint is cfs and another feet
-	
-	for (let i=0;i<values.length;i++) {
-		
-		let str = river[values[i]]
-		if (!str) {
-			values[i] = undefined
-			continue;
-		}
-		
-		str = str.trim()
-		let value = parseFloat(str)
-		let currentType = str.match(/[^\d|.]+/) //Match the integer or decimal number
-		
-		if (currentType) {
-			currentType = currentType[0].trim() //Match a string of non-digits
-		}
-		
-		if (!type && currentType) {
-			type = currentType
-		}
-		else if (type === currentType) {}
-		else {
-			console.warn(values[i] + " on " + river.name + " " + river.section + " has a different extension and has been skipped")
-			values[i] = undefined
-			continue;
-		}
-		
-		values[i] = value
-	}
-	
-	let flow;
-	if (type === "cfs") {
-		flow = river.cfs
-	}
-	else if (type === "feet" || type==="ft") {
-		flow = river.feet
-	}
-	
-	let lightness = (options && options.lightness) || "50%"
-	
-	//TODO: It is difficult to tell when the minimum has not bee reached or the maximum has been exceeded. Make that easy
-	if (flow < values[0]) {
-		//Too low
-		let lightness = (options && options.lightness) || "50%"
-		return "hsl(0,100%," + lightness + ",60%)"
-	}
-	else if (flow > values[4]) {
-		//Too high
-		return "hsl(240,100%," + lightness + ",60%)"
-	}
-	else {
-		//If we don't have some values, fill them in using logarithms
-		//TODO: Do some analyzsis and figure out the best way to do these calculations
-		
-		let minrun = values[0]
-		let maxrun = values[4]
-		let midflow = values[2] || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
-		let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
-		let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
-		
-				
-		function calculateRatio(low, high, current) {
-			low = Math.log(low)
-			high = Math.log(high)
-			
-			current = Math.log(current)
-			
-			
-			let range = high-low
-			let value = current-low
-			
-			return value/range
-			
-		}
-		
-		
-		if (flow < lowflow) {
-			return "hsl(" + (0 + 60*calculateRatio(minrun, lowflow, flow)) + ",100%," + lightness + ",30%"
-		}
-		else if (flow < midflow) {
-			return "hsl(" + (60 + 60*calculateRatio(lowflow, midflow, flow)) + ",100%," + lightness + ",30%"
-		}
-		else if (flow < highflow) {
-			return "hsl(" + (120 + 60*calculateRatio(midflow, highflow, flow)) + ",100%," + lightness + ",30%"
-		}
-		else {
-			return "hsl(" + (180 + 60*calculateRatio(highflow, maxrun, flow)) + ",100%," + lightness + ",30%"
-		}
-	}
+
+    let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
+
+    let type; //Currently, we skip a value if one datapoint is cfs and another feet
+
+    for (let i=0;i<values.length;i++) {
+
+        let str = river[values[i]]
+        if (!str) {
+            values[i] = undefined
+            continue;
+        }
+
+        str = str.trim()
+        let value = parseFloat(str)
+        let currentType = str.match(/[^\d|.]+/) //Match the integer or decimal number
+
+        if (currentType) {
+            currentType = currentType[0].trim() //Match a string of non-digits
+        }
+
+        if (!type && currentType) {
+            type = currentType
+        }
+        else if (type === currentType) {}
+        else {
+            console.warn(values[i] + " on " + river.name + " " + river.section + " has a different extension and has been skipped")
+            values[i] = undefined
+            continue;
+        }
+
+        values[i] = value
+    }
+
+    let flow;
+    if (type === "cfs") {
+        flow = river.cfs
+    }
+    else if (type === "feet" || type==="ft") {
+        flow = river.feet
+    }
+
+    let lightness = (options && options.lightness) || "50%"
+
+    //TODO: It is difficult to tell when the minimum has not bee reached or the maximum has been exceeded. Make that easy
+    if (flow < values[0]) {
+        //Too low
+        let lightness = (options && options.lightness) || "50%"
+        return "hsl(0,100%," + lightness + ",60%)"
+    }
+    else if (flow > values[4]) {
+        //Too high
+        return "hsl(240,100%," + lightness + ",60%)"
+    }
+    else {
+        //If we don't have some values, fill them in using logarithms
+        //TODO: Do some analyzsis and figure out the best way to do these calculations
+
+        let minrun = values[0]
+        let maxrun = values[4]
+        let midflow = values[2] || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
+        let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
+        let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
+
+
+        function calculateRatio(low, high, current) {
+            low = Math.log(low)
+            high = Math.log(high)
+
+            current = Math.log(current)
+
+
+            let range = high-low
+            let value = current-low
+
+            return value/range
+
+        }
+
+
+        if (flow < lowflow) {
+            return "hsl(" + (0 + 60*calculateRatio(minrun, lowflow, flow)) + ",100%," + lightness + ",30%"
+        }
+        else if (flow < midflow) {
+            return "hsl(" + (60 + 60*calculateRatio(lowflow, midflow, flow)) + ",100%," + lightness + ",30%"
+        }
+        else if (flow < highflow) {
+            return "hsl(" + (120 + 60*calculateRatio(midflow, highflow, flow)) + ",100%," + lightness + ",30%"
+        }
+        else {
+            return "hsl(" + (180 + 60*calculateRatio(highflow, maxrun, flow)) + ",100%," + lightness + ",30%"
+        }
+    }
 }
 
 
@@ -1216,12 +1216,12 @@ function calculateColor(river, options) {
 
 
 module.exports.River = function(locate, event) {
-	
-	//Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw
-	Object.assign(this, event)
-	//tags needs to be a string. It can't be undefined
+
+    //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw
+    Object.assign(this, event)
+    //tags needs to be a string. It can't be undefined
     this.tags = this.tags || ""
-	//Convert the numeric value to the filename
+    //Convert the numeric value to the filename
     switch (Number(this.rating)) {
         case 1:
             this.rating = "1Star";
@@ -1248,19 +1248,19 @@ module.exports.River = function(locate, event) {
     this.create = function (forceregenerate) {
         //Only create the button once - It's about 3 times faster.
         if (!this.finished || forceregenerate) {
-			
+
             var button = document.createElement("button")
             button.id = this.base + 1
 
-			button.normalColor = window.darkMode ? "" : "" //Inherit from CSS
-			button.focusedColor = window.darkMode ? "#333333" : "#e3e3e3"
-			
+            button.normalColor = window.darkMode ? "" : "" //Inherit from CSS
+            button.focusedColor = window.darkMode ? "#333333" : "#e3e3e3"
+
             function AddSpan(text) {
                 let span = document.createElement("span")
                 span.innerHTML = text
                 span.className = "riverspan"
                 button.appendChild(span)
-				return span
+                return span
             }
 
             AddSpan(this.name)
@@ -1284,22 +1284,22 @@ module.exports.River = function(locate, event) {
 
             if (this.flow) {
                 let flowSpan = AddSpan(this.flow + " " + calculateDirection(this.usgs))
-				if (this.minrun && this.maxrun) {
-					button.normalColor = calculateColor(this)
-					button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})
-				}
+                if (this.minrun && this.maxrun) {
+                    button.normalColor = calculateColor(this)
+                    button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})
+                }
             }
-            
 
-            
+
+
             button.className = "riverbutton"
             //Add the click handler
             addClickHandler(button, locate)
 
-			
-			button.addEventListener("mouseover", function(){this.style.backgroundColor = this.focusedColor})
-			button.addEventListener("mouseout", function(){this.style.backgroundColor = this.normalColor})
-			
+
+            button.addEventListener("mouseover", function(){this.style.backgroundColor = this.focusedColor})
+            button.addEventListener("mouseout", function(){this.style.backgroundColor = this.normalColor})
+
 
             //Make content available to Googlebot for indexing
             if (navigator.userAgent.toLowerCase().indexOf("google") !== -1) {
@@ -1318,8 +1318,8 @@ module.exports.River = function(locate, event) {
 
         }    
 
-		this.finished.style.backgroundColor = this.finished.normalColor
-		
+        this.finished.style.backgroundColor = this.finished.normalColor
+
         //Return finished button
         return this.finished
 
@@ -1465,22 +1465,22 @@ module.exports.addGraphs = function(div, data) {
     if (!data) {
         return;
     }
-    
+
     //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
     //for a specific river due to gauge problems.
     //Each canvas is wrapped individually because sometimes only some graphs have invalid data
 
-	let temp = data["00010"]
+    let temp = data["00010"]
     let precip = data["00045"]
     let cfs = data["00060"]
     let height = data["00065"]
-	
-	
-	//Space the first canvas
-	//div.innerHTML += "<br><br>" works, but logs CSP errors
+
+
+    //Space the first canvas
+    //div.innerHTML += "<br><br>" works, but logs CSP errors
     div.appendChild(document.createElement("br"))
     div.appendChild(document.createElement("br"))
-	
+
 
     try {
         addFlowGraph(div, cfs, height)
@@ -1523,7 +1523,7 @@ function alphabeticalsort(list, reverse) {
     if (reverse) {
         list.reverse()
     }
-    
+
     return list
 }
 
@@ -2007,114 +2007,114 @@ module.exports = {
 /* 9 */
 /***/ (function(module, exports) {
 
-	
+
 
 function drawColors(canvas) {
 
-	let context = canvas.getContext("2d")	
-	    
+    let context = canvas.getContext("2d")	
+
     //Some browsers flip screen.width and screen.height on rotation - some don't
-    
+
     //window.innerWidth fails - the window is expanded to handle the width of the legend
     //Then the legend doesn't resize (because the window has resized to it) 
-    
+
     //This seems to be the only cross browser solution
     canvas.width = document.documentElement.clientWidth
-	canvas.height = 40
-	
-	let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
-	
-	let redLightness = "50%"
-	let redColor = "hsl(0,100%," + redLightness + ",60%)"
-		
-	
-	gradient.addColorStop(0, redColor)
-	gradient.addColorStop(0.08, redColor)
-	
-	let start = 0.08
-	let end = 0.92
-	
-	let range = end-start
-	//240 is number of whole number hsl values
-		
-	for (let i=0;i<=240;i++) {
-		gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
-	}
-	
-	gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
-	gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
+    canvas.height = 40
 
-	context.fillStyle = gradient
-	context.fillRect(0,0,canvas.width,canvas.height)	
-	
+    let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
+
+    let redLightness = "50%"
+    let redColor = "hsl(0,100%," + redLightness + ",60%)"
+
+
+    gradient.addColorStop(0, redColor)
+    gradient.addColorStop(0.08, redColor)
+
+    let start = 0.08
+    let end = 0.92
+
+    let range = end-start
+    //240 is number of whole number hsl values
+
+    for (let i=0;i<=240;i++) {
+        gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
+    }
+
+    gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
+    gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
+
+    context.fillStyle = gradient
+    context.fillRect(0,0,canvas.width,canvas.height)	
+
 }
 
 
 
 function drawText(canvas) {
-		
-	let context = canvas.getContext("2d")	
-	context.fillStyle = window.darkMode ? "white" : "black"
 
-	//The fourth parameter is the maximum width of the text in pixels
-	//rivers.run may want to use it
-	
-	let height = 14
-	
-	
-	context.font = "14px Arial"
-	
-	context.textAlign = "start"
-	context.fillText("Too Low", 0, height)
-	
-	context.textAlign = "center"
-	context.fillText("Low Flow", canvas.width*0.28, height)
-	context.fillText("Mid Flow", canvas.width/2, height)
-	context.fillText("High Flow", canvas.width*0.72, height)
-	
-	
-	//Black text on blue is near inivisible - so use white text on blue
-	if (!window.darkMode) {context.fillStyle = "white"} 
-	
-	context.textAlign = "end"
-	context.fillText("Too High", canvas.width, height, canvas.width*0.2)
+    let context = canvas.getContext("2d")	
+    context.fillStyle = window.darkMode ? "white" : "black"
+
+    //The fourth parameter is the maximum width of the text in pixels
+    //rivers.run may want to use it
+
+    let height = 14
+
+
+    context.font = "14px Arial"
+
+    context.textAlign = "start"
+    context.fillText("Too Low", 0, height)
+
+    context.textAlign = "center"
+    context.fillText("Low Flow", canvas.width*0.28, height)
+    context.fillText("Mid Flow", canvas.width/2, height)
+    context.fillText("High Flow", canvas.width*0.72, height)
+
+
+    //Black text on blue is near inivisible - so use white text on blue
+    if (!window.darkMode) {context.fillStyle = "white"} 
+
+    context.textAlign = "end"
+    context.fillText("Too High", canvas.width, height, canvas.width*0.2)
 
 }
 
 
 function makeSticky(canvas) {
-	//Make the legend stick to the top of the screen
-	
-	let elementOffset = canvas.offsetTop
-	window.addEventListener("scroll", function() {
-		let pageOffset = window.pageYOffset
-		
-		if (pageOffset > elementOffset) {
-			canvas.style.position = "fixed"
-			canvas.style.top = 0
-			document.body.style.paddingTop = canvas.height + "px" //Avoid sudden jerk in page content
-		}
-		else {
-			canvas.style.position = ""
-			canvas.style.top = ""
-			document.body.style.paddingTop = 0
-		}
-	})
+    //Make the legend stick to the top of the screen
+
+    let elementOffset = canvas.offsetTop
+    window.addEventListener("scroll", function() {
+        let pageOffset = window.pageYOffset
+
+        if (pageOffset > elementOffset) {
+            canvas.style.position = "fixed"
+            canvas.style.top = 0
+            document.body.style.paddingTop = canvas.height + "px" //Avoid sudden jerk in page content
+        }
+        else {
+            canvas.style.position = ""
+            canvas.style.top = ""
+            document.body.style.paddingTop = 0
+        }
+    })
 }
 
 
 
 function updateLegend() {
-	let canvas = document.getElementById("legend")
+    let canvas = document.getElementById("legend")
 
-	canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)
-	
-	canvas.style.backgroundColor = window.getComputedStyle(document.body).getPropertyValue("background-color")
-    
-	drawColors(canvas)
-	drawText(canvas)
-	makeSticky(canvas)
-    	
+    canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)
+
+    canvas.style.backgroundColor = window.getComputedStyle(document.body).getPropertyValue("background-color")
+
+    drawColors(canvas)
+    drawText(canvas)
+    makeSticky(canvas)
+
 }
 
 window.addEventListener("resize", updateLegend)
