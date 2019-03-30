@@ -1976,41 +1976,6 @@ document.getElementById("advancedsearch").addEventListener("click", function() {
 /* 8 */
 /***/ (function(module, exports) {
 
-function haversine(lat1, lon1, lat2, lon2) { 
-	//Haversine formula
-	//Based off the Spherical Law of Cosines
-	let radius = 3958.8 //Earth's mean radius in miles
-	lat1 = lat1 * Math.PI / 180
-	lon1 = lon1 * Math.PI / 180
-	lat2 = lat2 * Math.PI / 180
-	lon2 = lon2 * Math.PI / 180  
-  //1 - Math.cos() is a versine - half of that is a haversine
-  let dLat = lat2 - lat1;
-  let dLon = lon2 - lon1;
-  let a =
-    0.5 - Math.cos(dLat) / 2 +
-    Math.cos(lat1) * Math.cos(lat2) *
-    (1 - Math.cos(dLon)) / 2;
-
-  return radius * 2 * Math.asin(Math.sqrt(a));
-}
-    
-
-function cosines(lat1, lon1, lat2, lon2) {
-	//Spherical Law of Cosines
-	let radius = 3958.8 //Earth's mean radius in miles
-
-	lat1 = lat1 * Math.PI / 180
-	lon1 = lon1 * Math.PI / 180
-	lat2 = lat2 * Math.PI / 180
-	lon2 = lon2 * Math.PI / 180
-	//With 32 bit floats, limited precision could cause Math.acos() to give wrong outputs on small distances
-	//The haversine formula fixes this issue - and so do 64 bit floats (unless the distances are REALLY small)
-	return Math.acos(Math.sin(lat1) * Math.sin(lat2) + Math.cos(lat1) * Math.cos(lat2) * Math.cos(lon2-lon1))*radius
-}
-
-
-
 function lambert(lat1, lon1, lat2, lon2) {
 	//Should be accurate to <100 meters
 	
@@ -2028,6 +1993,7 @@ function lambert(lat1, lon1, lat2, lon2) {
 	let reducedLat1 = Math.atan(ratio*Math.tan(lat1))
 	let reducedLat2 = Math.atan(ratio*Math.tan(lat2))
 	
+    //Spherical Law of Cosines
 	let angle = Math.acos(Math.sin(reducedLat1) * Math.sin(reducedLat2) + Math.cos(reducedLat1) * Math.cos(reducedLat2) * Math.cos(lon2-lon1))
 	
 	let p = (reducedLat1+reducedLat2)/2
@@ -2039,9 +2005,7 @@ function lambert(lat1, lon1, lat2, lon2) {
 
 
 module.exports = {
-  lambert,
-  cosines,
-  haversine
+  lambert
 }
 
 
