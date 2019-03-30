@@ -152,10 +152,12 @@ else if (distance > 0 && lat && lon) {
 			}
 	
 	
-	//TODO: Add from queries
     parameters.skill = {
-        type: document.getElementById("skillType").value,
-        query: Number(document.getElementById("skillQuery").value)
+        type: "from",
+        query: [
+            Number(document.getElementById("skillQuery1").value),
+            Number(document.getElementById("skillQuery2").value)
+        ]
     }
 	
 	
