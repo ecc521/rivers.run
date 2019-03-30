@@ -76,6 +76,11 @@ function drawText(canvas) {
 function makeSticky(canvas) {
     //Make the legend stick to the top of the screen
 
+    //position: sticky failed in Safari
+    //canvas.style.position = "-webkit-sticky"
+    //canvas.style.position = "sticky"
+    //canvas.style.top = 0
+    
     let elementOffset = canvas.offsetTop
     window.addEventListener("scroll", function() {
         let pageOffset = window.pageYOffset
