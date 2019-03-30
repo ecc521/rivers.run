@@ -1623,17 +1623,16 @@ function runningSort(list, reverse) {
     if (reverse) {
         knownState.reverse()
     }
-
-    knownState.concat(hasGauge)
-    knownState.concat(noData)
     
-    if (knownState.length !== 0) {
-        return knownState
-    }
-    else {
+    if (knownState.length === 0) {
         alert("Flow data has not yet loaded.")
         return list
-    }
+    }    
+
+    knownState = knownState.concat(hasGauge)
+    knownState = knownState.concat(noData)
+
+    return knownState
 }
 
 
