@@ -1,6 +1,6 @@
 
 
-function drawColors(canvas) {
+function drawColors(canvas, height) {
 
     let context = canvas.getContext("2d")	
 
@@ -11,7 +11,7 @@ function drawColors(canvas) {
 
     //This seems to be the only cross browser solution
     canvas.width = document.documentElement.clientWidth
-    canvas.height = 40
+    canvas.height = height
 
     let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 
@@ -42,18 +42,17 @@ function drawColors(canvas) {
 
 
 
-function drawText(canvas) {
+function drawText(canvas, fontSize) {
 
     let context = canvas.getContext("2d")	
     context.fillStyle = window.darkMode ? "white" : "black"
 
     //The fourth parameter is the maximum width of the text in pixels
     //rivers.run may want to use it
-
-    let height = 14
-
-
-    context.font = "14px Arial"
+    
+    let height = fontSize
+    
+    context.font = fontSize + "px Arial"
 
     context.textAlign = "start"
     context.fillText("Too Low", 0, height)
@@ -107,8 +106,14 @@ function updateLegend() {
 
     canvas.style.backgroundColor = window.getComputedStyle(document.body).getPropertyValue("background-color")
 
-    drawColors(canvas)
-    drawText(canvas)
+
+    let fontSize = window.getComputedStyle(document.getElementById("Rivers").firstChild).getPropertyValue("font-size")
+    fontSize = parseFloat(fontSize) * 1.4
+    
+    let height = 10 + fontSize*2
+    
+    drawColors(canvas, height)
+    drawText(canvas, fontSize)
     makeSticky(canvas)
 
 }

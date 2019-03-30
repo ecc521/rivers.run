@@ -14,8 +14,6 @@ self.sort = require("./sort.js").sort
 //Defines self.normalSearch and self.advanedSearch
 Object.assign(self, require("./search.js"))
 
-require("./createLegend.js")
-
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/sw.js');
@@ -97,6 +95,10 @@ window.NewList = function(query, type, reverse) {
 
 
 document.getElementById("Rivers").appendChild(new TopBar().create())
+//Needs a #Rivers > .riverbutton to get font-size using getComputedStyle
+require("./createLegend.js")
+
+
 NewList("alphabetical", "sort")
 
 
