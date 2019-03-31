@@ -121,10 +121,10 @@ module.exports.addGraphs = function(div, data) {
     let height = data["00065"]
 
 
-    //Space the first canvas
-    //div.innerHTML += "<br><br>" works, but logs CSP errors
-    div.appendChild(document.createElement("br"))
-    div.appendChild(document.createElement("br"))
+    
+    div.innerHTML += "<br><br><p class=\"pixel18 center\"><strong>Disclaimer: USGS Gauge data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>"
+
+    
 
 
     try {
