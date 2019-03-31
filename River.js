@@ -160,14 +160,18 @@ function calculateColor(river, options) {
     let lightness = (options && options.lightness) || "50%"
 
 
-    
-    if (flow < values[0]) {
+    //Use or equal to
+    //While that technically may not be correct, it makes no significant difference
+    //In addition, values equal to minrun or maxrun result in a river.running of 0 or 4
+    //Meaning that they may be included in the middle of a darker highlighted rivers
+    //When sorting by runnability is used.
+    if (flow <= values[0]) {
         //Too low
         river.running = 0
         let lightness = (options && options.lightness) || "50%"
         return "hsl(0,100%," + lightness + ",60%)"
     }
-    else if (flow > values[4]) {
+    else if (flow >= values[4]) {
         //Too high
         river.running = 4
         return "hsl(240,100%," + lightness + ",60%)"

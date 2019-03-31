@@ -233,8 +233,9 @@ if (window.location.hash.length > 0) {
     try {
         //Do an advanced search if the query if an advanced search
         let query = JSON.parse(search)
-
+        
         //TODO: Set the advanced search areas to the query. 
+        
         NewList(query, "advanced")
 
 
