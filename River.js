@@ -10,19 +10,27 @@ function addClickHandler(button, locate) {
         if (river.expanded === 0) {
             river.expanded = 1
             var div = document.createElement("div")
-            div.innerHTML = river.writeup + "<br>"
+            div.innerHTML = river.writeup + "<br><br>"
 
             if (river.plat && river.plon) {
-                div.innerHTML += "<br>Put-In GPS Coordinates: " + river.plat + ", " + river.plon
+                div.innerHTML += "Put-In GPS Coordinates: " + river.plat + ", " + river.plon + "<br>"
             }
 
             if (river.tlat && river.tlon) {
-                div.innerHTML += "<br>Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon
+                div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
             }
+            
+            let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
+            for (let i=0;i<values.length;i++) {
+                let name = values[i]
+                if (river[name]) {
+                    div.innerHTML += name + ":" + river[name] + " "
+                }
+            }
+            
 
             if (river.aw) {
                 //Adding to div.innerHTML works, but logs CSP errors
-                div.appendChild(document.createElement("br"))
                 div.appendChild(document.createElement("br"))
                 let link = document.createElement("a")
                 link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
@@ -191,6 +199,10 @@ function calculateColor(river, options) {
         let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
         let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
 
+        //We display these so people can tell what values the computer has generated.
+        river.lowflow = parseFloat(lowflow.toFixed(3)) + type
+        river.midflow = parseFloat(midflow.toFixed(3)) + type
+        river.highflow = parseFloat(highflow.toFixed(3)) + type
 
         function calculateRatio(low, high, current) {
             low = Math.log(low)

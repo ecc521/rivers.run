@@ -69,6 +69,8 @@
         await getFilesInFolder(fileids, writeupFolder)
 
 
+        await wait(1000) //Let quota refresh
+        
         self.retry  = []
         self.complete = []
         self.failed = []
@@ -77,15 +79,15 @@
             let request = await fetch(urlcreate(id))
             if (request.ok) {
                 request = await request.text()
-                complete.push(request)
+                complete.push({id, request})
                 console.log(complete.length + " items have now been loaded successfully!")
             }
             else if (request.status == 403) {
-                retry.push(id)
+                retry.push({id, request})
                 console.log("403 error requesting the file with a file id of " + id)
             }
             else {
-                failed.push(id)
+                failed.push({id, request})
                 console.warn("Requesting the file with a fild id of " + id + " failed. The response is below")
                 console.warn(request)
             }
@@ -123,7 +125,7 @@
         await wait(500) //Let requests finish
 
         for (let i=0;i<complete.length;i++) {
-            let item = complete[i].split("\n")
+            let item = complete[i].request.split("\n")
             let obj = {}
             for (let i=0;i<item.length;i++) {
                 let prop = item[i]
@@ -144,7 +146,8 @@
                     obj[name] = value
                 }
             }
-            complete[i] = obj    
+            console.log(complete[i].id + ": " + obj.name + " " + obj.section)
+            complete[i] = obj
         }        
 
         console.log(complete)      
