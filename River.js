@@ -165,6 +165,11 @@ function calculateColor(river, options) {
     //In addition, values equal to minrun or maxrun result in a river.running of 0 or 4
     //Meaning that they may be included in the middle of a darker highlighted rivers
     //When sorting by runnability is used.
+    
+    //It would be better if rivers that are too high or too low are still given river.running values 
+    //related to their level. This would also help in determining if something is just barely
+    //too low, and may come up with rain, or is truely too low.
+    
     if (flow <= values[0]) {
         //Too low
         river.running = 0
