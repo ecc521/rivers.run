@@ -39,14 +39,15 @@ html, body {
 
 #advancedsearch {
     display:inline-block;
-    text-decoration: underline;
-    cursor: pointer;
+    vertical-align:middle;
+    height: 36px;
 }
 
 #searchbox {
     display:inline-block;
-    padding:12px;
     vertical-align:middle;
+    padding:0;
+    height: 36px;
     width:30%
 }
 
