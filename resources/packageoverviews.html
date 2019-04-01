@@ -120,7 +120,7 @@
 			let result = {}
         for (let i=0;i<complete.length;i++) {
 			let item = complete[i]
-			result[item.name] = item.request
+			result[item.name.trim()] = item.request
         }        
                 
         console.log(result)      

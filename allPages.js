@@ -271,8 +271,8 @@ class RiverOverview extends HTMLElement {
 
         function openOverview() {
             let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a programming or data entry error"
-            if (window.overviews && window.overviews[this.innerHTML]) {
-                text = window.overviews[this.innerHTML]
+            if (window.overviews && window.overviews[this.innerText.trim()]) {
+                text = window.overviews[this.innerText.trim()]
             }
 
             overview_modal_text.innerHTML = text
