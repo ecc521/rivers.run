@@ -14,9 +14,6 @@ self.sort = require("./sort.js").sort
 //Defines self.normalSearch and self.advanedSearch
 Object.assign(self, require("./search.js"))
 
-
-
-
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/sw.js');
@@ -98,6 +95,10 @@ window.NewList = function(query, type, reverse) {
 
 
 document.getElementById("Rivers").appendChild(new TopBar().create())
+//Needs a #Rivers > .riverbutton to get font-size using getComputedStyle
+require("./createLegend.js")
+
+
 NewList("alphabetical", "sort")
 
 
@@ -123,9 +124,84 @@ function getAdvancedSearchParameters() {
         type: document.getElementById("writeupType").value,
         query: document.getElementById("writeupQuery").value
     }
-
+	
+	
+	
+	let distance = Number(document.getElementById("distanceQuery").value)
+	
+			let lat = document.getElementById("latitudeQuery").value
+			let lon = document.getElementById("longitudeQuery").value
+			
+			//TODO: Parse other latitude and longitude formats
+			lat = Number(lat)
+			lon = Number(lon)
+	
+	
+	
+if (!(distance > 0) && lat && lon) {
+	alert("Distance must be a number greater than 0 to use location sorting")
+}
+else if (distance > 0 && !(lat && lon)) {
+	alert("You must enter a latitude and longitude (Get the coordinates from GPS by pressing Calculate my Location)")
+}
+else if (distance > 0 && lat && lon) {
+				parameters.location = {
+					lat,
+					lon,
+					distance,
+					includeUnknown: document.getElementById("includeUnknown").checked
+				}
+			}
+	
+	
+    parameters.skill = {
+        type: "from",
+        query: [
+            Number(document.getElementById("skillQuery1").value),
+            Number(document.getElementById("skillQuery2").value)
+        ]
+    }
+	
+	
     return parameters
 }
+
+
+async function calculateCoordinates() {
+	
+	let status = document.getElementById("locationProgress")
+	let num = 0
+	let progress = setInterval(function() {
+		num = (num+1)%6
+		status.innerHTML = "Calculating your Approximate Location (Expect this to take 15-60 seconds)" + ".".repeat(num)
+	}, 500)
+	
+	let position;
+	try {
+		position = await new Promise((resolve, reject) => {
+			navigator.geolocation.getCurrentPosition(resolve, reject)
+	   });
+	}
+	catch(e) {
+		let output = "Error code " + e.code + " occoured when getting your location. The error message is: " + e.message 
+		alert(output)
+		clearInterval(progress)
+		status.innerHTML = output
+	}
+
+
+	let coords = position.coords
+	
+		clearInterval(progress)
+	
+	document.getElementById("latitudeQuery").value = coords.latitude
+	document.getElementById("longitudeQuery").value = coords.longitude
+	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
+}
+
+document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
+
+
 
 
 document.getElementById("performadvancedsearch").addEventListener("click", function() {
@@ -145,6 +221,11 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 
 
 
+
+
+
+
+
 //Check if there is a search query
 if (window.location.hash.length > 0) {
     let search = decodeURI(window.location.hash.slice(1))
@@ -152,8 +233,9 @@ if (window.location.hash.length > 0) {
     try {
         //Do an advanced search if the query if an advanced search
         let query = JSON.parse(search)
-
+        
         //TODO: Set the advanced search areas to the query. 
+        
         NewList(query, "advanced")
 
 
@@ -162,8 +244,5 @@ if (window.location.hash.length > 0) {
         //Looks like we have a normal search query
         document.getElementById("searchbox").value = search
         NewList(search, "normal")
-    }
-
+	}
 }
-
-

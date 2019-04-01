@@ -10,18 +10,32 @@ function addClickHandler(button, locate) {
         if (river.expanded === 0) {
             river.expanded = 1
             var div = document.createElement("div")
-            div.innerHTML = river.writeup + "<br>"
+            div.innerHTML = river.writeup + "<br><br>"
 
             if (river.plat && river.plon) {
-                div.innerHTML += "<br>Put-In GPS Coordinates: " + river.plat + ", " + river.plon
+                div.innerHTML += "Put-In GPS Coordinates: " + river.plat + ", " + river.plon + "<br>"
             }
 
             if (river.tlat && river.tlon) {
-                div.innerHTML += "<br>Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon
+                div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
             }
+            
+            let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
+            for (let i=0;i<values.length;i++) {
+                let name = values[i]
+                if (river[name]) {
+                    div.innerHTML += name + ":" + river[name] + " "
+                }
+            }
+            
 
             if (river.aw) {
-                div.innerHTML += "<br><br><a href='https://www.americanwhitewater.org/content/River/detail/id/" + river.aw + "'>Click here to view this river on American Whitewater</a>"
+                //Adding to div.innerHTML works, but logs CSP errors
+                div.appendChild(document.createElement("br"))
+                let link = document.createElement("a")
+                link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
+                link.innerHTML = "Click here to view this river on American Whitewater"
+                div.appendChild(link)
             }
 
             //USGS data may not have loaded yet
@@ -32,18 +46,10 @@ function addClickHandler(button, locate) {
 
             div.style.padding = "6px"
             div.id = river.base + 2
-            if (!window.darkMode) {
-                button.style.backgroundColor = "#e3e3e3"
-            }
-            else {
-                //Dark Mode
-                button.style.backgroundColor = "#333333"
-            }
             button.parentNode.insertBefore(div, button.nextSibling)
         }
         else {
             river.expanded = 0
-            button.style.backgroundColor = ""//Let the button inherit the default color
             var elem = document.getElementById(river.base + 2)
             if (elem) {
                 elem.parentNode.removeChild(elem)
@@ -57,48 +63,176 @@ function addClickHandler(button, locate) {
 
 
 function calculateDirection(usgsNumber) {
-	let usgsData = usgsarray[usgsNumber]
-	if (usgsData) {
-		let data;
-		
-		if (usgsData["00060"]) {data = usgsData["00060"].values}
-		else if (usgsData["00065"]) {data = usgsData["00065"].values}
-		
-		if (data) {
-			let current;
-			let previous;
-			
-			//We will go back 4 datapoints (1 hour) if possible. 
-			//Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
-			let stop = Math.max(data.length-5, 0)
-			for (let i=data.length;i>stop;i--) {
-				let item = data[i]
-				if (!item) {continue}
-				let value = item.value
-				if (!current) {
-					current = value
-				}
-				else {
-					previous = value
-				}
-			}
-			
-			if (current > previous) {
-				//Water level rising
-				return "⬆"
-			}
-			else if (previous > current) {
-				//Water level falling
-				return "⬇"
-			}
-			else if (current === previous) {
-				//Water level stable
-				return "-"
-			}
-			
-		}
-	}
-	return; //If we got here, there is not enough USGS data. 
+    let usgsData = usgsarray[usgsNumber]
+    if (usgsData) {
+        let data;
+
+        if (usgsData["00060"]) {data = usgsData["00060"].values}
+        else if (usgsData["00065"]) {data = usgsData["00065"].values}
+
+        if (data) {
+            let current;
+            let previous;
+
+            //We will go back 4 datapoints (1 hour) if possible. 
+            //Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
+            let stop = Math.max(data.length-5, 0)
+            for (let i=data.length;i>stop;i--) {
+                let item = data[i]
+                if (!item) {continue}
+                let value = item.value
+                if (!current) {
+                    current = value
+                }
+                else {
+                    previous = value
+                }
+            }
+
+            if (current > previous) {
+                //Water level rising
+                return "⬆"
+            }
+            else if (previous > current) {
+                //Water level falling
+                return "⬇"
+            }
+            else if (current === previous) {
+                //Water level stable
+                return "-"
+            }
+
+        }
+    }
+    return; //If we got here, there is not enough USGS data. 
+}
+
+
+
+
+function calculateColor(river, options) {
+    //hsla color values
+    //hsl(hue, saturation, lightness, opacity)
+    //Saturation hue is 0 red 120 green 240 blue
+    //Saturation - use 100%
+    //Lightness - use 50%
+    //Opacity - Percentage
+    
+    
+    //Defines river.running
+    //0-4
+    //0 is too low, 4 is too high, other values in between
+
+
+    let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
+
+    let type; //Currently, we skip a value if one datapoint is cfs and another feet
+
+    for (let i=0;i<values.length;i++) {
+
+        let str = river[values[i]]
+        if (!str) {
+            values[i] = undefined
+            continue;
+        }
+
+        str = str.trim()
+        let value = parseFloat(str)
+        let currentType = str.match(/[^\d|.]+/) //Match the integer or decimal number
+
+        if (currentType) {
+            currentType = currentType[0].trim() //Match a string of non-digits
+        }
+
+        if (!type && currentType) {
+            type = currentType
+        }
+        else if (type === currentType) {}
+        else {
+            console.warn(values[i] + " on " + river.name + " " + river.section + " has a different extension and has been skipped")
+            values[i] = undefined
+            continue;
+        }
+
+        values[i] = value
+    }
+
+    let flow;
+    if (type === "cfs") {
+        flow = river.cfs
+    }
+    else if (type === "feet" || type==="ft") {
+        flow = river.feet
+    }
+
+    let lightness = (options && options.lightness) || "50%"
+
+
+    //Use or equal to
+    //While that technically may not be correct, it makes no significant difference
+    //In addition, values equal to minrun or maxrun result in a river.running of 0 or 4
+    //Meaning that they may be included in the middle of a darker highlighted rivers
+    //When sorting by runnability is used.
+    
+    //It would be better if rivers that are too high or too low are still given river.running values 
+    //related to their level. This would also help in determining if something is just barely
+    //too low, and may come up with rain, or is truely too low.
+    
+    if (flow <= values[0]) {
+        //Too low
+        river.running = 0
+        let lightness = (options && options.lightness) || "50%"
+        return "hsl(0,100%," + lightness + ",60%)"
+    }
+    else if (flow >= values[4]) {
+        //Too high
+        river.running = 4
+        return "hsl(240,100%," + lightness + ",60%)"
+    }
+    else {
+        //If we don't have some values, fill them in using logarithms
+        //TODO: Do some analyzsis and figure out the best way to do these calculations
+
+        let minrun = values[0]
+        let maxrun = values[4]
+        let midflow = values[2] || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
+        let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
+        let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
+
+        //We display these so people can tell what values the computer has generated.
+        river.lowflow = parseFloat(lowflow.toFixed(3)) + type
+        river.midflow = parseFloat(midflow.toFixed(3)) + type
+        river.highflow = parseFloat(highflow.toFixed(3)) + type
+
+        function calculateRatio(low, high, current) {
+            low = Math.log(low)
+            high = Math.log(high)
+
+            current = Math.log(current)
+
+
+            let range = high-low
+            let value = current-low
+
+            return value/range
+
+        }
+        
+        if (flow < lowflow) {
+            river.running = calculateRatio(minrun, lowflow, flow)
+        }
+        else if (flow < midflow) {
+            river.running = 1+calculateRatio(lowflow, midflow, flow)
+        }
+        else if (flow < highflow) {
+            river.running = 2+calculateRatio(midflow, highflow, flow)
+        }
+        else {
+            river.running = 3+calculateRatio(highflow, maxrun, flow)
+        }
+        
+        return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ",30%"
+    }
 }
 
 
@@ -108,12 +242,12 @@ function calculateDirection(usgsNumber) {
 
 
 module.exports.River = function(locate, event) {
-	
-	//Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw
-	Object.assign(this, event)
-	//tags needs to be a string. It can't be undefined
+
+    //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw
+    Object.assign(this, event)
+    //tags needs to be a string. It can't be undefined
     this.tags = this.tags || ""
-	//Convert the numeric value to the filename
+    //Convert the numeric value to the filename
     switch (Number(this.rating)) {
         case 1:
             this.rating = "1Star";
@@ -140,14 +274,19 @@ module.exports.River = function(locate, event) {
     this.create = function (forceregenerate) {
         //Only create the button once - It's about 3 times faster.
         if (!this.finished || forceregenerate) {
+
             var button = document.createElement("button")
             button.id = this.base + 1
+
+            button.normalColor = window.darkMode ? "" : "" //Inherit from CSS
+            button.focusedColor = window.darkMode ? "#333333" : "#e3e3e3"
 
             function AddSpan(text) {
                 let span = document.createElement("span")
                 span.innerHTML = text
                 span.className = "riverspan"
                 button.appendChild(span)
+                return span
             }
 
             AddSpan(this.name)
@@ -169,17 +308,23 @@ module.exports.River = function(locate, event) {
                 button.appendChild(span)
             }
 
-
-
             if (this.flow) {
-                AddSpan(this.flow + " " + calculateDirection(this.usgs))
+                let flowSpan = AddSpan(this.flow + " " + calculateDirection(this.usgs))
+                if (this.minrun && this.maxrun) {
+                    button.normalColor = calculateColor(this)
+                    button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})
+                }
             }
-            
 
-            
+
+
             button.className = "riverbutton"
             //Add the click handler
             addClickHandler(button, locate)
+
+
+            button.addEventListener("mouseover", function(){this.style.backgroundColor = this.focusedColor})
+            button.addEventListener("mouseout", function(){this.style.backgroundColor = this.normalColor})
 
 
             //Make content available to Googlebot for indexing
@@ -198,6 +343,8 @@ module.exports.River = function(locate, event) {
             this.finished = button
 
         }    
+
+        this.finished.style.backgroundColor = this.finished.normalColor
 
         //Return finished button
         return this.finished

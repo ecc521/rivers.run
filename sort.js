@@ -3,7 +3,7 @@ function simpleSort(list, propertyName) {
         if (a[propertyName] > b[propertyName]) {
             return 1;
         }
-        if (a[propertyName] < [propertyName]) {
+        if (a[propertyName] < b[propertyName]) {
             return -1;
         }
         return 0;
@@ -18,7 +18,7 @@ function alphabeticalsort(list, reverse) {
     if (reverse) {
         list.reverse()
     }
-    
+
     return list
 }
 
@@ -87,6 +87,40 @@ function skillsort(list, reverse) {
 
 
 
+function runningSort(list, reverse) {
+    
+    let noData = []
+    let hasGauge = []
+    let knownState = []
+    
+    list.forEach((item) => {
+        if (item.running !== undefined) {knownState.push(item)}
+        //If there is gauge data, the user may be able to determine level themselves
+        //As such, put rivers with gauges second
+        else if (item.flow) {hasGauge.push(item)}
+        else {noData.push(item)}
+    })
+    
+    knownState = simpleSort(knownState, "running")
+    
+    if (reverse) {
+        knownState.reverse()
+    }
+    
+    if (knownState.length === 0) {
+        alert("Flow data has not yet loaded.")
+        return list
+    }    
+
+    knownState = knownState.concat(hasGauge)
+    knownState = knownState.concat(noData)
+
+    return knownState
+}
+
+
+
+
 
 function sort(method, list, reverse) {
     if (method === "alphabetical") {
@@ -97,6 +131,9 @@ function sort(method, list, reverse) {
     }
     else if (method === "skill") {
         list = skillsort(list, reverse)
+    }
+    else if (method === "running") {
+        list = runningSort(list, reverse)      
     }
     else {
         throw "Unknown sorting method " + method

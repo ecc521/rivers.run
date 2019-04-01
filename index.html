@@ -74,19 +74,26 @@
     <body>    
 
         <link rel="stylesheet" type="text/css" href="index.css">
+        <script src="riverarray.js"></script>
+        <script src="overviews.js"></script>
+
+
+
+
 
         <h1 class="center">River Information</h1>
 
         <div class="searchcontain">
             <img id="searchimg" alt="Search Icon" src="resources/SearchIcon.png">
             <input id="searchbox" type="text" aria-label="Type in the box to search for a river" placeholder="Search..">
-            <p id="advancedsearch"> Open Advanced Search</p>
+            <button id="advancedsearch">Open Advanced Search</button>
         </div>  
+        
+        <canvas id="legend"></canvas>
 
-        <p class="pixel18 center"><strong>Disclaimer: USGS Gauge data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>
         <div id="Rivers"></div>    
 
-        
+
 
         <div id="advanced-search-modal" class="modal">
             <div class="modal-content">
@@ -94,6 +101,8 @@
 
                 <p>Note: Advanced Search is a new feature, and is incomplete</p>
                 <p>Empty Search Queries will be Ignored</p>
+
+
                 Name 
                 <select id="nameType">
                     <option value="contains">Contains</option>
@@ -101,6 +110,8 @@
                 </select>
                 <input id="nameQuery" type="text" placeholder="Search Query">
                 <br>
+
+
                 Section 
                 <select id="sectionType">
                     <option value="contains">Contains</option>
@@ -108,6 +119,33 @@
                 </select>
                 <input id="sectionQuery" type="text" placeholder="Search Query">
                 <br>
+
+                Skill 
+                <!-- Consider reusing skillToNumber code to avoid excessive duplication-->
+                <select id="skillQuery1">
+                    <option value="1">Flat Water</option>
+                    <option value="2">Beginner</option>
+                    <option value="3">Novice</option>
+                    <option value="4">Low Intermediate</option>
+                    <option value="5">Intermediate</option>
+                    <option value="6">High Intermediate</option>
+                    <option value="7">Advanced</option>
+                    <option value="8">Expert</option>
+                </select>
+                through
+                <select id="skillQuery2">
+                    <option value="1">Flat Water</option>
+                    <option value="2">Beginner</option>
+                    <option value="3">Novice</option>
+                    <option value="4">Low Intermediate</option>
+                    <option value="5">Intermediate</option>
+                    <option value="6">High Intermediate</option>
+                    <option value="7">Advanced</option>
+                    <option value="8" selected>Expert</option>
+                </select>
+                <br>
+
+
                 Writeup 
                 <select id="writeupType">
                     <option value="contains">Contains</option>
@@ -115,15 +153,30 @@
                 </select>
                 <input id="writeupQuery" type="text" placeholder="Search Query">
                 <br>
+
+
+                Located within 
+                <input id="distanceQuery" type="number" placeholder="Distance in Miles"> 
+                miles of
+                <input id="latitudeQuery" type="text" placeholder="Degrees Latitude"> 
+                <input id="longitudeQuery" type="text" placeholder="Degrees Longitude"> 
+                <br>
+                <input id="includeUnknown" type="checkbox">Include rivers without GPS coordinates<br>
+                <button id="calculateCoordinates">Calculate my Location</button>
+                <p id="locationProgress"></p>
+                <br>
+
+
+
                 <button id="performadvancedsearch">Search</button>
                 <p id="searchlink"></p>
             </div>
         </div>	
-        
 
 
-        <script src="riverarray.js"></script>
-        <script src="overviews.js"></script>
+
+
+
         <script src="packages/index.js"></script> 
 
     </body>  

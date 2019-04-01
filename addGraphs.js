@@ -110,16 +110,21 @@ module.exports.addGraphs = function(div, data) {
     if (!data) {
         return;
     }
-    
+
     //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
     //for a specific river due to gauge problems.
     //Each canvas is wrapped individually because sometimes only some graphs have invalid data
-    div.innerHTML += "<br><br>" //Space the first canvas
 
     let temp = data["00010"]
     let precip = data["00045"]
     let cfs = data["00060"]
     let height = data["00065"]
+
+
+    
+    div.innerHTML += "<br><br><p class=\"pixel18 center\"><strong>Disclaimer: USGS Gauge data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>"
+
+    
 
 
     try {

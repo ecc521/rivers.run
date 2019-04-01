@@ -65,13 +65,25 @@ module.exports.loadUSGS = async function() {
         if (cfs) {cfs = cfs.values}
         if (feet) {feet = feet.values}
 
-        if (cfs && feet) {
-          item.flow = cfs[cfs.length - 1].value + " cfs, " + feet[feet.length - 1].value + " ft"
+		  
+		let latestCfs, latestFeet;
+		if (cfs) {
+			latestCfs = cfs[cfs.length - 1].value
+		}
+		if (feet) {
+			latestFeet = feet[feet.length - 1].value
+		}
+		  
+		item.feet = latestFeet
+		  item.cfs = latestCfs
+		  
+        if (latestCfs && latestFeet) {
+          item.flow = latestCfs + " cfs, " + latestFeet + " ft"
         }
-        else if (cfs) {
+        else if (latestCfs) {
           item.flow = cfs[cfs.length - 1].value + " cfs"
         }
-        else if (feet) {
+        else if (latestFeet) {
           item.flow = feet[feet.length - 1].value + " ft" 
         }
 

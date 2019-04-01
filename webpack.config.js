@@ -11,8 +11,8 @@ module.exports = {
         path: path.join(__dirname, "packages"),
         filename: "[name].js",
     },
-	optimization: {
-		minimize: false
-	},    
+    optimization: {
+        minimize: true
+    },    
     //Add babel plugin
 }

@@ -43,7 +43,10 @@ function TopBar() {
         span.value = 1 //We want greatest first, not least first, on the first sort
         button.appendChild(span) 
 
-        button.appendChild(NewSpan("Flow Info/Trend"))
+        span = NewSpan("Flow Info/Trend⇅")
+        addSorting(span, "running")
+        span.value = 1 //Show highest flow first, instead of lowest
+        button.appendChild(span)
 
         return button
     }

@@ -9,10 +9,16 @@
 <p>The 3 Fields below this may not apply to all rivers. Don't worry. You can leave them blank.</p>
 <input id="usgs" type="text" placeholder="USGS Gage Number" onkeydown="setTimeout(UpdateWriteup, 30)">
 <br>
-<p>Please notate feet with ft and cubic feet per second with cfs (ex. 1.67ft, 391cfs, 1.67 ft, 391 cfs).</p>
+<p>You <strong>MUST</strong> put either ft, feet, or cfs after the value (ex. 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet).</p>
 <input id="minrun" type="text" placeholder="Minimum runnable water level" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
 <br>
 <input id="maxrun" type="text" placeholder="Maximum runnable water level" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="lowflow" type="text" placeholder="Low Water" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="medflow" type="text" placeholder="Ideal Level" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<br>
+<input id="highflow" type="text" placeholder="High Water" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
 <br>
 <p>Use Decimal Format for Longitude and Latitude (ex. 32.53521523, -82.93201727, -74.37283910, 41.52318192) </p>
 <input id="plat" type="text" placeholder="Put-in GPS Latitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
@@ -103,7 +109,7 @@ function copyStringToClipboard() {
 }
 
   //state, hidlat, hidlon
-var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun"
+var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun, lowflow, medflow, highflow"
 List = List.split(",")
 List = List.map(function(value){
   return value.trim()

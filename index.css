@@ -1,7 +1,6 @@
 html, body {
     margin:0;
     border:0;
-    height:100%;
     background-color:#dffaff;
 }
 
@@ -40,14 +39,15 @@ html, body {
 
 #advancedsearch {
     display:inline-block;
-    text-decoration: underline;
-    cursor: pointer;
+    vertical-align:middle;
+    height: 36px;
 }
 
 #searchbox {
     display:inline-block;
-    padding:12px;
     vertical-align:middle;
+    padding:0;
+    height: 36px;
     width:30%
 }
 
@@ -104,9 +104,7 @@ Those include name,section,skill,quality, and flow info*/
 .riverbutton:focus {
     outline:0;
 }   
-.riverbutton:hover {
-    background-color: #e3e3e3;
-}
+
 
 /*Controlling font size smoothly based on screen size*/
 @media screen and (min-width: 500px) {
@@ -134,9 +132,29 @@ Those include name,section,skill,quality, and flow info*/
         font-size: 1.5vw;
     }
 }
-@media screen and (min-width: 1500px) {
+@media screen and (min-width: 1250px) {
     .riverbutton {
-        font-size: 1.27vw;
+        font-size: 1.4vw;
+    }
+}
+@media screen and (min-width: 1350px) {
+    .riverbutton {
+        font-size: 1.35vw;
+    }
+}
+@media screen and (min-width: 1450px) {
+    .riverbutton {
+        font-size: 1.24vw;
+    }
+}
+@media screen and (min-width: 1600px) {
+    .riverbutton {
+        font-size: 1.15vw;
+    }
+}
+@media screen and (min-width: 1900px) {
+    .riverbutton {
+        font-size: 21px;
     }
 }
 /*End of riverbutton style*/    
@@ -155,8 +173,6 @@ Those include name,section,skill,quality, and flow info*/
 /*End of topbar style*/
 
 
-
-
 /*Utilities Stuff - To avoid inline CSS*/
 .center {
     text-align:center;
@@ -165,6 +181,7 @@ Those include name,section,skill,quality, and flow info*/
 .pixel18 {
     font-size:18px;
 }
+
 
 
 @media (prefers-color-scheme: dark) {
@@ -181,9 +198,6 @@ Those include name,section,skill,quality, and flow info*/
     .riverbutton {
         color:#cccccc;
     }
-    .riverbutton:hover {
-        background-color: #333333;
-    }   
 
     #topbar {
         color:black;
@@ -198,6 +212,5 @@ Those include name,section,skill,quality, and flow info*/
     #searchbox::placeholder {
         color: #FAFAFA;
     }
-
 
 }
