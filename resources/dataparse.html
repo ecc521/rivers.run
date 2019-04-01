@@ -108,7 +108,7 @@
         await wait(1000) //Let quota refresh
 
         for (let i=0;i<retry.length;i++) {
-            promises.push(load(fileids[i]))
+            promises.push(load(retry[i].id))
             //Use 2000 instead of the 1000 it should be- I want the retries to never 403
             await wait(2000/googlecloudrequestrate)
         }                
