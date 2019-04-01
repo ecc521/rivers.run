@@ -110,6 +110,11 @@ item4.href = root + "settings.html"
 item4.innerHTML = "Settings"
 items.push(item4)
 
+let item5 = document.createElement("a")
+item5.href = root + "clubs.html"
+item5.innerHTML = "Clubs"
+items.push(item5)
+
 
 let currentPage = window.location.href.slice(root.length)
 if (currentPage.indexOf("#") !== -1) {
@@ -130,18 +135,39 @@ for (let i=0;i<items.length;i++) {
 
 document.body.insertBefore(topnav, document.body.firstChild)
 
-styleSheet.insertRule(".topnav {overflow: hidden}", styleSheet.cssRules.length)
-styleSheet.insertRule(".topnav {background-color: #24b9cc}", styleSheet.cssRules.length)
-styleSheet.insertRule(".topnav {margin:0px}", styleSheet.cssRules.length)
 
-styleSheet.insertRule(".topnav a {float: left}", styleSheet.cssRules.length)
-styleSheet.insertRule(".topnav a {display: block}", styleSheet.cssRules.length)
-styleSheet.insertRule(".topnav a {color: black}", styleSheet.cssRules.length)
-styleSheet.insertRule(".topnav a {text-align: center}", styleSheet.cssRules.length)
-styleSheet.insertRule(".topnav a {padding: 12px 13px}", styleSheet.cssRules.length)
-//Not sure what the one below is for
-styleSheet.insertRule(".topnav a {text-decoration: none}", styleSheet.cssRules.length)
-styleSheet.insertRule(".topnav a {font-size: 17px}", styleSheet.cssRules.length)
+
+styleSheet.insertRule(`
+.topnav {
+    overflow: hidden;
+    background-color: #24b9cc;
+    margin:0px;
+}
+`, styleSheet.cssRules.length)
+
+
+styleSheet.insertRule(`
+.topnav a {
+    float: left;
+    display: block;
+    color:black;
+    text-align:center;
+    padding: 12px 13px;
+    text-decoration: none; /*Avoid the links being underlined*/
+    font-size: 17px;
+}
+`, styleSheet.cssRules.length)
+
+
+//Make sure the header doesn't go onto multiple lines
+styleSheet.insertRule(`
+@media screen and (max-width: 386px) {
+    .topnav a {
+        padding: 10px 11px;
+        font-size: 4.3vw;
+    }
+}
+`, styleSheet.cssRules.length)
 
 
 styleSheet.insertRule(".topnav a:hover {background-color: #359daa}", styleSheet.cssRules.length)
