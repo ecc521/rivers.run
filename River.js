@@ -33,6 +33,8 @@ function addClickHandler(button, locate) {
                 //Adding to div.innerHTML works, but logs CSP errors
                 div.appendChild(document.createElement("br"))
                 let link = document.createElement("a")
+                link.target = "_blank"
+                link.rel = "noopener"
                 link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
                 link.innerHTML = "Click here to view this river on American Whitewater"
                 div.appendChild(link)
