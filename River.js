@@ -311,7 +311,7 @@ module.exports.River = function(locate, event) {
             }
 
             if (this.flow) {
-                let flowSpan = AddSpan(this.flow + " " + calculateDirection(this.usgs))
+                let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs))
                 if (this.minrun && this.maxrun) {
                     button.normalColor = calculateColor(this)
                     button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})

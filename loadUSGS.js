@@ -78,7 +78,7 @@ module.exports.loadUSGS = async function() {
 		  item.cfs = latestCfs
 		  
         if (latestCfs && latestFeet) {
-          item.flow = latestCfs + " cfs, " + latestFeet + " ft"
+          item.flow = latestCfs + "cfs " + latestFeet + "ft"
         }
         else if (latestCfs) {
           item.flow = cfs[cfs.length - 1].value + " cfs"

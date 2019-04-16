@@ -23,6 +23,14 @@ html, body {
     height:auto;
 }
 
+@media screen and (min-width: 800px) {
+    .starimg {
+        /*Prevent the stars from getting way too huge.*/
+        max-height:23px;
+    }
+}
+
+
 .searchcontain {
     margin-bottom:18px;
     margin-left:4px;

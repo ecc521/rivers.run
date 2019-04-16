@@ -112,7 +112,7 @@ function updateLegend() {
     let height;
     //Picked what I thought looked best
     if (fontSize > 18) {
-        height = 20 + fontSize*2
+        height = 10 + fontSize*2
     }
     else if (fontSize > 14.8){
         fontSize *= 1.2
