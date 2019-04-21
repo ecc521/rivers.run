@@ -16,12 +16,11 @@ function drawColors(canvas, height) {
     let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 
     let redLightness = "50%"
-    let redColor = "hsl(0,100%," + redLightness + ",60%)"
-
-
+    let redColor = "hsla(0,100%," + redLightness + ",0.6)"
+    
     gradient.addColorStop(0, redColor)
     gradient.addColorStop(0.08, redColor)
-
+    
     let start = 0.08
     let end = 0.92
 
@@ -29,11 +28,11 @@ function drawColors(canvas, height) {
     //240 is number of whole number hsl values
 
     for (let i=0;i<=240;i++) {
-        gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
+        gradient.addColorStop(start + (i/240*range), "hsla(" + i + ",100%,50%,0.3)")	
     }
 
-    gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
-    gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
+    gradient.addColorStop(0.92, "hsla(240,100%,50%,0.6)")
+    gradient.addColorStop(1, "hsla(240,100%,50%,0.6)")
 
     context.fillStyle = gradient
     context.fillRect(0,0,canvas.width,canvas.height)	
@@ -98,8 +97,8 @@ function makeSticky(canvas) {
 }
 
 
-
 function updateLegend() {
+    try {
     let canvas = document.getElementById("legend")
 
     canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)
@@ -126,6 +125,12 @@ function updateLegend() {
     drawColors(canvas, height)
     drawText(canvas, fontSize)
     makeSticky(canvas)
+    }
+    catch (e) {
+        //Something went badly wrong. Prevent from taking down whole page.
+        console.error("Legend failed to draw. Logging error.")
+        console.error(e)
+    }
 
 }
 
