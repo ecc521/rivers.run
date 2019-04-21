@@ -114,11 +114,11 @@ function calculateDirection(usgsNumber) {
 
 function calculateColor(river, options) {
     //hsla color values
-    //hsl(hue, saturation, lightness, opacity)
+    //hsla(hue, saturation, lightness, opacity)
     //Saturation hue is 0 red 120 green 240 blue
     //Saturation - use 100%
     //Lightness - use 50%
-    //Opacity - Percentage
+    //Opacity - Decimal 0 to 1
     
     
     //Defines river.running
@@ -171,7 +171,7 @@ function calculateColor(river, options) {
 
 
     //Use or equal to
-    //While that technically may not be correct, it makes no significant difference
+    //While that technically may not be correct (says that river is too low at minrun), it makes no significant difference
     //In addition, values equal to minrun or maxrun result in a river.running of 0 or 4
     //Meaning that they may be included in the middle of a darker highlighted rivers
     //When sorting by runnability is used.
@@ -184,12 +184,12 @@ function calculateColor(river, options) {
         //Too low
         river.running = 0
         let lightness = (options && options.lightness) || "50%"
-        return "hsl(0,100%," + lightness + ",60%)"
+        return "hsla(0,100%," + lightness + ",0.6)"
     }
     else if (flow >= values[4]) {
         //Too high
         river.running = 4
-        return "hsl(240,100%," + lightness + ",60%)"
+        return "hsla(240,100%," + lightness + ",0.6)"
     }
     else {
         //If we don't have some values, fill them in using logarithms
@@ -233,7 +233,7 @@ function calculateColor(river, options) {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
         
-        return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ",30%"
+        return "hsla(" + (0 + 60*river.running) + ",100%," + lightness + ",0.3)"
     }
 }
 
@@ -314,10 +314,9 @@ module.exports.River = function(locate, event) {
                 let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs))
                 if (this.minrun && this.maxrun) {
                     button.normalColor = calculateColor(this)
-                    button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})
+                    button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})                    
                 }
             }
-
 
 
             button.className = "riverbutton"
