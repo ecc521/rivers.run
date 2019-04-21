@@ -37,10 +37,8 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         console.warn("Uneven amount of datapoints. " + horizontal.length + " horizontal points found, but " + vertical.length + " vertical points found.")
     }
 
-    if (color === undefined) {
-        color = "#000000"
-    }
-    ctx.strokeStyle = color
+    color = color || "#000000"
+    
     ctx.lineWidth = Math.ceil(Math.min(width, height)/120)
     ctx.beginPath();
 
@@ -77,6 +75,8 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         color = color.slice(0,7)
     }
     ctx.fillStyle = color
+    ctx.strokeStyle = color
+
     if (graphtype === 3) {
         var grd = ctx.createLinearGradient(0, 0, 0, height);
         grd.addColorStop(0, color);   
