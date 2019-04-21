@@ -12,8 +12,6 @@ let loadUSGS = async function() {
     }
     let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-1000*86400).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
 
-    console.log("fetching")
-
     let usgsdata;
     if (window.fetch) {
         let response = await fetch(url)
@@ -29,8 +27,6 @@ let loadUSGS = async function() {
         })
         usgsdata = JSON.parse(response)
     }
-
-    console.log("finished fetching")
 
     //Iterate through all known conditions
     usgsdata.value.timeSeries.forEach(function(event){
