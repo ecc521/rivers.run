@@ -12,9 +12,8 @@
 //graphtype - Optional. Specify 2 to put 2 lines and 2 scales on one graph. See numplace below
 //numplace - Use only if you are using graphtype = 2. 
 //If you specify 0 or do not pass a value, the line's scale will be on the left side of the graph.
-//If you specify 1, the line's scale will be on the right side of the graph.
-
-module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
+//If you specify 1, the line's scale will be on the right side of the graph
+function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
     if (graphtype === 3) {
         var endcolor = numplace
         }
@@ -304,3 +303,8 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
     }
     ctx.stroke()
 }    
+
+
+export {
+    addLine
+}

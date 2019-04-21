@@ -12,7 +12,24 @@ module.exports = {
         filename: "[name].js",
     },
     optimization: {
-        minimize: false
-    },    
+        minimize: true
+    },   
     //Add babel plugin
+    module: {
+        rules: [
+            {
+                test: /\.js$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        presets: ['@babel/preset-env']
+                    }
+                }
+            }
+        ]
+    },
+    stats: {
+        colors: true
+    },
 }

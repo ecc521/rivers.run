@@ -1,18 +1,27 @@
 'use strict';
 
+try {
 require("./allPages.js")
+}
+catch(e) {console.error(e)}
 
-self.addLine = require("./graph.js").addLine
+try {
+window.addLine = require("./graph.js").addLine
+}
+catch(e) {console.error(e)}
 
-//Defines self.TopBar and self.triangle
-Object.assign(self, require("./TopBar.js"))
+//Defines window.TopBar and window.triangle
+Object.assign(window, require("./TopBar.js"))
 
-self.River = require("./River.js").River
+window.River = require("./River.js").River
 
-self.sort = require("./sort.js").sort
+window.sort = require("./sort.js").sort
 
-//Defines self.normalSearch and self.advanedSearch
-Object.assign(self, require("./search.js"))
+//Defines window.normalSearch and window.advanedSearch
+Object.assign(window, require("./search.js"))
+
+window.usgsarray = {} 
+
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -23,14 +32,14 @@ if ('serviceWorker' in navigator) {
 
 
 //ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list. 
-self.ItemHolder = []
+window.ItemHolder = []
 riverarray.map(function(event, index) {
     ItemHolder[index] = new River(index, event)
 })
 
 
 //Fetch data from USGS
-//ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise self.usgsarray is undefined)
+//ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise window.usgsarray is undefined)
 require("./loadUSGS.js").loadUSGS()
 
 

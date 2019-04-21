@@ -1,0 +1,30 @@
+{
+  "name": "rivers.run",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "webpack": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ecc521/rivers.run.git"
+  },
+  "author": "Tucker Willenborg",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/ecc521/rivers.run/issues"
+  },
+  "homepage": "https://rivers.run",
+  "devDependencies": {
+    "@babel/core": "^7.4.3",
+    "@babel/plugin-transform-runtime": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
+    "babel-loader": "^8.0.5",
+    "webpack": "^4.30.0",
+    "webpack-cli": "^3.3.0"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.4.3"
+  }
+}
