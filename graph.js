@@ -135,11 +135,14 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         var time = String(date.getHours())
 
         if (date.getHours() < 10) {
-            time += "0"
+            time = "0" + time
         }
-        time += ":" + date.getMinutes()
+        time += ":"
         if (date.getMinutes() < 10) {
-            time += "0"
+            time += "0" + date.getMinutes()
+        }
+        else {
+            time += date.getMinutes()
         }
         time += " " + (date.getMonth()+1) + "/" + date.getDate() + "/" +date.getFullYear()
         return time
