@@ -19,7 +19,7 @@ function addClickHandler(button, locate) {
             if (river.tlat && river.tlon) {
                 div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
             }
-            
+
             let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
             for (let i=0;i<values.length;i++) {
                 let name = values[i]
@@ -27,7 +27,7 @@ function addClickHandler(button, locate) {
                     div.innerHTML += name + ":" + river[name] + " "
                 }
             }
-            
+
 
             if (river.aw) {
                 //Adding to div.innerHTML works, but logs CSP errors
@@ -42,7 +42,7 @@ function addClickHandler(button, locate) {
 
             //USGS data may not have loaded yet
             if (self.usgsarray) {
-                data = self.usgsarray[river.usgs] 
+                data = self.usgsarray[river.usgs]
                 addGraphs(div, data)
             }
 
@@ -57,8 +57,8 @@ function addClickHandler(button, locate) {
                 elem.parentNode.removeChild(elem)
             }
 
-        }        
-    }    
+        }
+    }
 }
 
 
@@ -76,7 +76,7 @@ function calculateDirection(usgsNumber) {
             let current;
             let previous;
 
-            //We will go back 4 datapoints (1 hour) if possible. 
+            //We will go back 4 datapoints (1 hour) if possible.
             //Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
             let stop = Math.max(data.length-5, 0)
             for (let i=data.length;i>stop;i--) {
@@ -106,7 +106,7 @@ function calculateDirection(usgsNumber) {
 
         }
     }
-    return; //If we got here, there is not enough USGS data. 
+    return; //If we got here, there is not enough USGS data.
 }
 
 
@@ -119,8 +119,8 @@ function calculateColor(river, options) {
     //Saturation - use 100%
     //Lightness - use 50%
     //Opacity - Decimal 0 to 1
-    
-    
+
+
     //Defines river.running
     //0-4
     //0 is too low, 4 is too high, other values in between
@@ -175,11 +175,11 @@ function calculateColor(river, options) {
     //In addition, values equal to minrun or maxrun result in a river.running of 0 or 4
     //Meaning that they may be included in the middle of a darker highlighted rivers
     //When sorting by runnability is used.
-    
-    //It would be better if rivers that are too high or too low are still given river.running values 
+
+    //It would be better if rivers that are too high or too low are still given river.running values
     //related to their level. This would also help in determining if something is just barely
     //too low, and may come up with rain, or is truely too low.
-    
+
     if (flow <= values[0]) {
         //Too low
         river.running = 0
@@ -219,7 +219,7 @@ function calculateColor(river, options) {
             return value/range
 
         }
-        
+
         if (flow < lowflow) {
             river.running = calculateRatio(minrun, lowflow, flow)
         }
@@ -232,7 +232,7 @@ function calculateColor(river, options) {
         else {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
-        
+
         return "hsla(" + (0 + 60*river.running) + ",100%," + lightness + ",0.3)"
     }
 }
@@ -267,6 +267,7 @@ module.exports.River = function(locate, event) {
         this.rating = "Error"
     }
 
+    this.skill = this.skill || "?"
 
     this.base = "b" + locate
     this.expanded = 0
@@ -297,7 +298,7 @@ module.exports.River = function(locate, event) {
 
             //Star images for rating
             if (this.rating === "Error") {
-                AddSpan("???") 
+                AddSpan("???")
             }
             else {
                 let img = document.createElement("img")
@@ -314,7 +315,7 @@ module.exports.River = function(locate, event) {
                 let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs))
                 if (this.minrun && this.maxrun) {
                     button.normalColor = calculateColor(this)
-                    button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})                    
+                    button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})
                 }
             }
 
@@ -335,15 +336,15 @@ module.exports.River = function(locate, event) {
                 }
                 catch(e) {}
             }
-            //The code directly above this is used to allow Googlebot to index content. 
+            //The code directly above this is used to allow Googlebot to index content.
             //Shall it result in an SEO hit, or shall Googlebot be improved to handle content inside of JavaScript,
-            //It can safely be removed.    
+            //It can safely be removed.
 
 
-            //Store button for reuse later   
+            //Store button for reuse later
             this.finished = button
 
-        }    
+        }
 
         this.finished.style.backgroundColor = this.finished.normalColor
 
@@ -369,8 +370,7 @@ module.exports.River = function(locate, event) {
         }
 
         Remove(2)
-        Remove(1)   
+        Remove(1)
 
-    } 
+    }
 }
-
