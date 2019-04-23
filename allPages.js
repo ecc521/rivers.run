@@ -1,6 +1,29 @@
 //This JavaScript file should run on all pages
-//It defines global CSS rules, allows for forcing dark mode, and
-//defines the river-overview DOM element
+//It defines global CSS rules, allows for forcing dark mode,
+//defines the river-overview DOM element, and makes sure a viewport meta tag exists.
+
+
+
+
+
+
+
+//Add the viewport meta tag if it does not exist.
+try {
+    ;(function addViewportMeta() {
+        let tags = document.head.querySelectorAll("meta")
+        for (let i=0;i<tags.length;i++) {
+            if (tags[i].name = "viewport") {return} //There is already a viewmport meta tag
+        }
+        let meta = document.createElement("meta")
+        meta.name = "viewport"
+        meta.content = "width=device-width, initial-scale=1"
+        document.head.appendChild(meta)
+    })()
+}
+catch(e) {
+    console.error(e)
+}
 
 
 //This is extremely sensitive to the design of the CSS
@@ -8,9 +31,9 @@
 let styleSheet = document.styleSheets[0]
 
 if (!styleSheet) {
-    console.warn("No stylesheet available. There must be an existing stylesheet in order for allPages.js to function properly without inline style allowed or without document.body.")
+    console.warn("No stylesheet available. There must be an existing stylesheet in order for allPages.js to function properly without inline style allowed or without document.documentElement (which may always exist).")
     let style = document.createElement("style")
-    document.body.appendChild(style)
+    document.documentElement.appendChild(style)
     styleSheet = document.styleSheets[0]
 }
 
@@ -139,22 +162,22 @@ document.body.insertBefore(topnav, document.body.firstChild)
 
 styleSheet.insertRule(`
 .topnav {
-    overflow: hidden;
-    background-color: #24b9cc;
-    margin:0px;
+overflow: hidden;
+background-color: #24b9cc;
+margin:0px;
 }
 `, styleSheet.cssRules.length)
 
 
 styleSheet.insertRule(`
 .topnav a {
-    float: left;
-    display: block;
-    color:black;
-    text-align:center;
-    padding: 12px 13px;
-    text-decoration: none; /*Avoid the links being underlined*/
-    font-size: 17px;
+float: left;
+display: block;
+color:black;
+text-align:center;
+padding: 12px 13px;
+text-decoration: none; /*Avoid the links being underlined*/
+font-size: 17px;
 }
 `, styleSheet.cssRules.length)
 
@@ -162,10 +185,10 @@ styleSheet.insertRule(`
 //Make sure the header doesn't go onto multiple lines
 styleSheet.insertRule(`
 @media screen and (max-width: 386px) {
-    .topnav a {
-        padding: 10px 11px;
-        font-size: 4.3vw;
-    }
+.topnav a {
+padding: 10px 11px;
+font-size: 4.3vw;
+}
 }
 `, styleSheet.cssRules.length)
 
