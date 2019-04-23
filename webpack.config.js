@@ -3,7 +3,8 @@ const path = require("path")
 module.exports = {
     mode: "production", //Build for production
     entry: {
-        index: "./index.js"
+        index: "./index.js",
+        allPages: "./allPages.js" //Package allPages.js for browser support.
     },
     target: "web",
     devtool: "source-map",
