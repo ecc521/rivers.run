@@ -10,6 +10,7 @@ window.addLine = require("./graph.js").addLine
 }
 catch(e) {console.error(e)}
 
+
 //Defines window.TopBar and window.triangle
 Object.assign(window, require("./TopBar.js"))
 
