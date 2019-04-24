@@ -1,5 +1,5 @@
-let previousVisits = (Number(localStorage.getItem("previousVisits")) || 0) + 1
-localStorage.setItem("previousVisits", previousVisits)
+let previousVisits = (Number(localStorage.getItem("previousVisits")) || 0)
+localStorage.setItem("previousVisits", previousVisits + 1)
 
 
 //Data that we are collecting
