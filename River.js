@@ -10,6 +10,7 @@ function addClickHandler(button, locate) {
         if (river.expanded === 0) {
             river.expanded = 1
             var div = document.createElement("div")
+			
             div.innerHTML = river.writeup + "<br><br>"
 
             if (river.plat && river.plon) {
@@ -41,10 +42,19 @@ function addClickHandler(button, locate) {
             }
 
             //USGS data may not have loaded yet
-            if (self.usgsarray) {
-                data = self.usgsarray[river.usgs]
-                addGraphs(div, data)
-            }
+			if (self.usgsarray && river.usgs) {
+				//Alert the user if the data is (at least 2 hours) old
+				let dataAge = calculateAge(river.usgs)
+				if (dataAge > 1000*60*60*2) {
+					let oldDataWarning = document.createElement("p")
+					oldDataWarning.style.backgroundColor = "yellow"
+					oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(dataAge/1000/60/60) +" hours old."
+					div.appendChild(oldDataWarning)
+				}	
+				
+                addGraphs(div, self.usgsarray[river.usgs])
+			}
+			
 
             div.style.padding = "6px"
             div.id = river.base + 2
@@ -111,6 +121,30 @@ function calculateDirection(usgsNumber) {
 
 
 
+function calculateAge(usgsNumber) {
+	//Returns millseconds old that USGS data is
+    let usgsData = usgsarray[usgsNumber]
+    if (usgsData) {
+        let data;
+
+        if (usgsData["00060"]) {data = usgsData["00060"].values}
+        else if (usgsData["00065"]) {data = usgsData["00065"].values}
+        else if (usgsData["00010"]) {data = usgsData["00010"].values}
+        else if (usgsData["00045"]) {data = usgsData["00045"].values}
+
+        if (data) {
+            for (let i=data.length;i>stop;i--) {
+                let item = data[i]
+                if (!item) {continue}
+                return Date.now() - Number(Date(item.dateTime))
+            }
+        }
+		return null;
+    }
+    return; //If we got here, there is not enough USGS data.
+}
+
+
 
 function calculateColor(river, options) {
     //hsla color values
@@ -167,8 +201,6 @@ function calculateColor(river, options) {
         flow = river.feet
     }
 
-    let lightness = (options && options.lightness) || "50%"
-
 
     //Use or equal to
     //While that technically may not be correct (says that river is too low at minrun), it makes no significant difference
@@ -180,19 +212,25 @@ function calculateColor(river, options) {
     //related to their level. This would also help in determining if something is just barely
     //too low, and may come up with rain, or is truely too low.
 
+	
     if (flow <= values[0]) {
         //Too low
         river.running = 0
-        let lightness = (options && options.lightness) || "50%"
-        return "hsla(0,100%," + lightness + ",0.6)"
+	    let lightness = (options && options.highlighted)? (window.darkMode? "35%": "60%"):  window.darkMode? "30%": "70%"
+        return "hsl(0,100%," + lightness + ")"
     }
-    else if (flow >= values[4]) {
+    else if (flow >= values[4]) {0
         //Too high
         river.running = 4
-        return "hsla(240,100%," + lightness + ",0.6)"
+    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "65%"):  window.darkMode? "20%": "70%"
+        return "hsl(240,100%," + lightness + ")"
     }
     else {
-        //If we don't have some values, fill them in using logarithms
+		
+		//Normal Flow lightness values
+    	let lightness = (options && options.highlighted)? (window.darkMode? "35%": "65%"): (window.darkMode? "25%": "75%")
+	
+		//If we don't have some values, fill them in using logarithms
         //TODO: Do some analyzsis and figure out the best way to do these calculations
 
         let minrun = values[0]
@@ -233,7 +271,7 @@ function calculateColor(river, options) {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
 
-        return "hsla(" + (0 + 60*river.running) + ",100%," + lightness + ",0.3)"
+        return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
     }
 }
 
@@ -315,7 +353,7 @@ module.exports.River = function(locate, event) {
                 let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs))
                 if (this.minrun && this.maxrun) {
                     button.normalColor = calculateColor(this)
-                    button.focusedColor = window.darkMode ?  calculateColor(this, {lightness:"75%"}) : calculateColor(this, {lightness:"35%"})
+                    button.focusedColor = calculateColor(this, {highlighted: true})
                 }
             }
 

@@ -9,15 +9,20 @@ function drawColors(canvas, height) {
     //window.innerWidth fails - the window is expanded to handle the width of the legend
     //Then the legend doesn't resize (because the window has resized to it) 
 
-    //This seems to be the only cross browser solution
-    canvas.width = document.documentElement.clientWidth
+    //This seems to be the only cross browser solution (it fails if numerous rotations made)
+
+	let tooLowLightness = window.darkMode? "30%": "65%"
+	let tooHighLightness = window.darkMode? "20%": "70%"
+	let normalValueLightness = window.darkMode? "25%": "75%"
+	
+	canvas.width = document.documentElement.clientWidth
     canvas.height = height
 
     let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 
-    let redLightness = "50%"
-    let redColor = "hsla(0,100%," + redLightness + ",0.6)"
-    
+    let redColor = "hsl(0,100%," + tooLowLightness + ")"
+    let blueColor = "hsl(240,100%," + tooHighLightness + ")"
+
     gradient.addColorStop(0, redColor)
     gradient.addColorStop(0.08, redColor)
     
@@ -28,11 +33,11 @@ function drawColors(canvas, height) {
     //240 is number of whole number hsl values
 
     for (let i=0;i<=240;i++) {
-        gradient.addColorStop(start + (i/240*range), "hsla(" + i + ",100%,50%,0.3)")	
+        gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%," + normalValueLightness + ")")
     }
 
-    gradient.addColorStop(0.92, "hsla(240,100%,50%,0.6)")
-    gradient.addColorStop(1, "hsla(240,100%,50%,0.6)")
+    gradient.addColorStop(0.92, blueColor)
+    gradient.addColorStop(1, blueColor)
 
     context.fillStyle = gradient
     context.fillRect(0,0,canvas.width,canvas.height)	
