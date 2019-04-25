@@ -29,6 +29,9 @@ function loadURL() {
 				if (result.type === "opaque") {
 					resolve(true)
 				}
+        else {
+          resolve(false)
+        }
 			})
 			request.catch((e) => {
 				console.error(e)
@@ -36,18 +39,21 @@ function loadURL() {
 			})
 		}
 		else {
-						
+
 			//For browsers that don't support fetch
 			//I have no way to actually assure that the request went through using
 			//XMLHttpRequest, and merely assume that it went through if anything happens
-						
+
+      //Since browsers that support serviceWorker also support fetch, don't bother checking
+      //that the user is online or trying to bypass cache/serviceWorker
+
 			let request = new XMLHttpRequest()
 				request.onload = function(event) {
 					resolve(true)
 				};
 				request.onerror = function(event) {
 					resolve(true)
-				};			
+				};
 			request.open("GET", formURL);
 			request.send()
 		}
@@ -59,15 +65,15 @@ function loadURL() {
 //If the site is loaded offline, store the data and send it in the next time the site is loaded.
 let urls = JSON.parse(localStorage.getItem("urlsToLoad") || "[]")
 urls.push(formURL)
+localStorage.setItem("urlsToLoad", JSON.stringify(urls))
 
 for (let i=0;i<urls.length;i++) {
 	let url = urls[i]
 	loadURL(url).then((result) => {
 		//If the request succeeded, remove the URL from the queue
-		if (result) {
+		if (result === true) {
 			urls.splice(urls.indexOf(url), 1)
 			localStorage.setItem("urlsToLoad", JSON.stringify(urls))
 		}
 	})
 }
-
