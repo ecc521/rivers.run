@@ -36,7 +36,7 @@ function toparts(arr) {
 }
 
 
-function addFlowGraph(div, cfs, height) {
+function addFlowGraph(div, cfs, height, data) {
     //Make sure we actually have some data, and don't create an empty graph
     if (!(cfs || height)) {return}
 
@@ -69,7 +69,7 @@ function addFlowGraph(div, cfs, height) {
 }
 
 
-function addTempGraph(div, temp) {
+function addTempGraph(div, temp, data) {
     if (temp) {
         let canvas = createcanvas()
 
@@ -87,7 +87,7 @@ function addTempGraph(div, temp) {
 
 
 
-function addPrecipGraph(div, precip) {
+function addPrecipGraph(div, precip, data) {
     if (precip) {
         let canvas = createcanvas() 
 
@@ -105,7 +105,7 @@ function addPrecipGraph(div, precip) {
 
 
 module.exports.addGraphs = function(div, data) {
-
+	
     //Avoid erroring
     if (!data) {
         return;
@@ -128,17 +128,17 @@ module.exports.addGraphs = function(div, data) {
 
 
     try {
-        addFlowGraph(div, cfs, height)
+        addFlowGraph(div, cfs, height, data)
     }
     catch(e){console.warn("Error creating flow graph: " + e)}
 
     try {
-        addTempGraph(div, temp)
+        addTempGraph(div, temp, data)
     }
     catch(e){console.warn("Error creating temperature graph: " + e)}
 
     try {
-        addPrecipGraph(div, precip)
+        addPrecipGraph(div, precip, data)
     }
     catch(e){console.warn("Error creating precipitation graph: " + e)}
 }

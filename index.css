@@ -195,7 +195,7 @@ Those include name,section,skill,quality, and flow info*/
 @media (prefers-color-scheme: dark) {
     html, body {
         background-color: #090920;
-        color: #cccccc;
+        color: #dddddd;
     }
     .riverbutton:nth-child(even) {
         background-color: #222222;
@@ -204,7 +204,7 @@ Those include name,section,skill,quality, and flow info*/
         background-color: #252525;
     }
     .riverbutton {
-        color:#cccccc;
+        color:#ffffff;
     }
 
     #topbar {

@@ -115,16 +115,18 @@ function fetchevent(event) {
         if (end === -1) {end = url.length}
         url = url.slice(0, end) //Eliminate Query Parameter
 
+		if (url.includes("docs.google.com")) {
+			return fromnetwork
+		}
+		
+		
         let fromcache = await caches.match(url)
-
-
+		
         if (!fromcache) {
             //No cache. All we can do is return network response
             let response = await fromnetwork
             //Avoid filling up cache with opaque responses
-            if (!url.includes("docs.google.com")) {
-                cache.put(url, response.clone())
-            }
+            cache.put(url, response.clone())
             return response
         }
         else {
