@@ -1,14 +1,4 @@
-//Name of cache to use
-const cachename = "rivers.run"
 
-
-
-
-
-
-
-
-//New Code
 
 const cacheName = "rivers.run"
 const waitOnFirstLoad = 2500 //Milliseconds to wait before fetching items on preload list. Helps prevent duplicate requests on first load.
@@ -31,22 +21,6 @@ const preloadList = [
     "resources/4Stars.png",
     "resources/5Stars.png"
 ]
-
-function fetchHandler(event) {
-
-}
-
-function convertURL(url) {
-    //Applies user filters to modify how the URL will be stored in cache
-    //Examples: Remote query parameters
-
-    //Relies on getURLInformation
-}
-
-function getURLInformation(url) {
-    //Applies user filters and defaults to determine how to handle a URL.
-    //Example: Cache? Duration to Cache? Perfer Cache? New Timeout? ext.
-}
 
 function rebaseURL(url) {
     //Fills in relative URLs using the serviceWorker scope
@@ -84,19 +58,7 @@ function activateHandler(event) {
 
 self.addEventListener("activate", activateHandler)
 
-//End of new code.
 
-
-
-
-
-
-
-
-
-
-
-//Old code below.
 
 
 
@@ -105,20 +67,20 @@ self.addEventListener("activate", activateHandler)
 const waitperiod = 2000
 
 
-function fetchevent(event) {
+function fetchHandler(event) {
     event.respondWith((async function(){
         let fromnetwork = fetch(event.request)
-        let cache = await caches.open(cachename)
+        let cache = await caches.open(cacheName)
 
         let url = event.request.url
-        let end = url.indexOf("?")
-        if (end === -1) {end = url.length}
-        url = url.slice(0, end) //Eliminate Query Parameter
 
 		if (url.includes("docs.google.com")) {
 			return fromnetwork
 		}
 		
+		if (url.includes("waterservices.usgs.gov")) {
+			url = url.slice(0,url.indexOf("?"))
+		}
 		
         let fromcache = await caches.match(url)
 		
@@ -134,23 +96,36 @@ function fetchevent(event) {
             //We have cached data
             return new Promise(function(resolve, reject){
 
+				let served = 0
+				
                 //Fetch from network and update cache
                 fromnetwork.then(function(response){
-                    console.log(url + " has been loaded from the network")
+					if (served) {
+						console.log("Updated cache for " + url)
+					}
+					else {
+                    	console.log(url + " has been loaded from the network")
+					}
+					served = 1
                     cache.put(url, response.clone())
-                    console.log(url + " has been put into cache")
                     resolve(response)
                 })
 
                 //If the fetch event fails (ex. offline), return cached immediately
                 fromnetwork.catch(function(e){
-                    console.log(url + " errored when fetching from network. Using cache")
+					if (!served) {
+						console.log(url + " errored with " + e + ". Used cache.")
+					}
+					served = 1
                     resolve(fromcache)
                 })
 
                     //If the network doesn't respond quickly enough, use cached data
                     setTimeout(function(){
-                        console.log(url + " took too long to load from network. Using cache")
+						if (!served) {
+                        	console.log(url + " took too long to load from network. Using cache")
+						}
+						served = 1
                         resolve(fromcache)
                     }, waitperiod)
                 })
@@ -158,4 +133,8 @@ function fetchevent(event) {
     }()))
 }
 
-self.addEventListener("fetch", fetchevent)
+self.addEventListener("fetch", fetchHandler)
+
+
+
+
