@@ -8,6 +8,11 @@ try {
 catch(e) {console.error(e)}
 
 
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js');
+    });
+}
 
 
 //Add the viewport meta tag if it does not exist.

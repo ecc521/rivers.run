@@ -24,14 +24,6 @@ Object.assign(window, require("./search.js"))
 window.usgsarray = {} 
 
 
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js');
-    });
-}
-
-
-
 //ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list. 
 window.ItemHolder = []
 riverarray.map(function(event, index) {
