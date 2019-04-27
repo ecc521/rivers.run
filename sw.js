@@ -36,7 +36,20 @@ function fetchHandler(event) {
 
 }
 
+function convertURL(url) {
+    //Applies user filters to modify how the URL will be stored in cache
+    //Examples: Remote query parameters
+
+    //Relies on getURLInformation
+}
+
+function getURLInformation(url) {
+    //Applies user filters and defaults to determine how to handle a URL.
+    //Example: Cache? Duration to Cache? Perfer Cache? New Timeout? ext.
+}
+
 function rebaseURL(url) {
+    //Fills in relative URLs using the serviceWorker scope
     return (new URL(url, registration.scope)).href
 }
 

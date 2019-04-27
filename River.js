@@ -10,7 +10,7 @@ function addClickHandler(button, locate) {
         if (river.expanded === 0) {
             river.expanded = 1
             var div = document.createElement("div")
-			
+
             div.innerHTML = river.writeup + "<br><br>"
 
             if (river.plat && river.plon) {
@@ -44,17 +44,47 @@ function addClickHandler(button, locate) {
             //USGS data may not have loaded yet
 			if (self.usgsarray && river.usgs) {
 				//Alert the user if the data is (at least 2 hours) old
-				let dataAge = calculateAge(river.usgs)
-				if (dataAge > 1000*60*60*2) {
-					let oldDataWarning = document.createElement("p")
+
+				let dataAge
+                try {
+                    dataAge = calculateAge(river.usgs)
+                }
+                catch(e) {
+                    console.error(e)
+                    dataAge = null
+                }
+                let maxAge = 1000*60*60*2
+                let oldDataWarning;
+				if (dataAge > maxAge) {
+					oldDataWarning = document.createElement("p")
 					oldDataWarning.style.backgroundColor = "yellow"
-					oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(dataAge/1000/60/60) +" hours old."
+					oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(dataAge/1000/60/60) +" hours old!"
+                    oldDataWarning.style.textAlign = "center"
+                    oldDataWarning.style.lineHeight = "2em"
+                    oldDataWarning.style.color = "black" //Make sure that in dark mode, the text is not white
 					div.appendChild(oldDataWarning)
-				}	
-				
-                addGraphs(div, self.usgsarray[river.usgs])
+				}
+
+                let data = self.usgsarray[river.usgs]
+                if (data) {
+                    let disclaimer = document.createElement("p")
+                    disclaimer.style.fontWeight = "bold"
+                    disclaimer.style.textAlign = "center"
+                    disclaimer.innerHTML = "Disclaimer: USGS Gauge data is provisional, and MIGHT be incorrect. Use at your own risk."
+                    div.appendChild(disclaimer)
+
+                    if (!(dataAge > maxAge)) {
+                        disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
+                    }
+                    else {
+                        disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
+                        oldDataWarning.style.marginBottom = "0.5em"
+
+                    }
+                    addGraphs(div, data)
+                }
 			}
-			
+
 
             div.style.padding = "6px"
             div.id = river.base + 2
@@ -123,7 +153,7 @@ function calculateDirection(usgsNumber) {
 
 function calculateAge(usgsNumber) {
 	//Returns millseconds old that USGS data is
-    let usgsData = usgsarray[usgsNumber]
+    let usgsData = window.usgsarray[usgsNumber]
     if (usgsData) {
         let data;
 
@@ -133,15 +163,14 @@ function calculateAge(usgsNumber) {
         else if (usgsData["00045"]) {data = usgsData["00045"].values}
 
         if (data) {
-            for (let i=data.length;i>stop;i--) {
+            for (let i=data.length;i>=0;i--) {
                 let item = data[i]
                 if (!item) {continue}
-                return Date.now() - Number(Date(item.dateTime))
+                return Date.now() - Number(new Date(item.dateTime))
             }
         }
-		return null;
     }
-    return; //If we got here, there is not enough USGS data.
+    return null; //If we got here, there is not enough USGS data.
 }
 
 
@@ -212,7 +241,7 @@ function calculateColor(river, options) {
     //related to their level. This would also help in determining if something is just barely
     //too low, and may come up with rain, or is truely too low.
 
-	
+
     if (flow <= values[0]) {
         //Too low
         river.running = 0
@@ -226,10 +255,10 @@ function calculateColor(river, options) {
         return "hsl(240,100%," + lightness + ")"
     }
     else {
-		
+
 		//Normal Flow lightness values
     	let lightness = (options && options.highlighted)? (window.darkMode? "35%": "65%"): (window.darkMode? "25%": "75%")
-	
+
 		//If we don't have some values, fill them in using logarithms
         //TODO: Do some analyzsis and figure out the best way to do these calculations
 
