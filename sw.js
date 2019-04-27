@@ -64,11 +64,13 @@ self.addEventListener("activate", activateHandler)
 
 
 //Milliseconds to wait for network response before using cache
-const waitperiod = 2000
+const defaultWaitPeriod = 2000
 
 
 function fetchHandler(event) {
     event.respondWith((async function(){
+		let waitperiod = defaultWaitPeriod
+		
         let fromnetwork = fetch(event.request)
         let cache = await caches.open(cacheName)
 
@@ -80,6 +82,7 @@ function fetchHandler(event) {
 		
 		if (url.includes("waterservices.usgs.gov")) {
 			url = url.slice(0,url.indexOf("?"))
+			waitperiod *= 1.5
 		}
 		
         let fromcache = await caches.match(url)
