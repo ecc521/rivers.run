@@ -59,6 +59,9 @@ function addClickHandler(button, locate) {
 					oldDataWarning = document.createElement("p")
 					oldDataWarning.style.backgroundColor = "yellow"
 					oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(dataAge/1000/60/60) +" hours old!"
+					if (navigator.onLine) {
+					
+					oldDataWarning.innerHTML += " (Try reloading)"}
                     oldDataWarning.style.textAlign = "center"
                     oldDataWarning.style.lineHeight = "2em"
                     oldDataWarning.style.color = "black" //Make sure that in dark mode, the text is not white
