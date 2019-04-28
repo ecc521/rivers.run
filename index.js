@@ -1,6 +1,26 @@
 'use strict';
 
+
+
 try {
+	window.loadNewUSGS = "Trying to Load Data"
+window.serviceWorkerRegistered = function(registration) {
+	navigator.serviceWorker.onmessage = function(event) {
+		let data = event.data
+		if (data.includes("Updated cache for ")) {
+			window.loadNewUSGS = "Reload to see latest data"
+		}
+		else if (data.includes("errored with")) {
+			window.loadNewUSGS = "Unable to load latest data"
+		}
+		else if (data.includes(" took too long to load from network")) {
+			window.loadNewUSGS = "Updating data in backgroud"
+		}
+		else if (data.includes("has been loaded from the network")) {
+			window.loadNewUSGS = "This is likely a glitch. You should be viewing the latest data."
+		}
+	}
+}
 require("./allPages.js")
 }
 catch(e) {console.error(e)}

@@ -1,4 +1,8 @@
-
+function messageAllClients(message) {
+return self.clients.matchAll().then(clients => {
+  clients.forEach(client => client.postMessage(message));
+})
+}
 
 const cacheName = "rivers.run"
 const waitOnFirstLoad = 2500 //Milliseconds to wait before fetching items on preload list. Helps prevent duplicate requests on first load.
@@ -105,10 +109,10 @@ function fetchHandler(event) {
                 //Fetch from network and update cache
                 fromnetwork.then(function(response){
 					if (served) {
-						console.log("Updated cache for " + url)
+						messageAllClients("Updated cache for " + url)
 					}
 					else {
-                    	console.log(url + " has been loaded from the network")
+                    	messageAllClients(url + " has been loaded from the network")
 					}
 					served = 1
                     cache.put(url, response.clone())
@@ -118,7 +122,7 @@ function fetchHandler(event) {
                 //If the fetch event fails (ex. offline), return cached immediately
                 fromnetwork.catch(function(e){
 					if (!served) {
-						console.log(url + " errored with " + e + ". Used cache.")
+						messageAllClients(url + " errored with " + e + ". Used cache.")
 					}
 					served = 1
                     resolve(fromcache)
@@ -127,7 +131,7 @@ function fetchHandler(event) {
                     //If the network doesn't respond quickly enough, use cached data
                     setTimeout(function(){
 						if (!served) {
-                        	console.log(url + " took too long to load from network. Using cache")
+                        	messageAllClients(url + " took too long to load from network. Using cache")
 						}
 						served = 1
                         resolve(fromcache)
