@@ -4,8 +4,10 @@
 
 try {
 	window.loadNewUSGS = "Trying to Load Data"
+	window.serviceWorkerMessages = []
 window.serviceWorkerRegistered = function(registration) {
 	navigator.serviceWorker.onmessage = function(event) {
+		window.serviceWorkerMessages.push(event.data)
 		let data = event.data
 		if (data.includes("Updated cache for ")) {
 			window.loadNewUSGS = "Reload to see latest data"
