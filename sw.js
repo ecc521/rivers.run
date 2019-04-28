@@ -75,7 +75,7 @@ const defaultWaitPeriod = 0
 function fetchHandler(event) {
     event.respondWith((async function(){
 		let waitperiod = defaultWaitPeriod
-		
+
         let fromnetwork = fetch(event.request)
         let cache = await caches.open(cacheName)
 
@@ -84,14 +84,13 @@ function fetchHandler(event) {
 		if (url.includes("docs.google.com")) {
 			return fromnetwork
 		}
-		
+
 		if (url.includes("waterservices.usgs.gov")) {
 			url = url.slice(0,url.indexOf("?"))
-			waitperiod = 3000
 		}
-		
+
         let fromcache = await caches.match(url)
-		
+
         if (!fromcache) {
             //No cache. All we can do is return network response
             let response = await fromnetwork
@@ -105,7 +104,7 @@ function fetchHandler(event) {
             return new Promise(function(resolve, reject){
 
 				let served = 0
-				
+
                 //Fetch from network and update cache
                 fromnetwork.then(function(response){
 					if (served) {
@@ -142,7 +141,3 @@ function fetchHandler(event) {
 }
 
 self.addEventListener("fetch", fetchHandler)
-
-
-
-
