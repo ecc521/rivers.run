@@ -136,6 +136,8 @@ function skillFilter(list, parameters) {
             delete list[item]
         }
     }	
+	
+	return list
 }
 
 
@@ -148,7 +150,8 @@ function skillFilter(list, parameters) {
 
 
 function ratingFilter(list, parameters) {
-	
+	console.error("Rating based filtering is not yet implemented")
+	return list
 }
 
 
@@ -254,19 +257,19 @@ function advancedSearch(list, query) {
 
 
         if (["name", "section", "writeup"].includes(property)) {
-            stringFilter(list, property, parameters)
+            list = stringFilter(list, property, parameters)
         }
         else if (property === "skill") {
-            skillFilter(list, parameters)
+            list = skillFilter(list, parameters)
         }
         else if (property === "rating") {
-            ratingFilter(list, parameters)
+            list = ratingFilter(list, parameters)
         }
         else if (property === "location") {
-            locationFilter(list, parameters)
+            list = locationFilter(list, parameters)
         }
         else if (property === "flow") {
-            flowFilter(list, parameters)
+            list = flowFilter(list, parameters)
         }
 		else if (property === "sort") {
 
@@ -274,13 +277,9 @@ function advancedSearch(list, query) {
         else {
             alert("Unable to search based on " + property)
         }
-
-
-
-
-
     }
 
+	list = list.filter(item => item !== undefined)
     return list
 }
 
