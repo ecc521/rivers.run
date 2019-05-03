@@ -110,7 +110,7 @@ function runningSort(list, reverse) {
     if (knownState.length === 0) {
         alert("Flow data has not yet loaded.")
         return list
-    }    
+    }
 
     knownState = knownState.concat(hasGauge)
     knownState = knownState.concat(noData)

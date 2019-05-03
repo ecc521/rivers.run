@@ -144,6 +144,24 @@
                 </select>
                 <br>
 
+				Flow from 
+                <select id="flowQuery1">
+                    <option value="0" selected>Too Low</option>
+                    <option value="1">Low Flow</option>
+                    <option value="2">Medium Flow</option>
+                    <option value="3">High Flow</option>
+                    <option value="4">Too High</option>
+				</select>
+				to
+                <select id="flowQuery2">
+                    <option value="0">Too Low</option>
+                    <option value="1">Low Flow</option>
+                    <option value="2">Medium Flow</option>
+                    <option value="3">High Flow</option>
+                    <option value="4" selected>Too High</option>
+				</select>
+                <input id="includeUnknownFlow" type="checkbox">Include rivers without flow information<br>
+				
 
                 Writeup 
                 <select id="writeupType">
@@ -160,7 +178,7 @@
                 <input id="latitudeQuery" type="text" placeholder="Degrees Latitude"> 
                 <input id="longitudeQuery" type="text" placeholder="Degrees Longitude"> 
                 <br>
-                <input id="includeUnknown" type="checkbox">Include rivers without GPS coordinates<br>
+                <input id="includeUnknownLocation" type="checkbox">Include rivers without GPS coordinates<br>
                 <button id="calculateCoordinates">Calculate my Location</button>
                 <p id="locationProgress"></p>
                 <br>

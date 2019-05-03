@@ -129,10 +129,7 @@ function skillFilter(list, parameters) {
 
         if (min <= skill && skill <= max) {
             passes = true
-            console.log(min, skill, max)
         }
-
-
 
         if (!passes) {
             //Remove the item if it fails
@@ -151,7 +148,7 @@ function skillFilter(list, parameters) {
 
 
 function ratingFilter(list, parameters) {
-
+	
 }
 
 
@@ -193,6 +190,30 @@ function locationFilter(list, parameters) {
 
 }
 
+
+function flowFilter(list, parameters) {
+	let query = parameters.query
+	let min = query[0]
+	let max = query[1]
+	
+	console.log(parameters)
+	
+	for (let item in list) {
+		let river = list[item]
+		
+		if (river.running === undefined) {
+			if (!parameters.includeUnknown) {
+				delete list[item]
+			}
+		}
+		else if (river.running < min || river.running > max) {
+			delete list[item]
+		}
+	}
+	return list
+}
+
+
 //Query is in form of:
 //{
 //  name: {
@@ -215,6 +236,7 @@ function locationFilter(list, parameters) {
 //	includeUnknown: false //Do not eliminate if location not known 
 //}
 //}
+
 
 
 
@@ -243,7 +265,10 @@ function advancedSearch(list, query) {
         else if (property === "location") {
             locationFilter(list, parameters)
         }
-        else if (property === "sort") {
+        else if (property === "flow") {
+            flowFilter(list, parameters)
+        }
+		else if (property === "sort") {
 
         }
         else {

@@ -173,7 +173,7 @@ else if (distance > 0 && lat && lon) {
 					lat,
 					lon,
 					distance,
-					includeUnknown: document.getElementById("includeUnknown").checked
+					includeUnknown: document.getElementById("includeUnknownLocation").checked
 				}
 			}
 	
@@ -185,6 +185,15 @@ else if (distance > 0 && lat && lon) {
             Number(document.getElementById("skillQuery2").value)
         ]
     }
+	
+	parameters.flow = {
+		type: "from",
+		query: [
+            Number(document.getElementById("flowQuery1").value),
+            Number(document.getElementById("flowQuery2").value)
+		],
+		includeUnknown: document.getElementById("includeUnknownFlow").checked
+	}
 	
 	
     return parameters
