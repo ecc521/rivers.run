@@ -160,7 +160,7 @@
                     <option value="3">High Flow</option>
                     <option value="4" selected>Too High</option>
 				</select>
-                <input id="includeUnknownFlow" type="checkbox">Include rivers without flow information<br>
+                <input id="includeUnknownFlow" type="checkbox" checked>Include rivers without flow information<br>
 				
 
                 Writeup 
@@ -186,6 +186,9 @@
 
 
                 <button id="performadvancedsearch">Search</button>
+				
+				
+				<p>Warning: Searching based on flow will either return no results or all rivers if the search is run before flow information loads.</p>
                 <p id="searchlink"></p>
             </div>
         </div>	

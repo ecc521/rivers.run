@@ -1,3 +1,7 @@
+
+
+
+
 'use strict';
 
 
@@ -258,7 +262,7 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 	let root = window.location.href
 	root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
 	let link = encodeURI(root + "#" + JSON.stringify(query))
-	document.getElementById("searchlink").innerHTML = "Link to this search: <a href=\"" + link + "\">" + link + "</a>"
+	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
 
 	NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
 })
@@ -277,7 +281,7 @@ if (window.location.hash.length > 0) {
 	try {
 		//Do an advanced search if the query if an advanced search
 		let query = JSON.parse(search)
-
+		
 		//TODO: Set the advanced search areas to the query.
 
 		NewList(query, "advanced")
