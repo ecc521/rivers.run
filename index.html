@@ -11,7 +11,7 @@
               >
         <!-- Curently the img-src can be bypassed with a Data URL. This should be changed so that cannot be done-->
 
-        <meta name="referrer" content="no-referrer">
+        <meta name="referrer" content="strict-origin-when-cross-origin">
 
 
         <!-- USGS Gauges Preconnect -->
@@ -65,13 +65,13 @@
         <link rel="apple-touch-startup-image" href="resources/icons/512x512-Water-Drop.png">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-        <!-- End of Images -->	    
+        <!-- End of Images -->
 
 
         <title>Rivers.run - Paddling and River Info</title>
     </head>
 
-    <body>    
+    <body>
 
         <link rel="stylesheet" type="text/css" href="index.css">
         <script src="riverarray.js"></script>
@@ -86,11 +86,11 @@
             <img id="searchimg" alt="Search Icon" src="resources/SearchIcon.png">
             <input id="searchbox" type="text" aria-label="Type in the box to search for a river" placeholder="Search..">
             <button id="advancedsearch">Open Advanced Search</button>
-        </div>  
-        
+        </div>
+
         <canvas id="legend"></canvas>
 
-        <div id="Rivers"></div>    
+        <div id="Rivers"></div>
 
 
 
@@ -102,7 +102,7 @@
                 <p>Empty Search Queries will be Ignored</p>
 
 
-                Name 
+                Name
                 <select id="nameType">
                     <option value="contains">Contains</option>
                     <option value="matches">Matches</option>
@@ -111,7 +111,7 @@
                 <br>
 
 
-                Section 
+                Section
                 <select id="sectionType">
                     <option value="contains">Contains</option>
                     <option value="matches">Matches</option>
@@ -119,7 +119,7 @@
                 <input id="sectionQuery" type="text" placeholder="Search Query">
                 <br>
 
-                Skill 
+                Skill
                 <!-- Consider reusing skillToNumber code to avoid excessive duplication-->
                 <select id="skillQuery1">
                     <option value="1">Flat Water</option>
@@ -144,7 +144,7 @@
                 </select>
                 <br>
 
-				Flow from 
+				Flow from
                 <select id="flowQuery1">
                     <option value="0" selected>Too Low</option>
                     <option value="1">Low Flow</option>
@@ -161,9 +161,9 @@
                     <option value="4" selected>Too High</option>
 				</select>
                 <input id="includeUnknownFlow" type="checkbox">Include rivers without flow information<br>
-				
 
-                Writeup 
+
+                Writeup
                 <select id="writeupType">
                     <option value="contains">Contains</option>
                     <option value="matches">Matches</option>
@@ -172,11 +172,11 @@
                 <br>
 
 
-                Located within 
-                <input id="distanceQuery" type="number" placeholder="Distance in Miles"> 
+                Located within
+                <input id="distanceQuery" type="number" placeholder="Distance in Miles">
                 miles of
-                <input id="latitudeQuery" type="text" placeholder="Degrees Latitude"> 
-                <input id="longitudeQuery" type="text" placeholder="Degrees Longitude"> 
+                <input id="latitudeQuery" type="text" placeholder="Degrees Latitude">
+                <input id="longitudeQuery" type="text" placeholder="Degrees Longitude">
                 <br>
                 <input id="includeUnknownLocation" type="checkbox">Include rivers without GPS coordinates<br>
                 <button id="calculateCoordinates">Calculate my Location</button>
@@ -188,13 +188,13 @@
                 <button id="performadvancedsearch">Search</button>
                 <p id="searchlink"></p>
             </div>
-        </div>	
+        </div>
 
 
 
 
 
-        <script src="packages/index.js"></script> 
+        <script src="packages/index.js"></script>
 
-    </body>  
+    </body>
 </html>
