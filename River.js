@@ -398,19 +398,6 @@ module.exports.River = function(locate, event) {
             button.addEventListener("mouseover", function(){this.style.backgroundColor = this.focusedColor})
             button.addEventListener("mouseout", function(){this.style.backgroundColor = this.normalColor})
 
-
-            //Make content available to Googlebot for indexing
-            if (navigator.userAgent.toLowerCase().indexOf("google") !== -1) {
-                try {
-                    setTimeout(function(){button.dispatchEvent(new Event("click"))}, 100)
-                }
-                catch(e) {}
-            }
-            //The code directly above this is used to allow Googlebot to index content.
-            //Shall it result in an SEO hit, or shall Googlebot be improved to handle content inside of JavaScript,
-            //It can safely be removed.
-
-
             //Store button for reuse later
             this.finished = button
 

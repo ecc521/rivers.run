@@ -1,4 +1,4 @@
-self.usgsarray = {} 
+self.usgsarray = {}
 
 let loadUSGS = async function() {
 
@@ -15,7 +15,7 @@ let loadUSGS = async function() {
     let usgsdata;
     if (window.fetch) {
         let response = await fetch(url)
-        usgsdata = await response.json()    
+        usgsdata = await response.json()
     }
     else {
         //For browsers that don't support fetch
@@ -42,7 +42,7 @@ let loadUSGS = async function() {
 
         let sitecode = event.sourceInfo.siteCode[0].value
         //See if the site is already in the array.
-        //If the site code is not in the array, add it. 
+        //If the site code is not in the array, add it.
         if (!usgsarray[sitecode]) {
             let obj3 = {}
             obj3.name = event.sourceInfo.siteName
@@ -97,11 +97,11 @@ let loadUSGS = async function() {
                 item.flow = cfs[cfs.length - 1].value + " cfs"
             }
             else if (latestFeet) {
-                item.flow = feet[feet.length - 1].value + " ft" 
+                item.flow = feet[feet.length - 1].value + " ft"
             }
 
             //item.create(true) will force regeneration of the button
-            //Replace the current button so that the flow info shows 
+            //Replace the current button so that the flow info shows
             let elem = document.getElementById(item.base + "1")
             let expanded = item.expanded
             console.log(expanded)
@@ -111,10 +111,7 @@ let loadUSGS = async function() {
                 //If the river was expanded before, keep it expanded
                 if (expanded) {
                     replacement.dispatchEvent(new Event("click"))
-                    //For some reason, the automatically opened buttons and the manually opened buttons behave different.
-                    if (navigator.userAgent.toLowerCase().indexOf("google") === -1) {
-                        replacement.dispatchEvent(new Event("click"))
-                    }
+                    replacement.dispatchEvent(new Event("click"))
                 }
             }
             catch (e) {} //The list must have been sorted - the node was not currently in list
