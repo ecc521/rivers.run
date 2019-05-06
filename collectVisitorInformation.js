@@ -18,7 +18,7 @@ let data = {
 
 //URL to submit the data to
 let formURL = "https://docs.google.com/forms/d/e/1FAIpQLSfyTHeq0fp6-iofQacxfXcsSGjYymLJbLOPmlBBKBtttWvtcA/formResponse?ifq&entry.1198287313=" + JSON.stringify(data) + "&submit=Submit"
-
+formURL = encodeURI(formURL)
 
 function loadURL() {
 	//Return true if the request is successful. false otherwise
