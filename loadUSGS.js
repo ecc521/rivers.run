@@ -2,6 +2,8 @@ self.usgsarray = {}
 
 let loadUSGS = async function() {
 
+	let timeToRequest = 1000*86400 //Milliseconds of time to request
+	
     var sites = []
     for (let i=0;i<riverarray.length;i++) {
         let val = riverarray[i].usgs
@@ -10,7 +12,7 @@ let loadUSGS = async function() {
             sites.push(val)
         }
     }
-    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-1000*86400).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
+    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
 
     let usgsdata;
     if (window.fetch) {
@@ -28,6 +30,10 @@ let loadUSGS = async function() {
         usgsdata = JSON.parse(response)
     }
 
+	
+	window.usgsDataAge = Date.now() - (new Date(usgsdata.value.queryInfo.note[3].value).getTime() + timeToRequest) //TODO: Iterate through note and find requestDT
+	
+	
     //Iterate through all known conditions
     usgsdata.value.timeSeries.forEach(function(event){
         let obj2 = {}

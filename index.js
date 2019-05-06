@@ -14,6 +14,7 @@ try {
 		}
 	}
 	window.serviceWorkerMessages = []
+	//window.serviceWorkerRegistered will be called by allPages.js
 	window.serviceWorkerRegistered = function(registration) {
 		navigator.serviceWorker.onmessage = function(event) {
 			window.serviceWorkerMessages.push(event.data)
@@ -38,7 +39,6 @@ try {
 			window.updateLoadingStatus()
 		}
 	}
-	require("./allPages.js")
 }
 catch(e) {console.error(e)}
 

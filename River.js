@@ -60,7 +60,6 @@ function addClickHandler(button, locate) {
 					oldDataWarning.style.backgroundColor = "yellow"
 					oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(dataAge/1000/60/60) +" hours old!"
 
-                    oldDataWarning.className = "oldDataWarning"
 					oldDataWarning.innerHTML += " (" + window.loadNewUSGS + ") "
                     oldDataWarning.style.textAlign = "center"
                     oldDataWarning.style.lineHeight = "2em"
@@ -424,7 +423,6 @@ module.exports.River = function(locate, event) {
         }
 		
 		this.updateExpansion = function() {
-			addClickHandler(this.index, this.finished)
 			if (this.expanded) {
             	let elem = document.getElementById(this.base + "1")
                 elem.dispatchEvent(new Event("click"))

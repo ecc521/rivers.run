@@ -14,10 +14,34 @@ if ('serviceWorker' in navigator) {
 		registration.then(() => {
 			if (window.serviceWorkerRegistered) {
 				window.serviceWorkerRegistered(registration)
-			}
+			}	
 		})
     });
 }
+
+
+
+//Add the favicon if it does not exist.
+try {
+    ;(function addFavicon() {
+        let tags = document.head.querySelectorAll("link")
+        for (let i=0;i<tags.length;i++) {
+            if (tags[i].rel === "shortcut icon") {return} //There is already a favicon
+        }
+		let sizes = [16,24,32,64,96,160,196]
+		sizes.forEach((size) => {
+			let favicon = document.createElement("link")
+			favicon.rel = "shortcut icon"
+			favicon.type = "image/png"
+			favicon.href = `resources/icons/${size}x${size}-Water-Drop.png`
+			document.head.appendChild(favicon)
+		})
+    })()
+}
+catch(e) {
+    console.error(e)
+}
+
 
 
 //Add the viewport meta tag if it does not exist.
