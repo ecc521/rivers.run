@@ -121,19 +121,20 @@ function fetchHandler(event) {
                 //If the fetch event fails (ex. offline), return cached immediately
                 fromnetwork.catch(function(e){
 					if (!served) {
-						messageAllClients(url + " errored with " + e + ". Used cache.")
+						messageAllClients(url + " errored. Used cache.")
+						console.error(e)
+						served = 1
+						resolve(fromcache)
 					}
-					served = 1
-                    resolve(fromcache)
                 })
 
                     //If the network doesn't respond quickly enough, use cached data
                     setTimeout(function(){
 						if (!served) {
                         	messageAllClients(url + " took too long to load from network. Using cache")
+							served = 1
+							resolve(fromcache)
 						}
-						served = 1
-                        resolve(fromcache)
                     }, waitperiod)
                 })
             }

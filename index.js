@@ -8,18 +8,28 @@
 
 try {
 	window.loadNewUSGS = "Trying to Load Data"
+	window.updateLoadingStatus = function() {
+			//Update any rivers that have the old value
+			let elements = document.querySelectorAll(".oldDataWarning")
+			for (let i=0;i<elements.length;i++) {
+				let element = elements[i]
+				element.innerHTML = element.innerHTML.split(window.oldLoadUSGS).join(window.loadNewUSGS)
+			}
+	}
 	window.serviceWorkerMessages = []
 	window.serviceWorkerRegistered = function(registration) {
 		navigator.serviceWorker.onmessage = function(event) {
 			window.serviceWorkerMessages.push(event.data)
 			let data = event.data
 
-			let oldValue = window.loadNewUSGS
+			if (!data.includes("waterservices.usgs.gov")) {return;}
+			
+			window.oldLoadUSGS = window.loadNewUSGS
 
 			if (data.includes("Updated cache for ")) {
 				window.loadNewUSGS = "Reload to see latest data"
 			}
-			else if (data.includes("errored with")) {
+			else if (data.includes("errored. Used cache.")) {
 				window.loadNewUSGS = "Unable to load latest data"
 			}
 			else if (data.includes(" took too long to load from network")) {
@@ -28,14 +38,7 @@ try {
 			else if (data.includes("has been loaded from the network")) {
 				window.loadNewUSGS = "This is likely a glitch. You should be viewing the latest data."
 			}
-
-			//Update any rivers that have the old value
-			let elements = document.querySelectorAll(".oldDataWarning")
-			for (let i=0;i<elements.length;i++) {
-				let element = elements[i]
-				element.innerHTML = element.innerHTML.split(oldValue).join(window.loadNewUSGS)
-			}
-
+			window.updateLoadingStatus()
 		}
 	}
 	require("./allPages.js")

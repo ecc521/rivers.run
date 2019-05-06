@@ -61,10 +61,22 @@ function addClickHandler(button, locate) {
 					oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(dataAge/1000/60/60) +" hours old!"
 
                     oldDataWarning.className = "oldDataWarning"
-					oldDataWarning.innerHTML += " (" + window.loadNewUSGS + ")"
+					oldDataWarning.innerHTML += " (" + window.loadNewUSGS + ") "
                     oldDataWarning.style.textAlign = "center"
                     oldDataWarning.style.lineHeight = "2em"
                     oldDataWarning.style.color = "black" //Make sure that in dark mode, the text is not white
+					
+					
+					let reloadButton = document.createElement("button")
+					reloadButton.addEventListener("click", function() {
+						window.oldLoadUSGS = window.loadNewUSGS
+						window.loadNewUSGS = "Trying to Load Data"
+						require("./loadUSGS.js").loadUSGS()
+						window.updateLoadingStatus()
+					})
+					reloadButton.innerHTML = "Try Again"
+					oldDataWarning.appendChild(reloadButton)
+					
 					div.appendChild(oldDataWarning)
 				}
 
