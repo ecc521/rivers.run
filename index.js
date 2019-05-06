@@ -8,11 +8,6 @@
 
 try {
 	window.loadNewUSGS = "Trying to Load Data"
-	window.updateLoadingStatus = function() {
-		for (let i=0;i<ItemHolder.length;i++) {
-			ItemHolder[i].updateExpansion()
-		}
-	}
 	window.serviceWorkerMessages = []
 	//window.serviceWorkerRegistered will be called by allPages.js
 	window.serviceWorkerRegistered = function(registration) {
@@ -25,7 +20,7 @@ try {
 			window.oldLoadUSGS = window.loadNewUSGS
 
 			if (data.includes("Updated cache for ")) {
-				window.loadNewUSGS = "Reload to see latest data"
+				require("./loadUSGS.js").loadUSGS() //Update the information
 			}
 			else if (data.includes("errored. Used cache.")) {
 				window.loadNewUSGS = "Unable to load latest data"
@@ -36,7 +31,7 @@ try {
 			else if (data.includes("has been loaded from the network")) {
 				window.loadNewUSGS = "This is likely a glitch. You should be viewing the latest data."
 			}
-			window.updateLoadingStatus()
+			window.updateOldDataWarning()
 		}
 	}
 }

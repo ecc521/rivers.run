@@ -30,6 +30,12 @@ html, body {
     }
 }
 
+.oldDataWarning, #topOldDataWarning {
+	background-color:yellow;
+	text-align:center;
+	line-height:2em;
+	color:black; /*Make sure the text is not white in dark mode*/
+} 
 
 .searchcontain {
     margin-bottom:18px;

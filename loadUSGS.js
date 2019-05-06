@@ -1,6 +1,47 @@
 self.usgsarray = {}
 
+window.updateOldDataWarning = function() {
+	
+		//No reason to make an old data warning when data is new (within 1 hour)
+		if (window.usgsDataAge < 1000*60*60 || !window.usgsDataAge) {
+			return;
+		}
+	
+		let toDelete = document.getElementById("topOldDataWarning")
+		if (toDelete) {toDelete.remove()}
+	
+		let oldDataWarning = document.createElement("p")
+		oldDataWarning.id = "topOldDataWarning"
+		
+		oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(window.usgsDataAge/1000/60/60) + " hours old!"
+		oldDataWarning.innerHTML += "(" + window.loadNewUSGS + ") "
+		
+					let reloadButton = document.createElement("button")
+
+						reloadButton.addEventListener("click", function() {
+							window.loadNewUSGS = "Trying to Load Data"
+							require("./loadUSGS.js").loadUSGS()
+							window.updateLoadingStatus()
+						})
+						reloadButton.innerHTML = "Try Again"
+					
+
+					oldDataWarning.appendChild(reloadButton)
+		
+		
+		let legend = document.getElementById("legend")
+		legend.parentNode.insertBefore(oldDataWarning, legend)
+}
+
+
+
+
 let loadUSGS = async function() {
+	
+	//Gaurd against infinite recursion. Ignores calls when data is new. (within 1 hour)
+	if (window.usgsDataAge < 1000*60*60) {
+		return;
+	}
 
 	let timeToRequest = 1000*86400 //Milliseconds of time to request
 	
@@ -31,7 +72,8 @@ let loadUSGS = async function() {
     }
 
 	
-	window.usgsDataAge = Date.now() - (new Date(usgsdata.value.queryInfo.note[3].value).getTime() + timeToRequest) //TODO: Iterate through note and find requestDT
+	window.usgsDataAge = Date.now() - new Date(usgsdata.value.queryInfo.note[3].value).getTime() //TODO: Iterate through note and find requestDT
+	window.updateOldDataWarning()
 	
 	
     //Iterate through all known conditions
