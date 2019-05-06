@@ -53,7 +53,7 @@ function addClickHandler(button, locate) {
                     console.error(e)
                     dataAge = null
                 }
-                let maxAge = 1000*60*60*2
+                let maxAge = 1000*60*60*2				
                 let oldDataWarning;
 				if (dataAge > maxAge) {
 					oldDataWarning = document.createElement("p")
@@ -66,15 +66,23 @@ function addClickHandler(button, locate) {
                     oldDataWarning.style.lineHeight = "2em"
                     oldDataWarning.style.color = "black" //Make sure that in dark mode, the text is not white
 					
-					
 					let reloadButton = document.createElement("button")
-					reloadButton.addEventListener("click", function() {
-						window.oldLoadUSGS = window.loadNewUSGS
-						window.loadNewUSGS = "Trying to Load Data"
-						require("./loadUSGS.js").loadUSGS()
-						window.updateLoadingStatus()
-					})
-					reloadButton.innerHTML = "Try Again"
+					if (window.loadNewUSGS = "Reload to see latest data") {
+						reloadButton.addEventListener("click", function() {
+							window.location.reload() //If we set window.location.reload as the event listener, Chrome and Safari error.
+						})
+						reloadButton.innerHTML = "Reload"
+					}
+					else {
+						reloadButton.addEventListener("click", function() {
+							window.loadNewUSGS = "Trying to Load Data"
+							require("./loadUSGS.js").loadUSGS()
+							window.updateLoadingStatus()
+						})
+						reloadButton.innerHTML = "Try Again"
+					}
+					
+
 					oldDataWarning.appendChild(reloadButton)
 					
 					div.appendChild(oldDataWarning)
@@ -414,6 +422,15 @@ module.exports.River = function(locate, event) {
             this.finished = button
 
         }
+		
+		this.updateExpansion = function() {
+			addClickHandler(this.index, this.finished)
+			if (this.expanded) {
+            	let elem = document.getElementById(this.base + "1")
+                elem.dispatchEvent(new Event("click"))
+                elem.dispatchEvent(new Event("click"))
+			}
+		}
 
         this.finished.style.backgroundColor = this.finished.normalColor
 

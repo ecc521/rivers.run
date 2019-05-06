@@ -9,12 +9,9 @@
 try {
 	window.loadNewUSGS = "Trying to Load Data"
 	window.updateLoadingStatus = function() {
-			//Update any rivers that have the old value
-			let elements = document.querySelectorAll(".oldDataWarning")
-			for (let i=0;i<elements.length;i++) {
-				let element = elements[i]
-				element.innerHTML = element.innerHTML.split(window.oldLoadUSGS).join(window.loadNewUSGS)
-			}
+		for (let i=0;i<ItemHolder.length;i++) {
+			ItemHolder[i].updateExpansion()
+		}
 	}
 	window.serviceWorkerMessages = []
 	window.serviceWorkerRegistered = function(registration) {
