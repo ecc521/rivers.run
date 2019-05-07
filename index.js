@@ -10,7 +10,7 @@ try {
 	window.loadNewUSGS = "Trying to Load Data"
 	window.serviceWorkerMessages = []
 	//window.serviceWorkerRegistered will be called by allPages.js
-	window.serviceWorkerRegistered = function(registration) {
+	navigator.serviceWorker.ready.then(function(registration) {
 		navigator.serviceWorker.onmessage = function(event) {
 			window.serviceWorkerMessages.push(event.data)
 			let data = event.data
@@ -33,7 +33,7 @@ try {
 			}
 			window.updateOldDataWarning()
 		}
-	}
+	})
 }
 catch(e) {console.error(e)}
 

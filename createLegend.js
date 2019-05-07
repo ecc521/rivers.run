@@ -108,9 +108,6 @@ function updateLegend() {
 
     canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)
 
-    canvas.style.backgroundColor = window.getComputedStyle(document.body).getPropertyValue("background-color")
-
-
     let fontSize = parseFloat(window.getComputedStyle(document.getElementById("Rivers").firstChild).getPropertyValue("font-size"))
 
     let height;
