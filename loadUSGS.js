@@ -2,13 +2,13 @@ self.usgsarray = {}
 
 window.updateOldDataWarning = function() {
 	
+		let toDelete = document.getElementById("topOldDataWarning")
+		if (toDelete) {toDelete.remove()}
+	
 		//No reason to make an old data warning when data is new (within 1 hour)
 		if (window.usgsDataAge < 1000*60*60 || !window.usgsDataAge) {
 			return;
 		}
-	
-		let toDelete = document.getElementById("topOldDataWarning")
-		if (toDelete) {toDelete.remove()}
 	
 		let oldDataWarning = document.createElement("p")
 		oldDataWarning.id = "topOldDataWarning"
