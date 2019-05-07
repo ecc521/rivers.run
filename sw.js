@@ -126,10 +126,10 @@ function fetchHandler(event) {
 					served = 1
                     cache.put(url, response.clone())
 					if (served) {
-						messageAllClients("Updated cache for " + url)
 						if (url.includes("waterservices.usgs.gov")) {
 							usgsDataUpdated = Date.now()
 						}
+						messageAllClients("Updated cache for " + url)
 					}
 					else {
                     	messageAllClients(url + " has been loaded from the network")
