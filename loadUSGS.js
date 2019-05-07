@@ -13,7 +13,7 @@ window.updateOldDataWarning = function() {
 		let oldDataWarning = document.createElement("p")
 		oldDataWarning.id = "topOldDataWarning"
 		
-		oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(window.usgsDataAge/1000/60/60) + " hours old!"
+		oldDataWarning.innerHTML = "All river data is more than " + Math.floor(window.usgsDataAge/1000/60/60) + " hours old! "
 		oldDataWarning.innerHTML += "(" + window.loadNewUSGS + ") "
 		
 					let reloadButton = document.createElement("button")
@@ -21,7 +21,7 @@ window.updateOldDataWarning = function() {
 						reloadButton.addEventListener("click", function() {
 							window.loadNewUSGS = "Trying to Load Data"
 							require("./loadUSGS.js").loadUSGS()
-							window.updateLoadingStatus()
+							window.updateOldDataWarning()
 						})
 						reloadButton.innerHTML = "Try Again"
 					

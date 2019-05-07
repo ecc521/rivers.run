@@ -19,10 +19,11 @@ try {
 			
 			window.oldLoadUSGS = window.loadNewUSGS
 
-			if (data.includes("Updated cache for ")) {
+			if (data.includes("Updated cache for")) {
+				console.log("Updating")
 				require("./loadUSGS.js").loadUSGS() //Update the information
 			}
-			else if (data.includes("errored. Used cache.")) {
+			else if (data.includes("errored. Using cache")) {
 				window.loadNewUSGS = "Unable to load latest data"
 			}
 			else if (data.includes(" took too long to load from network")) {

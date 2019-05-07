@@ -112,8 +112,19 @@ function fetchHandler(event) {
 
 				let served = 0
 
-                //Fetch from network and update cache
+                //If the fetch event fails (ex. offline), return cached immediately
+                fromnetwork.catch(function(e){
+					messageAllClients(url + " errored. Using cache.")
+					if (!served) {
+						served = 1
+						resolve(fromcache)
+					}
+                })
+
+				//Fetch from network and update cache
                 fromnetwork.then(function(response){
+					served = 1
+                    cache.put(url, response.clone())
 					if (served) {
 						messageAllClients("Updated cache for " + url)
 						if (url.includes("waterservices.usgs.gov")) {
@@ -123,26 +134,15 @@ function fetchHandler(event) {
 					else {
                     	messageAllClients(url + " has been loaded from the network")
 					}
-					served = 1
-                    cache.put(url, response.clone())
-                    resolve(response)
+					resolve(response)
                 })
-
-                //If the fetch event fails (ex. offline), return cached immediately
-                fromnetwork.catch(function(e){
-					if (!served) {
-						messageAllClients(url + " errored. Used cache.")
-						console.error(e)
-						served = 1
-						resolve(fromcache)
-					}
-                })
-
+				
+				
                     //If the network doesn't respond quickly enough, use cached data
                     setTimeout(function(){
 						if (!served) {
-                        	messageAllClients(url + " took too long to load from network. Using cache")
 							served = 1
+                        	messageAllClients(url + " took too long to load from network. Using cache")
 							resolve(fromcache)
 						}
                     }, waitperiod)
