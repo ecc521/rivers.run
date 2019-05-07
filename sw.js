@@ -49,7 +49,7 @@ function activateHandler(event) {
             let request = requests[index]
             try {
                 let response = await request
-                cache.put(response.url, response)
+                await cache.put(response.url, response)
             }
             catch(e) {
                 console.error(e)
@@ -102,12 +102,12 @@ function fetchHandler(event) {
         if (!fromcache) {
             //No cache. All we can do is return network response
             let response = await fromnetwork
-            cache.put(url, response.clone())
+            await cache.put(url, response.clone())
             return response
         }
         else {
 
-            //We have cached data
+            //We have cached data			
             return new Promise(function(resolve, reject){
 
 				let served = 0
@@ -123,18 +123,20 @@ function fetchHandler(event) {
 
 				//Fetch from network and update cache
                 fromnetwork.then(function(response){
+					let otherServed = served
 					served = 1
-                    cache.put(url, response.clone())
-					if (served) {
-						if (url.includes("waterservices.usgs.gov")) {
-							usgsDataUpdated = Date.now()
+                    cache.put(url, response.clone()).then(() => {
+						if (otherServed) {
+							if (url.includes("waterservices.usgs.gov")) {
+								usgsDataUpdated = Date.now()
+							}
+							messageAllClients("Updated cache for " + url)
 						}
-						messageAllClients("Updated cache for " + url)
-					}
-					else {
-                    	messageAllClients(url + " has been loaded from the network")
-					}
-					resolve(response)
+						else {
+							messageAllClients(url + " has been loaded from the network")
+						}
+						resolve(response)
+					})
                 })
 				
 				

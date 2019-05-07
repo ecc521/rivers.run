@@ -4,7 +4,6 @@
 
 'use strict';
 
-let loadUSGS = require("./loadUSGS.js").loadUSGS
 
 try {
 	window.loadNewUSGS = "Trying to Load Data"
@@ -21,7 +20,7 @@ try {
 
 			if (data.includes("Updated cache for")) {
 				console.log("Updating")
-				loadUSGS() //Update the information
+				require("./loadUSGS.js").loadUSGS() //Update the information
 			}
 			else if (data.includes("errored. Using cache")) {
 				window.loadNewUSGS = "Unable to load latest data"
@@ -66,7 +65,7 @@ riverarray.map(function(event, index) {
 
 //Fetch data from USGS
 //ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise window.usgsarray is undefined)
-loadUSGS()
+require("./loadUSGS.js").loadUSGS()
 
 
 var oldresult;

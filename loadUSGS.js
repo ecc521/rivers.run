@@ -21,7 +21,6 @@ window.updateOldDataWarning = function() {
 						reloadButton.addEventListener("click", function() {
 							window.loadNewUSGS = "Trying to Load Data"
 							require("./loadUSGS.js").loadUSGS()
-							window.updateOldDataWarning()
 						})
 						reloadButton.innerHTML = "Try Again"
 					
