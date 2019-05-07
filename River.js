@@ -243,19 +243,20 @@ function calculateColor(river, options) {
     if (flow <= values[0]) {
         //Too low
         river.running = 0
-	    let lightness = (options && options.highlighted)? (window.darkMode? "35%": "60%"):  window.darkMode? "30%": "70%"
+	    let lightness = (options && options.highlighted)? (window.darkMode? "28%": "63%"):  window.darkMode? "23%": "67%"
         return "hsl(0,100%," + lightness + ")"
     }
     else if (flow >= values[4]) {0
         //Too high
         river.running = 4
-    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "65%"):  window.darkMode? "20%": "70%"
+    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "67%"):  window.darkMode? "20%": "69%"
         return "hsl(240,100%," + lightness + ")"
     }
     else {
 
 		//Normal Flow lightness values
-    	let lightness = (options && options.highlighted)? (window.darkMode? "35%": "65%"): (window.darkMode? "25%": "75%")
+		//Tough to see a difference when highlighted amount the more middle values in light mode.
+    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "65%"): window.darkMode? "25%": "70%"
 
 		//If we don't have some values, fill them in using logarithms
         //TODO: Do some analyzsis and figure out the best way to do these calculations
@@ -296,7 +297,7 @@ function calculateColor(river, options) {
         }
         else {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
-        }
+        }		
 
         return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
     }

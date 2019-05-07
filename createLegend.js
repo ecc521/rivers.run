@@ -11,9 +11,9 @@ function drawColors(canvas, height) {
 
     //This seems to be the only cross browser solution (it fails if numerous rotations made)
 
-	let tooLowLightness = window.darkMode? "30%": "65%"
-	let tooHighLightness = window.darkMode? "20%": "70%"
-	let normalValueLightness = window.darkMode? "25%": "75%"
+	let tooLowLightness = window.darkMode? "23%": "67%"
+	let tooHighLightness = window.darkMode? "20%": "69%"
+	let normalValueLightness = window.darkMode? "25%": "70%"
 	
 	canvas.width = document.documentElement.clientWidth
     canvas.height = height
