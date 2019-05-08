@@ -30,7 +30,13 @@
 
         <script>
             document.getElementById("theme").addEventListener("change", function(event) {
-                localStorage.setItem("prefersDarkMode", event.target.value)
+				//We can't just set the value to null - locaStorage would stringify it
+				if (event.target.value === "null") {
+					localStorage.removeItem("prefersDarkMode")
+				}
+				else {
+                	localStorage.setItem("prefersDarkMode", event.target.value)
+				}
             })
 
             document.getElementById("theme").value = localStorage.getItem("prefersDarkMode")

@@ -78,15 +78,14 @@ try {
     if (styleSheet.cssRules[styleSheet.cssRules.length - 1] instanceof CSSMediaRule) {
         window.darkMode = localStorage.getItem("prefersDarkMode")
         //Convert string to boolean
-        if (window.darkMode === "null") {window.darkMode = null}
-        if (window.darkMode === "false") {window.darkMode = false}
-        if (window.darkMode === "true") {window.darkMode = true}
-
 
         if (window.darkMode === null) {
             window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
         }
-
+		
+		window.darkMode = Boolean(window.darkMode)
+		
+		
         //Override browser to engage or disengage dark mode
         if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
             let cssText = styleSheet.cssRules[styleSheet.cssRules.length-1].cssText
