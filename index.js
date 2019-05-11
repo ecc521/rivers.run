@@ -226,7 +226,7 @@ async function calculateCoordinates() {
 		});
 	}
 	catch(e) {
-		let output = "Error code " + e.code + " occoured when getting your location. The error message is: " + e.message
+		let output = "Error code " + e.code + " occurred when getting your location. The error message is: " + e.message
 		alert(output)
 		clearInterval(progress)
 		status.innerHTML = output
