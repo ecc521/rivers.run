@@ -82,10 +82,10 @@ try {
         if (window.darkMode === null) {
             window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
         }
-		
-		window.darkMode = Boolean(window.darkMode)
-		
-		
+
+		if (window.darkMode === "true") {window.darkMode = true}
+		else if (window.darkMode === "false") {window.darkMode = false}
+
         //Override browser to engage or disengage dark mode
         if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
             let cssText = styleSheet.cssRules[styleSheet.cssRules.length-1].cssText
@@ -96,7 +96,7 @@ try {
                 let rule = darkModeRules[i]
                 if (rule.trim() === "") {continue}
                 styleSheet.insertRule(rule, styleSheet.cssRules.length)
-            }    
+            }
         }
 
         if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
@@ -178,7 +178,7 @@ if (currentPage.indexOf("#") !== -1) {
 for (let i=0;i<items.length;i++) {
     let item = items[i]
 
-    let target = item.href.slice(root.length)	
+    let target = item.href.slice(root.length)
 
     if (target === currentPage) {
         item.className = "topnavcurrent"
@@ -237,9 +237,9 @@ styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.c
 //Add the modal styles
 styleSheet.insertRule(`
 .modal {
-display: none; 
-position:fixed; 
-z-index:1; 
+display: none;
+position:fixed;
+z-index:1;
 padding-top: 5%;
 left:0;
 top:0;
@@ -276,7 +276,7 @@ cursor: pointer;
 
 
 if (window.darkMode) {
-    styleSheet.insertRule(`	
+    styleSheet.insertRule(`
 .modal-content {
 background-color:black;
 color:#cfcfcf;
