@@ -134,9 +134,7 @@ try {
 				container.insertRule(cssText, container.cssRules.length)
 			}
 		})
-	
-	console.log(container)
-	
+		
 		calculateDarkMode()
 }
 catch (e) {
