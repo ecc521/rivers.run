@@ -86,35 +86,31 @@ try {
 		window.darkMode = Boolean(window.darkMode)
 		
 		
-        //Override browser to engage or disengage dark mode
+        let mediaRule = styleSheet.cssRules[styleSheet.cssRules.length-1]
+        //Style links so that they are visible in dark mode
+        //Unvisited Link
+        mediaRule.cssRules.insertRule("a:link {color: #3333FF;}", mediaRule.cssRules.length)
+        //Visited link
+        mediaRule.cssRules.insertRule("a:visited {color: purple;}", mediaRule.cssRules.length)
+        //Hovering over link
+        mediaRule.cssRules.insertRule("a:hover {color: green;}", mediaRule.cssRules.length)
+        //Quick flash of color when link clicked
+        mediaRule.cssRules.insertRule("a:active {color: red;}", mediaRule.cssRules.length)
+		
+		let cssText = mediaRule.cssText
+		
+		//Force enable dark mode
         if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
-            let cssText = styleSheet.cssRules[styleSheet.cssRules.length-1].cssText
-            //Trim off the @media ... { and trailing }
-            cssText = cssText.slice(cssText.indexOf("{") + 1, -1)
-            let darkModeRules = cssText.split("\n")
-            for (let i=0;i<darkModeRules.length;i++) {
-                let rule = darkModeRules[i]
-                if (rule.trim() === "") {continue}
-                styleSheet.insertRule(rule, styleSheet.cssRules.length)
-            }    
-        }
-
-        if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
+			cssText = cssText.replace(/@media [^{]+{/, "@media all {")
             styleSheet.removeRule(styleSheet.cssRules.length - 1)
+            styleSheet.insertRule(cssText, styleSheet.cssRules.length)
         }
-
-        if (window.darkMode) {
-            //Style links so that they are visible in dark mode
-
-            //Unvisited Link
-            styleSheet.insertRule("a:link {color: #3333FF;}", styleSheet.cssRules.length)
-            //Visited link
-            styleSheet.insertRule("a:visited {color: purple;}", styleSheet.cssRules.length)
-            //Hovering over link
-            styleSheet.insertRule("a:hover {color: green;}", styleSheet.cssRules.length)
-            //Quick flash of color when link clicked
-            styleSheet.insertRule("a:active {color: red;}", styleSheet.cssRules.length)
-        }
+		//Force disable dark mode
+        if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
+			cssText = cssText.replace(/@media [^{]+{/, "@media not all {")
+            styleSheet.removeRule(styleSheet.cssRules.length - 1)
+            styleSheet.insertRule(cssText, styleSheet.cssRules.length)
+		}
     }
 }
 catch (e) {
