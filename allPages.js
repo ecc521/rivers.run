@@ -74,44 +74,70 @@ if (!styleSheet) {
 //If prefers-color-scheme does exist, we follow it, unless the user wants to override it
 
 try {
-    //Basic checking to make sure we don't mess with/error on pages that don't support dark mode
-    if (styleSheet.cssRules[styleSheet.cssRules.length - 1] instanceof CSSMediaRule) {
-        window.darkMode = localStorage.getItem("prefersDarkMode")
-        //Convert string to boolean
+	//Since we can't directly modify a CSSMediaRule, we will create a CSSMediaRule, then modify the media rule inside it.
+	//This prevents us from having to remember where the media rule is in the list
+	
+	let container = styleSheet.cssRules[styleSheet.insertRule("@media all {}", styleSheet.cssRules.length)]
+	let mediaMatch = window.matchMedia('(prefers-color-scheme: dark)')
+	
+	
+	function calculateDarkMode() {
+		let startingMode = window.darkMode
+		
+        let darkMode = localStorage.getItem("prefersDarkMode")
 
-        if (window.darkMode === null) {
-            window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (darkMode === null) {
+            darkMode = mediaMatch.matches
         }
 		
-		if (window.darkMode === "true") {window.darkMode = true}
-		else if (window.darkMode === "false") {window.darkMode = false}		
+	        //Convert string to boolean
+		if (darkMode === "true") {window.darkMode = true}
+		else {window.darkMode = false}	
 		
-        let mediaRule = styleSheet.cssRules[styleSheet.cssRules.length-1]
+		if (window.darkMode !== startingMode) {
+			window.dispatchEvent(new Event("colorSchemeChanged"))
+		}
+	}
+	
+		//Detect changes in color scheme
+		mediaMatch.onchange = calculateDarkMode
+		window.addEventListener("storage", calculateDarkMode)
+		
+        let mediaRule = styleSheet.cssRules[styleSheet.cssRules.length-2]
+		
+		mediaRule = container.cssRules[container.insertRule(mediaRule.cssText, container.cssRules.length)]
+		styleSheet.deleteRule(styleSheet.cssRules.length-2)
+	
+		
+		
         //Style links so that they are visible in dark mode
         //Unvisited Link
-        mediaRule.cssRules.insertRule("a:link {color: #3333FF;}", mediaRule.cssRules.length)
+        mediaRule.insertRule("a:link {color: #3333FF;}", mediaRule.cssRules.length)
         //Visited link
-        mediaRule.cssRules.insertRule("a:visited {color: purple;}", mediaRule.cssRules.length)
+        mediaRule.insertRule("a:visited {color: purple;}", mediaRule.cssRules.length)
         //Hovering over link
-        mediaRule.cssRules.insertRule("a:hover {color: green;}", mediaRule.cssRules.length)
+        mediaRule.insertRule("a:hover {color: green;}", mediaRule.cssRules.length)
         //Quick flash of color when link clicked
-        mediaRule.cssRules.insertRule("a:active {color: red;}", mediaRule.cssRules.length)
+        mediaRule.insertRule("a:active {color: red;}", mediaRule.cssRules.length)
 		
-		let cssText = mediaRule.cssText
-		
-		//Force enable dark mode
-        if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
-			cssText = cssText.replace(/@media [^{]+{/, "@media all {")
-            styleSheet.removeRule(styleSheet.cssRules.length - 1)
-            styleSheet.insertRule(cssText, styleSheet.cssRules.length)
-        }
-		//Force disable dark mode
-        if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
-			cssText = cssText.replace(/@media [^{]+{/, "@media not all {")
-            styleSheet.removeRule(styleSheet.cssRules.length - 1)
-            styleSheet.insertRule(cssText, styleSheet.cssRules.length)
-		}
-    }
+		//Enable or disable the media rule.
+		window.addEventListener("colorSchemeChanged", function() {
+			let cssText = mediaRule.cssText
+			if (window.darkMode === true) {
+				cssText = cssText.replace(/@media [^{]+{/, "@media all {")
+				container.deleteRule(container.cssRules.length - 1)
+				container.insertRule(cssText, container.cssRules.length)
+			}
+			else if (window.darkMode === false) {
+				cssText = cssText.replace(/@media [^{]+{/, "@media not all {")
+				container.deleteRule(container.cssRules.length - 1)
+				container.insertRule(cssText, container.cssRules.length)
+			}
+		})
+	
+	console.log(container)
+	
+		calculateDarkMode()
 }
 catch (e) {
     console.error(e)

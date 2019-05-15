@@ -9,7 +9,7 @@
     </head>
     <body>
 
-        <h3>Theme (Requires Refresh)</h3>
+        <h3>Theme (May Require Reload)</h3>
         <p>Note: If you choose a theme other than the default, you may see a little flash when the theme is changed during page load</p>
         <select id="theme">
             <option value="null">Default</option>
@@ -37,6 +37,7 @@
 				else {
                 	localStorage.setItem("prefersDarkMode", event.target.value)
 				}
+				window.dispatchEvent(new Event("storage"))
             })
 
             document.getElementById("theme").value = localStorage.getItem("prefersDarkMode")
