@@ -94,7 +94,7 @@ function runningSort(list, reverse) {
     let knownState = []
     
     list.forEach((item) => {
-        if (item.running !== undefined) {knownState.push(item)}
+        if (item.running !== undefined && !isNaN(item.running)) {knownState.push(item)}
         //If there is gauge data, the user may be able to determine level themselves
         //As such, put rivers with gauges second
         else if (item.flow) {hasGauge.push(item)}

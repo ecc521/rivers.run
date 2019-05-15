@@ -3,10 +3,25 @@ let addGraphs = require("./addGraphs.js").addGraphs
 
 
 
-function addClickHandler(button, locate) {
+function addHandlers(button, locate) {
+	let river = ItemHolder[locate]
+	
+			if (river.minrun && river.maxrun) {				
+				window.addEventListener("colorSchemeChanged", function() {
+					button.style.backgroundColor = calculateColor(river)
+				})
+
+				button.addEventListener("mouseover", function(){
+					button.style.backgroundColor =  calculateColor(river, {highlighted: true})
+				})
+
+				button.addEventListener("mouseout", function(){
+					button.style.backgroundColor = calculateColor(river)
+				})
+			}	
+	
     //Code that runs when the button is clicked
     button.onclick = function () {
-        let river = ItemHolder[locate]
         if (river.expanded === 0) {
             river.expanded = 1
             var div = document.createElement("div")
@@ -97,6 +112,11 @@ function addClickHandler(button, locate) {
 
         }
     }
+	
+	
+	
+	
+	
 }
 
 
@@ -347,9 +367,6 @@ module.exports.River = function(locate, event) {
             var button = document.createElement("button")
             button.id = this.base + 1
 
-            button.normalColor = window.darkMode ? "" : "" //Inherit from CSS
-            button.focusedColor = window.darkMode ? "#333333" : "#e3e3e3"
-
             function AddSpan(text) {
                 let span = document.createElement("span")
                 span.innerHTML = text
@@ -379,36 +396,34 @@ module.exports.River = function(locate, event) {
 
             if (this.flow) {
                 let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs))
-                if (this.minrun && this.maxrun) {
-                    button.normalColor = calculateColor(this)
-                    button.focusedColor = calculateColor(this, {highlighted: true})
-                }
             }
 
 
             button.className = "riverbutton"
             //Add the click handler
-            addClickHandler(button, locate)
-
-
-            button.addEventListener("mouseover", function(){this.style.backgroundColor = this.focusedColor})
-            button.addEventListener("mouseout", function(){this.style.backgroundColor = this.normalColor})
-
+            addHandlers(button, locate)		
+			
             //Store button for reuse later
             this.finished = button
 
         }
 		
 		this.updateExpansion = function() {
-			if (this.expanded) {
-            	let elem = document.getElementById(this.base + "1")
-                elem.dispatchEvent(new Event("click"))
-                elem.dispatchEvent(new Event("click"))
+			//Do not use "this". If called from event listener on window it will fail.
+			let river = ItemHolder[locate]
+			//Make sure it is expanded. Otherwise, there is no need to update the expansion - and
+			//updating the expansion can take a lot of time, expecially if it causes reflow.
+			if (river.expanded) {
+				river.finished.onclick()
+				river.finished.onclick()
 			}
 		}
+		
+		window.addEventListener("colorSchemeChanged", this.updateExpansion)
 
-        this.finished.style.backgroundColor = this.finished.normalColor
-
+		if (this.minrun && this.maxrun) {
+			this.finished.style.backgroundColor = calculateColor(this)
+		}
         //Return finished button
         return this.finished
 

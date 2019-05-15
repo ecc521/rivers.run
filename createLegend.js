@@ -9,7 +9,7 @@ function drawColors(canvas, height) {
     //window.innerWidth fails - the window is expanded to handle the width of the legend
     //Then the legend doesn't resize (because the window has resized to it) 
 
-    //This seems to be the only cross browser solution (it fails if numerous rotations made)
+    //This seems to be the only simple cross browser solution, although it fails if numerous rotations are made
 
 	let tooLowLightness = window.darkMode? "23%": "67%"
 	let tooHighLightness = window.darkMode? "20%": "69%"
@@ -139,5 +139,6 @@ function updateLegend() {
 window.addEventListener("resize", updateLegend)
 //orientationchange should be fired on resize, but some browsers (such as Safari) do not
 window.addEventListener("orientationchange", updateLegend)
+window.addEventListener("colorSchemeChanged", updateLegend)
 
 updateLegend()

@@ -115,6 +115,9 @@ Those include name,section,skill,quality, and flow info*/
 .riverbutton:nth-child(odd) {
     background-color: #f7f7f7;
 }
+.riverbutton:hover {
+	background-color: #e3e3e3;
+}
 .riverbutton:focus {
     outline:0;
 }   
@@ -209,6 +212,10 @@ Those include name,section,skill,quality, and flow info*/
     .riverbutton:nth-child(odd) {
         background-color: #252525;
     }
+	.riverbutton:hover {
+		background-color: #333333;
+	}
+	
     .riverbutton {
         color:#ffffff;
     }

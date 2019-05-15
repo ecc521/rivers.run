@@ -9,8 +9,7 @@
     </head>
     <body>
 
-        <h3>Theme (May Require Reload)</h3>
-        <p>Note: If you choose a theme other than the default, you may see a little flash when the theme is changed during page load</p>
+        <h3>Theme (Color Scheme)</h3>
         <select id="theme">
             <option value="null">Default</option>
             <option value="false">Light</option>
@@ -45,8 +44,13 @@
             let explaination = document.getElementById("darkModeDefaultExplaination")
             let browserSupportsDarkMode = window.matchMedia('(prefers-color-scheme: dark)').media !== "not all"
             if (browserSupportsDarkMode) {
-                let currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark": "light"
-                explaination.innerHTML = "Selecting Default causes rivers.run to use the theme provided by your browser (" + currentTheme + ")"
+				let mediaWatch = window.matchMedia('(prefers-color-scheme: dark)')
+				function setText() {
+                	let currentTheme = mediaWatch.matches ? "dark": "light"
+                	explaination.innerHTML = "Selecting Default causes rivers.run to use the theme provided by your browser (" + currentTheme + ")"
+				}
+				mediaWatch.onchange = setText
+				setText()
             }
             else {
                 explaination.innerHTML = "Selecting Default causes rivers.run to use the light theme - your browser does not provide rivers.run the theme to use"
