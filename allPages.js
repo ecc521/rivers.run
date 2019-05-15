@@ -83,8 +83,8 @@ try {
             window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
         }
 		
-		window.darkMode = Boolean(window.darkMode)
-		
+		if (window.darkMode === "true") {window.darkMode = true}
+		else if (window.darkMode === "false") {window.darkMode = false}		
 		
         let mediaRule = styleSheet.cssRules[styleSheet.cssRules.length-1]
         //Style links so that they are visible in dark mode
@@ -174,7 +174,7 @@ if (currentPage.indexOf("#") !== -1) {
 for (let i=0;i<items.length;i++) {
     let item = items[i]
 
-    let target = item.href.slice(root.length)	
+    let target = item.href.slice(root.length)
 
     if (target === currentPage) {
         item.className = "topnavcurrent"
@@ -233,9 +233,9 @@ styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.c
 //Add the modal styles
 styleSheet.insertRule(`
 .modal {
-display: none; 
-position:fixed; 
-z-index:1; 
+display: none;
+position:fixed;
+z-index:1;
 padding-top: 5%;
 left:0;
 top:0;
@@ -272,7 +272,7 @@ cursor: pointer;
 
 
 if (window.darkMode) {
-    styleSheet.insertRule(`	
+    styleSheet.insertRule(`
 .modal-content {
 background-color:black;
 color:#cfcfcf;
