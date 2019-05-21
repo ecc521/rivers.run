@@ -43,7 +43,7 @@ const path = require("path")
 	
 	
 	let devConfig = {
-		mode: "production", //Build for production
+		mode: "production", //Build for "production" - Not sure if needed, but CSP may require.
 		entry: {
 			index: "./index.js",
 			allPages: "./allPages.js" //Package allPages.js for browser support.

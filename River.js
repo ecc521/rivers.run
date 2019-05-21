@@ -46,7 +46,6 @@ function addHandlers(button, locate) {
 
 
             if (river.aw) {
-                //Adding to div.innerHTML works, but logs CSP errors
                 div.appendChild(document.createElement("br"))
                 let link = document.createElement("a")
                 link.target = "_blank"
@@ -55,6 +54,19 @@ function addHandlers(button, locate) {
                 link.innerHTML = "Click here to view this river on American Whitewater"
                 div.appendChild(link)
             }
+			
+			
+            if (river.usgs) {
+                //Adding to div.innerHTML works, but logs CSP errors
+                div.appendChild(document.createElement("br"))
+                let link = document.createElement("a")
+                link.target = "_blank"
+                link.rel = "noopener"
+                link.href = "https://waterdata.usgs.gov/nwis/uv?site_no=" + river.usgs
+                link.innerHTML = "View flow information on USGS"
+                div.appendChild(link)
+            }
+			
 
             //USGS data may not have loaded yet
 			if (self.usgsarray && river.usgs) {
