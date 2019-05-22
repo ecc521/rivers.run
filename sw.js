@@ -9,7 +9,7 @@ const waitOnFirstLoad = 2500 //Milliseconds to wait before fetching items on pre
 
 //Array of items to try and preload on install (the serviceWorker will install without them preloaded). Can be exact or relative to serviceWorker scope
 const preloadList = [
-    "/",
+    "",
     "about.html",
     "clubs.html",
     "settings.html",
