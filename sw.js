@@ -87,18 +87,19 @@ function fetchHandler(event) {
 		}
 
         let fromcache = await caches.match(url)
-		
+
 		if (Date.now() - usgsDataUpdated < 1000*60 && fromcache) {
 			return fromcache
 		}
-		
+
 		let fromnetwork = fetch(event.request)
 
-		if (url.includes("docs.google.com")) {
-            //Avoid filling up cache with opaque responses
+		if (url.includes("docs.google.com") || url.includes("googleapis.com")) {
+            //Avoid filling up cache with opaque responses from docs.google.com
+            //Avoid caching googleapis.com - we want the network response
 			return fromnetwork
-		}		
-		
+		}
+
         if (!fromcache) {
             //No cache. All we can do is return network response
             let response = await fromnetwork
@@ -107,7 +108,7 @@ function fetchHandler(event) {
         }
         else {
 
-            //We have cached data			
+            //We have cached data
             return new Promise(function(resolve, reject){
 
 				let served = 0
@@ -138,8 +139,8 @@ function fetchHandler(event) {
 						resolve(response)
 					})
                 })
-				
-				
+
+
                     //If the network doesn't respond quickly enough, use cached data
                     setTimeout(function(){
 						if (!served) {
