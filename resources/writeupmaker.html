@@ -71,6 +71,8 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <br>
 <input id="length" type="text" placeholder="Section Length" onkeydown="setTimeout(UpdateWriteup, 30)">
 <br><br>
+<!-- Quill can misbehave. Add a button to reset it.-->
+<input type="button" value="Clear Writeup" onclick="if (confirm('Are you sure you want to clear the writeup?')) {quill.root.innerHTML = '';UpdateWriteup()}">
 <div id="editor-container" style="height: 350px;"></div>
 <br>
 <p>Link Creator:</p>
@@ -111,20 +113,15 @@ function copyStringToClipboard() {
 //Create writeup editor
 var toolbarOptions = [
     ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
-    ['blockquote', 'code-block'],
+    ['blockquote'],
 
-    [{ 'header': 1 }, { 'header': 2 }],               // custom button values
     [{ 'list': 'ordered'}, { 'list': 'bullet' }],
     [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
-    [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
-    [{ 'direction': 'rtl' }],                         // text direction
 
-    [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
     [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-    [ 'link', 'image', 'video', 'formula' ],          // add's image support
+
+    [ 'link', 'image', 'video'],          // add's image support
     [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
-    [{ 'font': [] }],
-    [{ 'align': [] }],
 
     ['clean']                                         // remove formatting button
 ];
@@ -133,7 +130,7 @@ var quill = new Quill('#editor-container', {
 modules: {
 toolbar: toolbarOptions
 },
-placeholder: 'Create your writeup...',
+placeholder: 'Create your writeup... (Some writeup features, like images, may not work on the actual site. Those features should come in the future.)',
 theme: 'snow'
 });
 
