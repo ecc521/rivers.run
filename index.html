@@ -7,7 +7,7 @@
         <meta http-equiv="Content-Security-Policy" content="
                                                             default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:*;
                                                             connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov https://docs.google.com;
-                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;"
+                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://www.googleapis.com data:;"
               >
         <!-- Curently the img-src can be bypassed with a Data URL. This should be changed so that cannot be done-->
 
@@ -153,7 +153,7 @@
 				</select>
 
 				<input id="includeUnknownFlow" type="checkbox" checked>Include rivers without flow information<br>
-				
+
 
 
                 Writeup
@@ -179,8 +179,8 @@
 
 
                 <button id="performadvancedsearch">Search</button>
-				
-				
+
+
 				<p>Warning: Searching based on flow will either return no results or all rivers if the search is run before flow information loads.</p>
                 <p id="searchlink"></p>
             </div>

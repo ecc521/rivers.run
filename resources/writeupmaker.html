@@ -73,7 +73,7 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <br><br>
 <!-- Quill can misbehave. Add a button to reset it.-->
 <input type="button" value="Clear Writeup" onclick="if (confirm('Are you sure you want to clear the writeup?')) {quill.root.innerHTML = '';UpdateWriteup()}">
-<div id="editor-container" style="height: 350px;"></div>
+<div id="editor-container" style="height: fit-content; max-height:80vh;"></div>
 <br>
 <p>Link Creator:</p>
 <input type="text" id="LinkURL" onfocus="if(this.value.length === 0) {this.value='https://'}" placeholder="Link URL"style="width:100%" onkeydown="setTimeout(LinkUpdate, 20)">
@@ -110,27 +110,29 @@ function copyStringToClipboard() {
 }
 
 
+
+
 //Create writeup editor
 var toolbarOptions = [
-    ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+    ['bold', 'italic', 'underline', 'strike'],
     ['blockquote'],
 
     [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-    [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+    [{ 'script': 'sub'}, { 'script': 'super' }],
 
     [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
 
-    [ 'link', 'image', 'video'],          // add's image support
-    [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+    [ 'link', 'image', 'video'], //Image and video handlers are overwritten.
+    //[{ 'color': [] }, { 'background': [] }], //CSP breaks inline style.
 
-    ['clean']                                         // remove formatting button
+    ['clean']
 ];
 
 var quill = new Quill('#editor-container', {
 modules: {
 toolbar: toolbarOptions
 },
-placeholder: 'Create your writeup... (Some writeup features, like images, may not work on the actual site. Those features should come in the future.)',
+placeholder: 'Create your writeup...',
 theme: 'snow'
 });
 
@@ -138,7 +140,17 @@ quill.on('text-change', function() {
     UpdateWriteup()
 });
 
+let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
 
+quill.getModule("toolbar").handlers.image = function imageHandler(value) {
+        let File_ID = prompt("Please type in the File ID of the image in Google Drive. (To get the file id, click on the file, click the three dot menu in the top right hand corner, click open in new window. Copy out the section between /d/ and /view).")
+        quill.insertEmbed(quill.getSelection(true), 'image', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
+}
+
+quill.getModule("toolbar").handlers.video = function imageHandler(value) {
+        let File_ID = prompt("Please type in the File ID of the video in Google Drive. (To get the file id, click on the file, click the three dot menu in the top right hand corner, click open in new window. Copy out the section between /d/ and /view).")
+        quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
+}
 
   //state, hidlat, hidlon
 var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun, lowflow, medflow, highflow"
