@@ -71,16 +71,15 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <br>
 <input id="length" type="text" placeholder="Section Length" onkeydown="setTimeout(UpdateWriteup, 30)">
 <br><br>
+
+
+
 <!-- Quill can misbehave. Add a button to reset it.-->
 <input type="button" value="Clear Writeup" onclick="if (confirm('Are you sure you want to clear the writeup?')) {quill.root.innerHTML = '';UpdateWriteup()}">
-<div id="editor-container" style="height: fit-content; max-height:80vh;"></div>
+<div id="editor-container" style="height: fit-content; max-height:80vh; min-height:150px;"></div>
 <br>
-<p>Link Creator:</p>
-<input type="text" id="LinkURL" onfocus="if(this.value.length === 0) {this.value='https://'}" placeholder="Link URL"style="width:100%" onkeydown="setTimeout(LinkUpdate, 20)">
-<input type="text" id="LinkText" placeholder="Link Text"style="width:100%" onkeydown="setTimeout(LinkUpdate, 20)">
-<p id="LinkShow">Your link looks like this: </p>
-<p>Copy and paste the following code into your writeup:</p>
-<p id="LinkResult"></p>
+
+
 
 <br><br><br>
 <input type="button" value="Copy Output To Clipboard" onclick="copyStringToClipboard()">
@@ -171,12 +170,6 @@ List.forEach(function(value){
   }
 })
 
-function LinkUpdate() {
-  var Text = document.getElementById("LinkURL").value.trim()
-  Text = "<a href=\"" + Text + "\" target=\"_blank\" rel=\"noopener\">" + document.getElementById("LinkText").value + "</a>"
-  document.getElementById("LinkResult").innerText = Text
-  document.getElementById("LinkShow").innerHTML = "Your link looks like this: \"" + Text + "\""
-}
 
 function UpdateWriteup() {
     List.forEach(function(value){
