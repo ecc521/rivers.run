@@ -71,8 +71,6 @@ self.addEventListener("activate", activateHandler)
 //When set to 0, cached data will be returned immediately, and cache will be updated in background.
 const defaultWaitPeriod = 0
 
-let usgsDataUpdated = 0 //When the usgs data was last updated. Used to aviod duplicate requests (within 60 seconds).
-
 
 function fetchHandler(event) {
     event.respondWith((async function(){
@@ -88,7 +86,8 @@ function fetchHandler(event) {
 
         let fromcache = await caches.match(url)
 
-		if (Date.now() - usgsDataUpdated < 1000*60 && fromcache) {
+        //If it is less than 60 seconds old, return the cached data.
+		if (fromcache && Date.now() - new Date(fromcache.headers.get("date")).getTime() < 60*1000) {
 			return fromcache
 		}
 
@@ -96,7 +95,7 @@ function fetchHandler(event) {
 
 		if (url.includes("docs.google.com") || url.includes("googleapis.com")) {
             //Avoid filling up cache with opaque responses from docs.google.com
-            //Avoid caching googleapis.com - we want the network response
+            //Avoid caching googleapis.com - we want the network response for writeupmaker.html (though we may want to temporarily cache images)
 			return fromnetwork
 		}
 
@@ -128,9 +127,6 @@ function fetchHandler(event) {
 					served = 1
                     cache.put(url, response.clone()).then(() => {
 						if (otherServed) {
-							if (url.includes("waterservices.usgs.gov")) {
-								usgsDataUpdated = Date.now()
-							}
 							messageAllClients("Updated cache for " + url)
 						}
 						else {
