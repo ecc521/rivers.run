@@ -19,6 +19,12 @@ function addHandlers(button, locate) {
 					button.style.backgroundColor = calculateColor(river)
 				})
 			}
+	
+			if (river.dam) {
+				window.addEventListener("colorSchemeChanged", function() {
+					button.style.backgroundColor = createStripes()
+				})
+			}
 
     //Code that runs when the button is clicked
     button.onclick = function () {
@@ -345,19 +351,13 @@ function calculateColor(river, options) {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
 
-        let color = "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
-		
-		return color;
+        return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
     }
 }
 
 
-function createStripes(newColor) {
+function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.2)":"#aaaaaa55", oldColor = "rgba(0,0,0,0)") {
 		//If the river has a dam, stripe it.
-
-
-		let oldColor = "rgba(0,0,0,0)"	
-
 
 		let background = "linear-gradient(150deg"
 
@@ -466,11 +466,17 @@ module.exports.River = function(locate, event) {
 		window.addEventListener("colorSchemeChanged", this.updateExpansion)
 
 		if (this.dam) {
-			this.finished.style.background = createStripes(window.darkMode? "rgba(256,256,256,0.2)":"#aaaaaa55")
+			this.finished.style.background = createStripes()
 		}
+		
 		if (this.minrun && this.maxrun && this.flow) {
 			this.finished.style.backgroundColor = calculateColor(this)
 		}
+		else if (this.dam) {
+			//Background color gets overwrote by background. This class uses !important to prevent that.
+			this.finished.classList.add("riverbuttonDam")
+		}
+		
         //Return finished button
         return this.finished
 

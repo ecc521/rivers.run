@@ -118,6 +118,20 @@ Those include name,section,skill,quality, and flow info*/
 .riverbutton:hover {
 	background-color: #e3e3e3;
 }
+
+
+.riverbuttonDam:nth-child(even) {
+    background-color: #f4f4f4 !important;
+}
+.riverbuttonDam:nth-child(odd) {
+    background-color: #f7f7f7 !important;
+}
+.riverbuttonDam:hover {
+	background-color: #e3e3e3 !important;
+}
+
+
+
 .riverbutton:focus {
     outline:0;
 }   
@@ -215,6 +229,18 @@ Those include name,section,skill,quality, and flow info*/
 	.riverbutton:hover {
 		background-color: #333333;
 	}
+	
+	
+    .riverbuttonDam:nth-child(even) {
+        background-color: #222222 !important;
+    }
+    .riverbuttonDam:nth-child(odd) {
+        background-color: #252525 !important;
+    }
+	.riverbuttonDam:hover {
+		background-color: #333333 !important;
+	}
+	
 	
     .riverbutton {
         color:#ffffff;
