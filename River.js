@@ -352,33 +352,21 @@ function calculateColor(river, options) {
 }
 
 
-function createStripes(color) {
+function createStripes(newColor) {
 		//If the river has a dam, stripe it.
 
-		let canvas = document.createElement("canvas")
-		let context = canvas.getContext("2d")		
 
-		let background = "rgba(0,0,0,0)"	
-		
-		canvas.width = Math.max(screen.width, screen.height) //Make sure the image doesn't repeat
-		canvas.height = 20 //Doesn't really matter
+		let oldColor = "rgba(0,0,0,0)"	
 
-		let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 
+		let background = "linear-gradient(150deg"
 
 		for (let i=0;i<21;i++) {
-			gradient.addColorStop(i*0.05, i%4 ? background:color)
+			background += ", "
+			background += i % 3 ? oldColor:newColor
 		}
-
-		context.fillStyle = gradient
-		context.fillRect(0,0,canvas.width,canvas.height)
-
-		let url = canvas.toDataURL("image/png")
-		let backgroundStyle = "url(" + url + ")"		
 		
-		console.log(url)
-		
-		return backgroundStyle
+		return background
 }
 
 
@@ -478,7 +466,7 @@ module.exports.River = function(locate, event) {
 		window.addEventListener("colorSchemeChanged", this.updateExpansion)
 
 		if (this.dam) {
-			this.finished.style.background = createStripes(window.darkMode? "#66666688":"#aaaaaa88")
+			this.finished.style.background = createStripes(window.darkMode? "rgba(256,256,256,0.2)":"#aaaaaa55")
 		}
 		if (this.minrun && this.maxrun && this.flow) {
 			this.finished.style.backgroundColor = calculateColor(this)
