@@ -366,6 +366,8 @@ function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.2)":"rgb
 			background += i % 3 ? oldColor:newColor
 		}
 
+        background += ")"
+
 		return background
 }
 
