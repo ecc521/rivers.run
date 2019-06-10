@@ -5,8 +5,8 @@ let addGraphs = require("./addGraphs.js").addGraphs
 
 function addHandlers(button, locate) {
 	let river = ItemHolder[locate]
-	
-			if (river.minrun && river.maxrun) {				
+
+			if (river.minrun && river.maxrun) {
 				window.addEventListener("colorSchemeChanged", function() {
 					button.style.backgroundColor = calculateColor(river)
 				})
@@ -18,15 +18,29 @@ function addHandlers(button, locate) {
 				button.addEventListener("mouseout", function(){
 					button.style.backgroundColor = calculateColor(river)
 				})
-			}	
-	
+			}
+
     //Code that runs when the button is clicked
     button.onclick = function () {
         if (river.expanded === 0) {
             river.expanded = 1
             var div = document.createElement("div")
 
-            div.innerHTML = river.writeup + "<br><br>"
+			div.innerHTML = ""
+
+			if (river.dam) {
+                //Adding to div.innerHTML works, but logs CSP errors
+                let link = document.createElement("a")
+                link.target = "_blank"
+                link.rel = "noopener"
+                link.href = river.dam
+                link.innerHTML = "This river has a dam. View information."
+                div.appendChild(link)
+				div.appendChild(document.createElement("br"))
+				div.appendChild(document.createElement("br"))
+            }
+
+			div.innerHTML += river.writeup + "<br><br>"
 
             if (river.plat && river.plon) {
                 div.innerHTML += "Put-In GPS Coordinates: " + river.plat + ", " + river.plon + "<br>"
@@ -54,8 +68,8 @@ function addHandlers(button, locate) {
                 link.innerHTML = "Click here to view this river on American Whitewater"
                 div.appendChild(link)
             }
-			
-			
+
+
             if (river.usgs) {
                 //Adding to div.innerHTML works, but logs CSP errors
                 div.appendChild(document.createElement("br"))
@@ -66,7 +80,7 @@ function addHandlers(button, locate) {
                 link.innerHTML = "View flow information on USGS"
                 div.appendChild(link)
             }
-			
+
 
             //USGS data may not have loaded yet
 			if (self.usgsarray && river.usgs) {
@@ -80,7 +94,7 @@ function addHandlers(button, locate) {
                     console.error(e)
                     dataAge = null
                 }
-                let maxAge = 1000*60*60*2				
+                let maxAge = 1000*60*60*2
                 let oldDataWarning;
 				if (dataAge > maxAge) {
 					oldDataWarning = document.createElement("p")
@@ -124,11 +138,11 @@ function addHandlers(button, locate) {
 
         }
     }
-	
-	
-	
-	
-	
+
+
+
+
+
 }
 
 
@@ -329,7 +343,7 @@ function calculateColor(river, options) {
         }
         else {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
-        }		
+        }
 
         return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
     }
@@ -413,13 +427,13 @@ module.exports.River = function(locate, event) {
 
             button.className = "riverbutton"
             //Add the click handler
-            addHandlers(button, locate)		
-			
+            addHandlers(button, locate)
+
             //Store button for reuse later
             this.finished = button
 
         }
-		
+
 		this.updateExpansion = function() {
 			//Do not use "this". If called from event listener on window it will fail.
 			let river = ItemHolder[locate]
@@ -430,7 +444,7 @@ module.exports.River = function(locate, event) {
 				river.finished.onclick()
 			}
 		}
-		
+
 		window.addEventListener("colorSchemeChanged", this.updateExpansion)
 
 		if (this.minrun && this.maxrun) {
