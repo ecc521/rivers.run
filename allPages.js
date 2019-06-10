@@ -1,6 +1,60 @@
 //This JavaScript file should run on all pages
-//It defines global CSS rules, allows for forcing dark mode, and
-//defines the river-overview DOM element
+//It defines global CSS rules, allows for forcing dark mode,
+//defines the river-overview DOM element, and makes sure a viewport meta tag exists.
+
+try {
+	require("./collectVisitorInformation.js") //Get site usage statistics
+}
+catch(e) {console.error(e)}
+
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js');
+    });
+}
+
+
+
+//Add the favicon if it does not exist.
+try {
+    ;(function addFavicon() {
+        let tags = document.head.querySelectorAll("link")
+        for (let i=0;i<tags.length;i++) {
+            if (tags[i].rel === "shortcut icon") {return} //There is already a favicon
+        }
+		let sizes = [16,24,32,64,96,160,196]
+		sizes.forEach((size) => {
+			let favicon = document.createElement("link")
+			favicon.rel = "shortcut icon"
+			favicon.type = "image/png"
+			favicon.href = `resources/icons/${size}x${size}-Water-Drop.png`
+			document.head.appendChild(favicon)
+		})
+    })()
+}
+catch(e) {
+    console.error(e)
+}
+
+
+
+//Add the viewport meta tag if it does not exist.
+try {
+    ;(function addViewportMeta() {
+        let tags = document.head.querySelectorAll("meta")
+        for (let i=0;i<tags.length;i++) {
+            if (tags[i].name = "viewport") {return} //There is already a viewmport meta tag
+        }
+        let meta = document.createElement("meta")
+        meta.name = "viewport"
+        meta.content = "width=device-width, initial-scale=1"
+        document.head.appendChild(meta)
+    })()
+}
+catch(e) {
+    console.error(e)
+}
 
 
 //This is extremely sensitive to the design of the CSS
@@ -8,9 +62,9 @@
 let styleSheet = document.styleSheets[0]
 
 if (!styleSheet) {
-    console.warn("No stylesheet available. There must be an existing stylesheet in order for allPages.js to function properly without inline style allowed or without document.body.")
+    console.warn("No stylesheet available. There must be an existing stylesheet in order for allPages.js to function properly without inline style allowed or without document.documentElement (which may always exist).")
     let style = document.createElement("style")
-    document.body.appendChild(style)
+    document.documentElement.appendChild(style)
     styleSheet = document.styleSheets[0]
 }
 
@@ -20,49 +74,68 @@ if (!styleSheet) {
 //If prefers-color-scheme does exist, we follow it, unless the user wants to override it
 
 try {
-    //Basic checking to make sure we don't mess with/error on pages that don't support dark mode
-    if (styleSheet.cssRules[styleSheet.cssRules.length - 1] instanceof CSSMediaRule) {
-        window.darkMode = localStorage.getItem("prefersDarkMode")
-        //Convert string to boolean
-        if (window.darkMode === "null") {window.darkMode = null}
-        if (window.darkMode === "false") {window.darkMode = false}
-        if (window.darkMode === "true") {window.darkMode = true}
+	//Since we can't directly modify a CSSMediaRule, we will create a CSSMediaRule, then modify the media rule inside it.
+	//This prevents us from having to remember where the media rule is in the list
+	
+	let container = styleSheet.cssRules[styleSheet.insertRule("@media all {}", styleSheet.cssRules.length)]
+	let mediaMatch = window.matchMedia('(prefers-color-scheme: dark)')
+	
+	
+	function calculateDarkMode() {
+		let startingMode = window.darkMode
+		
+        let darkMode = localStorage.getItem("prefersDarkMode")
 
-
-        if (window.darkMode === null) {
-            window.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (darkMode === null) {
+            darkMode = mediaMatch.matches
         }
-
-        //Override browser to engage or disengage dark mode
-        if (window.darkMode === true && window.matchMedia('(prefers-color-scheme: dark)').matches === false) {
-            let cssText = styleSheet.cssRules[styleSheet.cssRules.length-1].cssText
-            //Trim off the @media ... { and trailing }
-            cssText = cssText.slice(cssText.indexOf("{") + 1, -1)
-            let darkModeRules = cssText.split("\n")
-            for (let i=0;i<darkModeRules.length;i++) {
-                let rule = darkModeRules[i]
-                if (rule.trim() === "") {continue}
-                styleSheet.insertRule(rule, styleSheet.cssRules.length)
-            }    
-        }
-
-        if (window.darkMode === false && window.matchMedia('(prefers-color-scheme: dark)').matches === true) {
-            styleSheet.removeRule(styleSheet.cssRules.length - 1)
-        }
-
-        if (window.darkMode) {
-            //Style links so that they are visible in dark mode
-
-            //Unvisited Link
-            styleSheet.insertRule("a:link {color: #3333FF;}", styleSheet.cssRules.length)
-            //Visited link
-            styleSheet.insertRule("a:visited {color: purple;}", styleSheet.cssRules.length)
-            //Hovering over link
-            styleSheet.insertRule("a:hover {color: green;}", styleSheet.cssRules.length)
-            //Quick flash of color when link clicked
-            styleSheet.insertRule("a:active {color: red;}", styleSheet.cssRules.length)
-        }
-    }
+		
+	        //Convert string to boolean
+		if (darkMode === "true") {window.darkMode = true}
+		else {window.darkMode = false}	
+		
+		if (window.darkMode !== startingMode) {
+			window.dispatchEvent(new Event("colorSchemeChanged"))
+		}
+	}
+	
+		//Detect changes in color scheme
+		mediaMatch.onchange = calculateDarkMode
+		window.addEventListener("storage", calculateDarkMode)
+		
+        let mediaRule = styleSheet.cssRules[styleSheet.cssRules.length-2]
+		
+		mediaRule = container.cssRules[container.insertRule(mediaRule.cssText, container.cssRules.length)]
+		styleSheet.deleteRule(styleSheet.cssRules.length-2)
+	
+		
+		
+        //Style links so that they are visible in dark mode
+        //Unvisited Link
+        mediaRule.insertRule("a:link {color: #3333FF;}", mediaRule.cssRules.length)
+        //Visited link
+        mediaRule.insertRule("a:visited {color: purple;}", mediaRule.cssRules.length)
+        //Hovering over link
+        mediaRule.insertRule("a:hover {color: green;}", mediaRule.cssRules.length)
+        //Quick flash of color when link clicked
+        mediaRule.insertRule("a:active {color: red;}", mediaRule.cssRules.length)
+		
+		//Enable or disable the media rule.
+		window.addEventListener("colorSchemeChanged", function() {
+			let cssText = mediaRule.cssText
+			if (window.darkMode === true) {
+				cssText = cssText.replace(/@media [^{]+{/, "@media all {")
+				container.deleteRule(container.cssRules.length - 1)
+				container.insertRule(cssText, container.cssRules.length)
+			}
+			else if (window.darkMode === false) {
+				cssText = cssText.replace(/@media [^{]+{/, "@media not all {")
+				container.deleteRule(container.cssRules.length - 1)
+				container.insertRule(cssText, container.cssRules.length)
+			}
+		})
+		
+		calculateDarkMode()
 }
 catch (e) {
     console.error(e)
@@ -125,7 +198,7 @@ if (currentPage.indexOf("#") !== -1) {
 for (let i=0;i<items.length;i++) {
     let item = items[i]
 
-    let target = item.href.slice(root.length)	
+    let target = item.href.slice(root.length)
 
     if (target === currentPage) {
         item.className = "topnavcurrent"
@@ -139,22 +212,22 @@ document.body.insertBefore(topnav, document.body.firstChild)
 
 styleSheet.insertRule(`
 .topnav {
-    overflow: hidden;
-    background-color: #24b9cc;
-    margin:0px;
+overflow: hidden;
+background-color: #24b9cc;
+margin:0px;
 }
 `, styleSheet.cssRules.length)
 
 
 styleSheet.insertRule(`
 .topnav a {
-    float: left;
-    display: block;
-    color:black;
-    text-align:center;
-    padding: 12px 13px;
-    text-decoration: none; /*Avoid the links being underlined*/
-    font-size: 17px;
+float: left;
+display: block;
+color:black;
+text-align:center;
+padding: 12px 13px;
+text-decoration: none; /*Avoid the links being underlined*/
+font-size: 17px;
 }
 `, styleSheet.cssRules.length)
 
@@ -162,10 +235,10 @@ styleSheet.insertRule(`
 //Make sure the header doesn't go onto multiple lines
 styleSheet.insertRule(`
 @media screen and (max-width: 386px) {
-    .topnav a {
-        padding: 10px 11px;
-        font-size: 4.3vw;
-    }
+.topnav a {
+padding: 10px 11px;
+font-size: 4.3vw;
+}
 }
 `, styleSheet.cssRules.length)
 
@@ -184,9 +257,9 @@ styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.c
 //Add the modal styles
 styleSheet.insertRule(`
 .modal {
-display: none; 
-position:fixed; 
-z-index:1; 
+display: none;
+position:fixed;
+z-index:1;
 padding-top: 5%;
 left:0;
 top:0;
@@ -223,7 +296,7 @@ cursor: pointer;
 
 
 if (window.darkMode) {
-    styleSheet.insertRule(`	
+    styleSheet.insertRule(`
 .modal-content {
 background-color:black;
 color:#cfcfcf;

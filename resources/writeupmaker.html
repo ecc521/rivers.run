@@ -71,16 +71,15 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <br>
 <input id="length" type="text" placeholder="Section Length" onkeydown="setTimeout(UpdateWriteup, 30)">
 <br><br>
-<textarea id="writeup" placeholder="Writeup Content" rows="10" style="width:100%;" onkeydown="setTimeout(UpdateWriteup, 30)"></textarea>
-<p>Here is what your writeup looks like::</p>
-<p id="WriteupExample"></p>
+
+
+
+<!-- Quill can misbehave. Add a button to reset it.-->
+<input type="button" value="Clear Writeup" onclick="if (confirm('Are you sure you want to clear the writeup?')) {quill.root.innerHTML = '';UpdateWriteup()}">
+<div id="editor-container" style="height: fit-content; max-height:80vh; min-height:150px;"></div>
 <br>
-<p>Link Creator:</p>
-<input type="text" id="LinkURL" onfocus="if(this.value.length === 0) {this.value='https://'}" placeholder="Link URL"style="width:100%" onkeydown="setTimeout(LinkUpdate, 20)">
-<input type="text" id="LinkText" placeholder="Link Text"style="width:100%" onkeydown="setTimeout(LinkUpdate, 20)">
-<p id="LinkShow">Your link looks like this: </p>
-<p>Copy and paste the following code into your writeup:</p>
-<p id="LinkResult"></p>
+
+
 
 <br><br><br>
 <input type="button" value="Copy Output To Clipboard" onclick="copyStringToClipboard()">
@@ -88,8 +87,9 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <br>
 
 
-
-<script>    
+<script src="quill.min.js"></script>
+<link rel="stylesheet" type="text/css" href="quill.snow.css">
+<script>
 function copyStringToClipboard() {
    var str = document.getElementById("Output").value
    // Create new element
@@ -108,31 +108,80 @@ function copyStringToClipboard() {
    document.body.removeChild(el);
 }
 
+
+
+
+//Create writeup editor
+var toolbarOptions = [
+    ['bold', 'italic', 'underline', 'strike'],
+    ['blockquote'],
+
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    [{ 'script': 'sub'}, { 'script': 'super' }],
+
+    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+
+    [ 'link', 'image', 'video'], //Image and video handlers are overwritten.
+    //[{ 'color': [] }, { 'background': [] }], //CSP breaks inline style.
+
+    ['clean']
+];
+
+var quill = new Quill('#editor-container', {
+modules: {
+toolbar: toolbarOptions
+},
+placeholder: 'Create your writeup...',
+theme: 'snow'
+});
+
+quill.on('text-change', function() {
+    UpdateWriteup()
+});
+
+let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+
+quill.getModule("toolbar").handlers.image = function imageHandler(value) {
+        let File_ID = prompt("Please type in the File ID of the image in Google Drive. (To get the file id, click on the file, click the three dot menu in the top right hand corner, click open in new window. Copy out the section between /d/ and /view).")
+        quill.insertEmbed(quill.getSelection(true), 'image', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
+}
+
+quill.getModule("toolbar").handlers.video = function imageHandler(value) {
+        let File_ID = prompt("Please type in the File ID of the video in Google Drive. (To get the file id, click on the file, click the three dot menu in the top right hand corner, click open in new window. Copy out the section between /d/ and /view).")
+        quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
+}
+
   //state, hidlat, hidlon
 var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun, lowflow, medflow, highflow"
 List = List.split(",")
 List = List.map(function(value){
   return value.trim()
 })
-  
+
 List.forEach(function(value){
   console.log(value)
   console.log(document.getElementById(value))
-  document.getElementById(value).value = localStorage.getItem(value)
-})  
-    
-function LinkUpdate() {
-  var Text = document.getElementById("LinkURL").value.trim()
-  Text = "<a href=\"" + Text + "\" target=\"_blank\" rel=\"noopener\">" + document.getElementById("LinkText").value + "</a>"
-  document.getElementById("LinkResult").innerText = Text
-  document.getElementById("LinkShow").innerHTML = "Your link looks like this: \"" + Text + "\""
-}
-	
+  if (value !== "writeup") {
+      document.getElementById(value).value = localStorage.getItem(value)
+  }
+  else {
+      //Start quill off with stored value.
+      quill.root.innerHTML = localStorage.getItem(value)
+  }
+})
+
+
 function UpdateWriteup() {
     List.forEach(function(value){
-      localStorage.setItem(value, document.getElementById(value).value.trim())
-    })  
-  
+        if (value !== "writeup") {
+            localStorage.setItem(value, document.getElementById(value).value.trim())
+        }
+        else {
+            //Save quill to localStorage
+            localStorage.setItem(value, quill.root.innerHTML)
+        }
+    })
+
     var Text = ""
     var EndText = ""
     List.forEach(function(value, index){
@@ -140,14 +189,13 @@ function UpdateWriteup() {
       Text += "\n" + value + ": " + document.getElementById(value).value.trim()
       }
       else {
-      Text += "\n" + value + ": " + document.getElementById(value).value.trim().split("\n").join("<br>")
+      Text += "\n" + value + ": " + quill.root.innerHTML
       }
     })
-    
+
 	Text.trim()
-	
+
     document.getElementById("Output").value = Text
-    document.getElementById("WriteupExample").innerHTML = document.getElementById("writeup").value.split("\n").join("<br>")
 }
 UpdateWriteup()
 //Initial update

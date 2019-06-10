@@ -13,9 +13,9 @@
         else{
             let elem = window.document.createElement('a');
             elem.href = window.URL.createObjectURL(blob);
-            elem.download = name;        
+            elem.download = name;
             document.body.appendChild(elem);
-            elem.click();        
+            elem.click();
             document.body.removeChild(elem);
         }
 
@@ -29,7 +29,7 @@
 
 
     function urlcreate(File_ID) {
-        return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=text%2Fplain&key=' + API_KEY       
+        return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=text%2Fplain&key=' + API_KEY
     }
 
     window.wait = function(ms) {
@@ -70,7 +70,7 @@
 
 
         await wait(1000) //Let quota refresh
-        
+
         self.retry  = []
         self.complete = []
         self.failed = []
@@ -111,12 +111,12 @@
             promises.push(load(retry[i].id))
             //Use 2000 instead of the 1000 it should be- I want the retries to never 403
             await wait(2000/googlecloudrequestrate)
-        }                
+        }
 
         for (let i=0;i<promises.length;i++) {
             await promises[i]
         }
-        promises = []			
+        promises = []
 
         for (let i=0;i<failed.length;i++) {
             console.error("Loading of file with file id of " + failed[i] + " failed.")
@@ -139,7 +139,7 @@
                     value = value.trim()
                 }
 
-                let allowed = ["name","section","skill","rating","length","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","state","maxrun","minrun","lowflow","medflow","highflow"] //Property values to be included in output file
+                let allowed = ["name","section","skill","rating","length","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","state","maxrun","minrun","lowflow","medflow","highflow","dam"] //Property values to be included in output file
 
                 let keepnames = ["name", "section", "tags", "writeup"] //Some need to be defined in file, even if empty
                 if (allowed.includes(name) && (String(value).length !== 0 || keepnames.includes(name))) {
@@ -148,9 +148,9 @@
             }
             console.log(complete[i].id + ": " + obj.name + " " + obj.section)
             complete[i] = obj
-        }        
+        }
 
-        console.log(complete)      
+        console.log(complete)
         let string = "window.riverarray = " + JSON.stringify(complete)
         download("riverarray.js", string, "application/json")
 

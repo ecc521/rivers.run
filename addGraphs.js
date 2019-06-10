@@ -4,7 +4,7 @@
 function createcanvas() {
     let canvas = document.createElement("canvas")
     canvas.width = 1200
-    canvas.height = 800 
+    canvas.height = 800
 
     //Make sure the background is not transparent
     let ctx = canvas.getContext("2d");
@@ -36,7 +36,7 @@ function toparts(arr) {
 }
 
 
-function addFlowGraph(div, cfs, height) {
+function addFlowGraph(div, cfs, height, data) {
     //Make sure we actually have some data, and don't create an empty graph
     if (!(cfs || height)) {return}
 
@@ -46,7 +46,7 @@ function addFlowGraph(div, cfs, height) {
         let parts = toparts(cfs.values)
         addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFFa0", 2)
         parts = toparts(height.values)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FFa0", 2, 1)                
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FFa0", 2, 1)
     }
     //We won't have both cfs and height. Draw a single line graph for whichever we have.
     else if (cfs) {
@@ -55,7 +55,7 @@ function addFlowGraph(div, cfs, height) {
     }
     else {
         let parts = toparts(height.values)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FF")    
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FF")
     }
 
     //For some reason, only the last canvas was showing. Use images
@@ -69,7 +69,7 @@ function addFlowGraph(div, cfs, height) {
 }
 
 
-function addTempGraph(div, temp) {
+function addTempGraph(div, temp, data) {
     if (temp) {
         let canvas = createcanvas()
 
@@ -87,9 +87,9 @@ function addTempGraph(div, temp) {
 
 
 
-function addPrecipGraph(div, precip) {
+function addPrecipGraph(div, precip, data) {
     if (precip) {
-        let canvas = createcanvas() 
+        let canvas = createcanvas()
 
         let parts = toparts(precip.values)
         addLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0066FF")
@@ -106,11 +106,6 @@ function addPrecipGraph(div, precip) {
 
 module.exports.addGraphs = function(div, data) {
 
-    //Avoid erroring
-    if (!data) {
-        return;
-    }
-
     //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
     //for a specific river due to gauge problems.
     //Each canvas is wrapped individually because sometimes only some graphs have invalid data
@@ -121,24 +116,19 @@ module.exports.addGraphs = function(div, data) {
     let height = data["00065"]
 
 
-    
-    div.innerHTML += "<br><br><p class=\"pixel18 center\"><strong>Disclaimer: USGS Gauge data is provisional, and <em>MIGHT</em> be incorrect. Use at your own risk.</strong></p>"
-
-    
-
 
     try {
-        addFlowGraph(div, cfs, height)
+        addFlowGraph(div, cfs, height, data)
     }
     catch(e){console.warn("Error creating flow graph: " + e)}
 
     try {
-        addTempGraph(div, temp)
+        addTempGraph(div, temp, data)
     }
     catch(e){console.warn("Error creating temperature graph: " + e)}
 
     try {
-        addPrecipGraph(div, precip)
+        addPrecipGraph(div, precip, data)
     }
     catch(e){console.warn("Error creating precipitation graph: " + e)}
 }

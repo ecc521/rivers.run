@@ -23,6 +23,20 @@ html, body {
     height:auto;
 }
 
+@media screen and (min-width: 800px) {
+    .starimg {
+        /*Prevent the stars from getting way too huge.*/
+        max-height:23px;
+    }
+}
+
+.oldDataWarning, #topOldDataWarning {
+	background-color:yellow;
+	text-align:center;
+	line-height:2em;
+	color:black; /*Make sure the text is not white in dark mode*/
+} 
+
 .searchcontain {
     margin-bottom:18px;
     margin-left:4px;
@@ -101,6 +115,23 @@ Those include name,section,skill,quality, and flow info*/
 .riverbutton:nth-child(odd) {
     background-color: #f7f7f7;
 }
+.riverbutton:hover {
+	background-color: #e3e3e3;
+}
+
+
+.riverbuttonDam:nth-child(even) {
+    background-color: #f4f4f4 !important;
+}
+.riverbuttonDam:nth-child(odd) {
+    background-color: #f7f7f7 !important;
+}
+.riverbuttonDam:hover {
+	background-color: #e3e3e3 !important;
+}
+
+
+
 .riverbutton:focus {
     outline:0;
 }   
@@ -187,7 +218,7 @@ Those include name,section,skill,quality, and flow info*/
 @media (prefers-color-scheme: dark) {
     html, body {
         background-color: #090920;
-        color: #cccccc;
+        color: #dddddd;
     }
     .riverbutton:nth-child(even) {
         background-color: #222222;
@@ -195,8 +226,24 @@ Those include name,section,skill,quality, and flow info*/
     .riverbutton:nth-child(odd) {
         background-color: #252525;
     }
+	.riverbutton:hover {
+		background-color: #333333;
+	}
+	
+	
+    .riverbuttonDam:nth-child(even) {
+        background-color: #222222 !important;
+    }
+    .riverbuttonDam:nth-child(odd) {
+        background-color: #252525 !important;
+    }
+	.riverbuttonDam:hover {
+		background-color: #333333 !important;
+	}
+	
+	
     .riverbutton {
-        color:#cccccc;
+        color:#ffffff;
     }
 
     #topbar {

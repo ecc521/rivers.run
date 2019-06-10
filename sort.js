@@ -90,14 +90,18 @@ function skillsort(list, reverse) {
 function runningSort(list, reverse) {
     
     let noData = []
+	let hasDam = []
     let hasGauge = []
+	let hasGaugeAndDam = []
     let knownState = []
     
     list.forEach((item) => {
-        if (item.running !== undefined) {knownState.push(item)}
+        if (item.running !== undefined && !isNaN(item.running)) {knownState.push(item)}
         //If there is gauge data, the user may be able to determine level themselves
         //As such, put rivers with gauges second
+        else if (item.flow && item.dam) {hasGaugeAndDam.push(item)}
         else if (item.flow) {hasGauge.push(item)}
+		else if (item.dam) {hasDam.push(item)}
         else {noData.push(item)}
     })
     
@@ -110,9 +114,11 @@ function runningSort(list, reverse) {
     if (knownState.length === 0) {
         alert("Flow data has not yet loaded.")
         return list
-    }    
-
+    }
+	
+    knownState = knownState.concat(hasGaugeAndDam)
     knownState = knownState.concat(hasGauge)
+    knownState = knownState.concat(hasDam)
     knownState = knownState.concat(noData)
 
     return knownState

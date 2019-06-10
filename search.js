@@ -129,16 +129,15 @@ function skillFilter(list, parameters) {
 
         if (min <= skill && skill <= max) {
             passes = true
-            console.log(min, skill, max)
         }
-
-
 
         if (!passes) {
             //Remove the item if it fails
             delete list[item]
         }
     }	
+	
+	return list
 }
 
 
@@ -151,7 +150,8 @@ function skillFilter(list, parameters) {
 
 
 function ratingFilter(list, parameters) {
-
+	console.error("Rating based filtering is not yet implemented")
+	return list
 }
 
 
@@ -193,6 +193,30 @@ function locationFilter(list, parameters) {
 
 }
 
+
+function flowFilter(list, parameters) {
+	let query = parameters.query
+	let min = query[0]
+	let max = query[1]
+	
+	console.log(parameters)
+	
+	for (let item in list) {
+		let river = list[item]
+		
+		if (river.running === undefined) {
+			if (!parameters.includeUnknown) {
+				delete list[item]
+			}
+		}
+		else if (river.running < min || river.running > max) {
+			delete list[item]
+		}
+	}
+	return list
+}
+
+
 //Query is in form of:
 //{
 //  name: {
@@ -218,6 +242,7 @@ function locationFilter(list, parameters) {
 
 
 
+
 //This doesn't work for difficulty and rating - no greater than or equal to.
 //That needs to be added
 function advancedSearch(list, query) {
@@ -232,30 +257,29 @@ function advancedSearch(list, query) {
 
 
         if (["name", "section", "writeup"].includes(property)) {
-            stringFilter(list, property, parameters)
+            list = stringFilter(list, property, parameters)
         }
         else if (property === "skill") {
-            skillFilter(list, parameters)
+            list = skillFilter(list, parameters)
         }
         else if (property === "rating") {
-            ratingFilter(list, parameters)
+            list = ratingFilter(list, parameters)
         }
         else if (property === "location") {
-            locationFilter(list, parameters)
+            list = locationFilter(list, parameters)
         }
-        else if (property === "sort") {
+        else if (property === "flow") {
+            list = flowFilter(list, parameters)
+        }
+		else if (property === "sort") {
 
         }
         else {
             alert("Unable to search based on " + property)
         }
-
-
-
-
-
     }
 
+	list = list.filter(item => item !== undefined)
     return list
 }
 

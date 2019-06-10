@@ -9,19 +9,23 @@ function drawColors(canvas, height) {
     //window.innerWidth fails - the window is expanded to handle the width of the legend
     //Then the legend doesn't resize (because the window has resized to it) 
 
-    //This seems to be the only cross browser solution
-    canvas.width = document.documentElement.clientWidth
+    //This seems to be the only simple cross browser solution, although it fails if numerous rotations are made
+
+	let tooLowLightness = window.darkMode? "23%": "67%"
+	let tooHighLightness = window.darkMode? "20%": "69%"
+	let normalValueLightness = window.darkMode? "25%": "70%"
+	
+	canvas.width = document.documentElement.clientWidth
     canvas.height = height
 
     let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
 
-    let redLightness = "50%"
-    let redColor = "hsl(0,100%," + redLightness + ",60%)"
-
+    let redColor = "hsl(0,100%," + tooLowLightness + ")"
+    let blueColor = "hsl(240,100%," + tooHighLightness + ")"
 
     gradient.addColorStop(0, redColor)
     gradient.addColorStop(0.08, redColor)
-
+    
     let start = 0.08
     let end = 0.92
 
@@ -29,11 +33,11 @@ function drawColors(canvas, height) {
     //240 is number of whole number hsl values
 
     for (let i=0;i<=240;i++) {
-        gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%,50%,30%)")	
+        gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%," + normalValueLightness + ")")
     }
 
-    gradient.addColorStop(0.92, "hsla(240,100%,50%,60%)")
-    gradient.addColorStop(1, "hsla(240,100%,50%,60%)")
+    gradient.addColorStop(0.92, blueColor)
+    gradient.addColorStop(1, blueColor)
 
     context.fillStyle = gradient
     context.fillRect(0,0,canvas.width,canvas.height)	
@@ -98,21 +102,18 @@ function makeSticky(canvas) {
 }
 
 
-
 function updateLegend() {
+    try {
     let canvas = document.getElementById("legend")
 
     canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)
-
-    canvas.style.backgroundColor = window.getComputedStyle(document.body).getPropertyValue("background-color")
-
 
     let fontSize = parseFloat(window.getComputedStyle(document.getElementById("Rivers").firstChild).getPropertyValue("font-size"))
 
     let height;
     //Picked what I thought looked best
     if (fontSize > 18) {
-        height = 20 + fontSize*2
+        height = 10 + fontSize*2
     }
     else if (fontSize > 14.8){
         fontSize *= 1.2
@@ -126,11 +127,18 @@ function updateLegend() {
     drawColors(canvas, height)
     drawText(canvas, fontSize)
     makeSticky(canvas)
+    }
+    catch (e) {
+        //Something went badly wrong. Prevent from taking down whole page.
+        console.error("Legend failed to draw. Logging error.")
+        console.error(e)
+    }
 
 }
 
 window.addEventListener("resize", updateLegend)
 //orientationchange should be fired on resize, but some browsers (such as Safari) do not
 window.addEventListener("orientationchange", updateLegend)
+window.addEventListener("colorSchemeChanged", updateLegend)
 
 updateLegend()

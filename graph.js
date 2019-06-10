@@ -12,9 +12,8 @@
 //graphtype - Optional. Specify 2 to put 2 lines and 2 scales on one graph. See numplace below
 //numplace - Use only if you are using graphtype = 2. 
 //If you specify 0 or do not pass a value, the line's scale will be on the left side of the graph.
-//If you specify 1, the line's scale will be on the right side of the graph.
-
-module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
+//If you specify 1, the line's scale will be on the right side of the graph
+function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
     if (graphtype === 3) {
         var endcolor = numplace
         }
@@ -38,10 +37,8 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
         console.warn("Uneven amount of datapoints. " + horizontal.length + " horizontal points found, but " + vertical.length + " vertical points found.")
     }
 
-    if (color === undefined) {
-        color = "#000000"
-    }
-    ctx.strokeStyle = color
+    color = color || "#000000"
+    
     ctx.lineWidth = Math.ceil(Math.min(width, height)/120)
     ctx.beginPath();
 
@@ -78,6 +75,8 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
         color = color.slice(0,7)
     }
     ctx.fillStyle = color
+    ctx.strokeStyle = color
+
     if (graphtype === 3) {
         var grd = ctx.createLinearGradient(0, 0, 0, height);
         grd.addColorStop(0, color);   
@@ -136,11 +135,14 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
         var time = String(date.getHours())
 
         if (date.getHours() < 10) {
-            time += "0"
+            time = "0" + time
         }
-        time += ":" + date.getMinutes()
+        time += ":"
         if (date.getMinutes() < 10) {
-            time += "0"
+            time += "0" + date.getMinutes()
+        }
+        else {
+            time += date.getMinutes()
         }
         time += " " + (date.getMonth()+1) + "/" + date.getDate() + "/" +date.getFullYear()
         return time
@@ -304,3 +306,8 @@ module.exports.addLine = function (GraphName, timeframe, Source, canvas, horizon
     }
     ctx.stroke()
 }    
+
+
+export {
+    addLine
+}

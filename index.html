@@ -6,12 +6,12 @@
         <!-- I would like to be able to use blobs for the images instead of data urls as they are faster and would prevent people from adding incredibly long data urls directly into their river writeups. The issue is that the current design for opening a river writeup is synchronus, and canvas.toBlob is asynchronus -->
         <meta http-equiv="Content-Security-Policy" content="
                                                             default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:*;
-                                                            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov;
-                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;"
+                                                            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov https://docs.google.com;
+                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://www.googleapis.com data:;"
               >
         <!-- Curently the img-src can be bypassed with a Data URL. This should be changed so that cannot be done-->
 
-        <meta name="referrer" content="no-referrer">
+        <meta name="referrer" content="strict-origin-when-cross-origin">
 
 
         <!-- USGS Gauges Preconnect -->
@@ -40,15 +40,6 @@
         <meta name="keywords" content="rivers.run, rivers, whitewater, river info, whitewater info, paddling, paddling info, kayak, canoe">
 
 
-        <!-- Images -->
-        <link rel="shortcut icon" type="image/png" sizes="16x16" href="resources/icons/16x16-Water-Drop.png"/>
-        <link rel="shortcut icon" type="image/png" sizes="24x24" href="resources/icons/24x24-Water-Drop.png"/>
-        <link rel="shortcut icon" type="image/png" sizes="32x32" href="resources/icons/32x32-Water-Drop.png"/>
-        <link rel="shortcut icon" type="image/png" sizes="64x64" href="resources/icons/64x64-Water-Drop.png"/>
-        <link rel="shortcut icon" type="image/png" sizes="96x96" href="resources/icons/96x96-Water-Drop.png"/>
-        <link rel="shortcut icon" type="image/png" sizes="160x160" href="resources/icons/160x160-Water-Drop.png"/>
-        <link rel="shortcut icon" type="image/png" sizes="196x196" href="resources/icons/196x196-Water-Drop.png"/>
-
         <!-- iOS is WAY too picky -->
         <link rel="apple-touch-icon" type="image/png" href="resources/icons/57x57-Water-Drop.png"/>
         <link rel="apple-touch-icon" type="image/png" sizes="114x114" href="resources/icons/114x114-Water-Drop.png"/>
@@ -65,21 +56,20 @@
         <link rel="apple-touch-startup-image" href="resources/icons/512x512-Water-Drop.png">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-        <!-- End of Images -->	    
+        <!-- End of Images -->
 
 
         <title>Rivers.run - Paddling and River Info</title>
     </head>
 
-    <body>    
+    <body>
 
         <link rel="stylesheet" type="text/css" href="index.css">
         <script src="riverarray.js"></script>
         <script src="overviews.js"></script>
 
 
-
-
+		<noscript><h1>JavaScript is needed in order to use rivers.run</h1></noscript>
 
         <h1 class="center">River Information</h1>
 
@@ -87,11 +77,11 @@
             <img id="searchimg" alt="Search Icon" src="resources/SearchIcon.png">
             <input id="searchbox" type="text" aria-label="Type in the box to search for a river" placeholder="Search..">
             <button id="advancedsearch">Open Advanced Search</button>
-        </div>  
-        
+        </div>
+
         <canvas id="legend"></canvas>
 
-        <div id="Rivers"></div>    
+        <div id="Rivers"></div>
 
 
 
@@ -103,7 +93,7 @@
                 <p>Empty Search Queries will be Ignored</p>
 
 
-                Name 
+                Name
                 <select id="nameType">
                     <option value="contains">Contains</option>
                     <option value="matches">Matches</option>
@@ -112,7 +102,7 @@
                 <br>
 
 
-                Section 
+                Section
                 <select id="sectionType">
                     <option value="contains">Contains</option>
                     <option value="matches">Matches</option>
@@ -120,7 +110,7 @@
                 <input id="sectionQuery" type="text" placeholder="Search Query">
                 <br>
 
-                Skill 
+                Skill
                 <!-- Consider reusing skillToNumber code to avoid excessive duplication-->
                 <select id="skillQuery1">
                     <option value="1">Flat Water</option>
@@ -145,8 +135,28 @@
                 </select>
                 <br>
 
+				Flow from
+                <select id="flowQuery1">
+                    <option value="0" selected>Too Low</option>
+                    <option value="1">Low Flow</option>
+                    <option value="2">Medium Flow</option>
+                    <option value="3">High Flow</option>
+                    <option value="4">Too High</option>
+				</select>
+				to
+                <select id="flowQuery2">
+                    <option value="0">Too Low</option>
+                    <option value="1">Low Flow</option>
+                    <option value="2">Medium Flow</option>
+                    <option value="3">High Flow</option>
+                    <option value="4" selected>Too High</option>
+				</select>
 
-                Writeup 
+				<input id="includeUnknownFlow" type="checkbox" checked>Include rivers without flow information<br>
+
+
+
+                Writeup
                 <select id="writeupType">
                     <option value="contains">Contains</option>
                     <option value="matches">Matches</option>
@@ -155,13 +165,13 @@
                 <br>
 
 
-                Located within 
-                <input id="distanceQuery" type="number" placeholder="Distance in Miles"> 
+                Located within
+                <input id="distanceQuery" type="number" placeholder="Distance in Miles">
                 miles of
-                <input id="latitudeQuery" type="text" placeholder="Degrees Latitude"> 
-                <input id="longitudeQuery" type="text" placeholder="Degrees Longitude"> 
+                <input id="latitudeQuery" type="text" placeholder="Degrees Latitude">
+                <input id="longitudeQuery" type="text" placeholder="Degrees Longitude">
                 <br>
-                <input id="includeUnknown" type="checkbox">Include rivers without GPS coordinates<br>
+                <input id="includeUnknownLocation" type="checkbox">Include rivers without GPS coordinates<br>
                 <button id="calculateCoordinates">Calculate my Location</button>
                 <p id="locationProgress"></p>
                 <br>
@@ -169,15 +179,17 @@
 
 
                 <button id="performadvancedsearch">Search</button>
+
+
+				<p>Warning: Searching based on flow will either return no results or all rivers if the search is run before flow information loads.</p>
                 <p id="searchlink"></p>
             </div>
-        </div>	
+        </div>
 
 
 
 
-
-        <script src="packages/index.js"></script> 
-
-    </body>  
+		<script src="packages/allPages.js"></script>
+        <script src="packages/index.js"></script>
+    </body>
 </html>

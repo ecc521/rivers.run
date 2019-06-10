@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <!--Favicon-->
-        <link rel="shortcut icon" type="image/x-icon" href="https://rivers.run/resources/32pxDrop.png" />
-
         <!--Web App Manifest-->
         <link rel="manifest" href="manifest.json">
 
@@ -31,18 +28,25 @@
 
         <button class="accordion">How does this Website work Offline?</button>
         <div class="panel">
-            <p>This website utilizes your browsers cache to store the contents of this site - So whenever rivers.run is in cache, you can visit it, even offline.<em> If you any reason your cache is cleared, then you will be unable to visit rivers.run without internet.</em> Whenever you visit the site without rivers.run in cache, rivers.run is loaded into cache, making it available offline again.</p>
+            <p>This website utilizes your browsers cache to store the contents of this site - So whenever rivers.run is in cache, you can visit it.<em> If for any reason your cache is cleared, then you will be unable to visit rivers.run without internet until the cache is refilled on the next visit.</em></p>
         </div>
 
-        <button class="accordion">X-axis of your graphs is showing a bunch of NaN's</button>
+        <button class="accordion">How do I link to a normal search?</button>
         <div class="panel">
-            <p>This is a bug that exists on some older versions of Safari</p>
+            <p>The URL to a normal search is https://rivers.run#YOUR_SEARCH_QUERY_HERE<br>If you want to test the URL, make sure you put it in a new tab.</p>
         </div>
 
         <button class="accordion">Your river info page is not showing any rivers</button>
         <div class="panel">
-            <p><a href="https://lefunny.net/wp-content/uploads/2014/02/Funny-internet-explorer-comic.jpg" rel="noopener" target="_blank">If you are using Internet Explorer, this comic (opens in new tab) shows why is isn't working</a><br>
-                If you aren't using Internet Explorer, your browser may be too old. The site has been tested in latest versions of Chrome, Firefox, Opera, and Safari (one bug in Safari).<br>
+            <p>
+                If are encountering issues, your browser may be too old. Here are the browsers that should work:<br>
+				Chrome (Version 40ish+ should work, but only the latest version tested)<br>
+				Firefox - Full Support can be obtained down to Firefox 60 ESR. river-overview popups break below version 60<br>
+				Microsoft Edge (Chakra) - Full Support believed for latest version<br>
+				Opera, Microsoft Edge (Blink), Chromium - Based on the same engines as Chrome, so they should work on the latest version, and down to Chromium 40ish+<br>
+				Opera Mini - Breaks in extreme mode. Works mostly otherwise (navigation menu dissapears though)<br>
+				Samsung Internet - Based on WebKit just like Safari, so it should work<br>
+				Any Browser on iOS 9.3+ (iOS 11.3+ needed for offline)<br>
             </p>
         </div>
 
@@ -147,7 +151,7 @@
 
         </style>
 
-        <script src="allPages.js"></script>    
+        <script src="packages/allPages.js"></script>    
 
     </body>
 </html>
