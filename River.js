@@ -19,7 +19,7 @@ function addHandlers(button, locate) {
 					button.style.backgroundColor = calculateColor(river)
 				})
 			}
-	
+
 			if (river.dam) {
 				window.addEventListener("colorSchemeChanged", function() {
 					button.style.backgroundColor = createStripes()
@@ -356,7 +356,7 @@ function calculateColor(river, options) {
 }
 
 
-function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.2)":"#aaaaaa55", oldColor = "rgba(0,0,0,0)") {
+function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.2)":"rgba(170,170,170,85)", oldColor = "rgba(0,0,0,0)") {
 		//If the river has a dam, stripe it.
 
 		let background = "linear-gradient(150deg"
@@ -365,7 +365,7 @@ function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.2)":"#aa
 			background += ", "
 			background += i % 3 ? oldColor:newColor
 		}
-		
+
 		return background
 }
 
@@ -468,7 +468,6 @@ module.exports.River = function(locate, event) {
 		if (this.dam) {
 			this.finished.style.background = createStripes()
 		}
-		
 		if (this.minrun && this.maxrun && this.flow) {
 			this.finished.style.backgroundColor = calculateColor(this)
 		}
@@ -476,7 +475,7 @@ module.exports.River = function(locate, event) {
 			//Background color gets overwrote by background. This class uses !important to prevent that.
 			this.finished.classList.add("riverbuttonDam")
 		}
-		
+
         //Return finished button
         return this.finished
 
