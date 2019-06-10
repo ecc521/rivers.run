@@ -345,19 +345,48 @@ function calculateColor(river, options) {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
 
-        return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
+        let color = "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
+		
+		return color;
     }
 }
 
 
+function createStripes(color) {
+		//If the river has a dam, stripe it.
 
+		let canvas = document.createElement("canvas")
+		let context = canvas.getContext("2d")		
+
+		let background = "rgba(0,0,0,0)"	
+		
+		canvas.width = Math.max(screen.width, screen.height) //Make sure the image doesn't repeat
+		canvas.height = 20 //Doesn't really matter
+
+		let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
+
+
+		for (let i=0;i<21;i++) {
+			gradient.addColorStop(i*0.05, i%4 ? background:color)
+		}
+
+		context.fillStyle = gradient
+		context.fillRect(0,0,canvas.width,canvas.height)
+
+		let url = canvas.toDataURL("image/png")
+		let backgroundStyle = "url(" + url + ")"		
+		
+		console.log(url)
+		
+		return backgroundStyle
+}
 
 
 
 
 module.exports.River = function(locate, event) {
 
-    //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw
+    //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
     Object.assign(this, event)
     //tags needs to be a string. It can't be undefined
     this.tags = this.tags || ""
@@ -421,8 +450,9 @@ module.exports.River = function(locate, event) {
             }
 
             if (this.flow) {
-                let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs))
+                let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs) + (this.dam ? "Dam" : ""))
             }
+			else if (this.dam) {AddSpan("Dam")}
 
 
             button.className = "riverbutton"
@@ -447,7 +477,10 @@ module.exports.River = function(locate, event) {
 
 		window.addEventListener("colorSchemeChanged", this.updateExpansion)
 
-		if (this.minrun && this.maxrun) {
+		if (this.dam) {
+			this.finished.style.background = createStripes(window.darkMode? "#66666688":"#aaaaaa88")
+		}
+		if (this.minrun && this.maxrun && this.flow) {
 			this.finished.style.backgroundColor = calculateColor(this)
 		}
         //Return finished button

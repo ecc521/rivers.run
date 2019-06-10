@@ -1,2 +1,2288 @@
-!function(e){var t={};function n(r){if(t[r])return t[r].exports;var a=t[r]={i:r,l:!1,exports:{}};return e[r].call(a.exports,a,a.exports,n),a.l=!0,a.exports}n.m=e,n.c=t,n.d=function(e,t,r){n.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:r})},n.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},n.t=function(e,t){if(1&t&&(e=n(e)),8&t)return e;if(4&t&&"object"==typeof e&&e&&e.__esModule)return e;var r=Object.create(null);if(n.r(r),Object.defineProperty(r,"default",{enumerable:!0,value:e}),2&t&&"string"!=typeof e)for(var a in e)n.d(r,a,function(t){return e[t]}.bind(null,a));return r},n.n=function(e){var t=e&&e.__esModule?function(){return e.default}:function(){return e};return n.d(t,"a",t),t},n.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},n.p="",n(n.s=10)}([function(e,t,n){e.exports=n(11)},function(e,t,n){var r=n(13),a=n(14),o=n(15);e.exports=function(e){return r(e)||a(e)||o()}},function(e,t){function n(e,t,n,r,a,o,i){try{var l=e[o](i),s=l.value}catch(e){return void n(e)}l.done?t(s):Promise.resolve(s).then(r,a)}e.exports=function(e){return function(){var t=this,r=arguments;return new Promise(function(a,o){var i=e.apply(t,r);function l(e){n(i,a,o,l,s,"next",e)}function s(e){n(i,a,o,l,s,"throw",e)}l(void 0)})}}},function(e,t,n){"use strict";n.r(t),n.d(t,"loadUSGS",function(){return l});var r=n(0),a=n.n(r),o=n(2),i=n.n(o);self.usgsarray={},window.updateOldDataWarning=function(){var e=document.getElementById("topOldDataWarning");if(e&&e.remove(),!(window.usgsDataAge<36e5)&&window.usgsDataAge){var t=document.createElement("p");t.id="topOldDataWarning",t.innerHTML="All river data is more than "+Math.floor(window.usgsDataAge/1e3/60/60)+" hours old! ",t.innerHTML+="("+window.loadNewUSGS+") ";var r=document.createElement("button");r.addEventListener("click",function(){window.loadNewUSGS="Trying to Load Data",n(3).loadUSGS()}),r.innerHTML="Try Again",t.appendChild(r);var a=document.getElementById("legend");a.parentNode.insertBefore(t,a)}};var l=function(){var e=i()(a.a.mark(function e(){var t,n,r,o,i,l,s,c,u,d,h,f,p,g,m,v,w,y;return a.a.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:if(!(window.usgsDataAge<36e5)){e.next=2;break}return e.abrupt("return");case 2:for(864e5,t=[],n=0;n<riverarray.length;n++)(r=riverarray[n].usgs)&&r.length>7&&r.length<16&&t.push(r);if(o="https://waterservices.usgs.gov/nwis/iv/?format=json&sites="+t.join(",")+"&startDT="+new Date(Date.now()-864e5).toISOString()+"&parameterCd=00060,00065,00010,00045&siteStatus=all",!window.fetch){e.next=15;break}return e.next=9,fetch(o);case 9:return l=e.sent,e.next=12,l.json();case 12:i=e.sent,e.next=20;break;case 15:return s=new XMLHttpRequest,e.next=18,new Promise(function(e,t){s.onload=function(t){e(t.target.response)},s.open("GET",o),s.send()});case 18:c=e.sent,i=JSON.parse(c);case 20:for(window.usgsDataAge=Date.now()-new Date(i.value.queryInfo.note[3].value).getTime(),window.updateOldDataWarning(),i.value.timeSeries.forEach(function(e){var t={};if(t.values=e.values[0].value,0!==t.values.length){t.units=e.variable.variableDescription;var n=e.sourceInfo.siteCode[0].value;if(!usgsarray[n]){var r={};r.name=e.sourceInfo.siteName,usgsarray[n]=r}var a=e.variable.variableCode[0].value;if("00010"===a&&"Temperature, water, degrees Celsius"===t.units){for(var o=0;o<t.values.length;o++)t.values[o].value=1.8*t.values[o].value+32;t.units="Temperature, water, degrees Fahrenheit"}usgsarray[n][a]=t}else console.log("Empty Array. Skipping")}),u=0;u<ItemHolder.length;u++)if(d=ItemHolder[u],h=usgsarray[d.usgs]){f=h["00060"],p=h["00065"],f&&(f=f.values),p&&(p=p.values),g=void 0,m=void 0,f&&(g=f[f.length-1].value),p&&(m=p[p.length-1].value),d.feet=m,d.cfs=g,g&&m?d.flow=g+"cfs "+m+"ft":g?d.flow=f[f.length-1].value+" cfs":m&&(d.flow=p[p.length-1].value+" ft"),v=document.getElementById(d.base+"1"),w=d.expanded,console.log(w),y=d.create(!0);try{v.parentNode.replaceChild(y,v),w&&(y.dispatchEvent(new Event("click")),y.dispatchEvent(new Event("click")))}catch(e){}}case 24:case"end":return e.stop()}},e)}));return function(){return e.apply(this,arguments)}}()},,,,,,,function(e,t,n){"use strict";n.r(t);var r,a=n(0),o=n.n(a),i=n(2),l=n.n(i);try{window.loadNewUSGS="Trying to Load Data",window.serviceWorkerMessages=[],navigator.serviceWorker.ready.then(function(e){navigator.serviceWorker.onmessage=function(e){window.serviceWorkerMessages.push(e.data);var t=e.data;t.includes("waterservices.usgs.gov")&&(window.oldLoadUSGS=window.loadNewUSGS,t.includes("Updated cache for")?(console.log("Updating"),n(3).loadUSGS()):t.includes("errored. Using cache")?window.loadNewUSGS="Unable to load latest data":t.includes(" took too long to load from network")?window.loadNewUSGS="Updating data in backgroud":t.includes("has been loaded from the network")&&(window.loadNewUSGS="This is likely a glitch. You should be viewing the latest data."),window.updateOldDataWarning())}})}catch(e){console.error(e)}try{window.addLine=n(12).addLine}catch(e){console.error(e)}Object.assign(window,n(16)),window.River=n(17).River,window.sort=n(19).sort,Object.assign(window,n(20)),window.usgsarray={},window.ItemHolder=[],riverarray.map(function(e,t){ItemHolder[t]=new River(t,e)}),n(3).loadUSGS(),window.NewList=function(e,t,n){"string"==typeof e&&(e=e.toLowerCase());var a=ItemHolder.slice(0);if(0!==String(e).length&&e&&t&&("sort"===t&&(r&&(a=r),a=sort(e,a,n)),"normal"===t&&(a=normalSearch(a,e)),"advanced"===t&&(a=advancedSearch(a,e)),"location"===t)){r&&(a=r);var o=[];a.forEach(function(t){t.plat&&t.plon&&distanceto(t.plat,t.plon)<e&&o.push(t)}),a=o}ItemHolder.forEach(function(e){e.delete()});var i=document.getElementById("Rivers");a.forEach(function(e){i.appendChild(e.create())}),"sort"!==t&&(r=a)},document.getElementById("Rivers").appendChild((new TopBar).create()),n(22),NewList("alphabetical","sort");var s=document.getElementById("searchbox");function c(){return(c=l()(o.a.mark(function e(){var t,n,r,a,i,l;return o.a.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return t=document.getElementById("locationProgress"),n=0,r=setInterval(function(){n=(n+1)%6,t.innerHTML="Calculating your Approximate Location (Expect this to take 15-60 seconds)"+".".repeat(n)},500),e.prev=3,e.next=6,new Promise(function(e,t){navigator.geolocation.getCurrentPosition(e,t)});case 6:a=e.sent,e.next=15;break;case 9:e.prev=9,e.t0=e.catch(3),i="Error code "+e.t0.code+" occurred when getting your location. The error message is: "+e.t0.message,alert(i),clearInterval(r),t.innerHTML=i;case 15:l=a.coords,clearInterval(r),document.getElementById("latitudeQuery").value=l.latitude,document.getElementById("longitudeQuery").value=l.longitude,t.innerHTML="You are within "+l.accuracy+" meters of "+l.latitude+" degrees latitude and "+l.longitude+" degrees longitude.";case 20:case"end":return e.stop()}},e,null,[[3,9]])}))).apply(this,arguments)}if(s.addEventListener("keydown",function(){setTimeout(function(){NewList(s.value,"normal")},20)}),document.getElementById("calculateCoordinates").addEventListener("click",function(){return c.apply(this,arguments)}),document.getElementById("performadvancedsearch").addEventListener("click",function(){var e=function(){var e={};e.name={type:document.getElementById("nameType").value,query:document.getElementById("nameQuery").value},e.section={type:document.getElementById("sectionType").value,query:document.getElementById("sectionQuery").value},e.writeup={type:document.getElementById("writeupType").value,query:document.getElementById("writeupQuery").value};var t=Number(document.getElementById("distanceQuery").value),n=document.getElementById("latitudeQuery").value,r=document.getElementById("longitudeQuery").value;return n=Number(n),r=Number(r),t>0||!n||!r?!(t>0)||n&&r?t>0&&n&&r&&(e.location={lat:n,lon:r,distance:t,includeUnknown:document.getElementById("includeUnknownLocation").checked}):alert("You must enter a latitude and longitude (Get the coordinates from GPS by pressing Calculate my Location)"):alert("Distance must be a number greater than 0 to use location sorting"),e.skill={type:"from",query:[Number(document.getElementById("skillQuery1").value),Number(document.getElementById("skillQuery2").value)]},e.flow={type:"from",query:[Number(document.getElementById("flowQuery1").value),Number(document.getElementById("flowQuery2").value)],includeUnknown:document.getElementById("includeUnknownFlow").checked},e}(),t=window.location.href;t=t.slice(0,t.lastIndexOf("/")+1);var n=encodeURI(t+"#"+JSON.stringify(e));document.getElementById("searchlink").innerHTML='Link to this search: <a target="_blank" href="'+n+'">'+n+"</a>",NewList(e,"advanced",!1)}),window.location.hash.length>0){var u=decodeURI(window.location.hash.slice(1));try{var d=JSON.parse(u);NewList(d,"advanced")}catch(e){document.getElementById("searchbox").value=u,NewList(u,"normal")}}},function(e,t,n){var r=function(e){"use strict";var t,n=Object.prototype,r=n.hasOwnProperty,a="function"==typeof Symbol?Symbol:{},o=a.iterator||"@@iterator",i=a.asyncIterator||"@@asyncIterator",l=a.toStringTag||"@@toStringTag";function s(e,t,n,r){var a=t&&t.prototype instanceof g?t:g,o=Object.create(a.prototype),i=new T(r||[]);return o._invoke=function(e,t,n){var r=u;return function(a,o){if(r===h)throw new Error("Generator is already running");if(r===f){if("throw"===a)throw o;return I()}for(n.method=a,n.arg=o;;){var i=n.delegate;if(i){var l=E(i,n);if(l){if(l===p)continue;return l}}if("next"===n.method)n.sent=n._sent=n.arg;else if("throw"===n.method){if(r===u)throw r=f,n.arg;n.dispatchException(n.arg)}else"return"===n.method&&n.abrupt("return",n.arg);r=h;var s=c(e,t,n);if("normal"===s.type){if(r=n.done?f:d,s.arg===p)continue;return{value:s.arg,done:n.done}}"throw"===s.type&&(r=f,n.method="throw",n.arg=s.arg)}}}(e,n,i),o}function c(e,t,n){try{return{type:"normal",arg:e.call(t,n)}}catch(e){return{type:"throw",arg:e}}}e.wrap=s;var u="suspendedStart",d="suspendedYield",h="executing",f="completed",p={};function g(){}function m(){}function v(){}var w={};w[o]=function(){return this};var y=Object.getPrototypeOf,b=y&&y(y(C([])));b&&b!==n&&r.call(b,o)&&(w=b);var x=v.prototype=g.prototype=Object.create(w);function M(e){["next","throw","return"].forEach(function(t){e[t]=function(e){return this._invoke(t,e)}})}function k(e){var t;this._invoke=function(n,a){function o(){return new Promise(function(t,o){!function t(n,a,o,i){var l=c(e[n],e,a);if("throw"!==l.type){var s=l.arg,u=s.value;return u&&"object"==typeof u&&r.call(u,"__await")?Promise.resolve(u.__await).then(function(e){t("next",e,o,i)},function(e){t("throw",e,o,i)}):Promise.resolve(u).then(function(e){s.value=e,o(s)},function(e){return t("throw",e,o,i)})}i(l.arg)}(n,a,t,o)})}return t=t?t.then(o,o):o()}}function E(e,n){var r=e.iterator[n.method];if(r===t){if(n.delegate=null,"throw"===n.method){if(e.iterator.return&&(n.method="return",n.arg=t,E(e,n),"throw"===n.method))return p;n.method="throw",n.arg=new TypeError("The iterator does not provide a 'throw' method")}return p}var a=c(r,e.iterator,n.arg);if("throw"===a.type)return n.method="throw",n.arg=a.arg,n.delegate=null,p;var o=a.arg;return o?o.done?(n[e.resultName]=o.value,n.next=e.nextLoc,"return"!==n.method&&(n.method="next",n.arg=t),n.delegate=null,p):o:(n.method="throw",n.arg=new TypeError("iterator result is not an object"),n.delegate=null,p)}function L(e){var t={tryLoc:e[0]};1 in e&&(t.catchLoc=e[1]),2 in e&&(t.finallyLoc=e[2],t.afterLoc=e[3]),this.tryEntries.push(t)}function S(e){var t=e.completion||{};t.type="normal",delete t.arg,e.completion=t}function T(e){this.tryEntries=[{tryLoc:"root"}],e.forEach(L,this),this.reset(!0)}function C(e){if(e){var n=e[o];if(n)return n.call(e);if("function"==typeof e.next)return e;if(!isNaN(e.length)){var a=-1,i=function n(){for(;++a<e.length;)if(r.call(e,a))return n.value=e[a],n.done=!1,n;return n.value=t,n.done=!0,n};return i.next=i}}return{next:I}}function I(){return{value:t,done:!0}}return m.prototype=x.constructor=v,v.constructor=m,v[l]=m.displayName="GeneratorFunction",e.isGeneratorFunction=function(e){var t="function"==typeof e&&e.constructor;return!!t&&(t===m||"GeneratorFunction"===(t.displayName||t.name))},e.mark=function(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,v):(e.__proto__=v,l in e||(e[l]="GeneratorFunction")),e.prototype=Object.create(x),e},e.awrap=function(e){return{__await:e}},M(k.prototype),k.prototype[i]=function(){return this},e.AsyncIterator=k,e.async=function(t,n,r,a){var o=new k(s(t,n,r,a));return e.isGeneratorFunction(n)?o:o.next().then(function(e){return e.done?e.value:o.next()})},M(x),x[l]="Generator",x[o]=function(){return this},x.toString=function(){return"[object Generator]"},e.keys=function(e){var t=[];for(var n in e)t.push(n);return t.reverse(),function n(){for(;t.length;){var r=t.pop();if(r in e)return n.value=r,n.done=!1,n}return n.done=!0,n}},e.values=C,T.prototype={constructor:T,reset:function(e){if(this.prev=0,this.next=0,this.sent=this._sent=t,this.done=!1,this.delegate=null,this.method="next",this.arg=t,this.tryEntries.forEach(S),!e)for(var n in this)"t"===n.charAt(0)&&r.call(this,n)&&!isNaN(+n.slice(1))&&(this[n]=t)},stop:function(){this.done=!0;var e=this.tryEntries[0].completion;if("throw"===e.type)throw e.arg;return this.rval},dispatchException:function(e){if(this.done)throw e;var n=this;function a(r,a){return l.type="throw",l.arg=e,n.next=r,a&&(n.method="next",n.arg=t),!!a}for(var o=this.tryEntries.length-1;o>=0;--o){var i=this.tryEntries[o],l=i.completion;if("root"===i.tryLoc)return a("end");if(i.tryLoc<=this.prev){var s=r.call(i,"catchLoc"),c=r.call(i,"finallyLoc");if(s&&c){if(this.prev<i.catchLoc)return a(i.catchLoc,!0);if(this.prev<i.finallyLoc)return a(i.finallyLoc)}else if(s){if(this.prev<i.catchLoc)return a(i.catchLoc,!0)}else{if(!c)throw new Error("try statement without catch or finally");if(this.prev<i.finallyLoc)return a(i.finallyLoc)}}}},abrupt:function(e,t){for(var n=this.tryEntries.length-1;n>=0;--n){var a=this.tryEntries[n];if(a.tryLoc<=this.prev&&r.call(a,"finallyLoc")&&this.prev<a.finallyLoc){var o=a;break}}o&&("break"===e||"continue"===e)&&o.tryLoc<=t&&t<=o.finallyLoc&&(o=null);var i=o?o.completion:{};return i.type=e,i.arg=t,o?(this.method="next",this.next=o.finallyLoc,p):this.complete(i)},complete:function(e,t){if("throw"===e.type)throw e.arg;return"break"===e.type||"continue"===e.type?this.next=e.arg:"return"===e.type?(this.rval=this.arg=e.arg,this.method="return",this.next="end"):"normal"===e.type&&t&&(this.next=t),p},finish:function(e){for(var t=this.tryEntries.length-1;t>=0;--t){var n=this.tryEntries[t];if(n.finallyLoc===e)return this.complete(n.completion,n.afterLoc),S(n),p}},catch:function(e){for(var t=this.tryEntries.length-1;t>=0;--t){var n=this.tryEntries[t];if(n.tryLoc===e){var r=n.completion;if("throw"===r.type){var a=r.arg;S(n)}return a}}throw new Error("illegal catch attempt")},delegateYield:function(e,n,r){return this.delegate={iterator:C(e),resultName:n,nextLoc:r},"next"===this.method&&(this.arg=t),p}},e}(e.exports);try{regeneratorRuntime=r}catch(e){Function("r","regeneratorRuntime = r")(r)}},function(e,t,n){"use strict";n.r(t),n.d(t,"addLine",function(){return o});var r=n(1),a=n.n(r);function o(e,t,n,r,o,i,l,s,c){if(3===s)var u=c;2!==s&&(c=0);var d=.8*r.height,h=r.width,f=r.getContext("2d");if(!isNaN(Number(o))){o=[];for(var p=0;p<i.length;p++)o.push(p*h)}o.length!==i.length&&console.warn("Uneven amount of datapoints. "+o.length+" horizontal points found, but "+i.length+" vertical points found."),l=l||"#000000",f.lineWidth=Math.ceil(Math.min(h,d)/120),f.beginPath(),h*=2===s?.86:.93;var g=[];for(p=0;p<i.length;p++)isNaN(Number(i[p]))||""===i[p]||g.push(i[p]);var m=Math.max.apply(Math,g)-Math.min.apply(Math,g),v=Math.max.apply(Math,a()(o))-Math.min.apply(Math,a()(o));m=d/m,v=h/v;var w=Math.min.apply(Math,g),y=Math.min.apply(Math,a()(o));y-=.07*(Math.max.apply(Math,a()(o))-Math.min.apply(Math,a()(o)));var b=Math.floor(.07*r.width/2.6);(f.font=b+"px serif",9===l.length&&(l=l.slice(0,7)),f.fillStyle=l,f.strokeStyle=l,3===s)&&((B=f.createLinearGradient(0,0,0,d)).addColorStop(0,l),B.addColorStop(1,u),f.strokeStyle=B,f.fillStyle=B);if(0===c||void 0===c)var x=1;else x=r.width-.07*r.width;for(p=1;p<11;p++){var M=(Math.max.apply(Math,g)-Math.min.apply(Math,g))*((p-1)/10)+Math.min.apply(Math,g),k=Math.max(0,3-String(Math.round(M)).length);M=Number(M.toFixed(k)),f.fillText(M,x,d*(11-p)/10-5)}M=(Math.max.apply(Math,g)-Math.min.apply(Math,g))*((p-1)/10)+Math.min.apply(Math,g);var E=Math.max(0,3-String(Math.round(M)).length);M=Number(M.toFixed(E)),f.fillText(M,x,27);b=Math.floor(.07*r.width/2.8);function L(e){var t=String(e.getHours());return e.getHours()<10&&(t="0"+t),t+=":",e.getMinutes()<10?t+="0"+e.getMinutes():t+=e.getMinutes(),t+=" "+(e.getMonth()+1)+"/"+e.getDate()+"/"+e.getFullYear()}f.font=b+"px serif",9===l.length&&(l=l.slice(0,7)),window.darkMode?f.fillStyle="#cccccc":f.fillStyle="black";var S=new Date(t[0]),T=new Date(t[t.length-1]),C=new Date((T-S)/2+S.getTime()),I=L(S),N=L(T),F=L(C);f.fillText(I,10,r.height*(11/12)-.06*r.height-12),f.textAlign="end",f.fillText(N,r.width-10,r.height*(11/12)-.06*r.height-12),f.textAlign="center",f.fillText(F,r.width/2,r.height*(11/12)-.06*r.height-12),f.textAlign="start";var B;b=Math.floor(.07*r.width/2.4);(f.font=b+"px serif",f.fillStyle=l,3===s)&&((B=f.createLinearGradient(0,d,200,d)).addColorStop(0,l),B.addColorStop(1,u),f.strokeStyle=B,f.fillStyle=B);if(2===s)0===c||void 0===c?f.fillText("Flow (Cubic Feet/Second)",x+5,r.height*(11/12)):(f.textAlign="right",f.fillText("Gauge Height (Feet)",x-5,r.height*(11/12)),f.textAlign="start");else if(3===s)f.fillText("Water Temperature (°F)",x+5,r.height*(11/12));else if("Precipitation"===e){f.fillText("Precipitation (Inches)",x+5,r.height*(11/12));var H,O=0,A=0;(H=(H=i.slice(-96)).map(Number)).forEach(function(e){O+=e}),(H=H.slice(-48)).forEach(function(e){A+=e}),O=O.toFixed(2),A=A.toFixed(2),f.fillText("Last 24 Hours: "+O+" in",r.width-700,r.height*(11/12)),f.fillText("Last 12 Hours: "+A+" in",r.width-330,r.height*(11/12))}else"cfs"===e?f.fillText("Flow (Cubic Feet/Second)",x+5,r.height*(11/12)):"height"===e?f.fillText("Gauge Height (Feet)",x+5,r.height*(11/12)):f.fillText("Labeling Error...",x+5,r.height*(11/12));3===s&&((B=f.createLinearGradient(0,0,0,.8*r.height)).addColorStop(0,l),B.addColorStop(1,u),f.strokeStyle=B,f.fillStyle=B);function G(e){return Math.round((e-y)*v)}function U(e){return Math.round(d-(e-w)*m)}window.darkMode?f.fillStyle="#cccccc":f.fillStyle="black",f.textAlign="center",f.fillText(n,r.width/2,r.height-10),f.textAlign="start";for(var P=0;P<Math.min(i.length,o.length);P++)if(!isNaN(Number(i[P]))&&""!==i[P]){f.moveTo(G(o[P]),U(i[P]));break}var D=1;for(p=P;p<Math.min(i.length,o.length);p++)isNaN(Number(i[p]))||""===i[p]?D=0:1===D?f.lineTo(G(o[p]),U(i[p])):(f.moveTo(G(o[p]),U(i[p])+10),f.lineTo(G(o[p]),U(i[p])),D=1);f.stroke(),f.beginPath(),f.lineWidth=Math.ceil(f.lineWidth/10),window.darkMode?f.strokeStyle="#ccccccAA":f.strokeStyle="000000AA";for(p=1;p<11;p++)f.moveTo(0,d*(11-p)/10),f.lineTo(r.width,d*(11-p)/10);f.stroke()}},function(e,t){e.exports=function(e){if(Array.isArray(e)){for(var t=0,n=new Array(e.length);t<e.length;t++)n[t]=e[t];return n}}},function(e,t){e.exports=function(e){if(Symbol.iterator in Object(e)||"[object Arguments]"===Object.prototype.toString.call(e))return Array.from(e)}},function(e,t){e.exports=function(){throw new TypeError("Invalid attempt to spread non-iterable instance")}},function(e,t){function n(e){var t=document.createElement("span");return t.className="riverspan",t.innerHTML=e,t}function r(e,t){e.onclick=function(){1===this.value?(NewList(t,"sort",!0),this.value=0):(NewList(t,"sort"),this.value=1)}}e.exports={TopBar:function(){this.create=function(){var e=document.createElement("button");e.id="topbar",e.className="riverbutton";var t=n("River⇅");return r(t,"alphabetical"),t.value=1,e.appendChild(t),e.appendChild(n("Section")),r(t=n("Skill⇅"),"skill"),t.value=0,e.appendChild(t),r(t=n("Rating⇅"),"rating"),t.value=1,e.appendChild(t),r(t=n("Flow Info/Trend⇅"),"running"),t.value=1,e.appendChild(t),e},this.delete=function(){var e=document.getElementById("topbar");e&&e.parentNode.removeChild(e)}}}},function(e,t,n){var r=n(18).addGraphs;function a(e,t){var n=ItemHolder[t];n.minrun&&n.maxrun&&(window.addEventListener("colorSchemeChanged",function(){e.style.backgroundColor=o(n)}),e.addEventListener("mouseover",function(){e.style.backgroundColor=o(n,{highlighted:!0})}),e.addEventListener("mouseout",function(){e.style.backgroundColor=o(n)})),e.onclick=function(){if(0===n.expanded){n.expanded=1;var t=document.createElement("div");if(t.innerHTML="",n.dam){var a=document.createElement("a");a.target="_blank",a.rel="noopener",a.href=n.dam,a.innerHTML="This river has a dam. View information.",t.appendChild(a),t.appendChild(document.createElement("br")),t.appendChild(document.createElement("br"))}t.innerHTML+=n.writeup+"<br><br>",n.plat&&n.plon&&(t.innerHTML+="Put-In GPS Coordinates: "+n.plat+", "+n.plon+"<br>"),n.tlat&&n.tlon&&(t.innerHTML+="Take-Out GPS Coordinates: "+n.tlat+", "+n.tlon+"<br>");for(var o=["minrun","lowflow","midflow","highflow","maxrun"],i=0;i<o.length;i++){var l=o[i];n[l]&&(t.innerHTML+=l+":"+n[l]+" ")}if(n.aw){t.appendChild(document.createElement("br"));var s=document.createElement("a");s.target="_blank",s.rel="noopener",s.href="https://www.americanwhitewater.org/content/River/detail/id/"+n.aw,s.innerHTML="Click here to view this river on American Whitewater",t.appendChild(s)}if(n.usgs){t.appendChild(document.createElement("br"));var c=document.createElement("a");c.target="_blank",c.rel="noopener",c.href="https://waterdata.usgs.gov/nwis/uv?site_no="+n.usgs,c.innerHTML="View flow information on USGS",t.appendChild(c)}if(self.usgsarray&&n.usgs){var u;try{u=function(e){var t=window.usgsarray[e];if(t){var n;if(t["00060"]?n=t["00060"].values:t["00065"]?n=t["00065"].values:t["00010"]?n=t["00010"].values:t["00045"]&&(n=t["00045"].values),n)for(var r=n.length;r>=0;r--){var a=n[r];if(a)return Date.now()-Number(new Date(a.dateTime))}}return null}(n.usgs)}catch(e){console.error(e),u=null}var d;u>72e5&&((d=document.createElement("p")).innerHTML="Check the dates! This river data is more than "+Math.floor(u/1e3/60/60)+" hours old!",d.className="oldDataWarning",t.appendChild(d));var h=self.usgsarray[n.usgs];if(h){var f=document.createElement("p");f.style.fontWeight="bold",f.style.textAlign="center",f.innerHTML="Disclaimer: USGS Gauge data is provisional, and MIGHT be incorrect. Use at your own risk.",t.appendChild(f),u>72e5?(f.style.marginTop="0.5em",d.style.marginBottom="0.5em"):f.style.marginTop="2em",r(t,h)}}t.style.padding="6px",t.id=n.base+2,e.parentNode.insertBefore(t,e.nextSibling)}else{n.expanded=0;var p=document.getElementById(n.base+2);p&&p.parentNode.removeChild(p)}}}function o(e,t){for(var n,r,a=["minrun","lowflow","midflow","highflow","maxrun"],o=0;o<a.length;o++){var i=e[a[o]];if(i){i=i.trim();var l=parseFloat(i),s=i.match(/[^\d|.]+/);if(s&&(s=s[0].trim()),!n&&s)n=s;else if(n!==s){console.warn(a[o]+" on "+e.name+" "+e.section+" has a different extension and has been skipped"),a[o]=void 0;continue}a[o]=l}else a[o]=void 0}if("cfs"===n?r=e.cfs:"feet"!==n&&"ft"!==n||(r=e.feet),r<=a[0])return e.running=0,"hsl(0,100%,"+(t&&t.highlighted?window.darkMode?"28%":"63%":window.darkMode?"23%":"67%")+")";if(r>=a[4])return e.running=4,"hsl(240,100%,"+(t&&t.highlighted?window.darkMode?"30%":"67%":window.darkMode?"20%":"69%")+")";var c=function(e,t,n){return e=Math.log(e),t=Math.log(t),((n=Math.log(n))-e)/(t-e)},u=t&&t.highlighted?window.darkMode?"30%":"65%":window.darkMode?"25%":"70%",d=a[0],h=a[4],f=a[2]||Math.pow(10,(Math.log10(d)+Math.log10(h))/2),p=a[1]||Math.pow(10,(Math.log10(d)+Math.log10(f))/2),g=a[3]||Math.pow(10,(Math.log10(f)+Math.log10(h))/2);return e.lowflow=parseFloat(p.toFixed(3))+n,e.midflow=parseFloat(f.toFixed(3))+n,e.highflow=parseFloat(g.toFixed(3))+n,e.running=r<p?c(d,p,r):r<f?1+c(p,f,r):r<g?2+c(f,g,r):3+c(g,h,r),"hsl("+(0+60*e.running)+",100%,"+u+")"}e.exports.River=function(e,t){switch(Object.assign(this,t),this.tags=this.tags||"",Number(this.rating)){case 1:this.rating="1Star";break;case 2:case 3:case 4:case 5:this.rating=t.rating+"Stars";break;default:this.rating="Error"}this.rating||(this.rating="Error"),this.skill=this.skill||"?",this.base="b"+e,this.expanded=0,this.index=e,this.create=function(t){if(!this.finished||t){var n=function(e){var t=document.createElement("span");return t.innerHTML=e,t.className="riverspan",r.appendChild(t),t},r=document.createElement("button");if(r.id=this.base+1,n(this.name),n(this.section),n(this.skill),"Error"===this.rating)n("???");else{var i=document.createElement("img");i.src="resources/"+this.rating+".png",i.alt=this.rating[0]+" Stars",i.className="starimg";var l=document.createElement("span");l.appendChild(i),l.className="riverspan",r.appendChild(l)}if(this.flow)n(this.flow+function(e){var t,n=usgsarray[e];if(n&&(n["00060"]?t=n["00060"].values:n["00065"]&&(t=n["00065"].values),t)){for(var r,a,o=Math.max(t.length-5,0),i=t.length;i>o;i--){var l=t[i];if(l){var s=l.value;r?a=s:r=s}}if(r>a)return"⬆";if(a>r)return"⬇";if(r===a)return"-"}}(this.usgs));r.className="riverbutton",a(r,e),this.finished=r}return this.updateExpansion=function(){var t=ItemHolder[e];t.expanded&&(t.finished.onclick(),t.finished.onclick())},window.addEventListener("colorSchemeChanged",this.updateExpansion),this.minrun&&this.maxrun&&(this.finished.style.backgroundColor=o(this)),this.finished},this.delete=function(){var t=ItemHolder[e];function n(e){var n=document.getElementById(t.base+e);n&&n.parentNode.removeChild(n)}var r=document.getElementById(t.base+1);r&&(r.style.backgroundColor=""),n(2),n(1)}}},function(e,t){function n(){var e=document.createElement("canvas");e.width=1200,e.height=800;var t=e.getContext("2d");return window.darkMode?t.fillStyle="black":t.fillStyle="white",t.fillRect(0,0,e.width,e.height),e}function r(e){for(var t=[],n=[],r=0;r<e.length;r++){var a=e[r];t.push(a.value),n.push(a.dateTime)}return{values:t,timestamps:n}}e.exports.addGraphs=function(e,t){var a=t["00010"],o=t["00045"],i=t["00060"],l=t["00065"];try{!function(e,t,a,o){if(t||a){var i=n();if(t&&a){var l=r(t.values);addLine("cfs",l.timestamps,o.name,i,0,l.values,"#00AAFFa0",2),l=r(a.values),addLine("height",l.timestamps,o.name,i,0,l.values,"#2222FFa0",2,1)}else if(t){var s=r(t.values);addLine("cfs",s.timestamps,o.name,i,0,s.values,"#00AAFF")}else{var c=r(a.values);addLine("height",c.timestamps,o.name,i,0,c.values,"#2222FF")}var u=document.createElement("img");u.className="graph",u.src=i.toDataURL("image/png"),e.appendChild(u)}}(e,i,l,t)}catch(e){console.warn("Error creating flow graph: "+e)}try{!function(e,t,a){if(t){var o=n(),i=r(t.values);addLine("",i.timestamps,a.name,o,0,i.values,"#FF0000",3,"#0000FF");var l=document.createElement("img");l.className="graph",l.src=o.toDataURL("image/png"),e.appendChild(l)}}(e,a,t)}catch(e){console.warn("Error creating temperature graph: "+e)}try{!function(e,t,a){if(t){var o=n(),i=r(t.values);addLine("Precipitation",i.timestamps,a.name,o,0,i.values,"#0066FF");var l=document.createElement("img");l.className="graph",l.src=o.toDataURL("image/png"),e.appendChild(l)}}(e,o,t)}catch(e){console.warn("Error creating precipitation graph: "+e)}}},function(e,t){function n(e,t){return e.sort(function(e,n){return e[t]>n[t]?1:e[t]<n[t]?-1:0}),e}function r(e,t){return e=n(e,"name"),t&&e.reverse(),e}function a(e,t){for(e=n(e,"rating"),t&&e.reverse();"Error"===e[0].rating;)e.push(e.shift());return e}function o(e,t){if(e.sort(function(e,t){function n(e){switch(e.skill){case"FW":e=1;break;case"B":e=2;break;case"N":e=3;break;case"LI":e=4;break;case"I":e=5;break;case"HI":e=6;break;case"A":e=7;break;case"E":e=8;break;default:e=9}return e}return n(e)-n(t)}),t)for(e.reverse();"?"===e[0].skill;)e.push(e.shift());return e}e.exports={ratingsort:a,alphabeticalsort:r,skillsort:o,sort:function(e,t,i){if("alphabetical"===e)t=r(t,i);else if("rating"===e)t=a(t,i);else if("skill"===e)t=o(t,i);else{if("running"!==e)throw"Unknown sorting method "+e;t=function(e,t){var r=[],a=[],o=[];return e.forEach(function(e){void 0===e.running||isNaN(e.running)?e.flow?a.push(e):r.push(e):o.push(e)}),o=n(o,"running"),t&&o.reverse(),0===o.length?(alert("Flow data has not yet loaded."),e):o=(o=o.concat(a)).concat(r)}(t,i)}return t}}},function(e,t,n){function r(e){var t=e.content,n=e.query;if(e.matchCase||(t=t.toLowerCase(),n=n.toLowerCase()),"contains"===e.type)return t.includes(n);if("matches"===e.type)return t===n;throw"Unknown Search Type "+e.type}function a(e,t,n){for(var a in e){n.content=e[a][t],r(n)||delete e[a]}return e}function o(e){var t;switch(e){case"FW":t=1;break;case"B":t=2;break;case"N":t=3;break;case"LI":t=4;break;case"I":t=5;break;case"HI":t=6;break;case"A":t=7;break;case"E":t=8}return t}function i(e,t){var n=t.query,r=t.type,a=Math.min(n[0],n[1]),i=Math.max(n[0],n[1]);if("from"!==r)throw"Unknown search type"+r;for(var l in e){var s=!1,c=o(e[l].skill);a<=c&&c<=i&&(s=!0),s||delete e[l]}return e}function l(e,t){return console.error("Rating based filtering is not yet implemented"),e}var s=n(21).lambert;function c(e,t){var n=t.distance,r=t.lat,a=t.lon;for(var o in e){var i=e[o],l=i.plat||i.tlat||i.hidlat,c=i.plon||i.tlon||i.hidlon,u=void 0;if(l&&c)u=s(r,a,l,c)<n;else u=t.includeUnknown;u||delete e[o]}return e}function u(e,t){var n=t.query,r=n[0],a=n[1];for(var o in console.log(t),e){var i=e[o];void 0===i.running?t.includeUnknown||delete e[o]:(i.running<r||i.running>a)&&delete e[o]}return e}e.exports={normalSearch:function(e,t){var n=[[],[],[],[],[]];return e.forEach(function(e){-1!==e.tags.toLowerCase().indexOf(t)?-1!==e.name.toLowerCase().indexOf(t)?n[0].push(e):n[1].push(e):-1!==e.name.toLowerCase().indexOf(t)?n[2].push(e):-1!==e.section.toLowerCase().indexOf(t)?n[3].push(e):-1!==e.writeup.toLowerCase().indexOf(t)&&n[4].push(e)}),e=(e=n[0].concat(n[1],n[2],n[3])).concat(n[4])},advancedSearch:function(e,t){for(var n in console.log(t),t){var r=t[n];["name","section","writeup"].includes(n)?e=a(e,n,r):"skill"===n?e=i(e,r):"rating"===n?e=l(e):"location"===n?e=c(e,r):"flow"===n?e=u(e,r):"sort"===n||alert("Unable to search based on "+n)}return e=e.filter(function(e){return void 0!==e})}};var d=document.getElementById("advanced-search-modal");document.getElementById("advanced-search-modal-close").onclick=function(){d.style.display="none"};window.addEventListener("click",function(e){e.target===d&&(d.style.display="none")}),document.getElementById("advancedsearch").addEventListener("click",function(){d.style.display="block"})},function(e,t){e.exports={lambert:function(e,t,n,r){e=e*Math.PI/180,t=t*Math.PI/180,n=n*Math.PI/180,r=r*Math.PI/180;var a=Math.atan(.9966471893352525*Math.tan(e)),o=Math.atan(.9966471893352525*Math.tan(n)),i=Math.acos(Math.sin(a)*Math.sin(o)+Math.cos(a)*Math.cos(o)*Math.cos(r-t)),l=(a+o)/2,s=(o-a)/2;return 3963.1905919430524*(i-.0016764053323737402*((i-Math.sin(i))*(Math.pow(Math.sin(l),2)*Math.pow(Math.cos(s),2)/Math.pow(Math.cos(i/2),2))+(i+Math.sin(i))*(Math.pow(Math.cos(l),2)*Math.pow(Math.sin(s),2)/Math.pow(Math.sin(i/2),2))))}}},function(e,t){function n(){try{var e=document.getElementById("legend");e.getContext("2d").clearRect(0,0,e.width,e.height);var t=parseFloat(window.getComputedStyle(document.getElementById("Rivers").firstChild).getPropertyValue("font-size"));(function(e,t){var n=e.getContext("2d"),r=window.darkMode?"23%":"67%",a=window.darkMode?"20%":"69%",o=window.darkMode?"25%":"70%";e.width=document.documentElement.clientWidth,e.height=t;var i=n.createLinearGradient(0,0,e.width,e.height),l="hsl(0,100%,"+r+")",s="hsl(240,100%,"+a+")";i.addColorStop(0,l),i.addColorStop(.08,l);for(var c=0;c<=240;c++)i.addColorStop(.08+c/240*(.92-.08),"hsl("+c+",100%,"+o+")");i.addColorStop(.92,s),i.addColorStop(1,s),n.fillStyle=i,n.fillRect(0,0,e.width,e.height)})(e,t>18?10+2*t:t>14.8?10+2*(t*=1.2):10+2*(t*=1.4)),function(e,t){var n=e.getContext("2d");n.fillStyle=window.darkMode?"white":"black";var r=t;n.font=t+"px Arial",n.textAlign="start",n.fillText("Too Low",0,r),n.textAlign="center",n.fillText("Low Flow",.28*e.width,r),n.fillText("Mid Flow",e.width/2,r),n.fillText("High Flow",.72*e.width,r),window.darkMode||(n.fillStyle="white"),n.textAlign="end",n.fillText("Too High",e.width,r,.2*e.width)}(e,t),function(e){var t=e.offsetTop;window.addEventListener("scroll",function(){window.pageYOffset>t?(e.style.position="fixed",e.style.top=0,document.body.style.paddingTop=e.height+"px"):(e.style.position="",e.style.top="",document.body.style.paddingTop=0)})}(e)}catch(e){console.error("Legend failed to draw. Logging error."),console.error(e)}}window.addEventListener("resize",n),window.addEventListener("orientationchange",n),window.addEventListener("colorSchemeChanged",n),n()}]);
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = function(exports) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = 1);
+/******/ })
+/************************************************************************/
+/******/ ([
+/* 0 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "loadUSGS", function() { return loadUSGS; });
+self.usgsarray = {}
+
+window.updateOldDataWarning = function() {
+	
+		let toDelete = document.getElementById("topOldDataWarning")
+		if (toDelete) {toDelete.remove()}
+	
+		//No reason to make an old data warning when data is new (within 1 hour)
+		if (window.usgsDataAge < 1000*60*60 || !window.usgsDataAge) {
+			return;
+		}
+	
+		let oldDataWarning = document.createElement("p")
+		oldDataWarning.id = "topOldDataWarning"
+		
+		oldDataWarning.innerHTML = "All river data is more than " + Math.floor(window.usgsDataAge/1000/60/60) + " hours old! "
+		oldDataWarning.innerHTML += "(" + window.loadNewUSGS + ") "
+		
+					let reloadButton = document.createElement("button")
+
+						reloadButton.addEventListener("click", function() {
+							window.loadNewUSGS = "Trying to Load Data"
+							__webpack_require__(0).loadUSGS()
+						})
+						reloadButton.innerHTML = "Try Again"
+					
+
+					oldDataWarning.appendChild(reloadButton)
+		
+		
+		let legend = document.getElementById("legend")
+		legend.parentNode.insertBefore(oldDataWarning, legend)
+}
+
+
+
+
+let loadUSGS = async function() {
+	
+	//Gaurd against infinite recursion. Ignores calls when data is new. (within 1 hour)
+	if (window.usgsDataAge < 1000*60*60) {
+		return;
+	}
+
+	let timeToRequest = 1000*86400 //Milliseconds of time to request
+	
+    var sites = []
+    for (let i=0;i<riverarray.length;i++) {
+        let val = riverarray[i].usgs
+        //Check for accuracy
+        if (val && val.length > 7 && val.length < 16) {
+            sites.push(val)
+        }
+    }
+    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
+
+    let usgsdata;
+    if (window.fetch) {
+        let response = await fetch(url)
+        usgsdata = await response.json()
+    }
+    else {
+        //For browsers that don't support fetch
+        let request = new XMLHttpRequest()
+        let response = await new Promise((resolve, reject) => {
+            request.onload = function(event) {resolve(event.target.response)};
+            request.open("GET", url);
+            request.send()
+        })
+        usgsdata = JSON.parse(response)
+    }
+
+	
+	window.usgsDataAge = Date.now() - new Date(usgsdata.value.queryInfo.note[3].value).getTime() //TODO: Iterate through note and find requestDT
+	window.updateOldDataWarning()
+	
+	
+    //Iterate through all known conditions
+    usgsdata.value.timeSeries.forEach(function(event){
+        let obj2 = {}
+        obj2.values = event.values[0].value //The values - ex. Gauge Height Array
+
+        if (obj2.values.length === 0) {
+            console.log("Empty Array. Skipping")
+            return;
+        }
+
+        obj2.units = event.variable.variableDescription //Units of values
+
+        let sitecode = event.sourceInfo.siteCode[0].value
+        //See if the site is already in the array.
+        //If the site code is not in the array, add it.
+        if (!usgsarray[sitecode]) {
+            let obj3 = {}
+            obj3.name = event.sourceInfo.siteName
+            usgsarray[sitecode] = obj3
+        }
+
+        let variablecode = event.variable.variableCode[0].value
+
+        //Convert celcius to farenheight
+        if (variablecode === "00010" && obj2.units === "Temperature, water, degrees Celsius") {
+            for (let i=0;i<obj2.values.length;i++) {
+                obj2.values[i].value = obj2.values[i].value * 1.8 + 32
+            }
+
+            obj2.units = "Temperature, water, degrees Fahrenheit"
+        }
+
+
+        //Add the values onto the site code object
+        usgsarray[sitecode][variablecode] = obj2
+    })
+
+    //Add USGS Data to Graph
+    for (let i=0;i<ItemHolder.length;i++) {
+        let item = ItemHolder[i]
+        let data = usgsarray[item.usgs]
+
+        if (data) {
+            let cfs = data["00060"]
+            let feet = data["00065"]
+
+            //Prevent "TypeError: Can't Read Property 'values' of undefined"
+            if (cfs) {cfs = cfs.values}
+            if (feet) {feet = feet.values}
+
+
+            let latestCfs, latestFeet;
+            if (cfs) {
+                latestCfs = cfs[cfs.length - 1].value
+            }
+            if (feet) {
+                latestFeet = feet[feet.length - 1].value
+            }
+
+            item.feet = latestFeet
+            item.cfs = latestCfs
+
+            if (latestCfs && latestFeet) {
+                item.flow = latestCfs + "cfs " + latestFeet + "ft"
+            }
+            else if (latestCfs) {
+                item.flow = cfs[cfs.length - 1].value + " cfs"
+            }
+            else if (latestFeet) {
+                item.flow = feet[feet.length - 1].value + " ft"
+            }
+
+            //item.create(true) will force regeneration of the button
+            //Replace the current button so that the flow info shows
+            let elem = document.getElementById(item.base + "1")
+            let expanded = item.expanded
+            console.log(expanded)
+            let replacement = item.create(true) //Update the version in cache
+            try {
+                elem.parentNode.replaceChild(replacement, elem)
+                //If the river was expanded before, keep it expanded
+                if (expanded) {
+                    replacement.dispatchEvent(new Event("click"))
+                    replacement.dispatchEvent(new Event("click"))
+                }
+            }
+            catch (e) {} //The list must have been sorted - the node was not currently in list
+        }
+    }
+
+}
+
+
+
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+
+
+
+
+
+try {
+	window.loadNewUSGS = "Trying to Load Data"
+	window.serviceWorkerMessages = []
+	//window.serviceWorkerRegistered will be called by allPages.js
+	navigator.serviceWorker.ready.then(function(registration) {
+		navigator.serviceWorker.onmessage = function(event) {
+			window.serviceWorkerMessages.push(event.data)
+			let data = event.data
+
+			if (!data.includes("waterservices.usgs.gov")) {return;}
+			
+			window.oldLoadUSGS = window.loadNewUSGS
+
+			if (data.includes("Updated cache for")) {
+				console.log("Updating")
+				__webpack_require__(0).loadUSGS() //Update the information
+			}
+			else if (data.includes("errored. Using cache")) {
+				window.loadNewUSGS = "Unable to load latest data"
+			}
+			else if (data.includes(" took too long to load from network")) {
+				window.loadNewUSGS = "Updating data in backgroud"
+			}
+			else if (data.includes("has been loaded from the network")) {
+				window.loadNewUSGS = "This is likely a glitch. You should be viewing the latest data."
+			}
+			window.updateOldDataWarning()
+		}
+	})
+}
+catch(e) {console.error(e)}
+
+try {
+	window.addLine = __webpack_require__(2).addLine
+}
+catch(e) {console.error(e)}
+
+
+//Defines window.TopBar and window.triangle
+Object.assign(window, __webpack_require__(3))
+
+window.River = __webpack_require__(4).River
+
+window.sort = __webpack_require__(6).sort
+
+//Defines window.normalSearch and window.advanedSearch
+Object.assign(window, __webpack_require__(7))
+
+window.usgsarray = {}
+
+
+//ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list.
+window.ItemHolder = []
+riverarray.map(function(event, index) {
+	ItemHolder[index] = new River(index, event)
+})
+
+
+//Fetch data from USGS
+//ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise window.usgsarray is undefined)
+__webpack_require__(0).loadUSGS()
+
+
+var oldresult;
+window.NewList = function(query, type, reverse) {
+	if (typeof(query) === "string") {
+		query = query.toLowerCase()
+	}
+	//Location searching uses numbers.
+
+	let orderedlist = ItemHolder.slice(0); //Clone the array
+	if (!(String(query).length === 0 || !query || !type)) {
+
+		if (type === "sort") {
+			//Obey other filters
+			if (oldresult) {
+				orderedlist = oldresult
+			}
+
+			orderedlist = sort(query, orderedlist, reverse)
+		}
+		if (type === "normal") {
+			orderedlist = normalSearch(orderedlist, query)
+		}
+		if (type === "advanced") {
+			orderedlist = advancedSearch(orderedlist, query)
+		}
+		if (type === "location") {
+			if (oldresult) {
+				orderedlist = oldresult
+			}
+
+			var nlist = []
+			orderedlist.forEach(function(value){
+				if (value.plat && value.plon) {
+					if (distanceto(value.plat, value.plon) < query) {
+						nlist.push(value)
+					}
+				}
+			})
+			orderedlist = nlist
+		}
+
+
+	}//Closing for if a query is present
+
+	//Clear Current
+	ItemHolder.forEach(function(event) {
+		event.delete()
+	})
+	//Append New
+	var div = document.getElementById("Rivers")
+	//Everything else
+	orderedlist.forEach(function(event){
+		div.appendChild(event.create())
+	})
+
+	if (type !== "sort") {
+		oldresult = orderedlist
+	}
+}
+
+
+document.getElementById("Rivers").appendChild(new TopBar().create())
+//Needs a #Rivers > .riverbutton to get font-size using getComputedStyle
+__webpack_require__(9)
+
+
+NewList("alphabetical", "sort")
+
+
+let searchbox = document.getElementById("searchbox")
+searchbox.addEventListener("keydown", function() {setTimeout(function(){NewList(searchbox.value, "normal")}, 20)})
+
+
+//Generate advanced search parameters from menu
+function getAdvancedSearchParameters() {
+	let parameters = {}
+
+	parameters.name = {
+		type: document.getElementById("nameType").value,
+		query: document.getElementById("nameQuery").value
+	}
+
+	parameters.section  = {
+		type: document.getElementById("sectionType").value,
+		query: document.getElementById("sectionQuery").value
+	}
+
+	parameters.writeup = {
+		type: document.getElementById("writeupType").value,
+		query: document.getElementById("writeupQuery").value
+	}
+
+
+
+	let distance = Number(document.getElementById("distanceQuery").value)
+
+	let lat = document.getElementById("latitudeQuery").value
+	let lon = document.getElementById("longitudeQuery").value
+
+	//TODO: Parse other latitude and longitude formats
+	lat = Number(lat)
+	lon = Number(lon)
+
+
+
+	if (!(distance > 0) && lat && lon) {
+		alert("Distance must be a number greater than 0 to use location sorting")
+	}
+	else if (distance > 0 && !(lat && lon)) {
+		alert("You must enter a latitude and longitude (Get the coordinates from GPS by pressing Calculate my Location)")
+	}
+	else if (distance > 0 && lat && lon) {
+		parameters.location = {
+			lat,
+			lon,
+			distance,
+			includeUnknown: document.getElementById("includeUnknownLocation").checked
+		}
+	}
+
+
+	parameters.skill = {
+		type: "from",
+		query: [
+			Number(document.getElementById("skillQuery1").value),
+			Number(document.getElementById("skillQuery2").value)
+		]
+	}
+
+	parameters.flow = {
+		type: "from",
+		query: [
+			Number(document.getElementById("flowQuery1").value),
+			Number(document.getElementById("flowQuery2").value)
+		],
+		includeUnknown: document.getElementById("includeUnknownFlow").checked
+	}
+	
+	
+	return parameters
+}
+
+
+async function calculateCoordinates() {
+
+	let status = document.getElementById("locationProgress")
+	let num = 0
+	let progress = setInterval(function() {
+		num = (num+1)%6
+		status.innerHTML = "Calculating your Approximate Location (Expect this to take 15-60 seconds)" + ".".repeat(num)
+	}, 500)
+
+	let position;
+	try {
+		position = await new Promise((resolve, reject) => {
+			navigator.geolocation.getCurrentPosition(resolve, reject)
+		});
+	}
+	catch(e) {
+		let output = "Error code " + e.code + " occurred when getting your location. The error message is: " + e.message
+		alert(output)
+		clearInterval(progress)
+		status.innerHTML = output
+	}
+
+
+	let coords = position.coords
+
+	clearInterval(progress)
+
+	document.getElementById("latitudeQuery").value = coords.latitude
+	document.getElementById("longitudeQuery").value = coords.longitude
+	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
+}
+
+document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
+
+
+
+
+document.getElementById("performadvancedsearch").addEventListener("click", function() {
+	let query = getAdvancedSearchParameters()
+
+	//Add link to this search
+	//This should run before NewList - otherwise the entire content is added to the object and URL
+	//Find where rivers.run is located
+	//This should allow rivers.run to the run from a directory
+	let root = window.location.href
+	root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
+	let link = encodeURI(root + "#" + JSON.stringify(query))
+	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
+
+	NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
+})
+
+
+
+
+
+
+
+
+//Check if there is a search query
+if (window.location.hash.length > 0) {
+	let search = decodeURI(window.location.hash.slice(1))
+
+	try {
+		//Do an advanced search if the query if an advanced search
+		let query = JSON.parse(search)
+		
+		//TODO: Set the advanced search areas to the query.
+
+		NewList(query, "advanced")
+
+
+	}
+	catch (e) {
+		//Looks like we have a normal search query
+		document.getElementById("searchbox").value = search
+		NewList(search, "normal")
+	}
+}
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "addLine", function() { return addLine; });
+//Graph Code
+//It's Ugly... It should be fixed
+//BUT IT WORKS
+
+//addline(canvas, horizontal, vertical, color, graphtype, numplace)
+
+//canvas - HTML canvas element
+//horizontal - array of horizontal values. Pass 0 and it will evenly space.
+//vertical - array of vertical values
+
+//color - Optional. Color of line. Default black
+//graphtype - Optional. Specify 2 to put 2 lines and 2 scales on one graph. See numplace below
+//numplace - Use only if you are using graphtype = 2. 
+//If you specify 0 or do not pass a value, the line's scale will be on the left side of the graph.
+//If you specify 1, the line's scale will be on the right side of the graph
+function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
+    if (graphtype === 3) {
+        var endcolor = numplace
+        }
+    if (graphtype !== 2) {
+        numplace = 0
+    }
+    var height = canvas.height*0.80
+    var width = canvas.width
+
+    var ctx = canvas.getContext('2d');  
+
+
+
+    if (!isNaN(Number(horizontal))) {
+        horizontal = []
+        for (var i = 0;i<vertical.length;i++) {
+            horizontal.push(i*width)
+        }
+    }
+    if (horizontal.length !== vertical.length) {
+        console.warn("Uneven amount of datapoints. " + horizontal.length + " horizontal points found, but " + vertical.length + " vertical points found.")
+    }
+
+    color = color || "#000000"
+    
+    ctx.lineWidth = Math.ceil(Math.min(width, height)/120)
+    ctx.beginPath();
+
+    if (graphtype === 2) {
+        width = width*0.86
+    }
+    else {
+        width = width*0.93
+    }
+
+    var calcvertical = []
+    for (var i = 0;i<vertical.length;i++) {
+        if (!isNaN(Number(vertical[i])) && (vertical[i]) !== "") {
+            calcvertical.push(vertical[i])
+        }
+        //else {
+        //This is a valid warning - It just got TOO ANNOYING
+        //console.warn("Element " + i + " in list is an invalid number. It had a value of: " + vertical[i])
+        //}
+    }
+
+    var vscale = Math.max(...calcvertical) - Math.min(...calcvertical)
+    var hscale = Math.max(...horizontal) - Math.min(...horizontal)
+    vscale = height/vscale
+    hscale = width/hscale
+    var voffset = Math.min(...calcvertical)
+    var hoffset = Math.min(...horizontal)
+
+    hoffset -= (Math.max(...horizontal) - Math.min(...horizontal))*0.07
+
+    var px = Math.floor(((canvas.width)*0.07)/2.6)
+    ctx.font = (px + 'px serif')
+    if (color.length === 9) {
+        color = color.slice(0,7)
+    }
+    ctx.fillStyle = color
+    ctx.strokeStyle = color
+
+    if (graphtype === 3) {
+        var grd = ctx.createLinearGradient(0, 0, 0, height);
+        grd.addColorStop(0, color);   
+        grd.addColorStop(1, endcolor);
+        ctx.strokeStyle = grd;
+        ctx.fillStyle = grd;
+    }    
+
+    if (numplace === 0 || numplace === undefined) {
+        var start = 1
+        }
+    else {
+        var start = canvas.width-(canvas.width*0.07)
+        }
+    for(var i = 1;i<11;i++) {
+        var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
+
+        let precision = Math.max(0, 3-String(Math.round(Text)).length)
+
+        Text = Number(Text.toFixed(precision))
+
+        ctx.fillText(Text, start, (height*(11-i))/10-5);
+    }
+
+    //Top one
+    Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
+
+    let precision = Math.max(0, 3-String(Math.round(Text)).length)
+
+    Text = Number(Text.toFixed(precision))
+
+    ctx.fillText(Text, start, 27);
+
+
+
+
+
+    var px = Math.floor(((canvas.width)*0.07)/2.8)
+    ctx.font = (px + 'px serif')
+    if (color.length === 9) {
+        color = color.slice(0,7)
+    }
+
+
+    if (!window.darkMode) {
+        ctx.fillStyle = "black"
+    }
+    else {
+        //Dark Mode
+        ctx.fillStyle = "#cccccc"
+    }    
+
+
+
+    function formatDate(date) {
+        var time = String(date.getHours())
+
+        if (date.getHours() < 10) {
+            time = "0" + time
+        }
+        time += ":"
+        if (date.getMinutes() < 10) {
+            time += "0" + date.getMinutes()
+        }
+        else {
+            time += date.getMinutes()
+        }
+        time += " " + (date.getMonth()+1) + "/" + date.getDate() + "/" +date.getFullYear()
+        return time
+    }
+
+    var time1 = new Date(timeframe[0])
+    var time2 = new Date(timeframe[timeframe.length - 1])
+    var time3 = new Date(((time2-time1)/2)+time1.getTime())
+
+    var starttime = formatDate(time1)
+    var endtime = formatDate(time2)
+    var midtime = formatDate(time3)
+
+    ctx.fillText(starttime, 10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
+
+    ctx.textAlign = "end"; 
+    ctx.fillText(endtime, canvas.width-10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
+
+    ctx.textAlign = "center"; 
+    ctx.fillText(midtime, canvas.width/2, (canvas.height*(11/12))-(canvas.height*0.06)-12)
+
+    ctx.textAlign = "start";     
+
+
+
+    var px = Math.floor(((canvas.width)*0.07)/2.4)
+    ctx.font = (px + 'px serif')
+    ctx.fillStyle = color
+    //We need to create a gradient for just the text "Water Temperature (F)"
+    if (graphtype === 3) {
+        var grd = ctx.createLinearGradient(0, height, 200, height);
+        grd.addColorStop(0, color);   
+        grd.addColorStop(1, endcolor);
+        ctx.strokeStyle = grd;
+        ctx.fillStyle = grd;
+    }
+
+    if (graphtype === 2) {
+        if (numplace === 0 || numplace === undefined) {
+            ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
+        }
+        else {
+            ctx.textAlign = "right"; 
+            ctx.fillText("Gauge Height (Feet)", start-5, (canvas.height*(11/12)));
+            ctx.textAlign = "start"; 
+        } 
+    }
+    else if (graphtype === 3) {
+        ctx.fillText("Water Temperature (°F)", start+5, (canvas.height*(11/12)));    
+    }
+    else {
+        if (GraphName === "Precipitation") {
+            ctx.fillText("Precipitation (Inches)", start+5, (canvas.height*(11/12))); 
+            var fulldayprecip = 0
+            var halfdayprecip = 0
+            var preciplist = vertical.slice(-96)
+            var preciplist = preciplist.map(Number)
+            //convert strings to numbers
+            preciplist.forEach(function(value){
+                fulldayprecip += value
+            })
+            preciplist = preciplist.slice(-48)
+            preciplist.forEach(function(value){
+                halfdayprecip += value
+            })
+
+            fulldayprecip = fulldayprecip.toFixed(2)
+            halfdayprecip = halfdayprecip.toFixed(2)
+
+            ctx.fillText("Last 24 Hours: " + fulldayprecip + " in", canvas.width-700, (canvas.height*(11/12))); 
+            ctx.fillText("Last 12 Hours: " + halfdayprecip + " in", canvas.width-330, (canvas.height*(11/12))); 
+        }
+        else if (GraphName === "cfs") {
+            ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
+        }
+        else if (GraphName === "height") {
+            ctx.fillText("Gauge Height (Feet)", start+5, (canvas.height*(11/12)));    
+        }
+        else {
+            ctx.fillText("Labeling Error...", start+5, (canvas.height*(11/12)));    
+        }    
+    }
+
+    //set it back    
+    if (graphtype === 3) {
+        //The area that actually has the graph is the top 80% height wise
+        var grd = ctx.createLinearGradient(0, 0, 0, canvas.height*0.8);
+        grd.addColorStop(0, color);   
+        grd.addColorStop(1, endcolor);
+        ctx.strokeStyle = grd;
+        ctx.fillStyle = grd;
+    }
+
+    if (!window.darkMode) {
+        ctx.fillStyle = "black"
+    }
+    else {
+        //Dark Mode
+        ctx.fillStyle = "#cccccc"
+    }
+
+    ctx.textAlign = "center"; 
+    ctx.fillText(Source, canvas.width/2 , canvas.height-10);  
+    ctx.textAlign = "start"; 
+
+
+
+
+    function H(Value) {
+        return Math.round((Value-hoffset)*hscale)
+    }
+
+    function V(Value) {
+        return Math.round(height-((Value-voffset)*vscale))
+    }
+
+
+    for (var p = 0;p<Math.min(vertical.length, horizontal.length);p++) {
+        if (!isNaN(Number(vertical[p])) && vertical[p] !== "") {
+            ctx.moveTo(H(horizontal[p]), V(vertical[p]))
+            break;
+        }    
+    }
+
+
+    var valid = 1
+
+    for (var i = p;i<Math.min(vertical.length, horizontal.length);i++) {
+        if (!isNaN(Number(vertical[i])) && vertical[i] !== "") {
+            if (valid === 1) {
+                ctx.lineTo(H(horizontal[i]), V(vertical[i]))
+            }
+            else {
+                ctx.moveTo(H(horizontal[i]), V(vertical[i])+10)
+                ctx.lineTo(H(horizontal[i]), V(vertical[i]))
+                valid = 1
+            }
+        }
+        else {
+            valid = 0
+        }
+    }
+
+
+    ctx.stroke();
+    ctx.beginPath()
+
+    ctx.lineWidth = Math.ceil(ctx.lineWidth/10)
+
+    if (!window.darkMode) {
+        ctx.strokeStyle = "000000AA"
+    }
+    else {
+        //Dark Mode
+        ctx.strokeStyle = "#ccccccAA"
+    }
+
+    for (var i = 1;i<11;i++) {
+        ctx.moveTo(0, height*(11-i)/10)
+        ctx.lineTo(canvas.width, height*(11-i)/10)
+    }
+    ctx.stroke()
+}    
+
+
+
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports) {
+
+function NewSpan(Text) {
+    let span = document.createElement("span")
+    span.className = "riverspan"
+    span.innerHTML = Text
+    return span
+}
+
+function addSorting(span, type) {
+    span.onclick = function() {
+        if (this.value === 1) {
+            NewList(type, "sort", true) //Reversed
+            this.value = 0
+        }
+        else {
+            NewList(type, "sort")
+            this.value = 1
+        }
+    }
+}
+
+
+function TopBar() {
+    this.create = function() {
+        let button = document.createElement("button")
+        button.id = "topbar"
+        button.className = "riverbutton"
+
+
+        let span = NewSpan("River⇅")
+        addSorting(span, "alphabetical")
+        span.value = 1//Starts sorted alphabetically, a-z. The first sort needs to reverse that.
+        button.appendChild(span)
+
+        button.appendChild(NewSpan("Section"))
+
+        span = NewSpan("Skill⇅")
+        addSorting(span, "skill")
+        span.value = 0
+        button.appendChild(span) 
+
+        span = NewSpan("Rating⇅")
+        addSorting(span, "rating")
+        span.value = 1 //We want greatest first, not least first, on the first sort
+        button.appendChild(span) 
+
+        span = NewSpan("Flow Info/Trend⇅")
+        addSorting(span, "running")
+        span.value = 1 //Show highest flow first, instead of lowest
+        button.appendChild(span)
+
+        return button
+    }
+
+    this.delete = function() {
+        let Node = document.getElementById("topbar")
+        if (Node) {
+            Node.parentNode.removeChild(Node)
+        }
+    }
+}
+
+
+module.exports = {
+    TopBar
+}
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+let addGraphs = __webpack_require__(5).addGraphs
+
+
+
+function addHandlers(button, locate) {
+	let river = ItemHolder[locate]
+
+			if (river.minrun && river.maxrun) {
+				window.addEventListener("colorSchemeChanged", function() {
+					button.style.backgroundColor = calculateColor(river)
+				})
+
+				button.addEventListener("mouseover", function(){
+					button.style.backgroundColor =  calculateColor(river, {highlighted: true})
+				})
+
+				button.addEventListener("mouseout", function(){
+					button.style.backgroundColor = calculateColor(river)
+				})
+			}
+
+    //Code that runs when the button is clicked
+    button.onclick = function () {
+        if (river.expanded === 0) {
+            river.expanded = 1
+            var div = document.createElement("div")
+
+			div.innerHTML = ""
+
+			if (river.dam) {
+                //Adding to div.innerHTML works, but logs CSP errors
+                let link = document.createElement("a")
+                link.target = "_blank"
+                link.rel = "noopener"
+                link.href = river.dam
+                link.innerHTML = "This river has a dam. View information."
+                div.appendChild(link)
+				div.appendChild(document.createElement("br"))
+				div.appendChild(document.createElement("br"))
+            }
+
+			div.innerHTML += river.writeup + "<br><br>"
+
+            if (river.plat && river.plon) {
+                div.innerHTML += "Put-In GPS Coordinates: " + river.plat + ", " + river.plon + "<br>"
+            }
+
+            if (river.tlat && river.tlon) {
+                div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
+            }
+
+            let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
+            for (let i=0;i<values.length;i++) {
+                let name = values[i]
+                if (river[name]) {
+                    div.innerHTML += name + ":" + river[name] + " "
+                }
+            }
+
+
+            if (river.aw) {
+                div.appendChild(document.createElement("br"))
+                let link = document.createElement("a")
+                link.target = "_blank"
+                link.rel = "noopener"
+                link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
+                link.innerHTML = "Click here to view this river on American Whitewater"
+                div.appendChild(link)
+            }
+
+
+            if (river.usgs) {
+                //Adding to div.innerHTML works, but logs CSP errors
+                div.appendChild(document.createElement("br"))
+                let link = document.createElement("a")
+                link.target = "_blank"
+                link.rel = "noopener"
+                link.href = "https://waterdata.usgs.gov/nwis/uv?site_no=" + river.usgs
+                link.innerHTML = "View flow information on USGS"
+                div.appendChild(link)
+            }
+
+
+            //USGS data may not have loaded yet
+			if (self.usgsarray && river.usgs) {
+				//Alert the user if the data is (at least 2 hours) old
+
+				let dataAge
+                try {
+                    dataAge = calculateAge(river.usgs)
+                }
+                catch(e) {
+                    console.error(e)
+                    dataAge = null
+                }
+                let maxAge = 1000*60*60*2
+                let oldDataWarning;
+				if (dataAge > maxAge) {
+					oldDataWarning = document.createElement("p")
+					oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(dataAge/1000/60/60) + " hours old!"
+
+					oldDataWarning.className = "oldDataWarning"
+					div.appendChild(oldDataWarning)
+				}
+
+                let data = self.usgsarray[river.usgs]
+                if (data) {
+                    let disclaimer = document.createElement("p")
+                    disclaimer.style.fontWeight = "bold"
+                    disclaimer.style.textAlign = "center"
+                    disclaimer.innerHTML = "Disclaimer: USGS Gauge data is provisional, and MIGHT be incorrect. Use at your own risk."
+                    div.appendChild(disclaimer)
+
+                    if (!(dataAge > maxAge)) {
+                        disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
+                    }
+                    else {
+                        disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
+                        oldDataWarning.style.marginBottom = "0.5em"
+
+                    }
+                    addGraphs(div, data)
+                }
+			}
+
+
+            div.style.padding = "6px"
+            div.id = river.base + 2
+            button.parentNode.insertBefore(div, button.nextSibling)
+        }
+        else {
+            river.expanded = 0
+            var elem = document.getElementById(river.base + 2)
+            if (elem) {
+                elem.parentNode.removeChild(elem)
+            }
+
+        }
+    }
+
+
+
+
+
+}
+
+
+
+
+function calculateDirection(usgsNumber) {
+    let usgsData = usgsarray[usgsNumber]
+    if (usgsData) {
+        let data;
+
+        if (usgsData["00060"]) {data = usgsData["00060"].values}
+        else if (usgsData["00065"]) {data = usgsData["00065"].values}
+
+        if (data) {
+            let current;
+            let previous;
+
+            //We will go back 4 datapoints (1 hour) if possible.
+            //Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
+            let stop = Math.max(data.length-5, 0)
+            for (let i=data.length;i>stop;i--) {
+                let item = data[i]
+                if (!item) {continue}
+                let value = item.value
+                if (!current) {
+                    current = value
+                }
+                else {
+                    previous = value
+                }
+            }
+
+            if (current > previous) {
+                //Water level rising
+                return "⬆"
+            }
+            else if (previous > current) {
+                //Water level falling
+                return "⬇"
+            }
+            else if (current === previous) {
+                //Water level stable
+                return "-"
+            }
+
+        }
+    }
+    return; //If we got here, there is not enough USGS data.
+}
+
+
+
+function calculateAge(usgsNumber) {
+	//Returns millseconds old that USGS data is
+    let usgsData = window.usgsarray[usgsNumber]
+    if (usgsData) {
+        let data;
+
+        if (usgsData["00060"]) {data = usgsData["00060"].values}
+        else if (usgsData["00065"]) {data = usgsData["00065"].values}
+        else if (usgsData["00010"]) {data = usgsData["00010"].values}
+        else if (usgsData["00045"]) {data = usgsData["00045"].values}
+
+        if (data) {
+            for (let i=data.length;i>=0;i--) {
+                let item = data[i]
+                if (!item) {continue}
+                return Date.now() - Number(new Date(item.dateTime))
+            }
+        }
+    }
+    return null; //If we got here, there is not enough USGS data.
+}
+
+
+
+function calculateColor(river, options) {
+    //hsla color values
+    //hsla(hue, saturation, lightness, opacity)
+    //Saturation hue is 0 red 120 green 240 blue
+    //Saturation - use 100%
+    //Lightness - use 50%
+    //Opacity - Decimal 0 to 1
+
+
+    //Defines river.running
+    //0-4
+    //0 is too low, 4 is too high, other values in between
+
+
+    let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
+
+    let type; //Currently, we skip a value if one datapoint is cfs and another feet
+
+    for (let i=0;i<values.length;i++) {
+
+        let str = river[values[i]]
+        if (!str) {
+            values[i] = undefined
+            continue;
+        }
+
+        str = str.trim()
+        let value = parseFloat(str)
+        let currentType = str.match(/[^\d|.]+/) //Match the integer or decimal number
+
+        if (currentType) {
+            currentType = currentType[0].trim() //Match a string of non-digits
+        }
+
+        if (!type && currentType) {
+            type = currentType
+        }
+        else if (type === currentType) {}
+        else {
+            console.warn(values[i] + " on " + river.name + " " + river.section + " has a different extension and has been skipped")
+            values[i] = undefined
+            continue;
+        }
+
+        values[i] = value
+    }
+
+    let flow;
+    if (type === "cfs") {
+        flow = river.cfs
+    }
+    else if (type === "feet" || type==="ft") {
+        flow = river.feet
+    }
+
+
+    //Use or equal to
+    //While that technically may not be correct (says that river is too low at minrun), it makes no significant difference
+    //In addition, values equal to minrun or maxrun result in a river.running of 0 or 4
+    //Meaning that they may be included in the middle of a darker highlighted rivers
+    //When sorting by runnability is used.
+
+    //It would be better if rivers that are too high or too low are still given river.running values
+    //related to their level. This would also help in determining if something is just barely
+    //too low, and may come up with rain, or is truely too low.
+
+
+    if (flow <= values[0]) {
+        //Too low
+        river.running = 0
+	    let lightness = (options && options.highlighted)? (window.darkMode? "28%": "63%"):  window.darkMode? "23%": "67%"
+        return "hsl(0,100%," + lightness + ")"
+    }
+    else if (flow >= values[4]) {0
+        //Too high
+        river.running = 4
+    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "67%"):  window.darkMode? "20%": "69%"
+        return "hsl(240,100%," + lightness + ")"
+    }
+    else {
+
+		//Normal Flow lightness values
+		//Tough to see a difference when highlighted amount the more middle values in light mode.
+    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "65%"): window.darkMode? "25%": "70%"
+
+		//If we don't have some values, fill them in using logarithms
+        //TODO: Do some analyzsis and figure out the best way to do these calculations
+
+        let minrun = values[0]
+        let maxrun = values[4]
+        let midflow = values[2] || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
+        let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
+        let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
+
+        //We display these so people can tell what values the computer has generated.
+        river.lowflow = parseFloat(lowflow.toFixed(3)) + type
+        river.midflow = parseFloat(midflow.toFixed(3)) + type
+        river.highflow = parseFloat(highflow.toFixed(3)) + type
+
+        function calculateRatio(low, high, current) {
+            low = Math.log(low)
+            high = Math.log(high)
+
+            current = Math.log(current)
+
+
+            let range = high-low
+            let value = current-low
+
+            return value/range
+
+        }
+
+        if (flow < lowflow) {
+            river.running = calculateRatio(minrun, lowflow, flow)
+        }
+        else if (flow < midflow) {
+            river.running = 1+calculateRatio(lowflow, midflow, flow)
+        }
+        else if (flow < highflow) {
+            river.running = 2+calculateRatio(midflow, highflow, flow)
+        }
+        else {
+            river.running = 3+calculateRatio(highflow, maxrun, flow)
+        }
+
+        let color = "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
+		
+		return color;
+    }
+}
+
+
+function createStripes(color) {
+		//If the river has a dam, stripe it.
+
+		let canvas = document.createElement("canvas")
+		let context = canvas.getContext("2d")		
+
+		let background = "rgba(0,0,0,0)"	
+		
+		canvas.width = Math.max(screen.width, screen.height) //Make sure the image doesn't repeat
+		canvas.height = 20 //Doesn't really matter
+
+		let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
+
+
+		for (let i=0;i<21;i++) {
+			gradient.addColorStop(i*0.05, i%4 ? background:color)
+		}
+
+		context.fillStyle = gradient
+		context.fillRect(0,0,canvas.width,canvas.height)
+
+		let url = canvas.toDataURL("image/png")
+		let backgroundStyle = "url(" + url + ")"		
+		
+		console.log(url)
+		
+		return backgroundStyle
+}
+
+
+
+
+module.exports.River = function(locate, event) {
+
+    //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
+    Object.assign(this, event)
+    //tags needs to be a string. It can't be undefined
+    this.tags = this.tags || ""
+    //Convert the numeric value to the filename
+    switch (Number(this.rating)) {
+        case 1:
+            this.rating = "1Star";
+            break;
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+            this.rating = event.rating + "Stars";
+            break;
+        default:
+            this.rating = "Error"
+    }
+    if (!this.rating) {
+        this.rating = "Error"
+    }
+
+    this.skill = this.skill || "?"
+
+    this.base = "b" + locate
+    this.expanded = 0
+    this.index = locate
+
+
+    this.create = function (forceregenerate) {
+        //Only create the button once - It's about 3 times faster.
+        if (!this.finished || forceregenerate) {
+
+            var button = document.createElement("button")
+            button.id = this.base + 1
+
+            function AddSpan(text) {
+                let span = document.createElement("span")
+                span.innerHTML = text
+                span.className = "riverspan"
+                button.appendChild(span)
+                return span
+            }
+
+            AddSpan(this.name)
+            AddSpan(this.section)
+            AddSpan(this.skill)
+
+            //Star images for rating
+            if (this.rating === "Error") {
+                AddSpan("???")
+            }
+            else {
+                let img = document.createElement("img")
+                img.src = "resources/" + this.rating + ".png"
+                img.alt = this.rating[0] + " Stars"
+                img.className = "starimg"
+                let span = document.createElement("span")
+                span.appendChild(img)
+                span.className = "riverspan"
+                button.appendChild(span)
+            }
+
+            if (this.flow) {
+                let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs) + (this.dam ? "Dam" : ""))
+            }
+			else if (this.dam) {AddSpan("Dam")}
+
+
+            button.className = "riverbutton"
+            //Add the click handler
+            addHandlers(button, locate)
+
+            //Store button for reuse later
+            this.finished = button
+
+        }
+
+		this.updateExpansion = function() {
+			//Do not use "this". If called from event listener on window it will fail.
+			let river = ItemHolder[locate]
+			//Make sure it is expanded. Otherwise, there is no need to update the expansion - and
+			//updating the expansion can take a lot of time, expecially if it causes reflow.
+			if (river.expanded) {
+				river.finished.onclick()
+				river.finished.onclick()
+			}
+		}
+
+		window.addEventListener("colorSchemeChanged", this.updateExpansion)
+
+		if (this.dam) {
+			this.finished.style.background = createStripes(window.darkMode? "#66666688":"#aaaaaa88")
+		}
+		if (this.minrun && this.maxrun && this.flow) {
+			this.finished.style.backgroundColor = calculateColor(this)
+		}
+        //Return finished button
+        return this.finished
+
+    }
+
+
+    this.delete = function () {
+        let river = ItemHolder[locate]
+        function Remove(Code) {
+            let ToDelete = document.getElementById(river.base + Code)
+            if (ToDelete) {
+                ToDelete.parentNode.removeChild(ToDelete)
+            }
+        }
+
+        //Reset background color
+        let reset = document.getElementById(river.base + 1)
+        if (reset) {
+            reset.style.backgroundColor = ""
+        }
+
+        Remove(2)
+        Remove(1)
+
+    }
+}
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports) {
+
+
+//Auxillary Function
+//Creates the canvas used by each of the graphs
+function createcanvas() {
+    let canvas = document.createElement("canvas")
+    canvas.width = 1200
+    canvas.height = 800
+
+    //Make sure the background is not transparent
+    let ctx = canvas.getContext("2d");
+    if (!window.darkMode) {
+        ctx.fillStyle = "white";
+    }
+    else {
+        //Dark Mode
+        ctx.fillStyle = "black"
+    }
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    return canvas
+}
+
+
+//Auxillary Function
+function toparts(arr) {
+    let values = []
+    let timestamps = []
+
+    for (let i=0;i<arr.length;i++) {
+        let obj = arr[i]
+        values.push(obj.value)
+        timestamps.push(obj.dateTime)
+    }
+
+    return {values:values,timestamps:timestamps}
+}
+
+
+function addFlowGraph(div, cfs, height, data) {
+    //Make sure we actually have some data, and don't create an empty graph
+    if (!(cfs || height)) {return}
+
+    let canvas = createcanvas()
+    //Time to create a dual lined graph!
+    if (cfs && height) {
+        let parts = toparts(cfs.values)
+        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFFa0", 2)
+        parts = toparts(height.values)
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FFa0", 2, 1)
+    }
+    //We won't have both cfs and height. Draw a single line graph for whichever we have.
+    else if (cfs) {
+        let parts = toparts(cfs.values)
+        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFF")
+    }
+    else {
+        let parts = toparts(height.values)
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FF")
+    }
+
+    //For some reason, only the last canvas was showing. Use images
+    //Images also allow "Save Image As"
+    let img = document.createElement("img")
+    img.className = "graph"
+    //Blobs may be faster - but I don't know of a synchronus method
+    img.src = canvas.toDataURL("image/png")
+
+    div.appendChild(img)
+}
+
+
+function addTempGraph(div, temp, data) {
+    if (temp) {
+        let canvas = createcanvas()
+
+        let parts = toparts(temp.values)
+        addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "#FF0000", 3, "#0000FF")
+
+        //For some reason, only the last canvas was showing. Use images
+        //Images also allow "Save Image As"
+        let img = document.createElement("img")
+        img.className = "graph"
+        img.src = canvas.toDataURL("image/png")
+        div.appendChild(img)
+    }
+}
+
+
+
+function addPrecipGraph(div, precip, data) {
+    if (precip) {
+        let canvas = createcanvas()
+
+        let parts = toparts(precip.values)
+        addLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0066FF")
+
+        //For some reason, only the last canvas was showing. Use images
+        //Images also allow "Save Image As"
+        let img = document.createElement("img")
+        img.className = "graph"
+        img.src = canvas.toDataURL("image/png")
+        div.appendChild(img)
+    }
+}
+
+
+module.exports.addGraphs = function(div, data) {
+
+    //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
+    //for a specific river due to gauge problems.
+    //Each canvas is wrapped individually because sometimes only some graphs have invalid data
+
+    let temp = data["00010"]
+    let precip = data["00045"]
+    let cfs = data["00060"]
+    let height = data["00065"]
+
+
+
+    try {
+        addFlowGraph(div, cfs, height, data)
+    }
+    catch(e){console.warn("Error creating flow graph: " + e)}
+
+    try {
+        addTempGraph(div, temp, data)
+    }
+    catch(e){console.warn("Error creating temperature graph: " + e)}
+
+    try {
+        addPrecipGraph(div, precip, data)
+    }
+    catch(e){console.warn("Error creating precipitation graph: " + e)}
+}
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports) {
+
+function simpleSort(list, propertyName) {
+    list.sort(function(a,b) {
+        if (a[propertyName] > b[propertyName]) {
+            return 1;
+        }
+        if (a[propertyName] < b[propertyName]) {
+            return -1;
+        }
+        return 0;
+    })
+    return list
+}
+
+
+function alphabeticalsort(list, reverse) {
+    list = simpleSort(list, "name")
+
+    if (reverse) {
+        list.reverse()
+    }
+
+    return list
+}
+
+function ratingsort(list, reverse) {
+    list = simpleSort(list, "rating")
+
+    if (reverse) {
+        list.reverse()
+    }
+    //Move error values to end
+    while (list[0].rating === "Error") {
+        list.push(list.shift())
+    }  
+    return list
+}
+
+
+function skillsort(list, reverse) {
+    list.sort(function(a,b) {
+
+        function ToNum(value) {
+
+            switch (value.skill) {
+                case "FW":
+                    value = 1;
+                    break;
+                case "B":
+                    value = 2;
+                    break;
+                case "N":
+                    value = 3;
+                    break;
+                case "LI":
+                    value = 4;
+                    break;
+                case "I":
+                    value = 5;
+                    break;
+                case "HI":
+                    value = 6;
+                    break;
+                case "A":
+                    value = 7;
+                    break;
+                case "E":
+                    value = 8;
+                    break;
+                default:
+                    value = 9;
+            }
+            return value
+        }       
+        return ToNum(a)-ToNum(b)
+    })
+
+
+    if (reverse) {
+        list.reverse()
+        while (list[0].skill === "?") {
+            list.push(list.shift())
+        }
+    }
+
+    return list
+}
+
+
+
+function runningSort(list, reverse) {
+    
+    let noData = []
+	let hasDam = []
+    let hasGauge = []
+	let hasGaugeAndDam = []
+    let knownState = []
+    
+    list.forEach((item) => {
+        if (item.running !== undefined && !isNaN(item.running)) {knownState.push(item)}
+        //If there is gauge data, the user may be able to determine level themselves
+        //As such, put rivers with gauges second
+        else if (item.flow && item.dam) {hasGaugeAndDam.push(item)}
+        else if (item.flow) {hasGauge.push(item)}
+		else if (item.dam) {hasDam.push(item)}
+        else {noData.push(item)}
+    })
+    
+    knownState = simpleSort(knownState, "running")
+    
+    if (reverse) {
+        knownState.reverse()
+    }
+    
+    if (knownState.length === 0) {
+        alert("Flow data has not yet loaded.")
+        return list
+    }
+	
+    knownState = knownState.concat(hasGaugeAndDam)
+    knownState = knownState.concat(hasGauge)
+    knownState = knownState.concat(hasDam)
+    knownState = knownState.concat(noData)
+
+    return knownState
+}
+
+
+
+
+
+function sort(method, list, reverse) {
+    if (method === "alphabetical") {
+        list = alphabeticalsort(list, reverse)
+    }
+    else if (method === "rating") {
+        list = ratingsort(list, reverse)
+    }
+    else if (method === "skill") {
+        list = skillsort(list, reverse)
+    }
+    else if (method === "running") {
+        list = runningSort(list, reverse)      
+    }
+    else {
+        throw "Unknown sorting method " + method
+    }
+    return list
+}
+
+
+module.exports = {
+    ratingsort,
+    alphabeticalsort,
+    skillsort,
+    sort
+}
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+function normalSearch(list, query) {
+    let l = [[],[],[],[],[]]
+    list.forEach(function(event){
+        if(event.tags.toLowerCase().indexOf(query) !== -1) {
+            if (event.name.toLowerCase().indexOf(query) !== -1) {
+                l[0].push(event)
+            }
+            else {
+                l[1].push(event)
+            }
+        }
+        else if (event.name.toLowerCase().indexOf(query) !== -1) {
+            l[2].push(event)
+        }
+        else if (event.section.toLowerCase().indexOf(query) !== -1) {
+            l[3].push(event)
+        }
+        else if (event.writeup.toLowerCase().indexOf(query) !== -1) {
+            l[4].push(event)
+        }
+    })
+
+    list = l[0].concat(l[1],l[2],l[3])
+
+    //Add the less relevant results below
+    list = list.concat(l[4])
+
+    return list
+}
+
+
+
+
+
+
+
+
+
+
+
+function stringQuery(parameters) {
+
+    let content = parameters.content
+    let query = parameters.query
+
+    //Ignore case by default
+    if (!parameters.matchCase) {
+        content = content.toLowerCase()
+        query = query.toLowerCase()
+    }
+
+    if (parameters.type === "contains") {
+        return content.includes(query)
+    }
+    else if (parameters.type === "matches") {
+        return content === query
+    }
+    else {
+        throw "Unknown Search Type " + parameters.type
+    }
+}
+
+
+function stringFilter(list, property, parameters) {
+    //Filter out the elements that fail the test
+    //Since we may be deleting elements in the list, items will be skipped if we use array.length
+    for (let item in list) {
+        parameters.content = list[item][property]
+        let passes = stringQuery(parameters)
+        if (!passes) {
+            //Remove the item if it fails
+            delete list[item]
+        }
+    }
+    return list
+}
+
+
+
+function skillToNumber(skill) {
+    let value
+    switch (skill) {
+        case "FW":
+            value = 1;
+            break;
+        case "B":
+            value = 2;
+            break;
+        case "N":
+            value = 3;
+            break;
+        case "LI":
+            value = 4;
+            break;
+        case "I":
+            value = 5;
+            break;
+        case "HI":
+            value = 6;
+            break;
+        case "A":
+            value = 7;
+            break;
+        case "E":
+            value = 8;
+    }
+    return value
+}
+
+
+
+
+
+
+function skillFilter(list, parameters) {
+
+    let query = parameters.query
+    let type = parameters.type
+
+    let min = Math.min(query[0], query[1])
+    let max = Math.max(query[0], query[1])
+
+    if (type !== "from") {throw "Unknown search type" + type}
+
+    for (let item in list) {
+
+        let passes = false;
+        let skill = skillToNumber(list[item].skill)
+
+        if (min <= skill && skill <= max) {
+            passes = true
+        }
+
+        if (!passes) {
+            //Remove the item if it fails
+            delete list[item]
+        }
+    }	
+	
+	return list
+}
+
+
+
+
+
+
+
+
+
+
+function ratingFilter(list, parameters) {
+	console.error("Rating based filtering is not yet implemented")
+	return list
+}
+
+
+
+
+let calculateDistance = __webpack_require__(8).lambert //Lambert formula
+
+function locationFilter(list, parameters) {
+
+    let maxDistance = parameters.distance
+    let lat1 = parameters.lat
+    let lon1 = parameters.lon
+
+    //Filter out the elements that fail the test
+    //Since we may be deleting elements in the list, items will be skipped if we use array.length
+    for (let item in list) {
+        let river = list[item]
+
+        let lat2 = river.plat || river.tlat || river.hidlat
+        let lon2 = river.plon || river.tlon || river.hidlon
+
+        let passes;
+        if (lat2 && lon2) {
+            let distance = calculateDistance(lat1, lon1, lat2, lon2)
+
+            passes = distance < maxDistance
+        }
+        else {
+            //TODO: If we only have one of two coordinates, we may still be able to eliminate it
+            passes = parameters.includeUnknown
+        }
+
+        if (!passes) {
+            //Remove the item if it fails
+            delete list[item]
+        }
+    }
+    return list
+
+}
+
+
+function flowFilter(list, parameters) {
+	let query = parameters.query
+	let min = query[0]
+	let max = query[1]
+	
+	console.log(parameters)
+	
+	for (let item in list) {
+		let river = list[item]
+		
+		if (river.running === undefined) {
+			if (!parameters.includeUnknown) {
+				delete list[item]
+			}
+		}
+		else if (river.running < min || river.running > max) {
+			delete list[item]
+		}
+	}
+	return list
+}
+
+
+//Query is in form of:
+//{
+//  name: {
+//    type: "matches",
+//    query: "potomac"
+//},
+//section: {
+//    type: "contains",
+//    query: "something"
+//  },
+// skill: {
+//	type:"" //easier harder exactly from
+//	value: 3 //An array of 2 if from
+//from is inclusive (From medium to hard)
+//},
+//location:{
+//	distance: 100 //Maximum distance in miles
+//	lat: 78//Starting latitude
+//	lon:-56 //Starting londitude
+//	includeUnknown: false //Do not eliminate if location not known 
+//}
+//}
+
+
+
+
+//This doesn't work for difficulty and rating - no greater than or equal to.
+//That needs to be added
+function advancedSearch(list, query) {
+    //List is the array of river elements that we are searching
+    //Query is the search parameters
+    console.log(query)
+
+    for (let property in query) {
+        //Iterate through each part of the query
+
+        let parameters = query[property]
+
+
+        if (["name", "section", "writeup"].includes(property)) {
+            list = stringFilter(list, property, parameters)
+        }
+        else if (property === "skill") {
+            list = skillFilter(list, parameters)
+        }
+        else if (property === "rating") {
+            list = ratingFilter(list, parameters)
+        }
+        else if (property === "location") {
+            list = locationFilter(list, parameters)
+        }
+        else if (property === "flow") {
+            list = flowFilter(list, parameters)
+        }
+		else if (property === "sort") {
+
+        }
+        else {
+            alert("Unable to search based on " + property)
+        }
+    }
+
+	list = list.filter(item => item !== undefined)
+    return list
+}
+
+
+
+
+
+
+module.exports = {
+    normalSearch,
+    advancedSearch
+}
+
+
+
+
+
+
+//Prepare the Advanced Search button
+let advanced_search_modal = document.getElementById('advanced-search-modal');
+
+let span = document.getElementById("advanced-search-modal-close").onclick = function() {
+    advanced_search_modal.style.display = "none"
+}
+
+window.addEventListener("click", function(event) {
+    if (event.target === advanced_search_modal) {
+        advanced_search_modal.style.display = "none"
+    }
+})
+
+document.getElementById("advancedsearch").addEventListener("click", function() {
+    advanced_search_modal.style.display = "block"
+})
+
+
+
+
+
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports) {
+
+function lambert(lat1, lon1, lat2, lon2) {
+	//Should be accurate to <100 meters
+	
+	//Parameters from WGS-84
+	let radius = 3963.1905919430524 //Equatorial radius in miles
+	let flattening = 0.0033528106647474805
+
+	lat1 = lat1 * Math.PI / 180
+	lon1 = lon1 * Math.PI / 180
+	lat2 = lat2 * Math.PI / 180
+	lon2 = lon2 * Math.PI / 180
+
+	let ratio = 1-flattening
+	
+	let reducedLat1 = Math.atan(ratio*Math.tan(lat1))
+	let reducedLat2 = Math.atan(ratio*Math.tan(lat2))
+	
+    //Spherical Law of Cosines
+	let angle = Math.acos(Math.sin(reducedLat1) * Math.sin(reducedLat2) + Math.cos(reducedLat1) * Math.cos(reducedLat2) * Math.cos(lon2-lon1))
+	
+	let p = (reducedLat1+reducedLat2)/2
+	let q = (reducedLat2-reducedLat1)/2
+	let x = (angle - Math.sin(angle)) * (((Math.sin(p)**2)*(Math.cos(q)**2))/(Math.cos(angle/2)**2))
+	let y = (angle + Math.sin(angle)) *(((Math.cos(p)**2)*(Math.sin(q)**2))/(Math.sin(angle/2)**2))
+	return radius*(angle-((flattening/2)*(x+y)))	
+}
+
+
+module.exports = {
+  lambert
+}
+
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports) {
+
+
+
+function drawColors(canvas, height) {
+
+    let context = canvas.getContext("2d")	
+
+    //Some browsers flip screen.width and screen.height on rotation - some don't
+
+    //window.innerWidth fails - the window is expanded to handle the width of the legend
+    //Then the legend doesn't resize (because the window has resized to it) 
+
+    //This seems to be the only simple cross browser solution, although it fails if numerous rotations are made
+
+	let tooLowLightness = window.darkMode? "23%": "67%"
+	let tooHighLightness = window.darkMode? "20%": "69%"
+	let normalValueLightness = window.darkMode? "25%": "70%"
+	
+	canvas.width = document.documentElement.clientWidth
+    canvas.height = height
+
+    let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
+
+    let redColor = "hsl(0,100%," + tooLowLightness + ")"
+    let blueColor = "hsl(240,100%," + tooHighLightness + ")"
+
+    gradient.addColorStop(0, redColor)
+    gradient.addColorStop(0.08, redColor)
+    
+    let start = 0.08
+    let end = 0.92
+
+    let range = end-start
+    //240 is number of whole number hsl values
+
+    for (let i=0;i<=240;i++) {
+        gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%," + normalValueLightness + ")")
+    }
+
+    gradient.addColorStop(0.92, blueColor)
+    gradient.addColorStop(1, blueColor)
+
+    context.fillStyle = gradient
+    context.fillRect(0,0,canvas.width,canvas.height)	
+
+}
+
+
+
+function drawText(canvas, fontSize) {
+
+    let context = canvas.getContext("2d")	
+    context.fillStyle = window.darkMode ? "white" : "black"
+
+    //The fourth parameter is the maximum width of the text in pixels
+    //rivers.run may want to use it
+
+    let height = fontSize
+
+    context.font = fontSize + "px Arial"
+
+    context.textAlign = "start"
+    context.fillText("Too Low", 0, height)
+
+    context.textAlign = "center"
+    context.fillText("Low Flow", canvas.width*0.28, height)
+    context.fillText("Mid Flow", canvas.width/2, height)
+    context.fillText("High Flow", canvas.width*0.72, height)
+
+
+    //Black text on blue is near inivisible - so use white text on blue
+    if (!window.darkMode) {context.fillStyle = "white"} 
+
+    context.textAlign = "end"
+    context.fillText("Too High", canvas.width, height, canvas.width*0.2)
+
+}
+
+
+function makeSticky(canvas) {
+    //Make the legend stick to the top of the screen
+
+    //position: sticky failed in Safari
+    //canvas.style.position = "-webkit-sticky"
+    //canvas.style.position = "sticky"
+    //canvas.style.top = 0
+
+    let elementOffset = canvas.offsetTop
+    window.addEventListener("scroll", function() {
+        let pageOffset = window.pageYOffset
+
+        if (pageOffset > elementOffset) {
+            canvas.style.position = "fixed"
+            canvas.style.top = 0
+            document.body.style.paddingTop = canvas.height + "px" //Avoid sudden jerk in page content
+        }
+        else {
+            canvas.style.position = ""
+            canvas.style.top = ""
+            document.body.style.paddingTop = 0
+        }
+    })
+}
+
+
+function updateLegend() {
+    try {
+    let canvas = document.getElementById("legend")
+
+    canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)
+
+    let fontSize = parseFloat(window.getComputedStyle(document.getElementById("Rivers").firstChild).getPropertyValue("font-size"))
+
+    let height;
+    //Picked what I thought looked best
+    if (fontSize > 18) {
+        height = 10 + fontSize*2
+    }
+    else if (fontSize > 14.8){
+        fontSize *= 1.2
+        height = 10 + fontSize*2
+    }
+    else {
+        fontSize *= 1.4
+        height = 10 + fontSize*2
+    }
+
+    drawColors(canvas, height)
+    drawText(canvas, fontSize)
+    makeSticky(canvas)
+    }
+    catch (e) {
+        //Something went badly wrong. Prevent from taking down whole page.
+        console.error("Legend failed to draw. Logging error.")
+        console.error(e)
+    }
+
+}
+
+window.addEventListener("resize", updateLegend)
+//orientationchange should be fired on resize, but some browsers (such as Safari) do not
+window.addEventListener("orientationchange", updateLegend)
+window.addEventListener("colorSchemeChanged", updateLegend)
+
+updateLegend()
+
+/***/ })
+/******/ ]);
 //# sourceMappingURL=index.js.map
