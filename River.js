@@ -361,7 +361,7 @@ function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.2)":"#aa
 
 		let background = "linear-gradient(150deg"
 
-		for (let i=0;i<21;i++) {
+		for (let i=0;i<19;i++) {
 			background += ", "
 			background += i % 3 ? oldColor:newColor
 		}
