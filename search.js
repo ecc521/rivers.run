@@ -20,11 +20,31 @@ function normalSearch(list, query) {
         }
     })
 
-    list = l[0].concat(l[1],l[2],l[3])
-
-    //Add the less relevant results below
-    list = list.concat(l[4])
-
+	console.log(l)
+	
+	//Sort each match level alphabetically by river name
+	
+	function compareNames(river1, river2) {
+		if (river1.name > river2.name) {
+			return 1
+		}
+		if (river1.name < river2.name) {
+			return -1
+		}
+		return 0
+	}
+	
+	l[0] = l[0].sort(compareNames)
+	l[1] = l[1].sort(compareNames)
+	l[2] = l[2].sort(compareNames)
+	l[3] = l[3].sort(compareNames)
+	l[4] = l[4].sort(compareNames)
+	
+	console.log(l)
+	
+	//Less relevant results are lower.
+    list = l[0].concat(l[1],l[2],l[3],l[4])
+	
     return list
 }
 
