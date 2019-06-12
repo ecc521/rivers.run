@@ -132,12 +132,12 @@ try {
 				container.deleteRule(container.cssRules.length - 1)
 				container.insertRule(cssText, container.cssRules.length)
 			}
+			mediaRule = container.cssRules[container.cssRules.length - 1]
 		})
 
 		window.addDarkModeCSS = function(css) {
 			mediaRule.insertRule(css, mediaRule.cssRules.length)
 		}
-
 
 		calculateDarkMode()
 }
