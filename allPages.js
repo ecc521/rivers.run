@@ -111,10 +111,10 @@ try {
 
 
         //Style links so that they are visible in dark mode
-        //Unvisited Link
-        mediaRule.insertRule("a:link {color: #3333FF;}", mediaRule.cssRules.length)
-        //Visited link
-        mediaRule.insertRule("a:visited {color: purple;}", mediaRule.cssRules.length)
+        //Unvisited Link. Lightish blue.
+        mediaRule.insertRule("a:link {color: rgb(100,150,255);}", mediaRule.cssRules.length)
+        //Visited link. Pinkish-purple.
+        mediaRule.insertRule("a:visited {color: rgb(200,0,255);}", mediaRule.cssRules.length)
         //Hovering over link
         mediaRule.insertRule("a:hover {color: green;}", mediaRule.cssRules.length)
         //Quick flash of color when link clicked
