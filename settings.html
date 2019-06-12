@@ -5,7 +5,7 @@
         <link rel="manifest" href="manifest.json">
 
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#317EFB"/>        
+        <meta name="theme-color" content="#317EFB"/>
     </head>
     <body>
 
@@ -44,7 +44,7 @@
             let explaination = document.getElementById("darkModeDefaultExplaination")
             let browserSupportsDarkMode = window.matchMedia('(prefers-color-scheme: dark)').media !== "not all"
             if (browserSupportsDarkMode) {
-				let mediaWatch = window.matchMedia('(prefers-color-scheme: dark)')
+				 window.mediaWatch = window.matchMedia('(prefers-color-scheme: dark)')
 				function setText() {
                 	let currentTheme = mediaWatch.matches ? "dark": "light"
                 	explaination.innerHTML = "Selecting Default causes rivers.run to use the theme provided by your browser (" + currentTheme + ")"
