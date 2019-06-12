@@ -10,7 +10,12 @@ function normalSearch(list, query) {
             }
         }
         else if (event.name.toLowerCase().indexOf(query) !== -1) {
-            l[2].push(event)
+            if (event.name.toLowerCase().startsWith(query)) {
+                l[0].push(event)
+            }
+            else {
+                l[2].push(event)
+            }
         }
         else if (event.section.toLowerCase().indexOf(query) !== -1) {
             l[3].push(event)
@@ -21,9 +26,9 @@ function normalSearch(list, query) {
     })
 
 	console.log(l)
-	
+
 	//Sort each match level alphabetically by river name
-	
+
 	function compareNames(river1, river2) {
 		if (river1.name > river2.name) {
 			return 1
@@ -33,18 +38,18 @@ function normalSearch(list, query) {
 		}
 		return 0
 	}
-	
+
 	l[0] = l[0].sort(compareNames)
 	l[1] = l[1].sort(compareNames)
 	l[2] = l[2].sort(compareNames)
 	l[3] = l[3].sort(compareNames)
 	l[4] = l[4].sort(compareNames)
-	
+
 	console.log(l)
-	
+
 	//Less relevant results are lower.
     list = l[0].concat(l[1],l[2],l[3],l[4])
-	
+
     return list
 }
 
@@ -155,8 +160,8 @@ function skillFilter(list, parameters) {
             //Remove the item if it fails
             delete list[item]
         }
-    }	
-	
+    }
+
 	return list
 }
 
@@ -218,12 +223,12 @@ function flowFilter(list, parameters) {
 	let query = parameters.query
 	let min = query[0]
 	let max = query[1]
-	
+
 	console.log(parameters)
-	
+
 	for (let item in list) {
 		let river = list[item]
-		
+
 		if (river.running === undefined) {
 			if (!parameters.includeUnknown) {
 				delete list[item]
@@ -256,7 +261,7 @@ function flowFilter(list, parameters) {
 //	distance: 100 //Maximum distance in miles
 //	lat: 78//Starting latitude
 //	lon:-56 //Starting londitude
-//	includeUnknown: false //Do not eliminate if location not known 
+//	includeUnknown: false //Do not eliminate if location not known
 //}
 //}
 
@@ -334,7 +339,3 @@ window.addEventListener("click", function(event) {
 document.getElementById("advancedsearch").addEventListener("click", function() {
     advanced_search_modal.style.display = "block"
 })
-
-
-
-

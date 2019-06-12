@@ -15,7 +15,7 @@ try {
 			let data = event.data
 
 			if (!data.includes("waterservices.usgs.gov")) {return;}
-			
+
 			window.oldLoadUSGS = window.loadNewUSGS
 
 			if (data.includes("Updated cache for")) {
@@ -110,6 +110,9 @@ window.NewList = function(query, type, reverse) {
 
 
 	}//Closing for if a query is present
+	else if (type = "normal" && query.length === 0) {
+		orderedlist = normalSearch(orderedlist, query)
+	}
 
 	//Clear Current
 	ItemHolder.forEach(function(event) {
@@ -137,7 +140,7 @@ NewList("alphabetical", "sort")
 
 
 let searchbox = document.getElementById("searchbox")
-searchbox.addEventListener("keydown", function() {setTimeout(function(){NewList(searchbox.value, "normal")}, 20)})
+searchbox.addEventListener("keyup", function(){NewList(searchbox.value, "normal")})
 
 
 //Generate advanced search parameters from menu
@@ -204,8 +207,8 @@ function getAdvancedSearchParameters() {
 		],
 		includeUnknown: document.getElementById("includeUnknownFlow").checked
 	}
-	
-	
+
+
 	return parameters
 }
 
@@ -276,7 +279,7 @@ if (window.location.hash.length > 0) {
 	try {
 		//Do an advanced search if the query if an advanced search
 		let query = JSON.parse(search)
-		
+
 		//TODO: Set the advanced search areas to the query.
 
 		NewList(query, "advanced")

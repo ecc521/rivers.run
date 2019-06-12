@@ -250,7 +250,7 @@ function calculateColor(river, options) {
             values[i] = undefined
             continue;
         }
-
+		str = str.split("(computer)").join("")
         str = str.trim()
         let value = parseFloat(str)
         let currentType = str.match(/[^\d|.]+/) //Match the integer or decimal number
