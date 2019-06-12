@@ -76,40 +76,40 @@ if (!styleSheet) {
 try {
 	//Since we can't directly modify a CSSMediaRule, we will create a CSSMediaRule, then modify the media rule inside it.
 	//This prevents us from having to remember where the media rule is in the list
-	
+
 	let container = styleSheet.cssRules[styleSheet.insertRule("@media all {}", styleSheet.cssRules.length)]
 	let mediaMatch = window.matchMedia('(prefers-color-scheme: dark)')
-	
-	
+
+
 	function calculateDarkMode() {
 		let startingMode = window.darkMode
-		
+
         let darkMode = localStorage.getItem("prefersDarkMode")
 
         if (darkMode === null) {
             darkMode = mediaMatch.matches
         }
-		
+
 	        //Convert string to boolean
 		if (darkMode === "true") {window.darkMode = true}
-		else {window.darkMode = false}	
-		
+		else {window.darkMode = false}
+
 		if (window.darkMode !== startingMode) {
 			window.dispatchEvent(new Event("colorSchemeChanged"))
 		}
 	}
-	
+
 		//Detect changes in color scheme
 		mediaMatch.onchange = calculateDarkMode
 		window.addEventListener("storage", calculateDarkMode)
-		
+
         let mediaRule = styleSheet.cssRules[styleSheet.cssRules.length-2]
-		
+
 		mediaRule = container.cssRules[container.insertRule(mediaRule.cssText, container.cssRules.length)]
 		styleSheet.deleteRule(styleSheet.cssRules.length-2)
-	
-		
-		
+
+
+
         //Style links so that they are visible in dark mode
         //Unvisited Link
         mediaRule.insertRule("a:link {color: #3333FF;}", mediaRule.cssRules.length)
@@ -119,7 +119,7 @@ try {
         mediaRule.insertRule("a:hover {color: green;}", mediaRule.cssRules.length)
         //Quick flash of color when link clicked
         mediaRule.insertRule("a:active {color: red;}", mediaRule.cssRules.length)
-		
+
 		//Enable or disable the media rule.
 		window.addEventListener("colorSchemeChanged", function() {
 			let cssText = mediaRule.cssText
@@ -134,7 +134,7 @@ try {
 				container.insertRule(cssText, container.cssRules.length)
 			}
 		})
-		
+
 		calculateDarkMode()
 }
 catch (e) {
@@ -157,6 +157,12 @@ styleSheet.insertRule("html body {font-family: Arial, Helvetica, sans-serif}", s
 //This should allow rivers.run to the run from a directory
 let root = window.location.href
 root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
+
+//Allow running from resources directory.
+if (root.endsWith("resources/")) {
+	root = root.slice(0, root.length - "resources/".length)
+}
+
 
 let topnav = document.createElement("div")
 topnav.className = "topnav"
