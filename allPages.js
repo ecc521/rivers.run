@@ -308,8 +308,8 @@ cursor: pointer;
 
 window.addDarkModeCSS(`
 .modal-content {
-background-color:black;
-color:#cfcfcf;
+background-color:black !important;
+color:#cfcfcf !important;
 `)
 
 
