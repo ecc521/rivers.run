@@ -90,8 +90,7 @@ try {
             darkMode = mediaMatch.matches
         }
 
-	        //Convert string to boolean
-		if (darkMode === "true") {window.darkMode = true}
+		if (darkMode === true || darkMode === "true") {window.darkMode = true}
 		else {window.darkMode = false}
 
 		if (window.darkMode !== startingMode) {
