@@ -134,6 +134,11 @@ try {
 			}
 		})
 
+		window.addDarkModeCSS = function(css) {
+			mediaRule.insertRule(css, mediaRule.cssRules.length)
+		}
+
+
 		calculateDarkMode()
 }
 catch (e) {
@@ -282,6 +287,7 @@ margin: auto;
 padding: 20px;
 border: 1px solid #888;
 width: 90%;
+margin-bottom:100px;
 }`,styleSheet.cssRules.length)
 
 styleSheet.insertRule(`
@@ -300,13 +306,11 @@ cursor: pointer;
 }`,styleSheet.cssRules.length)
 
 
-if (window.darkMode) {
-    styleSheet.insertRule(`
+window.addDarkModeCSS(`
 .modal-content {
 background-color:black;
 color:#cfcfcf;
-}`, styleSheet.cssRules.length)
-}
+`)
 
 
 //Create the modal element
@@ -358,10 +362,20 @@ class RiverOverview extends HTMLElement {
 
         }
 
+		let element = this
 
         //Style so that text looks like a link/button
         this.style.cursor = "pointer"
-        this.style.color = "rgb(51, 51, 255)"
+		function setColor() {
+			if (window.darkMode) {
+				element.style.color = "rgb(100, 150, 255)"
+			}
+			else {
+				element.style.color = "rgb(51, 51, 255)"
+			}
+		}
+		setColor()
+		window.addEventListener("colorSchemeChanged", setColor)
         this.style.textDecoration = "underline"
 
         this.addEventListener("click", openOverview)
