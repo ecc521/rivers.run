@@ -381,20 +381,9 @@ module.exports.River = function(locate, event) {
     //tags needs to be a string. It can't be undefined
     this.tags = this.tags || ""
     //Convert the numeric value to the filename
-    switch (Number(this.rating)) {
-        case 1:
-            this.rating = "1Star";
-            break;
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-            this.rating = event.rating + "Stars";
-            break;
-        default:
-            this.rating = "Error"
-    }
-    if (!this.rating) {
+	
+	this.rating = parseFloat(this.rating)
+    if (this.rating < 1 || this.rating > 5 || isNaN(this.rating) || !this.rating) {
         this.rating = "Error"
     }
 
@@ -430,9 +419,11 @@ module.exports.River = function(locate, event) {
             }
             else {
                 let img = document.createElement("img")
-                img.src = "resources/" + this.rating + ".png"
-                img.alt = this.rating[0] + " Stars"
+                img.src = "resources/5Stars.png"
+                img.alt = this.rating.toFixed(2) + " Stars"
                 img.className = "starimg"
+				//Crop top, crop right crop bottom crop left
+				img.style.clipPath = "inset(0px " + (100-(this.rating*20)) + "% 0px 0px)"
                 let span = document.createElement("span")
                 span.appendChild(img)
                 span.className = "riverspan"

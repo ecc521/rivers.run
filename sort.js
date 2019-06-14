@@ -23,11 +23,28 @@ function alphabeticalsort(list, reverse) {
 }
 
 function ratingsort(list, reverse) {
+	//In the sorting, the numbers all come before the letters
+	//Convert numbers to strings so that we are comparng the same type, and do not always get false.
+	//Convert back after.
+	
+	for (let i=0;i<list.length;i++) {
+		if (typeof list[i].rating === "number") {
+			list[i].rating = String(list[i].rating)
+		}
+	}
+	
     list = simpleSort(list, "rating")
 
-    if (reverse) {
+	for (let i=0;i<list.length;i++) {
+		if (!isNaN(parseFloat(list[i].rating))) {
+			list[i].rating = parseFloat(list[i].rating)
+		}
+	}
+	
+	if (reverse) {
         list.reverse()
     }
+	
     //Move error values to end
     while (list[0].rating === "Error") {
         list.push(list.shift())
