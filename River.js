@@ -250,7 +250,7 @@ function calculateColor(river, options) {
             values[i] = undefined
             continue;
         }
-
+		str = str.split("(computer)").join("")
         str = str.trim()
         let value = parseFloat(str)
         let currentType = str.match(/[^\d|.]+/) //Match the integer or decimal number
@@ -292,6 +292,21 @@ function calculateColor(river, options) {
     //too low, and may come up with rain, or is truely too low.
 
 
+	//If we don't have some values, fill them in using logarithms
+	//Although these calculations are not needed when flow is below minrun or above maxrun. they can be useful in
+	//alerting people what values are being used, so that they can
+	let minrun = values[0]
+	let maxrun = values[4]
+	let midflow = values[2] || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
+	let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
+	let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
+
+	//We display these so people can tell what values the computer has generated.
+	river.lowflow = parseFloat(lowflow.toFixed(2)) + type + " (computer)"
+	river.midflow = parseFloat(midflow.toFixed(2)) + type + " (computer)"
+	river.highflow = parseFloat(highflow.toFixed(2)) + type + " (computer)"
+
+
     if (flow <= values[0]) {
         //Too low
         river.running = 0
@@ -309,20 +324,6 @@ function calculateColor(river, options) {
 		//Normal Flow lightness values
 		//Tough to see a difference when highlighted amount the more middle values in light mode.
     	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "65%"): window.darkMode? "25%": "70%"
-
-		//If we don't have some values, fill them in using logarithms
-        //TODO: Do some analyzsis and figure out the best way to do these calculations
-
-        let minrun = values[0]
-        let maxrun = values[4]
-        let midflow = values[2] || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
-        let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
-        let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
-
-        //We display these so people can tell what values the computer has generated.
-        river.lowflow = parseFloat(lowflow.toFixed(3)) + type
-        river.midflow = parseFloat(midflow.toFixed(3)) + type
-        river.highflow = parseFloat(highflow.toFixed(3)) + type
 
         function calculateRatio(low, high, current) {
             low = Math.log(low)

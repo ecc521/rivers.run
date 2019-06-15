@@ -1,157 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <!--Web App Manifest-->
-        <link rel="manifest" href="manifest.json">
+<head>
+    <!--Web App Manifest-->
+    <link rel="manifest" href="manifest.json">
 
 
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#317EFB"/>
-        <meta name="Description" content="Ever wonder how rivers.run works without Wifi or Cellular? Our FAQ page can help with this question, AND others. If you have questions about rivers.run, check here (our FAQ) to see if it has already been answered.">
-        <meta name="keywords" content="rivers.run, FAQ, rivers.run FAQ">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#317EFB"/>
+    <meta name="Description" content="Ever wonder how rivers.run works without Wifi or Cellular? Our FAQ page can help with this question, AND others. If you have questions about rivers.run, check here (our FAQ) to see if it has already been answered.">
+    <meta name="keywords" content="rivers.run, FAQ, rivers.run FAQ">
 
-        <title style="text-align: center">Rivers.run - FAQ</title>   
+    <title style="text-align: center">Rivers.run - FAQ</title>
 
-    </head>
-    <body>
-
-
-
-        <h1 style="text-align: center">Frequently Asked Questions:</h1>
-        <noscript>Error. This page needs JavaScript to function. Please enable JavaScript and try again.</noscript>
-        <p style="text-align: center">Click on the question to see or hide the answer.</p>
-
-        <button class="accordion">Where can I contact you?</button>
-        <div class="panel">
-            <p>You can use the <a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">Feedback Form</a>, or you can email me at <a href="mailto:contact@rivers.run" target="_blank" rel="noopener">contact@rivers.run</a></p>
-        </div>
-
-        <button class="accordion">How does this Website work Offline?</button>
-        <div class="panel">
-            <p>This website utilizes your browsers cache to store the contents of this site - So whenever rivers.run is in cache, you can visit it.<em> If for any reason your cache is cleared, then you will be unable to visit rivers.run without internet until the cache is refilled on the next visit.</em></p>
-        </div>
-
-        <button class="accordion">How do I link to a normal search?</button>
-        <div class="panel">
-            <p>The URL to a normal search is https://rivers.run#YOUR_SEARCH_QUERY_HERE<br>If you want to test the URL, make sure you put it in a new tab.</p>
-        </div>
-
-        <button class="accordion">Your river info page is not showing any rivers</button>
-        <div class="panel">
-            <p>
-                If are encountering issues, your browser may be too old. Here are the browsers that should work:<br>
-				Chrome (Version 40ish+ should work, but only the latest version tested)<br>
-				Firefox - Full Support can be obtained down to Firefox 60 ESR. river-overview popups break below version 60<br>
-				Microsoft Edge (Chakra) - Full Support believed for latest version<br>
-				Opera, Microsoft Edge (Blink), Chromium - Based on the same engines as Chrome, so they should work on the latest version, and down to Chromium 40ish+<br>
-				Opera Mini - Breaks in extreme mode. Works mostly otherwise (navigation menu dissapears though)<br>
-				Samsung Internet - Based on WebKit just like Safari, so it should work<br>
-				Any Browser on iOS 9.3+ (iOS 11.3+ needed for offline)<br>
-            </p>
-        </div>
-
-        <button class="accordion">Can I embed a website or HTML</button>
-        <div class="panel">
-            <p>Yes you can - Put the following HTML code into your writeup:<br>
-                &lt;iframe src="embeds.rivers.run?Put the URL or HTML code to embed here"&gt;&lt;/iframe&gt;<br>
-                Embeds are still receiving some major updates, so it is not reccomended to use them yet.<br></p>
-        </div>    
+</head>
+<body>
 
 
 
+    <h1 style="text-align: center">Frequently Asked Questions:</h1>
+    <noscript>Error. This page needs JavaScript to function. Please enable JavaScript and try again.</noscript>
+    <p style="text-align: center">Click on the question to see or hide the answer.</p>
 
-        <script>
-            var acc = document.getElementsByClassName("accordion");
-            var i;
 
-            for (i = 0; i < acc.length; i++) {
-                acc[i].addEventListener("click", function() {
-                    this.classList.toggle("active");
-                    var panel = this.nextElementSibling;
-                    if (panel.style.maxHeight){
-                        panel.style.maxHeight = null;
-                    } else {
-                        panel.style.maxHeight = panel.scrollHeight + "px";
-                    } 
-                });
+    <button class="accordion">How do I add a new river?</button>
+    <div class="panel">
+        <p>If you would like to add a new river, please fill out the <a href="resources/writeupmaker.html" target="_blank">writeup maker</a> to the best of your ability,
+        then press the copy output to clipboard button, and send the output in an email to <a href="mailto:support@rivers.run" target="_blank" rel="noopener">support@rivers.run</a>.
+        <br>
+        If you would like access to add and edit rivers yourself, please email <a href="mailto:admin@rivers.run" target="_blank" rel="noopener">admin@rivers.run</a>.
+    </p>
+    </div>
+
+    <button class="accordion">How do I improve an existing river?</button>
+    <div class="panel">
+        <p>
+            You can email <a href="mailto:support@rivers.run" target="_blank" rel="noopener">support@rivers.run</a> telling us what you would like to be changed.
+            <br>
+            If you would like access to add and edit rivers yourself, please email <a href="mailto:admin@rivers.run" target="_blank" rel="noopener">admin@rivers.run</a>.
+        </p>
+    </div>
+
+    <button class="accordion">How do I use the search box?</button>
+    <div class="panel">
+        <p>
+            Just type in what you are looking for. The website will update results as you type.
+        </p>
+    </div>
+
+    <button class="accordion">How can I sort the rivers?</button>
+    <div class="panel">
+        <p>
+            Click the headers to sort. Currently, you may only sort by name, skill, rating, and flow.
+        </p>
+    </div>
+
+    <button class="accordion">How does the shading and sort by flow work?</button>
+    <div class="panel">
+        <p>
+            Relative flows (Too low, low, too high, etc) are calculated using a logarithmic scale based off of a given minimum, maximum, and other optional values.<br>
+            The values being used to calculate relative flows are shown above the graph. Computer generated values will be labeled with (computer).<br>
+            If you would like to contribute flow range information (such as a minimum, a maximum, a mid flow, etc), refer to "How do I improve an existing river?" above.<br>
+        </p>
+    </div>
+
+    <button class="accordion">Where does flow information come from?</button>
+    <div class="panel">
+        <p>
+            Flow information is obtained from <a href="https://usgs.gov" target="_blank" rel="noopener">USGS</a> (United States Geolocial Survey)
+        </p>
+    </div>
+
+    <button class="accordion">What are some tags to search for?</button>
+    <div class="panel">
+        <p>
+            This is migrating to the clubs page.
+
+            edtop
+            edclassic
+            yougharea
+            dcarea
+            cheat
+            shenandoah
+            cacapon
+            cccwor
+            wvwor
+            cccspring
+
+            For some tags, you can add a c at the end to get those within 2 hours, and a c1 to get those within 1 hour.
+        </p>
+    </div>
+
+    <button class="accordion">GPS searching returns no/few rivers?</button>
+    <div class="panel">
+        <p>
+            As of now, rivers.run has very few GPS coordinates for rivers, so very few will show up in searches. If you would like to show rivers without GPS coordinates,
+            a checkbox is provided. <br><br>
+            If you have GPS coordinates to add, please refer to "How do I improve an existing river?" above.
+        </p>
+    </div>
+
+
+    <button class="accordion">I would like to help build the website</button>
+    <div class="panel">
+        <p>
+            You can access the repository on <a href="https://github.com/ecc521/rivers.run" target="_blank" rel="noopener">GitHub</a>.
+        </p>
+    </div>
+
+    <button class="accordion">The website is not working.</button>
+    <div class="panel">
+        <p>
+            If are encountering issues, your browser may be too old. Here are the browsers that should work:<br>
+            <br>
+            Chrom(e/ium), Opera, Microsoft Edge (Blink) - Full Support for Latest Version. Versions down to Blink/V8 4.0ish should work.<br>
+            Any Browser on iOS 9.3+ (iOS 11.3+ needed for offline support)<br>
+            Firefox - Full Support can be obtained down to Firefox 60 ESR. river-overview popups break below version 60<br>
+            Opera Mini - Breaks in extreme data saving mode. Full support in all other modes.<br>
+            Samsung Internet - Based on WebKit just like Safari, so it should work<br>
+            Microsoft Edge (Chakra) - Full Support believed for latest version<br>
+            <br>
+            Internet Explorer does <strong>NOT</strong> work
+            <br><br>
+            If you encounter issues while using a supported browser, please refer to "where can I contact you" below.
+        </p>
+    </div>
+
+    <button class="accordion">Where can I contact you?</button>
+    <div class="panel">
+        <p>You can use the <a href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link" target="_blank" rel="noopener">Feedback Form</a>, or you can email me at <a href="mailto:contact@rivers.run" target="_blank">contact@rivers.run</a></p>
+    </div>
+
+    <button class="accordion">How does rivers.run work offline?</button>
+    <div class="panel">
+        <p>rivers.run utilizes your browsers cache to store the contents of this site - So whenever rivers.run is in cache, you can visit it.
+            <em> If for any reason your cache is cleared, then you will be unable to visit rivers.run without internet until the cache is refilled on the next visit.</em>
+            <br>
+            Don't worry about old content though - If rivers.run is using data more than 1 hour old, it will show very obvious warnings, and the site will update the cached
+            data the next time it is loaded while online.<br><br>
+
+            Note: A newer browser is required for offline support.
+        </p>
+    </div>
+
+    <button class="accordion">How do I link to a normal search?</button>
+    <div class="panel">
+        <p>The URL to a normal search is https://rivers.run#YOUR_SEARCH_QUERY<br>If you want to test the URL, make sure you put it in a new tab.</p>
+    </div>
+
+
+
+    <script>
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight){
+                panel.style.maxHeight = null;
+            } else {
+                panel.style.maxHeight = panel.scrollHeight + "px";
             }
-        </script>
+        });
+    }
+    </script>
 
 
-        <p style="text-align: center">Copyright © 2018 Tucker Willenborg. All Rights Reserved.</p>
+    <p style="text-align: center">Copyright © 2018 Tucker Willenborg. All Rights Reserved.</p>
 
 
-        <style>
-            body {font-family: Arial, Helvetica, sans-serif;}  
+    <style>
+    body {font-family: Arial, Helvetica, sans-serif;}
 
 
-            .p {
-                text-align: center
-            }
+    .p {
+        text-align: center
+    }
 
-            .accordion {
-                background-color: #f0f0f0;
-                color: #444;
-                cursor: pointer;
-                padding: 18px;
-                width: 100%;
-                border: none;
-                text-align: left;
-                outline: none;
-                font-size: 15px;
-                transition: 0.4s;
-            }
+    .accordion {
+        background-color: #f0f0f0;
+        color: #444;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 15px;
+        transition: 0.4s;
+    }
 
-            .active, .accordion:hover {
-                background-color: #d9d9d9;
-            }
+    .active, .accordion:hover {
+        background-color: #d9d9d9;
+    }
 
-            .accordion:after {
-                content: '\002B';
-                color: green;
-                font-weight: bold;
-                float: right;
-                margin-left: 5px;
-            }
+    .accordion:after {
+        content: '\002B';
+        color: green;
+        font-weight: bold;
+        float: right;
+        margin-left: 5px;
+    }
 
-            .active:after {
-                content: "\2212";
-                color:red;
-            }
+    .active:after {
+        content: "\2212";
+        color:red;
+    }
 
-            .panel {
-                padding: 0 18px;
-                background-color: lightblue;
-                max-height: 0;
-                overflow: hidden;
-                transition: max-height 0.2s ease-out;
-            }
-
-
-            body {
-                background-color: lightblue;
-            }
-
-            @media (prefers-color-scheme: dark) {
-                html, body, .panel {
-                    background-color: black;
-                    color: #cccccc;
-                }
-
-                .accordion {
-                    background-color: #494949;
-                    color: #e0e0e0;
-                }
-
-                .accordion:hover {
-                    background-color: #5f5f5f;
-                }
-            }
+    .panel {
+        padding: 0 18px;
+        background-color: lightblue;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease-out;
+    }
 
 
-        </style>
+    body {
+        background-color: lightblue;
+    }
 
-        <script src="packages/allPages.js"></script>    
+    @media (prefers-color-scheme: dark) {
+        html, body, .panel {
+            background-color: black;
+            color: #cccccc;
+        }
 
-    </body>
+        .accordion {
+            background-color: #494949;
+            color: #e0e0e0;
+        }
+
+        .accordion:hover {
+            background-color: #5f5f5f;
+        }
+    }
+
+
+    </style>
+
+    <script src="packages/allPages.js"></script>
+
+</body>
 </html>
