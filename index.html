@@ -160,7 +160,11 @@
                 <input id="writeupQuery" type="text" placeholder="Search Query">
                 <br>
 
-
+                Tags Contains (comma seperated list)
+                <input id="tagsQuery" type="text" placeholder="List of Tags">
+                <br>
+				
+				
                 Located within
                 <input id="distanceQuery" type="number" placeholder="Distance in Miles">
                 miles of
@@ -172,12 +176,19 @@
                 <p id="locationProgress"></p>
                 <br>
 
+				Sort the list by:
+                <select id="sortQuery">
+                    <option value="alphabetical" selected>Alphabetical</option>
+                    <option value="rating">Rating</option>
+                    <option value="skill">Skill</option>
+                    <option value="running">Flow</option>
+				</select>
+                <input id="sortQueryReverse" type="checkbox">Reverse List<br>
+
+				<button id="performadvancedsearch">Search</button>
 
 
-                <button id="performadvancedsearch">Search</button>
-
-
-				<p>Warning: Searching based on flow will either return no results or all rivers if the search is run before flow information loads.</p>
+				<p>Warning: Searching or sorting based on flow will either return no results or all rivers if the search is run before flow information loads.</p>
                 <p id="searchlink"></p>
             </div>
         </div>

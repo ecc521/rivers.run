@@ -1,3 +1,5 @@
+let sortUtils = require("./sort.js")
+
 function normalSearch(list, query) {
     let l = [[],[],[],[],[]]
     list.forEach(function(event){
@@ -241,6 +243,21 @@ function flowFilter(list, parameters) {
 	return list
 }
 
+function tagsFilter(list, parameters) {
+	let query = parameters.query
+	let components = parameters.query.split(" ").join("").split(",")
+	
+	for (let item in list) {
+		let river = list[item]
+
+		for (let i=0;i<components.length;i++) {
+			if (typeof river.tags !== "string" || !river.tags.toLowerCase().includes(components[i].toLowerCase())) {
+				delete list[item]
+			}
+		}
+	}
+	return list
+}
 
 //Query is in form of:
 //{
@@ -274,7 +291,7 @@ function advancedSearch(list, query) {
     //List is the array of river elements that we are searching
     //Query is the search parameters
     console.log(query)
-
+	
     for (let property in query) {
         //Iterate through each part of the query
 
@@ -296,8 +313,12 @@ function advancedSearch(list, query) {
         else if (property === "flow") {
             list = flowFilter(list, parameters)
         }
+		else if (property === "tags") {
+			list = tagsFilter(list, parameters)
+		}
 		else if (property === "sort") {
-
+			list = list.filter(item => item !== undefined) //The sort code isn't built to handle holes.
+			list = sortUtils.sort(parameters.query, list, parameters.reverse)
         }
         else {
             alert("Unable to search based on " + property)
@@ -305,6 +326,7 @@ function advancedSearch(list, query) {
     }
 
 	list = list.filter(item => item !== undefined)
+	
     return list
 }
 

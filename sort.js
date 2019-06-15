@@ -41,7 +41,8 @@ function ratingsort(list, reverse) {
 		}
 	}
 	
-	if (reverse) {
+	//The list is backwards. Reverse it if reverse is NOT specified.
+	if (!reverse) {
         list.reverse()
     }
 	

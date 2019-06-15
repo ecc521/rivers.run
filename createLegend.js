@@ -88,6 +88,9 @@ function makeSticky(canvas) {
     window.addEventListener("scroll", function() {
         let pageOffset = window.pageYOffset
 
+		canvas.style.zIndex = 1 //Not sure why, but when clip-path:inset(...) is added to the star images, they appear over top
+		//of the legend without adding zIndex.
+		
         if (pageOffset > elementOffset) {
             canvas.style.position = "fixed"
             canvas.style.top = 0

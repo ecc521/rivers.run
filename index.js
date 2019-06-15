@@ -190,7 +190,11 @@ function getAdvancedSearchParameters() {
 		}
 	}
 
-
+	parameters.tags = {
+		query: document.getElementById("tagsQuery").value
+	}
+	
+	
 	parameters.skill = {
 		type: "from",
 		query: [
@@ -208,6 +212,10 @@ function getAdvancedSearchParameters() {
 		includeUnknown: document.getElementById("includeUnknownFlow").checked
 	}
 
+	parameters.sort = {
+		query: document.getElementById("sortQuery").value,
+		reverse: document.getElementById("sortQueryReverse").checked
+	}
 
 	return parameters
 }
@@ -262,7 +270,7 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 	let link = encodeURI(root + "#" + JSON.stringify(query))
 	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
 
-	NewList(query, "advanced", false) //Currently no options are offered to sort or order advanced search
+	NewList(query, "advanced", false) //Reversing advanced search is handled in the sort.reverse portion of the parameters.
 })
 
 

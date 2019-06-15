@@ -40,7 +40,7 @@ function TopBar() {
 
         span = NewSpan("Rating⇅")
         addSorting(span, "rating")
-        span.value = 1 //We want greatest first, not least first, on the first sort
+        span.value = 0 //We want greatest first, not least first, on the first sort
         button.appendChild(span) 
 
         span = NewSpan("Flow Info/Trend⇅")
