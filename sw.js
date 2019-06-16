@@ -19,10 +19,6 @@ const preloadList = [
     "packages/index.js",
     "riverarray.js",
     "overviews.js",
-    "resources/1Star.png",
-    "resources/2Stars.png",
-    "resources/3Stars.png",
-    "resources/4Stars.png",
     "resources/5Stars.png"
 ]
 
