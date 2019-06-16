@@ -143,6 +143,27 @@ let searchbox = document.getElementById("searchbox")
 searchbox.addEventListener("keyup", function(){NewList(searchbox.value, "normal")})
 
 
+//Used to determine where search parameters match the default.
+	function objectsEqual(obj1, obj2) {
+		for (let property in obj1) {
+			if (typeof obj1[property] === "object") {
+				if (!objectsEqual(obj1[property], obj2[property])) {
+					return false
+				}
+			}
+			else {
+				if (obj1[property] !== obj2[property]) {
+					return false
+				}
+			}
+		}
+		return true
+	}
+
+
+
+let defaultAdvancedSearchParameters = getAdvancedSearchParameters();
+
 //Generate advanced search parameters from menu
 function getAdvancedSearchParameters() {
 	let parameters = {}
@@ -216,9 +237,24 @@ function getAdvancedSearchParameters() {
 		query: document.getElementById("sortQuery").value,
 		reverse: document.getElementById("sortQueryReverse").checked
 	}
+	
+	//If a specific parameter matches the default, exclude.
+	//Check for undefined, because this function is used to define defaultAdvancedSearchParameters
+	
+	
+	if (defaultAdvancedSearchParameters !== undefined) {
+		//TODO: Consolodate properties of each of the parameters. 
+		for (let property in parameters) {
+			if (objectsEqual(parameters[property], defaultAdvancedSearchParameters[property])) {
+				delete parameters[property]
+			}
+		}
+	}
+	
 
 	return parameters
 }
+
 
 
 async function calculateCoordinates() {
@@ -269,7 +305,7 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 	root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
 	let link = encodeURI(root + "#" + JSON.stringify(query))
 	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
-
+	
 	NewList(query, "advanced", false) //Reversing advanced search is handled in the sort.reverse portion of the parameters.
 })
 
@@ -287,6 +323,7 @@ if (window.location.hash.length > 0) {
 	try {
 		//Do an advanced search if the query if an advanced search
 		let query = JSON.parse(search)
+		query = Object.assign({}, defaultAdvancedSearchParameters, query) //Use default parameters in all non-specified cases.
 
 		//TODO: Set the advanced search areas to the query.
 
