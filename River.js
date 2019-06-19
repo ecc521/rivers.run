@@ -384,7 +384,8 @@ module.exports.River = function(locate, event) {
     //Convert the numeric value to the filename
 	
 	this.rating = parseFloat(this.rating)
-    if (this.rating < 1 || this.rating > 5 || isNaN(this.rating) || !this.rating) {
+	//Consider allowing ratings less than 1.
+    if (this.rating < 1 || this.rating > 5 || isNaN(this.rating) || this.rating === undefined) {
         this.rating = "Error"
     }
 
@@ -416,18 +417,34 @@ module.exports.River = function(locate, event) {
 
             //Star images for rating
             if (this.rating === "Error") {
-                AddSpan("???")
+				//Make sure that the span is the correct width, but inivisble.
+                AddSpan("☆☆☆☆☆").style.opacity = "0.3"
             }
             else {
-                let img = document.createElement("img")
-                img.src = "resources/5Stars.png"
-                img.alt = this.rating.toFixed(2) + " Stars"
-                img.className = "starimg"
-				//Crop top, crop right crop bottom crop left
-				img.style.clipPath = "inset(0px " + (100-(this.rating*20)) + "% 0px 0px)"
-                let span = document.createElement("span")
-                span.appendChild(img)
+				let span = document.createElement("span")
                 span.className = "riverspan"
+				
+				//We will use one empty span to set the width of the containing span.
+				//We will use another empty span to overlay the full stars
+                let spacer = document.createElement("span")
+				spacer.className = "emptyStars"
+				spacer.innerHTML = "☆☆☆☆☆"
+				spacer.style.opacity = "0"
+                span.appendChild(spacer)
+
+                let empty = document.createElement("span")
+				empty.className = "emptyStars"
+				empty.innerHTML = "☆☆☆☆☆"
+				empty.style.position = "absolute"
+				empty.style.zIndex = "1" //Overlay the full stars
+                span.appendChild(empty)
+				
+				let full = document.createElement("span")
+				full.className = "fullStars"
+				full.innerHTML = "★★★★★"
+				full.style.width = this.rating*20 + "%"
+                span.appendChild(full)
+				
                 button.appendChild(span)
             }
 

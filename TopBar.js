@@ -38,12 +38,33 @@ function TopBar() {
         span.value = 0
         button.appendChild(span) 
 
-        span = NewSpan("Rating⇅")
+		
+		//The rating span needs to be the same size as the stars. 
+		span = NewSpan("")
+		//Create an invisible star span. This will make the spans width the same as the ratings.
+        let empty = document.createElement("span")
+		empty.className = "emptyStars"
+		empty.innerHTML = "☆☆☆☆☆"
+		empty.style.opacity = "0" //Invisible
+		
+		//Create the text span.
+		let realContent = document.createElement("span")
+		realContent.innerHTML = "Rating⇅"
+		//Make sure that the span is positioned correctly.
+		realContent.style.position = "absolute"
+		realContent.style.left = 0
+		realContent.style.bottom = 0
+		
+		span.appendChild(empty)
+		span.appendChild(realContent)
+		
         addSorting(span, "rating")
         span.value = 0 //We want greatest first, not least first, on the first sort
         button.appendChild(span) 
 
-        span = NewSpan("Flow Info/Trend⇅")
+		
+		
+        span = NewSpan("Flow/Trend⇅")
         addSorting(span, "running")
         span.value = 1 //Show highest flow first, instead of lowest
         button.appendChild(span)
