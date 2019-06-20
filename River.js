@@ -418,7 +418,7 @@ module.exports.River = function(locate, event) {
             //Star images for rating
             if (this.rating === "Error") {
 				//Make sure that the span is the correct width, but inivisble.
-                AddSpan("☆☆☆☆☆").style.opacity = "0.3"
+                AddSpan("☆☆☆☆☆").style.opacity = "0.2"
             }
             else {
 				let span = document.createElement("span")
