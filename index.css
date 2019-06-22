@@ -51,7 +51,6 @@ html, body {
 @media screen and (max-width:500px) {
     .emptyStars, .fullStars {
         font-size: 2.035vw; /*Reduce overflow onto second line.*/
-        line-height: 2.035vw; /*Reduce overflow onto second line.*/
     }
 }
 
@@ -169,62 +168,52 @@ Those include name,section,skill,quality, and flow info*/
 @media screen and (min-width: 500px) {
     .riverbutton {
         font-size: 2.6vw;
-        line-height:2.6vw;
     }
 }
 @media screen and (min-width: 600px) {
     .riverbutton {
         font-size: 2.3vw;
-        line-height:2.3vw;
 
     }
 }
 @media screen and (min-width: 700px) {
     .riverbutton {
         font-size: 2.0vw;
-        line-height:2.0vw;
     }
 }
 @media screen and (min-width: 800px) {
     .riverbutton {
         font-size: 1.7vw;
-        line-height:1.7vw;
     }
 }
 @media screen and (min-width: 1000px) {
     .riverbutton {
         font-size: 1.5vw;
-        line-height:1.5vw;
     }
 }
 @media screen and (min-width: 1250px) {
     .riverbutton {
         font-size: 1.4vw;
-        line-height:1.4vw;
     }
 }
 @media screen and (min-width: 1350px) {
     .riverbutton {
         font-size: 1.32vw;
-        line-height:1.32vw;
     }
 }
 @media screen and (min-width: 1450px) {
     .riverbutton {
         font-size: 1.24vw;
-        line-height:1.24vw;
     }
 }
 @media screen and (min-width: 1600px) {
     .riverbutton {
         font-size: 1.15vw;
-        line-height:1.15vw;
     }
 }
 @media screen and (min-width: 1900px) {
     .riverbutton {
         font-size: 21px;
-        line-height:21px;
     }
 }
 /*End of riverbutton style*/
