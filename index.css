@@ -26,7 +26,7 @@ html, body {
 		margin:0;
 		display:inline-block;
 	}
-	
+
 	.fullStars {
 		color:yellow;
 		position: absolute;
@@ -45,7 +45,7 @@ html, body {
 	text-align:center;
 	line-height:2em;
 	color:black; /*Make sure the text is not white in dark mode*/
-} 
+}
 
 .searchcontain {
     margin-bottom:18px;
@@ -84,7 +84,7 @@ html, body {
 
 
 
-/*riverspans are the spans that actually hold the information - there are 6 riverspans for each river. 
+/*riverspans are the spans that actually hold the information - there are 6 riverspans for each river.
 Those include name,section,skill,quality, and flow info*/
 
 .riverspan {
@@ -110,7 +110,7 @@ Those include name,section,skill,quality, and flow info*/
 
 /*No styling for span number 5 at the moment.*/
 
-/*End of riverspan style*/    
+/*End of riverspan style*/
 
 /*riverbutton is the element that holds all the riverspans*/
 .riverbutton {
@@ -148,13 +148,17 @@ Those include name,section,skill,quality, and flow info*/
 
 .riverbutton:focus {
     outline:0;
-}   
+}
 
 
 /*Controlling font size smoothly based on screen size*/
 @media screen and (min-width: 500px) {
     .riverbutton {
         font-size: 2.6vw;
+    }
+
+    .emptyStars, .fullStars {
+        font-size:2.3vw; /*Reduce overflow onto second line.*/
     }
 }
 @media screen and (min-width: 600px) {
@@ -202,7 +206,7 @@ Those include name,section,skill,quality, and flow info*/
         font-size: 21px;
     }
 }
-/*End of riverbutton style*/    
+/*End of riverbutton style*/
 
 /*topbar is the header element for all the rivers. You can click it to order alphabetically, by quality, skill, ext.*/
 #topbar {
@@ -214,7 +218,7 @@ Those include name,section,skill,quality, and flow info*/
 
 #topbar:hover {
     background-color:#77ff77;
-}    
+}
 /*End of topbar style*/
 
 
@@ -243,8 +247,8 @@ Those include name,section,skill,quality, and flow info*/
 	.riverbutton:hover {
 		background-color: #333333;
 	}
-	
-	
+
+
     .riverbuttonDam:nth-child(even) {
         background-color: #222222 !important;
     }
@@ -254,8 +258,8 @@ Those include name,section,skill,quality, and flow info*/
 	.riverbuttonDam:hover {
 		background-color: #333333 !important;
 	}
-	
-	
+
+
     .riverbutton {
         color:#ffffff;
     }
