@@ -73,6 +73,7 @@ html, body {
     padding:0;
     height: 36px;
     width:30%;
+	padding-left:5px;/*Prevent the text from being on the left edge.*/
 	font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
 }
 
