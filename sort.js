@@ -26,13 +26,13 @@ function ratingsort(list, reverse) {
 	//In the sorting, the numbers all come before the letters
 	//Convert numbers to strings so that we are comparng the same type, and do not always get false.
 	//Convert back after.
-	
+
 	for (let i=0;i<list.length;i++) {
 		if (typeof list[i].rating === "number") {
 			list[i].rating = String(list[i].rating)
 		}
 	}
-	
+
     list = simpleSort(list, "rating")
 
 	for (let i=0;i<list.length;i++) {
@@ -40,16 +40,16 @@ function ratingsort(list, reverse) {
 			list[i].rating = parseFloat(list[i].rating)
 		}
 	}
-	
+
 	//The list is backwards. Reverse it if reverse is NOT specified.
 	if (!reverse) {
         list.reverse()
     }
-	
+
     //Move error values to end
     while (list[0].rating === "Error") {
         list.push(list.shift())
-    }  
+    }
     return list
 }
 
@@ -88,7 +88,7 @@ function skillsort(list, reverse) {
                     value = 9;
             }
             return value
-        }       
+        }
         return ToNum(a)-ToNum(b)
     })
 
@@ -106,13 +106,13 @@ function skillsort(list, reverse) {
 
 
 function runningSort(list, reverse) {
-    
+
     let noData = []
 	let hasDam = []
     let hasGauge = []
 	let hasGaugeAndDam = []
     let knownState = []
-    
+
     list.forEach((item) => {
         if (item.running !== undefined && !isNaN(item.running)) {knownState.push(item)}
         //If there is gauge data, the user may be able to determine level themselves
@@ -122,19 +122,19 @@ function runningSort(list, reverse) {
 		else if (item.dam) {hasDam.push(item)}
         else {noData.push(item)}
     })
-    
+
     knownState = simpleSort(knownState, "running")
-    
+
 	//Default order should be highest flow first.
     if (!reverse) {
         knownState.reverse()
     }
-    
-    if (knownState.length === 0) {
+
+    if (window.usgsDataAge === undefined) {
         alert("Flow data has not yet loaded.")
         return list
     }
-	
+
     knownState = knownState.concat(hasGaugeAndDam)
     knownState = knownState.concat(hasGauge)
     knownState = knownState.concat(hasDam)
@@ -158,7 +158,7 @@ function sort(method, list, reverse) {
         list = skillsort(list, reverse)
     }
     else if (method === "running") {
-        list = runningSort(list, reverse)      
+        list = runningSort(list, reverse)
     }
     else {
         throw "Unknown sorting method " + method
