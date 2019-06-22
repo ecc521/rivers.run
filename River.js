@@ -382,7 +382,7 @@ module.exports.River = function(locate, event) {
     //tags needs to be a string. It can't be undefined
     this.tags = this.tags || ""
     //Convert the numeric value to the filename
-	
+
 	this.rating = parseFloat(this.rating)
 	//Consider allowing ratings less than 1.
     if (this.rating < 1 || this.rating > 5 || isNaN(this.rating) || this.rating === undefined) {
@@ -418,12 +418,14 @@ module.exports.River = function(locate, event) {
             //Star images for rating
             if (this.rating === "Error") {
 				//Make sure that the span is the correct width, but inivisble.
-                AddSpan("☆☆☆☆☆").style.opacity = "0.2"
+                let span = AddSpan("☆☆☆☆☆")
+				span.style.opacity = "0.2"
+				span.classList.add("emptyStars")
             }
             else {
 				let span = document.createElement("span")
                 span.className = "riverspan"
-				
+
 				//We will use one empty span to set the width of the containing span.
 				//We will use another empty span to overlay the full stars
                 let spacer = document.createElement("span")
@@ -438,13 +440,13 @@ module.exports.River = function(locate, event) {
 				empty.style.position = "absolute"
 				empty.style.zIndex = "1" //Overlay the full stars
                 span.appendChild(empty)
-				
+
 				let full = document.createElement("span")
 				full.className = "fullStars"
 				full.innerHTML = "★★★★★"
 				full.style.width = this.rating*20 + "%"
                 span.appendChild(full)
-				
+
                 button.appendChild(span)
             }
 
