@@ -39,6 +39,11 @@ html, body {
 	left:0px;
 }
 
+@media screen and (max-width:500px) {
+    .emptyStars, .fullStars {
+        font-size:2.3vw; /*Reduce overflow onto second line.*/
+    }
+}
 
 .oldDataWarning, #topOldDataWarning {
 	background-color:yellow;
@@ -155,10 +160,6 @@ Those include name,section,skill,quality, and flow info*/
 @media screen and (min-width: 500px) {
     .riverbutton {
         font-size: 2.6vw;
-    }
-
-    .emptyStars, .fullStars {
-        font-size:2.3vw; /*Reduce overflow onto second line.*/
     }
 }
 @media screen and (min-width: 600px) {
