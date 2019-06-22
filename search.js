@@ -292,6 +292,8 @@ function advancedSearch(list, query) {
     //Query is the search parameters
     console.log(query)
 	
+	let sorted = false
+	
     for (let property in query) {
         //Iterate through each part of the query
 
@@ -319,6 +321,7 @@ function advancedSearch(list, query) {
 		else if (property === "sort") {
 			list = list.filter(item => item !== undefined) //The sort code isn't built to handle holes.
 			list = sortUtils.sort(parameters.query, list, parameters.reverse)
+			sorted = true
         }
         else {
             alert("Unable to search based on " + property)
@@ -326,6 +329,10 @@ function advancedSearch(list, query) {
     }
 
 	list = list.filter(item => item !== undefined)
+	
+	if (!sorted) {
+		list = sortUtils.sort("alphabetical", list)
+	}
 	
     return list
 }

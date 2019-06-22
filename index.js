@@ -90,6 +90,7 @@ window.NewList = function(query, type, reverse) {
 			orderedlist = normalSearch(orderedlist, query)
 		}
 		if (type === "advanced") {
+			query = recursiveAssign({}, defaultAdvancedSearchParameters, query) //Use default parameters in all non-specified cases.
 			orderedlist = advancedSearch(orderedlist, query)
 		}
 		if (type === "location") {
@@ -145,6 +146,7 @@ searchbox.addEventListener("keyup", function(){NewList(searchbox.value, "normal"
 
 //Used to determine where search parameters match the default.
 	function objectsEqual(obj1, obj2) {
+		//Tells if all properties, recursively, match.
 		for (let property in obj1) {
 			if (typeof obj1[property] === "object") {
 				if (!objectsEqual(obj1[property], obj2[property])) {
@@ -160,9 +162,63 @@ searchbox.addEventListener("keyup", function(){NewList(searchbox.value, "normal"
 		return true
 	}
 
+function deleteMatchingPortions(obj1, obj2) {
+	//Deletes all properties on obj1, recursively, that are identical to obj2
+	for (let property in obj1) {
+			if (typeof obj1[property] === "object") {
+				if (objectsEqual(obj1[property], obj2[property])) {
+					//If the objects are equal, delete them.
+					delete obj1[property]
+				}
+				//With an array, positional data can be totally lost by this. Do not delete portions of arrays.
+				else if (!(obj1[property] instanceof Array)) {
+					//Delete the portions of the objects that match.
+					deleteMatchingPortions(obj1[property], obj2[property])
+				}
+			}
+			else {
+				if (obj1[property] === obj2[property]) {
+					delete obj1[property]
+				}
+			}
+		}
+	return obj1
+}
 
+function recursiveAssign(target, ...objects) {	
+	if (objects.length > 1) {
+		for (let i=0;i<objects.length;i++) {
+			recursiveAssign(target, objects[i])
+		}
+	}
+	else {
+		let object = objects[0]
+	console.log(Object.assign({}, target))
+	console.log(Object.assign({}, object))
+		for (let property in object) {
+			if (typeof object[property] === "object") {
+				if (typeof target[property] !== "object") {
+					//Fixing needed!!!
+					//Right here we need to clone, recursively, object[property]
+					//Object.assign() is only one level deep.
+					target[property] = recursiveAssign({}, object[property])
+				}
+				else {
+					//Setting target[property] to the result probably isn't needed. 
+					target[property] = recursiveAssign(target[property], object[property])
+				}
+			}
+			else {
+				target[property] = object[property]
+			}
+		}
+	}
+	return target
+}
 
-let defaultAdvancedSearchParameters = getAdvancedSearchParameters();
+let defaultAdvancedSearchParameters;
+defaultAdvancedSearchParameters = getAdvancedSearchParameters();
+console.log(defaultAdvancedSearchParameters)
 
 //Generate advanced search parameters from menu
 function getAdvancedSearchParameters() {
@@ -243,12 +299,9 @@ function getAdvancedSearchParameters() {
 	
 	
 	if (defaultAdvancedSearchParameters !== undefined) {
-		//TODO: Consolodate properties of each of the parameters. 
-		for (let property in parameters) {
-			if (objectsEqual(parameters[property], defaultAdvancedSearchParameters[property])) {
-				delete parameters[property]
-			}
-		}
+		console.log(Object.assign({}, parameters))
+		console.log(Object.assign({}, defaultAdvancedSearchParameters))
+		parameters = deleteMatchingPortions(parameters, defaultAdvancedSearchParameters) //Delete where the default is used.
 	}
 	
 
@@ -323,8 +376,7 @@ if (window.location.hash.length > 0) {
 	try {
 		//Do an advanced search if the query if an advanced search
 		let query = JSON.parse(search)
-		query = Object.assign({}, defaultAdvancedSearchParameters, query) //Use default parameters in all non-specified cases.
-
+		
 		//TODO: Set the advanced search areas to the query.
 
 		NewList(query, "advanced")

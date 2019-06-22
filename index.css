@@ -72,14 +72,22 @@ html, body {
     vertical-align:middle;
     padding:0;
     height: 36px;
-    width:30%
+    width:30%;
+	font-size:16px; /*Prevent iOS from auto zooming...*/ 
+}
+
+@media screen and (min-width:1067px) {
+	#searchbox {
+		font-size: inherit; /*iOS auto zooms with font-size less than 16px. When dynamic sizing will be greater than that, switch.*/
+	}
 }
 
 #searchbox::placeholder {
     /*Make the text show up a little better.*/
-    font-size: 1.1em; 
     font-weight: bold;
 }
+
+
 
 /*riverspans are the spans that actually hold the information - there are 6 riverspans for each river. 
 Those include name,section,skill,quality, and flow info*/
@@ -181,7 +189,7 @@ Those include name,section,skill,quality, and flow info*/
 }
 @media screen and (min-width: 1350px) {
     .riverbutton {
-        font-size: 1.35vw;
+        font-size: 1.32vw;
     }
 }
 @media screen and (min-width: 1450px) {

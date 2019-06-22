@@ -28,7 +28,7 @@ function TopBar() {
 
         let span = NewSpan("River⇅")
         addSorting(span, "alphabetical")
-        span.value = 1//Starts sorted alphabetically, a-z. The first sort needs to reverse that.
+        span.value = 1 //Starts sorted alphabetically, a-z. The first sort needs to reverse that.
         button.appendChild(span)
 
         button.appendChild(NewSpan("Section"))
@@ -66,7 +66,7 @@ function TopBar() {
 		
         span = NewSpan("Flow/Trend⇅")
         addSorting(span, "running")
-        span.value = 1 //Show highest flow first, instead of lowest
+        span.value = 0 //Show highest flow first, instead of lowest
         button.appendChild(span)
 
         return button

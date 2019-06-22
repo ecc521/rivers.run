@@ -125,7 +125,8 @@ function runningSort(list, reverse) {
     
     knownState = simpleSort(knownState, "running")
     
-    if (reverse) {
+	//Default order should be highest flow first.
+    if (!reverse) {
         knownState.reverse()
     }
     
