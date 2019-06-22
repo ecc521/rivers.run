@@ -7,7 +7,8 @@
         <meta http-equiv="Content-Security-Policy" content="
                                                             default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:*;
                                                             connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov https://docs.google.com;
-                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://www.googleapis.com data:;"
+                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://www.googleapis.com data:;
+                                                            font-src data:;"
               >
         <!-- Curently the img-src can be bypassed with a Data URL. This should be changed so that cannot be done-->
 
@@ -159,8 +160,8 @@
                 Tags Contains (comma seperated list)
                 <input id="tagsQuery" type="text" placeholder="List of Tags">
                 <br>
-				
-				
+
+
                 Located within
                 <input id="distanceQuery" type="number" placeholder="Distance in Miles">
                 miles of
