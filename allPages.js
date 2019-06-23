@@ -3,6 +3,11 @@
 //defines the river-overview DOM element, and makes sure a viewport meta tag exists.
 
 try {
+	require("./reportErrors.js") //Get site usage statistics
+}
+catch(e) {console.error(e)}
+
+try {
 	require("./collectVisitorInformation.js") //Get site usage statistics
 }
 catch(e) {console.error(e)}
