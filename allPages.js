@@ -176,241 +176,247 @@ catch (e) {
 
 
 //Create navigation bar
-//Where rivers.run is located
+
+let root; //Where rivers.run is located
 //This should allow rivers.run to the run from a directory
-let root = window.location.href
-root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
 
-//Allow running from resources directory.
-if (root.endsWith("resources/")) {
-	root = root.slice(0, root.length - "resources/".length)
+try {
+	root = window.location.href
+	root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
+
+	//Allow running from resources directory.
+	if (root.endsWith("resources/")) {
+		root = root.slice(0, root.length - "resources/".length)
+	}
+
+
+	let topnav = document.createElement("div")
+	topnav.className = "topnav"
+
+	let items = []
+
+	let item1 = document.createElement("a")
+	item1.href = root
+	item1.innerHTML = "River Info"
+	items.push(item1)
+
+	let item2 = document.createElement("a")
+	item2.href = root + "about.html"
+	item2.innerHTML = "About"
+	items.push(item2)
+
+	let item3 = document.createElement("a")
+	item3.href = root + "FAQ.html"
+	item3.innerHTML = "FAQ"
+	items.push(item3)
+
+	let item4 = document.createElement("a")
+	item4.href = root + "settings.html"
+	item4.innerHTML = "Settings"
+	items.push(item4)
+
+	let item5 = document.createElement("a")
+	item5.href = root + "clubs.html"
+	item5.innerHTML = "Clubs"
+	items.push(item5)
+
+
+	let currentPage = window.location.href.slice(root.length)
+	if (currentPage.indexOf("#") !== -1) {
+	    currentPage = currentPage.slice(0, currentPage.indexOf("#"))
+	}
+
+
+	for (let i=0;i<items.length;i++) {
+	    let item = items[i]
+
+	    let target = item.href.slice(root.length)
+
+	    if (target === currentPage) {
+	        item.className = "topnavcurrent"
+	    }
+	    topnav.appendChild(item)
+	}
+
+	document.body.insertBefore(topnav, document.body.firstChild)
+
+
+
+	styleSheet.insertRule(`
+	.topnav {
+	overflow: hidden;
+	background-color: #24b9cc;
+	margin:0px;
+	}
+	`, styleSheet.cssRules.length)
+
+
+	styleSheet.insertRule(`
+	.topnav a {
+	float: left;
+	display: block;
+	color:black;
+	text-align:center;
+	padding: 12px 13px;
+	text-decoration: none; /*Avoid the links being underlined*/
+	font-size: 17px;
+	}
+	`, styleSheet.cssRules.length)
+
+
+	//Make sure the header doesn't go onto multiple lines
+	styleSheet.insertRule(`
+	@media screen and (max-width: 386px) {
+	.topnav a {
+	padding: 10px 11px;
+	font-size: 4.3vw;
+	}
+	}
+	`, styleSheet.cssRules.length)
+
+
+	styleSheet.insertRule(".topnav a:hover {background-color: #359daa}", styleSheet.cssRules.length)
+	styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.cssRules.length)
 }
-
-
-let topnav = document.createElement("div")
-topnav.className = "topnav"
-
-let items = []
-
-let item1 = document.createElement("a")
-item1.href = root
-item1.innerHTML = "River Info"
-items.push(item1)
-
-let item2 = document.createElement("a")
-item2.href = root + "about.html"
-item2.innerHTML = "About"
-items.push(item2)
-
-let item3 = document.createElement("a")
-item3.href = root + "FAQ.html"
-item3.innerHTML = "FAQ"
-items.push(item3)
-
-let item4 = document.createElement("a")
-item4.href = root + "settings.html"
-item4.innerHTML = "Settings"
-items.push(item4)
-
-let item5 = document.createElement("a")
-item5.href = root + "clubs.html"
-item5.innerHTML = "Clubs"
-items.push(item5)
-
-
-let currentPage = window.location.href.slice(root.length)
-if (currentPage.indexOf("#") !== -1) {
-    currentPage = currentPage.slice(0, currentPage.indexOf("#"))
+catch (e) {
+	console.error(e)
 }
-
-
-for (let i=0;i<items.length;i++) {
-    let item = items[i]
-
-    let target = item.href.slice(root.length)
-
-    if (target === currentPage) {
-        item.className = "topnavcurrent"
-    }
-    topnav.appendChild(item)
-}
-
-document.body.insertBefore(topnav, document.body.firstChild)
-
-
-
-styleSheet.insertRule(`
-.topnav {
-overflow: hidden;
-background-color: #24b9cc;
-margin:0px;
-}
-`, styleSheet.cssRules.length)
-
-
-styleSheet.insertRule(`
-.topnav a {
-float: left;
-display: block;
-color:black;
-text-align:center;
-padding: 12px 13px;
-text-decoration: none; /*Avoid the links being underlined*/
-font-size: 17px;
-}
-`, styleSheet.cssRules.length)
-
-
-//Make sure the header doesn't go onto multiple lines
-styleSheet.insertRule(`
-@media screen and (max-width: 386px) {
-.topnav a {
-padding: 10px 11px;
-font-size: 4.3vw;
-}
-}
-`, styleSheet.cssRules.length)
-
-
-styleSheet.insertRule(".topnav a:hover {background-color: #359daa}", styleSheet.cssRules.length)
-styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.cssRules.length)
-
-
-
-
-
 
 
 //The remaining code is for the river-overview tags
-
-//Add the modal styles
-styleSheet.insertRule(`
-.modal {
-display: none;
-position:fixed;
-z-index:1;
-padding-top: 5%;
-left:0;
-top:0;
-width:100%;
-height: 100%;
-overflow:auto;
-background-color: rgba(0,0,0,0.4);
-}`, styleSheet.cssRules.length)
-
-styleSheet.insertRule(`
-.modal-content {
-color:black;
-background-color: #fefefe;
-margin: auto;
-padding: 20px;
-border: 1px solid #888;
-width: 90%;
-margin-bottom:100px;
-}`,styleSheet.cssRules.length)
-
-styleSheet.insertRule(`
-.modal-close {
-color: #aaaaaa;
-float: right;
-font-size: 28px;
-font-weight: bold;
-}`,styleSheet.cssRules.length)
-
-styleSheet.insertRule(`
-.modal-close:hover, .modal-close:focus {
-color: #000;
-text-decoration: none;
-cursor: pointer;
-}`,styleSheet.cssRules.length)
-
-
-window.addDarkModeCSS(`
-.modal-content {
-background-color:black !important;
-color:#cfcfcf !important;
-`)
-
-
-//Create the modal element
-let overview_modal = document.createElement("div")
-overview_modal.className = "modal"
-
-let modal_content = document.createElement("div")
-modal_content.className = "modal-content"
-
-let overview_modal_close = document.createElement("span")
-overview_modal_close.className = "modal-close"
-overview_modal_close.innerHTML = "×"
-
-let overview_modal_text = document.createElement("p")
-
-overview_modal.appendChild(modal_content)
-modal_content.appendChild(overview_modal_close)
-modal_content.appendChild(overview_modal_text)
-
-document.body.appendChild(overview_modal)
-
-
-
-//Make the modal disappear when the close button is clicked, or when area outside content is clicked
-overview_modal_close.onclick = function() {
-    overview_modal.style.display = "none"
-}
-
-window.addEventListener("click", function(event) {
-    if (event.target === overview_modal) {
-        overview_modal.style.display = "none"
-    }
-})
-
-
-//Create the river-overview element
-class RiverOverview extends HTMLElement {
-    constructor() {
-        super();
-
-        function openOverview() {
-            let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a programming or data entry error"
-            if (window.overviews && window.overviews[this.innerText.trim()]) {
-                text = window.overviews[this.innerText.trim()]
-            }
-
-            overview_modal_text.innerHTML = text
-            overview_modal.style.display = "block"
-
-        }
-
-		let element = this
-
-        //Style so that text looks like a link/button
-        this.style.cursor = "pointer"
-		function setColor() {
-			if (window.darkMode) {
-				element.style.color = "rgb(100, 150, 255)"
-			}
-			else {
-				element.style.color = "rgb(51, 51, 255)"
-			}
-		}
-		setColor()
-		window.addEventListener("colorSchemeChanged", setColor)
-        this.style.textDecoration = "underline"
-
-        this.addEventListener("click", openOverview)
-
-    }
-}
-
 try {
-    customElements.define('river-overview', RiverOverview);
+	//Add the modal styles
+	styleSheet.insertRule(`
+	.modal {
+	display: none;
+	position:fixed;
+	z-index:1;
+	padding-top: 5%;
+	left:0;
+	top:0;
+	width:100%;
+	height: 100%;
+	overflow:auto;
+	background-color: rgba(0,0,0,0.4);
+	}`, styleSheet.cssRules.length)
+
+	styleSheet.insertRule(`
+	.modal-content {
+	color:black;
+	background-color: #fefefe;
+	margin: auto;
+	padding: 20px;
+	border: 1px solid #888;
+	width: 90%;
+	margin-bottom:100px;
+	}`,styleSheet.cssRules.length)
+
+	styleSheet.insertRule(`
+	.modal-close {
+	color: #aaaaaa;
+	float: right;
+	font-size: 28px;
+	font-weight: bold;
+	}`,styleSheet.cssRules.length)
+
+	styleSheet.insertRule(`
+	.modal-close:hover, .modal-close:focus {
+	color: #000;
+	text-decoration: none;
+	cursor: pointer;
+	}`,styleSheet.cssRules.length)
+
+
+	window.addDarkModeCSS(`
+	.modal-content {
+	background-color:black !important;
+	color:#cfcfcf !important;
+	`)
+
+
+	//Create the modal element
+	let overview_modal = document.createElement("div")
+	overview_modal.className = "modal"
+
+	let modal_content = document.createElement("div")
+	modal_content.className = "modal-content"
+
+	let overview_modal_close = document.createElement("span")
+	overview_modal_close.className = "modal-close"
+	overview_modal_close.innerHTML = "×"
+
+	let overview_modal_text = document.createElement("p")
+
+	overview_modal.appendChild(modal_content)
+	modal_content.appendChild(overview_modal_close)
+	modal_content.appendChild(overview_modal_text)
+
+	document.body.appendChild(overview_modal)
+
+
+
+	//Make the modal disappear when the close button is clicked, or when area outside content is clicked
+	overview_modal_close.onclick = function() {
+	    overview_modal.style.display = "none"
+	}
+
+	window.addEventListener("click", function(event) {
+	    if (event.target === overview_modal) {
+	        overview_modal.style.display = "none"
+	    }
+	})
+
+
+	//Create the river-overview element
+	class RiverOverview extends HTMLElement {
+	    constructor() {
+	        super();
+
+	        function openOverview() {
+	            let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a programming or data entry error"
+	            if (window.overviews && window.overviews[this.innerText.trim()]) {
+	                text = window.overviews[this.innerText.trim()]
+	            }
+
+	            overview_modal_text.innerHTML = text
+	            overview_modal.style.display = "block"
+
+	        }
+
+			let element = this
+
+	        //Style so that text looks like a link/button
+	        this.style.cursor = "pointer"
+			function setColor() {
+				if (window.darkMode) {
+					element.style.color = "rgb(100, 150, 255)"
+				}
+				else {
+					element.style.color = "rgb(51, 51, 255)"
+				}
+			}
+			setColor()
+			window.addEventListener("colorSchemeChanged", setColor)
+	        this.style.textDecoration = "underline"
+
+	        this.addEventListener("click", openOverview)
+
+	    }
+	}
+
+	try {
+	    customElements.define('river-overview', RiverOverview);
+	}
+	catch (e) {
+	    console.error(e)
+	    //Alert firefox users about the flag
+	    if (navigator.userAgent.includes("Firefox")) {
+	        setTimeout(function() {
+	            alert("In order to view area overviews, you will need a browser that supports DOM customElements. You may be able to enable customElements in about:config")
+	        },4000)
+	    }
+	}
 }
 catch (e) {
-    console.error(e)
-    //Alert firefox users about the flag
-    if (navigator.userAgent.includes("Firefox")) {
-        setTimeout(function() {
-            alert("In order to view area overviews, you will need a browser that supports DOM customElements. You may be able to enable customElements in about:config")
-        },4000)
-    }
+	console.error(e)
 }
