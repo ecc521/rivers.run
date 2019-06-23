@@ -22,6 +22,6 @@ let formURL = "https://docs.google.com/forms/d/e/1FAIpQLSfyTHeq0fp6-iofQacxfXcsS
 formURL = encodeURI(formURL)
 
 
-let loadURL = require("./sendOffData.js").loadURL(formURL)
+require("./sendOffData.js").loadURL(formURL)
 
 module.exports = {data}

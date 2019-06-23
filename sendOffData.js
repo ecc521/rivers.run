@@ -1,19 +1,18 @@
 function _loadURL(url) {
 	//Return true if the request is successful. false otherwise
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 		if (window.fetch) {
-			let request = fetch(url, {mode: "no-cors"})
-			request.then((result) => {
-				if (result.type === "opaque") {
+			fetch(url, {mode: "no-cors"}).catch((e) => {
+				console.warn(e) //Something didn't work out. Calling console.error causes another error to be reported, so
+				//if this fails due to internet, we end up in an infinite loop.
+				resolve(false)
+			}).then((result) => {
+				if (result && result.type === "opaque") {
 					resolve(true)
 				}
-        else {
-          resolve(false)
-        }
-			})
-			request.catch((e) => {
-				console.error(e)
-				resolve(false)
+				else {
+				    resolve(false)
+				}
 			})
 		}
 		else {
@@ -55,11 +54,14 @@ for (let i=0;i<urls.length;i++) {
 	})
 }
 
-
 function loadURL(url) {
 	urls.push(url)
 	localStorage.setItem("urlsToLoad", JSON.stringify(urls))
-	_loadURL(url).then((result) => {
+	let loader = _loadURL(url)
+	loader.catch((e) => {
+		console.warn(e)
+	})
+	loader.then((result) => {
 		//If the request succeeded, remove the URL from the queue
 		if (result === true) {
 			urls.splice(urls.indexOf(url), 1)

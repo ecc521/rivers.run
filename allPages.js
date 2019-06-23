@@ -71,18 +71,18 @@ catch(e) {
 let styleSheet;
 try {
 	styleSheet = document.styleSheets[0]
-
+	
 	if (!styleSheet) {
-	    console.warn("No stylesheet available. There must be an existing stylesheet in order for allPages.js to function properly without inline style allowed or without document.documentElement (which may always exist).")
+		console.warn("No stylesheet available. Without inline-style allowed, allPages.js may not work.")
 	    let style = document.createElement("style")
-	    document.documentElement.appendChild(style)
+		//Append to document.body if possible. Fallback to document.documentElement
+	    ;(document.body && document.body.appendChild(style)) || document.documentElement.appendChild(style)
 	    styleSheet = document.styleSheets[0]
 	}
 }
 catch (e) {
 	console.error(e)
 }
-
 
 
 //Determine if the user wants dark mode
