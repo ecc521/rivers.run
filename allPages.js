@@ -7,11 +7,15 @@ try {
 }
 catch(e) {console.error(e)}
 
-
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js');
-    });
+try {
+	if ('serviceWorker' in navigator) {
+	    window.addEventListener('load', function() {
+	        navigator.serviceWorker.register('sw.js');
+	    });
+	}
+}
+catch (e) {
+	console.error(e)
 }
 
 
@@ -59,14 +63,21 @@ catch(e) {
 
 //This is extremely sensitive to the design of the CSS
 //The @media query must be last rule in first stylesheet for this to work
-let styleSheet = document.styleSheets[0]
+let styleSheet;
+try {
+	styleSheet = document.styleSheets[0]
 
-if (!styleSheet) {
-    console.warn("No stylesheet available. There must be an existing stylesheet in order for allPages.js to function properly without inline style allowed or without document.documentElement (which may always exist).")
-    let style = document.createElement("style")
-    document.documentElement.appendChild(style)
-    styleSheet = document.styleSheets[0]
+	if (!styleSheet) {
+	    console.warn("No stylesheet available. There must be an existing stylesheet in order for allPages.js to function properly without inline style allowed or without document.documentElement (which may always exist).")
+	    let style = document.createElement("style")
+	    document.documentElement.appendChild(style)
+	    styleSheet = document.styleSheets[0]
+	}
 }
+catch (e) {
+	console.error(e)
+}
+
 
 
 //Determine if the user wants dark mode
@@ -149,10 +160,13 @@ catch (e) {
 
 
 
-
-//Make sure I don't hate the font
-styleSheet.insertRule("html body {font-family: Arial, Helvetica, sans-serif}", styleSheet.cssRules.length)
-
+try {
+	//Make sure I don't hate the font
+	styleSheet.insertRule("html body {font-family: Arial, Helvetica, sans-serif}", styleSheet.cssRules.length)
+}
+catch (e) {
+	console.error(e)
+}
 
 
 
