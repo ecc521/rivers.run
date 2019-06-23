@@ -23,3 +23,5 @@ formURL = encodeURI(formURL)
 
 
 let loadURL = require("./sendOffData.js").loadURL(formURL)
+
+module.exports = {data}

@@ -1,7 +1,12 @@
 let loadURL = require("./sendOffData.js").loadURL
+let userInfo = require("./collectVisitorInformation.js").data
 
 function reportError(...error) {
-	let formURL = "https://docs.google.com/forms/d/e/1FAIpQLSd9h20lDBD4kTaNH8Ko6CAG9RGH1VCWwJKdfID_5RTTywTkFQ/formResponse?ifq&entry.1198287313=" + JSON.stringify(error) + "&submit=Submit"
+	let data = {
+		userInfo,
+		error
+	}
+	let formURL = "https://docs.google.com/forms/d/e/1FAIpQLSd9h20lDBD4kTaNH8Ko6CAG9RGH1VCWwJKdfID_5RTTywTkFQ/formResponse?ifq&entry.1198287313=" + JSON.stringify(data) + "&submit=Submit"
 	formURL = encodeURI(formURL)
 
 	loadURL(formURL)
