@@ -55,6 +55,10 @@ for (let i=0;i<urls.length;i++) {
 }
 
 function loadURL(url) {
+	if (!url.includes("rivers.run")) {
+		console.log("To avoid sending testing data to the server, refused to load " + url)
+		return;
+	}
 	urls.push(url)
 	localStorage.setItem("urlsToLoad", JSON.stringify(urls))
 	let loader = _loadURL(url)
