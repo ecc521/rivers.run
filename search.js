@@ -222,9 +222,16 @@ function locationFilter(list, parameters) {
 
 
 function flowFilter(list, parameters) {
+
 	let query = parameters.query
 	let min = query[0]
 	let max = query[1]
+
+    //Alert user when an actually useful flow search can't be performed.
+    if (window.usgsDataAge === undefined && (max !== 4 || min !== 0)) {
+        alert("Searching based on flow requires flow data, which has not yet loaded. The flow search is not being performed.")
+        return list
+    }
 
 	console.log(parameters)
 
@@ -246,7 +253,7 @@ function flowFilter(list, parameters) {
 function tagsFilter(list, parameters) {
 	let query = parameters.query
 	let components = parameters.query.split(" ").join("").split(",")
-	
+
 	for (let item in list) {
 		let river = list[item]
 
@@ -291,9 +298,9 @@ function advancedSearch(list, query) {
     //List is the array of river elements that we are searching
     //Query is the search parameters
     console.log(query)
-	
+
 	let sorted = false
-	
+
     for (let property in query) {
         //Iterate through each part of the query
 
@@ -329,11 +336,11 @@ function advancedSearch(list, query) {
     }
 
 	list = list.filter(item => item !== undefined)
-	
+
 	if (!sorted) {
 		list = sortUtils.sort("alphabetical", list)
 	}
-	
+
     return list
 }
 

@@ -1,7 +1,3 @@
-
-
-
-
 'use strict';
 
 
@@ -69,7 +65,9 @@ require("./loadUSGS.js").loadUSGS()
 
 
 var oldresult;
+let timesNewListCalled = 0 //Used to handle advanced search links with flow.
 window.NewList = function(query, type, reverse) {
+	timesNewListCalled++
 	if (typeof(query) === "string") {
 		query = query.toLowerCase()
 	}
@@ -90,7 +88,8 @@ window.NewList = function(query, type, reverse) {
 			orderedlist = normalSearch(orderedlist, query)
 		}
 		if (type === "advanced") {
-			query = recursiveAssign({}, defaultAdvancedSearchParameters, query) //Use default parameters in all non-specified cases.
+			//This is ineffecient because we run a search with every parameter, even when that parameter is useless (as the defaults are).
+			query = recursiveAssign({}, defaultAdvancedSearchParameters, query) //Use the default portions of the parameters in all non-specified cases.
 			orderedlist = advancedSearch(orderedlist, query)
 		}
 		if (type === "location") {
@@ -145,8 +144,16 @@ searchbox.addEventListener("keyup", function(){NewList(searchbox.value, "normal"
 
 
 //Used to determine where search parameters match the default.
-	function objectsEqual(obj1, obj2) {
+//This is rather ineffecient, because it has to be called twice. A new system (probably using object.keys()) should be used instead.
+	function _objectsEqual(obj1, obj2) {
 		//Tells if all properties, recursively, match.
+
+		//Avoid property of undefined issues.
+		if (obj1 === undefined || obj2 === undefined) {
+			if (obj1 !== obj2) {return false}
+			return true
+		}
+
 		for (let property in obj1) {
 			if (typeof obj1[property] === "object") {
 				if (!objectsEqual(obj1[property], obj2[property])) {
@@ -160,6 +167,10 @@ searchbox.addEventListener("keyup", function(){NewList(searchbox.value, "normal"
 			}
 		}
 		return true
+	}
+
+	function objectsEqual(obj1, obj2) {
+		return _objectsEqual(obj1, obj2) && _objectsEqual(obj2, obj1)
 	}
 
 function deleteMatchingPortions(obj1, obj2) {
@@ -185,7 +196,7 @@ function deleteMatchingPortions(obj1, obj2) {
 	return obj1
 }
 
-function recursiveAssign(target, ...objects) {	
+function recursiveAssign(target, ...objects) {
 	if (objects.length > 1) {
 		for (let i=0;i<objects.length;i++) {
 			recursiveAssign(target, objects[i])
@@ -204,7 +215,7 @@ function recursiveAssign(target, ...objects) {
 					target[property] = recursiveAssign({}, object[property])
 				}
 				else {
-					//Setting target[property] to the result probably isn't needed. 
+					//Setting target[property] to the result probably isn't needed.
 					target[property] = recursiveAssign(target[property], object[property])
 				}
 			}
@@ -270,8 +281,8 @@ function getAdvancedSearchParameters() {
 	parameters.tags = {
 		query: document.getElementById("tagsQuery").value
 	}
-	
-	
+
+
 	parameters.skill = {
 		type: "from",
 		query: [
@@ -293,17 +304,17 @@ function getAdvancedSearchParameters() {
 		query: document.getElementById("sortQuery").value,
 		reverse: document.getElementById("sortQueryReverse").checked
 	}
-	
+
 	//If a specific parameter matches the default, exclude.
 	//Check for undefined, because this function is used to define defaultAdvancedSearchParameters
-	
-	
+
+
 	if (defaultAdvancedSearchParameters !== undefined) {
 		console.log(Object.assign({}, parameters))
 		console.log(Object.assign({}, defaultAdvancedSearchParameters))
 		parameters = deleteMatchingPortions(parameters, defaultAdvancedSearchParameters) //Delete where the default is used.
 	}
-	
+
 
 	return parameters
 }
@@ -351,14 +362,14 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 	let query = getAdvancedSearchParameters()
 
 	//Add link to this search
-	//This should run before NewList - otherwise the entire content is added to the object and URL
+	//This should run before NewList - otherwise some unwanted data (specifically, the content parameter added and used in some of the searches) is added to the object and URL
 	//Find where rivers.run is located
 	//This should allow rivers.run to the run from a directory
 	let root = window.location.href
 	root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
 	let link = encodeURI(root + "#" + JSON.stringify(query))
 	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
-	
+
 	NewList(query, "advanced", false) //Reversing advanced search is handled in the sort.reverse portion of the parameters.
 })
 
@@ -373,18 +384,42 @@ document.getElementById("performadvancedsearch").addEventListener("click", funct
 if (window.location.hash.length > 0) {
 	let search = decodeURI(window.location.hash.slice(1))
 
-	try {
-		//Do an advanced search if the query if an advanced search
+if (search.startsWith("{")) {
+		//Advanced search
 		let query = JSON.parse(search)
-		
+
 		//TODO: Set the advanced search areas to the query.
 
-		NewList(query, "advanced")
-
-
+		//We have no usgs data yet. Wait to flow search/sort.
+		if (window.usgsDataAge === undefined) {
+			let oldQuery = recursiveAssign({}, query)
+			delete query.flow
+			if (query.sort && query.sort.query === "running") {
+				delete query.sort
+			}
+			function dataNowLoaded() {
+				if (timesNewListCalled === 2 || confirm("You used an advanced search link with flow parameters. Now that flow data has loaded, would you like to apply that search?")) {
+					NewList(oldQuery, "advanced")
+				}
+				window.removeEventListener("usgsDataUpdated", dataNowLoaded)
+			}
+			if (!objectsEqual(query, oldQuery)) {
+				window.addEventListener("usgsDataUpdated", dataNowLoaded)
+				let searchNotFinished = document.createElement("p")
+				searchNotFinished.id = "topOldDataWarning" //Reuse styling
+				searchNotFinished.innerHTML = "Portions of your advanced search link required flow data, which is still loading. You will be able to see the outcome of the whole search once flow data loads."
+				//loadUSGS.js will delete searchNotFinished when it is not needed due to the id overlap.
+				let legend = document.getElementById("legend")
+				legend.parentNode.insertBefore(searchNotFinished, legend)
+		}
 	}
-	catch (e) {
-		//Looks like we have a normal search query
+	console.log(window.usgsDataAge)
+
+
+		NewList(query, "advanced")
+	}
+	else {
+		//Normal search
 		document.getElementById("searchbox").value = search
 		NewList(search, "normal")
 	}

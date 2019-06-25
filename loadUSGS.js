@@ -1,21 +1,19 @@
 self.usgsarray = {}
 
 window.updateOldDataWarning = function() {
-	
+
 		let toDelete = document.getElementById("topOldDataWarning")
 		if (toDelete) {toDelete.remove()}
-	
+
 		//No reason to make an old data warning when data is new (within 1 hour)
-		if (window.usgsDataAge < 1000*60*60 || !window.usgsDataAge) {
-			return;
-		}
-	
+		if (window.usgsDataAge < 1000*60*60 || !window.usgsDataAge) {return}
+
 		let oldDataWarning = document.createElement("p")
 		oldDataWarning.id = "topOldDataWarning"
-		
+
 		oldDataWarning.innerHTML = "All river data is more than " + Math.floor(window.usgsDataAge/1000/60/60) + " hours old! "
 		oldDataWarning.innerHTML += "(" + window.loadNewUSGS + ") "
-		
+
 					let reloadButton = document.createElement("button")
 
 						reloadButton.addEventListener("click", function() {
@@ -23,11 +21,11 @@ window.updateOldDataWarning = function() {
 							require("./loadUSGS.js").loadUSGS()
 						})
 						reloadButton.innerHTML = "Try Again"
-					
+
 
 					oldDataWarning.appendChild(reloadButton)
-		
-		
+
+
 		let legend = document.getElementById("legend")
 		legend.parentNode.insertBefore(oldDataWarning, legend)
 }
@@ -36,14 +34,14 @@ window.updateOldDataWarning = function() {
 
 
 let loadUSGS = async function() {
-	
+
 	//Gaurd against infinite recursion. Ignores calls when data is new. (within 1 hour)
 	if (window.usgsDataAge < 1000*60*60) {
 		return;
 	}
 
 	let timeToRequest = 1000*86400 //Milliseconds of time to request
-	
+
     var sites = []
     for (let i=0;i<riverarray.length;i++) {
         let val = riverarray[i].usgs
@@ -70,11 +68,11 @@ let loadUSGS = async function() {
         usgsdata = JSON.parse(response)
     }
 
-	
+
 	window.usgsDataAge = Date.now() - new Date(usgsdata.value.queryInfo.note[3].value).getTime() //TODO: Iterate through note and find requestDT
 	window.updateOldDataWarning()
-	
-	
+
+
     //Iterate through all known conditions
     usgsdata.value.timeSeries.forEach(function(event){
         let obj2 = {}
@@ -151,7 +149,6 @@ let loadUSGS = async function() {
             //Replace the current button so that the flow info shows
             let elem = document.getElementById(item.base + "1")
             let expanded = item.expanded
-            console.log(expanded)
             let replacement = item.create(true) //Update the version in cache
             try {
                 elem.parentNode.replaceChild(replacement, elem)
@@ -164,7 +161,7 @@ let loadUSGS = async function() {
             catch (e) {} //The list must have been sorted - the node was not currently in list
         }
     }
-
+	window.dispatchEvent(new Event("usgsDataUpdated"))
 }
 
 
