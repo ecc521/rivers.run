@@ -6,7 +6,6 @@ let addGraphs = require("./addGraphs.js").addGraphs
 function addHandlers(button, locate) {
 	let river = ItemHolder[locate]
 
-			if (river.minrun && river.maxrun) {
 				window.addEventListener("colorSchemeChanged", function() {
 					button.style.backgroundColor = calculateColor(river)
 				})
@@ -18,7 +17,6 @@ function addHandlers(button, locate) {
 				button.addEventListener("mouseout", function(){
 					button.style.backgroundColor = calculateColor(river)
 				})
-			}
 
 			if (river.dam) {
 				window.addEventListener("colorSchemeChanged", function() {
@@ -59,7 +57,7 @@ function addHandlers(button, locate) {
             let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
             for (let i=0;i<values.length;i++) {
                 let name = values[i]
-                if (river[name]) {
+                if (river[name] && !isNaN(parseFloat(river[name]))) {
                     div.innerHTML += name + ":" + river[name] + " "
                 }
             }
@@ -253,17 +251,15 @@ function calculateColor(river, options) {
 		str = str.split("(computer)").join("")
         str = str.trim()
         let value = parseFloat(str)
-        let currentType = str.match(/[^\d|.]+/) //Match the integer or decimal number
+        let currentType = str.match(/[^\d|.]+/) //Match a series of non-digits
 
         if (currentType) {
-            currentType = currentType[0].trim() //Match a string of non-digits
+            currentType = currentType[0].trim().toLowerCase() //Use the first match
         }
-
         if (!type && currentType) {
             type = currentType
         }
-        else if (type === currentType) {}
-        else {
+        else if (type !== currentType && !isNaN(value)) {
             console.warn(values[i] + " on " + river.name + " " + river.section + " has a different extension and has been skipped")
             values[i] = undefined
             continue;
@@ -307,13 +303,13 @@ function calculateColor(river, options) {
 	river.highflow = parseFloat(highflow.toFixed(2)) + type + " (computer)"
 
 
-    if (flow <= values[0]) {
+    if (flow <= minrun) {
         //Too low
         river.running = 0
 	    let lightness = (options && options.highlighted)? (window.darkMode? "28%": "63%"):  window.darkMode? "23%": "67%"
         return "hsl(0,100%," + lightness + ")"
     }
-    else if (flow >= values[4]) {0
+    else if (flow >= maxrun) {
         //Too high
         river.running = 4
     	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "67%"):  window.darkMode? "20%": "69%"
@@ -348,9 +344,13 @@ function calculateColor(river, options) {
         else if (flow < highflow) {
             river.running = 2+calculateRatio(midflow, highflow, flow)
         }
-        else {
+		//Use else if and comparison against maxrun to go to the else in case of isNaN(maxrun)
+        else if (flow < maxrun) {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
+		else {
+			return "" //We can't calculate a color or ratio.
+		}
 
         return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
     }
@@ -481,7 +481,7 @@ module.exports.River = function(locate, event) {
 		if (this.dam) {
 			this.finished.style.background = createStripes()
 		}
-		if (this.minrun && this.maxrun && this.flow) {
+		if (calculateColor(this)) {
 			this.finished.style.backgroundColor = calculateColor(this)
 		}
 		else if (this.dam) {
