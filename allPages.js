@@ -24,24 +24,36 @@ catch (e) {
 }
 
 
+//Create navigation bar
+
+let root; //Where rivers.run is located
+//This should allow rivers.run to the run from a directory or subdirectory.
+
+try {
+	let scripts = document.querySelectorAll("script")
+	for (let i=0;i<scripts.length;i++) {
+		if (scripts[i].src.includes("allPages.js")) {
+			let allPagesURL = new URL(scripts[0].src)
+			root = new URL(allPagesURL.pathname + "/../..", allPagesURL.origin)
+			break;
+		}
+	}
+}
+catch(e) {console.error(e)}
+
 
 //Add the favicon if it does not exist.
 try {
-    ;(function addFavicon() {
-        let tags = document.head.querySelectorAll("link")
-        for (let i=0;i<tags.length;i++) {
-            if (tags[i].rel === "shortcut icon") {return} //There is already a favicon
-        }
+ 	if (!document.querySelector("link[rel='shortcut icon']")) {
 		let sizes = [16,24,32,64,96,160,196]
 		sizes.forEach((size) => {
 			let favicon = document.createElement("link")
 			favicon.rel = "shortcut icon"
 			favicon.type = "image/png"
-			//TODO: Handle pages in subdirectories.
-			favicon.href = `resources/icons/${size}x${size}-Water-Drop.png`
+			favicon.href = root + `resources/icons/${size}x${size}-Water-Drop.png`
 			document.head.appendChild(favicon)
 		})
-    })()
+	}
 }
 catch(e) {
     console.error(e)
@@ -51,16 +63,12 @@ catch(e) {
 
 //Add the viewport meta tag if it does not exist.
 try {
-    ;(function addViewportMeta() {
-        let tags = document.head.querySelectorAll("meta")
-        for (let i=0;i<tags.length;i++) {
-            if (tags[i].name = "viewport") {return} //There is already a viewmport meta tag
-        }
+	if (!document.querySelector("meta[name=viewport]")) {	
         let meta = document.createElement("meta")
         meta.name = "viewport"
         meta.content = "width=device-width, initial-scale=1"
         document.head.appendChild(meta)
-    })()
+	}
 }
 catch(e) {
     console.error(e)
@@ -178,18 +186,7 @@ catch (e) {
 
 //Create navigation bar
 
-let root; //Where rivers.run is located
-//This should allow rivers.run to the run from a directory
-
 try {
-	root = window.location.href
-	root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
-
-	//Allow running from resources directory.
-	if (root.endsWith("resources/")) {
-		root = root.slice(0, root.length - "resources/".length)
-	}
-
 
 	let topnav = document.createElement("div")
 	topnav.className = "topnav"

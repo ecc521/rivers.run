@@ -51,7 +51,7 @@ let loadUSGS = async function() {
 			let usgsID = values[i]
 			if (!usgsID) {continue}
 			//Gauges used by virtual gauges should be in relatedusgs
-			//Basic value validation.
+			//Basic value validation (throws out virtual gauges and clearly incorrect numbers.)
 	        if (usgsID.length > 7 && usgsID.length < 16 && !isNaN(Number(usgsID))) {
 	            (sites.indexOf(usgsID) === -1) && sites.push(usgsID) //Add the site if it doesn't exist in the list.
 	        }
@@ -76,7 +76,14 @@ let loadUSGS = async function() {
     }
 
 
-	window.usgsDataAge = Date.now() - new Date(usgsdata.value.queryInfo.note[3].value).getTime() //TODO: Iterate through note and find requestDT
+	let notes = usgsdata.value.queryInfo.note
+	//Find where requestDT is located. (never seen it outside position 3)
+	for (let i=0;i<notes.length;i++) {
+		if (notes[i].title === "requestDT") {
+			window.usgsDataAge = Date.now() - new Date(notes[i].value).getTime(); //Find when the request was made.
+			break;
+		}
+	}
 	window.updateOldDataWarning()
 
 
@@ -149,11 +156,18 @@ let loadUSGS = async function() {
 		else {updateUSGSData()}
     }
 
-	//TODO: If the virtual gauge takes too long to create, skip it.
-	//If some gauges couldn't be calculated in time, we can display a notice, and update those gauges in the background, though this is not required.
+	//Wait on virtual gauges for up to 1.2 seconds before dispatching usgsDataUpdated event.
+	let eventDispatched = false
 	Promise.all(virtualGaugeCalculations).then(() => {
 		window.dispatchEvent(new Event("usgsDataUpdated"))
+		eventDispatched = true
+		
 	})
+	setTimeout(function() {
+		if (!eventDispatched) {
+			window.dispatchEvent(new Event("usgsDataUpdated"))
+		}
+	}, 1200)
 }
 
 

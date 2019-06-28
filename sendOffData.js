@@ -55,7 +55,7 @@ for (let i=0;i<urls.length;i++) {
 }
 
 function loadURL(url) {
-	if (!url.includes("rivers.run")) {
+	if (window.location.hostname !== "rivers.run") {
 		console.log("To avoid sending testing data to the server, refused to load " + url)
 		return;
 	}

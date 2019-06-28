@@ -12,8 +12,8 @@ let data = {
 	hasServiceWorkers: 'serviceWorker' in navigator,//Detect if the browser supports serviceworkers
 	timeStamp: Date.now(), //What time the page was visited at.
 	referrer: document.referrer, //Used to detect how navigation is used
+	url: window.location.href, //Used to detect how navigation is used
 	previousVisits, //Used to detect if a visitor is unique
-	url: window.location.href, //Used to eliminate data sent due to development work
     userAgent: navigator.userAgent, //Information about the browser
 }
 

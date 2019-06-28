@@ -207,8 +207,18 @@ function locationFilter(list, parameters) {
             passes = distance < maxDistance
         }
         else {
-            //TODO: If we only have one of two coordinates, we may still be able to eliminate it
-            passes = parameters.includeUnknown
+            //If we have one of two coordinates, we may still be able to eliminate the river by calculating distance on one axis and
+			//eliminating the river if the calculated distance is greater than maxDistance
+			let distance;
+			if (lat2) {
+            	distance = calculateDistance(lat1, lon1, lat2, lon1)
+			}
+			else if (lon2) {
+			    distance = calculateDistance(lat1, lon1, lat1, lon2)
+			}
+			//Follow parameters.includeUnknown unless the river has been eliminated on distance.
+            passes = parameters.includeUnknown && !(distance > maxDistance)
+						
         }
 
         if (!passes) {
