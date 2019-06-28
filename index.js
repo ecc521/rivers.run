@@ -3,33 +3,34 @@
 
 try {
 	window.loadNewUSGS = "Trying to Load Data"
-	window.serviceWorkerMessages = []
-	//window.serviceWorkerRegistered will be called by allPages.js
-	navigator.serviceWorker.ready.then(function(registration) {
-		navigator.serviceWorker.onmessage = function(event) {
-			window.serviceWorkerMessages.push(event.data)
-			let data = event.data
+	if ('serviceWorker' in navigator) {
+		window.serviceWorkerMessages = []
+		navigator.serviceWorker.ready.then(function(registration) {
+			navigator.serviceWorker.onmessage = function(event) {
+				window.serviceWorkerMessages.push(event.data)
+				let data = event.data
 
-			if (!data.includes("waterservices.usgs.gov")) {return;}
+				if (!data.includes("waterservices.usgs.gov")) {return;}
 
-			window.oldLoadUSGS = window.loadNewUSGS
+				window.oldLoadUSGS = window.loadNewUSGS
 
-			if (data.includes("Updated cache for")) {
-				console.log("Updating")
-				require("./loadUSGS.js").loadUSGS() //Update the information
+				if (data.includes("Updated cache for")) {
+					console.log("Updating")
+					require("./loadUSGS.js").loadUSGS() //Update the information
+				}
+				else if (data.includes("errored. Using cache")) {
+					window.loadNewUSGS = "Unable to load latest data"
+				}
+				else if (data.includes(" took too long to load from network")) {
+					window.loadNewUSGS = "Updating data in backgroud"
+				}
+				else if (data.includes("has been loaded from the network")) {
+					window.loadNewUSGS = "This is likely a glitch. You should be viewing the latest data."
+				}
+				window.updateOldDataWarning()
 			}
-			else if (data.includes("errored. Using cache")) {
-				window.loadNewUSGS = "Unable to load latest data"
-			}
-			else if (data.includes(" took too long to load from network")) {
-				window.loadNewUSGS = "Updating data in backgroud"
-			}
-			else if (data.includes("has been loaded from the network")) {
-				window.loadNewUSGS = "This is likely a glitch. You should be viewing the latest data."
-			}
-			window.updateOldDataWarning()
-		}
-	})
+		})
+	}
 }
 catch(e) {console.error(e)}
 
