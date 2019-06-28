@@ -53,14 +53,18 @@ function addHandlers(button, locate) {
             if (river.tlat && river.tlon) {
                 div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
             }
-
+			
+			//Show the user the values being used for determining relative flow.
             let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
+			let flowRange = document.createElement("p")
+			flowRange.innerHTML = ""
             for (let i=0;i<values.length;i++) {
                 let name = values[i]
                 if (river[name] && !isNaN(parseFloat(river[name]))) {
-                    div.innerHTML += name + ":" + river[name] + " "
+                    flowRange.innerHTML += name + ":" + river[name] + " "
                 }
             }
+			if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
 
 
             if (river.aw) {
@@ -157,7 +161,9 @@ function addHandlers(button, locate) {
 						//Not really a disclaimer, but the styling works well.
 						addDisclaimer("<br><br>The gauge below is related to this river, but is not the primary gauge for it")
 					}
+					console.time("Add Graphs")
                     addGraphs(div, data)
+					console.timeEnd("Add Graphs")
                 }
 			}
 

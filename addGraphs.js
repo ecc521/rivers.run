@@ -36,6 +36,18 @@ function toparts(arr) {
 }
 
 
+function addCanvasAsImage(appendTo, canvas) {
+    //For some reason, only the last canvas was showing. Use images
+    //Images also allow "Save Image As"
+    let img = document.createElement("img")
+    img.className = "graph"
+	
+    //Blobs may be faster - but I don't know of a synchronus method
+	img.src = canvas.toDataURL("image/png")
+
+    appendTo.appendChild(img)
+}
+
 function addFlowGraph(div, cfs, height, data) {
     //Make sure we actually have some data, and don't create an empty graph
     if (!(cfs || height)) {return}
@@ -58,14 +70,7 @@ function addFlowGraph(div, cfs, height, data) {
         addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, "#2222FF")
     }
 
-    //For some reason, only the last canvas was showing. Use images
-    //Images also allow "Save Image As"
-    let img = document.createElement("img")
-    img.className = "graph"
-    //Blobs may be faster - but I don't know of a synchronus method
-    img.src = canvas.toDataURL("image/png")
-
-    div.appendChild(img)
+	return addCanvasAsImage(div, canvas)
 }
 
 
@@ -76,12 +81,8 @@ function addTempGraph(div, temp, data) {
         let parts = toparts(temp.values)
         addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "#FF0000", 3, "#0000FF")
 
-        //For some reason, only the last canvas was showing. Use images
-        //Images also allow "Save Image As"
-        let img = document.createElement("img")
-        img.className = "graph"
-        img.src = canvas.toDataURL("image/png")
-        div.appendChild(img)
+ 		return addCanvasAsImage(div, canvas)
+
     }
 }
 
@@ -94,12 +95,7 @@ function addPrecipGraph(div, precip, data) {
         let parts = toparts(precip.values)
         addLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0066FF")
 
-        //For some reason, only the last canvas was showing. Use images
-        //Images also allow "Save Image As"
-        let img = document.createElement("img")
-        img.className = "graph"
-        img.src = canvas.toDataURL("image/png")
-        div.appendChild(img)
+		return addCanvasAsImage(div, canvas)
     }
 }
 
