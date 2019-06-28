@@ -37,6 +37,7 @@ try {
 			let favicon = document.createElement("link")
 			favicon.rel = "shortcut icon"
 			favicon.type = "image/png"
+			//TODO: Handle pages in subdirectories.
 			favicon.href = `resources/icons/${size}x${size}-Water-Drop.png`
 			document.head.appendChild(favicon)
 		})
@@ -71,7 +72,7 @@ catch(e) {
 let styleSheet;
 try {
 	styleSheet = document.styleSheets[0]
-	
+
 	if (!styleSheet) {
 		console.warn("No stylesheet available. Without inline-style allowed, allPages.js may not work.")
 	    let style = document.createElement("style")
