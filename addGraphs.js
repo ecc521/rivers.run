@@ -37,12 +37,12 @@ function toparts(arr) {
 
 
 function addCanvasAsImage(appendTo, canvas) {
-    //For some reason, only the last canvas was showing. Use images
+    //For some reason, only the last canvas was showing. Use images.
+	//I tried using blob urls instead of dataurls to improve performance, but they didn't help, and actually made things WORSE!!!
     //Images also allow "Save Image As"
     let img = document.createElement("img")
     img.className = "graph"
 	
-    //Blobs may be faster - but I don't know of a synchronus method
 	img.src = canvas.toDataURL("image/png")
 
     appendTo.appendChild(img)
