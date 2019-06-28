@@ -69,7 +69,7 @@ function addHandlers(button, locate) {
                 link.target = "_blank"
                 link.rel = "noopener"
                 link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
-                link.innerHTML = "Click here to view this river on American Whitewater"
+                link.innerHTML = "View this river on American Whitewater"
                 div.appendChild(link)
             }
 
@@ -86,13 +86,19 @@ function addHandlers(button, locate) {
             }
 
 
-            //USGS data may not have loaded yet
-			if (self.usgsarray && river.usgs) {
+			let addedUSGSDisclaimer = false
+			let addedVirtualGaugeDisclaimer = false
+
+			//Auxillary function
+			function addUSGSGraphs(usgsID, relatedGauge) {
 				//Alert the user if the data is (at least 2 hours) old
 
+
+				//TODO: Add spacing before related graphs (likely outside of this.)
+				//TODO: Do not put disclaimer above related graphs. It was already put up at the top.
 				let dataAge
                 try {
-                    dataAge = calculateAge(river.usgs)
+                    dataAge = calculateAge(usgsID)
                 }
                 catch(e) {
                     console.error(e)
@@ -108,24 +114,48 @@ function addHandlers(button, locate) {
 					div.appendChild(oldDataWarning)
 				}
 
-                let data = self.usgsarray[river.usgs]
+                let data = self.usgsarray[usgsID]
                 if (data) {
-                    let disclaimer = document.createElement("p")
-                    disclaimer.style.fontWeight = "bold"
-                    disclaimer.style.textAlign = "center"
-                    disclaimer.innerHTML = "Disclaimer: USGS Gauge data is provisional, and MIGHT be incorrect. Use at your own risk."
-                    div.appendChild(disclaimer)
 
-                    if (!(dataAge > maxAge)) {
-                        disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
-                    }
-                    else {
-                        disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
-                        oldDataWarning.style.marginBottom = "0.5em"
+					//TODO: Add disclaimer for virtual gauges.
+					function addDisclaimer(text) {
+						let disclaimer = document.createElement("p")
+	                    disclaimer.style.fontWeight = "bold"
+	                    disclaimer.style.textAlign = "center"
+	                    disclaimer.innerHTML = text
+	                    return div.appendChild(disclaimer)
+					}
 
-                    }
+					if (!addedUSGSDisclaimer) {
+						let disclaimer = addDisclaimer("Disclaimer: USGS Gauge data is provisional, and MIGHT be incorrect. Use at your own risk.")
+						if (!oldDataWarning) {
+	                        disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
+	                    }
+	                    else {
+	                        disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
+	                        oldDataWarning.style.marginBottom = "0.5em"
+	                    }
+						addedUSGSDisclaimer = true
+					}
+
+					if (relatedGauge) {
+						let notice = document.createElement("p")
+						notice.innerHTML = "The gauge below is related to this river, but is not the primary gauge for it"
+						notice.style.textAlign = "center"
+						div.appendChild(notice)
+					}
                     addGraphs(div, data)
                 }
+			}
+
+            //USGS data may not have loaded yet
+			if (self.usgsarray) {
+				river.usgs && addUSGSGraphs(river.usgs)
+				if (river.relatedusgs) {
+					for (let i=0;i<river.relatedusgs.length;i++) {
+						addUSGSGraphs(river.relatedusgs[i], true)
+					}
+				}
 			}
 
 
@@ -349,7 +379,7 @@ function calculateColor(river, options) {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
 		else {
-			return "" //We can't calculate a color or ratio.
+			return "" //We can't calculate a color or ratio. We lack enough information. Example: only have minrun and flow above minrun.
 		}
 
         return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
@@ -449,6 +479,39 @@ module.exports.River = function(locate, event) {
 
                 button.appendChild(span)
             }
+
+			//Load this.flow from usgsarray.
+			let data = usgsarray[this.usgs]
+			if (data) {
+	            let cfs = data["00060"]
+	            let feet = data["00065"]
+
+	            //Prevent "TypeError: Can't Read Property 'values' of undefined"
+	            if (cfs) {cfs = cfs.values}
+	            if (feet) {feet = feet.values}
+
+
+	            let latestCfs, latestFeet;
+	            if (cfs) {
+	                latestCfs = cfs[cfs.length - 1].value
+	            }
+	            if (feet) {
+	                latestFeet = feet[feet.length - 1].value
+	            }
+
+	            this.feet = latestFeet
+	            this.cfs = latestCfs
+
+	            if (latestCfs && latestFeet) {
+	                this.flow = latestCfs + "cfs " + latestFeet + "ft"
+	            }
+	            else if (latestCfs) {
+	                this.flow = cfs[cfs.length - 1].value + " cfs"
+	            }
+	            else if (latestFeet) {
+	                this.flow = feet[feet.length - 1].value + " ft"
+	            }
+			}
 
             if (this.flow) {
                 let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs) + (this.dam ? "Dam" : ""))

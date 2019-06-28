@@ -1,4 +1,5 @@
 self.usgsarray = {}
+let virtualGauges = require("./virtualGauges.js")
 
 window.updateOldDataWarning = function() {
 
@@ -44,11 +45,17 @@ let loadUSGS = async function() {
 
     var sites = []
     for (let i=0;i<riverarray.length;i++) {
-        let val = riverarray[i].usgs
-        //Check for accuracy
-        if (val && val.length > 7 && val.length < 16) {
-            sites.push(val)
-        }
+		let values = [riverarray[i].usgs]
+		riverarray[i].relatedusgs && values.concat(river.relatedusgs)
+		for (let i=0;i<values.length;i++) {
+			let usgsID = values[i]
+			if (!usgsID) {continue}
+			//Gauges used by virtual gauges should be in relatedusgs
+			//Basic value validation.
+	        if (usgsID.length > 7 && usgsID.length < 16 && !isNaN(Number(usgsID))) {
+	            (sites.indexOf(usgsID) === -1) && sites.push(usgsID) //Add the site if it doesn't exist in the list.
+	        }
+		}
     }
     let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
 
@@ -110,58 +117,43 @@ let loadUSGS = async function() {
         usgsarray[sitecode][variablecode] = obj2
     })
 
+	let virtualGaugeCalculations = [] //Calculations to wait for before dispatching usgsDataUpdated event to window.
+
     //Add USGS Data to Graph
     for (let i=0;i<ItemHolder.length;i++) {
-        let item = ItemHolder[i]
-        let data = usgsarray[item.usgs]
+        let river = ItemHolder[i]
 
-        if (data) {
-            let cfs = data["00060"]
-            let feet = data["00065"]
+		//Auxillary function
+		//Adds river data to river objects, and updates them for the new information.
 
-            //Prevent "TypeError: Can't Read Property 'values' of undefined"
-            if (cfs) {cfs = cfs.values}
-            if (feet) {feet = feet.values}
+		function updateUSGSData() {
+	            //item.create(true) will force regeneration of the button
+	            //Replace the current button so that the flow info shows
+	            let elem = document.getElementById(river.base + "1")
+	            let expanded = river.expanded
+	            let replacement = river.create(true) //Update the version in cache
+	            try {
+	                elem.parentNode.replaceChild(replacement, elem)
+	                //If the river was expanded before, keep it expanded
+	                if (expanded) {
+	                    replacement.dispatchEvent(new Event("click"))
+	                    replacement.dispatchEvent(new Event("click"))
+	                }
+	            }
+	            catch (e) {} //The list must have been sorted - the node was not currently being displayed.
+		}
 
-
-            let latestCfs, latestFeet;
-            if (cfs) {
-                latestCfs = cfs[cfs.length - 1].value
-            }
-            if (feet) {
-                latestFeet = feet[feet.length - 1].value
-            }
-
-            item.feet = latestFeet
-            item.cfs = latestCfs
-
-            if (latestCfs && latestFeet) {
-                item.flow = latestCfs + "cfs " + latestFeet + "ft"
-            }
-            else if (latestCfs) {
-                item.flow = cfs[cfs.length - 1].value + " cfs"
-            }
-            else if (latestFeet) {
-                item.flow = feet[feet.length - 1].value + " ft"
-            }
-
-            //item.create(true) will force regeneration of the button
-            //Replace the current button so that the flow info shows
-            let elem = document.getElementById(item.base + "1")
-            let expanded = item.expanded
-            let replacement = item.create(true) //Update the version in cache
-            try {
-                elem.parentNode.replaceChild(replacement, elem)
-                //If the river was expanded before, keep it expanded
-                if (expanded) {
-                    replacement.dispatchEvent(new Event("click"))
-                    replacement.dispatchEvent(new Event("click"))
-                }
-            }
-            catch (e) {} //The list must have been sorted - the node was not currently in list
-        }
+		if (river.usgs && river.usgs.toLowerCase().startsWith("virtual:")) {
+			virtualGaugeCalculations.push(virtualGauges.createVirtualGauge(river).then(updateUSGSData))
+		} //Create the virtual gauge and add it to usgsarray.
+		else {updateUSGSData()}
     }
-	window.dispatchEvent(new Event("usgsDataUpdated"))
+
+	//TODO: If the virtual gauge takes too long to create, skip it.
+	//If some gauges couldn't be calculated in time, we can display a notice, and update those gauges in the background, though this is not required.
+	Promise.all(virtualGaugeCalculations).then(() => {
+		window.dispatchEvent(new Event("usgsDataUpdated"))
+	})
 }
 
 

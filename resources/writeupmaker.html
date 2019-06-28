@@ -7,46 +7,46 @@
 <br><br>
 
 <p>The 3 Fields below this may not apply to all rivers. Don't worry. You can leave them blank.</p>
-<input id="usgs" type="text" placeholder="USGS Gage Number" onkeydown="setTimeout(UpdateWriteup, 30)">
+<input id="usgs" type="text" placeholder="USGS Gauge Number" onkeyup="UpdateWriteup">
+<br>
+<input id="relatedusgs" type="text" placeholder="Related USGS Gauges (comma seperated list)" onkeyup="UpdateWriteup">
 <br>
 <p>You <strong>MUST</strong> put either ft, feet, or cfs after the value (ex. 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet).</p>
-<input id="minrun" type="text" placeholder="Minimum runnable water level" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="minrun" type="text" placeholder="Minimum runnable water level" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="maxrun" type="text" placeholder="Maximum runnable water level" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="maxrun" type="text" placeholder="Maximum runnable water level" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="lowflow" type="text" placeholder="Low Water" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="lowflow" type="text" placeholder="Low Water" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="medflow" type="text" placeholder="Ideal Level" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="medflow" type="text" placeholder="Ideal Level" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="highflow" type="text" placeholder="High Water" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="highflow" type="text" placeholder="High Water" onkeyup="UpdateWriteup" style="width:100%">
 <br>
 <p>Use Decimal Format for Longitude and Latitude (ex. 32.53521523, -82.93201727, -74.37283910, 41.52318192) </p>
-<input id="plat" type="text" placeholder="Put-in GPS Latitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="plat" type="text" placeholder="Put-in GPS Latitude" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="plon" type="text" placeholder="Put-in GPS Longitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="plon" type="text" placeholder="Put-in GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="tlat" type="text" placeholder="Take-out GPS Latitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="tlat" type="text" placeholder="Take-out GPS Latitude" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="tlon" type="text" placeholder="Take-out GPS Longitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="tlon" type="text" placeholder="Take-out GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
 <br>
 <p><strong>IF YOU DID NOT INPUT PUT-IN OR TAKEOUT GPS:</strong></p>
-<input id="hidlat" type="text" placeholder="Approxtimate GPS Longitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
-<input id="hidlon" type="text" placeholder="Approxtimate GPS Longitude" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="hidlat" type="text" placeholder="Approxtimate GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
+<input id="hidlon" type="text" placeholder="Approxtimate GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
 <p>GPS coordinites that you input in the 2 boxes above will not be shown to the user, however will be used in GPS sorting.</p>
 <br><br>
-<input id="aw" type="text" placeholder="AW River Number (Not currently being used)" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="aw" type="text" placeholder="AW River Number (Not currently being used)" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="tags" type="text" placeholder="Input Tags Here, seperated by commas" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="tags" type="text" placeholder="Input Tags Here, seperated by commas" onkeyup="UpdateWriteup" style="width:100%">
 <br>
 <p>Tag Examples: CCCWOR, Ice-Cream, Monacacy, NC, PA, TN, CA, MI, WV, ext.
 <br>
 Put C1 after the tag if you can get to the river within an hour from that area (ex. CCCWORC1), put C if you can get to the river in 1-2 hours from that area (ex. CCCWORC), and put nothing if it takes 2+ hours (ex. CCCWOR). Do not put the tag if it is unreasonable to paddle the river from the area.</p>
 <br>
-<input id="state" type="text" placeholder="State that the river is in (if multiple, separate with commas)" onkeydown="setTimeout(UpdateWriteup, 30)" style="width:100%">
+<input id="name" type="text" placeholder="River Name" onkeyup="UpdateWriteup">
 <br>
-<input id="name" type="text" placeholder="River Name" onkeydown="setTimeout(UpdateWriteup, 30)">
-<br>
-<input id="section" placeholder="Section Name" type="text" onkeydown="setTimeout(UpdateWriteup, 30)">
+<input id="section" placeholder="Section Name" type="text" onkeyup="UpdateWriteup">
 <br>
 <select id="skill" onchange="UpdateWriteup()">
   <option value="">Skill</option>
@@ -69,7 +69,7 @@ Put C1 after the tag if you can get to the river within an hour from that area (
   <option value="5">5</option>
 </select>
 <br>
-<input id="length" type="text" placeholder="Section Length" onkeydown="setTimeout(UpdateWriteup, 30)">
+<input id="length" type="text" placeholder="Section Length" onkeyup="UpdateWriteup">
 <br><br>
 
 
@@ -151,12 +151,7 @@ quill.getModule("toolbar").handlers.video = function imageHandler(value) {
         quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
 }
 
-  //state, hidlat, hidlon
-var List = "name, section, skill, rating, length, writeup, tags, usgs, aw, plat, plon, tlat, tlon, hidlat, hidlon, state, maxrun, minrun, lowflow, medflow, highflow"
-List = List.split(",")
-List = List.map(function(value){
-  return value.trim()
-})
+var List = ["name","section","skill","rating","length","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","medflow","highflow","dam","virtualgauge","relatedusgs"]
 
 List.forEach(function(value){
   console.log(value)
@@ -185,11 +180,18 @@ function UpdateWriteup() {
     var Text = ""
     var EndText = ""
     List.forEach(function(value, index){
-      if (value !== "writeup") {
-      Text += "\n" + value + ": " + document.getElementById(value).value.trim()
+      if (value === "writeup") {
+          Text += "\n" + value + ": " + quill.root.innerHTML
+      }
+      else if (value === "relatedusgs") {
+          Text += "\n" + value + ": "
+          //Convert comma seperated list into javascript list
+          if (document.getElementById(value).value.trim().split(" ").join("").split(",").length > 0) {
+              Text += JSON.stringify(document.getElementById(value).value.trim().split(" ").join("").split(","))
+          }
       }
       else {
-      Text += "\n" + value + ": " + quill.root.innerHTML
+          Text += "\n" + value + ": " + document.getElementById(value).value.trim()
       }
     })
 

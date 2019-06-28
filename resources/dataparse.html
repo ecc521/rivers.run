@@ -136,10 +136,10 @@
                 //Google Docs adds \r terminators to the end
                 if (value.endsWith("\r")) {
                     value = value.slice(0,-1)
-                    value = value.trim()
                 }
+                value = value.trim()
 
-                let allowed = ["name","section","skill","rating","length","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","state","maxrun","minrun","lowflow","medflow","highflow","dam"] //Property values to be included in output file
+                let allowed = ["name","section","skill","rating","length","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","medflow","highflow","dam","virtualgauge","relatedusgs"] //Property values to be included in output file
 
                 let keepnames = ["name", "section", "tags", "writeup"] //Some need to be defined in file, even if empty
                 if (allowed.includes(name) && (String(value).length !== 0 || keepnames.includes(name))) {

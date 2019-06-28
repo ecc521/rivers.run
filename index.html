@@ -16,13 +16,17 @@
 
 
         <!-- USGS Gauges Preconnect -->
-        <link rel="preconnect" href="https://waterservices.usgs.gov" crossorigin>
+        <link rel="preconnect" href="https://waterservices.usgs.gov" crossorigin importance="high">
 
         <!--JavaScript & CSS-->
-        <link rel="preload" href="index.css" as="style">
-        <link rel="preload" href="riverarray.js" as="script">
-        <link rel="preload" href="overviews.js" as="script">
-        <link rel="preload" href="packages/index.js" as="script">
+        <link rel="preload" href="index.css" as="style" importance="high">
+        <link rel="preload" href="riverarray.js" as="script" importance="high">
+        <link rel="preload" href="overviews.js" as="script" importance="low">
+        <link rel="preload" href="packages/index.js" as="script" importance="high">
+
+        <!-- Used in a sandboxed iframe to calculate virtual gauges. -->
+        <!-- Chrome doesn't like as="document", mostly because chrome has a bug.-->
+        <link rel="preload" href="virtualGaugeCalculator.html" as="document" importance="high">
 
         <!-- Progressive Web App Manifest -->
         <link rel="manifest" href="manifest.json">
@@ -60,7 +64,7 @@
         <link rel="stylesheet" type="text/css" href="index.css">
         <script src="packages/allPages.js"></script>
         <script src="riverarray.js"></script>
-        <script src="overviews.js"></script>
+        <script src="overviews.js" async defer></script> <!-- This isn't needed at initial page load. -->
 
 
 		<noscript><h1>JavaScript is needed in order to use rivers.run</h1></noscript>

@@ -10,6 +10,7 @@ const path = require("path")
 	let prodConfig = {
 		mode: "production", //Build for production
 		entry: {
+			//virtualGaugeCalculator: "./virtualGaugeCalculator.js", //virtualGaugeCalculator.js is manually transfered into an inline script. Remember to change source map url.
 			index: "./index.js",
 			allPages: "./allPages.js" //Package allPages.js for browser support.
 		},
@@ -40,8 +41,8 @@ const path = require("path")
 			]
 		}
 	}
-	
-	
+
+
 	let devConfig = {
 		mode: "production", //Build for "production" - Not sure if needed, but CSP may require.
 		entry: {
@@ -61,9 +62,9 @@ const path = require("path")
 			colors: true
 		}
 	}
-	
-	
-	
+
+
+
 module.exports = function(env) {
 	if (env === "dev") {
 		return devConfig

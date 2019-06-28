@@ -58,7 +58,6 @@ riverarray.map(function(event, index) {
 	ItemHolder[index] = new River(index, event)
 })
 
-
 //Fetch data from USGS
 //ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise window.usgsarray is undefined)
 require("./loadUSGS.js").loadUSGS()
