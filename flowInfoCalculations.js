@@ -1,3 +1,4 @@
+//These functions are used by River.js to calculate things based on a rivers flow.
 
 function calculateDirection(usgsNumber) {
     let usgsData = usgsarray[usgsNumber]
@@ -144,10 +145,10 @@ function calculateColor(river, options) {
 	let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
 	let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
 
-	//We display these so people can tell what values the computer has generated.
-	river.lowflow = parseFloat(lowflow.toFixed(2)) + type + " (computer)"
-	river.midflow = parseFloat(midflow.toFixed(2)) + type + " (computer)"
-	river.highflow = parseFloat(highflow.toFixed(2)) + type + " (computer)"
+	//Add computer generated properties to the river object so that they will display and people can see the values used in calculations.
+	values[1] || (river.lowflow = parseFloat(lowflow.toFixed(2)) + type + " (computer)")
+	values[2] || (river.midflow = parseFloat(midflow.toFixed(2)) + type + " (computer)")
+	values[3] || (river.highflow = parseFloat(highflow.toFixed(2)) + type + " (computer)")
 
 
     if (flow <= minrun) {
@@ -203,3 +204,8 @@ function calculateColor(river, options) {
     }
 }
 
+export {
+	calculateColor,
+	calculateAge,
+	calculateDirection
+}
