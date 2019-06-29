@@ -175,6 +175,9 @@ searchbox.addEventListener("keyup", function(){NewList(searchbox.value, "normal"
 
 function deleteMatchingPortions(obj1, obj2) {
 	//Deletes all properties on obj1, recursively, that are identical to obj2
+	if (!obj1 || !obj2) {
+		return obj1
+	}
 	for (let property in obj1) {
 			if (typeof obj1[property] === "object") {
 				if (objectsEqual(obj1[property], obj2[property])) {

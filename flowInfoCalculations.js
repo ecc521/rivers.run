@@ -141,7 +141,7 @@ function calculateColor(river, options) {
 	//alerting people what values are being used, so that they can
 	let minrun = values[0]
 	let maxrun = values[4]
-	let midflow = values[2] || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
+	let midflow = values[2] || 10**((Math.log10(lowflow) + Math.log10(highflow))/2) || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
 	let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
 	let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
 
@@ -183,17 +183,17 @@ function calculateColor(river, options) {
 
         }
 
-        if (flow < lowflow) {
+        if (flow < lowflow && minrun) {
             river.running = calculateRatio(minrun, lowflow, flow)
         }
-        else if (flow < midflow) {
+        else if (flow < midflow && lowflow) {
             river.running = 1+calculateRatio(lowflow, midflow, flow)
         }
-        else if (flow < highflow) {
+        else if (flow < highflow && midflow) {
             river.running = 2+calculateRatio(midflow, highflow, flow)
         }
 		//Use else if and comparison against maxrun to go to the else in case of isNaN(maxrun)
-        else if (flow < maxrun) {
+        else if (flow < maxrun && highflow) {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
 		else {
