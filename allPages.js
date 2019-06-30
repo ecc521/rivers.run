@@ -33,7 +33,7 @@ try {
 	let scripts = document.querySelectorAll("script")
 	for (let i=0;i<scripts.length;i++) {
 		if (scripts[i].src.includes("allPages.js")) {
-			let allPagesURL = new URL(scripts[0].src)
+			let allPagesURL = new URL(scripts[i].src)
 			root = new URL(allPagesURL.pathname + "/../..", allPagesURL.origin)
 			break;
 		}
