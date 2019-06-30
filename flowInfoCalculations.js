@@ -141,7 +141,8 @@ function calculateColor(river, options) {
 	//alerting people what values are being used, so that they can
 	let minrun = values[0]
 	let maxrun = values[4]
-	let midflow = values[2] || 10**((Math.log10(lowflow) + Math.log10(highflow))/2) || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
+	//Prefer midflow, log-avg lowflow highflow, log-avg minrun maxrun.
+	let midflow = values[2] || 10**((Math.log10(values[1]) + Math.log10(values[3]))/2) || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
 	let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
 	let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
 
