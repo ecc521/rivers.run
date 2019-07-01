@@ -11,6 +11,8 @@
 <br>
 <input id="relatedusgs" type="text" placeholder="Related USGS Gauges (comma seperated list)" onkeyup="UpdateWriteup">
 <br>
+<textarea hidden id="virtualgauge" type="text" placeholder="Virtual Gauge Code" onkeyup="UpdateWriteup"></textarea>
+<br>
 <p>You <strong>MUST</strong> put either ft, feet, or cfs after the value (ex. 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet).</p>
 <input id="minrun" type="text" placeholder="Minimum runnable water level" onkeyup="UpdateWriteup" style="width:100%">
 <br>
@@ -36,7 +38,9 @@
 <input id="hidlon" type="text" placeholder="Approxtimate GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
 <p>GPS coordinites that you input in the 2 boxes above will not be shown to the user, however will be used in GPS sorting.</p>
 <br><br>
-<input id="aw" type="text" placeholder="AW River Number (Not currently being used)" onkeyup="UpdateWriteup" style="width:100%">
+<input id="aw" type="text" placeholder="AW River Number" onkeyup="UpdateWriteup" style="width:100%">
+<br>
+<input id="dam" type="text" placeholder="Link to dam information" onkeyup="UpdateWriteup" style="width:100%">
 <br>
 <input id="tags" type="text" placeholder="Input Tags Here, seperated by commas" onkeyup="UpdateWriteup" style="width:100%">
 <br>
@@ -61,13 +65,19 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 </select>
 <br>
 <select id="rating" onchange="UpdateWriteup()">
-  <option value="">Rating</option>
-  <option value="1">1</option>
-  <option value="2">2</option>
-  <option value="3">3</option>
-  <option value="4">4</option>
-  <option value="5">5</option>
+  <option selected value="">Rating</option>
 </select>
+
+<script>
+	var rating = document.getElementById("rating")
+	for (let i=4;i<21;i++) {
+		let stars = i/4
+		let option = document.createElement("option")
+		option.value = stars
+		option.innerHTML = stars + " Stars"
+		rating.appendChild(option)
+	}
+</script>
 <br>
 <input id="length" type="text" placeholder="Section Length" onkeyup="UpdateWriteup">
 <br><br>
