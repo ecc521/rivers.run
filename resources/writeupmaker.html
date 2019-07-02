@@ -7,11 +7,11 @@
 <br><br>
 
 <p>The 3 Fields below this may not apply to all rivers. Don't worry. You can leave them blank.</p>
-<input id="usgs" type="text" placeholder="USGS Gauge Number" onkeyup="UpdateWriteup">
+<input id="usgs" type="text" placeholder="USGS Gauge Number" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="relatedusgs" type="text" placeholder="Related USGS Gauges (comma seperated list)" onkeyup="UpdateWriteup">
+<input id="relatedusgs" type="text" placeholder="Related USGS Gauges (comma seperated list)" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<textarea hidden id="virtualgauge" type="text" placeholder="Virtual Gauge Code" onkeyup="UpdateWriteup"></textarea>
+<textarea hidden id="virtualgauge" type="text" placeholder="Virtual Gauge Code" onkeyup="UpdateWriteup" style="width:100%"></textarea>
 <br>
 <p>You <strong>MUST</strong> put either ft, feet, or cfs after the value (ex. 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet).</p>
 <input id="minrun" type="text" placeholder="Minimum runnable water level" onkeyup="UpdateWriteup" style="width:100%">
@@ -48,9 +48,9 @@
 <br>
 Put C1 after the tag if you can get to the river within an hour from that area (ex. CCCWORC1), put C if you can get to the river in 1-2 hours from that area (ex. CCCWORC), and put nothing if it takes 2+ hours (ex. CCCWOR). Do not put the tag if it is unreasonable to paddle the river from the area.</p>
 <br>
-<input id="name" type="text" placeholder="River Name" onkeyup="UpdateWriteup">
+<input id="name" type="text" placeholder="River Name" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<input id="section" placeholder="Section Name" type="text" onkeyup="UpdateWriteup">
+<input id="section" placeholder="Section Name" type="text" onkeyup="UpdateWriteup" style="width:100%">
 <br>
 <select id="skill" onchange="UpdateWriteup()">
   <option value="">Skill</option>
@@ -78,8 +78,6 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 		rating.appendChild(option)
 	}
 </script>
-<br>
-<input id="length" type="text" placeholder="Section Length" onkeyup="UpdateWriteup">
 <br><br>
 
 
@@ -161,7 +159,7 @@ quill.getModule("toolbar").handlers.video = function imageHandler(value) {
         quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
 }
 
-var List = ["name","section","skill","rating","length","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","medflow","highflow","dam","virtualgauge","relatedusgs"]
+var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","medflow","highflow","dam","virtualgauge","relatedusgs"]
 
 List.forEach(function(value){
   console.log(value)
