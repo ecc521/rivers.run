@@ -24,7 +24,7 @@
 <br>
 <input id="highflow" type="text" placeholder="High Water" onkeyup="UpdateWriteup" style="width:100%">
 <br>
-<p>Use Decimal Format for Longitude and Latitude (ex. 32.53521523, -82.93201727, -74.37283910, 41.52318192) </p>
+<p>Either input coordinates in decimal format, or press the convert coordinates button to convert them. If you see NaN, email admin@rivers.run with the coordinates. </p>
 <input id="plat" type="text" placeholder="Put-in GPS Latitude" onkeyup="UpdateWriteup" style="width:100%">
 <br>
 <input id="plon" type="text" placeholder="Put-in GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
@@ -32,6 +32,8 @@
 <input id="tlat" type="text" placeholder="Take-out GPS Latitude" onkeyup="UpdateWriteup" style="width:100%">
 <br>
 <input id="tlon" type="text" placeholder="Take-out GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
+<br>
+<button onclick="convertCoordinates()">Convert Coordinates</button>
 <br>
 <p><strong>IF YOU DID NOT INPUT PUT-IN OR TAKEOUT GPS:</strong></p>
 <input id="hidlat" type="text" placeholder="Approxtimate GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
@@ -173,8 +175,42 @@ List.forEach(function(value){
   }
 })
 
+	
+	function toDecimalDegrees(coord) {
+	if (!isNaN(Number(coord))) {
+		return coord //Coordinate is already in decimal form.
+	}
+	
+	let parts = coord.split(/[^\w]+/) //Split on non-alphanumeric characters.
+	console.log(parts)
+	let direction;
+	for (let i=0;i<parts.length;i++) {
+		if (["N","S","E","W"].includes(parts[i])) {
+			direction = parts[i];
+			parts.splice(i, 1)
+			break;
+		}
+	}
+	console.log(parts)
+	let degrees = Number(parts[0])
+	let minutes = Number(parts[1] || 0)
+	let seconds = Number(parts[2] || 0)
+	
+	minutes += seconds/60
+	degrees += minutes/60
+	
+	return degrees	
+}
+	
+	function convertCoordinates() {
+		["tlat", "tlon", "plat", "plon"].forEach(function(value) {
+			let coordinate = document.getElementById(value).value.trim()
+			document.getElementById(value).value = toDecimalDegrees(coordinate)
+		})
+	}
 
 function UpdateWriteup() {
+	
     List.forEach(function(value){
         if (value !== "writeup") {
             localStorage.setItem(value, document.getElementById(value).value.trim())
