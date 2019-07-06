@@ -82,8 +82,8 @@ function fetchHandler(event) {
 
         let fromcache = await caches.match(url)
 
-        //If it is less than 60 seconds old, return the cached data.
-		if (fromcache && Date.now() - new Date(fromcache.headers.get("date")).getTime() < 60*1000) {
+        //If it is less than 5 minutes old, return the cached data.
+		if (fromcache && Date.now() - new Date(fromcache.headers.get("date")).getTime() < 60*1000*5) {
 			return fromcache
 		}
 

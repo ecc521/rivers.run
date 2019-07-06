@@ -32,12 +32,10 @@ window.updateOldDataWarning = function() {
 }
 
 
-
-
 let loadUSGS = async function() {
 
-	//Gaurd against infinite recursion. Ignores calls when data is new. (within 1 hour)
-	if (window.usgsDataAge < 1000*60*60) {
+	//Gaurd against infinite recursion. Ignores calls when data is new. (within 5 minutes)
+	if (window.usgsDataAge < 1000*60*5) {
 		return;
 	}
 
@@ -46,7 +44,7 @@ let loadUSGS = async function() {
     var sites = []
     for (let i=0;i<riverarray.length;i++) {
 		let values = [riverarray[i].usgs]
-		riverarray[i].relatedusgs && values.concat(river.relatedusgs)
+		riverarray[i].relatedusgs && values.concat(riverarray[i].relatedusgs)
 		for (let i=0;i<values.length;i++) {
 			let usgsID = values[i]
 			if (!usgsID) {continue}
@@ -80,7 +78,13 @@ let loadUSGS = async function() {
 	//Find where requestDT is located. (never seen it outside position 3)
 	for (let i=0;i<notes.length;i++) {
 		if (notes[i].title === "requestDT") {
-			window.usgsDataAge = Date.now() - new Date(notes[i].value).getTime(); //Find when the request was made.
+			let requestTime = new Date(notes[i].value).getTime();
+			window.usgsDataAge = Date.now() - requestTime //Find when the request was made.
+			//Every minute, update usgsDataAge and make sure that the top warning will appear/update.
+			setInterval(() => {
+				window.usgsDataAge = Date.now() - requestTime
+				window.updateOldDataWarning()
+			}, 1000*60*1)
 			break;
 		}
 	}

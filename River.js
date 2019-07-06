@@ -255,7 +255,21 @@ module.exports.River = function(locate, event) {
 
             AddSpan(this.name)
             AddSpan(this.section)
-            AddSpan(this.skill)
+			
+			let translations = {
+				"?": "Skill Unknown",
+				"FW": "Flat Water",
+				"B": "Beginner",
+				"N": "Novice",
+				"LI": "Low Intermediate",
+				"I": "Intermediate",
+				"HI": "High Intermediate",
+				"A": "Advanced",
+				"E": "Expert"
+			}
+			
+			//TODO: Allow abbr to work on mobile.
+            AddSpan(`<abbr title="${translations[this.skill]}">${this.skill}</abbr>`)
 
             //Star images for rating
             if (this.rating === "Error") {
