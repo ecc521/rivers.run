@@ -32,6 +32,12 @@ window.updateOldDataWarning = function() {
 }
 
 
+function updateUSGSDataInfo() {
+	window.usgsDataAge = Date.now() - window.requestTime
+	window.updateOldDataWarning()
+}
+setInterval(updateUSGSDataInfo, 1000*60*1) //Every minute, make sure that the data has not become old. If it has, display a warning.
+
 let loadUSGS = async function() {
 
 	//Gaurd against infinite recursion. Ignores calls when data is new. (within 5 minutes)
@@ -78,13 +84,8 @@ let loadUSGS = async function() {
 	//Find where requestDT is located. (never seen it outside position 3)
 	for (let i=0;i<notes.length;i++) {
 		if (notes[i].title === "requestDT") {
-			let requestTime = new Date(notes[i].value).getTime();
-			window.usgsDataAge = Date.now() - requestTime //Find when the request was made.
-			//Every minute, update usgsDataAge and make sure that the top warning will appear/update.
-			setInterval(() => {
-				window.usgsDataAge = Date.now() - requestTime
-				window.updateOldDataWarning()
-			}, 1000*60*1)
+			window.requestTime = new Date(notes[i].value).getTime();
+			updateUSGSDataInfo()
 			break;
 		}
 	}
