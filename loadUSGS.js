@@ -6,8 +6,13 @@ window.updateOldDataWarning = function() {
 		let toDelete = document.getElementById("topOldDataWarning")
 		if (toDelete) {toDelete.remove()}
 
+		if (!window.usgsDataAge) {return}
 		//No reason to make an old data warning when data is new (within 1 hour)
-		if (window.usgsDataAge < 1000*60*60 || !window.usgsDataAge) {return}
+		//Make sure to change the warning text so that if the data becomes old while the page is open, they are not confused.
+		if (window.usgsDataAge < 1000*60*60) {
+			window.loadNewUSGS = "USGS Data has become old while this page was open. Click try again to update."
+			return
+		}
 
 		let oldDataWarning = document.createElement("p")
 		oldDataWarning.id = "topOldDataWarning"
@@ -166,7 +171,7 @@ let loadUSGS = async function() {
 	Promise.all(virtualGaugeCalculations).then(() => {
 		window.dispatchEvent(new Event("usgsDataUpdated"))
 		eventDispatched = true
-		
+
 	})
 	setTimeout(function() {
 		if (!eventDispatched) {
