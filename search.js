@@ -218,7 +218,7 @@ function locationFilter(list, parameters) {
 			}
 			//Follow parameters.includeUnknown unless the river has been eliminated on distance.
             passes = parameters.includeUnknown && !(distance > maxDistance)
-						
+
         }
 
         if (!passes) {
@@ -248,11 +248,16 @@ function flowFilter(list, parameters) {
 	for (let item in list) {
 		let river = list[item]
 
-		if (river.running === undefined) {
-			if (!parameters.includeUnknown) {
-				delete list[item]
-			}
-		}
+        if (river.dam && parameters.includeDams) {
+            //Do nothing if the river is a dam and dams are to be included.
+        }
+        //If we do not know flow status, follow parameters.includeUnknown
+        else if (river.running === undefined) {
+            if (!parameters.includeUnknown) {
+                delete list[item]
+            }
+        }
+        //If we do know flow status, filter based on the flow.
 		else if (river.running < min || river.running > max) {
 			delete list[item]
 		}

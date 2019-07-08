@@ -299,6 +299,7 @@ function getAdvancedSearchParameters() {
 			Number(document.getElementById("flowQuery1").value),
 			Number(document.getElementById("flowQuery2").value)
 		],
+		includeDams: document.getElementById("includeDams").checked,
 		includeUnknown: document.getElementById("includeUnknownFlow").checked
 	}
 
