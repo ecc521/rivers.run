@@ -135,7 +135,8 @@ Those include name,section,skill,quality, and flow info*/
     font-size: 3.0vw;
 	min-height:22px; /*Make the buttons easier to click on mobile.*/
 	display:flex;
-    display:-webkit-box; /*iOS 9 and 10 workaround due to lack of flexbox support for buttons.*/
+    /*display:-webkit-box; *//*iOS 9 and 10 workaround due to lack of flexbox support for buttons.*/
+    /*The workaround broke other browsers such as chrome. I'll just let iOS 9 and 10 be slightly broken for now.*/
 	align-items:center;
 }
 
