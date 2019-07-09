@@ -53,7 +53,7 @@ function addHandlers(button, locate) {
             if (river.tlat && river.tlon) {
                 div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
             }
-			
+
 			//Show the user the values being used for determining relative flow.
             let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
 			let flowRange = document.createElement("p")
@@ -95,8 +95,8 @@ function addHandlers(button, locate) {
 
 			//Auxillary function
 			//TODO: Show button to see code used by virtual gauge.
-			function addUSGSGraphs(usgsID, relatedGauge) {		
-				
+			function addUSGSGraphs(usgsID, relatedGauge) {
+
 				//Alert the user if the data is (at least 2 hours) old
 				let dataAge
                 try {
@@ -128,7 +128,7 @@ function addHandlers(button, locate) {
 					}
 
 					let isVirtualGauge = usgsID.startsWith("virtual:")
-						
+
 					//Add the disclaimer about USGS Gauges.
 					if (!addedUSGSDisclaimer && !isVirtualGauge) {
 						let disclaimer = addDisclaimer("Disclaimer: USGS Gauge data is provisional, and MIGHT be incorrect. Use at your own risk.")
@@ -141,7 +141,7 @@ function addHandlers(button, locate) {
 	                    }
 						addedUSGSDisclaimer = true
 					}
-					
+
 					//Add the disclaimer about virtual gauges.
 					if (!addedVirtualGaugeDisclaimer && isVirtualGauge) {
 						let disclaimer = addDisclaimer("Disclaimer: Virtual gauges are community provided, based off provisional data, and condition dependent. Use at your own risk.")
@@ -255,7 +255,7 @@ module.exports.River = function(locate, event) {
 
             AddSpan(this.name)
             AddSpan(this.section)
-			
+
 			let translations = {
 				"?": "Skill Unknown",
 				"FW": "Flat Water",
@@ -267,9 +267,24 @@ module.exports.River = function(locate, event) {
 				"A": "Advanced",
 				"E": "Expert"
 			}
-			
+
 			//TODO: Allow abbr to work on mobile.
-            AddSpan(`<abbr title="${translations[this.skill]}">${this.skill}</abbr>`)
+            let skillSpan = document.createElement("span")
+			skillSpan.className = "riverspan tooltip"
+
+			let tooltip = document.createElement("div")
+			tooltip.innerHTML = this.skill
+			tooltip.className = "tooltip"
+			
+			let tooltiptext = document.createElement("span")
+			tooltiptext.innerHTML = translations[this.skill]
+			tooltiptext.className = "tooltiptext"
+
+			skillSpan.style.borderBottom = "none"
+
+			tooltip.appendChild(tooltiptext)
+			skillSpan.appendChild(tooltip)
+			button.appendChild(skillSpan)
 
             //Star images for rating
             if (this.rating === "Error") {

@@ -117,6 +117,7 @@ Those include name,section,skill,quality, and flow info*/
 .riverspan:nth-child(3) {
     width:8%;
 }
+/*Child #4 acts as a tooltip too. That declaration is a around 40 lines below (May change. Do a search for nth-child(4))*/
 .riverspan:nth-child(4) {
 	position: relative;
 }
@@ -124,6 +125,48 @@ Those include name,section,skill,quality, and flow info*/
     margin-left: 1%;
 }
 /*End of riverspan style*/
+
+
+/*tooltips. Used to explain skill levels.*/
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 3px 0;
+  position: absolute;
+  z-index: 3;
+  top: 120%;
+  left: 50%;
+  margin-left: -60px;
+}
+
+.tooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent black transparent;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+
+
+
+
 
 /*riverbutton is the element that holds all the riverspans*/
 .riverbutton {
