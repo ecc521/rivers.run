@@ -139,7 +139,15 @@ NewList("alphabetical", "sort")
 
 
 let searchbox = document.getElementById("searchbox")
-searchbox.addEventListener("keyup", function(){NewList(searchbox.value, "normal")})
+searchbox.addEventListener("keyup", function(event) {
+	//If the user presses the "Go" button (Actually an Enter/Return), unfocus the searchbox.
+	if (event.keyCode == 13) {
+        event.target.blur()
+    }
+	else {
+		NewList(searchbox.value, "normal")
+	}
+})
 
 
 //Used to determine where search parameters match the default.
