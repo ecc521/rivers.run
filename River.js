@@ -6,10 +6,6 @@ let {calculateColor, calculateAge, calculateDirection} = require("./flowInfoCalc
 function addHandlers(button, locate) {
 	let river = ItemHolder[locate]
 
-				window.addEventListener("colorSchemeChanged", function() {
-					button.style.backgroundColor = calculateColor(river)
-				})
-
 				button.addEventListener("mouseover", function(){
 					button.style.backgroundColor =  calculateColor(river, {highlighted: true})
 				})
@@ -18,11 +14,12 @@ function addHandlers(button, locate) {
 					button.style.backgroundColor = calculateColor(river)
 				})
 
-			if (river.dam) {
 				window.addEventListener("colorSchemeChanged", function() {
-					button.style.backgroundColor = createStripes()
+					if (river.dam) {
+						button.style.background = createStripes()
+					}
+					button.style.backgroundColor = calculateColor(river)
 				})
-			}
 
     //Code that runs when the button is clicked
     button.onclick = function () {
