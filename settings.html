@@ -17,6 +17,13 @@
         </select>
         <p id="darkModeDefaultExplaination">Default: Use browser/os theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your browser provides a color scheme to use)</p>
 
+        <h3>Skill Explainations</h3>
+        <select id="skillExplainataions">
+            <option value="null">Default</option>
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+        </select>
+        <p>Default: Yes. Choose if you want to see mini popups showing the expanded skill on hover.</p>
 
         <style>
             @media (prefers-color-scheme: dark) {
@@ -36,7 +43,17 @@
 				else {
                 	localStorage.setItem("prefersDarkMode", event.target.value)
 				}
-				window.dispatchEvent(new Event("storage"))
+				window.dispatchEvent(new Event("storage")) //Allow this page to pick up the color scheme change. May not be needed.
+            })
+
+            document.getElementById("skillExplainataions").addEventListener("change", function(event) {
+				//We can't just set the value to null - locaStorage would stringify it
+				if (event.target.value === "null") {
+					localStorage.removeItem("skillTooltips")
+				}
+				else {
+                	localStorage.setItem("skillTooltips", event.target.value)
+				}
             })
 
             document.getElementById("theme").value = localStorage.getItem("prefersDarkMode")

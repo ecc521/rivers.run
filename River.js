@@ -267,24 +267,28 @@ module.exports.River = function(locate, event) {
 				"A": "Advanced",
 				"E": "Expert"
 			}
+			//Add a setting for the tooltips.
+			if (localStorage.getItem("skillTooltips") === "false") {
+				AddSpan(this.skill)
+			}
+			else {
+				let skillSpan = document.createElement("span")
+				skillSpan.className = "riverspan tooltip"
 
-			//TODO: Allow abbr to work on mobile.
-            let skillSpan = document.createElement("span")
-			skillSpan.className = "riverspan tooltip"
+				let tooltip = document.createElement("div")
+				tooltip.innerHTML = this.skill
+				tooltip.className = "tooltip"
 
-			let tooltip = document.createElement("div")
-			tooltip.innerHTML = this.skill
-			tooltip.className = "tooltip"
-			
-			let tooltiptext = document.createElement("span")
-			tooltiptext.innerHTML = translations[this.skill]
-			tooltiptext.className = "tooltiptext"
+				let tooltiptext = document.createElement("span")
+				tooltiptext.innerHTML = translations[this.skill]
+				tooltiptext.className = "tooltiptext"
 
-			skillSpan.style.borderBottom = "none"
+				skillSpan.style.borderBottom = "none"
 
-			tooltip.appendChild(tooltiptext)
-			skillSpan.appendChild(tooltip)
-			button.appendChild(skillSpan)
+				tooltip.appendChild(tooltiptext)
+				skillSpan.appendChild(tooltip)
+				button.appendChild(skillSpan)
+			}
 
             //Star images for rating
             if (this.rating === "Error") {

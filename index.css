@@ -136,28 +136,27 @@ Those include name,section,skill,quality, and flow info*/
 
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 120px;
+  white-space: nowrap;
   background-color: black;
   color: #fff;
   text-align: center;
   border-radius: 6px;
-  padding: 3px 0;
+  padding: 5px 4px;
   position: absolute;
   z-index: 3;
-  top: 120%;
-  left: 50%;
-  margin-left: -60px;
+  top: -5px;
+  left: 155%;
 }
 
 .tooltip .tooltiptext::after {
   content: "";
   position: absolute;
-  bottom: 100%;
-  left: 50%;
-  margin-left: -5px;
+  top: 50%;
+  right: 100%;
+  margin-top: -5px;
   border-width: 5px;
   border-style: solid;
-  border-color: transparent transparent black transparent;
+  border-color: transparent black transparent transparent;
 }
 
 .tooltip:hover .tooltiptext {
