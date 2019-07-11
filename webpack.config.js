@@ -21,7 +21,8 @@ const path = require("path")
 			filename: "[name].js",
 		},
 		optimization: {
-			minimize: true
+			minimize: true //Consider using Uglify.js for minification.
+			//https://github.com/mishoo/UglifyJS2/blob/ae67a4985073dcdaa2788c86e576202923514e0d/README.md#uglify-fast-minify-mode
 		},
 		stats: {
 			colors: true
