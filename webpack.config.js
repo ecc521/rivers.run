@@ -34,6 +34,8 @@ const path = require("path")
 					use: {
 						loader: 'babel-loader',
 						options: {
+							cacheDirectory: true, //Huge performance boost. Avoid recompiling when unneeded.
+							cacheCompression: true, //true is default. Compress cached data written to disk.
 							presets: ['@babel/preset-env']
 						}
 					}
