@@ -5,17 +5,19 @@ function NewSpan(Text) {
     return span
 }
 
-function addSorting(span, type) {
-    span.onclick = function() {
-        if (this.value === 1) {
+function addSorting(span, type, reverse = 0) {
+    span.addEventListener("click", function() {
+        console.log("sorting")
+        if (reverse === 1) {
             NewList(type, "sort", true) //Reversed
-            this.value = 0
+            reverse = 0
         }
         else {
             NewList(type, "sort")
-            this.value = 1
+            reverse = 1
         }
-    }
+    })
+    console.log("Added " + type)
 }
 
 
@@ -25,28 +27,36 @@ function TopBar() {
         button.id = "topbar"
         button.className = "riverbutton"
 
+        if (!!window.MSInputMethodContext && !!document.documentMode) {
+            //IE 11 will not dispatch click events to the Name, Skill, Rating, etc, spans, but rather to their parent.
+            //Time to do an evil workaround...
+            button.onclick = function(e) {
+                var x = e.clientX, y = e.clientY,
+                    elementMouseIsOver = document.elementFromPoint(x, y);
+
+                elementMouseIsOver.click()
+            }
+        }
 
         let span = NewSpan("River⇅")
-        addSorting(span, "alphabetical")
-        span.value = 1 //Starts sorted alphabetically, a-z. The first sort needs to reverse that.
+        addSorting(span, "alphabetical", 1) //Starts sorted alphabetically, a-z. Pass 1 so the first sort reverses that.
         button.appendChild(span)
 
         button.appendChild(NewSpan("Section"))
 
         span = NewSpan("Skill⇅")
-        addSorting(span, "skill")
-        span.value = 0
-        button.appendChild(span) 
+        addSorting(span, "skill", 0)
+        button.appendChild(span)
 
-		
-		//The rating span needs to be the same size as the stars. 
+
+		//The rating span needs to be the same size as the stars.
 		span = NewSpan("")
 		//Create an invisible star span. This will make the spans width the same as the ratings.
         let empty = document.createElement("span")
 		empty.className = "emptyStars"
 		empty.innerHTML = "☆☆☆☆☆"
 		empty.style.opacity = "0" //Invisible
-		
+
 		//Create the text span.
 		let realContent = document.createElement("span")
 		realContent.innerHTML = "Rating⇅"
@@ -54,19 +64,15 @@ function TopBar() {
 		realContent.style.position = "absolute"
 		realContent.style.left = 0
 		realContent.style.bottom = 0
-		
+
 		span.appendChild(empty)
 		span.appendChild(realContent)
-		
-        addSorting(span, "rating")
-        span.value = 0 //We want greatest first, not least first, on the first sort
-        button.appendChild(span) 
 
-		
-		
+        addSorting(span, "rating", 0) //We want greatest first, not least first, on the first sort. Pass 0 to not reverse
+        button.appendChild(span)
+
         span = NewSpan("Flow/Trend⇅")
-        addSorting(span, "running")
-        span.value = 0 //Show highest flow first, instead of lowest
+        addSorting(span, "running", 0) //Show highest flow first, instead of lowest. Pass 0 to not reverse.
         button.appendChild(span)
 
         return button

@@ -34,13 +34,13 @@ try {
 	for (let i=0;i<scripts.length;i++) {
 		if (scripts[i].src.includes("allPages.js")) {
 			let allPagesURL = new URL(scripts[i].src)
-			root = new URL(allPagesURL.pathname + "/../..", allPagesURL.origin)
+			root = new URL(allPagesURL.pathname + "/../..", allPagesURL.origin).href
 			break;
 		}
 	}
 }
 catch(e) {
-	root = window.location.origin //Time to hope!!!
+	root = window.location.origin + "/" //Time to hope! As far as I know, this code should never run.
 	console.error(e)
 }
 
@@ -121,7 +121,6 @@ try {
 	let container = styleSheet.cssRules[styleSheet.insertRule("@media all {}", styleSheet.cssRules.length)]
 	let mediaMatch = window.matchMedia('(prefers-color-scheme: dark)')
 
-
 	function calculateDarkMode() {
 		let startingMode = window.darkMode
 
@@ -145,10 +144,22 @@ try {
 
         let mediaRule = styleSheet.cssRules[styleSheet.cssRules.length-2]
 
-		mediaRule = container.cssRules[container.insertRule(mediaRule.cssText, container.cssRules.length)]
-		styleSheet.deleteRule(styleSheet.cssRules.length-2)
+		let isIE11 = !!window.MSInputMethodContext && !!document.documentMode;
 
-
+		if (isIE11) {
+			console.log("IE 11 does not support nested media queries. As such, reloads will be required to change color scheme.")
+			try{calculateDarkMode()} catch(e) {}//This will set window.darkMode but error on the event dispatch.
+			if (window.darkMode) {
+				mediaRule = styleSheet.cssRules[styleSheet.insertRule(mediaRule.cssText.replace("not all", "all"), styleSheet.cssRules.length)]
+			}
+			else {
+				mediaRule = styleSheet.cssRules[styleSheet.insertRule(mediaRule.cssText.replace("all", "not all"), styleSheet.cssRules.length)]
+			}
+		}
+		else {
+			mediaRule = container.cssRules[container.insertRule(mediaRule.cssText, container.cssRules.length)]
+			styleSheet.deleteRule(styleSheet.cssRules.length-2)
+		}
 
         //Style links so that they are visible in dark mode
         //Unvisited Link. Lightish blue.
@@ -201,7 +212,6 @@ catch (e) {
 
 
 //Create navigation bar
-
 try {
 
 	let topnav = document.createElement("div")
@@ -234,18 +244,15 @@ try {
 	item5.innerHTML = "Clubs"
 	items.push(item5)
 
-
 	let currentPage = window.location.href.slice(root.length)
 	if (currentPage.indexOf("#") !== -1) {
 	    currentPage = currentPage.slice(0, currentPage.indexOf("#"))
 	}
 
-
 	for (let i=0;i<items.length;i++) {
 	    let item = items[i]
 
 	    let target = item.href.slice(root.length)
-
 	    if (target === currentPage) {
 	        item.className = "topnavcurrent"
 	    }
@@ -253,7 +260,6 @@ try {
 	}
 
 	document.body.insertBefore(topnav, document.body.firstChild)
-
 
 
 	styleSheet.insertRule(`
@@ -291,6 +297,7 @@ try {
 
 	styleSheet.insertRule(".topnav a:hover {background-color: #359daa}", styleSheet.cssRules.length)
 	styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.cssRules.length)
+
 }
 catch (e) {
 	console.error(e)

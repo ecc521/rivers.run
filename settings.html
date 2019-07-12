@@ -43,6 +43,10 @@
 				else {
                 	localStorage.setItem("prefersDarkMode", event.target.value)
 				}
+
+                //If the browser is IE 11, reload the page to apply changes.
+                if (!!window.MSInputMethodContext && !!document.documentMode) {window.location.reload()}
+                //End of IE 11 code
 				window.dispatchEvent(new Event("storage")) //Allow this page to pick up the color scheme change. May not be needed.
             })
 
