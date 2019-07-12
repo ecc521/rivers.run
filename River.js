@@ -214,7 +214,7 @@ function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.2)":"rgb
 
 
 
-module.exports.River = function(locate, event) {
+function River(locate, event) {
 
     //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
     Object.assign(this, event)
@@ -419,4 +419,8 @@ module.exports.River = function(locate, event) {
         Remove(1)
 
     }
+}
+
+export {
+	River
 }

@@ -74,6 +74,6 @@ function loadURL(url) {
 	})
 }
 
-module.exports = {
+export {
 	loadURL
 }

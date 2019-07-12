@@ -364,7 +364,7 @@ function advancedSearch(list, query) {
 
 
 
-module.exports = {
+export {
     normalSearch,
     advancedSearch
 }

@@ -42,7 +42,7 @@ function addCanvasAsImage(appendTo, canvas) {
     //Images also allow "Save Image As"
     let img = document.createElement("img")
     img.className = "graph"
-	
+
 	img.src = canvas.toDataURL("image/png")
 
     appendTo.appendChild(img)
@@ -100,7 +100,7 @@ function addPrecipGraph(div, precip, data) {
 }
 
 
-module.exports.addGraphs = function(div, data) {
+function addGraphs(div, data) {
 
     //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
     //for a specific river due to gauge problems.
@@ -127,4 +127,9 @@ module.exports.addGraphs = function(div, data) {
         addPrecipGraph(div, precip, data)
     }
     catch(e){console.warn("Error creating precipitation graph: " + e)}
+}
+
+
+export {
+    addGraphs
 }
