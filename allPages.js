@@ -7,7 +7,6 @@ try {
 }
 catch(e) {console.error(e)}
 
-console.log("Hi")
 try {
 	require("./collectVisitorInformation.js") //Get site usage statistics.
 }
@@ -40,7 +39,10 @@ try {
 		}
 	}
 }
-catch(e) {console.error(e)}
+catch(e) {
+	root = window.location.origin //Time to hope!!!
+	console.error(e)
+}
 
 
 //Add the favicon if it does not exist.
