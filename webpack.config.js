@@ -37,7 +37,19 @@ const path = require("path")
 						options: {
 							cacheDirectory: true, //Huge performance boost. Avoid recompiling when unneeded.
 							cacheCompression: true, //true is default. Compress cached data written to disk.
-							presets: ['@babel/preset-env']
+							presets: [
+								[
+									'@babel/preset-env', {
+									targets: {
+										ie: 11,
+										firefox: 60,
+										safari: 9,
+										chrome: 57, //No idea what a good minimum on this is.
+										browsers: "last 2 versions"
+									},
+									useBuiltIns: 'usage'
+								}]
+							]
 						}
 					}
 				}
