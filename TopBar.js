@@ -7,7 +7,6 @@ function NewSpan(Text) {
 
 function addSorting(span, type, reverse = 0) {
     span.addEventListener("click", function() {
-        console.log("sorting")
         if (reverse === 1) {
             NewList(type, "sort", true) //Reversed
             reverse = 0
@@ -17,7 +16,6 @@ function addSorting(span, type, reverse = 0) {
             reverse = 1
         }
     })
-    console.log("Added " + type)
 }
 
 
