@@ -91,6 +91,10 @@ html, body {
 	font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
 }
 
+#advanced-search-modal > .modal-content > * {
+    font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
+}
+
 #searchbox::placeholder {
     /*Make the text show up a little better.*/
     font-weight: bold;
