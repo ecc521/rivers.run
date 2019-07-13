@@ -120,9 +120,32 @@ window.NewList = function(query, type, reverse) {
 	//Append New
 	var div = document.getElementById("Rivers")
 	//Everything else
-	orderedlist.forEach(function(event){
-		div.appendChild(event.create())
-	})
+
+	let completed = 0
+	let callNumber = timesNewListCalled
+
+	function drawMore(num) {
+		//Draw num more rivers to the screen.
+		for (let i=0;completed<orderedlist.length && i<num;i++) {
+			div.appendChild(orderedlist[completed].create())
+			completed++
+		}
+		return completed < orderedlist.length
+	}
+	drawMore(30) //Draw the first 30 immediately.
+	function asyncDraw(number = 5) {
+		let start = Date.now()
+		if (callNumber === timesNewListCalled && drawMore(number)) {
+			let time = Date.now() - start
+			//Wait either 16 milliseconds, or twice as long as drawing took, before drawing more.
+			//Try to use up 3-4 milliseconds per draw.
+			if (time < 3) {number++}
+			if (time > 4) {number--}
+			console.log(number)
+			setTimeout(asyncDraw, Math.max(16, time*2), number)
+		}
+	}
+	asyncDraw(navigator.hardwareConcurrency || 4) //Using navigator.hardwareConcurrency to guess at device performance.
 
 	if (type !== "sort") {
 		oldresult = orderedlist

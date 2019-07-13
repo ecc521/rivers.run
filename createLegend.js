@@ -2,30 +2,30 @@
 
 function drawColors(canvas, height) {
 
-    let context = canvas.getContext("2d")	
+    let context = canvas.getContext("2d")
 
     //Some browsers flip screen.width and screen.height on rotation - some don't
 
     //window.innerWidth fails - the window is expanded to handle the width of the legend
-    //Then the legend doesn't resize (because the window has resized to it) 
+    //Then the legend doesn't resize (because the window has resized to it)
 
     //This seems to be the only simple cross browser solution, although it fails if numerous rotations are made
 
 	let tooLowLightness = window.darkMode? "23%": "67%"
 	let tooHighLightness = window.darkMode? "20%": "69%"
 	let normalValueLightness = window.darkMode? "25%": "70%"
-	
+
 	canvas.width = document.documentElement.clientWidth
     canvas.height = height
 
-    let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters  
+    let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters
 
     let redColor = "hsl(0,100%," + tooLowLightness + ")"
     let blueColor = "hsl(240,100%," + tooHighLightness + ")"
 
     gradient.addColorStop(0, redColor)
     gradient.addColorStop(0.08, redColor)
-    
+
     let start = 0.08
     let end = 0.92
 
@@ -40,7 +40,7 @@ function drawColors(canvas, height) {
     gradient.addColorStop(1, blueColor)
 
     context.fillStyle = gradient
-    context.fillRect(0,0,canvas.width,canvas.height)	
+    context.fillRect(0,0,canvas.width,canvas.height)
 
 }
 
@@ -48,7 +48,7 @@ function drawColors(canvas, height) {
 
 function drawText(canvas, fontSize) {
 
-    let context = canvas.getContext("2d")	
+    let context = canvas.getContext("2d")
     context.fillStyle = window.darkMode ? "white" : "black"
 
     //The fourth parameter is the maximum width of the text in pixels
@@ -68,7 +68,7 @@ function drawText(canvas, fontSize) {
 
 
     //Black text on blue is near inivisible - so use white text on blue
-    if (!window.darkMode) {context.fillStyle = "white"} 
+    if (!window.darkMode) {context.fillStyle = "white"}
 
     context.textAlign = "end"
     context.fillText("Too High", canvas.width, height, canvas.width*0.2)
@@ -79,18 +79,23 @@ function drawText(canvas, fontSize) {
 function makeSticky(canvas) {
     //Make the legend stick to the top of the screen
 
-    //position: sticky failed in Safari
+    //We should use position:sticky here, but there were some issues with it in Safari.
     //canvas.style.position = "-webkit-sticky"
     //canvas.style.position = "sticky"
     //canvas.style.top = 0
-	
 
-	canvas.style.zIndex = 2 //Show up on top of stars. 
-	
-    let elementOffset = canvas.offsetTop
+	canvas.style.zIndex = 2 //Show up on top of stars.
+	let elementOffset = canvas.offsetTop;
+    if (elementOffset === 0) {
+        //It looks like the canvas was absolutely positioned at this time.
+        //We can approxtimate this number VERY closley using the topbar and canvas height.
+        //This is probably better than removing the absolute positioning to calculate, then re-adding.
+        elementOffset = document.getElementById("topbar").offsetTop - canvas.height
+    }
+
     window.addEventListener("scroll", function() {
         let pageOffset = window.pageYOffset
-		
+
         if (pageOffset > elementOffset) {
             canvas.style.position = "fixed"
             canvas.style.top = 0
