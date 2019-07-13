@@ -131,7 +131,7 @@ function runningSort(list, reverse) {
     }
 
     if (window.usgsDataAge === undefined) {
-        alert("Sorting based on flow requires flow data, which has not yet loaded. The flow sort is not being performed.")
+        alert("Sorting based on flow requires flow data, which has not fully loaded. The flow sort is not being performed.")
         return list
     }
 

@@ -296,29 +296,26 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	let completed = 0
 	let callNumber = timesNewListCalled
 
-	function drawMore(num) {
-		//Draw num more rivers to the screen.
-		for (let i=0;completed<orderedlist.length && i<num;i++) {
-			div.appendChild(orderedlist[completed].create())
-			completed++
-		}
-		return completed < orderedlist.length
-	}
-	drawMore(30) //Draw the first 30 immediately.
-	function asyncDraw(number = 5) {
+	function drawMore(milliseconds = 12) {
+		//Draw rivers to the screen for milliseconds milliseconds.
 		let start = Date.now()
-		if (callNumber === timesNewListCalled && drawMore(number)) {
-			let time = Date.now() - start
-			//Wait either 16 milliseconds, or twice as long as drawing took, before drawing more.
-			//Try to use up 3-4 milliseconds per draw.
-			if (time < 3) {number++}
-			if (time > 4) {number--}
-			setTimeout(asyncDraw, Math.max(16, time*2), number)
+		for (;completed<orderedlist.length;completed++) {
+			if (Date.now() - start > milliseconds || callNumber !== timesNewListCalled) {break;}
+			div.appendChild(orderedlist[completed].create())
+		}
+		return {
+			finished: completed >= orderedlist.length,
+			time: Date.now() - start //Really slow devices may take more than the allocated amount of time to finish
 		}
 	}
-	asyncDraw(navigator.hardwareConcurrency || 4) //Using navigator.hardwareConcurrency to guess at device performance.
-
-
+	function asyncDraw() {
+		let drawing = drawMore()
+		if (callNumber === timesNewListCalled && !drawing.finished) {
+			setTimeout(asyncDraw, Math.min(Math.max(16, drawing.time*2), 100))
+		}
+	}
+	drawMore(16) //Spend 16 milliseconds drawing at start.
+	asyncDraw()
 
 	query = deleteMatchingPortions(query, defaultAdvancedSearchParameters) //Filter out parameters where the default is used.
 

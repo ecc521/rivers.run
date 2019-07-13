@@ -233,7 +233,7 @@ function flowFilter(list, parameters) {
 
     //Alert user when an actually useful flow search can't be performed.
     if (window.usgsDataAge === undefined && (max !== 4 || min !== 0)) {
-        alert("Searching based on flow requires flow data, which has not yet loaded. The flow search is not being performed.")
+        alert("Searching based on flow requires flow data, which has not fully loaded. The flow search is not being performed.")
         return list
     }
 

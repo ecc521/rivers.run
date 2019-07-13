@@ -146,18 +146,20 @@ let loadUSGS = async function() {
 		function updateUSGSData() {
 	            //item.create(true) will force regeneration of the button
 	            //Replace the current button so that the flow info shows
-	            let elem = document.getElementById(river.base + "1")
-	            let expanded = river.expanded
-	            let replacement = river.create(true) //Update the version in cache
-	            try {
-	                elem.parentNode.replaceChild(replacement, elem)
-	                //If the river was expanded before, keep it expanded
-	                if (expanded) {
-	                    replacement.dispatchEvent(new Event("click"))
-	                    replacement.dispatchEvent(new Event("click"))
-	                }
-	            }
-	            catch (e) {} //The list must have been sorted - the node was not currently being displayed.
+				let replacement = river.create(true) //Create the new button and update the version in cache.
+	            let elem = document.getElementById(river.base + "1") //Get the currently displayed button (if there is one.)
+				if (elem) {
+					let expanded = river.expanded
+		            try {
+		                elem.parentNode.replaceChild(replacement, elem)
+		                //If the river was expanded before, keep it expanded
+		                if (expanded) {
+		                    replacement.dispatchEvent(new Event("click"))
+		                    replacement.dispatchEvent(new Event("click"))
+		                }
+		            }
+		            catch (e) {console.error(e)}
+				}
 		}
 
 		if (river.usgs && river.usgs.toLowerCase().startsWith("virtual:")) {
