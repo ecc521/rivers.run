@@ -7,52 +7,52 @@
 <br><br>
 
 <p>The 3 Fields below this may not apply to all rivers. Don't worry. You can leave them blank.</p>
-<input id="usgs" type="text" placeholder="USGS Gauge Number" onkeyup="UpdateWriteup" style="width:100%">
+<input id="usgs" type="text" placeholder="USGS Gauge Number"  style="width:100%">
 <br>
-<input id="relatedusgs" type="text" placeholder="Related USGS Gauges (comma seperated list)" onkeyup="UpdateWriteup" style="width:100%">
+<input id="relatedusgs" type="text" placeholder="Related USGS Gauges (comma seperated list)"  style="width:100%">
 <br>
-<textarea hidden id="virtualgauge" type="text" placeholder="Virtual Gauge Code" onkeyup="UpdateWriteup" style="width:100%"></textarea>
+<textarea hidden id="virtualgauge" type="text" placeholder="Virtual Gauge Code"  style="width:100%"></textarea>
 <br>
 <p>You <strong>MUST</strong> put either ft, feet, or cfs after the value (ex. 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet).</p>
-<input id="minrun" type="text" placeholder="Minimum runnable water level" onkeyup="UpdateWriteup" style="width:100%">
+<input id="minrun" type="text" placeholder="Minimum runnable water level"  style="width:100%">
 <br>
-<input id="maxrun" type="text" placeholder="Maximum runnable water level" onkeyup="UpdateWriteup" style="width:100%">
+<input id="maxrun" type="text" placeholder="Maximum runnable water level"  style="width:100%">
 <br>
-<input id="lowflow" type="text" placeholder="Low Water" onkeyup="UpdateWriteup" style="width:100%">
+<input id="lowflow" type="text" placeholder="Low Water"  style="width:100%">
 <br>
-<input id="medflow" type="text" placeholder="Ideal Level" onkeyup="UpdateWriteup" style="width:100%">
+<input id="medflow" type="text" placeholder="Ideal Level"  style="width:100%">
 <br>
-<input id="highflow" type="text" placeholder="High Water" onkeyup="UpdateWriteup" style="width:100%">
+<input id="highflow" type="text" placeholder="High Water"  style="width:100%">
 <br>
 <p>Either input coordinates in decimal format, or press the convert coordinates button to convert them. If you see NaN, email admin@rivers.run with the coordinates. </p>
-<input id="plat" type="text" placeholder="Put-in GPS Latitude" onkeyup="UpdateWriteup" style="width:100%">
+<input id="plat" type="text" placeholder="Put-in GPS Latitude"  style="width:100%">
 <br>
-<input id="plon" type="text" placeholder="Put-in GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
+<input id="plon" type="text" placeholder="Put-in GPS Longitude"  style="width:100%">
 <br>
-<input id="tlat" type="text" placeholder="Take-out GPS Latitude" onkeyup="UpdateWriteup" style="width:100%">
+<input id="tlat" type="text" placeholder="Take-out GPS Latitude"  style="width:100%">
 <br>
-<input id="tlon" type="text" placeholder="Take-out GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
+<input id="tlon" type="text" placeholder="Take-out GPS Longitude"  style="width:100%">
 <br>
 <button onclick="convertCoordinates()">Convert Coordinates</button>
 <br>
 <p><strong>IF YOU DID NOT INPUT PUT-IN OR TAKEOUT GPS:</strong></p>
-<input id="hidlat" type="text" placeholder="Approxtimate GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
-<input id="hidlon" type="text" placeholder="Approxtimate GPS Longitude" onkeyup="UpdateWriteup" style="width:100%">
+<input id="hidlat" type="text" placeholder="Approxtimate GPS Longitude"  style="width:100%">
+<input id="hidlon" type="text" placeholder="Approxtimate GPS Longitude"  style="width:100%">
 <p>GPS coordinites that you input in the 2 boxes above will not be shown to the user, however will be used in GPS sorting.</p>
 <br><br>
-<input id="aw" type="text" placeholder="AW River Number" onkeyup="UpdateWriteup" style="width:100%">
+<input id="aw" type="text" placeholder="AW River Number"  style="width:100%">
 <br>
-<input id="dam" type="text" placeholder="Link to dam information" onkeyup="UpdateWriteup" style="width:100%">
+<input id="dam" type="text" placeholder="Link to dam information"  style="width:100%">
 <br>
-<input id="tags" type="text" placeholder="Input Tags Here, seperated by commas" onkeyup="UpdateWriteup" style="width:100%">
+<input id="tags" type="text" placeholder="Input Tags Here, seperated by commas"  style="width:100%">
 <br>
 <p>Tag Examples: CCCWOR, Ice-Cream, Monacacy, NC, PA, TN, CA, MI, WV, ext.
 <br>
 Put C1 after the tag if you can get to the river within an hour from that area (ex. CCCWORC1), put C if you can get to the river in 1-2 hours from that area (ex. CCCWORC), and put nothing if it takes 2+ hours (ex. CCCWOR). Do not put the tag if it is unreasonable to paddle the river from the area.</p>
 <br>
-<input id="name" type="text" placeholder="River Name" onkeyup="UpdateWriteup" style="width:100%">
+<input id="name" type="text" placeholder="River Name"  style="width:100%">
 <br>
-<input id="section" placeholder="Section Name" type="text" onkeyup="UpdateWriteup" style="width:100%">
+<input id="section" placeholder="Section Name" type="text"  style="width:100%">
 <br>
 <select id="skill" onchange="UpdateWriteup()">
   <option value="">Skill</option>
@@ -66,7 +66,7 @@ Put C1 after the tag if you can get to the river within an hour from that area (
   <option value="E">Expert</option>
 </select>
 <br>
-<input id="class" placeholder="Class (currently not used, likely will be in future)" type="text" onkeyup="UpdateWriteup" style="width:100%">
+<input id="class" placeholder="Class (currently not used, likely will be in future)" type="text"  style="width:100%">
 <br>
 <select id="rating" onchange="UpdateWriteup()">
   <option selected value="">Rating</option>
