@@ -66,6 +66,8 @@ Put C1 after the tag if you can get to the river within an hour from that area (
   <option value="E">Expert</option>
 </select>
 <br>
+<input id="class" placeholder="Class (currently not used, likely will be in future)" type="text" onkeyup="UpdateWriteup" style="width:100%">
+<br>
 <select id="rating" onchange="UpdateWriteup()">
   <option selected value="">Rating</option>
 </select>
@@ -161,13 +163,14 @@ quill.getModule("toolbar").handlers.video = function imageHandler(value) {
         quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
 }
 
-var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","medflow","highflow","dam","virtualgauge","relatedusgs"]
+var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","medflow","highflow","dam","virtualgauge","relatedusgs","class"]
 
 List.forEach(function(value){
   console.log(value)
   console.log(document.getElementById(value))
   if (value !== "writeup") {
       document.getElementById(value).value = localStorage.getItem(value)
+      document.getElementById(value).addEventListener("keyup", UpdateWriteup)
   }
   else {
       //Start quill off with stored value.
@@ -175,12 +178,12 @@ List.forEach(function(value){
   }
 })
 
-	
+
 	function toDecimalDegrees(coord) {
 	if (!isNaN(Number(coord))) {
 		return coord //Coordinate is already in decimal form.
 	}
-	
+
 	let parts = coord.split(/[^\w]+/) //Split on non-alphanumeric characters.
 	console.log(parts)
 	let direction;
@@ -195,13 +198,13 @@ List.forEach(function(value){
 	let degrees = Number(parts[0])
 	let minutes = Number(parts[1] || 0)
 	let seconds = Number(parts[2] || 0)
-	
+
 	minutes += seconds/60
 	degrees += minutes/60
-	
-	return degrees	
+
+	return degrees
 }
-	
+
 	function convertCoordinates() {
 		["tlat", "tlon", "plat", "plon"].forEach(function(value) {
 			let coordinate = document.getElementById(value).value.trim()
@@ -210,7 +213,7 @@ List.forEach(function(value){
 	}
 
 function UpdateWriteup() {
-	
+
     List.forEach(function(value){
         if (value !== "writeup") {
             localStorage.setItem(value, document.getElementById(value).value.trim())
