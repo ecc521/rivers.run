@@ -296,7 +296,7 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	let completed = 0
 	let callNumber = timesNewListCalled
 
-	function drawMore(milliseconds = 12) {
+	function drawMore(milliseconds = 8) {
 		//Draw rivers to the screen for milliseconds milliseconds.
 		let start = Date.now()
 		for (;completed<orderedlist.length;completed++) {
@@ -314,7 +314,6 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 			setTimeout(asyncDraw, Math.min(Math.max(16, drawing.time*2), 100))
 		}
 	}
-	drawMore(16) //Spend 16 milliseconds drawing at start.
 	asyncDraw()
 
 	query = deleteMatchingPortions(query, defaultAdvancedSearchParameters) //Filter out parameters where the default is used.
