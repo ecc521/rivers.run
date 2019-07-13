@@ -311,7 +311,7 @@ try {
 	.modal {
 	display: none;
 	position:fixed;
-	z-index:1;
+	z-index:2;
 	padding-top: 5%;
 	left:0;
 	top:0;
