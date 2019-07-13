@@ -86,9 +86,7 @@
             <div class="modal-content">
                 <span id="advanced-search-modal-close" class="modal-close">&times;</span>
 
-                <p>Note: Advanced Search is a new feature, and is incomplete</p>
-                <p>Empty Search Queries will be Ignored</p>
-
+                <p>Advanced Search is still under development, so expect some changes in the future.</p>
 
                 Name
                 <select id="nameType">
@@ -130,7 +128,8 @@
                     <option value="7">Advanced</option>
                     <option value="8" selected>Expert</option>
                 </select>
-                <br>
+                <br><input id="includeUnknownSkill" type="checkbox" checked>Include rivers without skill information<br>
+
 
 				Flow from
                 <select id="flowQuery1">
@@ -166,6 +165,9 @@
                 <input id="tagsQuery" type="text" placeholder="List of Tags">
                 <br>
 
+                Normal Search (Same as search box)
+                <input id="normalSearchBoxOnAdvancedSearch" type="text" placeholder="Normal Search">
+                <br>
 
                 Located within
                 <input id="distanceQuery" type="number" placeholder="Distance in Miles">
@@ -180,14 +182,13 @@
 
 				Sort the list by:
                 <select id="sortQuery">
-                    <option value="alphabetical" selected>Alphabetical</option>
+                    <option value="none" selected>No Sort</option>
+                    <option value="alphabetical">Alphabetical</option>
                     <option value="rating">Rating</option>
                     <option value="skill">Skill</option>
                     <option value="running">Flow</option>
 				</select>
                 <input id="sortQueryReverse" type="checkbox">Reverse List<br>
-
-				<button id="performadvancedsearch">Search</button>
 
                 <p id="searchlink"></p>
             </div>

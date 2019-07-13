@@ -3,7 +3,7 @@ let sortUtils = require("./sort.js")
 function normalSearch(list, query) {
     let l = [[],[],[],[],[]]
     list.forEach(function(event){
-        if(event.tags.toLowerCase().indexOf(query) !== -1) {
+        if (event.tags.toLowerCase().indexOf(query) !== -1) {
             if (event.name.toLowerCase().indexOf(query) !== -1) {
                 l[0].push(event)
             }
@@ -27,8 +27,6 @@ function normalSearch(list, query) {
         }
     })
 
-	console.log(l)
-
 	//Sort each match level alphabetically by river name
 
 	function compareNames(river1, river2) {
@@ -46,8 +44,6 @@ function normalSearch(list, query) {
 	l[2] = l[2].sort(compareNames)
 	l[3] = l[3].sort(compareNames)
 	l[4] = l[4].sort(compareNames)
-
-	console.log(l)
 
 	//Less relevant results are lower.
     list = l[0].concat(l[1],l[2],l[3],l[4])
@@ -99,6 +95,7 @@ function stringFilter(list, property, parameters) {
             delete list[item]
         }
     }
+    delete parameters.content //Cleanup
     return list
 }
 
@@ -142,12 +139,9 @@ function skillToNumber(skill) {
 function skillFilter(list, parameters) {
 
     let query = parameters.query
-    let type = parameters.type
 
     let min = Math.min(query[0], query[1])
     let max = Math.max(query[0], query[1])
-
-    if (type !== "from") {throw "Unknown search type" + type}
 
     for (let item in list) {
 
@@ -158,7 +152,7 @@ function skillFilter(list, parameters) {
             passes = true
         }
 
-        if (!passes) {
+        if (!passes && !(parameters.includeUnknown && skill === undefined)) {
             //Remove the item if it fails
             delete list[item]
         }
@@ -243,8 +237,6 @@ function flowFilter(list, parameters) {
         return list
     }
 
-	console.log(parameters)
-
 	for (let item in list) {
 		let river = list[item]
 
@@ -314,16 +306,16 @@ function advancedSearch(list, query) {
     //Query is the search parameters
     console.log(query)
 
-	let sorted = false
-
     for (let property in query) {
         //Iterate through each part of the query
 
         let parameters = query[property]
 
-
         if (["name", "section", "writeup"].includes(property)) {
             list = stringFilter(list, property, parameters)
+        }
+        else if (property === "normalSearch" || property === "sort") {
+            //These are delt with later
         }
         else if (property === "skill") {
             list = skillFilter(list, parameters)
@@ -340,21 +332,14 @@ function advancedSearch(list, query) {
 		else if (property === "tags") {
 			list = tagsFilter(list, parameters)
 		}
-		else if (property === "sort") {
-			list = list.filter(item => item !== undefined) //The sort code isn't built to handle holes.
-			list = sortUtils.sort(parameters.query, list, parameters.reverse)
-			sorted = true
-        }
         else {
             alert("Unable to search based on " + property)
         }
     }
 
 	list = list.filter(item => item !== undefined)
-
-	if (!sorted) {
-		list = sortUtils.sort("alphabetical", list)
-	}
+    if (query["normalSearch"] !== undefined) {list = normalSearch(list, query["normalSearch"])}
+    if (query["sort"]) {list = sortUtils.sort(query["sort"].query, list, query["sort"].reverse)}
 
     return list
 }

@@ -5,16 +5,20 @@ function NewSpan(Text) {
     return span
 }
 
-function addSorting(span, type, reverse = 0) {
+function addSorting(span, type, reverse = false) {
     span.addEventListener("click", function() {
-        if (reverse === 1) {
-            NewList(type, "sort", true) //Reversed
-            reverse = 0
+        let query = window.getAdvancedSearchParameters()
+        if (query.sort.query === type) {
+            query.sort.reverse = !query.sort.reverse
+            reverse = query.sort.reverse
         }
         else {
-            NewList(type, "sort")
-            reverse = 1
+            query.sort.query = type
+            query.sort.reverse = reverse
+            reverse = !reverse
         }
+        window.setMenuFromSearch(query)
+        NewList()
     })
 }
 
@@ -37,13 +41,13 @@ function TopBar() {
         }
 
         let span = NewSpan("River⇅")
-        addSorting(span, "alphabetical", 1) //Starts sorted alphabetically, a-z. Pass 1 so the first sort reverses that.
+        addSorting(span, "alphabetical", true) //Starts sorted alphabetically, a-z. Pass 1 so the first sort reverses that.
         button.appendChild(span)
 
         button.appendChild(NewSpan("Section"))
 
         span = NewSpan("Skill⇅")
-        addSorting(span, "skill", 0)
+        addSorting(span, "skill", false)
         button.appendChild(span)
 
 
@@ -66,11 +70,11 @@ function TopBar() {
 		span.appendChild(empty)
 		span.appendChild(realContent)
 
-        addSorting(span, "rating", 0) //We want greatest first, not least first, on the first sort. Pass 0 to not reverse
+        addSorting(span, "rating", false) //We want greatest first, not least first, on the first sort. Pass 0 to not reverse
         button.appendChild(span)
 
         span = NewSpan("Flow/Trend⇅")
-        addSorting(span, "running", 0) //Show highest flow first, instead of lowest. Pass 0 to not reverse.
+        addSorting(span, "running", false) //Show highest flow first, instead of lowest. Pass 0 to not reverse.
         button.appendChild(span)
 
         return button
@@ -85,6 +89,6 @@ function TopBar() {
 }
 
 
-module.exports = {
+export {
     TopBar
 }

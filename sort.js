@@ -148,7 +148,8 @@ function runningSort(list, reverse) {
 
 
 function sort(method, list, reverse) {
-    if (method === "alphabetical") {
+    if (method === "none") {}
+    else if (method === "alphabetical") {
         list = alphabeticalsort(list, reverse)
     }
     else if (method === "rating") {

@@ -63,116 +63,6 @@ riverarray.map(function(event, index) {
 require("./loadUSGS.js").loadUSGS()
 
 
-var oldresult;
-let timesNewListCalled = 0 //Used to handle advanced search links with flow.
-window.NewList = function(query, type, reverse) {
-	timesNewListCalled++
-	if (typeof(query) === "string") {
-		query = query.toLowerCase()
-	}
-	//Location searching uses numbers.
-
-	let orderedlist = ItemHolder.slice(0); //Clone the array
-	if (!(String(query).length === 0 || !query || !type)) {
-
-		if (type === "sort") {
-			//Obey other filters
-			if (oldresult) {
-				orderedlist = oldresult
-			}
-
-			orderedlist = sort(query, orderedlist, reverse)
-		}
-		if (type === "normal") {
-			orderedlist = normalSearch(orderedlist, query)
-		}
-		if (type === "advanced") {
-			//This is ineffecient because we run a search with every parameter, even when that parameter is useless (as the defaults are).
-			query = recursiveAssign({}, defaultAdvancedSearchParameters, query) //Use the default portions of the parameters in all non-specified cases.
-			orderedlist = advancedSearch(orderedlist, query)
-		}
-		if (type === "location") {
-			if (oldresult) {
-				orderedlist = oldresult
-			}
-
-			var nlist = []
-			orderedlist.forEach(function(value){
-				if (value.plat && value.plon) {
-					if (distanceto(value.plat, value.plon) < query) {
-						nlist.push(value)
-					}
-				}
-			})
-			orderedlist = nlist
-		}
-
-
-	}//Closing for if a query is present
-	else if (type = "normal" && query.length === 0) {
-		orderedlist = normalSearch(orderedlist, query)
-	}
-
-	//Clear Current
-	ItemHolder.forEach(function(event) {
-		event.delete()
-	})
-	//Append New
-	var div = document.getElementById("Rivers")
-	//Everything else
-
-	let completed = 0
-	let callNumber = timesNewListCalled
-
-	function drawMore(num) {
-		//Draw num more rivers to the screen.
-		for (let i=0;completed<orderedlist.length && i<num;i++) {
-			div.appendChild(orderedlist[completed].create())
-			completed++
-		}
-		return completed < orderedlist.length
-	}
-	drawMore(30) //Draw the first 30 immediately.
-	function asyncDraw(number = 5) {
-		let start = Date.now()
-		if (callNumber === timesNewListCalled && drawMore(number)) {
-			let time = Date.now() - start
-			//Wait either 16 milliseconds, or twice as long as drawing took, before drawing more.
-			//Try to use up 3-4 milliseconds per draw.
-			if (time < 3) {number++}
-			if (time > 4) {number--}
-			console.log(number)
-			setTimeout(asyncDraw, Math.max(16, time*2), number)
-		}
-	}
-	asyncDraw(navigator.hardwareConcurrency || 4) //Using navigator.hardwareConcurrency to guess at device performance.
-
-	if (type !== "sort") {
-		oldresult = orderedlist
-	}
-}
-
-
-document.getElementById("Rivers").appendChild(new TopBar().create())
-//Needs a #Rivers > .riverbutton to get font-size using getComputedStyle
-require("./createLegend.js")
-
-
-NewList("alphabetical", "sort")
-
-
-let searchbox = document.getElementById("searchbox")
-searchbox.addEventListener("keyup", function(event) {
-	//If the user presses the "Go" button (Actually an Enter/Return), unfocus the searchbox.
-	if (event.keyCode == 13) {
-        event.target.blur()
-    }
-	else {
-		NewList(searchbox.value, "normal")
-	}
-})
-
-
 //Used to determine where search parameters match the default.
 //This is rather ineffecient, because it has to be called twice. A new system (probably using object.keys()) should be used instead.
 	function _objectsEqual(obj1, obj2) {
@@ -237,8 +127,6 @@ function recursiveAssign(target, ...objects) {
 	}
 	else {
 		let object = objects[0]
-	console.log(Object.assign({}, target))
-	console.log(Object.assign({}, object))
 		for (let property in object) {
 			if (typeof object[property] === "object") {
 				if (typeof target[property] !== "object") {
@@ -261,11 +149,10 @@ function recursiveAssign(target, ...objects) {
 }
 
 let defaultAdvancedSearchParameters;
-defaultAdvancedSearchParameters = getAdvancedSearchParameters();
-console.log(defaultAdvancedSearchParameters)
 
 //Generate advanced search parameters from menu
-function getAdvancedSearchParameters() {
+window.getAdvancedSearchParameters = function(filter) {
+	//filter: Filter out parameters that match defaults.
 	let parameters = {}
 
 	parameters.name = {
@@ -290,11 +177,9 @@ function getAdvancedSearchParameters() {
 	let lat = document.getElementById("latitudeQuery").value
 	let lon = document.getElementById("longitudeQuery").value
 
-	//TODO: Parse other latitude and longitude formats
+	//We should only be dealing with decimal degrees here. writeupmaker.html reformats other formats to deciaml.
 	lat = Number(lat)
 	lon = Number(lon)
-
-
 
 	if (!(distance > 0) && lat && lon) {
 		alert("Distance must be a number greater than 0 to use location sorting")
@@ -321,8 +206,12 @@ function getAdvancedSearchParameters() {
 		query: [
 			Number(document.getElementById("skillQuery1").value),
 			Number(document.getElementById("skillQuery2").value)
-		]
+		],
+		includeUnknown: document.getElementById("includeUnknownSkill").checked
 	}
+
+	parameters.normalSearch = document.getElementById("searchbox").value.toLowerCase()
+
 
 	parameters.flow = {
 		type: "from",
@@ -339,20 +228,165 @@ function getAdvancedSearchParameters() {
 		reverse: document.getElementById("sortQueryReverse").checked
 	}
 
-	//If a specific parameter matches the default, exclude.
-	//Check for undefined, because this function is used to define defaultAdvancedSearchParameters
-
-
-	if (defaultAdvancedSearchParameters !== undefined) {
-		console.log(Object.assign({}, parameters))
-		console.log(Object.assign({}, defaultAdvancedSearchParameters))
-		parameters = deleteMatchingPortions(parameters, defaultAdvancedSearchParameters) //Delete where the default is used.
-	}
-
-
 	return parameters
 }
+defaultAdvancedSearchParameters = window.getAdvancedSearchParameters();
 
+
+window.setMenuFromSearch = function(query) {
+	console.log(recursiveAssign({}, query))
+	console.log(window.getAdvancedSearchParameters())
+	query = recursiveAssign(window.getAdvancedSearchParameters(), query)
+
+	document.getElementById("nameType").value = query.name.type
+	document.getElementById("nameQuery").value = query.name.query
+	document.getElementById("sectionType").value = query.section.type
+	document.getElementById("sectionQuery").value = query.section.query
+	document.getElementById("writeupType").value = query.writeup.type
+	document.getElementById("writeupQuery").value = query.writeup.query
+
+	if (query.location) {
+		document.getElementById("distanceQuery").value = query.location.distance
+		document.getElementById("includeUnknownLocation").checked = query.location.includeUnknown
+		document.getElementById("latitudeQuery").value = query.location.lat
+		document.getElementById("longitudeQuery").value = query.location.lon
+	}
+
+	document.getElementById("tagsQuery").value = query.tags.query
+
+	document.getElementById("skillQuery1").value = query.skill.query[0]
+	document.getElementById("skillQuery2").value = query.skill.query[1]
+
+	document.getElementById("searchbox").value = query.normalSearch
+
+	document.getElementById("flowQuery1").value = query.flow.query[0]
+	document.getElementById("flowQuery2").value = query.flow.query[1]
+	document.getElementById("includeDams").checked = query.flow.includeDams
+	document.getElementById("includeUnknownFlow").checked = query.flow.includeUnknown
+
+	document.getElementById("sortQuery").value = query.sort.query
+	document.getElementById("sortQueryReverse").checked = query.sort.reverse
+}
+
+
+let timesNewListCalled = 0 //Used to handle advanced search links with flow, and to prevent drawing rivers from an older search.
+let previousSearchQuery; //Used to avoid spending CPU to do the same search query again.
+window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParameters, window.getAdvancedSearchParameters())) {
+	//For the advanced search paramters, use the defaults in all non-specified cases. This is ineffecient because we run a search with every parameter, even when that parameter is useless (as the defaults are).
+
+	if (objectsEqual(previousSearchQuery, query)) {
+		//The search query is the same as the one that was run before. Ignore it.
+		console.log("Killed search");
+		return
+	}
+	previousSearchQuery = query
+	timesNewListCalled++
+
+	let orderedlist = ItemHolder.slice(0); //Clone the array
+	orderedlist = advancedSearch(orderedlist, query)
+
+	//Clear Current
+	ItemHolder.forEach(function(event) {
+		event.delete()
+	})
+
+	//Append New
+	var div = document.getElementById("Rivers")
+	//To avoid lagging, append a small amount of rivers at the start, then finish adding rivers in the background.
+	let completed = 0
+	let callNumber = timesNewListCalled
+
+	function drawMore(num) {
+		//Draw num more rivers to the screen.
+		for (let i=0;completed<orderedlist.length && i<num;i++) {
+			div.appendChild(orderedlist[completed].create())
+			completed++
+		}
+		return completed < orderedlist.length
+	}
+	drawMore(30) //Draw the first 30 immediately.
+	function asyncDraw(number = 5) {
+		let start = Date.now()
+		if (callNumber === timesNewListCalled && drawMore(number)) {
+			let time = Date.now() - start
+			//Wait either 16 milliseconds, or twice as long as drawing took, before drawing more.
+			//Try to use up 3-4 milliseconds per draw.
+			if (time < 3) {number++}
+			if (time > 4) {number--}
+			setTimeout(asyncDraw, Math.max(16, time*2), number)
+		}
+	}
+	asyncDraw(navigator.hardwareConcurrency || 4) //Using navigator.hardwareConcurrency to guess at device performance.
+
+
+
+	query = deleteMatchingPortions(query, defaultAdvancedSearchParameters) //Filter out parameters where the default is used.
+
+	//Add link to this search to the advanced search menu.
+	let link;
+	//If the only parameter is normalSearch, create a normal search link.
+	if (query.normalSearch && objectsEqual(query, {normalSearch:query.normalSearch})) {
+		link = encodeURI(window.location.href + "#" + query.normalSearch)
+	}
+	else if (objectsEqual(query, {})) {
+		link = window.location.href //There is no search. Provide the link to this page.
+	}
+	else {
+		link = encodeURI(window.location.href + "#" + JSON.stringify(query))
+	}
+	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
+}
+
+document.getElementById("Rivers").appendChild(new TopBar().create())
+//createLegend.js needs a #Rivers > .riverbutton to get font-size using getComputedStyle
+require("./createLegend.js")
+
+NewList()
+
+
+let searchbox = document.getElementById("searchbox")
+let searchboxOnAdvancedSearch = document.getElementById("normalSearchBoxOnAdvancedSearch")
+function searchBoxKeyPress(event) {
+	//If the user presses the "Go" button (Actually an Enter/Return), unfocus the searchbox.
+	if (event.keyCode === 13) {
+		event.target.blur()
+	}
+	let query = window.getAdvancedSearchParameters()
+	query.sort.query = "none" //Normal searches apply their own sorting. query.sort will override this.
+	NewList(query)
+	searchboxOnAdvancedSearch.value = searchbox.value
+}
+searchbox.addEventListener("keyup", searchBoxKeyPress)
+
+searchboxOnAdvancedSearch.addEventListener("keyup", function() {
+	searchbox.value = searchboxOnAdvancedSearch.value
+	searchBoxKeyPress({}) //Pass an empty object to avoid error reading property of undefined.
+})
+
+
+
+//Advanced search event listeners.
+//When parameters are changed, run the search.
+let elements = document.querySelectorAll("#advanced-search-modal > .modal-content > input[type=text]")
+for (let i=0;i<elements.length;i++) {
+	elements[i].addEventListener("keyup", function() {
+		//If the user presses the "Go" button (Actually an Enter/Return), unfocus the searchbox.
+		if (event.keyCode === 13) {
+			event.target.blur()
+		}
+		NewList()
+	})
+}
+
+elements = document.querySelectorAll("#advanced-search-modal > .modal-content > select")
+for (let i=0;i<elements.length;i++) {
+	elements[i].addEventListener("change", function(){NewList()})
+}
+
+elements = document.querySelectorAll("#advanced-search-modal > .modal-content > input[type=checkbox]")
+for (let i=0;i<elements.length;i++) {
+	elements[i].addEventListener("change", function(){NewList()})
+}
 
 
 async function calculateCoordinates() {
@@ -389,31 +423,6 @@ async function calculateCoordinates() {
 
 document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
 
-
-
-
-document.getElementById("performadvancedsearch").addEventListener("click", function() {
-	let query = getAdvancedSearchParameters()
-
-	//Add link to this search
-	//This should run before NewList - otherwise some unwanted data (specifically, the content parameter added and used in some of the searches) is added to the object and URL
-	//Find where rivers.run is located
-	//This should allow rivers.run to the run from a directory
-	let root = window.location.href
-	root = root.slice(0,root.lastIndexOf("/") + 1) //Add 1 so we don't clip trailing slash
-	let link = encodeURI(root + "#" + JSON.stringify(query))
-	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
-
-	NewList(query, "advanced", false) //Reversing advanced search is handled in the sort.reverse portion of the parameters.
-})
-
-
-
-
-
-
-
-
 //Check if there is a search query
 if (window.location.hash.length > 0) {
 	let search = decodeURI(window.location.hash.slice(1))
@@ -433,7 +442,8 @@ if (search.startsWith("{")) {
 			}
 			function dataNowLoaded() {
 				if (timesNewListCalled === 2 || confirm("You used an advanced search link with flow parameters. Now that flow data has loaded, would you like to apply that search?")) {
-					NewList(oldQuery, "advanced")
+					setMenuFromSearch(oldQuery)
+					NewList()
 				}
 				window.removeEventListener("usgsDataUpdated", dataNowLoaded)
 			}
@@ -448,13 +458,12 @@ if (search.startsWith("{")) {
 		}
 	}
 	console.log(window.usgsDataAge)
-
-
-		NewList(query, "advanced")
+		setMenuFromSearch(query)
+		NewList()
 	}
 	else {
 		//Normal search
 		document.getElementById("searchbox").value = search
-		NewList(search, "normal")
+		NewList()
 	}
 }
