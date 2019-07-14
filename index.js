@@ -361,6 +361,7 @@ function searchBoxKeyPress(event) {
 	searchboxOnAdvancedSearch.value = searchbox.value
 }
 searchbox.addEventListener("keyup", searchBoxKeyPress)
+searchbox.addEventListener("keydown", searchBoxKeyPress) //Also function when a key is held down (most likely backspace).
 
 searchboxOnAdvancedSearch.addEventListener("keyup", function() {
 	searchbox.value = searchboxOnAdvancedSearch.value
