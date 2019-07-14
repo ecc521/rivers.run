@@ -167,18 +167,19 @@
 
                 Normal Search (Same as search box)
                 <input id="normalSearchBoxOnAdvancedSearch" type="text" placeholder="Normal Search">
-                <br>
-
-                Located within
-                <input id="distanceQuery" type="number" placeholder="Distance in Miles">
-                miles of
-                <input id="latitudeQuery" type="text" placeholder="Degrees Latitude">
-                <input id="longitudeQuery" type="text" placeholder="Degrees Longitude">
-                <br>
-                <input id="includeUnknownLocation" type="checkbox">Include rivers without GPS coordinates<br>
-                <button id="calculateCoordinates">Calculate my Location</button>
-                <p id="locationProgress"></p>
-                <br>
+                <br><br>
+                <div id="locationSearchPortion">
+                    Located within
+                    <input id="distanceQuery" type="number" placeholder="Distance in Miles">
+                    miles of
+                    <input id="latitudeQuery" type="text" placeholder="Degrees Latitude">
+                    <input id="longitudeQuery" type="text" placeholder="Degrees Longitude">
+                    <br>
+                    <input id="includeUnknownLocation" type="checkbox">Include rivers without GPS coordinates<br>
+                    <button id="calculateCoordinates">Calculate my Location</button>
+                    <p id="locationProgress"></p>
+                </div>
+                <br><br>
 
 				Sort the list by:
                 <select id="sortQuery">

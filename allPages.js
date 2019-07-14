@@ -330,6 +330,7 @@ try {
 	border: 1px solid #888;
 	width: 90%;
 	margin-bottom:100px;
+	margin-top:60px;
 	}`,styleSheet.cssRules.length)
 
 	styleSheet.insertRule(`

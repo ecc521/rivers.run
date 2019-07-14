@@ -181,13 +181,21 @@ window.getAdvancedSearchParameters = function(filter) {
 	lat = Number(lat)
 	lon = Number(lon)
 
-	if (!(distance > 0) && lat && lon) {
-		alert("Distance must be a number greater than 0 to use location sorting")
+	if (!lat && (lon || distance > 0)) {
+		document.getElementById("latitudeQuery").style.border = "3px solid red"
 	}
-	else if (distance > 0 && !(lat && lon)) {
-		alert("You must enter a latitude and longitude (Get the coordinates from GPS by pressing Calculate my Location)")
+	if (!lon && (lat || distance > 0)) {
+		document.getElementById("longitudeQuery").style.border = "3px solid red"
 	}
-	else if (distance > 0 && lat && lon) {
+	if (!(distance > 0) && (lat || lon)) {
+		document.getElementById("distanceQuery").style.border = "3px solid red"
+	}
+
+	if (distance > 0 && lat && lon) {
+		document.getElementById("latitudeQuery").style.border = ""
+		document.getElementById("longitudeQuery").style.border = ""
+		document.getElementById("distanceQuery").style.border = ""
+
 		parameters.location = {
 			lat,
 			lon,
@@ -384,6 +392,10 @@ for (let i=0;i<elements.length;i++) {
 	elements[i].addEventListener("change", function(){NewList()})
 }
 
+elements = document.querySelectorAll("#advanced-search-modal > .modal-content > #locationSearchPortion > input")
+for (let i=0;i<elements.length;i++) {
+	elements[i].addEventListener("keyup", function(){NewList()})
+}
 
 async function calculateCoordinates() {
 
@@ -415,6 +427,8 @@ async function calculateCoordinates() {
 	document.getElementById("latitudeQuery").value = coords.latitude
 	document.getElementById("longitudeQuery").value = coords.longitude
 	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
+
+	NewList()
 }
 
 document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
