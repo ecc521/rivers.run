@@ -356,7 +356,13 @@ function River(locate, event) {
 			}
 
             if (this.flow) {
-                let flowSpan = AddSpan(this.flow + calculateDirection(this.usgs) + (this.dam ? "Dam" : ""))
+				let value = this.flow + calculateDirection(this.usgs)
+				//If the user has color blind mode enabled, add river.running to one digit onto the flow data.
+				if (localStorage.getItem("colorBlindMode") === "true" && calculateColor(this) && this.running !== undefined) {
+					value += "(" + Math.round(this.running*10)/10 + ")"
+				}
+				value += this.dam ? "Dam" : ""
+                AddSpan(value)
             }
 			else if (this.dam) {AddSpan("Dam")}
 
