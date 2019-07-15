@@ -244,19 +244,13 @@ try {
 	item5.innerHTML = "Clubs"
 	items.push(item5)
 
-	let currentPage = window.location.href.slice(root.length)
-	if (currentPage.indexOf("#") !== -1) {
-	    currentPage = currentPage.slice(0, currentPage.indexOf("#"))
-	}
-
 	for (let i=0;i<items.length;i++) {
-	    let item = items[i]
-
-	    let target = item.href.slice(root.length)
-	    if (target === currentPage) {
-	        item.className = "topnavcurrent"
+	    let link = items[i]
+		//If the link is to the current page, highlight it.
+	    if (link.href === window.location.origin + window.location.pathname) {
+	        link.className = "topnavcurrent"
 	    }
-	    topnav.appendChild(item)
+	    topnav.appendChild(link)
 	}
 
 	document.body.insertBefore(topnav, document.body.firstChild)
