@@ -147,3 +147,14 @@ function fetchHandler(event) {
 }
 
 self.addEventListener("fetch", fetchHandler)
+
+
+
+//TODO: Consider showing only the river being talked about.
+function notificationHandler(event) {
+    let url = rebaseURL(""); //URL to River Info page.
+    event.notification.close(); //Android needs explicit close.
+    event.waitUntil(clients.mlients.openWindow(url)) //Open the specified url.
+}
+
+self.addEventListener('notificationclick', notificationHandler);
