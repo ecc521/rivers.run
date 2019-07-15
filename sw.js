@@ -154,7 +154,7 @@ self.addEventListener("fetch", fetchHandler)
 function notificationHandler(event) {
     let url = rebaseURL(""); //URL to River Info page.
     event.notification.close(); //Android needs explicit close.
-    event.waitUntil(clients.mlients.openWindow(url)) //Open the specified url.
+    event.waitUntil(clients.openWindow(url)) //Open the specified url.
 }
 
 self.addEventListener('notificationclick', notificationHandler);
