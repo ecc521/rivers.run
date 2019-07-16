@@ -27,6 +27,7 @@
     "webpack-cli": "^3.3.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.4.3"
+    "@babel/runtime": "^7.4.3",
+    "@webcomponents/custom-elements": "^1.2.4"
   }
 }

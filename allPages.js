@@ -2,6 +2,30 @@
 //It defines global CSS rules, allows for forcing dark mode,
 //defines the river-overview DOM element, and makes sure a viewport meta tag exists.
 
+if (!window.customElements) {
+	require("./node_modules/@webcomponents/custom-elements/custom-elements.min.js")
+}
+
+
+//IE doesn't define console unless devtools is open.
+if(!window.console) {window.console={}}
+
+['assert', 'clear', 'count', 'debug', 'dir', 'dirxml', 'error', 'exception', 'group', 'groupCollapsed', 'groupEnd', 'info', 'log', 'markTimeline', 'profile', 'profileEnd', 'table', 'time',
+'timeEnd', 'timeline', 'timelineEnd', 'timeStamp', 'trace', 'warn'].forEach((method) => {
+	if (!window.console[method]) {
+		//When the console is opened, all of the old messages should be dumped within 5 seconds.
+		window.console[method] = function(...data) {
+			let interval = setInterval(function() {
+				if(window.console[method].toString().indexOf('[native code]') > -1 || window.console[method].toString().indexOf("__BROWSERTOOLS_CONSOLE_SAFEFUNC") > -1) {
+					console.log(...data)
+					window.console[method](...data)
+					clearInterval(interval)
+				}
+			}, 5000)
+		}
+	}
+})
+
 try {
 	require("./reportErrors.js") //Collect errors.
 }
