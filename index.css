@@ -224,7 +224,7 @@ Those include name,section,skill,quality, and flow info*/
 
 /*Controlling font size smoothly based on screen size*/
 .riverbutton {
-    font-size:12px;
+    font-size:3.2vw;
 }
 
 @media screen and (min-width: 400px) {
