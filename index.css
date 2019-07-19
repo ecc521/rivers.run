@@ -117,12 +117,18 @@ Those include name,section,skill,quality, and flow info*/
 
 .riverspan:nth-child(1) {
     width:23%;
+    min-width:23%;
+    max-width:23%;
 }
 .riverspan:nth-child(2) {
     width:31%;
+    min-width:31%;
+    max-width:31%;
 }
 .riverspan:nth-child(3) {
     width:8%;
+    min-width:8%;
+    max-width:8%;
 }
 /*Child #4 acts as a tooltip too. That declaration is a around 40 lines below (May change. Do a search for nth-child(4))*/
 .riverspan:nth-child(4) {
@@ -181,7 +187,6 @@ Those include name,section,skill,quality, and flow info*/
     margin:0;
     transition: 0.2s;
     text-align:left;
-    font-size: 3.0vw;
 	min-height:22px; /*Make the buttons easier to click on mobile.*/
 	display:flex;
     /*display:-webkit-box; *//*iOS 9 and 10 workaround due to lack of flexbox support for buttons.*/
@@ -218,6 +223,16 @@ Those include name,section,skill,quality, and flow info*/
 
 
 /*Controlling font size smoothly based on screen size*/
+.riverbutton {
+    font-size:12px;
+}
+
+@media screen and (min-width: 400px) {
+    .riverbutton {
+        font-size: 3.0vw;
+    }
+}
+
 @media screen and (min-width: 500px) {
     .riverbutton {
         font-size: 2.6vw;
