@@ -235,8 +235,6 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         grd.addColorStop(1, endcolor);
         ctx.strokeStyle = grd;
         ctx.fillStyle = grd;
-        console.log(color)
-        console.log(endcolor)
     }
 
     if (!window.darkMode) {
@@ -250,10 +248,6 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     ctx.textAlign = "center";
     ctx.fillText(Source, canvas.width/2 , canvas.height-10);
     ctx.textAlign = "start";
-
-    console.log(ctx.lineWidth)
-    console.log(ctx.font)
-
 
     function H(Value) {
         return Math.round((Value-hoffset)*hscale)
