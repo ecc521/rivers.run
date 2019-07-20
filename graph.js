@@ -10,7 +10,7 @@
 
 //color - Optional. Color of line. Default black
 //graphtype - Optional. Specify 2 to put 2 lines and 2 scales on one graph. See numplace below
-//numplace - Use only if you are using graphtype = 2. 
+//numplace - Use only if you are using graphtype = 2.
 //If you specify 0 or do not pass a value, the line's scale will be on the left side of the graph.
 //If you specify 1, the line's scale will be on the right side of the graph
 function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
@@ -23,9 +23,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     var height = canvas.height*0.80
     var width = canvas.width
 
-    var ctx = canvas.getContext('2d');  
-
-
+    var ctx = canvas.getContext('2d');
 
     if (!isNaN(Number(horizontal))) {
         horizontal = []
@@ -38,12 +36,14 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     }
 
     color = color || "#000000"
-    
-    ctx.lineWidth = Math.ceil(Math.min(width, height)/120)
+
+    ctx.lineWidth = Math.ceil(Math.min(width, height)/70)
+
     ctx.beginPath();
 
     if (graphtype === 2) {
-        width = width*0.86
+        width = width*0.86 //We need to put values on both sides
+        ctx.lineWidth = Math.ceil(ctx.lineWidth/1.3) //Because there are two lines, make the lines thinner.
     }
     else {
         width = width*0.93
@@ -79,11 +79,11 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
 
     if (graphtype === 3) {
         var grd = ctx.createLinearGradient(0, 0, 0, height);
-        grd.addColorStop(0, color);   
+        grd.addColorStop(0, color);
         grd.addColorStop(1, endcolor);
         ctx.strokeStyle = grd;
         ctx.fillStyle = grd;
-    }    
+    }
 
     if (numplace === 0 || numplace === undefined) {
         var start = 1
@@ -91,6 +91,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     else {
         var start = canvas.width-(canvas.width*0.07)
         }
+        ctx.font = "bold " + ctx.font
     for(var i = 1;i<11;i++) {
         var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
 
@@ -127,7 +128,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     else {
         //Dark Mode
         ctx.fillStyle = "#cccccc"
-    }    
+    }
 
 
 
@@ -158,13 +159,13 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
 
     ctx.fillText(starttime, 10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
 
-    ctx.textAlign = "end"; 
+    ctx.textAlign = "end";
     ctx.fillText(endtime, canvas.width-10, (canvas.height*(11/12))-(canvas.height*0.06)-12)
 
-    ctx.textAlign = "center"; 
+    ctx.textAlign = "center";
     ctx.fillText(midtime, canvas.width/2, (canvas.height*(11/12))-(canvas.height*0.06)-12)
 
-    ctx.textAlign = "start";     
+    ctx.textAlign = "start";
 
 
 
@@ -174,7 +175,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     //We need to create a gradient for just the text "Water Temperature (F)"
     if (graphtype === 3) {
         var grd = ctx.createLinearGradient(0, height, 200, height);
-        grd.addColorStop(0, color);   
+        grd.addColorStop(0, color);
         grd.addColorStop(1, endcolor);
         ctx.strokeStyle = grd;
         ctx.fillStyle = grd;
@@ -182,20 +183,20 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
 
     if (graphtype === 2) {
         if (numplace === 0 || numplace === undefined) {
-            ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
+            ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));
         }
         else {
-            ctx.textAlign = "right"; 
+            ctx.textAlign = "right";
             ctx.fillText("Gauge Height (Feet)", start-5, (canvas.height*(11/12)));
-            ctx.textAlign = "start"; 
-        } 
+            ctx.textAlign = "start";
+        }
     }
     else if (graphtype === 3) {
-        ctx.fillText("Water Temperature (°F)", start+5, (canvas.height*(11/12)));    
+        ctx.fillText("Water Temperature (°F)", start+5, (canvas.height*(11/12)));
     }
     else {
         if (GraphName === "Precipitation") {
-            ctx.fillText("Precipitation (Inches)", start+5, (canvas.height*(11/12))); 
+            ctx.fillText("Precipitation (Inches)", start+5, (canvas.height*(11/12)));
             var fulldayprecip = 0
             var halfdayprecip = 0
             var preciplist = vertical.slice(-96)
@@ -212,28 +213,30 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
             fulldayprecip = fulldayprecip.toFixed(2)
             halfdayprecip = halfdayprecip.toFixed(2)
 
-            ctx.fillText("Last 24 Hours: " + fulldayprecip + " in", canvas.width-700, (canvas.height*(11/12))); 
-            ctx.fillText("Last 12 Hours: " + halfdayprecip + " in", canvas.width-330, (canvas.height*(11/12))); 
+            ctx.fillText("Last 24 Hours: " + fulldayprecip + " in", canvas.width-700, (canvas.height*(11/12)));
+            ctx.fillText("Last 12 Hours: " + halfdayprecip + " in", canvas.width-330, (canvas.height*(11/12)));
         }
         else if (GraphName === "cfs") {
-            ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));    
+            ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));
         }
         else if (GraphName === "height") {
-            ctx.fillText("Gauge Height (Feet)", start+5, (canvas.height*(11/12)));    
+            ctx.fillText("Gauge Height (Feet)", start+5, (canvas.height*(11/12)));
         }
         else {
-            ctx.fillText("Labeling Error...", start+5, (canvas.height*(11/12)));    
-        }    
+            ctx.fillText("Labeling Error...", start+5, (canvas.height*(11/12)));
+        }
     }
 
-    //set it back    
+    //set it back
     if (graphtype === 3) {
         //The area that actually has the graph is the top 80% height wise
         var grd = ctx.createLinearGradient(0, 0, 0, canvas.height*0.8);
-        grd.addColorStop(0, color);   
+        grd.addColorStop(0, color);
         grd.addColorStop(1, endcolor);
         ctx.strokeStyle = grd;
         ctx.fillStyle = grd;
+        console.log(color)
+        console.log(endcolor)
     }
 
     if (!window.darkMode) {
@@ -244,11 +247,12 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         ctx.fillStyle = "#cccccc"
     }
 
-    ctx.textAlign = "center"; 
-    ctx.fillText(Source, canvas.width/2 , canvas.height-10);  
-    ctx.textAlign = "start"; 
+    ctx.textAlign = "center";
+    ctx.fillText(Source, canvas.width/2 , canvas.height-10);
+    ctx.textAlign = "start";
 
-
+    console.log(ctx.lineWidth)
+    console.log(ctx.font)
 
 
     function H(Value) {
@@ -264,7 +268,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         if (!isNaN(Number(vertical[p])) && vertical[p] !== "") {
             ctx.moveTo(H(horizontal[p]), V(vertical[p]))
             break;
-        }    
+        }
     }
 
 
@@ -305,7 +309,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         ctx.lineTo(canvas.width, height*(11-i)/10)
     }
     ctx.stroke()
-}    
+}
 
 
 export {
