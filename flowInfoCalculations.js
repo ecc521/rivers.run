@@ -153,7 +153,7 @@ function calculateColor(river, options) {
 	let minrun = values[0]
 	let maxrun = values[4]
 	//For midflow, use the nearest values to calculate midflow.
-	let midflow = values[2] //
+	let midflow = values[2] //Prefer the specified midflow.
     midflow = midflow || logDist(values[1], values[3]) //Average lowflow and highflow
     midflow = midflow || logDist(values[0], values[3], 2/3) // two-thirds of the way between minrun and highflow
     midflow = midflow || logDist(values[1], values[4], 1/3) // one-third of the way between lowflow and maxrun
