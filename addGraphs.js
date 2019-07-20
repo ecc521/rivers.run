@@ -61,7 +61,7 @@ function addFlowGraph(div, cfs, height, data) {
         let parts = toparts(cfs.values)
         addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFFa0", 2)
         parts = toparts(height.values)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#6bedb2a0":"#0000FFa0", 2, 1)
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#7175f0a0":"#0000FFa0", 2, 1)
     }
     //We won't have both cfs and height. Draw a single line graph for whichever we have.
     else if (cfs) {
@@ -70,7 +70,7 @@ function addFlowGraph(div, cfs, height, data) {
     }
     else {
         let parts = toparts(height.values)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#6bedb2":"blue")
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#7175f0":"blue")
     }
 
 	return addCanvasAsImage(div, canvas)
@@ -114,10 +114,16 @@ function addGraphs(div, data) {
     let cfs = data["00060"]
     let height = data["00065"]
 
-
-
     try {
-        addFlowGraph(div, cfs, height, data)
+        if (!localStorage.getItem("colorBlindMode")) {
+            addFlowGraph(div, cfs, height, data)
+        }
+
+        else {
+            //Use one graph for cfs and one for feet if the user is in color blind mode.
+            addFlowGraph(div, cfs, undefined, data)
+            addFlowGraph(div, undefined, height, data)
+        }
     }
     catch(e){console.warn("Error creating flow graph: " + e)}
 
