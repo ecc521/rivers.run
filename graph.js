@@ -127,7 +127,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     }
     else {
         //Dark Mode
-        ctx.fillStyle = "#cccccc"
+        ctx.fillStyle = "#dddddd"
     }
 
 

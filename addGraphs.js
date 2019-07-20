@@ -48,7 +48,7 @@ function addCanvasAsImage(appendTo, canvas) {
     appendTo.appendChild(img)
 }
 
-//In dark mode, blue doesn't show up well enough, so use #0088FF instead.
+//In dark mode, blue doesn't show up well enough, so different colors are used.
 
 
 function addFlowGraph(div, cfs, height, data) {
@@ -59,18 +59,18 @@ function addFlowGraph(div, cfs, height, data) {
     //Time to create a dual lined graph!
     if (cfs && height) {
         let parts = toparts(cfs.values)
-        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFFa0", 2)
+        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFFa0", 2)
         parts = toparts(height.values)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#0066FFa0":"#0000FFa0", 2, 1)
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#6bedb2a0":"#0000FFa0", 2, 1)
     }
     //We won't have both cfs and height. Draw a single line graph for whichever we have.
     else if (cfs) {
         let parts = toparts(cfs.values)
-        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFF")
+        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFF")
     }
     else {
         let parts = toparts(height.values)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#0066FF":"blue")
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#6bedb2":"blue")
     }
 
 	return addCanvasAsImage(div, canvas)
@@ -82,7 +82,7 @@ function addTempGraph(div, temp, data) {
         let canvas = createcanvas()
 
         let parts = toparts(temp.values)
-        addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "red", 3, window.darkMode?"#0066FF":"blue")
+        addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "red", 3, window.darkMode?"#00AAFF":"blue")
 
  		return addCanvasAsImage(div, canvas)
 
@@ -96,7 +96,7 @@ function addPrecipGraph(div, precip, data) {
         let canvas = createcanvas()
 
         let parts = toparts(precip.values)
-        addLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0066FF")
+        addLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0099FF")
 
 		return addCanvasAsImage(div, canvas)
     }
