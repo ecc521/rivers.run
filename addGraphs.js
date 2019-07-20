@@ -48,6 +48,9 @@ function addCanvasAsImage(appendTo, canvas) {
     appendTo.appendChild(img)
 }
 
+//In dark mode, blue doesn't show up well enough, so use #0088FF instead.
+
+
 function addFlowGraph(div, cfs, height, data) {
     //Make sure we actually have some data, and don't create an empty graph
     if (!(cfs || height)) {return}
@@ -58,7 +61,7 @@ function addFlowGraph(div, cfs, height, data) {
         let parts = toparts(cfs.values)
         addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00AAFFa0", 2)
         parts = toparts(height.values)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#3232FFa0":"#0000FFa0", 2, 1)
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#0066FFa0":"#0000FFa0", 2, 1)
     }
     //We won't have both cfs and height. Draw a single line graph for whichever we have.
     else if (cfs) {
@@ -67,7 +70,7 @@ function addFlowGraph(div, cfs, height, data) {
     }
     else {
         let parts = toparts(height.values)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#3232FF":"#0000FF")
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#0066FF":"blue")
     }
 
 	return addCanvasAsImage(div, canvas)
@@ -79,7 +82,7 @@ function addTempGraph(div, temp, data) {
         let canvas = createcanvas()
 
         let parts = toparts(temp.values)
-        addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "#FF0000", 3, window.darkMode?"#3232FF":"#0000FF")
+        addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "red", 3, window.darkMode?"#0066FF":"blue")
 
  		return addCanvasAsImage(div, canvas)
 
