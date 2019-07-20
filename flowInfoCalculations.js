@@ -135,16 +135,31 @@ function calculateColor(river, options) {
     //related to their level. This would also help in determining if something is just barely
     //too low, and may come up with rain, or is truely too low.
 
-
 	//If we don't have some values, fill them in using logarithms
 	//Although these calculations are not needed when flow is below minrun or above maxrun. they can be useful in
 	//alerting people what values are being used, so that they can
+
+    function logDist(low, high, ratio = 0.5) {
+        //ratio is how a decimal between 0 and 1. 0.5 means to factor lowLog and highLog evenly. Values greater than 0.5 factor in highLog more, vice versa.
+        let lowLog = Math.log10(low)
+        let highLog = Math.log10(high)
+        if (lowLog > highLog) {
+            console.error("Low greater than high on " + river.name + " " + river.section)
+            return;
+        }
+        return 10**(lowLog + (highLog - lowLog)*ratio)
+    }
+
 	let minrun = values[0]
 	let maxrun = values[4]
-	//Prefer midflow, log-avg lowflow highflow, log-avg minrun maxrun.
-	let midflow = values[2] || 10**((Math.log10(values[1]) + Math.log10(values[3]))/2) || 10**((Math.log10(minrun) + Math.log10(maxrun))/2)
-	let lowflow = values[1] || 10**((Math.log10(minrun) + Math.log10(midflow))/2)
-	let highflow = values[3] || 10**((Math.log10(midflow) + Math.log10(maxrun))/2)
+	//For midflow, use the nearest values to calculate midflow.
+	let midflow = values[2] //
+    midflow = midflow || logDist(values[1], values[3]) //Average lowflow and highflow
+    midflow = midflow || logDist(values[0], values[3], 2/3) // two-thirds of the way between minrun and highflow
+    midflow = midflow || logDist(values[1], values[4], 1/3) // one-third of the way between lowflow and maxrun
+    midflow = midflow || logDist(minrun, maxrun) //Average minrun and maxrun.
+	let lowflow = values[1] || logDist(minrun, midflow)
+	let highflow = values[3] || logDist(midflow, maxrun)
 
 	//Add computer generated properties to the river object so that they will display and people can see the values used in calculations.
 	values[1] || (river.lowflow = parseFloat(lowflow.toFixed(2)) + type + " (computer)")
