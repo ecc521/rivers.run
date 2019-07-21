@@ -186,12 +186,17 @@ let loadUSGS = async function() {
 
 window.addEventListener("usgsDataUpdated", function() {
 	let query = getAdvancedSearchParameters()
-	//Detect if flow searching or sorting is being performed.
-	let hasFlowParameters = !objectsEqual(query.flow, defaultAdvancedSearchParameters.flow) || (query.sort.query === "running")
-	//If the data has actually been updated (basic check to see if loadUSGS has been called before), and the user would like us to, rerun the previous search.
-	if (hasFlowParameters && timesLoadUSGSRan >= 1 && confirm("USGS data has been updated. Would you like to re-run the previous search?")) {
-		NewList()
-	}
+	if (
+		(//Make sure flow searching or sorting is being performed, so that re-running the search may make a difference.
+			!objectsEqual(query.flow, defaultAdvancedSearchParameters.flow) //Flow search
+			|| (query.sort.query === "running") //Flow sort
+		)
+		&& timesLoadUSGSRan >= 1 //And this is actually an update to the data, not the first load
+		&& (//Make sure we don't close writeups that the user is looking at without their permission.
+			ItemHolder.every(river => !river.expanded) //If no writeups are open, we can continue
+			|| confirm("USGS data has been updated. Would you like to re-run the previous search?") //Otherwise, ask the user if they would like the update.
+		)
+	) {NewList()}
 })
 
 export {
