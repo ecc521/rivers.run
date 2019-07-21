@@ -353,25 +353,3 @@ export {
     normalSearch,
     advancedSearch
 }
-
-
-
-
-
-
-//Prepare the Advanced Search button
-let advanced_search_modal = document.getElementById('advanced-search-modal');
-
-let span = document.getElementById("advanced-search-modal-close").onclick = function() {
-    advanced_search_modal.style.display = "none"
-}
-
-window.addEventListener("click", function(event) {
-    if (event.target === advanced_search_modal) {
-        advanced_search_modal.style.display = "none"
-    }
-})
-
-document.getElementById("advancedsearch").addEventListener("click", function() {
-    advanced_search_modal.style.display = "block"
-})
