@@ -398,6 +398,9 @@ for (let i=0;i<elements.length;i++) {
 	elements[i].addEventListener("keyup", function(){NewList()})
 }
 
+document.querySelector("#advanced-search-modal > .modal-content > #locationSearchPortion > input[type=checkbox]").addEventListener("click", function(){NewList()})
+
+
 async function calculateCoordinates() {
 
 	let status = document.getElementById("locationProgress")
