@@ -266,6 +266,7 @@ window.setMenuFromSearch = function(query) {
 	document.getElementById("skillQuery2").value = query.skill.query[1]
 
 	document.getElementById("searchbox").value = query.normalSearch
+	document.getElementById("normalSearchBoxOnAdvancedSearch").value = query.normalSearch
 
 	document.getElementById("flowQuery1").value = query.flow.query[0]
 	document.getElementById("flowQuery2").value = query.flow.query[1]
@@ -357,6 +358,7 @@ function searchBoxKeyPress(event) {
 	}
 	let query = window.getAdvancedSearchParameters()
 	query.sort.query = "none" //Normal searches apply their own sorting. query.sort will override this.
+	setMenuFromSearch(query) //Make sure the user knows that the sort has been canceled.
 	NewList(query)
 	searchboxOnAdvancedSearch.value = searchbox.value
 }
@@ -471,13 +473,15 @@ if (search.startsWith("{")) {
 				legend.parentNode.insertBefore(searchNotFinished, legend)
 		}
 	}
-	console.log(window.usgsDataAge)
+		console.log(window.usgsDataAge)
 		setMenuFromSearch(query)
 		NewList()
 	}
 	else {
 		//Normal search
-		document.getElementById("searchbox").value = search
+		let query = window.getAdvancedSearchParameters()
+		query.normalSearch = search
+		setMenuFromSearch(query)
 		NewList()
 	}
 }
