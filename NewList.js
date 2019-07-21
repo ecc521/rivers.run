@@ -58,6 +58,15 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	}
 	else {
 		link = encodeURI(window.root + "#" + JSON.stringify(query))
+		//There are advanced search parameters other than normalSearch. Show the advanced search warning.
 	}
 	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
+
+	//If there are parameters other than normalSearch and sort, show the advanced search warning
+	if (objectsEqual(query, {normalSearch:query.normalSearch,sort:query.sort})) {
+		document.getElementById("advancedSearchWarning").style.display = "none" //No parameters other than sort and normalSearch
+	}
+	else {
+		document.getElementById("advancedSearchWarning").style.display = "block" //Advanced search is in affect!
+	}
 }

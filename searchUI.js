@@ -46,7 +46,7 @@ searchboxOnAdvancedSearch.addEventListener("keyup", function() {
 let elements = document.querySelectorAll("#advanced-search-modal > .modal-content > input[type=text]")
 for (let i=0;i<elements.length;i++) {
 	elements[i].addEventListener("keyup", function() {
-		//If the user presses the "Go" button (Actually an Enter/Return), unfocus the searchbox.
+		//If the user presses the "Go" key (Actually an Enter/Return), unfocus the searchbox.
 		if (event.keyCode === 13) {
 			event.target.blur()
 		}
@@ -107,3 +107,13 @@ async function calculateCoordinates() {
 }
 
 document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
+
+document.getElementById("clearAdvancedSearch").addEventListener("click", function() {
+	if (confirm("Are you sure that you would like to clear the advanced search query?")) {
+		//Reset all but normalSearch
+		let query = recursiveAssign({}, window.defaultAdvancedSearchParameters)
+		query.normalSearch = getAdvancedSearchParameters().normalSearch
+		window.setMenuFromSearch(query)
+		NewList()
+	}
+})

@@ -81,6 +81,15 @@ html, body {
     height: 36px;
 }
 
+#advancedSearchWarning {
+    text-align: center;
+    background-color:lightpink;
+    margin:0;
+    margin-bottom:8px;
+    padding:6px;
+    display:none;
+}
+
 #searchbox {
     display:inline-block;
     vertical-align:middle;
@@ -337,6 +346,9 @@ Those include name,section,skill,quality, and flow info*/
 		background-color: #333333 !important;
 	}
 
+    #advancedSearchWarning {
+        background-color:darkblue;
+    }
 
     .riverbutton {
         color:#ffffff;
