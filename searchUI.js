@@ -88,10 +88,33 @@ async function calculateCoordinates() {
 		});
 	}
 	catch(e) {
-		let output = "Error code " + e.code + " occurred when getting your location. The error message is: " + e.message
-		alert(output)
-		clearInterval(progress)
-		status.innerHTML = output
+		let output = "Your device encountered an error when attempting to find your position." //Message for POSITION_UNAVAILABLE error.
+		new Promise(() => {
+			//If the error is actually permission denied, check to see if we have location permission.
+			if (output.PERMISSION_DENIED) {
+				navigator.permissions.query({name:'geolocation'}).then((status) => {
+					if (status.state === "granted") {
+						//If we do have location permission, odds are that the browser did not. Tell that to the user.
+						output = "It appears that your browser could not access your location. Make sure that location services is enabled and allowed for your browser."
+					}
+					else if (status.state === "denied"){
+						//If the user denied permission, tell the user that they need to enable it.
+						output = "You denied rivers.run access to your location. Please enable location permission in site settings."
+					}
+					else if (status.state === "prompt") {
+						//If the user dismissed the prompt, tell them that they need to click Allow.
+						output = "It appears that you dismissed the permission prompt. To find your location, you need to grant the location permission."
+					}
+					resolve()
+				})
+			}
+			else {resolve()} //The error was not permission denied. Continue.
+		}).then(() => {
+			output = "\nError message: " + e.message
+			alert(output)
+			clearInterval(progress)
+			status.innerHTML = output
+		})
 	}
 
 
@@ -107,6 +130,7 @@ async function calculateCoordinates() {
 }
 
 document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
+
 
 elements = document.querySelectorAll(".clearAdvancedSearch")
 for (let i=0;i<elements.length;i++) {
