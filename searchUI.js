@@ -105,7 +105,7 @@ async function calculateCoordinates() {
 				output = "It appears that you dismissed the permission prompt. To find your location, you need to grant the location permission."
 			}
 		}
-		output = "\nError message: " + error.message
+		output += "\nError message: " + error.message
 		alert(output)
 		clearInterval(progress)
 		status.innerHTML = output
