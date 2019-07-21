@@ -94,6 +94,7 @@ async function calculateCoordinates() {
 			let status = await navigator.permissions.query({name:'geolocation'})
 			if (status.state === "granted") {
 				//If we do have location permission, odds are that the browser did not. Tell that to the user.
+				//Browsers used to do this, but it looks like they now give a POSITION_UNAVAILABLE error.
 				output = "It appears that your browser could not access your location. Make sure that location services is enabled and allowed for your browser."
 			}
 			else if (status.state === "denied"){
@@ -105,7 +106,7 @@ async function calculateCoordinates() {
 				output = "It appears that you dismissed the permission prompt. To find your location, you need to grant the location permission."
 			}
 		}
-		output += "\nError message: " + error.message
+		output += "\n\nError message: " + error.message
 		alert(output)
 		clearInterval(progress)
 		status.innerHTML = output
