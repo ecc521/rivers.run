@@ -173,9 +173,11 @@ catch (e) {
 //If prefers-color-scheme does exist, we follow it, unless the user wants to override it
 
 try {
-	//Since we can't directly modify a CSSMediaRule, we will create a CSSMediaRule, then modify the media rule inside it.
-	//This prevents us from having to remember where the media rule is in the list
+	let mediaRule = styleSheet.cssRules[styleSheet.cssRules.length-1]
+	if (!mediaRule) {mediaRule = styleSheet.cssRules[styleSheet.insertRule("@media all {}", styleSheet.cssRules.length)]} //If there isn't a rule, create a blank one.
 
+	//Since we can't directly modify a CSSMediaRule, we will create a containing CSSMediaRule, then modify the media rule inside it.
+	//This prevents us from having to find where the media rule is in the list
 	let container = styleSheet.cssRules[styleSheet.insertRule("@media all {}", styleSheet.cssRules.length)]
 	let mediaMatch = window.matchMedia('(prefers-color-scheme: dark)')
 
@@ -199,8 +201,6 @@ try {
 		//Detect changes in color scheme
 		mediaMatch.onchange = calculateDarkMode
 		window.addEventListener("storage", calculateDarkMode)
-
-        let mediaRule = styleSheet.cssRules[styleSheet.cssRules.length-2]
 
 		let isIE11 = !!window.MSInputMethodContext && !!document.documentMode;
 
