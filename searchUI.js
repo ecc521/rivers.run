@@ -108,12 +108,15 @@ async function calculateCoordinates() {
 
 document.getElementById("calculateCoordinates").addEventListener("click", calculateCoordinates)
 
-document.getElementById("clearAdvancedSearch").addEventListener("click", function() {
-	if (confirm("Are you sure that you would like to clear the advanced search query?")) {
-		//Reset all but normalSearch
-		let query = recursiveAssign({}, window.defaultAdvancedSearchParameters)
-		query.normalSearch = getAdvancedSearchParameters().normalSearch
-		window.setMenuFromSearch(query)
-		NewList()
-	}
-})
+elements = document.querySelectorAll(".clearAdvancedSearch")
+for (let i=0;i<elements.length;i++) {
+	elements[i].addEventListener("click", function() {
+		if (confirm("Are you sure that you would like to clear the advanced search query?")) {
+			//Reset all but normalSearch
+			let query = recursiveAssign({}, window.defaultAdvancedSearchParameters)
+			query.normalSearch = getAdvancedSearchParameters().normalSearch
+			window.setMenuFromSearch(query)
+			NewList()
+		}
+	})
+}

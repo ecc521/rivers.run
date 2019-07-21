@@ -43,12 +43,14 @@ function updateUSGSDataInfo() {
 }
 setInterval(updateUSGSDataInfo, 1000*60*1) //Every minute, make sure that the data has not become old. If it has, display a warning.
 
+let timesLoadUSGSRan = 0
 let loadUSGS = async function() {
-
 	//Gaurd against infinite recursion. Ignores calls when data is new. (within 5 minutes)
 	if (window.usgsDataAge < 1000*60*5) {
 		return;
 	}
+
+	timesLoadUSGSRan++
 
 	let timeToRequest = 1000*86400 //Milliseconds of time to request
 
@@ -182,6 +184,15 @@ let loadUSGS = async function() {
 	}, 1200)
 }
 
+window.addEventListener("usgsDataUpdated", function() {
+	let query = getAdvancedSearchParameters()
+	//Detect if flow searching or sorting is being performed.
+	let hasFlowParameters = !objectsEqual(query.flow, defaultAdvancedSearchParameters.flow) || (query.sort.query === "running")
+	//If the data has actually been updated (basic check to see if loadUSGS has been called before), and the user would like us to, rerun the previous search.
+	if (hasFlowParameters && timesLoadUSGSRan >= 1 && confirm("USGS data has been updated. Would you like to re-run the previous search?")) {
+		NewList()
+	}
+})
 
 export {
 loadUSGS
