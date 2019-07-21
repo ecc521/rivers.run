@@ -93,6 +93,7 @@ try {
 			components.pop()
 			components.pop()
 			root = components.join("/") + "/"
+			window.root = root
 			break;
 		}
 	}

@@ -330,13 +330,13 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	let link;
 	//If the only parameter is normalSearch, create a normal search link.
 	if (query.normalSearch && objectsEqual(query, {normalSearch:query.normalSearch})) {
-		link = encodeURI(window.location.href + "#" + query.normalSearch)
+		link = encodeURI(window.root + "#" + query.normalSearch)
 	}
 	else if (objectsEqual(query, {})) {
-		link = window.location.href //There is no search. Provide the link to this page.
+		link = window.root //There is no search. Provide the link to this page.
 	}
 	else {
-		link = encodeURI(window.location.href + "#" + JSON.stringify(query))
+		link = encodeURI(window.root + "#" + JSON.stringify(query))
 	}
 	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
 }
