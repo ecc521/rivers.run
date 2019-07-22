@@ -124,6 +124,8 @@
 
         await wait(500) //Let requests finish
 
+        let allowed = ["name","section","skill","rating","length","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","virtualgauge","relatedusgs","averagegradient","maxgradient","class"] //Property values to be included in output file
+
         for (let i=0;i<complete.length;i++) {
             let item = complete[i].request.split("\n")
             let obj = {}
@@ -139,8 +141,6 @@
                 }
                 value = value.trim()
 
-                let allowed = ["name","section","skill","rating","length","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","virtualgauge","relatedusgs"] //Property values to be included in output file
-
                 let keepnames = ["name", "section", "tags", "writeup"] //Some need to be defined in file, even if empty
                 if (allowed.includes(name) && (String(value).length !== 0 || keepnames.includes(name))) {
                     obj[name] = value
@@ -149,6 +149,11 @@
             console.log(complete[i].id + ": " + obj.name + " " + obj.section)
             complete[i] = obj
         }
+
+        allowed.forEach((name) => {
+            console.log("There are " + complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
+        })
+
 
         console.log(complete)
         let string = "window.riverarray = " + JSON.stringify(complete)

@@ -44,7 +44,11 @@ function addHandlers(button, locate) {
 
 			div.innerHTML += river.writeup + "<br><br>"
 
-            if (river.plat && river.plon) {
+			if (river.class) {div.innerHTML += "This river is rated class " + river.class + ".<br>"}
+			if (river.averagegradient) {div.innerHTML += "Average gradient: " + river.averagegradient + " feet per mile.<br>"}
+			if (river.maxgradient) {div.innerHTML += "Maximum gradient: " + river.maxgradient + " feet per mile.<br>"}
+
+			if (river.plat && river.plon) {
                 div.innerHTML += "Put-In GPS Coordinates: " + river.plat + ", " + river.plon + "<br>"
             }
 
@@ -235,6 +239,12 @@ function River(locate, event) {
     this.expanded = 0
     this.index = locate
 
+	if (this.relatedusgs) {
+		try {
+			this.relatedusgs = JSON.parse(this.relatedusgs)
+		}
+		catch(e) {console.warn(e);}
+	}
 
     this.create = function (forceregenerate) {
         //Only create the button once - It's about 3 times faster.
