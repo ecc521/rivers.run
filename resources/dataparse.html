@@ -129,6 +129,7 @@
         for (let i=0;i<complete.length;i++) {
             let item = complete[i].request.split("\n")
             let obj = {}
+            obj.id = complete[i].id
             for (let i=0;i<item.length;i++) {
                 let prop = item[i]
                 let name = prop.slice(0,prop.indexOf(":"))

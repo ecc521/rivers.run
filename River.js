@@ -68,6 +68,16 @@ function addHandlers(button, locate) {
             }
 			if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
 
+			if (river.id) {
+				//river.id should always be defined.
+                div.appendChild(document.createElement("br"))
+                let link = document.createElement("a")
+                link.target = "_blank"
+                link.rel = "noopener"
+                link.href = "https://docs.google.com/document/d/" + river.id
+                link.innerHTML = "Edit this river"
+                div.appendChild(link)
+            }
 
             if (river.aw) {
                 div.appendChild(document.createElement("br"))
