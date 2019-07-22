@@ -20,7 +20,7 @@
 <br>
 <input id="lowflow" type="text" placeholder="Low Water"  style="width:100%">
 <br>
-<input id="medflow" type="text" placeholder="Ideal Level"  style="width:100%">
+<input id="midflow" type="text" placeholder="Ideal Level"  style="width:100%">
 <br>
 <input id="highflow" type="text" placeholder="High Water"  style="width:100%">
 <br>
@@ -166,7 +166,7 @@ quill.getModule("toolbar").handlers.video = function imageHandler(value) {
         quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
 }
 
-var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","medflow","highflow","dam","virtualgauge","relatedusgs","class"]
+var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","virtualgauge","relatedusgs","class"]
 
 List.forEach(function(value){
   console.log(value)
