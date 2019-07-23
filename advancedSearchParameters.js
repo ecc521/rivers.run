@@ -18,37 +18,31 @@ window.getAdvancedSearchParameters = function(filter) {
 		query: document.getElementById("writeupQuery").value
 	}
 
-	let distance = Number(document.getElementById("distanceQuery").value)
+	parameters.location = {
+		lat: document.getElementById("latitudeQuery").value,
+		lon: document.getElementById("longitudeQuery").value,
+		distance: document.getElementById("distanceQuery").value,
+		includeUnknown: document.getElementById("includeUnknownLocation").checked
+	}
 
-	let lat = document.getElementById("latitudeQuery").value
-	let lon = document.getElementById("longitudeQuery").value
-
-	//We should only be dealing with decimal degrees here. writeupmaker.html reformats other formats to deciaml.
-	lat = Number(lat)
-	lon = Number(lon)
-
-	if (!lat && (lon || distance > 0)) {
+	//Input checking. Highlight fields that fail in red.
+	if (!toDecimalDegrees(parameters.location.lat) && (toDecimalDegrees(parameters.location.lon) || Number(parameters.location.distance) > 0)) {
 		document.getElementById("latitudeQuery").style.border = "3px solid red"
 	}
-	if (!lon && (lat || distance > 0)) {
+	if (!toDecimalDegrees(parameters.location.lon) && (toDecimalDegrees(parameters.location.lat) || Number(parameters.location.distance) > 0)) {
 		document.getElementById("longitudeQuery").style.border = "3px solid red"
 	}
-	if (!(distance > 0) && (lat || lon)) {
+	if (!(Number(parameters.location.distance) > 0) && (toDecimalDegrees(parameters.location.lat) || toDecimalDegrees(parameters.location.lon))) {
 		document.getElementById("distanceQuery").style.border = "3px solid red"
 	}
 
-	if (distance > 0 && lat && lon) {
+	if (Number(parameters.location.distance) > 0 && toDecimalDegrees(parameters.location.lat) && toDecimalDegrees(parameters.location.lon)) {
 		document.getElementById("latitudeQuery").style.border = ""
 		document.getElementById("longitudeQuery").style.border = ""
 		document.getElementById("distanceQuery").style.border = ""
-
-		parameters.location = {
-			lat,
-			lon,
-			distance,
-			includeUnknown: document.getElementById("includeUnknownLocation").checked
-		}
 	}
+
+
 
 	parameters.tags = {
 		query: document.getElementById("tagsQuery").value
@@ -96,12 +90,10 @@ window.setMenuFromSearch = function(query) {
 	document.getElementById("writeupType").value = query.writeup.type
 	document.getElementById("writeupQuery").value = query.writeup.query
 
-	if (query.location) {
-		document.getElementById("distanceQuery").value = query.location.distance
-		document.getElementById("includeUnknownLocation").checked = query.location.includeUnknown
-		document.getElementById("latitudeQuery").value = query.location.lat
-		document.getElementById("longitudeQuery").value = query.location.lon
-	}
+	document.getElementById("distanceQuery").value = query.location.distance
+	document.getElementById("includeUnknownLocation").checked = query.location.includeUnknown
+	document.getElementById("latitudeQuery").value = query.location.lat
+	document.getElementById("longitudeQuery").value = query.location.lon
 
 	document.getElementById("tagsQuery").value = query.tags.query
 

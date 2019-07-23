@@ -46,7 +46,7 @@ window.River = require("./River.js").River
 
 window.sort = require("./sort.js").sort
 
-//Defines window.normalSearch and window.advanedSearch
+//Defines window.normalSearch, window.advanedSearch, and window.toDecimalDegrees
 Object.assign(window, require("./search.js"))
 
 window.usgsarray = {}

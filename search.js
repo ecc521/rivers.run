@@ -1,3 +1,30 @@
+window.toDecimalDegrees = function(coord) {
+	if (!isNaN(Number(coord))) {
+		return Number(coord) //Coordinate is already in decimal form.
+	}
+
+	let parts = coord.split(/[^\w]+/) //Split on non-alphanumeric characters.
+	console.log(parts)
+	let direction;
+	for (let i=0;i<parts.length;i++) {
+		if (["N","S","E","W"].includes(parts[i])) {
+			direction = parts[i];
+			parts.splice(i, 1)
+			break;
+		}
+	}
+	console.log(parts)
+	let degrees = Number(parts[0])
+	let minutes = Number(parts[1] || 0)
+	let seconds = Number(parts[2] || 0)
+
+	minutes += seconds/60
+	degrees += minutes/60
+
+	return degrees
+}
+
+
 let sortUtils = require("./sort.js")
 
 function normalSearch(list, query) {
@@ -183,9 +210,15 @@ let calculateDistance = require("./distance.js").lambert //Lambert formula
 
 function locationFilter(list, parameters) {
 
-    let maxDistance = parameters.distance
-    let lat1 = parameters.lat
-    let lon1 = parameters.lon
+    let maxDistance = Number(parameters.distance)
+    let lat1 = toDecimalDegrees(parameters.lat)
+    let lon1 = toDecimalDegrees(parameters.lon)
+
+    if (!(maxDistance && lat1 && lon1)) {
+        //Cancel the search.
+        //Technically we could be missing either lat1, or lon1, and eliminate some rivers. Whatever. This can be dealt with later if wanted.
+        return list
+    }
 
     //Filter out the elements that fail the test
     //Since we may be deleting elements in the list, items will be skipped if we use array.length
