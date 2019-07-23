@@ -1,6 +1,3 @@
-<h2>Notice: This may generate an invalid writeup. It has not yet been tested.</h2>
-
-
 <p>Your progress in creating this writeup is automatically saved. It will be available the next time this page is loaded, unless one of the following occours:<br>
 1. localStorage is cleared. Browsers may do this if you click "clear cache" or "clear cookies and other side data".<br>
 2. Multiple tabs of this page open at once - The tabs will overwrite each other.</p>
@@ -102,7 +99,7 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 
 <br><br><br>
 <input type="button" value="Copy Output To Clipboard" onclick="copyStringToClipboard()">
-<input type="button" value="Clear Stored Data (Everything will be blank on reload). Note that this may impact rivers.run website settings." onclick="localStorage.clear()">
+<input type="button" value="Clear All Fields" onclick="clearAllFields()">
 <textarea id="Output" readonly="" placeholder="Output Will Appear Here. Copy and Paste it into the Google Doc."rows = "25" style="width:100%"></textarea>
 <br>
 
@@ -185,6 +182,15 @@ List.forEach(function(value){
       quill.root.innerHTML = localStorage.getItem(value)
   }
 })
+
+function clearAllFields() {
+    if (confirm("Are you sure you want to clear all fields?")) {
+        List.forEach((value) => {
+            localStorage.removeItem(value)
+        })
+        window.location.reload()
+    }
+}
 
 function UpdateWriteup() {
 
