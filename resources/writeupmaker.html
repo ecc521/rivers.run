@@ -71,6 +71,8 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <br>
 <input id="class" placeholder="Class" type="text"  style="width:100%">
 <br>
+<input id="length" placeholder="Length of Section (Currently not used)" type="text"  style="width:100%">
+<br>
 <input id="averagegradient" type="text" placeholder="Average gradient (feet per mile)"  style="width:100%">
 <br>
 <input id="maxgradient" type="text" placeholder="Maximum gradient (feet per mile)"  style="width:100%">
@@ -170,7 +172,7 @@ quill.getModule("toolbar").handlers.video = function imageHandler(value) {
         quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
 }
 
-var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","virtualgauge","relatedusgs","class","averagegradient","maxgradient"]
+var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","virtualgauge","relatedusgs","class","averagegradient","maxgradient","length"]
 
 List.forEach(function(value){
   console.log(value)
