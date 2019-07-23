@@ -29,7 +29,6 @@ function searchBoxKeyPress(event) {
 	query.sort.query = "none" //Normal searches apply their own sorting. query.sort will override this.
 	setMenuFromSearch(query) //Make sure the user knows that the sort has been canceled.
 	NewList(query)
-	searchboxOnAdvancedSearch.value = searchbox.value
 }
 searchbox.addEventListener("keyup", searchBoxKeyPress)
 searchbox.addEventListener("keydown", searchBoxKeyPress) //Also function when a key is held down (most likely backspace).
@@ -88,7 +87,7 @@ async function calculateCoordinates() {
 		});
 	}
 	catch(error) {
-		let output = "Your device encountered an error when attempting to find your position." //Message for POSITION_UNAVAILABLE error.
+		let output = "Your device encountered an error when attempting to find your position. " //Message for POSITION_UNAVAILABLE error.
 		if (error.PERMISSION_DENIED) {
 			//If the error is actually permission denied, check to see if we have location permission.
 			let status = await navigator.permissions.query({name:'geolocation'})

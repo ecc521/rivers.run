@@ -64,8 +64,7 @@ window.getAdvancedSearchParameters = function(filter) {
 		includeUnknown: document.getElementById("includeUnknownSkill").checked
 	}
 
-	parameters.normalSearch = document.getElementById("searchbox").value.toLowerCase()
-
+	parameters.normalSearch = document.getElementById("searchbox").value
 
 	parameters.flow = {
 		type: "from",
@@ -88,8 +87,6 @@ window.defaultAdvancedSearchParameters = window.getAdvancedSearchParameters();
 
 
 window.setMenuFromSearch = function(query) {
-	console.log(recursiveAssign({}, query))
-	console.log(window.getAdvancedSearchParameters())
 	query = recursiveAssign(window.getAdvancedSearchParameters(), query)
 
 	document.getElementById("nameType").value = query.name.type

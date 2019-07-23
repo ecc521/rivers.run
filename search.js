@@ -1,6 +1,7 @@
 let sortUtils = require("./sort.js")
 
 function normalSearch(list, query) {
+    query = query.toLowerCase()
     let l = [[],[],[],[],[]]
     list.forEach(function(event){
         if (event.tags.toLowerCase().indexOf(query) !== -1) {
