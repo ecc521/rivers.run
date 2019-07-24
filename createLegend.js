@@ -52,7 +52,7 @@ function drawText(canvas, fontSize) {
     context.fillStyle = window.darkMode ? "white" : "black"
 
     //The fourth parameter is the maximum width of the text in pixels
-    //We use it here, but it doesn't actually come into affect.
+    //We use it here, but it takes an extremely small screen before it comes into affect.
 
     let maxWidth = canvas.width/5
 
