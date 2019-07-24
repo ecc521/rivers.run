@@ -3,6 +3,30 @@ let addGraphs = require("./addGraphs.js").addGraphs
 let {calculateColor, calculateAge, calculateDirection} = require("./flowInfoCalculations.js")
 
 
+let skillTranslations = {
+	"?": "Skill Unknown",
+	"B": "Beginner",
+	"FW": "Flat Water",
+	"N": "Novice",
+	"N+": "Novice Plus",
+	"LI-": "Low-Intermediate Minus",
+	"LI": "Low-Intermediate",
+	"LI+": "Low-Intermediate Plus",
+	"I-": "Intermediate Minus",
+	"I": "Intermediate",
+	"I+": "Intermediate Plus",
+	"HI-": "High-Intermediate Minus",
+	"HI": "High-Intermediate",
+	"HI+": "High-Intermediate Plus",
+	"A-": "Advanced Minus",
+	"A": "Advanced",
+	"A+": "Advanced Plus",
+	"E-": "Expert Minus",
+	"E": "Expert",
+	"E+": "Expert Plus"
+}
+
+
 function addHandlers(button, locate) {
 	let river = ItemHolder[locate]
 
@@ -44,7 +68,13 @@ function addHandlers(button, locate) {
 
 			div.innerHTML += river.writeup + "<br><br>"
 
-			if (river.class) {div.innerHTML += "This river is rated class " + river.class + ".<br>"}
+			if (localStorage.getItem("classOrSkill") === "class") {
+				if (river.skill && river.skill !== "?") {div.innerHTML += "This river is rated " + skillTranslations[river.skill] + ".<br>"}
+			}
+			else {
+				if (river.class) {div.innerHTML += "This river is rated class " + river.class + ".<br>"}
+			}
+
 			if (river.averagegradient) {div.innerHTML += "Average gradient: " + river.averagegradient + " feet per mile.<br>"}
 			if (river.maxgradient) {div.innerHTML += "Maximum gradient: " + river.maxgradient + " feet per mile.<br>"}
 
@@ -278,28 +308,6 @@ function River(locate, event) {
 				AddSpan(this.class || "")
 			}
 			else {
-				let translations = {
-					"?": "Skill Unknown",
-					"B": "Beginner",
-					"FW": "Flat Water",
-					"N": "Novice",
-					"N+": "Novice Plus",
-					"LI-": "Low-Intermediate Minus",
-					"LI": "Low-Intermediate",
-					"LI+": "Low-Intermediate Plus",
-					"I-": "Intermediate Minus",
-					"I": "Intermediate",
-					"I+": "Intermediate Plus",
-					"HI-": "High-Intermediate Minus",
-					"HI": "High-Intermediate",
-					"HI+": "High-Intermediate Plus",
-					"A-": "Advanced Minus",
-					"A": "Advanced",
-					"A+": "Advanced Plus",
-					"E-": "Expert Minus",
-					"E": "Expert",
-					"E+": "Expert Plus"
-				}
 				//Add a setting for the tooltips.
 				if (localStorage.getItem("skillTooltips") === "false") {
 					AddSpan(this.skill)
@@ -313,7 +321,7 @@ function River(locate, event) {
 					tooltip.className = "tooltip"
 
 					let tooltiptext = document.createElement("span")
-					tooltiptext.innerHTML = translations[this.skill]
+					tooltiptext.innerHTML = skillTranslations[this.skill]
 					tooltiptext.className = "tooltiptext"
 
 					skillSpan.style.borderBottom = "none"
