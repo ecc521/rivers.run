@@ -135,7 +135,7 @@ function updateLegend() {
     }
 
     //Smart watch mode
-    if (window.innerWidth < 250) {
+    if (window.innerWidth <= 309) {
         fontSize = (window.innerWidth * 0.032 * 1.5)
         height = 10 + fontSize*2
     }

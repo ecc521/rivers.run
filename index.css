@@ -147,7 +147,7 @@ Those include name,section,skill,quality, and flow info*/
     margin-left: 1%;
 }
 
-@media screen and (max-width:250px) {
+@media screen and (max-width:309px) {
     /*Smart watch mode.*/
     .riverspan:nth-child(1) {
         width:40%;
@@ -176,6 +176,9 @@ Those include name,section,skill,quality, and flow info*/
     }
     .riverbutton {
         flex-wrap: wrap;
+    }
+    h1 {
+        font-size: 18vw; /*Prevent the River Information text from going off the screen and making the device zoom out.*/
     }
 }
 /*End of riverspan style*/
@@ -268,7 +271,7 @@ Those include name,section,skill,quality, and flow info*/
     font-size:3.2vw;
 }
 
-@media screen and (max-width: 250px) {
+@media screen and (max-width: 309px) {
     /*Smart watch mode.*/
     .riverbutton {
         font-size:5.3vw;
