@@ -17,6 +17,14 @@
         </select>
         <p id="darkModeDefaultExplaination">Default: Use browser/os theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your browser provides a color scheme to use)</p>
 
+        <h3>Class or Skill</h3>
+        <select id="classOrSkill">
+            <option value="null">Default</option>
+            <option value="class">Class</option>
+            <option value="skill">Skill</option>
+        </select>
+        <p>Default: Skill (may change). Show class instead of skill. <strong>Sorting by class actually sorts by skill.</strong></p>
+
         <h3>Skill Explainations</h3>
         <select id="skillExplainataions">
             <option value="null">Default</option>
@@ -85,6 +93,16 @@
 				}
             })
 
+            document.getElementById("classOrSkill").addEventListener("change", function(event) {
+				//We can't just set the value to null - locaStorage would stringify it
+				if (event.target.value === "null") {
+					localStorage.removeItem("classOrSkill")
+				}
+				else {
+                	localStorage.setItem("classOrSkill", event.target.value)
+				}
+            })
+
             document.getElementById("colorBlindMode").addEventListener("change", function(event) {
 				//We can't just set the value to null - locaStorage would stringify it
 				if (event.target.value === "null") {
@@ -98,6 +116,7 @@
 
             document.getElementById("theme").value = localStorage.getItem("prefersDarkMode")
             document.getElementById("skillExplainataions").value = localStorage.getItem("skillTooltips")
+            document.getElementById("classOrSkill").value = localStorage.getItem("classOrSkill")
             document.getElementById("colorBlindMode").value = localStorage.getItem("colorBlindMode")
 
             let explaination = document.getElementById("darkModeDefaultExplaination")

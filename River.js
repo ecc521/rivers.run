@@ -274,49 +274,54 @@ function River(locate, event) {
             AddSpan(this.name)
             AddSpan(this.section)
 
-			let translations = {
-				"?": "Skill Unknown",
-				"B": "Beginner",
-				"FW": "Flat Water",
-				"N": "Novice",
-				"N+": "Novice Plus",
-				"LI-": "Low-Intermediate Minus",
-				"LI": "Low-Intermediate",
-				"LI+": "Low-Intermediate Plus",
-				"I-": "Intermediate Minus",
-				"I": "Intermediate",
-				"I+": "Intermediate Plus",
-				"HI-": "High-Intermediate Minus",
-				"HI": "High-Intermediate",
-				"HI+": "High-Intermediate Plus",
-				"A-": "Advanced Minus",
-				"A": "Advanced",
-				"A+": "Advanced Plus",
-				"E-": "Expert Minus",
-				"E": "Expert",
-				"E+": "Expert Plus"
-			}
-			//Add a setting for the tooltips.
-			if (localStorage.getItem("skillTooltips") === "false") {
-				AddSpan(this.skill)
+			if (localStorage.getItem("classOrSkill") === "class") {
+				AddSpan(this.class || "")
 			}
 			else {
-				let skillSpan = document.createElement("span")
-				skillSpan.className = "riverspan tooltip"
+				let translations = {
+					"?": "Skill Unknown",
+					"B": "Beginner",
+					"FW": "Flat Water",
+					"N": "Novice",
+					"N+": "Novice Plus",
+					"LI-": "Low-Intermediate Minus",
+					"LI": "Low-Intermediate",
+					"LI+": "Low-Intermediate Plus",
+					"I-": "Intermediate Minus",
+					"I": "Intermediate",
+					"I+": "Intermediate Plus",
+					"HI-": "High-Intermediate Minus",
+					"HI": "High-Intermediate",
+					"HI+": "High-Intermediate Plus",
+					"A-": "Advanced Minus",
+					"A": "Advanced",
+					"A+": "Advanced Plus",
+					"E-": "Expert Minus",
+					"E": "Expert",
+					"E+": "Expert Plus"
+				}
+				//Add a setting for the tooltips.
+				if (localStorage.getItem("skillTooltips") === "false") {
+					AddSpan(this.skill)
+				}
+				else {
+					let skillSpan = document.createElement("span")
+					skillSpan.className = "riverspan tooltip"
 
-				let tooltip = document.createElement("div")
-				tooltip.innerHTML = this.skill
-				tooltip.className = "tooltip"
+					let tooltip = document.createElement("div")
+					tooltip.innerHTML = this.skill
+					tooltip.className = "tooltip"
 
-				let tooltiptext = document.createElement("span")
-				tooltiptext.innerHTML = translations[this.skill]
-				tooltiptext.className = "tooltiptext"
+					let tooltiptext = document.createElement("span")
+					tooltiptext.innerHTML = translations[this.skill]
+					tooltiptext.className = "tooltiptext"
 
-				skillSpan.style.borderBottom = "none"
+					skillSpan.style.borderBottom = "none"
 
-				tooltip.appendChild(tooltiptext)
-				skillSpan.appendChild(tooltip)
-				button.appendChild(skillSpan)
+					tooltip.appendChild(tooltiptext)
+					skillSpan.appendChild(tooltip)
+					button.appendChild(skillSpan)
+				}
 			}
 
             //Star images for rating

@@ -46,8 +46,15 @@ function TopBar() {
 
         button.appendChild(NewSpan("Section"))
 
-        span = NewSpan("Skill⇅")
-        addSorting(span, "skill", false)
+
+        if (localStorage.getItem("classOrSkill") === "class") {
+            span = NewSpan("Class")
+            //TODO: How should Class be sorted?
+        }
+        else {
+            span = NewSpan("Skill⇅")
+            addSorting(span, "skill", false)
+        }
         button.appendChild(span)
 
 
