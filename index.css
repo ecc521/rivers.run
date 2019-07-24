@@ -139,12 +139,43 @@ Those include name,section,skill,quality, and flow info*/
     min-width:8%;
     max-width:8%;
 }
-/*Child #4 acts as a tooltip too. That declaration is a around 40 lines below (May change. Do a search for nth-child(4))*/
+/*Child number 4 is only displayed on larger screens.*/
 .riverspan:nth-child(4) {
+    display: none;
+}
+/*Child #5 acts as a tooltip too. That declaration is a around 40 lines below (May change. Do a search for nth-child(5))*/
+.riverspan:nth-child(5) {
 	position: relative;
 }
-.riverspan:nth-child(5) {
+.riverspan:nth-child(6) {
     margin-left: 1%;
+}
+
+@media screen and (min-width: 600px) {
+    /*Add the 4th span. Resize others so that it fits.*/
+    .riverspan:nth-child(1) {
+        width:17%;
+        min-width:17%;
+        max-width:17%;
+    }
+    .riverspan:nth-child(2) {
+        width:29%;
+        min-width:29%;
+        max-width:29%;
+    }
+    .skillspan {
+        width:5%;
+        min-width:5%;
+        max-width:5%;
+    }
+    .riverspan:nth-child(4) {
+        display: inline-block;
+    }
+    .classspan {
+        width:12%;
+        min-width:12%;
+        max-width:12%;
+    }
 }
 
 @media screen and (max-width:309px) {
@@ -164,11 +195,7 @@ Those include name,section,skill,quality, and flow info*/
         min-width:25%;
         max-width:25%;
     }
-    /*Child #4 acts as a tooltip too. That declaration is a around 40 lines below (May change. Do a search for nth-child(4))*/
-    .riverspan:nth-child(4) {
-    	position: relative;
-    }
-    .riverspan:nth-child(5) {
+    .riverspan:nth-child(6) {
         margin-left: 2%;
     }
     .emptyStars, .fullStars {

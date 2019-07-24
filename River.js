@@ -68,12 +68,16 @@ function addHandlers(button, locate) {
 
 			div.innerHTML += river.writeup + "<br><br>"
 
-			if (localStorage.getItem("classOrSkill") === "class") {
-				if (river.skill && river.skill !== "?") {div.innerHTML += "This river is rated " + skillTranslations[river.skill] + ".<br>"}
+			if (river.class && river.skill) {
+				div.innerHTML += "This river is class " + river.class + " and is rated " + skillTranslations[river.skill] + ".<br>"
 			}
-			else {
-				if (river.class) {div.innerHTML += "This river is rated class " + river.class + ".<br>"}
+			else if (river.class) {
+				div.innerHTML += "This river is rated class " + river.class + ".<br>"
 			}
+			else if (river.skill) {
+				div.innerHTML += "This river is rated " + skillTranslations[river.skill] + ".<br>"
+			}
+
 
 			if (river.averagegradient) {div.innerHTML += "Average gradient: " + river.averagegradient + " feet per mile.<br>"}
 			if (river.maxgradient) {div.innerHTML += "Maximum gradient: " + river.maxgradient + " feet per mile.<br>"}
@@ -304,24 +308,25 @@ function River(locate, event) {
             AddSpan(this.name)
             AddSpan(this.section)
 
-			if (localStorage.getItem("classOrSkill") === "class") {
-				AddSpan(this.class || "")
+			function addClassSpan(river) {
+				AddSpan(river.class || "").classList.add("classspan")
 			}
-			else {
+
+			function addSkillSpan(river) {
 				//Add a setting for the tooltips.
 				if (localStorage.getItem("skillTooltips") === "false") {
-					AddSpan(this.skill)
+					AddSpan(river.skill).classList.add("skillspan")
 				}
 				else {
 					let skillSpan = document.createElement("span")
-					skillSpan.className = "riverspan tooltip"
+					skillSpan.className = "riverspan skillspan tooltip"
 
 					let tooltip = document.createElement("div")
-					tooltip.innerHTML = this.skill
+					tooltip.innerHTML = river.skill
 					tooltip.className = "tooltip"
 
 					let tooltiptext = document.createElement("span")
-					tooltiptext.innerHTML = skillTranslations[this.skill]
+					tooltiptext.innerHTML = skillTranslations[river.skill]
 					tooltiptext.className = "tooltiptext"
 
 					skillSpan.style.borderBottom = "none"
@@ -330,6 +335,17 @@ function River(locate, event) {
 					skillSpan.appendChild(tooltip)
 					button.appendChild(skillSpan)
 				}
+			}
+
+			if (localStorage.getItem("classOrSkill") === "class") {
+				//Put class first so that it will show up if screen small.
+				addClassSpan(this)
+				addSkillSpan(this)
+			}
+			else {
+				//Put skill first so that it will show up if screen small.
+				addSkillSpan(this)
+				addClassSpan(this)
 			}
 
             //Star images for rating

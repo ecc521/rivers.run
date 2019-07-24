@@ -46,16 +46,27 @@ function TopBar() {
 
         button.appendChild(NewSpan("Section"))
 
+        function addSkillSpan() {
+            span = NewSpan("Skill⇅")
+            span.classList.add("skillspan")
+            addSorting(span, "skill", false)
+            button.appendChild(span)
+        }
+
+        function addClassSpan() {
+            span = NewSpan("Class")
+            span.classList.add("classspan")
+            button.appendChild(span)
+        }
 
         if (localStorage.getItem("classOrSkill") === "class") {
-            span = NewSpan("Class")
-            //TODO: How should Class be sorted?
+            addClassSpan() //Add the class span first so it shows up on small screens.
+            addSkillSpan()
         }
         else {
-            span = NewSpan("Skill⇅")
-            addSorting(span, "skill", false)
+            addSkillSpan() //Add the skill span first so it shows up on small screens.
+            addClassSpan()
         }
-        button.appendChild(span)
 
 
 		//The rating span needs to be the same size as the stars.

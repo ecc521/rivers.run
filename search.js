@@ -21,6 +21,8 @@ window.toDecimalDegrees = function(coord) {
 	minutes += seconds/60
 	degrees += minutes/60
 
+	if (isNaN(Number(degrees))) {throw "Coordinate " + coord + " could not be processed."} 
+
 	return degrees
 }
 
