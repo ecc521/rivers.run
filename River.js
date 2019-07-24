@@ -309,7 +309,10 @@ function River(locate, event) {
             AddSpan(this.section)
 
 			function addClassSpan(river) {
-				AddSpan(river.class || "").classList.add("classspan")
+				let riverclass = river.class || ""
+				//Put a zero width space between a parantheses and the preceeding character so that the browser knows it can split the line.
+				riverclass = riverclass.split("(").join("\u200b(")
+				AddSpan(riverclass).classList.add("classspan")
 			}
 
 			function addSkillSpan(river) {

@@ -151,7 +151,7 @@ Those include name,section,skill,quality, and flow info*/
     margin-left: 1%;
 }
 
-@media screen and (min-width: 600px) {
+@media screen and (min-width: 550px) {
     /*Add the 4th span. Resize others so that it fits.*/
     .riverspan:nth-child(1) {
         width:17%;
@@ -172,9 +172,9 @@ Those include name,section,skill,quality, and flow info*/
         display: inline-block;
     }
     .classspan {
-        width:12%;
-        min-width:12%;
-        max-width:12%;
+        width:10%;
+        min-width:10%;
+        max-width:10%;
     }
 }
 
