@@ -52,26 +52,28 @@ function drawText(canvas, fontSize) {
     context.fillStyle = window.darkMode ? "white" : "black"
 
     //The fourth parameter is the maximum width of the text in pixels
-    //rivers.run may want to use it
+    //We use it here, but it doesn't actually come into affect.
+
+    let maxWidth = canvas.width/5
 
     let height = fontSize
 
     context.font = fontSize + "px Arial"
 
     context.textAlign = "start"
-    context.fillText("Too Low", 0, height)
+    context.fillText("Too Low", 0, height, maxWidth)
 
     context.textAlign = "center"
-    context.fillText("Low Flow", canvas.width*0.28, height)
-    context.fillText("Mid Flow", canvas.width/2, height)
-    context.fillText("High Flow", canvas.width*0.72, height)
-
+    //Low Flow and High Flow confine the legend, making the range for low-high flow between 8% and 92%. Because of this, lowflow is 29% (8+84*0.25), and highflow is 71%.
+    context.fillText("Low Flow", canvas.width*0.29, height, maxWidth)
+    context.fillText("Mid Flow", canvas.width/2, height, maxWidth)
+    context.fillText("High Flow", canvas.width*0.71, height, maxWidth)
 
     //Black text on blue is near inivisible - so use white text on blue
     if (!window.darkMode) {context.fillStyle = "white"}
 
     context.textAlign = "end"
-    context.fillText("Too High", canvas.width, height, canvas.width*0.2)
+    context.fillText("Too High", canvas.width, height, maxWidth)
 
 }
 
@@ -129,6 +131,12 @@ function updateLegend() {
     }
     else {
         fontSize *= 1.4
+        height = 10 + fontSize*2
+    }
+
+    //Smart watch mode
+    if (window.innerWidth < 250) {
+        fontSize = (window.innerWidth * 0.032 * 1.5)
         height = 10 + fontSize*2
     }
 

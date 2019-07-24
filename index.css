@@ -146,6 +146,38 @@ Those include name,section,skill,quality, and flow info*/
 .riverspan:nth-child(5) {
     margin-left: 1%;
 }
+
+@media screen and (max-width:250px) {
+    /*Smart watch mode.*/
+    .riverspan:nth-child(1) {
+        width:40%;
+        min-width:40%;
+        max-width:40%;
+    }
+    .riverspan:nth-child(2) {
+        width:60%;
+        min-width:60%;
+        max-width:60%;
+    }
+    .riverspan:nth-child(3) {
+        width:25%;
+        min-width:25%;
+        max-width:25%;
+    }
+    /*Child #4 acts as a tooltip too. That declaration is a around 40 lines below (May change. Do a search for nth-child(4))*/
+    .riverspan:nth-child(4) {
+    	position: relative;
+    }
+    .riverspan:nth-child(5) {
+        margin-left: 2%;
+    }
+    .emptyStars, .fullStars {
+        font-size: 4vw;
+    }
+    .riverbutton {
+        flex-wrap: wrap;
+    }
+}
 /*End of riverspan style*/
 
 
@@ -234,6 +266,13 @@ Those include name,section,skill,quality, and flow info*/
 /*Controlling font size smoothly based on screen size*/
 .riverbutton {
     font-size:3.2vw;
+}
+
+@media screen and (max-width: 250px) {
+    /*Smart watch mode.*/
+    .riverbutton {
+        font-size:5.3vw;
+    }
 }
 
 @media screen and (min-width: 400px) {
