@@ -276,14 +276,25 @@ function River(locate, event) {
 
 			let translations = {
 				"?": "Skill Unknown",
-				"FW": "Flat Water",
 				"B": "Beginner",
+				"FW": "Flat Water",
 				"N": "Novice",
-				"LI": "Low Intermediate",
+				"N+": "Novice Plus",
+				"LI-": "Low-Intermediate Minus",
+				"LI:": "Low-Intermediate",
+				"LI+": "Low-Intermediate Plus",
+				"I-": "Intermediate Minus",
 				"I": "Intermediate",
-				"HI": "High Intermediate",
+				"I+": "Intermediate Plus",
+				"HI-": "High-Intermediate Minus",
+				"HI": "High-Intermediate",
+				"HI+": "High-Intermediate Plus",
+				"A-": "Advanced Minus",
 				"A": "Advanced",
-				"E": "Expert"
+				"A+": "Advanced Plus",
+				"E-": "Expert Minus",
+				"E": "Expert",
+				"E+": "Expert Plus"
 			}
 			//Add a setting for the tooltips.
 			if (localStorage.getItem("skillTooltips") === "false") {
