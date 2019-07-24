@@ -281,7 +281,7 @@ function River(locate, event) {
 				"N": "Novice",
 				"N+": "Novice Plus",
 				"LI-": "Low-Intermediate Minus",
-				"LI:": "Low-Intermediate",
+				"LI": "Low-Intermediate",
 				"LI+": "Low-Intermediate Plus",
 				"I-": "Intermediate Minus",
 				"I": "Intermediate",
