@@ -30,10 +30,9 @@ function searchBoxKeyPress(event) {
 	setMenuFromSearch(query) //Make sure the user knows that the sort has been canceled.
 	NewList(query)
 }
-searchbox.addEventListener("keyup", searchBoxKeyPress)
-searchbox.addEventListener("keydown", searchBoxKeyPress) //Also function when a key is held down (most likely backspace).
+searchbox.addEventListener("input", searchBoxKeyPress)
 
-searchboxOnAdvancedSearch.addEventListener("keyup", function() {
+searchboxOnAdvancedSearch.addEventListener("input", function() {
 	searchbox.value = searchboxOnAdvancedSearch.value
 	searchBoxKeyPress({}) //Pass an empty object to avoid error reading property of undefined.
 })
@@ -44,7 +43,7 @@ searchboxOnAdvancedSearch.addEventListener("keyup", function() {
 //When parameters are changed, run the search.
 let elements = document.querySelectorAll("#advanced-search-modal > .modal-content > input[type=text]")
 for (let i=0;i<elements.length;i++) {
-	elements[i].addEventListener("keyup", function() {
+	elements[i].addEventListener("input", function() {
 		//If the user presses the "Go" key (Actually an Enter/Return), unfocus the searchbox.
 		if (event.keyCode === 13) {
 			event.target.blur()
@@ -65,7 +64,7 @@ for (let i=0;i<elements.length;i++) {
 
 elements = document.querySelectorAll("#advanced-search-modal > .modal-content > #locationSearchPortion > input")
 for (let i=0;i<elements.length;i++) {
-	elements[i].addEventListener("keyup", function(){NewList()})
+	elements[i].addEventListener("input", function(){NewList()})
 }
 
 document.querySelector("#advanced-search-modal > .modal-content > #locationSearchPortion > input[type=checkbox]").addEventListener("click", function(){NewList()})
