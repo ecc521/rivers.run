@@ -47,7 +47,8 @@ const path = require("path")
 										chrome: 57, //No idea what a good minimum on this is.
 										browsers: "last 2 versions"
 									},
-									useBuiltIns: 'usage'
+									useBuiltIns: 'usage',
+									corejs: "2.6.9"
 								}]
 							]
 						}
