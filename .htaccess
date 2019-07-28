@@ -1,6 +1,3 @@
 #Apache will serve files with a different charset, and break unicode characters, unless this is set.
 
-<FilesMatch "\.(htm|html|css|js|php)$">
 AddDefaultCharset UTF-8
-DefaultLanguage en-US
-</FilesMatch>
