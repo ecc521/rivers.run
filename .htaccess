@@ -1,0 +1,2 @@
+AddCharset utf-8 *
+#Apache will serve files with a different charset, and break unicode characters, unless this is set.
