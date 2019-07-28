@@ -5,8 +5,8 @@ let {calculateColor, calculateAge, calculateDirection} = require("./flowInfoCalc
 
 let skillTranslations = {
 	"?": "Skill Unknown",
-	"B": "Beginner",
 	"FW": "Flat Water",
+	"B": "Beginner",
 	"N": "Novice",
 	"N+": "Novice Plus",
 	"LI-": "Low-Intermediate Minus",

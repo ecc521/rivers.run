@@ -54,39 +54,15 @@ function ratingsort(list, reverse) {
 }
 
 
-function skillsort(list, reverse) {    
+function skillsort(list, reverse) {
     list.sort(function(a,b) {
 
         function ToNum(value) {
 
-            switch (value.skill) {
-                case "FW":
-                    value = 1;
-                    break;
-                case "B":
-                    value = 2;
-                    break;
-                case "N":
-                    value = 3;
-                    break;
-                case "LI":
-                    value = 4;
-                    break;
-                case "I":
-                    value = 5;
-                    break;
-                case "HI":
-                    value = 6;
-                    break;
-                case "A":
-                    value = 7;
-                    break;
-                case "E":
-                    value = 8;
-                    break;
-                default:
-                    value = 9;
-            }
+            let skillList = ["FW","B","N","N+","LI-","LI","LI+","I-","I","I+","HI-","HI","HI+","A-","A","A+","E-","E","E+"]
+            value = skillList.indexOf(value.skill)
+            if (value === undefined) {value = Infinity}
+
             return value
         }
         return ToNum(a)-ToNum(b)
@@ -95,9 +71,10 @@ function skillsort(list, reverse) {
 
     if (reverse) {
         list.reverse()
-        while (list[0].skill === "?") {
-            list.push(list.shift())
-        }
+    }
+
+    while (list[0].skill === "?") {
+        list.push(list.shift())
     }
 
     return list
