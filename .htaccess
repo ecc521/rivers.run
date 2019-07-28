@@ -1,5 +1,7 @@
 
 AddDefaultCharset utf-8
 AddCharset utf-8 .htm .html .js .css
+IndexOptions Charset=UTF-8 NameWidth=*
+
 
 #Apache will serve files with a different charset, and break unicode characters, unless this is set.
