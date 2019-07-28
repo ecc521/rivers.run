@@ -1,3 +1,6 @@
 #Apache will serve files with a different charset, and break unicode characters, unless this is set.
 
-AddDefaultCharset UTF-8
+AddDefaultCharset utf-8
+AddCharset UTF-8 .html
+
+IndexOptions +Charset=UTF-8
