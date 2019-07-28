@@ -351,6 +351,8 @@ function River(locate, event) {
 				addClassSpan(this)
 			}
 
+			console.log("☆☆☆☆☆")
+
             //Star images for rating
             if (this.rating === "Error") {
 				//Make sure that the span is the correct width, but inivisble.
