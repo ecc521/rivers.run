@@ -1,7 +1,3 @@
-
-AddDefaultCharset utf-8
-AddCharset utf-8 .htm .html .js .css
-IndexOptions Charset=UTF-8 NameWidth=*
-
-
-#Apache will serve files with a different charset, and break unicode characters, unless this is set.
+#Apache was serving files with the wrong charset, breaking unicode characters.
+#Added AddDefaultCharset UTF-8 to the filename below to fix.
+#/etc/apache2/conf-enabled/charset.conf
