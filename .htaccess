@@ -7,8 +7,8 @@ SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png)$ no-brotli no-gzip
 
 SetOutputFilter DEFLATE
 #Max deflate compression level. Levels are 0-9
-DeflateCompressionLevel 9
+#DeflateCompressionLevel 9
 
 SetOutputFilter BROTLI_COMPRESS
 #Max brotli compression levels before speed totally plummets. Levels are 0-11.
-BrotliCompressionQuality 9
+#BrotliCompressionQuality 9
