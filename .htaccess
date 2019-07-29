@@ -3,8 +3,12 @@
 #Apache will serve files with a different charset, and break unicode characters, unless this is set.
 AddDefaultCharset UTF-8
 
-#Apache wasn't compressing some files
+SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png)$ no-brotli no-gzip
+
 SetOutputFilter DEFLATE
+#Max deflate compression level. Levels are 0-9
 DeflateCompressionLevel 9
 
-#TODO: Use brotli
+SetOutputFilter BROTLI_COMPRESS
+#Max brotli compression levels before speed totally plummets. Levels are 0-11.
+BrotliCompressionQuality 9
