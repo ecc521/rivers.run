@@ -21,5 +21,3 @@ SetOutputFilter DEFLATE
 #Make sure to use brotli compression level 9. Levels are 0-11, but 10 and 11 are FAR slower.
 
 #TODO: Implement http/2 server push.
-Protocols h2 h2c http/1.1
-ProtocolsHonorOrder Off
