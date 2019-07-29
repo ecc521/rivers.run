@@ -8,6 +8,6 @@ SetOutputFilter DEFLATE
 #DeflateCompressionLevel 9
 
 #TODO: Brotli doesn't appear to be working. Compression levels are resulting in not allowed here error.
-#SetOutputFilter BROTLI_COMPRESS
+SetOutputFilter BROTLI_COMPRESS
 #Max brotli compression levels before speed totally plummets. Levels are 0-11.
 #BrotliCompressionQuality 9
