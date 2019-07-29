@@ -8,7 +8,7 @@ let riverarray;
 	riverarray = window.riverarray
 }
 
-function updateCachedData() {
+async function updateCachedData() {
 	let timeToRequest = 1000*86400 //Milliseconds of time to request
 
     var sites = []
