@@ -3,8 +3,6 @@
 #Apache will serve files with a different charset, and break unicode characters, unless this is set.
 AddDefaultCharset UTF-8
 
-SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png)$ no-brotli no-gzip
-
 SetOutputFilter DEFLATE
 #Max deflate compression level. Levels are 0-9
 #DeflateCompressionLevel 9
