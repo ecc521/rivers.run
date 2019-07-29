@@ -3,14 +3,15 @@
 #Apache will serve files with a different charset, and break unicode characters, unless this is set.
 AddDefaultCharset UTF-8
 
+# Redirect HTTP connections to HTTPS
+<IfModule mod_rewrite.c>
 RewriteEngine On
-#Redirect http to https
 RewriteCond %{HTTPS} off
 RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</IfModule>
 
 #Strict transport security - force https in future.
 Header always set Strict-Transport-Security "max-age=63072000; preload; includeSubdomains" env=HTTPS
-
 
 SetOutputFilter DEFLATE
 #Max deflate compression level. Levels are 0-9
