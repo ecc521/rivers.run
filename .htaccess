@@ -1,3 +1,7 @@
 #Apache was serving files with the wrong charset, breaking unicode characters.
 #Added AddDefaultCharset UTF-8 to the filename below to fix.
 #/etc/apache2/conf-enabled/charset.conf
+
+AddOutputFilterByType DEFLATE application/json
+#Apache wasn't compressing JSON files
+#TODO: Use brotli
