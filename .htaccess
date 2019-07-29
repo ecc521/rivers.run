@@ -14,10 +14,12 @@ RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 Header always set Strict-Transport-Security "max-age=63072000; preload; includeSubdomains" env=HTTPS
 
 SetOutputFilter DEFLATE
-#Max deflate compression level. Levels are 0-9
-#DeflateCompressionLevel 9
+#TODO: Make sure to use deflate compression level 9. Levels are 0-9
 
-#TODO: Brotli doesn't appear to be working. Compression levels are resulting in not allowed here error.
+#TODO: Implement brotli compression.
 #SetOutputFilter BROTLI_COMPRESS
-#Max brotli compression levels before speed totally plummets. Levels are 0-11.
-#BrotliCompressionQuality 9
+#Make sure to use brotli compression level 9. Levels are 0-11, but 10 and 11 are FAR slower.
+
+#TODO: Implement http/2 server push.
+Protocols h2 h2c http/1.1
+ProtocolsHonorOrder Off
