@@ -3,6 +3,7 @@
 #Apache will serve files with a different charset, and break unicode characters, unless this is set.
 AddDefaultCharset UTF-8
 
-#Apache wasn't compressing JSON files
-AddOutputFilterByType DEFLATE application/json
+#Apache wasn't compressing some files
+SetOutputFilter DEFLATE
+
 #TODO: Use brotli
