@@ -13,6 +13,11 @@ RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 #Strict transport security - force https in future.
 Header always set Strict-Transport-Security "max-age=63072000; preload; includeSubdomains" env=HTTPS
 
+#Allow usgscache to be loaded by dev site and rivers.run. This is a bit too lax, but whatever.
+<FilesMatch "\.(json)$">
+Header set Access-Control-Allow-Origin *
+</FilesMatch>
+
 SetOutputFilter DEFLATE
 #TODO: Make sure to use deflate compression level 9. Levels are 0-9
 
