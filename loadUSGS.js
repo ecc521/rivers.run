@@ -68,36 +68,44 @@ let loadUSGS = async function() {
 	        }
 		}
     }
-    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
 
-    let usgsdata;
-    if (window.fetch) {
-        let response = await fetch(url)
-        usgsdata = await response.json()
-    }
-    else {
-        //For browsers that don't support fetch
-        let request = new XMLHttpRequest()
-        let response = await new Promise((resolve, reject) => {
-            request.onload = function(event) {resolve(event.target.response)};
-            request.open("GET", url);
-            request.send()
-        })
-        usgsdata = JSON.parse(response)
-    }
-
-
-	let notes = usgsdata.value.queryInfo.note
-	//Find where requestDT is located. (never seen it outside position 3)
-	for (let i=0;i<notes.length;i++) {
-		if (notes[i].title === "requestDT") {
-			window.requestTime = new Date(notes[i].value).getTime();
-			updateUSGSDataInfo()
-			break;
+	function getUSGSDataAge() {
+		let notes = usgsdata.value.queryInfo.note
+		//Find where requestDT is located. (never seen it outside position 3)
+		for (let i=0;i<notes.length;i++) {
+			if (notes[i].title === "requestDT") {
+				return new Date(notes[i].value).getTime();
+			}
 		}
 	}
-	window.updateOldDataWarning()
 
+
+	let cacheURL = "https://server.rivers.run/usgscache.json"
+    let fallbackURL = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
+
+    let response;
+    let usgsdata;
+
+	try {
+		response = await fetch(cacheURL)
+		usgsdata = await response.json()
+	}
+	catch(e) {console.error(e)}
+
+	let requestSent = new Date(response.headers.get("Date")).getTime()
+	let dataCreated = new Date(response.headers.get("Last-Modified")).getTime()
+
+	if (requestSent - dataCreated > 15*1000*60 && Date.now() - requestSent < 15*1000*60) {
+		//The cache must be down. Load from usgs.
+		//The guard checking that the request was sent within the last 15 minutes is there to prevent cases where the cache goes down, then comes back up,
+		//and this runs because the cached cache was down.
+		console.error("USGS data cache is " + (requestSent - dataCreated) + " milliseconds old.") //Use an error so that it gets sent off. Not technically an error.
+		response = await fetch(fallbackURL)
+	    usgsdata = await response.json()
+	}
+	window.requestTime = getUSGSDataAge()
+	updateUSGSDataInfo()
+	window.updateOldDataWarning()
 
     //Iterate through all known conditions
     usgsdata.value.timeSeries.forEach(function(event){

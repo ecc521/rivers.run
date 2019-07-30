@@ -14,8 +14,9 @@
 
         <meta name="referrer" content="strict-origin-when-cross-origin">
 
-        <!-- USGS Gauges Preconnect -->
-        <link rel="preconnect" href="https://waterservices.usgs.gov" crossorigin importance="high">
+        <!-- USGS Gauges Preload -->
+        <link rel="preload" href="https://server.rivers.run/usgscache.json" as="fetch" crossorigin importance="high">
+        <!--<link rel="preconnect" href="https://waterservices.usgs.gov" crossorigin importance="high">-->
 
         <!--JavaScript & CSS-->
         <link rel="preload" href="index.css" as="style" importance="high">
@@ -24,8 +25,8 @@
         <link rel="preload" href="packages/index.js" as="script" importance="high">
 
         <!-- Used in a sandboxed iframe to calculate virtual gauges. -->
-        <!-- Chrome doesn't like as="document", mostly because chrome has a bug.-->
-        <link rel="preload" href="virtualGaugeCalculator.html" as="document" importance="high">
+        <!-- Chrome doesn't like as="document", mostly because chrome has a bug. Use as="fetch" instead.-->
+        <link rel="preload" href="virtualGaugeCalculator.html" as="fetch" importance="high">
 
         <!-- Progressive Web App Manifest -->
         <link rel="manifest" href="manifest.json">

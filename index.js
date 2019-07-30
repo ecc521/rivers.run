@@ -10,7 +10,7 @@ try {
 				window.serviceWorkerMessages.push(event.data)
 				let data = event.data
 
-				if (!data.includes("waterservices.usgs.gov")) {return;}
+				if (!data.includes("waterservices.usgs.gov") && !data.includes("usgscache.json")) {return;}
 
 				window.oldLoadUSGS = window.loadNewUSGS
 
