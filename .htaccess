@@ -16,6 +16,7 @@ Header always set Strict-Transport-Security "max-age=63072000; preload; includeS
 #Allow usgscache to be loaded by dev site and rivers.run. This is a bit too lax, but whatever.
 <FilesMatch "\.(json)$">
 Header set Access-Control-Allow-Origin *
+Header set Access-Control-Expose-Headers Date
 </FilesMatch>
 
 SetOutputFilter DEFLATE
