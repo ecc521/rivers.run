@@ -1,11 +1,17 @@
 #!/usr/bin/node
 const fs = require("fs")
+const path = require("path")
 const fetch = require("node-fetch")
+
+fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
+
+//TODO: Use crontab to schedule this to run on reboot.
+//@reboot + " " + __filename
 
 let riverarray;
 {
 	let window = {}
-	eval(fs.readFileSync("./riverarray.js").toString()) //Defines window.riverarray.
+	eval(fs.readFileSync(path.join(__dirname, "riverarray.js")).toString()) //Defines window.riverarray.
 	riverarray = window.riverarray
 }
 
@@ -33,10 +39,10 @@ async function updateCachedData() {
 	let start = Date.now()
 
 	let response = await fetch(url)
-	fs.writeFileSync("./usgscache.json", await response.text())
+	fs.writeFileSync(path.join(__dirname, "usgscache.json"), await response.text())
 
 	let time = Date.now() - start
-	fs.appendFileSync('usgsloadingtime.log', time + '\n');
+	fs.appendFileSync(path.join(__dirname, 'usgsloadingtime.log'), time + '\n');
 
 	//Run whenever the minutes on the hour is a multiple of 15.
 	let currentTime = new Date()
