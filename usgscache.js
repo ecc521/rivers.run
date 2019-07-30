@@ -25,10 +25,17 @@ async function updateCachedData() {
 	        }
 		}
     }
+
+
     let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
+
+	let start = Date.now()
 
 	let response = await fetch(url)
 	fs.writeFileSync("./usgscache.json", await response.text())
+
+	let time = Date.now() - start
+	fs.appendFileSync('usgsloadingtime.log', time + '\n');
 
 	//Run whenever the minutes on the hour is a multiple of 15.
 	let currentTime = new Date()
