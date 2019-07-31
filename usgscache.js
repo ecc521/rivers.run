@@ -47,10 +47,10 @@ async function updateCachedData() {
 	//Run whenever the minutes on the hour is a multiple of 15.
 	let currentTime = new Date()
 	if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
-	else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes/15)*15)}
+	else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes()/15)*15)}
 
 	fs.appendFileSync(path.join(__dirname, 'executiontimer.log'), (currentTime.getTime() - Date.now() + 60*1000) + '\n');
-	
+
 	setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
 }
 
