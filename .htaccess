@@ -19,6 +19,35 @@ Header set Access-Control-Allow-Origin *
 Header set Access-Control-Expose-Headers Date
 </FilesMatch>
 
+
+
+#Images can be cached for 5 days. Serve up to 100 days old if errors.
+<FilesMatch "\.(png|jpeg)$">
+Header set Cache-Control "max-age=432000, public, stale-if-error=8640000"
+</FilesMatch>
+
+#Make sure the site stays up to date. 12 hour cache for javascript, html, and css, but up to 100 days old if errors.
+<FilesMatch "\.(js|css|html)$">
+Header set Cache-Control "max-age=43200, public, stale-if-error=8640000"
+</FilesMatch>
+
+#5 minute cache. Serve up to 1 day old if errors.
+<FilesMatch "usgscache.json">
+Header set Cache-Control "max-age=300, public, stale-if-error=86400"
+</FilesMatch>
+
+#1 day cache. Serve up to 100 days old if errors.
+<FilesMatch "(riverarray.js|manifest.json)">
+Header set Cache-Control "max-age=86400, public, stale-if-error=8640000"
+</FilesMatch>
+
+#3 day cache (overviews don't change much). Serve up to 100 days old if errors.
+<FilesMatch "overviews.js">
+Header set Cache-Control "max-age=259200, public, stale-if-error=8640000"
+</FilesMatch>
+
+
+
 SetOutputFilter DEFLATE
 #TODO: Make sure to use deflate compression level 9. Levels are 0-9
 
