@@ -8,8 +8,6 @@
 <br>
 <input id="relatedusgs" type="text" placeholder="Related USGS Gauges (comma seperated list)"  style="width:100%">
 <br>
-<textarea hidden id="virtualgauge" type="text" placeholder="Virtual Gauge Code"  style="width:100%"></textarea>
-<br>
 <p>You <strong>MUST</strong> put either ft, feet, or cfs after the value (ex. 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet).</p>
 <input id="minrun" type="text" placeholder="Minimum runnable water level"  style="width:100%">
 <br>
@@ -179,7 +177,7 @@ quill.getModule("toolbar").handlers.video = function imageHandler(value) {
         quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
 }
 
-var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","virtualgauge","relatedusgs","class","averagegradient","maxgradient","length"]
+var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","class","averagegradient","maxgradient","length"]
 
 List.forEach(function(value){
   console.log(value)

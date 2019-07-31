@@ -1,5 +1,4 @@
 self.usgsarray = {}
-let virtualGauges = require("./virtualGauges.js")
 
 window.updateOldDataWarning = function() {
 
@@ -61,7 +60,6 @@ let loadUSGS = async function() {
 		for (let i=0;i<values.length;i++) {
 			let usgsID = values[i]
 			if (!usgsID) {continue}
-			//Gauges used by virtual gauges should be in relatedusgs
 			//Basic value validation (throws out virtual gauges and clearly incorrect numbers.)
 	        if (usgsID.length > 7 && usgsID.length < 16 && !isNaN(Number(usgsID))) {
 	            (sites.indexOf(usgsID) === -1) && sites.push(usgsID) //Add the site if it doesn't exist in the list.
@@ -144,52 +142,32 @@ let loadUSGS = async function() {
         usgsarray[sitecode][variablecode] = obj2
     })
 
-	let virtualGaugeCalculations = [] //Calculations to wait for before dispatching usgsDataUpdated event to window.
+	//Add USGS Data to Graph
+	for (let i=0;i<ItemHolder.length;i++) {
+		let river = ItemHolder[i]
 
-    //Add USGS Data to Graph
-    for (let i=0;i<ItemHolder.length;i++) {
-        let river = ItemHolder[i]
+		//Add river data to river objects, and updates them for the new information.
 
-		//Auxillary function
-		//Adds river data to river objects, and updates them for the new information.
-
-		function updateUSGSData() {
-	            //item.create(true) will force regeneration of the button
-	            //Replace the current button so that the flow info shows
-				let replacement = river.create(true) //Create the new button and update the version in cache.
-	            let elem = document.getElementById(river.base + "1") //Get the currently displayed button (if there is one.)
-				if (elem) {
-					let expanded = river.expanded
-		            try {
-		                elem.parentNode.replaceChild(replacement, elem)
-		                //If the river was expanded before, keep it expanded
-		                if (expanded) {
-		                    replacement.dispatchEvent(new Event("click"))
-		                    replacement.dispatchEvent(new Event("click"))
-		                }
-		            }
-		            catch (e) {console.error(e)}
+		//item.create(true) will force regeneration of the button
+		//Replace the current button so that the flow info shows
+		let replacement = river.create(true) //Create the new button and update the version in cache.
+		let elem = document.getElementById(river.base + "1") //Get the currently displayed button (if there is one.)
+		if (elem) {
+			let expanded = river.expanded
+			try {
+				elem.parentNode.replaceChild(replacement, elem)
+				//If the river was expanded before, keep it expanded
+				if (expanded) {
+					replacement.dispatchEvent(new Event("click"))
+					replacement.dispatchEvent(new Event("click"))
 				}
+			}
+			catch (e) {console.error(e)}
 		}
 
-		if (river.usgs && river.usgs.toLowerCase().startsWith("virtual:")) {
-			virtualGaugeCalculations.push(virtualGauges.createVirtualGauge(river).then(updateUSGSData))
-		} //Create the virtual gauge and add it to usgsarray.
-		else {updateUSGSData()}
-    }
+	}
 
-	//Wait on virtual gauges for up to 1.2 seconds before dispatching usgsDataUpdated event.
-	let eventDispatched = false
-	Promise.all(virtualGaugeCalculations).then(() => {
-		window.dispatchEvent(new Event("usgsDataUpdated"))
-		eventDispatched = true
-
-	})
-	setTimeout(function() {
-		if (!eventDispatched) {
-			window.dispatchEvent(new Event("usgsDataUpdated"))
-		}
-	}, 1200)
+	window.dispatchEvent(new Event("usgsDataUpdated"))
 }
 
 window.addEventListener("usgsDataUpdated", function() {

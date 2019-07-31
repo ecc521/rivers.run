@@ -10,7 +10,6 @@ const path = require("path")
 	let prodConfig = {
 		mode: "production", //Build for production
 		entry: {
-			//virtualGaugeCalculator: "./virtualGaugeCalculator.js", //virtualGaugeCalculator.js is manually transfered into an inline script. Remember to change source map url.
 			index: "./index.js",
 			allPages: "./allPages.js" //Package allPages.js for browser support.
 		},
