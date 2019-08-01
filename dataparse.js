@@ -1,11 +1,5 @@
-Promise.allSettled = function(promises) {
-    let wrappedPromises = promises.map(p => Promise.resolve(p)
-        .then(
-            val => ({ state: 'fulfilled', value: val }),
-            err => ({ state: 'rejected', reason: err })));
-    return Promise.all(wrappedPromises);
-}
-
+const fs = require("fs")
+const path = require("path")
 
 const fetch = require("node-fetch")
 
@@ -24,6 +18,7 @@ const fetch = require("node-fetch")
     };
 
     async function load(url, attempts = 0) {
+        //TODO: Handle 500, internal server errors too. Google sends them somewhat commonly.
         let request = await fetch(url)
         if (request.ok) {
             return request
@@ -37,15 +32,40 @@ const fetch = require("node-fetch")
             return load(url, attempts++) //We hit the quota. Time to retry.
         }
         else {
+            console.log("Failed to load " + url)
             console.error(request)
             throw "Failed to request " + url
         }
     }
 
+    function loadFromDisk(id, lastModified = 0) {
+        let filename = path.join(__dirname, "drivecache", id)
+        //Add 5 minutes because it takes some time to download - so a file may be written to disk a minute or so after it is downloaded.
+        //This is overly cautious - a freak scenario is required, and it should only be a few seconds for this to happen.
+        if (fs.existsSync(filename) && fs.statSync(filename).mtime.getTime() > new Date(lastModified).getTime()+1000*60*5) {
+            return fs.readFileSync(filename)
+        }
+        else {return false} //The cache is old.
+    }
+
+    function writeToDisk(data, id) {
+        let directory = path.join(__dirname, "drivecache")
+        if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
+        let filename = path.join(directory, id)
+        //Avoid unneeded writes to the disk - although this may be done already.
+        if (!fs.existsSync(filename) || data !== fs.readFileSync(filename)) {
+            fs.writeFileSync(filename, data)
+        }
+    }
+
     (async function() {
 
-        async function getFilesInFolder(output, id, promises=[]) {
+        console.log("Here")
+
+        async function getFilesInFolder(id, output = [], promises=[], wasFirst = true) {
             //Use fields=* to get all fields.
+            //Do not cache directory requests - last modified dates of files inside will be wrong (folder last modified is when files last added/removed).
+
             let response = await load("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
             let obj = await response.json()
 
@@ -57,7 +77,7 @@ const fetch = require("node-fetch")
                 let file = files[i]
 
                 if (file.mimeType === "application/vnd.google-apps.folder") {
-                    promises.push(getFilesInFolder(output, file.id, promises))
+                    promises.push(getFilesInFolder(file.id, output, promises, false))
                 }
                 else if (file.mimeType === "application/vnd.google-apps.document") {
                     output.push(file)
@@ -66,46 +86,56 @@ const fetch = require("node-fetch")
                     console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
                 }
             }
-            return await Promise.allSettled(promises)
+            console.log("Hi")
+            if (wasFirst) {console.log("Hello2");await Promise.all(promises);console.log("Aaaaejgawjgiwaejgiajwegijwo");console.log(output)}
+            console.log("Howdy")
+            return output
         }
 
+        console.log("Here")
 
         let writeupFolder = "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof"
-        let files = []
-        await getFilesInFolder(files, writeupFolder)
-
-        process.exit() //Testing.
+        let files = await getFilesInFolder(writeupFolder)
+        console.log(files)
 
         await wait(1000) //Let quota refresh
 
-        self.complete = []
-        self.failed = []
+        globalThis.complete = []
+        globalThis.failed = []
 
         //TODO: Use modifiedTime to avoid loading some files.
+        console.log("Here")
 
-        async function loadText(id) {
+        async function loadText(file) {
             try {
-                let request = await load(urlcreate(id))
-                request = await request.text()
-                complete.push({id, request})
+                let request;
+                request = loadFromDisk(file.id, file.modifiedTime)
+                if (!request) {
+                    request = await load(urlcreate(file.id))
+                    request = await request.text()
+                    writeToDisk(request, file.id)
+                }
+                complete.push({id: file.id, request})
                 console.log(complete.length + " items have now been loaded successfully!")
             }
             catch(e) {
                 console.error(e)
-                failed.push({id, request})
-                console.warn("Requesting the file with a fild id of " + id + " failed. The response is below")
+                failed.push({id: file.id, request})
+                console.warn("Requesting the file with a fild id of " + file.id + " failed. The response is below")
                 console.warn(request)
             }
         }
+        console.log("Here")
 
         let promises = []
         for (let i=0;i<files.length;i++) {
-            promises.push(loadText(files[i].id))
+            promises.push(loadText(files[i]))
             await wait(1000/googlecloudrequestrate)
         }
 
-        await Promise.allSettled(promises)
+        await Promise.all(promises)
 
+        console.log("Here")
 
         for (let i=0;i<failed.length;i++) {
             console.error("Loading of file with file id of " + failed[i] + " failed.")
@@ -142,9 +172,10 @@ const fetch = require("node-fetch")
         allowed.forEach((name) => {
             console.log("There are " + complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
         })
+        console.log("Here")
 
 
         console.log(complete)
         let string = "window.riverarray = " + JSON.stringify(complete)
-
+        fs.writeFileSync(path.join(__dirname, "riverarray.js"), string)
     }())
