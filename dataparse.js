@@ -1,3 +1,11 @@
+Promise.allSettled = function(promises) {
+    let wrappedPromises = promises.map(p => Promise.resolve(p)
+        .then(
+            val => ({ state: 'fulfilled', value: val }),
+            err => ({ state: 'rejected', reason: err })));
+    return Promise.all(wrappedPromises);
+}
+
 
 const fetch = require("node-fetch")
 
@@ -15,12 +23,30 @@ const fetch = require("node-fetch")
         });
     };
 
+    async function load(url, attempts = 0) {
+        let request = await fetch(url)
+        if (request.ok) {
+            return request
+        }
+        else if (attempts > 20) {
+            console.error("Repeatedly 403'ed on " + url)
+            throw "Repeatedly 403'ed on " + url
+        }
+        else if (request.status == 403) {
+            await wait(1000/googlecloudrequestrate) //A queue should be used instead, but oh well.
+            return load(url, attempts++) //We hit the quota. Time to retry.
+        }
+        else {
+            console.error(request)
+            throw "Failed to request " + url
+        }
+    }
+
     (async function() {
 
-        //This is a bit *TOO* synchronus. All requests should be sent at once, then waited for
-        async function getFilesInFolder(output, id) {
+        async function getFilesInFolder(output, id, promises=[]) {
             //Use fields=* to get all fields.
-            let response = await fetch("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
+            let response = await load("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
             let obj = await response.json()
 
             if (obj.incompleteSearch) {console.warn("Search may have been incomplete")}
@@ -31,7 +57,7 @@ const fetch = require("node-fetch")
                 let file = files[i]
 
                 if (file.mimeType === "application/vnd.google-apps.folder") {
-                    await getFilesInFolder(output, file.id)
+                    promises.push(getFilesInFolder(output, file.id, promises))
                 }
                 else if (file.mimeType === "application/vnd.google-apps.document") {
                     output.push(file)
@@ -40,38 +66,9 @@ const fetch = require("node-fetch")
                     console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
                 }
             }
-
+            return await Promise.allSettled(promises)
         }
 
-        /*
-        //Async version.
-        //May not be resolving.
-        async function getFilesInFolder(output, id, promises=[]) {
-                    //Use fields=* to get all fields.
-                    let response = await fetch("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
-                    let obj = await response.json()
-
-                    if (obj.incompleteSearch) {console.warn("Search may have been incomplete")}
-
-                    let files = obj.files
-        console.log(obj);console.log(files);
-                    for (let i=0;i<files.length;i++) {
-                        let file = files[i]
-
-                        if (file.mimeType === "application/vnd.google-apps.folder") {
-                        await wait(100)//TODO: Create a function that retries requests when they fail.
-                            promises.push(getFilesInFolder(output, file.id, promises))
-                        }
-                        else if (file.mimeType === "application/vnd.google-apps.document") {
-                            output.push(file)
-                        }
-                        else {
-                            console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
-                        }
-                    }
-        			return await Promise.all(promises)
-                }
-        */
 
         let writeupFolder = "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof"
         let files = []
@@ -81,59 +78,39 @@ const fetch = require("node-fetch")
 
         await wait(1000) //Let quota refresh
 
-        self.retry  = []
         self.complete = []
         self.failed = []
 
-        window.load = async function(id) {
-            let request = await fetch(urlcreate(id))
-            if (request.ok) {
+        //TODO: Use modifiedTime to avoid loading some files.
+
+        async function loadText(id) {
+            try {
+                let request = await load(urlcreate(id))
                 request = await request.text()
                 complete.push({id, request})
                 console.log(complete.length + " items have now been loaded successfully!")
             }
-            else if (request.status == 403) {
-                retry.push({id, request})
-                console.log("403 error requesting the file with a file id of " + id)
-            }
-            else {
+            catch(e) {
+                console.error(e)
                 failed.push({id, request})
                 console.warn("Requesting the file with a fild id of " + id + " failed. The response is below")
                 console.warn(request)
             }
         }
 
-
-        //TODO: Use modifiedTime to avoid loading some files.
         let promises = []
         for (let i=0;i<files.length;i++) {
-            promises.push(load(files[i].id))
+            promises.push(loadText(files[i].id))
             await wait(1000/googlecloudrequestrate)
         }
 
-        for (let i=0;i<promises.length;i++) {
-            await promises[i]
-        }
-        promises = []
+        await Promise.allSettled(promises)
 
-        await wait(1000) //Let quota refresh
-
-        for (let i=0;i<retry.length;i++) {
-            promises.push(load(retry[i].id))
-            //Use 2000 instead of the 1000 it should be- I want the retries to never 403
-            await wait(2000/googlecloudrequestrate)
-        }
-
-        for (let i=0;i<promises.length;i++) {
-            await promises[i]
-        }
-        promises = []
 
         for (let i=0;i<failed.length;i++) {
             console.error("Loading of file with file id of " + failed[i] + " failed.")
         }
 
-        await wait(500) //Let requests finish
 
         let allowed = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","averagegradient","maxgradient","class"] //Property values to be included in output file
 
