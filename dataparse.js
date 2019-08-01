@@ -60,8 +60,6 @@ const fetch = require("node-fetch")
 
     (async function() {
 
-        console.log("Here")
-
         async function getFilesInFolder(id, output = [], promises=[], wasFirst = true) {
             //Use fields=* to get all fields.
             //Do not cache directory requests - last modified dates of files inside will be wrong (folder last modified is when files last added/removed).
@@ -86,13 +84,9 @@ const fetch = require("node-fetch")
                     console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
                 }
             }
-            console.log("Hi")
-            if (wasFirst) {console.log("Hello2");await Promise.all(promises);console.log("Aaaaejgawjgiwaejgiajwegijwo");console.log(output)}
-            console.log("Howdy")
+            if (wasFirst) {await Promise.all(promises)}
             return output
         }
-
-        console.log("Here")
 
         let writeupFolder = "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof"
         let files = await getFilesInFolder(writeupFolder)
@@ -104,7 +98,6 @@ const fetch = require("node-fetch")
         globalThis.failed = []
 
         //TODO: Use modifiedTime to avoid loading some files.
-        console.log("Here")
 
         async function loadText(file) {
             try {
@@ -125,7 +118,6 @@ const fetch = require("node-fetch")
                 console.warn(request)
             }
         }
-        console.log("Here")
 
         let promises = []
         for (let i=0;i<files.length;i++) {
@@ -134,8 +126,6 @@ const fetch = require("node-fetch")
         }
 
         await Promise.all(promises)
-
-        console.log("Here")
 
         for (let i=0;i<failed.length;i++) {
             console.error("Loading of file with file id of " + failed[i] + " failed.")
@@ -172,8 +162,6 @@ const fetch = require("node-fetch")
         allowed.forEach((name) => {
             console.log("There are " + complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
         })
-        console.log("Here")
-
 
         console.log(complete)
         let string = "window.riverarray = " + JSON.stringify(complete)
