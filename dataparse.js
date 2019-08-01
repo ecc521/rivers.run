@@ -43,7 +43,7 @@ const fetch = require("node-fetch")
         //Add 5 minutes because it takes some time to download - so a file may be written to disk a minute or so after it is downloaded.
         //This is overly cautious - a freak scenario is required, and it should only be a few seconds for this to happen.
         if (fs.existsSync(filename) && fs.statSync(filename).mtime.getTime() > new Date(lastModified).getTime()+1000*60*5) {
-            return fs.readFileSync(filename)
+            return fs.readFileSync(filename, "utf8")
         }
         else {return false} //The cache is old.
     }
@@ -53,7 +53,7 @@ const fetch = require("node-fetch")
         if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
         let filename = path.join(directory, id)
         //Avoid unneeded writes to the disk - although this may be done already.
-        if (!fs.existsSync(filename) || data !== fs.readFileSync(filename)) {
+        if (!fs.existsSync(filename) || data !== fs.readFileSync(filename, "utf8")) {
             fs.writeFileSync(filename, data)
         }
     }
