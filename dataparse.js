@@ -43,6 +43,36 @@ const fetch = require("node-fetch")
 
         }
 
+        /*
+        //Async version.
+        //May not be resolving.
+        async function getFilesInFolder(output, id, promises=[]) {
+                    //Use fields=* to get all fields.
+                    let response = await fetch("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
+                    let obj = await response.json()
+
+                    if (obj.incompleteSearch) {console.warn("Search may have been incomplete")}
+
+                    let files = obj.files
+        console.log(obj);console.log(files);
+                    for (let i=0;i<files.length;i++) {
+                        let file = files[i]
+
+                        if (file.mimeType === "application/vnd.google-apps.folder") {
+                        await wait(100)//TODO: Create a function that retries requests when they fail.
+                            promises.push(getFilesInFolder(output, file.id, promises))
+                        }
+                        else if (file.mimeType === "application/vnd.google-apps.document") {
+                            output.push(file)
+                        }
+                        else {
+                            console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
+                        }
+                    }
+        			return await Promise.all(promises)
+                }
+        */
+
         let writeupFolder = "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof"
         let files = []
         await getFilesInFolder(files, writeupFolder)
