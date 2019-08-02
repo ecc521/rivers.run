@@ -1,5 +1,4 @@
 self.usgsarray = {}
-
 window.updateOldDataWarning = function() {
 
 		let toDelete = document.getElementById("topOldDataWarning")
@@ -84,22 +83,43 @@ let loadUSGS = async function() {
     let response;
     let usgsdata;
 
+	async function loadData(url) {
+		if (window.fetch) {
+			response = await fetch(url)
+			usgsdata = await response.json()
+		}
+		else {
+			//For browsers that don't support fetch
+			let request = new XMLHttpRequest()
+			let response = await new Promise((resolve, reject) => {
+				request.onload = function(event) {resolve(event.target.response)};
+				request.open("GET", url);
+				request.send()
+			})
+			usgsdata = JSON.parse(response)
+		}
+	}
+
 	try {
-		response = await fetch(cacheURL)
-		usgsdata = await response.json()
+		await loadData(cacheURL)
 	}
 	catch(e) {console.error(e)}
 
-	let requestSent = new Date(response.headers.get("Date")).getTime()
-	let dataCreated = new Date(response.headers.get("Last-Modified")).getTime()
+	let requestSent;
+	let dataCreated;
+	try {
+		requestSent = new Date(response.headers.get("Date")).getTime()
+		dataCreated = new Date(response.headers.get("Last-Modified")).getTime()
+	}
+	catch (e) {} //Not all browsers support headers. This design means that the fallback will not work in them.
+
 
 	if (requestSent - dataCreated > 15*1000*60 && Date.now() - requestSent < 15*1000*60) {
 		//The cache must be down. Load from usgs.
 		//The guard checking that the request was sent within the last 15 minutes is there to prevent cases where the cache goes down, then comes back up,
 		//and this runs because the cached cache was down.
 		console.error("USGS data cache is " + (requestSent - dataCreated) + " milliseconds old.") //Use an error so that it gets sent off. Not technically an error.
-		response = await fetch(fallbackURL)
-	    usgsdata = await response.json()
+		await loadData(fallbackURL)
 	}
 	window.requestTime = getUSGSDataAge()
 	updateUSGSDataInfo()
@@ -188,3 +208,5 @@ window.addEventListener("usgsDataUpdated", function() {
 export {
 loadUSGS
 }
+
+window.loadUSGS = loadUSGS

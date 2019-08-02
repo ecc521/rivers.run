@@ -4,7 +4,7 @@ function _loadURL(url) {
 		if (navigator && navigator.sendBeacon && navigator.sendBeacon(url)) {
 			resolve(true)
 		}
-		else {
+		else if (window.fetch) {
 			fetch(url, {mode: "no-cors"}).catch((e) => {
 				console.warn(e) //Something didn't work out. Calling console.error causes another error to be reported, so
 				//if this fails due to internet, we end up in an infinite loop.
@@ -14,9 +14,27 @@ function _loadURL(url) {
 					resolve(true)
 				}
 				else {
-				    resolve(false)
+					resolve(false)
 				}
 			})
+		}
+		else {
+			//For browsers that don't support fetch
+			//I have no way to actually assure that the request went through using
+			//XMLHttpRequest, and merely assume that it went through if anything happens
+
+			//Since browsers that support serviceWorker also support fetch, don't bother checking
+			//that the user is online or trying to bypass cache/serviceWorker
+
+			let request = new XMLHttpRequest()
+			request.onload = function(event) {
+				resolve(true)
+			};
+			request.onerror = function(event) {
+				resolve(true)
+			};
+			request.open("GET", url);
+			request.send()
 		}
 	})
 }
