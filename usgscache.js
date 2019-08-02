@@ -1,12 +1,24 @@
 #!/usr/bin/node
+
+//Use crontab @reboot to make this file run on reboots.
+
+//Loads the latest USGS data and writes it to usgscache.json every 15 minutes.
+//TODO: Calculate virtual gauges here. Reccomend Pitboss npm module for sandboxing.
+//Also runs dataparse.js periodically to update the data on rivers.run.
+
 const fs = require("fs")
 const path = require("path")
 const fetch = require("node-fetch")
 
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
 
-//TODO: Use crontab to schedule this to run on reboot.
-//@reboot + " " + __filename
+
+//Every 24 hours, run dataparse.js to keep the data on rivers.run current.
+setInterval(function() {
+	require("./dataparse.js")
+}, 1000*60*60*24)
+
+
 
 let riverarray;
 {
