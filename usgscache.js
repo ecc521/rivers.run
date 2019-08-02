@@ -13,7 +13,8 @@ const fetch = require("node-fetch")
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
 
 
-//Every 24 hours, run dataparse.js to keep the data on rivers.run current.
+//On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
+require("./dataparse.js") //
 setInterval(function() {
 	require("./dataparse.js")
 }, 1000*60*60*24)
