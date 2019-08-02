@@ -150,11 +150,33 @@ self.addEventListener("fetch", fetchHandler)
 
 
 
-//TODO: Consider showing only the river being talked about.
-function notificationHandler(event) {
-    let url = rebaseURL(""); //URL to River Info page.
-    event.notification.close(); //Android needs explicit close.
-    event.waitUntil(clients.openWindow(url)) //Open the specified url.
+function pushHandler(event) {
+    console.log(event)
+    var data = {};
+    if (event.data) {
+      data = event.data.json();
+    }
+    let title = data.title || "Something Has Happened";
+    let body = data.body || "Here's something you might want to check out.";
+
+    var notification = new Notification(title, {
+      icon: "resources/icons/192x192-Water-Drop.png",
+      body,
+      badge: "resources/icons/32x32-Water-Drop.png",
+      sound: 'resources/waterfall.mp3',
+      requireInteraction: true, //Don't auto-close the notification.
+      //renotify: //If tag value is reused, should the user be notified again?
+      //tag: '',
+    });
+
+    notification.addEventListener('click', function() {
+      //TODO: Consider showing only the river(s) being talked about.
+      if (clients.openWindow) {
+          let url = rebaseURL(""); //URL to River Info page.
+          event.notification.close(); //Android needs explicit close.
+          clients.openWindow(url) //Open the specified url.
+      }
+  });
 }
 
-self.addEventListener('notificationclick', notificationHandler);
+self.addEventListener('push', pushHandler)

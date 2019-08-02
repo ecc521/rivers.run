@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.4.3",
-    "@webcomponents/custom-elements": "^1.2.4"
+    "@webcomponents/custom-elements": "^1.2.4",
+    "web-push": "^3.3.5"
   }
 }

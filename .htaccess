@@ -20,6 +20,9 @@ Header set Access-Control-Expose-Headers Date
 </FilesMatch>
 
 
+#Block all access to data directory.
+RedirectMatch 403 ^/data/.*$
+
 
 #Images can be cached for 5 days. Serve up to 100 days old if errors.
 <FilesMatch "\.(png|jpeg)$">

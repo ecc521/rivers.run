@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    </head>
+    <body>
+
+        <p>
+            Don't expect this page to do anything useful... Yet.<br>
+            In the future, it will be used to send you notifications when rivers that you select become runnable.
+        </p>
+
+        <p id="notificationPermission"></p>
+
+        <p id="notificationsStatus"></p>
+        <button id="subscribe">Enable Notifications</button>
+        <button id="unsubscribe">Disable Notifications</button>
+
+        <script src="packages/allPages.js"></script>
+        <script>
+        (async function() {
+
+            let notificationPermission = await navigator.permissions.query({name:"notifications"})
+            function updatePermissionNotice() {
+                if (notificationPermission.state === "denied") {
+                    document.getElementById("notificationPermission").style.display = "block"
+                    document.getElementById("notificationPermission").innerHTML = "You denied rivers.run notifications permission. You will need to change this in site settings."
+                }
+                else {
+                    //If the permission state is either granted or prompt, don't bother the user.
+                    document.getElementById("notificationPermission").style.display = "none"
+                }
+            }
+            updatePermissionNotice()
+            notificationPermission.onchange = updatePermissionNotice
+
+
+
+            async function updateSubscriptionStatus() {
+                //TODO: Handle the scenario where the public key has changed.
+                if (await sw.pushManager.getSubscription() === null) {
+                    document.getElementById("notificationsStatus").innerHTML = "All notifications are currently disabled."
+                }
+                else {
+                    document.getElementById("notificationsStatus").innerHTML = "Notifications are currently enabled."
+                }
+            }
+            updateSubscriptionStatus()
+
+
+
+            window.sw = await navigator.serviceWorker.ready
+
+            document.getElementById("unsubscribe").addEventListener("click", async function() {
+                if (confirm("Are you sure that you no longer want to receive notifications when rivers become runnable?")) {
+                    try {
+                        await sw.pushManager.unsubscribe()
+                        alert("Unsubscribed from all river notifications")
+                    }
+                    catch (e) {
+                        alert("Failed to unsubscribe from river notifications. Error message: \n\n" + e)
+                    }
+                    updateSubscriptionStatus()
+                }
+            })
+
+
+            //Used to convert base64 vapidKey to Uint8Array.
+            function urlBase64ToUint8Array(base64String) {
+              const padding = '='.repeat((4 - base64String.length % 4) % 4);
+              const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+
+              const rawData = window.atob(base64);
+              const outputArray = new Uint8Array(rawData.length);
+
+              for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+              }
+              return outputArray;
+            }
+
+
+            document.getElementById("subscribe").addEventListener("click", async function() {
+                try {
+                    await Notification.requestPermission()
+                    //Load the public key.
+                    let vapidKey = await fetch("public_key")
+                    vapidKey = await vapidKey.text()
+                    vapidKey = urlBase64ToUint8Array(vapidKey)
+                    await sw.pushManager.subscribe({
+                        userVisibleOnly: true, //Chrome requires this to be set to true.
+                        applicationServerKey: vapidKey
+                    })
+                }
+                catch (e) {
+                    alert("Failed to subscribe to river notifications. Error message: \n\n" + e)
+                }
+                updateSubscriptionStatus()
+            })
+
+
+
+        }());
+        </script>
+    </body>
+</html>
