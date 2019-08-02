@@ -4,10 +4,7 @@
     </head>
     <body>
 
-        <p>
-            Don't expect this page to do anything useful... Yet.<br>
-            In the future, it will be used to send you notifications when rivers that you select become runnable.
-        </p>
+        <h1>River notifications</h1>
 
         <p id="notificationPermission"></p>
 
@@ -18,6 +15,8 @@
         <script src="packages/allPages.js"></script>
         <script>
         (async function() {
+
+            window.sw = await navigator.serviceWorker.ready
 
             let notificationPermission = await navigator.permissions.query({name:"notifications"})
             function updatePermissionNotice() {
@@ -36,7 +35,7 @@
 
 
             async function updateSubscriptionStatus() {
-                //TODO: Handle the scenario where the public key has changed.
+                //TODO: Handle the scenario where the public key has changed. This will need code changes in other places too.
                 if (await sw.pushManager.getSubscription() === null) {
                     document.getElementById("notificationsStatus").innerHTML = "All notifications are currently disabled."
                 }
@@ -48,12 +47,14 @@
 
 
 
-            window.sw = await navigator.serviceWorker.ready
-
             document.getElementById("unsubscribe").addEventListener("click", async function() {
-                if (confirm("Are you sure that you no longer want to receive notifications when rivers become runnable?")) {
+                if (await sw.pushManager.getSubscription() === null) {
+                    alert("You are not subscribed to notifications")
+                }
+                else if (confirm("Are you sure that you no longer want to receive notifications when rivers become runnable?")) {
                     try {
-                        await sw.pushManager.unsubscribe()
+                        let subscription = await sw.pushManager.getSubscription()
+                        await subscription.unsubscribe()
                         alert("Unsubscribed from all river notifications")
                     }
                     catch (e) {
@@ -82,6 +83,10 @@
 
 
             document.getElementById("subscribe").addEventListener("click", async function() {
+                if (await sw.pushManager.getSubscription() !== null) {
+                    alert("You are already subscribed to notifications")
+                    return;
+                }
                 try {
                     await Notification.requestPermission()
                     //Load the public key.
