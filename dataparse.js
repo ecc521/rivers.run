@@ -106,6 +106,7 @@ const fetch = require("node-fetch")
                 if (!request) {
                     request = await load(urlcreate(file.id))
                     request = await request.text()
+                    await wait(1000/googlecloudrequestrate)
                     writeToDisk(request, file.id)
                 }
                 complete.push({id: file.id, request})
@@ -122,7 +123,6 @@ const fetch = require("node-fetch")
         let promises = []
         for (let i=0;i<files.length;i++) {
             promises.push(loadText(files[i]))
-            await wait(1000/googlecloudrequestrate)
         }
 
         await Promise.all(promises)
