@@ -140,21 +140,23 @@ const fetch = require("node-fetch")
             obj.id = complete[i].id
             for (let i=0;i<item.length;i++) {
                 let prop = item[i]
-                let name = prop.slice(0,prop.indexOf(":"))
-                name = name.toLowerCase()
-                let value = prop.slice(prop.indexOf(":") + 1)
+                let name = prop.slice(0,prop.indexOf(":")).trim().toLowerCase()
+                let value = prop.slice(prop.indexOf(":") + 1).trim()
 
-                //Google Docs adds \r terminators to the end
-                if (value.endsWith("\r")) {
-                    value = value.slice(0,-1)
-                }
-                value = value.trim()
+                obj[name] = value
 
-                let keepnames = ["name", "section", "tags", "writeup"] //Some need to be defined in file, even if empty
-                if (allowed.includes(name) && (String(value).length !== 0 || keepnames.includes(name))) {
-                    obj[name] = value
+                if (!allowed.includes(name)) {
+                    delete obj[name]
                 }
             }
+
+            //Some properties need to be defined in file, even if blank.
+            ["name", "section", "tags", "writeup"].forEach((prop) => {
+                if (!obj[prop]) {
+                    obj[prop] = ""
+                }
+            })
+
             console.log(complete[i].id + ": " + obj.name + " " + obj.section)
             complete[i] = obj
         }
@@ -163,7 +165,6 @@ const fetch = require("node-fetch")
             console.log("There are " + complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
         })
 
-        console.log(complete)
         let string = "window.riverarray = " + JSON.stringify(complete)
         fs.writeFileSync(path.join(__dirname, "riverarray.js"), string)
     }())
