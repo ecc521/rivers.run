@@ -23,8 +23,15 @@
         <style>
         .row {
             padding:8px;
-            background-color: #999999;
+            background-color: #bbbbbb;
         }
+        .row:nth-child(odd) {
+            background-color: #cccccc;
+        }
+        .row:first-child {
+            background-color:lightgreen;
+        }
+
         .gaugeColumn {
             min-width:20%;
             width:20%;
@@ -55,7 +62,23 @@
             max-width:20%;
             cursor:pointer;
         }
-        @media (prefers-color-scheme: dark) {}
+
+        @media (prefers-color-scheme: dark) {
+            html, body {
+                background-color: black;
+                color: white;
+            }
+            .row {
+                background-color: #555555;
+            }
+            .row:nth-child(odd) {
+                background-color: #666666;
+            }
+            .row:first-child {
+                background-color:darkgreen;
+            }
+        }
+
         </style>
 
         <script src="packages/allPages.js"></script>
