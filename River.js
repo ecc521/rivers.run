@@ -142,10 +142,10 @@ function addHandlers(button, locate) {
 				let low = document.createElement("input")
 				low.type = "text"
 				low.placeholder = "Minimum"
-				low.value = current.minimum || ""
+				low.value = (current && current.minimum) || ""
 				let high = document.createElement("input")
 				high.placeholder = "Maximum"
-				high.value = current.maximum || ""
+				high.value = (current && current.maximum) || ""
 				high.type = "text"
 				let save = document.createElement("button")
 				save.innerHTML = "Save"
