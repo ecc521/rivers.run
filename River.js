@@ -124,6 +124,109 @@ function addHandlers(button, locate) {
             }
 
 
+			function addNotificationsSelector() {
+				//As of now, we will only use river names, not sections. Causes some overlap, but sections may change, not the name.
+				let data = {}
+
+				let existing = JSON.parse(localStorage.getItem("flownotifications") || "{}")
+				let current = existing[river.usgs]
+				if (current) {
+					current = current[river.name]
+				}
+
+
+
+				//Add the notification selector.
+				let description = document.createElement("p")
+				description.innerHTML = "Receive notifications when this river gauge is between a designated minimum and maximum.<br>"
+				let low = document.createElement("input")
+				low.type = "text"
+				low.placeholder = "Minimum"
+				low.value = current.minimum || ""
+				let high = document.createElement("input")
+				high.placeholder = "Maximum"
+				high.value = current.maximum || ""
+				high.type = "text"
+				let save = document.createElement("button")
+				save.innerHTML = "Save"
+
+				save.addEventListener("click", function() {
+					data.minimum = low.value
+					data.maximum = high.value
+
+					let lowStr = low.value.trim()
+			        let lowValue = parseFloat(lowStr)
+			        let lowType = lowStr.match(/[^\d|.]+/) //Match a series of non-digits
+
+			        if (lowType) {
+			            lowType = lowType[0].trim().toLowerCase() //Use the first match
+			        }
+
+					let highStr = high.value.trim()
+					let highValue = parseFloat(highStr)
+					let highType = highStr.match(/[^\d|.]+/) //Match a series of non-digits
+
+					if (highType) {
+						highType = highType[0].trim().toLowerCase() //Use the first match
+					}
+
+					//Rather extreme data validation...
+					if (!lowType) {
+						alert("Minimum must be either feet or cfs. Ex. 300cfs or 2.37ft")
+						return
+					}
+					if (!highType) {
+						alert("Maximum must be either feet or cfs. Ex. 5000cfs or 6.2ft")
+						return
+					}
+
+					if (highType !== lowType) {
+						alert("Minimum and maximum must have the same extension")
+						return;
+					}
+
+					if (isNaN(lowValue)) {
+						alert("Minimum must contain a number. (ex. 3000cfs)")
+						return
+					}
+
+					if (isNaN(highValue)) {
+						alert("Maximum must contain a number. (ex. 3000cfs)")
+						return
+					}
+
+					if (lowType !== "ft" && lowType !== "cfs" && lowType !== "feet") {
+						alert("Minimum must have an extension of either ft, cfs, or feet.")
+					}
+
+					if (highType !== "ft" && highType !== "cfs" && highType !== "feet") {
+						alert("Maximum must have an extension of either ft, cfs, or feet.")
+					}
+
+					existing[river.usgs] = existing[river.usgs] || {}
+					existing[river.usgs][river.name] = data
+
+					localStorage.setItem("flownotifications", JSON.stringify(existing))
+
+					window.open("notifications.html")
+				})
+
+				let manage = document.createElement("button")
+				manage.innerHTML = "Manage Notifications"
+				manage.addEventListener("click", function() {
+					window.open("notifications.html")
+				})
+
+				let container = document.createElement("div")
+				container.appendChild(description)
+				container.appendChild(low)
+				container.appendChild(high)
+				container.appendChild(save)
+				container.appendChild(manage)
+				div.appendChild(container)
+			}
+
+
             if (river.usgs) {
                 //Adding to div.innerHTML works, but logs CSP errors
                 div.appendChild(document.createElement("br"))
@@ -133,6 +236,8 @@ function addHandlers(button, locate) {
                 link.href = "https://waterdata.usgs.gov/nwis/uv?site_no=" + river.usgs
                 link.innerHTML = "View flow information on USGS"
                 div.appendChild(link)
+
+				addNotificationsSelector() //TODO: Do this above every gauge, not just the main gauge.
             }
 
 

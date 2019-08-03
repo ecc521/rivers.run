@@ -6,6 +6,9 @@
 
         <h1>River notifications</h1>
 
+        <p>WARNING: River notifications are extremely expiramental. Please note that browser support is somewhat limited. </p>
+        
+
         <p id="notificationPermission"></p>
 
         <p id="notificationsStatus"></p>
@@ -32,6 +35,16 @@
             updatePermissionNotice()
             notificationPermission.onchange = updatePermissionNotice
 
+
+            async function syncWithServer() {
+                await fetch("https://rivers.run/node", {
+                    method: "POST",
+                    body:JSON.stringify({
+                        subscription,
+                        //TODO: Add an array of rivers and levels here.
+                    })
+                })
+            }
 
 
             async function updateSubscriptionStatus() {
@@ -93,7 +106,7 @@
                     let vapidKey = await fetch("public_key")
                     vapidKey = await vapidKey.text()
                     vapidKey = urlBase64ToUint8Array(vapidKey)
-                    await sw.pushManager.subscribe({
+                    let subscription = await sw.pushManager.subscribe({
                         userVisibleOnly: true, //Chrome requires this to be set to true.
                         applicationServerKey: vapidKey
                     })
