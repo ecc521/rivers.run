@@ -26,3 +26,19 @@ webpush.setVapidDetails(
   vapidKeys.publicKey,
   vapidKeys.privateKey
 )
+
+
+const hostname = "0.0.0.0"
+const httpport = 3000
+
+function httprequest(req,res) {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
+  res.end('Hello World\n');
+}
+
+const httpserver = http.createServer(httprequest);
+
+httpserver.listen(httpport, hostname, () => {
+  console.log(`Server running at http://${hostname}:${httpport}/`);
+});

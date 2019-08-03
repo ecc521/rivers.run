@@ -23,6 +23,10 @@ Header set Access-Control-Expose-Headers Date
 #Block all access to data directory.
 RedirectMatch 403 ^/data/.*$
 
+#Proxy /node to localhost at port 3000
+ProxyPass /node http://127.0.0.1:3000/node
+ProxyPassReverse /node http://127.0.0.1:3000/node
+
 
 #Images can be cached for 5 days. Serve up to 100 days old if errors.
 <FilesMatch "\.(png|jpeg)$">
