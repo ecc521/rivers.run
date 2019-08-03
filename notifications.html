@@ -7,7 +7,7 @@
         <h1>River notifications</h1>
 
         <p>WARNING: River notifications are extremely expiramental. Please note that browser support is somewhat limited. </p>
-        
+
 
         <p id="notificationPermission"></p>
 
@@ -15,9 +15,89 @@
         <button id="subscribe">Enable Notifications</button>
         <button id="unsubscribe">Disable Notifications</button>
 
+        <p>If notifications are enabled, here are the ones you will see:</p>
+        <div id="currentSelections">
+            <div class="row">
+                <span class="gaugeColumn">Gauge</span>
+                <span class="nameColumn">River Name</span>
+                <span class="minColumn">Minimum</span>
+                <span class="maxColumn">Maximum</span>
+            </div>
+        </div>
+
+        <!-- Consider adding a gauge name column. -->
+
+        <style>
+        .row {
+            padding:8px;
+            background-color: #999999;
+        }
+        .gaugeColumn {
+            width:20%;
+            display: inline-block;
+        }
+        .nameColumn {
+            width:20%;
+            display: inline-block;
+        }
+        .minColumn {
+            width:20%;
+            display: inline-block;
+        }
+        .maxColumn {
+            width:20%;
+            display: inline-block;
+        }
+        @media (prefers-color-scheme: dark) {}
+        </style>
+
         <script src="packages/allPages.js"></script>
         <script>
-        (async function() {
+
+        function redrawRows() {
+            //Clear the current list.
+            let list = document.getElementById("currentSelections")
+            let rows = list.children
+            //The first child element is the header. Start at position 1.
+            for (let i=1;i<rows.length;i++) {
+                rows[i].remove()
+            }
+
+            let selections = JSON.parse(localStorage.getItem("flownotifications") || "{}")
+
+            for (let gauge in selections) {
+                for (let name in selections[gauge]) {
+
+                    let row = document.createElement("div")
+                    row.className = "row"
+
+                    let gaugeColumn = document.createElement("span")
+                    gaugeColumn.className = "gaugeColumn"
+                    gaugeColumn.innerHTML = gauge
+                    row.appendChild(gaugeColumn)
+
+                    let nameColumn = document.createElement("nameColumn")
+                    nameColumn.className = "nameColumn"
+                    nameColumn.innerHTML = name
+                    row.appendChild(nameColumn)
+
+                    let minColumn = document.createElement("minColumn")
+                    minColumn.className = "minColumn"
+                    minColumn.innerHTML = selections[gauge][name].minimum
+                    row.appendChild(minColumn)
+
+                    let maxColumn = document.createElement("maxColumn")
+                    maxColumn.className = "maxColumn"
+                    minColumn.innerHTML = selections[gauge][name].maximum
+                    row.appendChild(maxColumn)
+
+                    list.appendChild(row)
+                }
+            }
+        }
+        redrawRows()
+
+        ;(async function() {
 
             window.sw = await navigator.serviceWorker.ready
 
@@ -41,7 +121,7 @@
                     method: "POST",
                     body:JSON.stringify({
                         subscription,
-                        //TODO: Add an array of rivers and levels here.
+                        parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}")
                     })
                 })
             }
