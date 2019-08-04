@@ -158,14 +158,26 @@ function addHandlers(button, locate) {
 				high.style.width = "100px"
 				high.value = (current && current.maximum) || ""
 				high.type = "text"
+				let units = document.createElement("select")
+				units.style.fontSize = "16px"
+				let blank = document.createElement("option")
+				blank.selected = true
+				blank.value = ""
+				blank.innerHTML = "Units"
+				units.appendChild(blank)
+				let feet = document.createElement("option")
+				feet.value = "ft"
+				feet.innerHTML = "Feet"
+				units.appendChild(feet)
+				let cfs = document.createElement("option")
+				cfs.value = "cfs"
+				cfs.innerHTML = "CFS"
+				units.appendChild(cfs)
 				let save = document.createElement("button")
 				save.style.fontSize = "16px"
 				save.innerHTML = "Save"
 
 				save.addEventListener("click", function() {
-					data.minimum = low.value
-					data.maximum = high.value
-
 					let lowStr = low.value.trim()
 			        let lowValue = parseFloat(lowStr)
 			        let lowType = lowStr.match(/[^\d|.]+/) //Match a series of non-digits
@@ -182,37 +194,41 @@ function addHandlers(button, locate) {
 						highType = highType[0].trim().toLowerCase() //Use the first match
 					}
 
-					//Rather extreme data validation...
-					if (!lowType) {
-						alert("Minimum must be either feet or cfs. Make sure to put the extension. Ex. 300cfs or 2.37ft")
-						return
-					}
-					if (!highType) {
-						alert("Maximum must be either feet or cfs. Make sure to put the extension. Ex. 5000cfs or 6.2ft")
-						return
+					if (lowType === "feet") {lowType = "ft"}
+					if (highType === "feet") {highType = "ft"}
+
+					if (lowType === highType && !units.value) {
+						if (highType === "ft") {
+							units.value = "ft"
+						}
+						if (highType === "cfs") {
+							units.value = "cfs"
+						}
 					}
 
-					if (highType !== lowType) {
-						alert("Minimum and maximum must have the same extension")
+					if (units.value && ((highType && highType !== units.value) || (lowType && lowType !== units.value))) {
+						//If the units in the box do not match units.value, alert the user.
+						alert("You have put units into the fields that do not match the selected units.")
 						return;
 					}
 
+					data.minimum = lowValue
+					data.maximum = highValue
+					data.units = units.value
+
 					if (isNaN(lowValue)) {
-						alert("Minimum must contain a number. (ex. 3000cfs)")
+						alert("Minimum must be a number. Ex: 2.37, 3000")
 						return
 					}
 
 					if (isNaN(highValue)) {
-						alert("Maximum must contain a number. (ex. 3000cfs)")
+						alert("Maximum must be a number. Ex: 2.37, 3000")
 						return
 					}
 
-					if (lowType !== "ft" && lowType !== "cfs" && lowType !== "feet") {
-						alert("Minimum must have an extension of either ft, cfs, or feet.")
-					}
-
-					if (highType !== "ft" && highType !== "cfs" && highType !== "feet") {
-						alert("Maximum must have an extension of either ft, cfs, or feet.")
+					if (!units.value) {
+						alert("Please specify whether feet or cfs should be used.")
+						return;
 					}
 
 					resyncData() //Make sure we don't restore rivers that were removed while this river was open.
@@ -236,6 +252,7 @@ function addHandlers(button, locate) {
 				container.appendChild(description)
 				container.appendChild(low)
 				container.appendChild(high)
+				container.appendChild(units)
 				container.appendChild(save)
 				container.appendChild(manage)
 				div.appendChild(container)

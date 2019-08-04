@@ -96,6 +96,7 @@
         currentSelections.firstChild.innerHTML += '<span class="nameColumn">River Name</span>'
         currentSelections.firstChild.innerHTML += '<span class="minColumn">Minimum</span>'
         currentSelections.firstChild.innerHTML += '<span class="maxColumn">Maximum</span>'
+        currentSelections.firstChild.innerHTML += '<span class="deleteButton">Delete</span>'
 
 
         function redrawRows() {
@@ -126,12 +127,12 @@
 
                     let minColumn = document.createElement("span")
                     minColumn.className = "minColumn"
-                    minColumn.innerHTML = selections[gauge][name].minimum
+                    minColumn.innerHTML = selections[gauge][name].minimum + selections[gauge][name].units
                     row.appendChild(minColumn)
 
                     let maxColumn = document.createElement("span")
                     maxColumn.className = "maxColumn"
-                    maxColumn.innerHTML = selections[gauge][name].maximum
+                    maxColumn.innerHTML = selections[gauge][name].maximum + selections[gauge][name].units
                     row.appendChild(maxColumn)
 
                     let deleteButton = document.createElement("span")
