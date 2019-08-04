@@ -355,6 +355,7 @@ function addHandlers(button, locate) {
 				river.usgs && addUSGSGraphs(river.usgs)
 				if (river.relatedusgs) {
 					for (let i=0;i<river.relatedusgs.length;i++) {
+						if (river.relatedusgs[i] === "") {continue;}
 						addUSGSGraphs(river.relatedusgs[i], true)
 					}
 				}
