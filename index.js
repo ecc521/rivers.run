@@ -16,7 +16,7 @@ try {
 
 				if (data.includes("Updated cache for")) {
 					console.log("Updating")
-					require("./loadUSGS.js").loadUSGS() //Update the information
+					require("./loadUSGS.js").loadUSGS(true) //Update the information. true says to use cache.
 				}
 				else if (data.includes("errored. Using cache")) {
 					window.loadNewUSGS = "Unable to load latest data"

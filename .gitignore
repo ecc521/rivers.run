@@ -2,3 +2,5 @@ CNAME
 node_modules
 drivecache
 data
+public_key
+usgscache.json
