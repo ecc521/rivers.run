@@ -148,10 +148,14 @@ function addHandlers(button, locate) {
 				low.type = "text"
 				low.placeholder = "Minimum"
 				low.style.fontSize = "16px"
+				low.style.fontWeight = "bold"
+				low.style.width = "80px"
 				low.value = (current && current.minimum) || ""
 				let high = document.createElement("input")
 				high.placeholder = "Maximum"
 				high.style.fontSize = "16px"
+				high.style.fontWeight = "bold"
+				high.style.width = "100px"
 				high.value = (current && current.maximum) || ""
 				high.type = "text"
 				let save = document.createElement("button")
