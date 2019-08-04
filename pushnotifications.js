@@ -1,6 +1,7 @@
 const webpush = require('web-push');
 const fs = require("fs")
 const path = require("path")
+const http = require("http")
 
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
@@ -31,10 +32,35 @@ webpush.setVapidDetails(
 const hostname = "0.0.0.0"
 const httpport = 3000
 
-function httprequest(req,res) {
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'text/plain');
-  res.end('Hello World\n');
+
+function saveUserSubscription() {
+
+}
+
+
+async function httprequest(req,res) {
+	if (req.method !== "POST") {
+		console.log("Post request only. Rejected.")
+		res.statusCode = 403;
+	    res.setHeader('Content-Type', 'text/plain');
+	    res.end('Only post requests are permitted.\n');
+	}
+	else {
+		let data = await new Promise((resolve, reject) => {
+			let body = ""
+			req.on("data", function(chunk) {
+				body += chunk.toString()
+			})
+			req.on("end", function() {
+				resolve(body)
+			})
+		})
+
+		data = JSON.parse(data)
+		//data.subscription contains the details needed to send push notifications.
+		//data.parameters contains the conditions under which to send notifications.
+
+	}
 }
 
 const httpserver = http.createServer(httprequest);
