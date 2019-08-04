@@ -185,12 +185,22 @@
                 await fetch("https://rivers.run/node", {
                     method: "POST",
                     body:JSON.stringify({
-                        subscription,
+                        subscription: await sw.pushManager.getSubscription(),
                         parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}")
                     })
                 })
             }
 
+            //URL is the unique url push notifications are received from.
+            //This can be used to recover lost data if localStorage is cleared, or to sync between devices.
+            async function getSubscriptionFromURL(url) {
+                await fetch("https://rivers.run/node", {
+                    method: "POST",
+                    body:JSON.stringify({
+                        getSubscriptionFromURL: url
+                    })
+                })
+            }
 
             async function updateSubscriptionStatus() {
                 //TODO: Handle the scenario where the public key has changed. This will need code changes in other places too.

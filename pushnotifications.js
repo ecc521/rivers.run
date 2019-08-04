@@ -29,14 +29,25 @@ webpush.setVapidDetails(
 )
 
 
+
+
 const hostname = "0.0.0.0"
 const httpport = 3000
 
+let storagePath = path.join(__dirname, "data", "notifications", "subscriptions.json")
 
-function saveUserSubscription() {
-
+function saveUserSubscription(data) {
+	let current = fs.readFileSync(storagePath, {encoding:"utf8"})
+	let obj = JSON.parse(current)
+	obj[data.subscription.endpoint] = data
+	fs.writeFileSync(storagePath, JSON.stringify(obj), {encoding:"utf8"})
 }
 
+function getUserSubscription(url) {
+	let current = fs.readFileSync(storagePath, {encoding:"utf8"})
+	let obj = JSON.parse(current)
+	return obj[url]
+}
 
 async function httprequest(req,res) {
 	if (req.method !== "POST") {
@@ -57,9 +68,25 @@ async function httprequest(req,res) {
 		})
 
 		data = JSON.parse(data)
-		//data.subscription contains the details needed to send push notifications.
-		//data.parameters contains the conditions under which to send notifications.
 
+		if (data.getSubscriptionFromURL) {
+			res.statusCode = 200;
+			res.setHeader('Content-Type', 'text/json');
+			res.end(JSON.stringify(getUserSubscription(data.getSubscriptionFromURL)));
+		}
+		else if (data.subscription && data.parameters) {
+			//data.subscription contains the details needed to send push notifications.
+			//data.parameters contains the conditions under which to send notifications.
+			saveUserSubscription(data)
+			res.statusCode = 200;
+			res.setHeader('Content-Type', 'text/plain');
+			res.end('Saved Subscription\n');
+		}
+		else {
+			res.statusCode = 404;
+			res.setHeader('Content-Type', 'text/plain');
+			res.end('Unknown request\n');
+		}
 	}
 }
 
