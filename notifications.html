@@ -98,9 +98,9 @@
         function redrawRows() {
             //Clear the current list.
             let rows = currentSelections.children
-            //The first child element is the header. Start at position 1.
-            for (let i=1;i<rows.length;i++) {
-                rows[i].remove()
+            //The first child element is the header. Don't delete the firstChild, but the nextSibling.
+            while (currentSelections.firstChild.nextSibling) {
+                currentSelections.firstChild.nextSibling.remove()
             }
 
             let selections = JSON.parse(localStorage.getItem("flownotifications") || "{}")
@@ -139,13 +139,14 @@
                     deleteButton.addEventListener("click", function() {
                         if (confirm("Remove " + name + " at gauge " + gauge + "?")) {
                             delete selections[gauge][name]
-                            //TODO: Consider trimming out empty objects.
+                            //Trim out the gauge object if it is empty.
+                            if (Object.keys(selections[gauge]).length === 0) {
+                                delete selections[gauge]
+                            }
                             localStorage.setItem("flownotifications", JSON.stringify(selections))
+                            redrawRows()
                         }
                     })
-
-                    console.log(selections)
-                    console.log(selections[gauge][name])
 
                     currentSelections.appendChild(row)
                 }
