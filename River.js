@@ -180,11 +180,11 @@ function addHandlers(button, locate) {
 
 					//Rather extreme data validation...
 					if (!lowType) {
-						alert("Minimum must be either feet or cfs. Ex. 300cfs or 2.37ft")
+						alert("Minimum must be either feet or cfs. Make sure to put the extension. Ex. 300cfs or 2.37ft")
 						return
 					}
 					if (!highType) {
-						alert("Maximum must be either feet or cfs. Ex. 5000cfs or 6.2ft")
+						alert("Maximum must be either feet or cfs. Make sure to put the extension. Ex. 5000cfs or 6.2ft")
 						return
 					}
 
