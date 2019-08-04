@@ -6,7 +6,6 @@
 
         <h1>River notifications</h1>
 
-        <p>WARNING: River notifications are extremely expiramental. Please note that browser support is somewhat limited. </p>
 
 
         <p id="notificationPermission"></p>
@@ -30,6 +29,10 @@
         }
         .row:first-child {
             background-color:lightgreen;
+        }
+
+        #subscribe, #unsubscribe {
+            font-size: 16px;
         }
 
         .gaugeColumn {
@@ -83,7 +86,7 @@
 
         <script src="packages/allPages.js"></script>
         <script>
-
+        //TODO: Add a way for users to sync between devices.
 
         let currentSelections = document.getElementById("currentSelections")
         //Add the header
@@ -160,7 +163,11 @@
 
             let notificationPermission = await navigator.permissions.query({name:"notifications"})
             function updatePermissionNotice() {
-                if (notificationPermission.state === "denied") {
+                if (!"PushManager" in window || !"Notification" in window) {
+                    document.getElementById("notificationPermission").style.display = "block"
+                    document.getElementById("notificationPermission").innerHTML = "Your browser does not support flow notifications."
+                }
+                else if (notificationPermission.state === "denied") {
                     document.getElementById("notificationPermission").style.display = "block"
                     document.getElementById("notificationPermission").innerHTML = "You denied rivers.run notifications permission. You will need to change this in site settings."
                 }

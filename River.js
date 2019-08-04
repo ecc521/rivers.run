@@ -147,12 +147,15 @@ function addHandlers(button, locate) {
 				let low = document.createElement("input")
 				low.type = "text"
 				low.placeholder = "Minimum"
+				low.style.fontSize = "16px"
 				low.value = (current && current.minimum) || ""
 				let high = document.createElement("input")
 				high.placeholder = "Maximum"
+				high.style.fontSize = "16px"
 				high.value = (current && current.maximum) || ""
 				high.type = "text"
 				let save = document.createElement("button")
+				save.style.fontSize = "16px"
 				save.innerHTML = "Save"
 
 				save.addEventListener("click", function() {
@@ -220,6 +223,7 @@ function addHandlers(button, locate) {
 
 				let manage = document.createElement("button")
 				manage.innerHTML = "Manage Notifications"
+				manage.style.fontSize = "16px"
 				manage.addEventListener("click", function() {
 					window.open("notifications.html")
 				})
