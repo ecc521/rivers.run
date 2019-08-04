@@ -4,3 +4,5 @@ drivecache
 data
 public_key
 usgscache.json
+riverarray.js
+*.log
