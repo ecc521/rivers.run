@@ -124,7 +124,7 @@ function addHandlers(button, locate) {
             }
 
 
-			function addNotificationsSelector() {
+			function addNotificationsSelector(usgsID) {
 				//As of now, we will only use river names, not sections. Causes some overlap, but sections may change, not the name.
 				let data = {}
 
@@ -133,7 +133,7 @@ function addHandlers(button, locate) {
 
 				function resyncData() {
 					existing = JSON.parse(localStorage.getItem("flownotifications") || "{}")
-					current = existing[river.usgs]
+					current = existing[usgsID]
 					if (current) {
 						current = current[river.name]
 					}
@@ -143,7 +143,7 @@ function addHandlers(button, locate) {
 
 				//Add the notification selector.
 				let description = document.createElement("p")
-				description.innerHTML = "Receive notifications when this river gauge is between a designated minimum and maximum.<br>"
+				description.innerHTML = "Receive notifications when " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + " is between a designated minimum and maximum.<br>"
 				let low = document.createElement("input")
 				low.type = "text"
 				low.placeholder = "Minimum"
@@ -233,8 +233,8 @@ function addHandlers(button, locate) {
 
 					resyncData() //Make sure we don't restore rivers that were removed while this river was open.
 
-					existing[river.usgs] = existing[river.usgs] || {}
-					existing[river.usgs][river.name] = data
+					existing[usgsID] = existing[usgsID] || {}
+					existing[usgsID][river.name] = data
 
 					localStorage.setItem("flownotifications", JSON.stringify(existing))
 
@@ -268,8 +268,6 @@ function addHandlers(button, locate) {
                 link.href = "https://waterdata.usgs.gov/nwis/uv?site_no=" + river.usgs
                 link.innerHTML = "View flow information on USGS"
                 div.appendChild(link)
-
-				addNotificationsSelector() //TODO: Do this above every gauge, not just the main gauge.
             }
 
 
@@ -279,6 +277,8 @@ function addHandlers(button, locate) {
 			//Auxillary function
 			//TODO: Show button to see code used by virtual gauge.
 			function addUSGSGraphs(usgsID, relatedGauge) {
+
+				addNotificationsSelector(usgsID) //TODO: Do this above every gauge, not just the main gauge.
 
 				//Alert the user if the data is (at least 2 hours) old
 				let dataAge

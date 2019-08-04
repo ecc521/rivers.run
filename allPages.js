@@ -271,6 +271,7 @@ catch (e) {
 
 
 //Create navigation bar
+//TODO: Add alerts tab, potentially for larger screens only, and under a menu for smaller ones.
 try {
 
 	let topnav = document.createElement("div")
