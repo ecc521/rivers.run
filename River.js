@@ -128,13 +128,18 @@ function addHandlers(button, locate) {
 				//As of now, we will only use river names, not sections. Causes some overlap, but sections may change, not the name.
 				let data = {}
 
-				let existing = JSON.parse(localStorage.getItem("flownotifications") || "{}")
-				let current = existing[river.usgs]
-				if (current) {
-					current = current[river.name]
+				let existing;
+				let current;
+
+				function resyncData() {
+					existing = JSON.parse(localStorage.getItem("flownotifications") || "{}")
+					current = existing[river.usgs]
+					if (current) {
+						current = current[river.name]
+					}
 				}
 
-
+				resyncData()
 
 				//Add the notification selector.
 				let description = document.createElement("p")
@@ -202,6 +207,8 @@ function addHandlers(button, locate) {
 					if (highType !== "ft" && highType !== "cfs" && highType !== "feet") {
 						alert("Maximum must have an extension of either ft, cfs, or feet.")
 					}
+
+					resyncData() //Make sure we don't restore rivers that were removed while this river was open.
 
 					existing[river.usgs] = existing[river.usgs] || {}
 					existing[river.usgs][river.name] = data
