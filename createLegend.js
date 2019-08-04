@@ -87,15 +87,13 @@ function makeSticky(canvas) {
     //canvas.style.top = 0
 
 	canvas.style.zIndex = 2 //Show up on top of stars.
-	let elementOffset = canvas.offsetTop;
-    if (elementOffset === 0) {
-        //It looks like the canvas was absolutely positioned at this time.
-        //We can approxtimate this number VERY closley using the topbar and canvas height.
-        //This is probably better than removing the absolute positioning to calculate, then re-adding.
-        elementOffset = document.getElementById("topbar").offsetTop - canvas.height
-    }
 
     window.addEventListener("scroll", function() {
+        //We could use canvas.offsetTop, but that doesn't work with absolute positioning, and can't be calculated once,
+        //because warnings and alerts above the canvas can change the correct offset.
+        //We can approxtimate this number VERY closley using the topbar and canvas height.
+        //This is probably better than removing the absolute positioning to calculate, then re-adding.
+        let elementOffset = document.getElementById("topbar").offsetTop - canvas.height
         let pageOffset = window.pageYOffset
 
         if (pageOffset > elementOffset) {

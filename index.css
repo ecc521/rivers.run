@@ -180,6 +180,7 @@ Those include name,section,skill,quality, and flow info*/
 
 @media screen and (max-width:309px) {
     /*Smart watch mode.*/
+    /*TODO: Show both class and skill in smart watch mode.*/
     .riverspan:nth-child(1) {
         width:40%;
         min-width:40%;
