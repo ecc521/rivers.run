@@ -22,9 +22,6 @@ setInterval(function() {
 }, 1000*60*60*24)
 
 
-
-
-
 let riverarray;
 {
 	let window = {}
@@ -78,3 +75,8 @@ async function updateCachedData() {
 
 
 updateCachedData()
+
+
+
+require("./notificationserver.js")
+//On reboot, run notificationserver.js

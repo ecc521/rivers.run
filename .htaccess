@@ -23,8 +23,9 @@ Header set Access-Control-Expose-Headers Date
 #Block all access to data directory.
 RedirectMatch 403 ^/data/.*$
 
-#TODO: ProxyPass doesn't work in .htaccess
 #Proxy /node to localhost at port 3000
+#ProxyPass doesn't work in .htaccess. Put in site config file.
+#ProxyRequests on
 #ProxyPass /node http://127.0.0.1:3000/node
 #ProxyPassReverse /node http://127.0.0.1:3000/node
 
