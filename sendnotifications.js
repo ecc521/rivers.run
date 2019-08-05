@@ -5,6 +5,11 @@ const fs = require("fs")
 let storagePath = path.join(__dirname, "data", "notifications", "subscriptions.json")
 
 function sendNotifications() {
+	if (!fs.existsSync(storagePath)) {
+		//There are no subscriptions
+		console.warn("No subscriptions. ")
+		return
+	}
 	let subscriptions = JSON.parse(fs.readFileSync(storagePath, {encoding:"utf8"}))
 	let flowData = JSON.parse(fs.readFileSync(path.join(__dirname, "flowdata.json"), {encoding:"utf8"}))
 
