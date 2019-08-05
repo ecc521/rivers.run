@@ -42,7 +42,9 @@ function sendNotifications() {
 				}
 			}
 			//We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
-			webpush.sendNotification(user.subscription, JSON.stringify(rivers))
+			webpush.sendNotification(user.subscription, JSON.stringify(rivers), {
+				TTL: 60*60*36 //Store notification for up to 36 hours.
+			})
 		}
 	}
 }
