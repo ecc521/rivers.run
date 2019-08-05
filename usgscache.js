@@ -9,6 +9,8 @@
 const fs = require("fs")
 const path = require("path")
 const fetch = require("node-fetch")
+const sendNotifications = require("./sendnotifications.js")
+const flowDataParser = require("./flowDataParser.js")
 
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
 
@@ -18,6 +20,8 @@ require("./dataparse.js") //
 setInterval(function() {
 	require("./dataparse.js")
 }, 1000*60*60*24)
+
+
 
 
 
@@ -52,7 +56,10 @@ async function updateCachedData() {
 	let start = Date.now()
 
 	let response = await fetch(url)
-	fs.writeFileSync(path.join(__dirname, "usgscache.json"), await response.text())
+	let usgsData = await response.text()
+	fs.writeFileSync(path.join(__dirname, "usgscache.json"), usgsData)
+	fs.writeFileSync(path.join(__dirname, "flowdata.json"), flowDataParser.parseUSGS(JSON.parse(usgsData)))
+	sendNotifications()
 
 	let time = Date.now() - start
 	fs.appendFileSync(path.join(__dirname, 'usgsloadingtime.log'), time + '\n');
