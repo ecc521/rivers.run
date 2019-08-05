@@ -58,10 +58,6 @@ async function updateCachedData() {
 	let response = await fetch(url)
 	let usgsData = await response.text()
 	fs.writeFileSync(path.join(__dirname, "usgscache.json"), usgsData)
-	console.log(typeof usgsData)
-	console.log(typeof JSON.parse(usgsData))
-	console.log(typeof flowDataParser.parseUSGS(JSON.parse(usgsData)))
-	console.log(typeof JSON.stringify(flowDataParser.parseUSGS(JSON.parse(usgsData))))
 	fs.writeFileSync(path.join(__dirname, "flowdata.json"), JSON.stringify(flowDataParser.parseUSGS(JSON.parse(usgsData))))
 	sendNotifications()
 
