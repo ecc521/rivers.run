@@ -6,7 +6,7 @@
 
         <h1>River notifications</h1>
 
-        <p>Be warned!!! Notifications are an upcoming feature that currently DOES NOT WORK. </p>
+        <p>Be warned!!! Notifications are extrordinarily expiramental and unstable! </p>
 
         <p id="notificationPermission"></p>
 
@@ -100,6 +100,7 @@
 
 
         function redrawRows() {
+            syncWithServer() //TODO: This is async, and we never confirm that this actually happened.
             //Clear the current list.
             let rows = currentSelections.children
             //The first child element is the header. Don't delete the firstChild, but the nextSibling.
@@ -158,59 +159,79 @@
         }
         redrawRows()
 
+
+        async function syncWithServer() {
+            await fetch("https://rivers.run/node", {
+                method: "POST",
+                body:JSON.stringify({
+                    subscription: await sw.pushManager.getSubscription(),
+                    parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}")
+                })
+            })
+        }
+
+        //URL is the unique url push notifications are received from.
+        //This can be used to recover lost data if localStorage is cleared, or to sync between devices.
+        async function getSubscriptionFromURL(url) {
+            await fetch("https://rivers.run/node", {
+                method: "POST",
+                body:JSON.stringify({
+                    getSubscriptionFromURL: url
+                })
+            })
+        }
+
+        async function updateSubscriptionStatus() {
+            //TODO: Handle the scenario where the public key has changed. This will need code changes in other places too.
+            if (await sw.pushManager.getSubscription() === null) {
+                document.getElementById("notificationsStatus").innerHTML = "All notifications are currently disabled."
+            }
+            else {
+                document.getElementById("notificationsStatus").innerHTML = "Notifications are currently enabled."
+            }
+        }
+
+        let notificationPermission;
+        function updatePermissionNotice() {
+            if (!"PushManager" in window || !"Notification" in window) {
+                document.getElementById("notificationPermission").style.display = "block"
+                document.getElementById("notificationPermission").innerHTML = "Your browser does not support flow notifications."
+            }
+            else if (notificationPermission.state === "denied") {
+                document.getElementById("notificationPermission").style.display = "block"
+                document.getElementById("notificationPermission").innerHTML = "You denied rivers.run notifications permission. You will need to change this in site settings."
+            }
+            else {
+                //If the permission state is either granted or prompt, don't bother the user.
+                document.getElementById("notificationPermission").style.display = "none"
+            }
+        }
+
+        //Used to convert base64 vapidKey to Uint8Array.
+        function urlBase64ToUint8Array(base64String) {
+          const padding = '='.repeat((4 - base64String.length % 4) % 4);
+          const base64 = (base64String + padding)
+            .replace(/-/g, '+')
+            .replace(/_/g, '/');
+
+          const rawData = window.atob(base64);
+          const outputArray = new Uint8Array(rawData.length);
+
+          for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+          }
+          return outputArray;
+        }
+        
+
         ;(async function() {
 
             window.sw = await navigator.serviceWorker.ready
+            notificationPermission = await navigator.permissions.query({name:"notifications"})
 
-            let notificationPermission = await navigator.permissions.query({name:"notifications"})
-            function updatePermissionNotice() {
-                if (!"PushManager" in window || !"Notification" in window) {
-                    document.getElementById("notificationPermission").style.display = "block"
-                    document.getElementById("notificationPermission").innerHTML = "Your browser does not support flow notifications."
-                }
-                else if (notificationPermission.state === "denied") {
-                    document.getElementById("notificationPermission").style.display = "block"
-                    document.getElementById("notificationPermission").innerHTML = "You denied rivers.run notifications permission. You will need to change this in site settings."
-                }
-                else {
-                    //If the permission state is either granted or prompt, don't bother the user.
-                    document.getElementById("notificationPermission").style.display = "none"
-                }
-            }
             updatePermissionNotice()
             notificationPermission.onchange = updatePermissionNotice
 
-
-            async function syncWithServer() {
-                await fetch("https://rivers.run/node", {
-                    method: "POST",
-                    body:JSON.stringify({
-                        subscription: await sw.pushManager.getSubscription(),
-                        parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}")
-                    })
-                })
-            }
-
-            //URL is the unique url push notifications are received from.
-            //This can be used to recover lost data if localStorage is cleared, or to sync between devices.
-            async function getSubscriptionFromURL(url) {
-                await fetch("https://rivers.run/node", {
-                    method: "POST",
-                    body:JSON.stringify({
-                        getSubscriptionFromURL: url
-                    })
-                })
-            }
-
-            async function updateSubscriptionStatus() {
-                //TODO: Handle the scenario where the public key has changed. This will need code changes in other places too.
-                if (await sw.pushManager.getSubscription() === null) {
-                    document.getElementById("notificationsStatus").innerHTML = "All notifications are currently disabled."
-                }
-                else {
-                    document.getElementById("notificationsStatus").innerHTML = "Notifications are currently enabled."
-                }
-            }
             updateSubscriptionStatus()
 
 
@@ -231,23 +252,6 @@
                     updateSubscriptionStatus()
                 }
             })
-
-
-            //Used to convert base64 vapidKey to Uint8Array.
-            function urlBase64ToUint8Array(base64String) {
-              const padding = '='.repeat((4 - base64String.length % 4) % 4);
-              const base64 = (base64String + padding)
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-
-              const rawData = window.atob(base64);
-              const outputArray = new Uint8Array(rawData.length);
-
-              for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-              }
-              return outputArray;
-            }
 
 
             document.getElementById("subscribe").addEventListener("click", async function() {
