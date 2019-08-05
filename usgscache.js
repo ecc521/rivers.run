@@ -57,12 +57,14 @@ async function updateCachedData() {
 
 	let response = await fetch(url)
 	let usgsData = await response.text()
+
+	let time = Date.now() - start
+	fs.appendFileSync(path.join(__dirname, 'usgsloadingtime.log'), time + '\n');
+
 	fs.writeFileSync(path.join(__dirname, "usgscache.json"), usgsData)
 	fs.writeFileSync(path.join(__dirname, "flowdata.json"), JSON.stringify(flowDataParser.parseUSGS(JSON.parse(usgsData))))
 	sendNotifications()
 
-	let time = Date.now() - start
-	fs.appendFileSync(path.join(__dirname, 'usgsloadingtime.log'), time + '\n');
 
 	//Run whenever the minutes on the hour is a multiple of 15.
 	let currentTime = new Date()
