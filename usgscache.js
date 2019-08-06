@@ -79,5 +79,5 @@ async function updateCachedData() {
 updateCachedData()
 
 
-//require("./notificationserver.js")
+require("./notificationserver.js")
 //On reboot, run notificationserver.js
