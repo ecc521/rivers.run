@@ -141,6 +141,8 @@ function addHandlers(button, locate) {
 
 				resyncData()
 
+				console.log(current)
+
 				//Add the notification selector.
 				let description = document.createElement("p")
 				description.innerHTML = "Receive notifications when " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + " is between a designated minimum and maximum.<br>"
@@ -173,6 +175,7 @@ function addHandlers(button, locate) {
 				cfs.value = "cfs"
 				cfs.innerHTML = "CFS"
 				units.appendChild(cfs)
+				units.value = (current && current.units) || ""
 				let save = document.createElement("button")
 				save.style.fontSize = "16px"
 				save.innerHTML = "Save"
