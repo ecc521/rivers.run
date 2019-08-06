@@ -164,7 +164,7 @@
             await fetch("https://rivers.run/node", {
                 method: "POST",
                 body:JSON.stringify({
-                    subscription: await sw.pushManager.getSubscription(),
+                    subscription: await (await navigator.serviceWorker.ready).pushManager.getSubscription(),
                     parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}")
                 })
             })
@@ -222,7 +222,7 @@
           }
           return outputArray;
         }
-        
+
 
         ;(async function() {
 
