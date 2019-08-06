@@ -60,8 +60,8 @@ function sendNotifications() {
 						river.current = latest
 					}
 				}
+                data[prop] = rivers[prop]
 			}
-            data[prop] = rivers[prop]
 		}
         //TODO: Detect users that have unsubscribed, and remove them from the list.
         //Should be able to detect WebPushError: Received unexpected response code
