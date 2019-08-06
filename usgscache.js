@@ -79,6 +79,10 @@ async function updateCachedData() {
 updateCachedData()
 
 
-
-require("./notificationserver.js")
-//On reboot, run notificationserver.js
+try {
+	require("./notificationserver.js")
+	//On reboot, run notificationserver.js
+}
+catch(e) {
+	fs.appendFileSync(path.join(__dirname, 'notificationserver.log'), e.toString());
+}
