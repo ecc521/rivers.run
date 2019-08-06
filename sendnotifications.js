@@ -38,17 +38,6 @@ function sendNotifications() {
 			for (let prop in rivers) {
 				let river = rivers[prop]
 				if (river.units === "cfs") {
-					let values = flowData[gauge]["00065"].values
-					let latest = values[values.length - 1].value
-
-					if (!(river.minimum < latest && latest < river.maximum)) {
-						delete rivers[prop]
-					}
-					else {
-						river.current = latest
-					}
-				}
-				else if (river.units === "ft") {
 					let values = flowData[gauge]["00060"].values
 					let latest = values[values.length - 1].value
 
@@ -59,7 +48,20 @@ function sendNotifications() {
 						river.current = latest
 					}
 				}
+				else if (river.units === "ft") {
+					let values = flowData[gauge]["00065"].values
+					let latest = values[values.length - 1].value
+
+					if (!(river.minimum < latest && latest < river.maximum)) {
+						delete rivers[prop]
+					}
+					else {
+						river.current = latest
+					}
+				}
 			}
+			//TODO: Detect users that have unsubscribed, and remove them from the list.
+			//Should be able to detect WebPushError: Received unexpected response code
 			//We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
 			webpush.sendNotification(user.subscription, JSON.stringify(rivers), {
 				vapidDetails: {
