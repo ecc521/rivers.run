@@ -162,7 +162,13 @@ function pushHandler(event) {
     let body = "";
 
     let riverNames = Object.keys(data)
-    if (riverNames.length === 1) {
+
+    console.log(data)
+
+    if (riverNames.length === 0) {
+        return;
+    }
+    else if (riverNames.length === 1) {
         title = "The " + riverNames[0] + " is running!"
         body = "The " + riverNames[0]  +  " is running at " + data[riverNames[0]].current + data[riverNames[0]].units + "!"
     }
@@ -187,16 +193,18 @@ function pushHandler(event) {
     let notification = self.registration.showNotification(title, options)
     console.log(notification)
 
-    notification.addEventListener('click', function() {
-      //TODO: Consider showing only the river(s) being talked about.
-      if (clients.openWindow) {
-          let url = rebaseURL(""); //URL to River Info page.
-          event.notification.close(); //Android needs explicit close.
-          clients.openWindow(url) //Open the specified url.
-      }
-  });
-
-  event.waitUntil(notification) //Try to make sure Chrome doesn't notify the user that rivers.run was running in the background.
+    event.waitUntil(notification) //Try to make sure Chrome doesn't notify the user that rivers.run was running in the background.
 }
 
 self.addEventListener('push', pushHandler)
+
+
+
+self.addEventListener('notificationclick', function() {
+  //TODO: Consider showing only the river(s) being talked about.
+  if (clients.openWindow) {
+      let url = rebaseURL(""); //URL to River Info page.
+      event.notification.close(); //Android needs explicit close.
+      clients.openWindow(url) //Open the specified url.
+  }
+});

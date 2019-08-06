@@ -145,7 +145,8 @@ function addHandlers(button, locate) {
 
 				//Add the notification selector.
 				let description = document.createElement("p")
-				description.innerHTML = "Receive notifications when " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + " is between a designated minimum and maximum.<br>"
+				description.innerHTML = "Set alerts for " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + ":<br>"
+				
 				let low = document.createElement("input")
 				low.type = "text"
 				low.placeholder = "Minimum"
@@ -153,6 +154,7 @@ function addHandlers(button, locate) {
 				low.style.fontWeight = "bold"
 				low.style.width = "80px"
 				low.value = (current && current.minimum) || ""
+
 				let high = document.createElement("input")
 				high.placeholder = "Maximum"
 				high.style.fontSize = "16px"
@@ -160,22 +162,28 @@ function addHandlers(button, locate) {
 				high.style.width = "100px"
 				high.value = (current && current.maximum) || ""
 				high.type = "text"
+
 				let units = document.createElement("select")
 				units.style.fontSize = "16px"
+
 				let blank = document.createElement("option")
 				blank.selected = true
 				blank.value = ""
 				blank.innerHTML = "Units"
 				units.appendChild(blank)
+
 				let feet = document.createElement("option")
 				feet.value = "ft"
 				feet.innerHTML = "Feet"
 				units.appendChild(feet)
+
 				let cfs = document.createElement("option")
 				cfs.value = "cfs"
 				cfs.innerHTML = "CFS"
 				units.appendChild(cfs)
+
 				units.value = (current && current.units) || ""
+
 				let save = document.createElement("button")
 				save.style.fontSize = "16px"
 				save.innerHTML = "Save"
