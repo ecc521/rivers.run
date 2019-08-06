@@ -213,7 +213,7 @@ self.addEventListener('push', pushHandler)
 
 
 
-self.addEventListener('notificationclick', function() {
+self.addEventListener('notificationclick', function(event) {
   //TODO: Consider showing only the river(s) being talked about.
   if (clients.openWindow) {
       let url = rebaseURL(""); //URL to River Info page.
