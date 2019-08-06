@@ -2,6 +2,16 @@ const webpush = require("web-push")
 const path = require("path")
 const fs = require("fs")
 
+let vapidKeys = {}
+vapidKeys.publicKey = fs.readFileSync(publicKeyPath, {encoding:"utf8"})
+vapidKeys.privateKey = fs.readFileSync(privateKeyPath, {encoding:"utf8"})
+
+webpush.setVapidDetails(
+  'mailto:admin@rivers.run',
+  vapidKeys.publicKey,
+  vapidKeys.privateKey
+)
+
 let storagePath = path.join(__dirname, "data", "notifications", "subscriptions.json")
 
 function sendNotifications() {
@@ -48,6 +58,11 @@ function sendNotifications() {
 			}
 			//We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
 			webpush.sendNotification(user.subscription, JSON.stringify(rivers), {
+				vapidDetails: {
+					subject: 'mailto:admin@rivers.run',
+					publicKey: vapidKeys.publicKey,
+					privateKey: vapidKeys.privateKey
+				},
 				TTL: 60*60*36 //Store notification for up to 36 hours.
 			})
 		}
