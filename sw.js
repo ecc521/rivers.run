@@ -164,7 +164,7 @@ function pushHandler(event) {
     let riverNames = Object.keys(data)
     if (riverNames.length === 1) {
         title = "The " + riverNames[0] + " is running!"
-        body = "The " + riverNames[0]  +  "is running at " + data[riverNames[0]].current + data[riverNames[0]].units + "!"
+        body = "The " + riverNames[0]  +  " is running at " + data[riverNames[0]].current + data[riverNames[0]].units + "!"
     }
     else {
         title = riverNames.length + " rivers are running!"
