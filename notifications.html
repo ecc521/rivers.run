@@ -87,10 +87,11 @@
         <script src="packages/allPages.js"></script>
         <script>
         //TODO: Add a way for users to sync between devices.
+        //TODO: Add a way to see the river id. Support for multiple sections (section names)
 
         let currentSelections = document.getElementById("currentSelections")
         //Add the header
-        //This was HTML, but a space was added in between the spans, unless it was all in 1 line (and unreadable)
+        //This was HTML, but a space was added in between the spans, unless the spans had no whitespace between them.
         currentSelections.innerHTML += '<div class="row"></div>'
         currentSelections.firstChild.innerHTML += '<span class="gaugeColumn">Gauge</span>'
         currentSelections.firstChild.innerHTML += '<span class="nameColumn">River Name</span>'
@@ -111,7 +112,7 @@
             let selections = JSON.parse(localStorage.getItem("flownotifications") || "{}")
 
             for (let gauge in selections) {
-                for (let name in selections[gauge]) {
+                for (let id in selections[gauge]) {
 
                     let row = document.createElement("div")
                     row.className = "row"
@@ -128,12 +129,12 @@
 
                     let minColumn = document.createElement("span")
                     minColumn.className = "minColumn"
-                    minColumn.innerHTML = selections[gauge][name].minimum + selections[gauge][name].units
+                    minColumn.innerHTML = selections[gauge][id].minimum + selections[gauge][id].units
                     row.appendChild(minColumn)
 
                     let maxColumn = document.createElement("span")
                     maxColumn.className = "maxColumn"
-                    maxColumn.innerHTML = selections[gauge][name].maximum + selections[gauge][name].units
+                    maxColumn.innerHTML = selections[gauge][id].maximum + selections[gauge][id].units
                     row.appendChild(maxColumn)
 
                     let deleteButton = document.createElement("span")
@@ -142,8 +143,8 @@
                     row.appendChild(deleteButton)
 
                     deleteButton.addEventListener("click", function() {
-                        if (confirm("Remove " + name + " at gauge " + gauge + "?")) {
-                            delete selections[gauge][name]
+                        if (confirm("Remove " + selections[gauge][id].name + " at gauge " + gauge + "?")) {
+                            delete selections[gauge][id]
                             //Trim out the gauge object if it is empty.
                             if (Object.keys(selections[gauge]).length === 0) {
                                 delete selections[gauge]

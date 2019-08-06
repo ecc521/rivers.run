@@ -102,16 +102,14 @@ function addHandlers(button, locate) {
             }
 			if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
 
-			if (river.id) {
-				//river.id should always be defined.
-                div.appendChild(document.createElement("br"))
-                let link = document.createElement("a")
-                link.target = "_blank"
-                link.rel = "noopener"
-                link.href = "https://docs.google.com/document/d/" + river.id
-                link.innerHTML = "Edit this river"
-                div.appendChild(link)
-            }
+			//river.id should always be defined.
+            div.appendChild(document.createElement("br"))
+            let link = document.createElement("a")
+            link.target = "_blank"
+            link.rel = "noopener"
+            link.href = "https://docs.google.com/document/d/" + river.id
+            link.innerHTML = "Edit this river"
+            div.appendChild(link)
 
             if (river.aw) {
                 div.appendChild(document.createElement("br"))
@@ -125,8 +123,10 @@ function addHandlers(button, locate) {
 
 
 			function addNotificationsSelector(usgsID) {
-				//As of now, we will only use river names, not sections. Causes some overlap, but sections may change, not the name.
-				let data = {}
+				let data = {
+					id: river.id,
+					name: river.name
+				}
 
 				let existing;
 				let current;
@@ -135,7 +135,7 @@ function addHandlers(button, locate) {
 					existing = JSON.parse(localStorage.getItem("flownotifications") || "{}")
 					current = existing[usgsID]
 					if (current) {
-						current = current[river.name]
+						current = current[river.id]
 					}
 				}
 
@@ -217,7 +217,7 @@ function addHandlers(button, locate) {
 					resyncData() //Make sure we don't restore rivers that were removed while this river was open.
 
 					existing[usgsID] = existing[usgsID] || {}
-					existing[usgsID][river.name] = data
+					existing[usgsID][river.id] = data
 
 					localStorage.setItem("flownotifications", JSON.stringify(existing))
 
