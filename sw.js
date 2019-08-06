@@ -185,6 +185,7 @@ function pushHandler(event) {
     }
 
     let notification = self.registration.showNotification(title, options)
+    console.log(notification)
 
     notification.addEventListener('click', function() {
       //TODO: Consider showing only the river(s) being talked about.
@@ -194,6 +195,8 @@ function pushHandler(event) {
           clients.openWindow(url) //Open the specified url.
       }
   });
+
+  event.waitUntil(notification) //Try to make sure Chrome doesn't notify the user that rivers.run was running in the background.
 }
 
 self.addEventListener('push', pushHandler)
