@@ -176,11 +176,13 @@ function addHandlers(button, locate) {
 				let feet = document.createElement("option")
 				feet.value = "ft"
 				feet.innerHTML = "Feet"
+				feet.pattern = "[0-9]"
 				units.appendChild(feet)
 
 				let cfs = document.createElement("option")
 				cfs.value = "cfs"
 				cfs.innerHTML = "CFS"
+				cfs.pattern = "[0-9]"
 				units.appendChild(cfs)
 
 				units.value = (current && current.units) || ""
