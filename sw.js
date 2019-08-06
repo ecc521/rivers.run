@@ -157,6 +157,7 @@ function pushHandler(event) {
     if (event.data) {
       data = event.data.json();
     }
+    console.log(data)
     let title = data.title || "Something Has Happened";
     let body = data.body || "Here's something you might want to check out.";
 
@@ -166,8 +167,8 @@ function pushHandler(event) {
       badge: "resources/icons/32x32-Water-Drop.png",
       sound: 'resources/waterfall.mp3',
       requireInteraction: true, //Don't auto-close the notification.
-      //renotify: //If tag value is reused, should the user be notified again?
-      //tag: '',
+      renotify: false,
+      tag: 'rivernotification',
     }
 
     let notification = self.registration.showNotification(title, options)
