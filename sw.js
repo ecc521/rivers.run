@@ -167,10 +167,12 @@ function pushHandler(event) {
 
     if (riverNames.length === 0) {
         //Close existing river notifications.
-        let existingNotifications = await sw.getNotifications({tag: "rivernotification"})
-        existingNotifications.forEach((notification) => {
-            notification.close()
-        })
+        event.waitUntil((async function() {
+            let existingNotifications = await sw.getNotifications({tag: "rivernotification"})
+            existingNotifications.forEach((notification) => {
+                notification.close()
+            })
+        }()))
         return;
     }
     else if (riverNames.length === 1) {
