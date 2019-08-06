@@ -146,28 +146,29 @@ function addHandlers(button, locate) {
 				//Add the notification selector.
 				let description = document.createElement("p")
 				description.innerHTML = "Set alerts for " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + ":<br>"
-				
+
 				let low = document.createElement("input")
-				low.type = "text"
+				low.type = "number"
 				low.placeholder = "Minimum"
 				low.style.fontSize = "16px"
 				low.style.fontWeight = "bold"
-				low.style.width = "80px"
+				low.style.width = "90px"
 				low.value = (current && current.minimum) || ""
 
 				let high = document.createElement("input")
 				high.placeholder = "Maximum"
 				high.style.fontSize = "16px"
 				high.style.fontWeight = "bold"
-				high.style.width = "100px"
+				high.style.width = "110px"
 				high.value = (current && current.maximum) || ""
-				high.type = "text"
+				high.type = "number"
 
 				let units = document.createElement("select")
 				units.style.fontSize = "16px"
 
 				let blank = document.createElement("option")
 				blank.selected = true
+				blank.disabled = true
 				blank.value = ""
 				blank.innerHTML = "Units"
 				units.appendChild(blank)
@@ -189,39 +190,8 @@ function addHandlers(button, locate) {
 				save.innerHTML = "Save"
 
 				save.addEventListener("click", function() {
-					let lowStr = low.value.trim()
-			        let lowValue = parseFloat(lowStr)
-			        let lowType = lowStr.match(/[^\d|.]+/) //Match a series of non-digits
-
-			        if (lowType) {
-			            lowType = lowType[0].trim().toLowerCase() //Use the first match
-			        }
-
-					let highStr = high.value.trim()
-					let highValue = parseFloat(highStr)
-					let highType = highStr.match(/[^\d|.]+/) //Match a series of non-digits
-
-					if (highType) {
-						highType = highType[0].trim().toLowerCase() //Use the first match
-					}
-
-					if (lowType === "feet") {lowType = "ft"}
-					if (highType === "feet") {highType = "ft"}
-
-					if (lowType === highType && !units.value) {
-						if (highType === "ft") {
-							units.value = "ft"
-						}
-						if (highType === "cfs") {
-							units.value = "cfs"
-						}
-					}
-
-					if (units.value && ((highType && highType !== units.value) || (lowType && lowType !== units.value))) {
-						//If the units in the box do not match units.value, alert the user.
-						alert("You have put units into the fields that do not match the selected units.")
-						return;
-					}
+			        let lowValue = parseFloat(low.value)
+					let highValue = parseFloat(high.value)
 
 					data.minimum = lowValue
 					data.maximum = highValue
