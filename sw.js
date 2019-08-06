@@ -160,7 +160,7 @@ function pushHandler(event) {
     let title = data.title || "Something Has Happened";
     let body = data.body || "Here's something you might want to check out.";
 
-    var notification = new Notification(title, {
+    let options = {
       icon: "resources/icons/192x192-Water-Drop.png",
       body,
       badge: "resources/icons/32x32-Water-Drop.png",
@@ -168,7 +168,9 @@ function pushHandler(event) {
       requireInteraction: true, //Don't auto-close the notification.
       //renotify: //If tag value is reused, should the user be notified again?
       //tag: '',
-    });
+    }
+
+    let notification = self.registration.showNotification(title, options)
 
     notification.addEventListener('click', function() {
       //TODO: Consider showing only the river(s) being talked about.
