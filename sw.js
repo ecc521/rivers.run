@@ -166,18 +166,29 @@ function pushHandler(event) {
     console.log(data)
 
     if (riverNames.length === 0) {
+        //Close existing river notifications.
+        let existingNotifications = await sw.getNotifications({tag: "rivernotification"})
+        existingNotifications.forEach((notification) => {
+            notification.close()
+        })
         return;
     }
     else if (riverNames.length === 1) {
         title = "The " + riverNames[0] + " is running!"
         body = "The " + riverNames[0]  +  " is running at " + data[riverNames[0]].current + data[riverNames[0]].units + "!"
     }
+    else if (riverNames.length === 2) {
+        title = "2 rivers are running!"
+        body = "The " + riverNames[0] + " and " + riverNames[1] + " are running!"
+    }
     else {
         title = riverNames.length + " rivers are running!"
         let last = riverNames.pop()
-        body = "The " + riverNames.join(", ") + ", and" + last + "are running!"
+        body = "The " + riverNames.join(", ") + ", and " + last + " are running!"
         riverNames.push(last) //Make sure the list stays the same.
     }
+
+    //TODO: Add actions to dismiss notifications for 12 hours, etc.
 
 
     let options = {
