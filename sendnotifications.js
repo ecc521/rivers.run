@@ -2,6 +2,10 @@ const webpush = require("web-push")
 const path = require("path")
 const fs = require("fs")
 
+let keysDirectory = path.join(__dirname, "data", "notifications")
+let publicKeyPath = path.join(__dirname, "public_key") //Use the root directory for the public key.
+let privateKeyPath = path.join(keysDirectory, "private_key")
+
 let vapidKeys = {}
 vapidKeys.publicKey = fs.readFileSync(publicKeyPath, {encoding:"utf8"})
 vapidKeys.privateKey = fs.readFileSync(privateKeyPath, {encoding:"utf8"})
