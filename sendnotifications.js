@@ -32,6 +32,7 @@ function sendNotifications() {
 
 		let parameters = user.parameters
 
+        let data = {};
 		for (let gauge in parameters) {
 			let rivers = parameters[gauge]
 			let flow = flowData[gauge]
@@ -60,18 +61,19 @@ function sendNotifications() {
 					}
 				}
 			}
-			//TODO: Detect users that have unsubscribed, and remove them from the list.
-			//Should be able to detect WebPushError: Received unexpected response code
-			//We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
-			webpush.sendNotification(user.subscription, JSON.stringify(rivers), {
-				vapidDetails: {
-					subject: 'mailto:admin@rivers.run',
-					publicKey: vapidKeys.publicKey,
-					privateKey: vapidKeys.privateKey
-				},
-				TTL: 60*60*36 //Store notification for up to 36 hours.
-			}).then(console.log)
+            data[prop] = rivers[prop]
 		}
+        //TODO: Detect users that have unsubscribed, and remove them from the list.
+        //Should be able to detect WebPushError: Received unexpected response code
+        //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
+        webpush.sendNotification(user.subscription, JSON.stringify(rivers), {
+            vapidDetails: {
+                subject: 'mailto:admin@rivers.run',
+                publicKey: vapidKeys.publicKey,
+                privateKey: vapidKeys.privateKey
+            },
+            TTL: 60*60*36 //Store notification for up to 36 hours.
+        }).then(console.log)
 	}
 }
 
