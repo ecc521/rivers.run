@@ -157,9 +157,22 @@ function pushHandler(event) {
     if (event.data) {
       data = event.data.json();
     }
-    console.log(data)
-    let title = data.title || "Something Has Happened";
-    let body = data.body || "Here's something you might want to check out.";
+
+    let title = "River(s) are running!";
+    let body = "";
+
+    let riverNames = Object.keys(data)
+    if (riverNames.length === 1) {
+        title = "The " + riverNames[0] + " is running!"
+        body = "The " + riverNames[0]  +  "is running at " + data[rivernames[0]].current + data[rivernames[0]].units + "!"
+    }
+    else {
+        title = riverNames.length + " rivers are running!"
+        let last = riverNames.pop()
+        body = "The " + riverNames.join(", ") + ", and" + last + "are running!"
+        riverNames.push(last) //Make sure the list stays the same.
+    }
+
 
     let options = {
       icon: "resources/icons/192x192-Water-Drop.png",
