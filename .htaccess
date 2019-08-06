@@ -28,7 +28,9 @@ RedirectMatch 403 ^/data/.*$
 #ProxyRequests on
 #ProxyPass /node http://127.0.0.1:3000/node
 #ProxyPassReverse /node http://127.0.0.1:3000/node
-
+<FilesMatch "node">
+Header set Cache-Control "no-store"
+</FilesMatch>
 
 #Images can be cached for 5 days. Serve up to 100 days old if errors.
 <FilesMatch "\.(png|jpeg)$">

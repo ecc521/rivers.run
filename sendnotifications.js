@@ -68,7 +68,7 @@ function sendNotifications() {
 					privateKey: vapidKeys.privateKey
 				},
 				TTL: 60*60*36 //Store notification for up to 36 hours.
-			})
+			}).then(console.log)
 		}
 	}
 }
