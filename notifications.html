@@ -4,9 +4,10 @@
     </head>
     <body>
 
-        <h1>River notifications</h1>
+        <h1>River notifications (Beta)</h1>
 
-        <p>Warning: Notifications are in beta. Expect to receive more than you want, plus some glitchy ones!</p>
+        <p>Please be aware that clearing browsing data for rivers.run will likely disable notifications. <br>
+        You may receive alerts that say rivers.run has been running in the background. This happens due to Chrome's treatment of rivers.run notifications. I am working on fixing this issue.</p>
 
         <p id="notificationPermission"></p>
 
@@ -195,7 +196,7 @@
 
         let notificationPermission;
         function updatePermissionNotice() {
-            if (!"PushManager" in window || !"Notification" in window) {
+            if (!"PushManager" in window || !"Notification" in window || !"serviceWorker" in navigator) {
                 document.getElementById("notificationPermission").style.display = "block"
                 document.getElementById("notificationPermission").innerHTML = "Your browser does not support flow notifications."
             }
