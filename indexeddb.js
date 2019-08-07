@@ -77,7 +77,7 @@ let loader = function(appendto){
 
             let store = indexedDB.open(dbname, 1);
 
-            store.onupgradeneeded = function(){
+            store.onupgradeneeded = function(event){
                 let db = event.target.result;
                 db.createObjectStore("data", { keyPath: "key" });
             }
