@@ -210,7 +210,7 @@ function pushHandler(event) {
       renotify: false,
       data: {
           IDs,
-      }
+      },
       tag: 'rivernotification',
     }
 
@@ -229,7 +229,7 @@ self.addEventListener('notificationclick', function(event) {
   if (clients.openWindow) {
       console.log(event)
       let data = event.notification.data.json()
-      
+
       let IDs = data.IDs
 
       let searchQuery = {
