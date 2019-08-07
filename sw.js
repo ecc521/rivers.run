@@ -224,6 +224,7 @@ self.addEventListener('push', pushHandler)
 self.addEventListener('notificationclick', function(event) {
   //TODO: Consider showing only the river(s) being talked about.
   if (clients.openWindow) {
+      console.log(event)
       let data = event.notification.data.json()
       let IDs = []
 
