@@ -228,7 +228,7 @@ self.addEventListener('notificationclick', function(event) {
   //TODO: Consider showing only the river(s) being talked about.
   if (clients.openWindow) {
       console.log(event)
-      let data = event.notification.data.json()
+      let data = event.notification.data
 
       let IDs = data.IDs
 
@@ -236,9 +236,10 @@ self.addEventListener('notificationclick', function(event) {
           id: IDs.join(",")
       }
 
-      let url = rebaseURL(""); //URL to River Info page.
-      url += "#" + JSON.stringify(searchQuery)
+      let url = new URL(rebaseURL("")); //URL to River Info page.
+      url.hash = JSON.stringify(searchQuery)
       event.notification.close(); //Android needs explicit close.
-      clients.openWindow(url) //Open the specified url.
+      console.log(url.href)
+      clients.openWindow(url.href) //Open the specified url.
   }
 });
