@@ -1,3 +1,4 @@
+
 //Generate advanced search parameters from menu
 window.getAdvancedSearchParameters = function(filter) {
 	//filter: Filter out parameters that match defaults.
@@ -41,8 +42,8 @@ window.getAdvancedSearchParameters = function(filter) {
 		document.getElementById("longitudeQuery").style.border = ""
 		document.getElementById("distanceQuery").style.border = ""
 	}
-
-
+	//ID search is currently hidden from the user.
+	parameters.id = window.IDSearchParameters
 
 	parameters.tags = {
 		query: document.getElementById("tagsQuery").value
@@ -110,4 +111,6 @@ window.setMenuFromSearch = function(query) {
 
 	document.getElementById("sortQuery").value = query.sort.query
 	document.getElementById("sortQueryReverse").checked = query.sort.reverse
+	//ID search is currently hidden from the user.
+	window.IDSearchParameters = query.id
 }

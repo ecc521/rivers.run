@@ -21,7 +21,7 @@ window.toDecimalDegrees = function(coord) {
 	minutes += seconds/60
 	degrees += minutes/60
 
-	if (isNaN(Number(degrees))) {throw "Coordinate " + coord + " could not be processed."} 
+	if (isNaN(Number(degrees))) {throw "Coordinate " + coord + " could not be processed."}
 
 	return degrees
 }
@@ -80,14 +80,6 @@ function normalSearch(list, query) {
 
     return list
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -334,6 +326,24 @@ function tagsFilter(list, parameters) {
 
 
 
+function IDSearch(list, query) {
+	if (query === undefined) {return list}
+
+	let components = query.split(",")
+
+	if (components.length === 0) {return list} //No IDs to search for.
+
+	for (let item in list) {
+		let river = list[item]
+		if (!components.includes(river.id)) {
+			delete list[item]
+		}
+	}
+	return list
+}
+
+
+
 
 //This doesn't work for difficulty and rating - no greater than or equal to.
 //That needs to be added
@@ -367,6 +377,9 @@ function advancedSearch(list, query) {
         }
 		else if (property === "tags") {
 			list = tagsFilter(list, parameters)
+		}
+		else if (property === "id") {
+			list = IDSearch(list, parameters)
 		}
         else {
             alert("Unable to search based on " + property)

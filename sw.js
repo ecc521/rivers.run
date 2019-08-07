@@ -224,7 +224,19 @@ self.addEventListener('push', pushHandler)
 self.addEventListener('notificationclick', function(event) {
   //TODO: Consider showing only the river(s) being talked about.
   if (clients.openWindow) {
+      let data = event.notification.data.json()
+      let IDs = []
+
+      for (let id in data) {
+          IDs.push(id)
+      }
+
+      let searchQuery = {
+          id: IDs.join(",")
+      }
+
       let url = rebaseURL(""); //URL to River Info page.
+      url += "#" + JSON.stringify(searchQuery)
       event.notification.close(); //Android needs explicit close.
       clients.openWindow(url) //Open the specified url.
   }
