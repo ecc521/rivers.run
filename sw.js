@@ -235,8 +235,6 @@ function pushHandler(event) {
         if (await notificationsEnabled() || existingNotifications.length > 0) {
             let notification = self.registration.showNotification(title, options)
             console.log(notification)
-        }
-        else {
             //No more notifications for the next 12 hours.
             await disableNotificationsUntil(Date.now() + 1000*60*60*12)
         }
