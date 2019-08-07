@@ -6,21 +6,28 @@
 
         <h1>River notifications (Beta)</h1>
 
-        <p>Please be aware that clearing browsing data for rivers.run will likely disable notifications. <br>
-        You may receive alerts that say rivers.run has been running in the background. This happens due to Chrome's treatment of rivers.run notifications. I am working on fixing this issue.</p>
-
         <p id="notificationPermission"></p>
 
-        <p id="notificationsStatus"></p>
-        <button id="subscribe">Enable Notifications</button>
-        <button id="unsubscribe">Disable Notifications</button>
+        <div id="notificationsState">
+            <p id="notificationsStatus"></p>
+            <button id="subscribe">Enable Notifications</button>
+            <button id="unsubscribe">Disable Notifications</button>
+        </div>
 
-        <p>If notifications are enabled, here are the ones you will see:</p>
         <div id="currentSelections"></div>
 
-        <!-- Consider adding a gauge name column. -->
+        <!-- Consider adding a gauge name column. Add an ID column. -->
+
+        <br><br>
+        <p>Please be aware that clearing browsing data for rivers.run will likely disable notifications. <br><br>
+        You may receive alerts that say rivers.run has been running in the background. This happens due to Chrome's treatment of rivers.run notifications. I am working on fixing this issue.</p>
+
 
         <style>
+        h1 {
+            text-align: center
+        }
+
         .row {
             padding:8px;
             background-color: #bbbbbb;
@@ -34,37 +41,57 @@
 
         #subscribe, #unsubscribe {
             font-size: 16px;
+            border-radius: 10px;
+            padding:8px;
         }
 
+        #subscribe {
+            background: linear-gradient(45deg, lightyellow, lightgreen, lightblue);
+        }
+
+        #unsubscribe {
+            background: linear-gradient(45deg, #FF9999, #9999FF)
+            /*linear-gradient(45deg, #FF6666, #FFaaaa, lightblue, #6666FF);   Text shows up better, but I don't like it as much.*/
+        }
+
+        #notificationsState {
+            text-align: center;
+        }
+
+        #notificationsStatus {
+            display: inline-block;
+            font-size: 20px;
+        }
+
+
         .gaugeColumn {
-            min-width:20%;
-            width:20%;
-            max-width:20%;
+            min-width:25%;
+            width:25%;
+            max-width:25%;
             display: inline-block;
         }
         .nameColumn {
-            min-width:20%;
-            width:20%;
-            max-width:20%;
+            min-width:22%;
+            width:22%;
+            max-width:22%;
             display: inline-block;
         }
-        .minColumn {
-            min-width:20%;
-            width:20%;
-            max-width:20%;
-            display: inline-block;
-        }
-        .maxColumn {
-            min-width:20%;
-            width:20%;
-            max-width:20%;
+        .rangeColumn {
+            min-width:34%;
+            width:34%;
+            max-width:34%;
             display: inline-block;
         }
         .deleteButton {
-            min-width:20%;
-            width:20%;
-            max-width:20%;
+            min-width:6%;
+            width:6%;
+            max-width:6%;
             cursor:pointer;
+            color: red;
+        }
+
+        #currentSelections > :first-child > .deleteButton {
+            color: inherit;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -95,9 +122,8 @@
         //This was HTML, but a space was added in between the spans, unless the spans had no whitespace between them.
         currentSelections.innerHTML += '<div class="row"></div>'
         currentSelections.firstChild.innerHTML += '<span class="gaugeColumn">Gauge</span>'
-        currentSelections.firstChild.innerHTML += '<span class="nameColumn">River Name</span>'
-        currentSelections.firstChild.innerHTML += '<span class="minColumn">Minimum</span>'
-        currentSelections.firstChild.innerHTML += '<span class="maxColumn">Maximum</span>'
+        currentSelections.firstChild.innerHTML += '<span class="nameColumn">Name</span>'
+        currentSelections.firstChild.innerHTML += '<span class="rangeColumn">Range</span>'
         currentSelections.firstChild.innerHTML += '<span class="deleteButton">Delete</span>'
 
 
@@ -129,14 +155,9 @@
                     row.appendChild(nameColumn)
 
                     let minColumn = document.createElement("span")
-                    minColumn.className = "minColumn"
-                    minColumn.innerHTML = selections[gauge][id].minimum + selections[gauge][id].units
+                    minColumn.className = "rangeColumn"
+                    minColumn.innerHTML = selections[gauge][id].minimum + "-" + selections[gauge][id].maximum + selections[gauge][id].units
                     row.appendChild(minColumn)
-
-                    let maxColumn = document.createElement("span")
-                    maxColumn.className = "maxColumn"
-                    maxColumn.innerHTML = selections[gauge][id].maximum + selections[gauge][id].units
-                    row.appendChild(maxColumn)
 
                     let deleteButton = document.createElement("span")
                     deleteButton.className = "deleteButton"
@@ -187,10 +208,18 @@
         async function updateSubscriptionStatus() {
             //TODO: Handle the scenario where the public key has changed. This will need code changes in other places too.
             if (await sw.pushManager.getSubscription() === null) {
-                document.getElementById("notificationsStatus").innerHTML = "All notifications are currently disabled."
+                document.getElementById("notificationsStatus").innerHTML = "Notifications are disabled."
+                document.getElementById("unsubscribe").style.display = "none"
+                document.getElementById("subscribe").style.display = "inline-block"
+                document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
+                currentSelections.style.opacity = 0.5
             }
             else {
-                document.getElementById("notificationsStatus").innerHTML = "Notifications are currently enabled."
+                document.getElementById("notificationsStatus").innerHTML = "Notifications are enabled."
+                document.getElementById("subscribe").style.display = "none"
+                document.getElementById("unsubscribe").style.display = "inline-block"
+                document.getElementById("notificationsState").style.backgroundColor = ""
+                currentSelections.style.opacity = 1
             }
         }
 
