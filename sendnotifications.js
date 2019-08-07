@@ -63,8 +63,7 @@ function sendNotifications() {
                 data[prop] = rivers[prop]
 			}
 		}
-        //TODO: Detect users that have unsubscribed, and remove them from the list.
-        //Should be able to detect WebPushError: Received unexpected response code
+        //TODO: Detect users that have unsubscribed, and remove them from the list. Use the status code that webpush returns.
         //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
         webpush.sendNotification(user.subscription, JSON.stringify(data), {
             vapidDetails: {
@@ -73,7 +72,7 @@ function sendNotifications() {
                 privateKey: vapidKeys.privateKey
             },
             TTL: 60*60*36 //Store notification for up to 36 hours.
-        }).then(console.log)
+        }).catch(console.error).then(console.log)
 	}
 }
 
