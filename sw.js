@@ -208,6 +208,9 @@ function pushHandler(event) {
       sound: 'resources/waterfall.mp3',
       requireInteraction: true, //Don't auto-close the notification.
       renotify: false,
+      data: {
+          IDs,
+      }
       tag: 'rivernotification',
     }
 
@@ -226,11 +229,8 @@ self.addEventListener('notificationclick', function(event) {
   if (clients.openWindow) {
       console.log(event)
       let data = event.notification.data.json()
-      let IDs = []
-
-      for (let id in data) {
-          IDs.push(id)
-      }
+      
+      let IDs = data.IDs
 
       let searchQuery = {
           id: IDs.join(",")
