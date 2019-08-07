@@ -219,7 +219,7 @@ function pushHandler(event) {
     let options = {
       icon: "resources/icons/192x192-Water-Drop.png",
       body,
-      badge: "resources/icons/32x32-Water-Drop.png",
+      badge: "resources/icons/72x72-Water-Drop.png",
       sound: 'resources/waterfall.mp3',
       requireInteraction: true, //Don't auto-close the notification.
       renotify: false,
