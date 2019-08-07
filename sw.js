@@ -165,7 +165,7 @@ function pushHandler(event) {
     let IDs = []
 
     for (let id in data) {
-        riverNames.push(data[id][name])
+        riverNames.push(data[id].name)
         IDs.push(id)
     }
 
