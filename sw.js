@@ -161,7 +161,13 @@ function pushHandler(event) {
     let title = "River(s) are running!";
     let body = "";
 
-    let riverNames = Object.keys(data)
+    let riverNames = []
+    let IDs = []
+
+    for (let id in data) {
+        riverNames.push(data[id][name])
+        IDs.push(id)
+    }
 
     console.log(data)
 
