@@ -59,8 +59,9 @@ function activateHandler(event) {
 self.addEventListener("activate", activateHandler)
 
 
-
-
+self.addEventListener("install", function() {
+    self.skipWaiting()
+})
 
 
 //Milliseconds to wait for network response before using cache
