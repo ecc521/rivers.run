@@ -184,7 +184,7 @@ function pushHandler(event) {
     }
     else if (riverNames.length === 1) {
         title = "The " + riverNames[0] + " is running!"
-        body = "The " + riverNames[0]  +  " is running at " + data[riverNames[0]].current + data[riverNames[0]].units + "!"
+        body = "The " + riverNames[0]  +  " is running at " + data[IDs[0]].current + data[IDs[0]].units + "!"
     }
     else if (riverNames.length === 2) {
         title = "2 rivers are running!"
