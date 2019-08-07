@@ -4,6 +4,8 @@ return self.clients.matchAll().then(clients => {
 })
 }
 
+self.importScripts("indexeddb.js")
+
 const cacheName = "rivers.run"
 const waitOnFirstLoad = 2500 //Milliseconds to wait before fetching items on preload list. Helps prevent duplicate requests on first load.
 
@@ -19,7 +21,8 @@ const preloadList = [
     "packages/index.js",
     "riverarray.js",
     "overviews.js",
-    "resources/5Stars.png"
+    "resources/5Stars.png",
+    "indexeddb.js"
 ]
 
 function rebaseURL(url) {
@@ -151,6 +154,18 @@ function fetchHandler(event) {
 self.addEventListener("fetch", fetchHandler)
 
 
+let dbName = "rivers.run"
+async function disableNotificationsUntil(timestamp) {
+    let db = await lib.loaddb(dbName)
+    await db.set("flowNotificationsTimestamp", timestamp)
+}
+
+async function notificationsEnabled() {
+    let db = await lib.loaddb(dbName)
+    return (Date.now() > await db.get("flowNotificationsTimestamp"))
+}
+
+
 
 function pushHandler(event) {
     console.log(event)
@@ -214,10 +229,18 @@ function pushHandler(event) {
       tag: 'rivernotification',
     }
 
-    let notification = self.registration.showNotification(title, options)
-    console.log(notification)
-
-    event.waitUntil(notification) //Try to make sure Chrome doesn't notify the user that rivers.run was running in the background.
+    event.waitUntil((async function() {
+        let existingNotifications = await sw.getNotifications({tag: "rivernotification"})
+        //Do not create new notifications if notifications are disabled.
+        if (await notificationsEnabled() || existingNotifications.length > 0) {
+            let notification = self.registration.showNotification(title, options)
+            console.log(notification)
+        }
+        else {
+            //No more notifications for the next 12 hours.
+            await disableNotificationsUntil(Date.now() + 1000*60*60*12)
+        }
+    }()))
 }
 
 self.addEventListener('push', pushHandler)
