@@ -182,18 +182,19 @@ function pushHandler(event) {
         }()))
         return;
     }
+    //If a rivers name ends with Creek, don't use the work "The"
     else if (riverNames.length === 1) {
-        title = "The " + riverNames[0] + " is running!"
-        body = "The " + riverNames[0]  +  " is running at " + data[IDs[0]].current + data[IDs[0]].units + "!"
+        title = (riverNames[0].trim().endsWith("Creek")?"":"The ") + riverNames[0] + " is running!"
+        body = (riverNames[0].trim().endsWith("Creek")?"":"The ") + riverNames[0]  +  " is at " + data[IDs[0]].current + data[IDs[0]].units + "!"
     }
     else if (riverNames.length === 2) {
         title = "2 rivers are running!"
-        body = "The " + riverNames[0] + " and " + riverNames[1] + " are running!"
+        body = (riverNames[0].trim().endsWith("Creek")?"":"The ") + riverNames[0] + " and " + riverNames[1] + " are running!"
     }
     else {
         title = riverNames.length + " rivers are running!"
         let last = riverNames.pop()
-        body = "The " + riverNames.join(", ") + ", and " + last + " are running!"
+        body = (riverNames[0].trim().endsWith("Creek")?"":"The ") + riverNames.join(", ") + ", and " + last + " are running!"
         riverNames.push(last) //Make sure the list stays the same.
     }
 
