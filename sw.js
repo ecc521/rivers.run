@@ -190,7 +190,7 @@ function pushHandler(event) {
     if (riverNames.length === 0) {
         //Close existing river notifications.
         event.waitUntil((async function() {
-            let existingNotifications = await sw.getNotifications({tag: "rivernotification"})
+            let existingNotifications = await self.registration..getNotifications({tag: "rivernotification"})
             existingNotifications.forEach((notification) => {
                 notification.close()
             })
@@ -230,7 +230,7 @@ function pushHandler(event) {
     }
 
     event.waitUntil((async function() {
-        let existingNotifications = await sw.getNotifications({tag: "rivernotification"})
+        let existingNotifications = await self.registration.getNotifications({tag: "rivernotification"})
         //Do not create new notifications if notifications are disabled.
         if (await notificationsEnabled() || existingNotifications.length > 0) {
             let notification = self.registration.showNotification(title, options)
