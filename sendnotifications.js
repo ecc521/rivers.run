@@ -18,6 +18,18 @@ webpush.setVapidDetails(
 
 let storagePath = path.join(__dirname, "data", "notifications", "subscriptions.json")
 
+function deleteUserSubscription(endpoint) {
+	if (!fs.existsSync(storagePath)) {
+        console.error("Can't delete subscription. storagePath doesn't exist.")
+        return;
+	}
+    let current = fs.readFileSync(storagePath, {encoding:"utf8"})
+	let obj = JSON.parse(current)
+	delete obj[endpoint]
+	fs.writeFileSync(storagePath, JSON.stringify(obj), {encoding:"utf8"})
+}
+
+
 function sendNotifications() {
 	if (!fs.existsSync(storagePath)) {
 		//There are no subscriptions
@@ -72,7 +84,13 @@ function sendNotifications() {
                 privateKey: vapidKeys.privateKey
             },
             TTL: 60*60*36 //Store notification for up to 36 hours.
-        }).catch(console.error).then(console.log)
+        }).catch((e) => {
+            console.error(e)
+            //The users subscription is either invalid, or never was valid.
+            if (e.statusCode === 410 || e.statusCode === 404) {
+                deleteUserSubscription(user.subscription.endpoint)
+            }
+        }).then(console.log)
 	}
 }
 
