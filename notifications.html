@@ -19,9 +19,7 @@
         <!-- Consider adding a gauge name column. Add an ID column. -->
 
         <br><br>
-        <p>Please be aware that clearing browsing data for rivers.run will likely disable notifications. <br><br>
-        You may receive alerts that say rivers.run has been updated in the background. This happens due to Chrome's treatment of rivers.run notifications. I am working on fixing this issue.</p>
-
+        <p>Please be aware that clearing browsing data for rivers.run will likely disable notifications. </p>
 
         <style>
         h1 {
@@ -185,12 +183,13 @@
         redrawRows()
 
 
-        async function syncWithServer() {
+        async function syncWithServer(timeStamp = 0) {
             await fetch("https://rivers.run/node", {
                 method: "POST",
                 body:JSON.stringify({
                     subscription: await (await navigator.serviceWorker.ready).pushManager.getSubscription(),
                     parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}")
+                    noneUntil: timeStamp
                 })
             })
         }

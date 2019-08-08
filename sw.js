@@ -4,8 +4,6 @@ return self.clients.matchAll().then(clients => {
 })
 }
 
-self.importScripts("indexeddb.js")
-
 const cacheName = "rivers.run"
 const waitOnFirstLoad = 2500 //Milliseconds to wait before fetching items on preload list. Helps prevent duplicate requests on first load.
 
@@ -22,7 +20,6 @@ const preloadList = [
     "riverarray.js",
     "overviews.js",
     "resources/5Stars.png",
-    "indexeddb.js"
 ]
 
 function rebaseURL(url) {
@@ -153,18 +150,15 @@ function fetchHandler(event) {
 
 self.addEventListener("fetch", fetchHandler)
 
-
-let dbName = "rivers.run"
-async function disableNotificationsUntil(timestamp) {
-    let db = await lib.loaddb(dbName)
-    await db.set("flowNotificationsTimestamp", timestamp)
+async function disableNotificationsUntil(timeStamp = 0) {
+    await fetch("https://rivers.run/node", {
+        method: "POST",
+        body:JSON.stringify({
+            subscription: await self.registration.pushManager.getSubscription(),
+            noneUntil: timeStamp
+        })
+    })
 }
-
-async function notificationsEnabled() {
-    let db = await lib.loaddb(dbName)
-    return (Date.now() > await db.get("flowNotificationsTimestamp"))
-}
-
 
 
 function pushHandler(event) {
@@ -233,10 +227,10 @@ function pushHandler(event) {
         let existingNotifications = await self.registration.getNotifications({tag: "rivernotification"})
         //Do not create new notifications if notifications are disabled.
         if (await notificationsEnabled() || existingNotifications.length > 0) {
-            let notification = self.registration.showNotification(title, options)
+            let notification = await self.registration.showNotification(title, options)
             console.log(notification)
             //No more notifications for the next 12 hours.
-            await disableNotificationsUntil(Date.now() + 1000*60*60*12)
+            await disableNotificationsUntil(Date.now() + 1000*60*60*8)
         }
     }()))
 }

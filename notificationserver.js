@@ -89,6 +89,16 @@ async function httprequest(req,res) {
 			res.setHeader('Content-Type', 'text/plain');
 			res.end('Saved Subscription\n');
 		}
+		else if (data.subscription && data.noneUntil) {
+			//Update noneUntil (disables notifications temporarily)
+			let subscription = getUserSubscription(data.subscription.endpoint)
+			subscription.noneUntil = data.noneUntil
+			saveUserSubscription(subscription)
+
+			res.statusCode = 200;
+			res.setHeader('Content-Type', 'text/plain');
+			res.end('Disabled notifications until timestamp ' + subscription.noneUntil + "\n");
+		}
 		else {
 			console.log(data)
 			res.statusCode = 404;

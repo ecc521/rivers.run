@@ -42,6 +42,9 @@ function sendNotifications() {
 	for (let url in subscriptions) {
 		let user = subscriptions[url]
 
+        //Don't send the user a notification yet.
+        if (user.noneUntil > Date.now()) {continue;}
+
 		let parameters = user.parameters
 
         let data = {};
@@ -75,9 +78,9 @@ function sendNotifications() {
                 data[prop] = rivers[prop]
 			}
 		}
-        //TODO: Detect users that have unsubscribed, and remove them from the list. Use the status code that webpush returns.
         //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
         webpush.sendNotification(user.subscription, JSON.stringify(data), {
+            //Not sure if vapidDetails is needed, because webpush.setVapidDetails was used above.
             vapidDetails: {
                 subject: 'mailto:admin@rivers.run',
                 publicKey: vapidKeys.publicKey,
@@ -86,7 +89,7 @@ function sendNotifications() {
             TTL: 60*60*36 //Store notification for up to 36 hours.
         }).catch((e) => {
             console.error(e)
-            //The users subscription is either invalid, or never was valid.
+            //The users subscription is either now invalid, or never was valid.
             if (e.statusCode === 410 || e.statusCode === 404) {
                 deleteUserSubscription(user.subscription.endpoint)
             }
