@@ -84,6 +84,7 @@ async function httprequest(req,res) {
 		else if (data.subscription && data.parameters) {
 			//data.subscription contains the details needed to send push notifications.
 			//data.parameters contains the conditions under which to send notifications.
+			//TODO: Consider preserving noneUntil if it is not present in the POST request.
 			saveUserSubscription(data)
 			res.statusCode = 200;
 			res.setHeader('Content-Type', 'text/plain');
