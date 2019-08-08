@@ -19,7 +19,6 @@ const preloadList = [
     "packages/index.js",
     "riverarray.js",
     "overviews.js",
-    "resources/5Stars.png",
 ]
 
 function rebaseURL(url) {
@@ -259,5 +258,6 @@ self.addEventListener("notificationclose", function() {
     //Automatic notifications by chrome pose an issue here - if the user closes notifications offline, they will receive one notification That
     //they shouldn't. If rivers.run blocks that, and it happens again, Chrome will create a notification.
     //Proposal for chrome: If the user interacted with the previous notification, you do not have to create another one.
-    disableNotificationsUntil(Date.now() + 1000*60*60*8)
+    let promise = disableNotificationsUntil(Date.now() + 1000*60*60*8)
+    console.log(promise)
 })
