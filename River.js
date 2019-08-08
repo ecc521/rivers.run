@@ -143,9 +143,19 @@ function addHandlers(button, locate) {
 
 				console.log(current)
 
-				//Add the notification selector.
+				//Container for the river alert creator.
+				let container = document.createElement("div")
+				div.appendChild(container)
+
+				//Describe what this does, and alert the user if their browser is unsupported.
 				let description = document.createElement("p")
+				container.appendChild(description)
 				description.innerHTML = "Set alerts for " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + ":<br>"
+
+				if (!("PushManager" in window) || !("Notification" in window) || !("serviceWorker" in navigator)) {
+					description.innerHTML += "Your browser does not support flow alerts. You can try using Firefox, Chrome, Opera, or Edge, or Samsung Internet. On iOS, there is no browser that will work, due to Apple forcing other browsers to use Safari's terrible Javascript engine."
+					return;
+				}
 
 				let low = document.createElement("input")
 				low.type = "number"
@@ -231,14 +241,11 @@ function addHandlers(button, locate) {
 					window.open("notifications.html")
 				})
 
-				let container = document.createElement("div")
-				container.appendChild(description)
 				container.appendChild(low)
 				container.appendChild(high)
 				container.appendChild(units)
 				container.appendChild(save)
 				container.appendChild(manage)
-				div.appendChild(container)
 			}
 
 
