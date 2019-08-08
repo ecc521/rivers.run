@@ -247,6 +247,8 @@ self.addEventListener('notificationclick', function(event) {
       let url = new URL(rebaseURL("")); //URL to River Info page.
       url.hash = JSON.stringify(searchQuery)
       event.notification.close(); //Android needs explicit close.
+      self.dispatchEvent(new Event("notificationclose")) //I thought that the event was supposed to fire when the notification was closed for
+      //any purpose, however, at least in chrome, it did not.
       console.log(url.href)
       clients.openWindow(url.href) //Open the specified url.
   }

@@ -90,7 +90,7 @@ async function httprequest(req,res) {
 			res.setHeader('Content-Type', 'text/plain');
 			res.end('Saved Subscription\n');
 		}
-		else if (data.subscription && data.noneUntil) {
+		else if (data.subscription && data.noneUntil !== undefined) {
 			//Update noneUntil (disables notifications temporarily)
 			let subscription = getUserSubscription(data.subscription.endpoint)
 			subscription.noneUntil = data.noneUntil
