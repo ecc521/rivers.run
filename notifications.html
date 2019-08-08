@@ -188,7 +188,7 @@
                 method: "POST",
                 body:JSON.stringify({
                     subscription: await (await navigator.serviceWorker.ready).pushManager.getSubscription(),
-                    parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}")
+                    parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}"),
                     noneUntil: timeStamp
                 })
             })
