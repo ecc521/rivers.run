@@ -225,13 +225,10 @@ function pushHandler(event) {
 
     event.waitUntil((async function() {
         let existingNotifications = await self.registration.getNotifications({tag: "rivernotification"})
-        //Do not create new notifications if notifications are disabled.
-        if (await notificationsEnabled() || existingNotifications.length > 0) {
-            let notification = await self.registration.showNotification(title, options)
-            console.log(notification)
-            //No more notifications for the next 12 hours.
-            await disableNotificationsUntil(Date.now() + 1000*60*60*8)
-        }
+        let notification = await self.registration.showNotification(title, options)
+        console.log(notification)
+        //No more notifications for the next 12 hours.
+        await disableNotificationsUntil(Date.now() + 1000*60*60*8)
     }()))
 }
 
