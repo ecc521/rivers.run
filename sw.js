@@ -259,5 +259,5 @@ self.addEventListener("notificationclose", function() {
     //Automatic notifications by chrome pose an issue here - if the user closes notifications offline, they will receive one notification That
     //they shouldn't. If rivers.run blocks that, and it happens again, Chrome will create a notification.
     //Proposal for chrome: If the user interacted with the previous notification, you do not have to create another one.
-    await disableNotificationsUntil(Date.now() + 1000*60*60*8)
+    disableNotificationsUntil(Date.now() + 1000*60*60*8)
 })
