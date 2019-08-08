@@ -227,13 +227,10 @@ function pushHandler(event) {
         let existingNotifications = await self.registration.getNotifications({tag: "rivernotification"})
         let notification = await self.registration.showNotification(title, options)
         console.log(notification)
-        //No more notifications for the next 12 hours.
-        await disableNotificationsUntil(Date.now() + 1000*60*60*8)
     }()))
 }
 
 self.addEventListener('push', pushHandler)
-
 
 
 self.addEventListener('notificationclick', function(event) {
@@ -255,3 +252,12 @@ self.addEventListener('notificationclick', function(event) {
       clients.openWindow(url.href) //Open the specified url.
   }
 });
+
+self.addEventListener("notificationclose", function() {
+    //No more notifications for the next 8 hours.
+    //TODO: Use background sync for if the user is offline when they close the notification.
+    //Automatic notifications by chrome pose an issue here - if the user closes notifications offline, they will receive one notification That
+    //they shouldn't. If rivers.run blocks that, and it happens again, Chrome will create a notification.
+    //Proposal for chrome: If the user interacted with the previous notification, you do not have to create another one.
+    await disableNotificationsUntil(Date.now() + 1000*60*60*8)
+})
