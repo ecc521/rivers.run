@@ -225,13 +225,12 @@
             }
         }
 
-        let notificationPermission;
         function updatePermissionNotice() {
             if (!"PushManager" in window || !"Notification" in window || !"serviceWorker" in navigator) {
                 document.getElementById("notificationPermission").style.display = "block"
                 document.getElementById("notificationPermission").innerHTML = "Your browser does not support flow notifications."
             }
-            else if (notificationPermission.state === "denied") {
+            else if (Notification.permission === "denied") {
                 document.getElementById("notificationPermission").style.display = "block"
                 document.getElementById("notificationPermission").innerHTML = "You denied rivers.run notifications permission. You will need to change this in site settings."
             }
@@ -261,13 +260,14 @@
         ;(async function() {
 
             window.sw = await navigator.serviceWorker.ready
-            notificationPermission = await navigator.permissions.query({name:"notifications"})
+
+            try {
+                (await navigator.permissions.query({name:"notifications"})).onchange = updatePermissionNotice
+            }
+            catch(e) {console.error(e)}
 
             updatePermissionNotice()
-            notificationPermission.onchange = updatePermissionNotice
-
             updateSubscriptionStatus()
-
 
 
             document.getElementById("unsubscribe").addEventListener("click", async function() {
