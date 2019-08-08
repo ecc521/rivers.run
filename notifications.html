@@ -271,14 +271,10 @@
 
 
             document.getElementById("unsubscribe").addEventListener("click", async function() {
-                if (await sw.pushManager.getSubscription() === null) {
-                    alert("You are not subscribed to notifications")
-                }
-                else if (confirm("Are you sure that you no longer want to receive notifications when rivers become runnable?")) {
+                if (confirm("Are you sure that you no longer want to receive notifications when rivers become runnable?")) {
                     try {
                         let subscription = await sw.pushManager.getSubscription()
                         await subscription.unsubscribe()
-                        alert("Unsubscribed from all river notifications")
                     }
                     catch (e) {
                         alert("Failed to unsubscribe from river notifications. Error message: \n\n" + e)
@@ -289,10 +285,6 @@
 
 
             document.getElementById("subscribe").addEventListener("click", async function() {
-                if (await sw.pushManager.getSubscription() !== null) {
-                    alert("You are already subscribed to notifications")
-                    return;
-                }
                 try {
                     await Notification.requestPermission()
                     //Load the public key.
