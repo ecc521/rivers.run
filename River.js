@@ -153,7 +153,7 @@ function addHandlers(button, locate) {
 				description.innerHTML = "Set alerts for " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + ":<br>"
 
 				if (!("PushManager" in window) || !("Notification" in window) || !("serviceWorker" in navigator)) {
-					description.innerHTML += "Your browser does not support flow alerts. You can try using Firefox, Chrome, Opera, or Edge, or Samsung Internet. On iOS, there is no browser that will work, due to Apple forcing other browsers to use Safari's terrible Javascript engine."
+					description.innerHTML += "Your browser does not support flow alerts. You can try using Firefox, Chrome, Opera, or Edge, or Samsung Internet. On iOS, Apple provides no reasonable way to send web notifications, and uses their control of the App Store to prevent other browsers from supporting notifications. Rivers.run is working on email notifications to remedy this situation. "
 					return;
 				}
 
