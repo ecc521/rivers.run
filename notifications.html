@@ -34,7 +34,10 @@
         .row:nth-child(odd) {
             background-color: #cccccc;
         }
-        .row:first-child {
+        .row:hover {
+            background-color: #aaaaaa;
+        }
+        .row:first-child, .row:first-child:hover {
             background-color:lightgreen;
         }
 
@@ -114,8 +117,11 @@
             .row:nth-child(odd) {
                 background-color: #666666;
             }
-            .row:first-child {
+            .row:first-child, .row:first-child:hover {
                 background-color:darkgreen;
+            }
+            .row:hover {
+                background-color: #757575;
             }
             #notificationPermission {
                 background-color: #555500;
@@ -189,6 +195,17 @@
                     })
 
                     currentSelections.appendChild(row)
+
+                    let panel = document.createElement("div")
+                    panel.innerHTML = "id: " + id
+
+                    row.addEventListener("click", function() {
+                        let currentlyExists = (panel.offsetHeight > 0)
+                        panel.remove() //Doesn't do anything if panel doesn't exist.
+                        if (!currentlyExists) {
+                            currentSelections.insertBefore(panel, row.nextSibling)
+                        }
+                    });
                 }
             }
         }
