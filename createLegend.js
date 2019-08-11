@@ -91,8 +91,7 @@ function makeSticky(canvas) {
     window.addEventListener("scroll", function() {
         //We could use canvas.offsetTop, but that doesn't work with absolute positioning, and can't be calculated once,
         //because warnings and alerts above the canvas can change the correct offset.
-        //We can approxtimate this number VERY closley using the topbar and canvas height.
-        //This is probably better than removing the absolute positioning to calculate, then re-adding.
+        //As such, we will use #topbar, and subtract the height of the canvas.
         let elementOffset = document.getElementById("topbar").offsetTop - canvas.height
         let pageOffset = window.pageYOffset
 

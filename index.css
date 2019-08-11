@@ -112,7 +112,9 @@ html, body {
     font-weight: bold;
 }
 
-
+#legend {
+    display: block; /*Remove space at bottom.*/
+}
 
 /*riverspans are the spans that actually hold the information - there are 6 riverspans for each river.
 Those include name,section,skill,quality, and flow info*/
