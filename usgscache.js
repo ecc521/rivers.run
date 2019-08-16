@@ -11,9 +11,10 @@ const path = require("path")
 const fetch = require("node-fetch")
 
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
-require("./dataparse.js") //
+//Use child_process.execSync to allow for synchronus execution.
+child_process.execSync("node " + __dirname + "dataparse.js")
 setInterval(function() {
-	require("./dataparse.js")
+	child_process.execSync("node " + __dirname + "dataparse.js")
 }, 1000*60*60*24)
 
 require("./notificationserver.js")
