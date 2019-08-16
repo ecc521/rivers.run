@@ -26,6 +26,8 @@ const sendNotifications = require("./sendnotifications.js");
 
 const flowDataParser = require("./flowDataParser.js")
 
+const precompress = require("./precompress.js")
+
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
 
 
@@ -88,6 +90,9 @@ async function updateCachedData() {
 	if (process.argv[2] === "--install") {
 		process.exit()
 	}
+	
+	console.log("Precompressing files...")
+	precompress()
 	
 	let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
 	console.log(timer)
