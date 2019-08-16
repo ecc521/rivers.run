@@ -66,30 +66,17 @@ let loadUSGS = async function(useCache) {
 		}
     }
 
-	function getUSGSDataAge() {
-		let notes = usgsdata.value.queryInfo.note
-		//Find where requestDT is located. (never seen it outside position 3)
-		for (let i=0;i<notes.length;i++) {
-			if (notes[i].title === "requestDT") {
-				return new Date(notes[i].value).getTime();
-			}
-		}
-	}
 
-
-	let cacheURL = "usgscache.json"
-
-    let response;
-    let usgsdata;
+	let cacheURL = "flowdata.json"
 
 	if (useCache) {
 		let cache = await caches.open("rivers.run")
-		response = await caches.match("usgscache.json")
-		usgsdata = await response.json()
+		let response = await caches.match("usgscache.json")
+		window.usgsarray = await response.json()
 	}
 	else if (window.fetch) {
-		response = await fetch(cacheURL)
-		usgsdata = await response.json()
+		let response = await fetch(cacheURL)
+		window.usgsarray = await response.json()
 	}
 	else {
 		//For browsers that don't support fetch
@@ -99,49 +86,14 @@ let loadUSGS = async function(useCache) {
 			request.open("GET", cacheURL);
 			request.send()
 		})
-		usgsdata = JSON.parse(response)
+		window.usgsarray = JSON.parse(response)
 	}
 
-	window.requestTime = getUSGSDataAge()
+	window.requestTime = usgsarray.generatedAt
 	updateUSGSDataInfo()
 	window.updateOldDataWarning()
 
-    //Iterate through all known conditions
-    usgsdata.value.timeSeries.forEach(function(event){
-        let obj2 = {}
-        obj2.values = event.values[0].value //The values - ex. Gauge Height Array
 
-        if (obj2.values.length === 0) {
-            console.log("Empty Array. Skipping")
-            return;
-        }
-
-        obj2.units = event.variable.variableDescription //Units of values
-
-        let sitecode = event.sourceInfo.siteCode[0].value
-        //See if the site is already in the array.
-        //If the site code is not in the array, add it.
-        if (!usgsarray[sitecode]) {
-            let obj3 = {}
-            obj3.name = event.sourceInfo.siteName
-            usgsarray[sitecode] = obj3
-        }
-
-        let variablecode = event.variable.variableCode[0].value
-
-        //Convert celcius to farenheight
-        if (variablecode === "00010" && obj2.units === "Temperature, water, degrees Celsius") {
-            for (let i=0;i<obj2.values.length;i++) {
-                obj2.values[i].value = obj2.values[i].value * 1.8 + 32
-            }
-
-            obj2.units = "Temperature, water, degrees Fahrenheit"
-        }
-
-
-        //Add the values onto the site code object
-        usgsarray[sitecode][variablecode] = obj2
-    })
 
 	//Add USGS Data to Graph
 	for (let i=0;i<ItemHolder.length;i++) {
