@@ -18,10 +18,16 @@ setInterval(function() {
 	child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
 }, 1000*60*60*24)
 
-require("./notificationserver.js")
-//On reboot, run notificationserver.js
 
-const sendNotifications = require("./sendnotifications.js")
+let sendNotifications;
+
+//Don't run the server on install.
+if (process.argv[2] !== "--install") {
+	require("./notificationserver.js")
+	//On reboot, run notificationserver.js
+	sendNotifications = require("./sendnotifications.js");
+}
+
 const flowDataParser = require("./flowDataParser.js")
 
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
