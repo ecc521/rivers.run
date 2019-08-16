@@ -9,6 +9,7 @@
 const fs = require("fs")
 const path = require("path")
 const fetch = require("node-fetch")
+const child_process = require("child_process")
 
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
 //Use child_process.execSync to allow for synchronus execution.
