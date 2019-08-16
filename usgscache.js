@@ -65,10 +65,14 @@ async function updateCachedData() {
 	let time = Date.now() - start
 	fs.appendFileSync(path.join(__dirname, 'usgsloadingtime.log'), time + '\n');
 
-	fs.writeFileSync(path.join(__dirname, "usgscache.json"), usgsData) //No longer used by website. Still maintained for devices on the old site.
+	fs.writeFileSync(path.join(__dirname, "usgscache.json"), usgsData) //usgscache.json longer used by website. Still maintained for devices on the old site.
 	let usgsarray = flowDataParser.parseUSGS(JSON.parse(usgsData))
 	usgsarray.generatedAt = Date.now()
-	fs.writeFileSync(path.join(__dirname, "flowdata.json"), JSON.stringify(usgsarray))
+	fs.writeFileSync(path.join(__dirname, "flowdata.json"), JSON.stringify(usgsarray)) //flowdata.json no longer used by website. Still maintained for devices on the old site.
+	
+	let usgsarray2 = flowDataParser.reformatUSGS(usgsarray)
+	fs.writeFileSync(path.join(__dirname, "flowdata2.json"), JSON.stringify(usgsarray2))
+	
 	sendNotifications()
 
 

@@ -67,7 +67,7 @@ let loadUSGS = async function(useCache) {
     }
 
 
-	let cacheURL = "flowdata.json"
+	let cacheURL = "flowdata2.json"
 
 	if (useCache) {
 		let cache = await caches.open("rivers.run")

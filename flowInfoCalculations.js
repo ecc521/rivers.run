@@ -3,10 +3,8 @@
 function calculateDirection(usgsNumber) {
     let usgsData = usgsarray[usgsNumber]
     if (usgsData) {
-        let data;
 
-        if (usgsData["00060"]) {data = usgsData["00060"].values}
-        else if (usgsData["00065"]) {data = usgsData["00065"].values}
+        let data = usgsData.cfs || usgsData.feet
 
         if (data) {
             let current;
@@ -51,12 +49,7 @@ function calculateAge(usgsNumber) {
 	//Returns millseconds old that USGS data is
     let usgsData = window.usgsarray[usgsNumber]
     if (usgsData) {
-        let data;
-
-        if (usgsData["00060"]) {data = usgsData["00060"].values}
-        else if (usgsData["00065"]) {data = usgsData["00065"].values}
-        else if (usgsData["00010"]) {data = usgsData["00010"].values}
-        else if (usgsData["00045"]) {data = usgsData["00045"].values}
+        let data = usgsData.cfs || usgsData.feet || usgsData.temp || usgsData.precip;
 
         if (data) {
             for (let i=data.length;i>=0;i--) {
