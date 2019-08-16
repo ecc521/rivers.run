@@ -71,15 +71,15 @@ AddType "image/svg+xml" .svg.br .svg.gz
 
 Header append Vary Accept-Encoding
 
-#Serve a brotli compressed file when possible.
-RewriteCond %{HTTP:Accept-Encoding} br
-RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_FILENAME}.br -s
-RewriteRule ^(.*)$ %{DOCUMENT_ROOT}/%{REQUEST_FILENAME}.br [E=no-gzip,L]
-
-#Otherwise, serve a gzip compressed file if possible.
+#Serve a gzip compressed file if possible.
 RewriteCond %{HTTP:Accept-Encoding} gzip
 RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_FILENAME}.gz -s
 RewriteRule ^(.*)$ %{DOCUMENT_ROOT}/%{REQUEST_FILENAME}.gz [E=no-gzip,L]
+
+#Prefer a brotli compressed file when possible.
+RewriteCond %{HTTP:Accept-Encoding} br
+RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_FILENAME}.br -s
+RewriteRule ^(.*)$ %{DOCUMENT_ROOT}/%{REQUEST_FILENAME}.br [E=no-gzip,L]
 
 #Run other files through deflate. I think this uses the default compression level of 7.
 SetOutputFilter DEFLATE
