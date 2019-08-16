@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "webpack": "webpack"
+    "webpack": "webpack",
+	"postinstall": "./install.js"
   },
   "repository": {
     "type": "git",

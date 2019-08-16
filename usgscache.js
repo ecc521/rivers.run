@@ -9,17 +9,20 @@
 const fs = require("fs")
 const path = require("path")
 const fetch = require("node-fetch")
-const sendNotifications = require("./sendnotifications.js")
-const flowDataParser = require("./flowDataParser.js")
-
-fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
-
 
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
 require("./dataparse.js") //
 setInterval(function() {
 	require("./dataparse.js")
 }, 1000*60*60*24)
+
+require("./notificationserver.js")
+//On reboot, run notificationserver.js
+
+const sendNotifications = require("./sendnotifications.js")
+const flowDataParser = require("./flowDataParser.js")
+
+fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
 
 
 let riverarray;
@@ -77,7 +80,3 @@ async function updateCachedData() {
 
 
 updateCachedData()
-
-
-require("./notificationserver.js")
-//On reboot, run notificationserver.js
