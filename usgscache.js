@@ -13,9 +13,9 @@ const child_process = require("child_process")
 
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
 //Use child_process.execSync to allow for synchronus execution.
-child_process.execSync("node " + __dirname + "dataparse.js")
+child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
 setInterval(function() {
-	child_process.execSync("node " + __dirname + "dataparse.js")
+	child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
 }, 1000*60*60*24)
 
 require("./notificationserver.js")
