@@ -26,17 +26,9 @@ setInterval(function() {
 }, 1000*60*60*24)
 
 
-let sendNotifications;
+require("./notificationserver.js") //On reboot, run notificationserver.js
+const sendNotifications = require("./sendnotifications.js");
 
-//Don't run the server on install.
-if (process.argv[2] !== "--install") {
-	require("./notificationserver.js")
-	//On reboot, run notificationserver.js
-	sendNotifications = require("./sendnotifications.js");
-}
-else {
-	sendNotifications = function() {}
-}
 const flowDataParser = require("./flowDataParser.js")
 
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
@@ -91,11 +83,13 @@ async function updateCachedData() {
 	fs.appendFileSync(path.join(__dirname, 'executiontimer.log'), (currentTime.getTime() - Date.now() + 60*1000) + '\n');
 
 
-	//Don't keep running on install.
-	if (process.argv[2] !== "--install") {
-		let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
-		console.log(timer)
+	//End install script
+	if (process.argv[2] === "--install") {
+		process.exit()
 	}
+	
+	let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
+	console.log(timer)
 }
 
 
