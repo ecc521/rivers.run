@@ -13,9 +13,16 @@ const child_process = require("child_process")
 
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
 //Use child_process.execSync to allow for synchronus execution.
-child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
+process.stdout.write("Generating riverarray.js - this may take a while (should be no more than 200 milliseconds per river)\n")
+child_process.execSync("node " + path.join(__dirname, "dataparse.js"), {
+	stido: "pipe",
+	encoding: "utf8"
+})
 setInterval(function() {
-	child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
+	child_process.execSync("node " + path.join(__dirname, "dataparse.js"), {
+		stido: "pipe",
+		encoding: "utf8"
+	})
 }, 1000*60*60*24)
 
 
@@ -27,7 +34,9 @@ if (process.argv[2] !== "--install") {
 	//On reboot, run notificationserver.js
 	sendNotifications = require("./sendnotifications.js");
 }
-
+else {
+	sendNotifications = function() {}
+}
 const flowDataParser = require("./flowDataParser.js")
 
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
