@@ -14,15 +14,10 @@ const child_process = require("child_process")
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
 //Use child_process.execSync to allow for synchronus execution.
 process.stdout.write("Generating riverarray.js - this may take a while (should be no more than 200 milliseconds per river)\n")
-child_process.execSync("node " + path.join(__dirname, "dataparse.js"), {
-	stido: "pipe",
-	encoding: "utf8"
-})
+child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
+process.stdout.write("riverarray.js generated.")
 setInterval(function() {
-	child_process.execSync("node " + path.join(__dirname, "dataparse.js"), {
-		stido: "pipe",
-		encoding: "utf8"
-	})
+	child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
 }, 1000*60*60*24)
 
 
@@ -85,6 +80,7 @@ async function updateCachedData() {
 
 	//End install script
 	if (process.argv[2] === "--install") {
+		process.stdout.write("Flow data updated.")
 		process.exit()
 	}
 	
@@ -92,5 +88,5 @@ async function updateCachedData() {
 	console.log(timer)
 }
 
-
+process.stdout.write("Preparing flow data.")
 updateCachedData()
