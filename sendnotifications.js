@@ -37,7 +37,7 @@ function sendNotifications() {
 		return
 	}
 	let subscriptions = JSON.parse(fs.readFileSync(storagePath, {encoding:"utf8"}))
-	let flowData = JSON.parse(fs.readFileSync(path.join(__dirname, "flowdata.json"), {encoding:"utf8"}))
+	let flowData = JSON.parse(fs.readFileSync(path.join(__dirname, "flowdata2.json"), {encoding:"utf8"}))
 
 	for (let url in subscriptions) {
 		let user = subscriptions[url]
@@ -53,27 +53,19 @@ function sendNotifications() {
 			let flow = flowData[gauge]
 			for (let prop in rivers) {
 				let river = rivers[prop]
-				if (river.units === "cfs") {
-					let values = flowData[gauge]["00060"].values
-					let latest = values[values.length - 1].value
 
-					if (!(river.minimum < latest && latest < river.maximum)) {
-						delete rivers[prop]
-					}
-					else {
-						river.current = latest
-					}
+				let values;
+				
+				if (river.units === "cfs") {values = flowData[gauge].cfs}
+				if (river.units === "ft") {values = flowData[gauge].feet}
+				
+				let latest = values[values.length - 1].value
+
+				if (!(river.minimum < latest && latest < river.maximum)) {
+					delete rivers[prop]
 				}
-				else if (river.units === "ft") {
-					let values = flowData[gauge]["00065"].values
-					let latest = values[values.length - 1].value
-
-					if (!(river.minimum < latest && latest < river.maximum)) {
-						delete rivers[prop]
-					}
-					else {
-						river.current = latest
-					}
+				else {
+					river.current = latest
 				}
                 data[prop] = rivers[prop]
 			}
