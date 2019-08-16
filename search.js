@@ -2,6 +2,10 @@ window.toDecimalDegrees = function(coord) {
 	if (!isNaN(Number(coord))) {
 		return Number(coord) //Coordinate is already in decimal form.
 	}
+	
+	if (typeof coord !== "string") {
+		return undefined;
+	}
 
 	let parts = coord.split(/[^\w]+/) //Split on non-alphanumeric characters.
 	console.log(parts)
@@ -207,44 +211,26 @@ function locationFilter(list, parameters) {
     let maxDistance = Number(parameters.distance)
     let lat1 = toDecimalDegrees(parameters.lat)
     let lon1 = toDecimalDegrees(parameters.lon)
-
+		
     if (!(maxDistance && lat1 && lon1)) {
         //Cancel the search.
-        //Technically we could be missing either lat1, or lon1, and eliminate some rivers. Whatever. This can be dealt with later if wanted.
+        //Technically we could be missing part of 1 coordinate, sometimes both, and eliminate some rivers, however this goes against
+		//the purpose of location sorting - to find rivers, not eliminate them (we want all rivers to have full coordinates)
         return list
     }
 
-    //Filter out the elements that fail the test
-    //Since we may be deleting elements in the list, items will be skipped if we use array.length
     for (let item in list) {
         let river = list[item]
 
-        let lat2 = river.plat || river.tlat || river.hidlat
-        let lon2 = river.plon || river.tlon || river.hidlon
-
-        let passes;
-        if (lat2 && lon2) {
-            let distance = calculateDistance(lat1, lon1, lat2, lon2)
-
-            passes = distance < maxDistance
-        }
-        else {
-            //If we have one of two coordinates, we may still be able to eliminate the river by calculating distance on one axis and
-			//eliminating the river if the calculated distance is greater than maxDistance
-			let distance;
-			if (lat2) {
-            	distance = calculateDistance(lat1, lon1, lat2, lon1)
-			}
-			else if (lon2) {
-			    distance = calculateDistance(lat1, lon1, lat1, lon2)
-			}
-			//Follow parameters.includeUnknown unless the river has been eliminated on distance.
-            passes = parameters.includeUnknown && !(distance > maxDistance)
-
-        }
+		let lat2 = toDecimalDegrees(river.plat) || toDecimalDegrees(river.tlat) || toDecimalDegrees(river.hidlat)
+    	let lon2 = toDecimalDegrees(river.plon) || toDecimalDegrees(river.tlon) || toDecimalDegrees(river.hidlon)
+	
+		let distance = calculateDistance(lat1, lon1, lat2, lon2)
+        		
+        let passes = (distance < maxDistance) || parameters.includeUnknown //Follow parameters.includeUnknown unless the river has been eliminated on distance.
 
         if (!passes) {
-            //Remove the item if it fails
+            //Remove the item if it does not pass the test.
             delete list[item]
         }
     }
