@@ -47,7 +47,6 @@ async function handlefiles(files) {
 		
 		filecount++
 		let filenum = filecount
-		document.write("Uploading files. If all files complete successfully, this page will update with the new listing. The alternative has not been tested.")
 		document.write("Reading file " + filenum + "\n")
 		
 		let buffer = await readfile(files)
