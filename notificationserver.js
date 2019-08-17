@@ -100,8 +100,8 @@ async function httprequest(req,res) {
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
 					//Apparently the configuration didn't carry into subdirectories - so just copy the files.
-					fs.writeFileSync(path.join(pathOnSystem, "header.html"), fs.readFileSync(path.join(__dirname, "header.html")))
-					fs.writeFileSync(path.join(pathOnSystem, ".htaccess"), fs.readFileSync(path.join(__dirname, ".htaccess")))
+					fs.writeFileSync(path.join(pathOnSystem, "header.html"), fs.readFileSync(path.join(__dirname, "salmon2019", "header.html")))
+					fs.writeFileSync(path.join(pathOnSystem, ".htaccess"), fs.readFileSync(path.join(__dirname, "salmon2019", ".htaccess")))
 					res.end("Directory created")
 					return
 				}
