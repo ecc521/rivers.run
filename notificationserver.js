@@ -28,7 +28,14 @@ webpush.setVapidDetails(
   vapidKeys.privateKey
 )
 
-
+let lookupIP;
+try {
+	lookupIP = require(path.join(__dirname, "lookupIP.js"))
+}
+catch(e) {
+	fs.appendFileSync(path.join(__dirname, 'lookupIP.log'), e.toString() + "\n");
+	console.error(e)
+}
 
 
 const hostname = "0.0.0.0"
@@ -57,13 +64,7 @@ function getUserSubscription(url) {
 }
 
 async function httprequest(req,res) {
-	if (req.method !== "POST") {
-		console.log("Post request only. Rejected.")
-		res.statusCode = 403;
-	    res.setHeader('Content-Type', 'text/plain');
-	    res.end('Only post requests are permitted.\n');
-	}
-	else {
+
 		let data = await new Promise((resolve, reject) => {
 			let body = []
 			req.on("data", function(chunk) {
@@ -122,39 +123,70 @@ async function httprequest(req,res) {
 			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), String(e) + "\n");
 		}
 		
-		data = JSON.parse(data.toString())
+	
+		if (req.method === "GET" && req.url.startsWith("/node/ip2location")) {
+			if (lookupIP) {
+				let ipData = {};
+				let ip;
+				if (req.url === "/node/ip2location") {
+					ip = (req.headers['x-forwarded-for'] || '').split(',').pop() || 
+						 req.connection.remoteAddress || 
+						 req.socket.remoteAddress || 
+						 req.connection.socket.remoteAddress
+				}
+				else {
+					//ip = req.url.slice("/node/ip2location".length) //Uncomment to allow custom IPs. May be wanted in future.
+				}
+				let ipData = lookupIP(ip)
+				
+				fs.appendFileSync(path.join(__dirname, 'lookupIP.log'), req.url + " " + ip + "\n");
+				
+				res.statusCode = 200;
+				res.setHeader('Content-Type', 'text/json');
+				res.end(JSON.stringify(ipData));
+			}
+			else {
+				res.statusCode = 500;
+				res.setHeader('Content-Type', 'text/plain');
+				res.end("Internal Server Error - lookupIP.js did not load. Contact the server administrator.");
+			}
+		}
+	
+	
+		if (req.method === "POST") {
+			data = JSON.parse(data.toString())
 
-		if (data.getSubscriptionFromURL) {
-			res.statusCode = 200;
-			res.setHeader('Content-Type', 'text/json');
-			res.end(JSON.stringify(getUserSubscription(data.getSubscriptionFromURL)));
-		}
-		else if (data.subscription && data.parameters) {
-			//data.subscription contains the details needed to send push notifications.
-			//data.parameters contains the conditions under which to send notifications.
-			//TODO: Consider preserving noneUntil if it is not present in the POST request.
-			saveUserSubscription(data)
-			res.statusCode = 200;
-			res.setHeader('Content-Type', 'text/plain');
-			res.end('Saved Subscription\n');
-		}
-		else if (data.subscription && data.noneUntil !== undefined) {
-			//Update noneUntil (disables notifications temporarily)
-			let subscription = getUserSubscription(data.subscription.endpoint)
-			subscription.noneUntil = data.noneUntil
-			saveUserSubscription(subscription)
+			if (data.getSubscriptionFromURL) {
+				res.statusCode = 200;
+				res.setHeader('Content-Type', 'text/json');
+				res.end(JSON.stringify(getUserSubscription(data.getSubscriptionFromURL)));
+			}
+			else if (data.subscription && data.parameters) {
+				//data.subscription contains the details needed to send push notifications.
+				//data.parameters contains the conditions under which to send notifications.
+				//TODO: Consider preserving noneUntil if it is not present in the POST request.
+				saveUserSubscription(data)
+				res.statusCode = 200;
+				res.setHeader('Content-Type', 'text/plain');
+				res.end('Saved Subscription\n');
+			}
+			else if (data.subscription && data.noneUntil !== undefined) {
+				//Update noneUntil (disables notifications temporarily)
+				let subscription = getUserSubscription(data.subscription.endpoint)
+				subscription.noneUntil = data.noneUntil
+				saveUserSubscription(subscription)
 
-			res.statusCode = 200;
-			res.setHeader('Content-Type', 'text/plain');
-			res.end('Disabled notifications until timestamp ' + subscription.noneUntil + "\n");
+				res.statusCode = 200;
+				res.setHeader('Content-Type', 'text/plain');
+				res.end('Disabled notifications until timestamp ' + subscription.noneUntil + "\n");
+			}
 		}
-		else {
-			console.log(data)
-			res.statusCode = 404;
-			res.setHeader('Content-Type', 'text/plain');
-			res.end('Unknown request\n');
-		}
-	}
+	
+		console.log(data)
+		res.statusCode = 404;
+		res.setHeader('Content-Type', 'text/plain');
+		res.end('Unknown request\n');
+	
 }
 
 const httpserver = http.createServer(httprequest);

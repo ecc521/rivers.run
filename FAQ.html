@@ -76,7 +76,8 @@
     <button class="accordion">Where does flow information come from?</button>
     <div class="panel">
         <p>
-            Flow information is obtained from <a href="https://usgs.gov" target="_blank" rel="noopener">USGS</a> (United States Geolocial Survey)
+            Flow information is obtained from <a href="https://usgs.gov" target="_blank" rel="noopener">USGS</a> (United States Geolocial Survey)<br>
+			rivers.run is working on adding support for NWS (National Weather Service) gauges, as well as gauge for other countries.
         </p>
     </div>
 
@@ -127,14 +128,15 @@
     <button class="accordion">The website is not working.</button>
     <div class="panel">
         <p>
-            If are encountering issues, your browser may be too old. Here are the browsers that should work:<br>
-            <br>
-            Chrom(e/ium), Opera, Microsoft Edge - Full Support for Latest Version. Versions MUCH older than the latest should also work.<br>
-            Firefox - Full Support can be obtained down to Firefox 60 ESR. river-overview popups break below version 60<br>
-            Samsung Internet - Based on WebKit just like Safari, so it should work<br>
-            Opera Mini - Fails in extreme data saving mode. Should work fine in other modes.<br>
-            Any Browser on iOS 8.4+ (May work older. iOS 11.3+ needed for offline support). Looks uglier than it should on 8.4. Dark mode needs iOS 10.<br>
-            Internet Explorer 11 - Should be totally usable. Tooltips do not work, nor does offline. Dark mode changes take reload.
+            If are encountering issues, your browser may be too old. Here are the browsers that should work:
+            <br><br>
+            Chrome, Firefox, Opera, Edge, Samsung Internet - Full support for non-horribly outdated versions.
+			<br><br>
+            Any Browser on iOS 8.4+ (maybe lower). iOS 11.3+ needed for offline support. Web push notifications not supported. Dark mode needs iOS 10. Below iOS 9, empty space appears between rivers on home page.
+			<br><br>
+            Internet Explorer 11 - Should be totally usable. Skill explainations do not work, dark mode changes require a reload, and push notifications are not supported.
+			<br><br>
+			Opera Mini - Fails in extreme data saving mode. On the home page, the navigaton menu may lack styling, and the advanced search menu may be at the bottom of the page.<br>
             <br><br>
             If you encounter issues while using a supported browser, please refer to "where can I contact you" below.
         </p>
@@ -157,9 +159,9 @@
         </p>
     </div>
 
-    <button class="accordion">How do I link to a normal search?</button>
+    <button class="accordion">How do I link to a specific search?</button>
     <div class="panel">
-        <p>The URL to a normal search is https://rivers.run#YOUR_SEARCH_QUERY<br>If you want to test the URL, make sure you put it in a new tab.</p>
+        <p>Do your search - the search url will be in both the url bar (javascript tricks!) and at the bottom of the advanced search menu.</p>
     </div>
 
     <script>

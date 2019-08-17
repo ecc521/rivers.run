@@ -74,14 +74,15 @@ document.getElementById("Rivers").appendChild(new TopBar().create())
 //createLegend.js needs a #Rivers > .riverbutton to get font-size using getComputedStyle
 require("./createLegend.js")
 
-NewList()
 
 
-//Check if there is a search query
+//If there is a custom search link, use it. Otherwise, just call NewList.
 if (window.location.hash.length > 0) {
 	let search = decodeURI(window.location.hash.slice(1))
 
 if (search.startsWith("{")) {
+	
+	console.log(search)
 		//Advanced search
 		let query = JSON.parse(search)
 
@@ -95,7 +96,7 @@ if (search.startsWith("{")) {
 				delete query.sort
 			}
 			function dataNowLoaded() {
-				if (timesNewListCalled === 2 || confirm("You used an advanced search link with flow parameters. Now that flow data has loaded, would you like to apply that search?")) {
+				if (timesNewListCalled === 1 || confirm("You used an advanced search link with flow parameters. Now that flow data has loaded, would you like to apply that search?")) {
 					setMenuFromSearch(oldQuery)
 					NewList()
 				}
@@ -122,4 +123,7 @@ if (search.startsWith("{")) {
 		setMenuFromSearch(query)
 		NewList()
 	}
+}
+else {
+	NewList()
 }
