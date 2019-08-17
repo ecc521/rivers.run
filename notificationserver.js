@@ -95,7 +95,7 @@ async function httprequest(req,res) {
 					return
 				}
 				if (req.url.endsWith("/")) {
-					fs.makedirSync(filePath, {recursive:true})
+					fs.mkdirSync(filePath, {recursive:true})
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
 					res.end("Directory created")
