@@ -3,8 +3,13 @@
 #Apache will serve files with a different charset, and break unicode characters, unless this is set.
 AddDefaultCharset UTF-8
 
-# Redirect HTTP connections to HTTPS
 RewriteEngine On
+
+#Redirect from www.rivers.run to rivers.run
+RewriteCond %{HTTP_HOST} ^www.rivers.run [NC]
+RewriteRule ^(.*)$ https://rivers.run/$1 [L,R=301]
+
+# Redirect HTTP connections to HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
@@ -17,6 +22,8 @@ Header set Access-Control-Allow-Origin *
 Header set Access-Control-Expose-Headers Date
 </FilesMatch>
 
+#Block access to .git files
+RedirectMatch 403 /\.git
 
 #Block all access to data directory.
 RedirectMatch 403 ^/data/.*$
@@ -26,6 +33,7 @@ RedirectMatch 403 ^/data/.*$
 #ProxyRequests on
 #ProxyPass /node http://127.0.0.1:3000/node
 #ProxyPassReverse /node http://127.0.0.1:3000/node
+
 <FilesMatch "node">
 Header set Cache-Control "no-store"
 </FilesMatch>
@@ -76,5 +84,7 @@ RewriteCond %{HTTP:Accept-Encoding} br
 RewriteCond %{REQUEST_FILENAME}\.br -f
 RewriteRule ^(.+)$ $1.br [E=no-gzip,L]
 
-#Run other files through deflate. I think this uses the default compression level of 7.
+#TODO: Serve gzip precompressed files too.
+
+#Run other files through deflate. Default compression level is 6.
 SetOutputFilter DEFLATE
