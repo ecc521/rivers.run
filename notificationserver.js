@@ -106,6 +106,9 @@ async function httprequest(req,res) {
 					res.end("File created")
 					return
 				}
+				res.statusCode = 404;
+				res.setHeader('Content-Type', 'text/plain');
+				res.end("Oh no! This request didn't work!")
 			}
 		}
 		catch(e) {
