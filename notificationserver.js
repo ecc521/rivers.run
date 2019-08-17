@@ -2,7 +2,6 @@ const webpush = require('web-push');
 const fs = require("fs")
 const path = require("path")
 const http = require("http")
-const Buffer = require("buffer")
 
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
