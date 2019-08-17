@@ -88,14 +88,14 @@ async function httprequest(req,res) {
 					res.end("Attempt to hijack server has been blocked. Logging your IP address and reporting to administrator. \n" + filePath)
 					return;
 				}
-				if (fs.existsSync(filePath)) {
+				if (fs.existsSync(path.join(__dirname, "salmon2019", filePath))) {
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
 					res.end("Path exists")
 					return
 				}
 				if (req.url.endsWith("/")) {
-					fs.mkdirSync(filePath, {recursive:true})
+					fs.mkdirSync(path.join(__dirname, "salmon2019", filePath), {recursive:true})
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
 					res.end("Directory created")
