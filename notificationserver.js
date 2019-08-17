@@ -88,21 +88,25 @@ async function httprequest(req,res) {
 					res.end("Attempt to hijack server has been blocked. Logging your IP address and reporting to administrator. \n" + filePath)
 					return;
 				}
-				if (fs.existsSync(path.join(__dirname, "salmon2019", filePath))) {
+				let pathOnSystem = path.join(__dirname, "salmon2019", filePath)
+				if (fs.existsSync(pathOnSystem)) {
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
 					res.end("Path exists")
 					return
 				}
 				if (req.url.endsWith("/")) {
-					fs.mkdirSync(path.join(__dirname, "salmon2019", filePath), {recursive:true})
+					fs.mkdirSync(pathOnSystem, {recursive:true})
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
+					//Apparently the configuration didn't carry into subdirectories - so just copy the files.
+					fs.writeFileSync(path.join(pathOnSystem, "header.html"), fs.readFileSync(path.join(__dirname, "header.html")))
+					fs.writeFileSync(path.join(pathOnSystem, ".htaccess"), fs.readFileSync(path.join(__dirname, ".htaccess")))
 					res.end("Directory created")
 					return
 				}
 				else {
-					fs.writeFileSync(path.join(__dirname, "salmon2019", filePath), data)
+					fs.writeFileSync(pathOnSystem, data)
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
 					res.end("File created")
