@@ -108,7 +108,7 @@ async function httprequest(req,res) {
 				}
 				res.statusCode = 404;
 				res.setHeader('Content-Type', 'text/plain');
-				res.end("Oh no! This request didn't work!")
+				res.end("Oh no! This request didn't work!\n" + req.path)
 			}
 		}
 		catch(e) {
