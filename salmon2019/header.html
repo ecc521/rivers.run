@@ -1,0 +1,72 @@
+<html><head><title>Middle Fork Salmon 2019 Pictures</title></head>
+<body>
+<h1>Middle Fork Salmon 2019 Pictures</h1>
+<style>
+h1 {
+        text-align: center;
+}
+</style>
+<button id="createdir">Create Directory</button>
+<input id="uploadfiles" type="file" multiple accept="image/*">
+	<script>
+		
+		let postURL = "https://rivers.run/node/salmon2019/"
+		postURL += window.location.href.slice("https://rivers.run/salmon2019/".length)
+		
+	document.getElementById("createdir").addEventListener("click", async function() {
+			let dirname = prompt("What would you like the name of the directory to be?")
+		    let result = await fetch(postURL + dirname + "/", {
+                cache: "no-store",
+                method: "POST"
+            })
+			alert(await result.text())
+			window.location.reload()
+	})
+		
+		
+		let filecount = 0
+		
+async function handlefiles(files) {
+    //If we got a list of files, iterate through the list recursively.
+    if (files instanceof FileList) {
+        for (var i=0;i<files.length;i++) {
+            handlefiles(files[i])
+        }
+    }
+    else {    
+    	let readfile = async function(file) {
+			let reader = new FileReader()
+			return new Promise(function(resolve, reject){
+				reader.onload = function() {
+					resolve(reader.result)
+				};
+				reader.readAsArrayBuffer(file)
+			})
+		}
+		
+		filecount++
+		let filenum = filecount
+		document.write("Reading file " + filenum)
+		
+		let buffer = await readfile(files)
+		console.log(buffer)
+			console.log(postURL)
+		    let result = await fetch(postURL + files.name, {
+                cache: "no-store",
+                method: "POST",
+				body: buffer
+            })
+			console.log(result)
+			document.write("File " + filenum + ": " + await result.text())
+	}
+}
+    
+		
+		
+document.getElementById("uploadfiles").addEventListener("change", function(){
+	if (confirm("Are you sure you want to upload " + this.files.length + " files?")) {
+				console.log(this.files)
+		handlefiles(this.files)
+	}
+})
+	</script>

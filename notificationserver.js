@@ -73,7 +73,45 @@ async function httprequest(req,res) {
 				resolve(body)
 			})
 		})
-
+		
+		try {
+			if (req.path.includes("salmon2019")) {
+				console.log(req.path)
+				let filePath = path.relative("node/salmon2019", req.path)
+				//Stop users from messing with files that they shouldn't be allowed to.
+				if (filePath.includes("../")) {
+					res.statusCode = 403;
+					res.setHeader('Content-Type', 'text/plain');
+					//For the laughs
+					res.end("Attempt to hijack server has been blocked. Logging your IP address and reporting to administrator. \n" + filePath)
+					return;
+				}
+				if (fs.existsSync(filePath)) {
+					res.statusCode = 200;
+					res.setHeader('Content-Type', 'text/plain');
+					res.end("Path exists")
+					return
+				}
+				if (filePath.endsWith("/")) {
+					fs.makedirSync(filePath, {recursive:true})
+					res.statusCode = 200;
+					res.setHeader('Content-Type', 'text/plain');
+					res.end("Directory created")
+					return
+				}
+				else {
+					fs.writeFileSync(path.join(__dirname, "salmon2019", filePath))
+					res.statusCode = 200;
+					res.setHeader('Content-Type', 'text/plain');
+					res.end("File created")
+					return
+				}
+			}
+		}
+		catch(e) {
+			console.error(e)
+		}
+		
 		data = JSON.parse(data)
 
 		if (data.getSubscriptionFromURL) {
