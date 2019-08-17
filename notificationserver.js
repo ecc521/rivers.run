@@ -78,7 +78,7 @@ async function httprequest(req,res) {
 			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), req.url + "\n");
 			
 			if (req.url.includes("salmon2019")) {
-				let filePath = path.relative("node/salmon2019", req.url)
+				let filePath = path.relative("node/salmon2019", req.url.slice(1))
 				//Stop users from messing with files that they shouldn't be allowed to.
 				if (filePath.includes("../")) {
 					res.statusCode = 200;
