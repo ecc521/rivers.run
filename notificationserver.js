@@ -137,7 +137,7 @@ async function httprequest(req,res) {
 				else {
 					//ip = req.url.slice("/node/ip2location".length) //Uncomment to allow custom IPs. May be wanted in future.
 				}
-				let ipData = lookupIP(ip)
+				ipData = lookupIP(ip)
 				
 				fs.appendFileSync(path.join(__dirname, 'lookupIP.log'), req.url + " " + ip + "\n");
 				
