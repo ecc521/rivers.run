@@ -23,8 +23,9 @@ h1 {
 			window.location.reload()
 	})
 		
-		
+		let total;
 		let filecount = 0
+		let finished = 0
 		
 async function handlefiles(files) {
     //If we got a list of files, iterate through the list recursively.
@@ -46,7 +47,8 @@ async function handlefiles(files) {
 		
 		filecount++
 		let filenum = filecount
-		document.write("Reading file " + filenum)
+		document.write("Uploading files. If all files complete successfully, this page will update with the new listing. The alternative has not been tested.")
+		document.write("Reading file " + filenum + "\n")
 		
 		let buffer = await readfile(files)
 		console.log(buffer)
@@ -58,6 +60,8 @@ async function handlefiles(files) {
             })
 			console.log(result)
 			document.write("File " + filenum + ": " + await result.text())
+		finished++
+		if (finished === total) {window.location.reload()}
 	}
 }
     
@@ -67,6 +71,7 @@ document.getElementById("uploadfiles").addEventListener("change", function(){
 	if (confirm("Are you sure you want to upload " + this.files.length + " files?")) {
 				console.log(this.files)
 		handlefiles(this.files)
+		total = this.files.length
 	}
 })
 	</script>
