@@ -75,12 +75,14 @@ async function httprequest(req,res) {
 		})
 		
 		try {
+			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), req.path + "\n");
+			
 			if (req.path.includes("salmon2019")) {
 				console.log(req.path)
 				let filePath = path.relative("node/salmon2019", req.path)
 				//Stop users from messing with files that they shouldn't be allowed to.
 				if (filePath.includes("../")) {
-					res.statusCode = 403;
+					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
 					//For the laughs
 					res.end("Attempt to hijack server has been blocked. Logging your IP address and reporting to administrator. \n" + filePath)
@@ -106,13 +108,14 @@ async function httprequest(req,res) {
 					res.end("File created")
 					return
 				}
-				res.statusCode = 404;
+				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/plain');
 				res.end("Oh no! This request didn't work!\n" + req.path)
 			}
 		}
 		catch(e) {
 			console.error(e)
+			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), String(e) + "\n");
 		}
 		
 		data = JSON.parse(data)
