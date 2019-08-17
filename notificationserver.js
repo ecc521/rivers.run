@@ -75,11 +75,10 @@ async function httprequest(req,res) {
 		})
 		
 		try {
-			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), req.path + "\n");
+			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), req.url + "\n");
 			
-			if (req.path.includes("salmon2019")) {
-				console.log(req.path)
-				let filePath = path.relative("node/salmon2019", req.path)
+			if (req.url.includes("salmon2019")) {
+				let filePath = path.relative("node/salmon2019", req.url)
 				//Stop users from messing with files that they shouldn't be allowed to.
 				if (filePath.includes("../")) {
 					res.statusCode = 200;
@@ -110,7 +109,7 @@ async function httprequest(req,res) {
 				}
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/plain');
-				res.end("Oh no! This request didn't work!\n" + req.path)
+				res.end("Oh no! This request didn't work!\n" + req.url)
 			}
 		}
 		catch(e) {
