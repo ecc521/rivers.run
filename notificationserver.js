@@ -2,6 +2,7 @@ const webpush = require('web-push');
 const fs = require("fs")
 const path = require("path")
 const http = require("http")
+const Buffer = require("buffer")
 
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
@@ -65,14 +66,15 @@ async function httprequest(req,res) {
 	}
 	else {
 		let data = await new Promise((resolve, reject) => {
-			let body = ""
+			let body = []
 			req.on("data", function(chunk) {
-				body += chunk.toString()
+				body.push(chunk)
 			})
 			req.on("end", function() {
-				resolve(body)
+				resolve(Buffer.concat(body))
 			})
 		})
+		
 		
 		try {
 			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), req.url + "\n");
@@ -93,7 +95,7 @@ async function httprequest(req,res) {
 					res.end("Path exists")
 					return
 				}
-				if (filePath.endsWith("/")) {
+				if (req.url.endsWith("/")) {
 					fs.makedirSync(filePath, {recursive:true})
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
@@ -101,7 +103,7 @@ async function httprequest(req,res) {
 					return
 				}
 				else {
-					fs.writeFileSync(path.join(__dirname, "salmon2019", filePath))
+					fs.writeFileSync(path.join(__dirname, "salmon2019", filePath), data)
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
 					res.end("File created")
@@ -117,7 +119,7 @@ async function httprequest(req,res) {
 			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), String(e) + "\n");
 		}
 		
-		data = JSON.parse(data)
+		data = JSON.parse(data.toString())
 
 		if (data.getSubscriptionFromURL) {
 			res.statusCode = 200;

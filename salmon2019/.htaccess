@@ -2,4 +2,4 @@ Options +Indexes
 IndexOptions IgnoreCase FancyIndexing FoldersFirst NameWidth=* DescriptionWidth=* SuppressHTMLPreamble
 HeaderName header.html
 IndexOrderDefault Descending Name
-IndexIgnore header.html
+IndexIgnore header.html *.br
