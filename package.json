@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "webpack": "webpack",
-    "postinstall": "./usgscache.js --install"
+    "postinstall": "node usgscache.js --install"
   },
   "repository": {
     "type": "git",
