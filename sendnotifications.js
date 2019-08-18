@@ -30,7 +30,7 @@ function deleteUserSubscription(endpoint) {
 }
 
 
-function sendNotifications() {
+function sendNotifications(ignoreNoneUntil = false) {
 	if (!fs.existsSync(storagePath)) {
 		//There are no subscriptions
 		console.warn("No subscriptions. ")
@@ -43,7 +43,7 @@ function sendNotifications() {
 		let user = subscriptions[url]
 
         //Don't send the user a notification yet.
-        if (user.noneUntil > Date.now()) {continue;}
+        if (!ignoreNoneUntil && user.noneUntil > Date.now()) {continue;}
 
 		let parameters = user.parameters
 
@@ -55,10 +55,10 @@ function sendNotifications() {
 				let river = rivers[prop]
 
 				let values;
-				
+
 				if (river.units === "cfs") {values = flowData[gauge].cfs}
 				if (river.units === "ft") {values = flowData[gauge].feet}
-				
+
 				let latest = values[values.length - 1].value
 
 				if (!(river.minimum < latest && latest < river.maximum)) {
