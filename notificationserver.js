@@ -130,6 +130,7 @@ async function httprequest(req,res) {
 			if (lookupIP) {
 				let ipData = {};
 				let ip;
+				//Geobytes.com looks good enough to use. May want to do some testing on how much less accurate it is. If it is used, we can remove attribution.
 				if (req.url === "/node/ip2location") {
 					ip = (req.headers['x-forwarded-for'] || '').split(',').pop() || 
 						 req.connection.remoteAddress || 

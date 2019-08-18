@@ -67,15 +67,15 @@ let loadUSGS = async function(useCache) {
     }
 
 
-	let cacheURL = "flowdata2.json"
+	let fileName = "flowdata2.json"
 
 	if (useCache) {
 		let cache = await caches.open("rivers.run")
-		let response = await caches.match("usgscache.json")
+		let response = await caches.match(fileName)
 		window.usgsarray = await response.json()
 	}
 	else if (window.fetch) {
-		let response = await fetch(cacheURL)
+		let response = await fetch(fileName)
 		window.usgsarray = await response.json()
 	}
 	else {
@@ -83,7 +83,7 @@ let loadUSGS = async function(useCache) {
 		let request = new XMLHttpRequest()
 		let response = await new Promise((resolve, reject) => {
 			request.onload = function(event) {resolve(event.target.response)};
-			request.open("GET", cacheURL);
+			request.open("GET", fileName);
 			request.send()
 		})
 		window.usgsarray = JSON.parse(response)
