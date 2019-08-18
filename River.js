@@ -145,12 +145,15 @@ function addHandlers(button, locate) {
 
 				//Container for the river alert creator.
 				let container = document.createElement("div")
+				container.style.textAlign = "center"
+				container.style.marginBottom = "0.5em" //Add some space between this and the graph.
 				div.appendChild(container)
 
 				//Describe what this does, and alert the user if their browser is unsupported.
 				let description = document.createElement("p")
 				container.appendChild(description)
 				description.innerHTML = "Set alerts for " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + ":<br>"
+				description.style.marginBottom = "0.5em" //Make the description closer to what it is describing...
 
 				if (!("PushManager" in window) || !("Notification" in window) || !("serviceWorker" in navigator)) {
 					description.innerHTML += "Your browser does not support flow alerts. You can try using Firefox, Chrome, Opera, or Edge, or Samsung Internet. On iOS, Apple provides no reasonable way to send web notifications, and uses their control of the App Store to prevent other browsers from supporting notifications. Rivers.run is working on email notifications to remedy this situation. "
@@ -268,7 +271,11 @@ function addHandlers(button, locate) {
 			//TODO: Show button to see code used by virtual gauge.
 			function addUSGSGraphs(usgsID, relatedGauge) {
 
-				addNotificationsSelector(usgsID) //TODO: Do this above every gauge, not just the main gauge.
+				let data = self.usgsarray[usgsID]
+				if (!data) {return;}
+				else {
+					console.log("No flow data for " + usgsID)
+				}
 
 				//Alert the user if the data is (at least 2 hours) old
 				let dataAge
@@ -289,55 +296,53 @@ function addHandlers(button, locate) {
 					div.appendChild(oldDataWarning)
 				}
 
-                let data = self.usgsarray[usgsID]
-                if (data) {
+				function addDisclaimer(text) {
+					let disclaimer = document.createElement("p")
+					disclaimer.style.fontWeight = "bold"
+					disclaimer.style.textAlign = "center"
+					disclaimer.innerHTML = text
+					return div.appendChild(disclaimer)
+				}
 
-					function addDisclaimer(text) {
-						let disclaimer = document.createElement("p")
-	                    disclaimer.style.fontWeight = "bold"
-	                    disclaimer.style.textAlign = "center"
-	                    disclaimer.innerHTML = text
-	                    return div.appendChild(disclaimer)
+				let isVirtualGauge = usgsID.startsWith("virtual:")
+
+				//Add the disclaimer about USGS Gauges.
+				if (!addedUSGSDisclaimer && !isVirtualGauge) {
+					let disclaimer = addDisclaimer("Disclaimer: USGS Gauge data is provisional, and MIGHT be incorrect. Use at your own risk.")
+					if (!oldDataWarning) {
+						disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
 					}
-
-					let isVirtualGauge = usgsID.startsWith("virtual:")
-
-					//Add the disclaimer about USGS Gauges.
-					if (!addedUSGSDisclaimer && !isVirtualGauge) {
-						let disclaimer = addDisclaimer("Disclaimer: USGS Gauge data is provisional, and MIGHT be incorrect. Use at your own risk.")
-						if (!oldDataWarning) {
-	                        disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
-	                    }
-	                    else {
-	                        disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
-	                        oldDataWarning.style.marginBottom = "0.5em"
-	                    }
-						addedUSGSDisclaimer = true
+					else {
+						disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
+						oldDataWarning.style.marginBottom = "0.5em"
 					}
+					addedUSGSDisclaimer = true
+				}
 
-					//Add the disclaimer about virtual gauges.
-					if (!addedVirtualGaugeDisclaimer && isVirtualGauge) {
-						let disclaimer = addDisclaimer("Disclaimer: Virtual gauges are community provided, based off provisional data, and condition dependent. Use at your own risk.")
-						if (!oldDataWarning) {
-	                        disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
-	                    }
-	                    else {
-	                        disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
-	                        oldDataWarning.style.marginBottom = "0.5em"
-	                    }
-						addedUSGSDisclaimer = true
+				//Add the disclaimer about virtual gauges.
+				if (!addedVirtualGaugeDisclaimer && isVirtualGauge) {
+					let disclaimer = addDisclaimer("Disclaimer: Virtual gauges are community provided, based off provisional data, and condition dependent. Use at your own risk.")
+					if (!oldDataWarning) {
+						disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
 					}
+					else {
+						disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
+						oldDataWarning.style.marginBottom = "0.5em"
+					}
+					addedUSGSDisclaimer = true
+				}
 
-					if (relatedGauge) {
-						div.appendChild(document.createElement("br"))
-						div.appendChild(document.createElement("br"))
-						//Not really a disclaimer, but the styling works well.
-						addDisclaimer("<br><br>The gauge below is related to this river, but is not the primary gauge for it")
-					}
-					console.time("Add Graphs")
-                    addGraphs(div, data)
-					console.timeEnd("Add Graphs")
-                }
+				if (relatedGauge) {
+					//Space out the gauges.
+					div.appendChild(document.createElement("br"))
+					div.appendChild(document.createElement("br"))
+					div.appendChild(document.createElement("br"))
+				}
+				addNotificationsSelector(usgsID)
+
+				console.time("Add Graphs")
+				addGraphs(div, data)
+				console.timeEnd("Add Graphs")
 			}
 
             //USGS data may not have loaded yet
