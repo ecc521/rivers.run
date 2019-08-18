@@ -265,7 +265,7 @@ function addHandlers(button, locate) {
 
 			div.appendChild(document.createElement("br"))
 			let disclaimer = document.createElement("a")
-			disclaimer.href = "legal/disclaimer.html"
+			disclaimer.href = "legal/DISCLAIMER.html"
 			disclaimer.target = "_blank"
 			disclaimer.innerHTML = "Rivers.run Content and Flow Disclaimer"
 			div.appendChild(disclaimer)
