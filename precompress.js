@@ -5,6 +5,12 @@ const zlib = require("zlib")
 
 //Note - the compression is done synchronusly, which will make it very slow.
 function compressFile(filePath) {
+	
+	if (fs.statSync(filePath).size > 5*1024*1024) {
+		console.log(filePath + " is over 5MiB. Not compressing.")
+		return;
+	}
+	
 	let uncompressed = fs.readFileSync(filePath)
 	
 	let compressedPath = filePath + ".br"
