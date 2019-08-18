@@ -75,7 +75,8 @@ async function httprequest(req,res) {
 			})
 		})
 		
-		res.setHeader('Access-Control-Allow-Origin', 'https://rivers.run https://*.rivers.run http://127.0.0.1:*')
+		//TODO: Only allow rivers.run, its subdomains and 127.0.0.1
+		res.setHeader('Access-Control-Allow-Origin', '*')
 
 		try {
 			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), req.url + "\n");
