@@ -147,6 +147,16 @@ try {
 			ipLocation.innerHTML = "Would you like to use coordinates for " + locationInfo.city + ", " + locationInfo.region + "?"
 			ipLocation.style.display = "block"
 			
+			function close() {
+				//IP2Location wants attribution.
+				ipLocation.innerHTML = "IP to geolocation data from <a href='https://lite.ip2location.com'>http://lite.ip2location.com</a>"
+				ipLocation.style.opacity = 0
+				ipLocation.style.fontSize = 0
+				setTimeout(function() {
+					ipLocation.remove()
+				}, 3000)
+			}
+			
 			let yes = document.createElement("button")
 			yes.innerHTML = "Yes"
 			yes.addEventListener("click", function() {
@@ -154,14 +164,14 @@ try {
 				query.location.lat = locationInfo.latitude
 				query.location.lon = locationInfo.longitude
 				window.setMenuFromSearch(query)
-				ipLocation.remove()
+				close()
 			})
 			ipLocation.appendChild(yes)
 			
 			let no = document.createElement("button")
 			no.innerHTML = "No"
 			no.addEventListener("click", function() {
-				ipLocation.remove()
+				close()
 			})
 			ipLocation.appendChild(no)
 		})
