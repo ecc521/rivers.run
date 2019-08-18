@@ -17,57 +17,41 @@ document.getElementById("advancedsearch").addEventListener("click", function() {
 })
 
 
-//Make the searchboxes work and stay in sync.
-let searchbox = document.getElementById("searchbox")
-let searchboxOnAdvancedSearch = document.getElementById("normalSearchBoxOnAdvancedSearch")
-function searchBoxKeyPress(event) {
-	//If the user presses the "Go" button (Actually an Enter/Return), unfocus the searchbox.
-	if (event.keyCode === 13) {
-		event.target.blur()
-	}
-	let query = window.getAdvancedSearchParameters()
-	query.sort.query = "none" //Normal searches apply their own sorting. query.sort will override this.
-	setMenuFromSearch(query) //Make sure the user knows that the sort has been canceled.
-	NewList(query)
-}
-searchbox.addEventListener("input", searchBoxKeyPress)
+//For dynamic searching, we may want to use the keyup event instead of input if there are performance issues when users hold down delete.
 
-searchboxOnAdvancedSearch.addEventListener("input", function() {
-	searchbox.value = searchboxOnAdvancedSearch.value
-	searchBoxKeyPress({}) //Pass an empty object to avoid error reading property of undefined.
+
+//Event listeners for the normal search boxes.
+document.querySelectorAll("#searchbox, #normalSearchBoxOnAdvancedSearch").forEach((element) => {
+    element.addEventListener("input", function searchBoxKeyPress(event) {
+    	//If the user presses the "Go" button (Actually an Enter/Return), unfocus the searchbox.
+    	if (event.keyCode === 13) {
+    		event.target.blur()
+    	}
+    	let query = window.getAdvancedSearchParameters()
+    	query.sort.query = "none" //Normal searches apply their own sorting. query.sort will override this.
+        query.normalSearch = event.target.value
+    	setMenuFromSearch(query) //Make sure the user knows that the sort has been canceled.
+    	NewList(query)
+    })
 })
 
-
-
 //Advanced search event listeners.
-//When parameters are changed, run the search.
-let elements = document.querySelectorAll("#advanced-search-modal > .modal-content > input[type=text]")
-for (let i=0;i<elements.length;i++) {
-	elements[i].addEventListener("input", function() {
+let elements = document.querySelectorAll(
+    "#advanced-search-modal > .modal-content > input, " +
+    "#advanced-search-modal > .modal-content > select, " +
+    "#advanced-search-modal > .modal-content > #locationSearchPortion > input"
+).forEach((element) => {
+    function input() {
 		//If the user presses the "Go" key (Actually an Enter/Return), unfocus the searchbox.
 		if (event.keyCode === 13) {
 			event.target.blur()
 		}
 		NewList()
-	})
-}
-
-elements = document.querySelectorAll("#advanced-search-modal > .modal-content > select")
-for (let i=0;i<elements.length;i++) {
-	elements[i].addEventListener("change", function(){NewList()})
-}
-
-elements = document.querySelectorAll("#advanced-search-modal > .modal-content > input[type=checkbox]")
-for (let i=0;i<elements.length;i++) {
-	elements[i].addEventListener("change", function(){NewList()})
-}
-
-elements = document.querySelectorAll("#advanced-search-modal > .modal-content > #locationSearchPortion > input")
-for (let i=0;i<elements.length;i++) {
-	elements[i].addEventListener("input", function(){NewList()})
-}
-
-document.querySelector("#advanced-search-modal > .modal-content > #locationSearchPortion > input[type=checkbox]").addEventListener("click", function(){NewList()})
+	}
+    element.addEventListener("input", input)
+    element.addEventListener("change", input) //Some browsers don't fire input event in some cases due to bugs
+    element.addEventListener("click", input) //Just an extra precaution.
+})
 
 
 async function calculateCoordinates() {
