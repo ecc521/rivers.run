@@ -1,3 +1,27 @@
+function highlightFailingFields(parameters) {
+	//Input checking. Highlight fields that fail in red.
+	if (!toDecimalDegrees(parameters.location.lat) && (toDecimalDegrees(parameters.location.lon) || Number(parameters.location.distance) > 0)) {
+		document.getElementById("latitudeQuery").style.border = "3px solid red"
+	}
+	else {
+		document.getElementById("latitudeQuery").style.border = ""
+	}
+	
+	if (!toDecimalDegrees(parameters.location.lon) && (toDecimalDegrees(parameters.location.lat) || Number(parameters.location.distance) > 0)) {
+		document.getElementById("longitudeQuery").style.border = "3px solid red"
+	}
+	else {
+		document.getElementById("longitudeQuery").style.border = ""
+	}
+	
+	if (!(Number(parameters.location.distance) > 0) && (toDecimalDegrees(parameters.location.lat) || toDecimalDegrees(parameters.location.lon))) {
+		document.getElementById("distanceQuery").style.border = "3px solid red"
+	}
+	else {
+		document.getElementById("distanceQuery").style.border = ""
+	}
+}
+
 
 //Generate advanced search parameters from menu
 window.getAdvancedSearchParameters = function(filter) {
@@ -26,22 +50,6 @@ window.getAdvancedSearchParameters = function(filter) {
 		includeUnknown: document.getElementById("includeUnknownLocation").checked
 	}
 
-	//Input checking. Highlight fields that fail in red.
-	if (!toDecimalDegrees(parameters.location.lat) && (toDecimalDegrees(parameters.location.lon) || Number(parameters.location.distance) > 0)) {
-		document.getElementById("latitudeQuery").style.border = "3px solid red"
-	}
-	if (!toDecimalDegrees(parameters.location.lon) && (toDecimalDegrees(parameters.location.lat) || Number(parameters.location.distance) > 0)) {
-		document.getElementById("longitudeQuery").style.border = "3px solid red"
-	}
-	if (!(Number(parameters.location.distance) > 0) && (toDecimalDegrees(parameters.location.lat) || toDecimalDegrees(parameters.location.lon))) {
-		document.getElementById("distanceQuery").style.border = "3px solid red"
-	}
-
-	if (Number(parameters.location.distance) > 0 && toDecimalDegrees(parameters.location.lat) && toDecimalDegrees(parameters.location.lon)) {
-		document.getElementById("latitudeQuery").style.border = ""
-		document.getElementById("longitudeQuery").style.border = ""
-		document.getElementById("distanceQuery").style.border = ""
-	}
 	//ID search is currently hidden from the user.
 	parameters.id = window.IDSearchParameters
 
@@ -75,6 +83,8 @@ window.getAdvancedSearchParameters = function(filter) {
 		query: document.getElementById("sortQuery").value,
 		reverse: document.getElementById("sortQueryReverse").checked
 	}
+	
+	highlightFailingFields(parameters)
 
 	return parameters
 }
@@ -113,4 +123,6 @@ window.setMenuFromSearch = function(query) {
 	document.getElementById("sortQueryReverse").checked = query.sort.reverse
 	//ID search is currently hidden from the user.
 	window.IDSearchParameters = query.id
+	
+	highlightFailingFields(query)
 }

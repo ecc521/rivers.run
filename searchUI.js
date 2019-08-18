@@ -137,3 +137,36 @@ for (let i=0;i<elements.length;i++) {
 		}
 	})
 }
+
+
+let ipLocation = document.getElementById("ipLocation")
+try {
+	fetch("https://rivers.run/node/ip2location").then((response) => {
+		response.json().then((locationInfo) => {
+			
+			ipLocation.innerHTML = "Would you like to use coordinates for " + locationInfo.city + ", " + locationInfo.region + "?"
+			ipLocation.style.display = "block"
+			
+			let yes = document.createElement("button")
+			yes.innerHTML = "Yes"
+			yes.addEventListener("click", function() {
+				let query = window.getAdvancedSearchParameters()
+				query.location.lat = locationInfo.latitude
+				query.location.lon = locationInfo.longitude
+				window.setMenuFromSearch(query)
+				ipLocation.remove()
+			})
+			ipLocation.appendChild(yes)
+			
+			let no = document.createElement("button")
+			no.innerHTML = "No"
+			no.addEventListener("click", function() {
+				ipLocation.remove()
+			})
+			ipLocation.appendChild(no)
+		})
+	})
+}
+catch (e) {
+	console.error(e)
+}
