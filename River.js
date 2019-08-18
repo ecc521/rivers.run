@@ -263,6 +263,12 @@ function addHandlers(button, locate) {
                 div.appendChild(link)
             }
 
+			div.appendChild(document.createElement("br"))
+			let disclaimer = document.createElement("a")
+			disclaimer.href = "legal/disclaimer.html"
+			disclaimer.target = "_blank"
+			disclaimer.innerHTML = "Rivers.run Content and Flow Disclaimer"
+			div.appendChild(disclaimer)
 
 			let addedUSGSDisclaimer = false
 			let addedVirtualGaugeDisclaimer = false
@@ -302,34 +308,6 @@ function addHandlers(button, locate) {
 					disclaimer.style.textAlign = "center"
 					disclaimer.innerHTML = text
 					return div.appendChild(disclaimer)
-				}
-
-				let isVirtualGauge = usgsID.startsWith("virtual:")
-
-				//Add the disclaimer about USGS Gauges.
-				if (!addedUSGSDisclaimer && !isVirtualGauge) {
-					let disclaimer = addDisclaimer("Disclaimer: USGS Gauge data is provisional, and MIGHT be incorrect. Use at your own risk.")
-					if (!oldDataWarning) {
-						disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
-					}
-					else {
-						disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
-						oldDataWarning.style.marginBottom = "0.5em"
-					}
-					addedUSGSDisclaimer = true
-				}
-
-				//Add the disclaimer about virtual gauges.
-				if (!addedVirtualGaugeDisclaimer && isVirtualGauge) {
-					let disclaimer = addDisclaimer("Disclaimer: Virtual gauges are community provided, based off provisional data, and condition dependent. Use at your own risk.")
-					if (!oldDataWarning) {
-						disclaimer.style.marginTop = "2em" //Space the disclaimer from the content above
-					}
-					else {
-						disclaimer.style.marginTop = "0.5em" //Make the disclaimer closer to the warning
-						oldDataWarning.style.marginBottom = "0.5em"
-					}
-					addedUSGSDisclaimer = true
 				}
 
 				if (relatedGauge) {
