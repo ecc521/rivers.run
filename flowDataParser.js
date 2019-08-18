@@ -49,6 +49,37 @@ function parseUSGS(usgsdata) {
 }
 
 
+function reformatUSGS(usgsarray) {
+	for (let gaugeID in usgsarray) {
+		let gauge = usgsarray[gaugeID]
+		
+		if (gauge["00060"]) {
+			gauge.cfs = gauge["00060"].values
+			delete gauge["00060"]
+		}
+		
+		if (gauge["00065"]) {
+			gauge.feet = gauge["00065"].values
+			delete gauge["00065"]
+		}
+		
+		if (gauge["00010"]) {
+			gauge.temp = gauge["00010"].values
+			delete gauge["00010"]
+		}
+		
+		if (gauge["00045"]) {
+			gauge.precip = gauge["00045"].values
+			delete gauge["00045"]
+		}
+	}
+	return usgsarray
+}
+
+
+
+
 module.exports = {
-	parseUSGS
+	parseUSGS,
+	reformatUSGS
 }

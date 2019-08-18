@@ -517,13 +517,8 @@ function River(locate, event) {
 			//Load this.flow from usgsarray.
 			let data = usgsarray[this.usgs]
 			if (data) {
-	            let cfs = data["00060"]
-	            let feet = data["00065"]
-
-	            //Prevent "TypeError: Can't Read Property 'values' of undefined"
-	            if (cfs) {cfs = cfs.values}
-	            if (feet) {feet = feet.values}
-
+	            let cfs = data.cfs
+	            let feet = data.feet
 
 	            let latestCfs, latestFeet;
 	            if (cfs) {

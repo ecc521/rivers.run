@@ -3,12 +3,15 @@
 #Apache will serve files with a different charset, and break unicode characters, unless this is set.
 AddDefaultCharset UTF-8
 
-# Redirect HTTP connections to HTTPS
-<IfModule mod_rewrite.c>
 RewriteEngine On
+
+#Redirect from www.rivers.run to rivers.run
+RewriteCond %{HTTP_HOST} ^www.rivers.run [NC]
+RewriteRule ^(.*)$ https://rivers.run/$1 [L,R=301]
+
+# Redirect HTTP connections to HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
-</IfModule>
 
 #Strict transport security - force https in future.
 Header always set Strict-Transport-Security "max-age=63072000; preload; includeSubdomains" env=HTTPS
@@ -19,6 +22,8 @@ Header set Access-Control-Allow-Origin *
 Header set Access-Control-Expose-Headers Date
 </FilesMatch>
 
+#Block access to .git files
+RedirectMatch 403 /\.git
 
 #Block all access to data directory.
 RedirectMatch 403 ^/data/.*$
@@ -28,6 +33,7 @@ RedirectMatch 403 ^/data/.*$
 #ProxyRequests on
 #ProxyPass /node http://127.0.0.1:3000/node
 #ProxyPassReverse /node http://127.0.0.1:3000/node
+
 <FilesMatch "node">
 Header set Cache-Control "no-store"
 </FilesMatch>
@@ -58,12 +64,27 @@ Header set Cache-Control "max-age=259200, public, stale-if-error=8640000"
 </FilesMatch>
 
 
+RemoveLanguage .br
+AddEncoding br .br
+RemoveType .gz
+AddEncoding x-gzip .gz
 
+AddType "text/html" .html.br .htm.br .html.gz .htm.gz
+AddType "text/css" .css.br css.gz
+AddType "text/plain" .txt.br txt.gz
+AddType "text/xml" .xml.br .xml.gz
+AddType "application/javascript" .js.br .js.gz
+AddType "application/json" .json.br .json.gz
+AddType "image/svg+xml" .svg.br .svg.gz
+
+Header append Vary Accept-Encoding
+
+#Serve a brotli precompressed file if one exists and the user agent accepts it.
+RewriteCond %{HTTP:Accept-Encoding} br
+RewriteCond %{REQUEST_FILENAME}\.br -f
+RewriteRule ^(.+)$ $1.br [E=no-gzip,L]
+
+#TODO: Serve gzip precompressed files too.
+
+#Run other files through deflate. Default compression level is 6.
 SetOutputFilter DEFLATE
-#TODO: Make sure to use deflate compression level 9. Levels are 0-9
-
-#TODO: Implement brotli compression.
-#SetOutputFilter BROTLI_COMPRESS
-#Make sure to use brotli compression level 9. Levels are 0-11, but 10 and 11 are FAR slower.
-
-#TODO: Implement http/2 server push.

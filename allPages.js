@@ -235,14 +235,12 @@ try {
 			let cssText = mediaRule.cssText
 			if (window.darkMode === true) {
 				cssText = cssText.replace(/@media [^{]+{/, "@media all {")
-				container.deleteRule(container.cssRules.length - 1)
-				container.insertRule(cssText, container.cssRules.length)
 			}
 			else if (window.darkMode === false) {
 				cssText = cssText.replace(/@media [^{]+{/, "@media not all {")
-				container.deleteRule(container.cssRules.length - 1)
-				container.insertRule(cssText, container.cssRules.length)
 			}
+			container.deleteRule(container.cssRules.length - 1)
+			container.insertRule(cssText, container.cssRules.length)
 			mediaRule = container.cssRules[container.cssRules.length - 1]
 		})
 

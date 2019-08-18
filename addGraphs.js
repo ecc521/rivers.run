@@ -58,18 +58,18 @@ function addFlowGraph(div, cfs, height, data) {
     let canvas = createcanvas()
     //Time to create a dual lined graph!
     if (cfs && height) {
-        let parts = toparts(cfs.values)
+        let parts = toparts(cfs)
         addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFFa0", 2)
-        parts = toparts(height.values)
+        parts = toparts(height)
         addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#7175f0a0":"#0000FFa0", 2, 1)
     }
     //We won't have both cfs and height. Draw a single line graph for whichever we have.
     else if (cfs) {
-        let parts = toparts(cfs.values)
+        let parts = toparts(cfs)
         addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFF")
     }
     else {
-        let parts = toparts(height.values)
+        let parts = toparts(height)
         addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#7175f0":"blue")
     }
 
@@ -81,11 +81,10 @@ function addTempGraph(div, temp, data) {
     if (temp) {
         let canvas = createcanvas()
 
-        let parts = toparts(temp.values)
+        let parts = toparts(temp)
         addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "red", 3, window.darkMode?"#00AAFF":"blue")
 
  		return addCanvasAsImage(div, canvas)
-
     }
 }
 
@@ -95,7 +94,7 @@ function addPrecipGraph(div, precip, data) {
     if (precip) {
         let canvas = createcanvas()
 
-        let parts = toparts(precip.values)
+        let parts = toparts(precip)
         addLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0099FF")
 
 		return addCanvasAsImage(div, canvas)
@@ -109,31 +108,26 @@ function addGraphs(div, data) {
     //for a specific river due to gauge problems.
     //Each canvas is wrapped individually because sometimes only some graphs have invalid data
 
-    let temp = data["00010"]
-    let precip = data["00045"]
-    let cfs = data["00060"]
-    let height = data["00065"]
-
     try {
         if (!localStorage.getItem("colorBlindMode")) {
-            addFlowGraph(div, cfs, height, data)
+            addFlowGraph(div, data.cfs, data.feet, data)
         }
 
         else {
             //Use one graph for cfs and one for feet if the user is in color blind mode.
-            addFlowGraph(div, cfs, undefined, data)
-            addFlowGraph(div, undefined, height, data)
+            addFlowGraph(div, data.cfs, undefined, data)
+            addFlowGraph(div, undefined, data.feet, data)
         }
     }
     catch(e){console.warn("Error creating flow graph: " + e)}
 
     try {
-        addTempGraph(div, temp, data)
+        addTempGraph(div, data.temp, data)
     }
     catch(e){console.warn("Error creating temperature graph: " + e)}
 
     try {
-        addPrecipGraph(div, precip, data)
+        addPrecipGraph(div, data.precip, data)
     }
     catch(e){console.warn("Error creating precipitation graph: " + e)}
 }

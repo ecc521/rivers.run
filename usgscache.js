@@ -9,17 +9,26 @@
 const fs = require("fs")
 const path = require("path")
 const fetch = require("node-fetch")
-const sendNotifications = require("./sendnotifications.js")
-const flowDataParser = require("./flowDataParser.js")
-
-fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
-
+const child_process = require("child_process")
 
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
-require("./dataparse.js") //
+//Use child_process.execSync to allow for synchronus execution.
+process.stdout.write("Generating riverarray.js - this may take a while (should be no more than 200 milliseconds per river)\n")
+child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
+process.stdout.write("riverarray.js generated.\n")
 setInterval(function() {
-	require("./dataparse.js")
+	child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
 }, 1000*60*60*24)
+
+
+require("./notificationserver.js") //On reboot, run notificationserver.js
+const sendNotifications = require("./sendnotifications.js");
+
+const flowDataParser = require("./flowDataParser.js")
+
+const precompress = require("./precompress.js")
+
+fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
 
 
 let riverarray;
@@ -58,8 +67,14 @@ async function updateCachedData() {
 	let time = Date.now() - start
 	fs.appendFileSync(path.join(__dirname, 'usgsloadingtime.log'), time + '\n');
 
-	fs.writeFileSync(path.join(__dirname, "usgscache.json"), usgsData)
-	fs.writeFileSync(path.join(__dirname, "flowdata.json"), JSON.stringify(flowDataParser.parseUSGS(JSON.parse(usgsData))))
+	fs.writeFileSync(path.join(__dirname, "usgscache.json"), usgsData) //usgscache.json longer used by website. Still maintained for devices on the old site.
+	let usgsarray = flowDataParser.parseUSGS(JSON.parse(usgsData))
+	usgsarray.generatedAt = Date.now()
+	fs.writeFileSync(path.join(__dirname, "flowdata.json"), JSON.stringify(usgsarray)) //flowdata.json no longer used by website. Still maintained for devices on the old site.
+	
+	let usgsarray2 = flowDataParser.reformatUSGS(usgsarray)
+	fs.writeFileSync(path.join(__dirname, "flowdata2.json"), JSON.stringify(usgsarray2))
+	
 	sendNotifications()
 
 
@@ -71,13 +86,17 @@ async function updateCachedData() {
 	fs.appendFileSync(path.join(__dirname, 'executiontimer.log'), (currentTime.getTime() - Date.now() + 60*1000) + '\n');
 
 
+	//End install script
+	if (process.argv[2] === "--install") {
+		process.exit()
+	}
+	
+	console.log("Precompressing files...")
+	precompress()
+	
 	let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
 	console.log(timer)
 }
 
-
+process.stdout.write("Preparing flow data.\n")
 updateCachedData()
-
-
-require("./notificationserver.js")
-//On reboot, run notificationserver.js

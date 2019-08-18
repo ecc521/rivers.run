@@ -42,6 +42,15 @@ html, body {
         top:0;
 	}
 
+#ipLocation {
+	display:none;
+	transition: all 3s ease-in;
+}
+
+#ipLocation > button {
+	font-size: inherit;
+}
+
 .emptyStars {
 	position:static;
 	top:0px;

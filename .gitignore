@@ -7,3 +7,6 @@ usgscache.json
 riverarray.js
 *.log
 flowdata.json
+flowdata2.json
+*.br
+*.BIN

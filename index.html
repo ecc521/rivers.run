@@ -15,12 +15,11 @@
         <meta name="referrer" content="strict-origin-when-cross-origin">
 
         <!-- USGS Gauges Preload -->
-        <link rel="preload" href="usgscache.json" as="fetch" importance="high">
+        <link rel="preload" href="flowdata2.json" as="fetch" importance="high" crossorigin>
 
         <!--JavaScript & CSS-->
         <link rel="preload" href="index.css" as="style" importance="high">
         <link rel="preload" href="riverarray.js" as="script" importance="high">
-        <link rel="preload" href="overviews.js" as="script" importance="low">
         <link rel="preload" href="packages/index.js" as="script" importance="high">
 
         <!-- Progressive Web App Manifest -->
@@ -67,8 +66,6 @@
         <!-- Consider combining allPages.js and index.js to save a good bit of bandwidth. This will require modifying allPages.js so that it can also use index.js to find the site root.-->
         <script src="packages/allPages.js"></script>
         <script src="riverarray.js"></script>
-        <script src="overviews.js" async defer></script> <!-- This isn't needed at initial page load. -->
-
 
 		<noscript><h1>JavaScript is needed in order to use rivers.run</h1></noscript>
 
@@ -184,6 +181,7 @@
                     <br>
                     <input id="includeUnknownLocation" type="checkbox">Include rivers without GPS coordinates<br>
                     <button id="calculateCoordinates">Calculate my Location</button>
+					<div id="ipLocation" class="oldDataWarning"></div>
                     <p id="locationProgress"></p>
                 </div>
                 <br><br>
@@ -203,5 +201,6 @@
         </div>
 
         <script src="packages/index.js"></script>
+        <script src="overviews.js" defer></script> <!-- This isn't needed at initial page load. -->
     </body>
 </html>
