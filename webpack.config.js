@@ -10,13 +10,15 @@ const path = require("path")
 	let prodConfig = {
 		mode: "production", //Build for production
 		entry: {
-			index: "./index.js",
-			allPages: "./allPages.js" //Package allPages.js for browser support.
+			"packages/index": "./index.js",
+			"packages/allPages": "./allPages.js",
+			//TODO: Package serviceworker, and drop it in root directory. (could use Service-Worker-Allowed: / header, but that makes local development harder).
 		},
+  		watch: true,
 		target: "web",
 		devtool: "source-map",
 		output: {
-			path: path.join(__dirname, "packages"),
+			path: __dirname,
 			filename: "[name].js",
 		},
 		optimization: {
@@ -60,6 +62,7 @@ const path = require("path")
 
 	let devConfig = {
 		mode: "production", //Build for "production" - Not sure if needed, but CSP may require.
+  		watch: true,
 		entry: {
 			index: "./index.js",
 			allPages: "./allPages.js" //Package allPages.js for browser support.
@@ -78,7 +81,7 @@ const path = require("path")
 		}
 	}
 
-
+	
 
 module.exports = function(env) {
 	if (env === "dev") {
