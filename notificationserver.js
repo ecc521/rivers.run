@@ -65,15 +65,18 @@ function getUserSubscription(url) {
 
 async function httprequest(req,res) {
 
-		let data = await new Promise((resolve, reject) => {
-			let body = []
-			req.on("data", function(chunk) {
-				body.push(chunk)
+	
+		function getData() {
+			return new Promise((resolve, reject) => {
+				let body = []
+				req.on("data", function(chunk) {
+					body.push(chunk)
+				})
+				req.on("end", function() {
+					resolve(Buffer.concat(body))
+				})
 			})
-			req.on("end", function() {
-				resolve(Buffer.concat(body))
-			})
-		})
+		}
 		
 		//TODO: Only allow rivers.run, its subdomains and 127.0.0.1
 		res.setHeader('Access-Control-Allow-Origin', '*')
@@ -111,11 +114,19 @@ async function httprequest(req,res) {
 					return
 				}
 				else {
-					fs.writeFileSync(pathOnSystem, data)
-					res.statusCode = 200;
-					res.setHeader('Content-Type', 'text/plain');
-					res.end("File created")
-					return
+					let stream = req.pipe(fs.createWriteStream(pathOnSystem))
+					console.log(stream)
+					stream.on("close", function() {
+						res.statusCode = 200;
+						res.setHeader('Content-Type', 'text/plain');
+						res.end("File created")
+					})
+					stream.on("error", function(e) {
+						res.statusCode = 500;
+						res.setHeader('Content-Type', 'text/plain');
+						res.end("Internal Server Error " + e.toString())
+					})
+					return;
 				}
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/plain');
@@ -160,7 +171,7 @@ async function httprequest(req,res) {
 	
 	
 		if (req.method === "POST") {
-			data = JSON.parse(data.toString())
+			let data = JSON.parse((await getData()).toString())
 			
 			res.setHeader("Cache-Control", "no-store")
 
@@ -190,7 +201,7 @@ async function httprequest(req,res) {
 			}
 		}
 	
-		console.log(data)
+		
 		res.statusCode = 404;
 		res.setHeader('Content-Type', 'text/plain');
 		res.end('Unknown request\n');
