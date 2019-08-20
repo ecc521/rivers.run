@@ -108,8 +108,8 @@ async function httprequest(req,res) {
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
 					//Apparently the configuration didn't carry into subdirectories - so link the files.
-					fs.linkSync(path.join(__dirname, "salmon2019", "header.html"), path.join(pathOnSystem, "header.html"))
-					fs.linkSync(path.join(__dirname, "salmon2019", ".htaccess"), path.join(pathOnSystem, ".htaccess"))
+					fs.symlinkSync(path.join(__dirname, "salmon2019", "header.html"), path.join(pathOnSystem, "header.html"))
+					fs.symlinkSync(path.join(__dirname, "salmon2019", ".htaccess"), path.join(pathOnSystem, ".htaccess"))
 					res.end("Directory created")
 					return
 				}
