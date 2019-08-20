@@ -107,9 +107,9 @@ async function httprequest(req,res) {
 					fs.mkdirSync(pathOnSystem, {recursive:true})
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'text/plain');
-					//Apparently the configuration didn't carry into subdirectories - so just copy the files.
-					fs.writeFileSync(path.join(pathOnSystem, "header.html"), fs.readFileSync(path.join(__dirname, "salmon2019", "header.html")))
-					fs.writeFileSync(path.join(pathOnSystem, ".htaccess"), fs.readFileSync(path.join(__dirname, "salmon2019", ".htaccess")))
+					//Apparently the configuration didn't carry into subdirectories - so link the files.
+					fs.linkSync(path.join(__dirname, "salmon2019", "header.html"), path.join(pathOnSystem, "header.html"))
+					fs.linkSync(path.join(__dirname, "salmon2019", ".htaccess"), path.join(pathOnSystem, ".htaccess"))
 					res.end("Directory created")
 					return
 				}
