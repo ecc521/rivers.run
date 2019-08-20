@@ -336,7 +336,7 @@ function IDSearch(list, query) {
 function advancedSearch(list, query) {
     //List is the array of river elements that we are searching
     //Query is the search parameters
-    console.log(query)
+    console.log(recursiveAssign({},query))
 
     for (let property in query) {
         //Iterate through each part of the query

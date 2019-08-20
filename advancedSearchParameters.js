@@ -88,7 +88,6 @@ window.getAdvancedSearchParameters = function(filter) {
 
 	return parameters
 }
-window.defaultAdvancedSearchParameters = window.getAdvancedSearchParameters();
 
 
 window.setMenuFromSearch = function(query) {
@@ -110,6 +109,7 @@ window.setMenuFromSearch = function(query) {
 
 	document.getElementById("skillQuery1").value = query.skill.query[0]
 	document.getElementById("skillQuery2").value = query.skill.query[1]
+	document.getElementById("includeUnknownSkill").checked = query.skill.includeUnknown
 
 	document.getElementById("searchbox").value = query.normalSearch
 	document.getElementById("normalSearchBoxOnAdvancedSearch").value = query.normalSearch
@@ -126,3 +126,49 @@ window.setMenuFromSearch = function(query) {
 	
 	highlightFailingFields(query)
 }
+
+
+//Previously I just used the initial state of the HTML fields to calculate defaultAdvancedSearchParameters (call getAdvancedSearchParameters at page load) - 
+//However Chrome will remember the state of input fields if the hits the back button to go back to the page (sometimes with the app to), causing issues.
+//This is probably a feature intended to stop users from losing form inputs if they navigate accidentally - meaning that filing a bug report would be useless.
+window.defaultAdvancedSearchParameters = {
+  "name": {
+    "type": "contains",
+    "query": ""
+  },
+  "section": {
+    "type": "contains",
+    "query": ""
+  },
+  "writeup": {
+    "type": "contains",
+    "query": ""
+  },
+  "location": {
+    "lat": "",
+    "lon": "",
+    "distance": "",
+    "includeUnknown": false
+  },
+  "tags": {
+    "query": ""
+  },
+  "skill": {
+    "type": "from",
+    "query": [1, 8],
+    "includeUnknown": true
+  },
+  "normalSearch": "",
+  "flow": {
+    "type": "from",
+    "query": [0, 4],
+    "includeDams": true,
+    "includeUnknown": true
+  },
+  "sort": {
+    "query": "none",
+    "reverse": false
+  }
+};
+
+window.setMenuFromSearch(window.defaultAdvancedSearchParameters)

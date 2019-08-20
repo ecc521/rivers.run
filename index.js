@@ -75,7 +75,6 @@ document.getElementById("Rivers").appendChild(new TopBar().create())
 require("./createLegend.js")
 
 
-
 //If there is a custom search link, use it. Otherwise, just call NewList.
 if (window.location.hash.length > 0) {
 	let search = decodeURI(window.location.hash.slice(1))
@@ -113,7 +112,6 @@ if (search.startsWith("{")) {
 				legend.parentNode.insertBefore(searchNotFinished, legend)
 		}
 	}
-		console.log(window.usgsDataAge)
 		setMenuFromSearch(query)
 		NewList()
 	}
