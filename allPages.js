@@ -66,17 +66,6 @@ try {
 }
 catch(e) {console.error(e)}
 
-try {
-	if ('serviceWorker' in navigator) {
-	    window.addEventListener('load', function() {
-	        navigator.serviceWorker.register('sw.js');
-	    });
-	}
-}
-catch (e) {
-	console.error(e)
-}
-
 
 //Create navigation bar
 
@@ -103,6 +92,19 @@ catch(e) {
 }
 
 console.log(root)
+
+
+try {
+	if ('serviceWorker' in navigator) {
+	    window.addEventListener('load', function() {
+	        navigator.serviceWorker.register(root + 'sw.js');
+	    });
+	}
+}
+catch (e) {
+	console.error(e)
+}
+
 
 //Add the favicon if it does not exist.
 try {
