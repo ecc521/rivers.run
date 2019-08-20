@@ -145,8 +145,7 @@ function addHandlers(button, locate) {
 
 				//Container for the river alert creator.
 				let container = document.createElement("div")
-				container.style.textAlign = "center"
-				container.style.marginBottom = "0.5em" //Add some space between this and the graph.
+				container.className = "notificationsContainer"
 				div.appendChild(container)
 
 				//Describe what this does, and alert the user if their browser is unsupported.
@@ -161,23 +160,18 @@ function addHandlers(button, locate) {
 				}
 
 				let low = document.createElement("input")
+				low.className = "minimum"
 				low.type = "number"
 				low.placeholder = "Minimum"
-				low.style.fontSize = "16px"
-				low.style.fontWeight = "bold"
-				low.style.width = "90px"
 				low.value = (current && current.minimum) || ""
 
 				let high = document.createElement("input")
+				high.className = "maximum"
 				high.placeholder = "Maximum"
-				high.style.fontSize = "16px"
-				high.style.fontWeight = "bold"
-				high.style.width = "110px"
 				high.value = (current && current.maximum) || ""
 				high.type = "number"
 
 				let units = document.createElement("select")
-				units.style.fontSize = "16px"
 
 				let blank = document.createElement("option")
 				blank.selected = true
@@ -201,7 +195,6 @@ function addHandlers(button, locate) {
 				units.value = (current && current.units) || ""
 
 				let save = document.createElement("button")
-				save.style.fontSize = "16px"
 				save.innerHTML = "Save"
 
 				save.addEventListener("click", function() {
@@ -239,7 +232,6 @@ function addHandlers(button, locate) {
 
 				let manage = document.createElement("button")
 				manage.innerHTML = "Manage Notifications"
-				manage.style.fontSize = "16px"
 				manage.addEventListener("click", function() {
 					window.open("notifications.html")
 				})
