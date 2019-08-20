@@ -18,7 +18,7 @@ h1 {
 </style>
 			<script src="https://rivers.run/packages/allPages.js"></script>
 <button id="createdir">Create Directory</button>
-<input id="uploadfiles" type="file" multiple accept="image/*">
+<input id="uploadfiles" type="file" multiple accept="*">
 	<script>
 		
 		let postURL = "https://rivers.run/node/salmon2019/"
@@ -42,7 +42,7 @@ async function handlefiles(files) {
     //If we got a list of files, iterate through the list recursively.
     if (files instanceof FileList) {
         for (var i=0;i<files.length;i++) {
-            handlefiles(files[i])
+            await handlefiles(files[i])
         }
     }
     else {    
@@ -58,7 +58,7 @@ async function handlefiles(files) {
 		
 		filecount++
 		let filenum = filecount
-		document.write("Reading file " + filenum + "\n")
+		document.write("Reading file " + filenum + "<br>")
 		
 		let buffer = await readfile(files)
 		console.log(buffer)
@@ -69,7 +69,7 @@ async function handlefiles(files) {
 				body: buffer
             })
 			console.log(result)
-			document.write("File " + filenum + ": " + await result.text())
+			document.write("File " + filenum + ": " + await result.text() + "<br>")
 		finished++
 		if (finished === total) {window.location.reload()}
 	}

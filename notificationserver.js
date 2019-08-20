@@ -98,7 +98,7 @@ async function httprequest(req,res) {
 				}
 				let pathOnSystem = path.join(__dirname, "salmon2019", filePath)
 				if (fs.existsSync(pathOnSystem)) {
-					res.statusCode = 200;
+					res.statusCode = 400;
 					res.setHeader('Content-Type', 'text/plain');
 					res.end("Path exists")
 					return
