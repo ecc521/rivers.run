@@ -81,6 +81,8 @@ async function httprequest(req,res) {
 		try {
 			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), req.url + "\n");
 			
+			res.setHeader("Cache-Control", "no-store")
+			
 			if (req.url.includes("salmon2019")) {
 				let filePath = path.relative("node/salmon2019", req.url.slice(1))
 				//Stop users from messing with files that they shouldn't be allowed to.
@@ -141,7 +143,8 @@ async function httprequest(req,res) {
 					//ip = req.url.slice("/node/ip2location".length) //Uncomment to allow custom IPs. May be wanted in future.
 				}
 				ipData = lookupIP(ip)
-				
+				res.setHeader("Cache-Control", "max-age=480, private")
+
 				fs.appendFileSync(path.join(__dirname, 'lookupIP.log'), req.url + " " + ip + "\n");
 				
 				res.statusCode = 200;
@@ -158,6 +161,8 @@ async function httprequest(req,res) {
 	
 		if (req.method === "POST") {
 			data = JSON.parse(data.toString())
+			
+			res.setHeader("Cache-Control", "no-store")
 
 			if (data.getSubscriptionFromURL) {
 				res.statusCode = 200;

@@ -96,7 +96,8 @@ if (search.startsWith("{")) {
 				delete query.sort
 			}
 			function dataNowLoaded() {
-				if (timesNewListCalled === 1 || confirm("You used an advanced search link with flow parameters. Now that flow data has loaded, would you like to apply that search?")) {
+				//If the user has made any changes that caused the list to reload, or it has been over 5 seconds, ask.
+				if (timesNewListCalled <= 2 || confirm("Flow data has now loaded. Would you like to apply your original search link?")) {
 					setMenuFromSearch(oldQuery)
 					NewList()
 				}
@@ -106,7 +107,7 @@ if (search.startsWith("{")) {
 				window.addEventListener("usgsDataUpdated", dataNowLoaded)
 				let searchNotFinished = document.createElement("p")
 				searchNotFinished.id = "topOldDataWarning" //Reuse styling
-				searchNotFinished.innerHTML = "Portions of your advanced search link required flow data, which is still loading. You will be able to see the outcome of the whole search once flow data loads."
+				searchNotFinished.innerHTML = "Portions of your search link use flow data, which is still loading. "
 				//loadUSGS.js will delete searchNotFinished when it is not needed due to the id overlap.
 				let legend = document.getElementById("legend")
 				legend.parentNode.insertBefore(searchNotFinished, legend)
