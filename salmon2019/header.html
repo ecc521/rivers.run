@@ -37,7 +37,7 @@ h1 {
 		let total;
 		let filecount = 0
 		let finished = 0
-		
+		let previousHTML;
 		
 async function handlefiles(files) {
     //If we got a list of files, iterate through the list recursively.
@@ -51,7 +51,7 @@ async function handlefiles(files) {
 		filecount++
 		let filenum = filecount		
 		
-		if (!document.body.innerHTML.includes(files.name)) {
+		if (!previousHTML.includes(files.name)) {
 			//Don't bother uploading a file if it is already in the directory listing (because the server will reject it.)
 			document.write("File " + filenum + " already exists.")
 		}
@@ -77,7 +77,8 @@ async function handlefiles(files) {
 		
 document.getElementById("uploadfiles").addEventListener("change", function(){
 	if (confirm("Are you sure you want to upload " + this.files.length + " files?")) {
-				console.log(this.files)
+		previousHTML = document.body.innerHTML
+		console.log(this.files)
 		handlefiles(this.files)
 		total = this.files.length
 	}
