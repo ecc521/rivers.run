@@ -7,7 +7,7 @@ window.toDecimalDegrees = function(coord) {
 		return undefined;
 	}
 
-	let parts = coord.split(/[^\w]+/) //Split on non-alphanumeric characters.
+	let parts = coord.split(/[^.\w]+/) //Split on non-alphanumeric characters that aren't decimals.
 	console.log(parts)
 	let direction;
 	for (let i=0;i<parts.length;i++) {
@@ -19,14 +19,16 @@ window.toDecimalDegrees = function(coord) {
 	}
 	console.log(parts)
 	let degrees = Number(parts[0])
-	let minutes = Number(parts[1] || 0)
-	let seconds = Number(parts[2] || 0)
+	let minutes = Number(parts[1]) || 0
+	let seconds = Number(parts[2]) || 0
 
 	minutes += seconds/60
 	degrees += minutes/60
 
 	if (isNaN(Number(degrees))) {throw "Coordinate " + coord + " could not be processed."}
 
+	if (direction === "S" || direction === "W") {degrees = -degrees}
+	
 	return degrees
 }
 
