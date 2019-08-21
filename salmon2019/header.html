@@ -22,7 +22,7 @@ h1 {
 	<script>
 		
 		let postURL = "https://rivers.run/node/salmon2019/"
-		postURL += window.location.href.slice("https://rivers.run/salmon2019/".length)
+		postURL += window.location.pathname.slice("/salmon2019/".length)
 		
 	document.getElementById("createdir").addEventListener("click", async function() {
 			let dirname = prompt("What would you like the name of the directory to be?")
@@ -51,7 +51,7 @@ async function handlefiles(files) {
 		filecount++
 		let filenum = filecount		
 		
-		if (!previousHTML.includes(files.name)) {
+		if (previousHTML.includes(files.name)) {
 			//Don't bother uploading a file if it is already in the directory listing (because the server will reject it.)
 			document.write("File " + filenum + " already exists.")
 		}
