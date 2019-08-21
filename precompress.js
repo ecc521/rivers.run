@@ -101,7 +101,7 @@ module.exports = function compressFiles() {
 
 	files = files.filter((filePath) => {
 		let extension = path.extname(filePath).toLowerCase()
-		if ([".png",".jpeg", "jpg", ".br"].includes(extension)) {
+		if ([".png",".jpeg", ".jpg", ".br"].includes(extension)) {
 			//Don't compress some precompessed file types.
 			return false
 		}

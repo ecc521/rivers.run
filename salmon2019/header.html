@@ -38,6 +38,7 @@ h1 {
 		let filecount = 0
 		let finished = 0
 		
+		
 async function handlefiles(files) {
     //If we got a list of files, iterate through the list recursively.
     if (files instanceof FileList) {
@@ -61,14 +62,15 @@ async function handlefiles(files) {
 		document.write("Reading file " + filenum + "<br>")
 		
 		let buffer = await readfile(files)
-		console.log(buffer)
-			console.log(postURL)
+		
+		document.write("Uploading file " + filenum + "<br>")
+
 		    let result = await fetch(postURL + files.name, {
                 cache: "no-store",
                 method: "POST",
 				body: buffer
             })
-			console.log(result)
+			
 			document.write("File " + filenum + ": " + await result.text() + "<br>")
 		finished++
 		if (finished === total) {window.location.reload()}
