@@ -117,6 +117,9 @@ async function httprequest(req,res) {
 				else {
 					//If the file upload gets terminated for some reason, the user should be able to upload the file again without a path collison.
 					let whileLoadingPath = path.join(os.tmpdir(), "rivers.run", filePath)
+					if (!fs.existsSync(path.dirname(whileLoadingPath))) {
+						fs.mkdirSync(path.dirname(whileLoadingPath), {recursive:true})
+					}
 					if (fs.existsSync(whileLoadingPath)) {fs.unlinkSync(whileLoadingPath)}
 					
 					let stream = req.pipe(fs.createWriteStream(whileLoadingPath))
