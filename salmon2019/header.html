@@ -53,7 +53,7 @@ async function handlefiles(files) {
 		
 		if (previousHTML.includes(files.name)) {
 			//Don't bother uploading a file if it is already in the directory listing (because the server will reject it.)
-			document.write("File " + filenum + " already exists.")
+			document.write("File " + filenum + " already exists.<br>")
 		}
 		else {
 		
