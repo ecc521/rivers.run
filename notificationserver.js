@@ -99,14 +99,14 @@ async function httprequest(req,res) {
 					return;
 				}
 				let pathOnSystem = path.join(__dirname, "salmon2019", filePath)
-				if (fs.existsSync(pathOnSystem)) {
-					res.statusCode = 400;
-					res.setHeader('Content-Type', 'text/plain');
-					res.end("Path exists")
-					return
-				}
 				if (req.url.endsWith("/")) {
 					if (req.method === "POST") {
+						if (fs.existsSync(pathOnSystem)) {
+							res.statusCode = 400;
+							res.setHeader('Content-Type', 'text/plain');
+							res.end("Path exists")
+							return
+						}
 						//Create the directory
 						fs.mkdirSync(pathOnSystem, {recursive:true})
 						res.statusCode = 200;
@@ -117,6 +117,12 @@ async function httprequest(req,res) {
 						res.end("Directory created")
 					}
 					else {
+						if (!fs.existsSync(pathOnSystem)) {
+							res.statusCode = 400;
+							res.setHeader('Content-Type', 'text/plain');
+							res.end("Path does not exist.")
+							return
+						}
 						//Send the user a zip file.
 						let zipper = child_process.spawn("zip", ["-9", "-r", "-", "."], {
 							cwd: pathOnSystem,
@@ -132,6 +138,13 @@ async function httprequest(req,res) {
 					return
 				}
 				else {
+					if (fs.existsSync(pathOnSystem)) {
+						res.statusCode = 400;
+						res.setHeader('Content-Type', 'text/plain');
+						res.end("Path exists")
+						return
+					}
+					
 					//If the file upload gets terminated for some reason, the user should be able to upload the file again without a path collison.
 					let whileLoadingPath = path.join(os.tmpdir(), "rivers.run", filePath)
 					if (!fs.existsSync(path.dirname(whileLoadingPath))) {
