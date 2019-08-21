@@ -25,11 +25,28 @@ h1 {
 		let postURL = "https://rivers.run/node/salmon2019/"
 		postURL += window.location.pathname.slice("/salmon2019/".length)
 		
+		
+		let alreadyDownloaded = false
 		//Download as Zip Button
-		let dirname = window.location.pathname.slice(window.location.pathname.lastIndexOf("/") + 1)
 		let downloadAsZip = document.getElementById("downloadzipdir")
-		downloadAsZip.download = dirname
-		downloadAsZip.href = postURL
+		downloadAsZip.addEventListener("click", function() {
+			if (alreadyDownloaded && !confirm("Are you sure you want to download this file again?")) {
+				alert("Download canceled.")
+				return;
+			}  
+			
+			let dirname = postURL.slice(postURL.slice(0,-1).lastIndexOf("/") + 1).slice(0,-1)
+			
+			let elem = window.document.createElement('a');
+			elem.href = postURL
+			elem.download = dirname + ".zip";
+			document.body.appendChild(elem);
+			elem.click();
+			document.body.removeChild(elem);
+			
+			alreadyDownloaded = true
+		})
+
 		
 		
 		
