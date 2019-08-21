@@ -38,7 +38,7 @@ async function load(url, attempts = 0) {
 }
 
 function loadFromDisk(id, lastModified = 0) {
-    let filename = path.join(__dirname, "drivecache", id)
+    let filename = path.join(__dirname, "data", "drivecache", id)
     //Add 5 minutes because it takes some time to download - so a file may be written to disk a minute or so after it is downloaded.
     //This is overly cautious - a freak scenario is required, and it should only be a few seconds for this to happen.
     if (fs.existsSync(filename) && fs.statSync(filename).mtime.getTime() > new Date(lastModified).getTime()+1000*60*5) {
@@ -48,7 +48,7 @@ function loadFromDisk(id, lastModified = 0) {
 }
 
 function writeToDisk(data, id) {
-    let directory = path.join(__dirname, "drivecache")
+    let directory = path.join(__dirname, "data", "drivecache")
     if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
     let filename = path.join(directory, id)
     //Avoid unneeded writes to the disk - although this may be done already.
