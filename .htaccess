@@ -60,6 +60,9 @@ Header set Cache-Control "max-age=259200, public, stale-if-error=8640000"
 </FilesMatch>
 
 
+ErrorDocument 404 /404.html
+
+
 RemoveLanguage .br
 AddEncoding br .br
 RemoveType .gz
