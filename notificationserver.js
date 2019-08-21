@@ -2,6 +2,7 @@ const webpush = require('web-push');
 const fs = require("fs")
 const path = require("path")
 const http = require("http")
+const os = require("os")
 
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
@@ -114,14 +115,20 @@ async function httprequest(req,res) {
 					return
 				}
 				else {
-					let stream = req.pipe(fs.createWriteStream(pathOnSystem))
+					//If the file upload gets terminated for some reason, the user should be able to upload the file again without a path collison.
+					let whileLoadingPath = path.join(os.tmpdir(), "rivers.run", filePath)
+					if (fs.existsSync(whileLoadingPath)) {fs.unlinkSync(whileLoadingPath)}
+					
+					let stream = req.pipe(fs.createWriteStream(whileLoadingPath))
 					console.log(stream)
 					stream.on("close", function() {
+						fs.renameSync(whileLoadingPath, pathOnSystem)
 						res.statusCode = 200;
 						res.setHeader('Content-Type', 'text/plain');
 						res.end("File created")
 					})
 					stream.on("error", function(e) {
+						if (fs.existsSync(whileLoadingPath)) {fs.unlinkSync(whileLoadingPath)}
 						res.statusCode = 500;
 						res.setHeader('Content-Type', 'text/plain');
 						res.end("Internal Server Error " + e.toString())

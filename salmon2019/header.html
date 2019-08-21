@@ -47,31 +47,27 @@ async function handlefiles(files) {
         }
     }
     else {    
-    	let readfile = async function(file) {
-			let reader = new FileReader()
-			return new Promise(function(resolve, reject){
-				reader.onload = function() {
-					resolve(reader.result)
-				};
-				reader.readAsArrayBuffer(file)
-			})
-		}
 		
 		filecount++
-		let filenum = filecount
-		document.write("Reading file " + filenum + "<br>")
+		let filenum = filecount		
 		
-		let buffer = await readfile(files)
+		if (!document.body.innerHTML.includes(files.name)) {
+			//Don't bother uploading a file if it is already in the directory listing (because the server will reject it.)
+			document.write("File " + filenum + " already exists.")
+		}
+		else {
 		
-		document.write("Uploading file " + filenum + "<br>")
+			document.write("Uploading file " + filenum + "<br>")
 
 		    let result = await fetch(postURL + files.name, {
                 cache: "no-store",
                 method: "POST",
-				body: buffer
+				body: files
             })
 			
 			document.write("File " + filenum + ": " + await result.text() + "<br>")
+		}
+		
 		finished++
 		if (finished === total) {window.location.reload()}
 	}
