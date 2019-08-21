@@ -18,12 +18,22 @@ h1 {
 </style>
 			<script src="https://rivers.run/packages/allPages.js"></script>
 <button id="createdir">Create Directory</button>
+	<button id="downloadzipdir">Download Directory as .Zip</button>
 <input id="uploadfiles" type="file" multiple accept="*">
 	<script>
 		
 		let postURL = "https://rivers.run/node/salmon2019/"
 		postURL += window.location.pathname.slice("/salmon2019/".length)
 		
+		//Download as Zip Button
+		let dirname = window.location.pathname.slice(window.location.pathname.lastIndexOf("/") + 1)
+		let downloadAsZip = document.getElementById("downloadzipdir")
+		downloadAsZip.download = dirname
+		downloadAsZip.href = postURL
+		
+		
+		
+	//Create directory button.
 	document.getElementById("createdir").addEventListener("click", async function() {
 			let dirname = prompt("What would you like the name of the directory to be?")
 		    let result = await fetch(postURL + dirname + "/", {

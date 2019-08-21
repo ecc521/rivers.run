@@ -3,6 +3,7 @@ const fs = require("fs")
 const path = require("path")
 const http = require("http")
 const os = require("os")
+const child_process = require("child_process")
 
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
@@ -105,13 +106,29 @@ async function httprequest(req,res) {
 					return
 				}
 				if (req.url.endsWith("/")) {
-					fs.mkdirSync(pathOnSystem, {recursive:true})
-					res.statusCode = 200;
-					res.setHeader('Content-Type', 'text/plain');
-					//Apparently the configuration didn't carry into subdirectories - so link the files.
-					fs.symlinkSync(path.join(__dirname, "salmon2019", "header.html"), path.join(pathOnSystem, "header.html"))
-					fs.symlinkSync(path.join(__dirname, "salmon2019", ".htaccess"), path.join(pathOnSystem, ".htaccess"))
-					res.end("Directory created")
+					if (req.method === "POST") {
+						//Create the directory
+						fs.mkdirSync(pathOnSystem, {recursive:true})
+						res.statusCode = 200;
+						res.setHeader('Content-Type', 'text/plain');
+						//Apparently the configuration didn't carry into subdirectories - so link the files.
+						fs.symlinkSync(path.join(__dirname, "salmon2019", "header.html"), path.join(pathOnSystem, "header.html"))
+						fs.symlinkSync(path.join(__dirname, "salmon2019", ".htaccess"), path.join(pathOnSystem, ".htaccess"))
+						res.end("Directory created")
+					}
+					else {
+						//Send the user a zip file.
+						let zipper = child_process.spawn("zip", ["-9", "-r", "-", "."], {
+							cwd: pathOnSystem,
+							stido: ["ignore", "pipe", "pipe"] //Ingore stdin. Pipe others.
+						})
+						//Send stderr into log.
+						let errorStream = fs.createWriteStream('salmon2019zip.log')
+						zipper.stderr.pipe(errorStream)
+						
+						res.statusCode = 200;
+						zipper.stdout.pipe(res) //Respond with the zip file.
+					}
 					return
 				}
 				else {
