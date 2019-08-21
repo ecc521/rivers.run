@@ -124,7 +124,7 @@ async function httprequest(req,res) {
 							return
 						}
 						//Send the user a zip file.
-						let zipper = child_process.spawn("zip", ["-9", "-r", "-x", "header.html", "-x", "header.html.br", "-x", ".htaccess", "-", "."], {
+						let zipper = child_process.spawn("zip", ["-9", "-r", "-x", "header.html", "-x", ".htaccess", "-x", "*.br", "-", "."], {
 							cwd: pathOnSystem,
 							stido: ["ignore", "pipe", "pipe"] //Ingore stdin. Pipe others.
 						})
