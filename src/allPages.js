@@ -4,7 +4,7 @@
 
 try {
 	if (!window.customElements) {
-		require("./node_modules/@webcomponents/custom-elements/custom-elements.min.js")
+		require("../node_modules/@webcomponents/custom-elements/custom-elements.min.js")
 	}
 }
 catch(e) {console.error(e)}
