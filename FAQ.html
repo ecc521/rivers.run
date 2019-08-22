@@ -178,7 +178,33 @@
                 panel.style.maxHeight = panel.scrollHeight + "px";
             }
         });
-    }
+    }	
+		
+		//Add metadata - TODO: Consider adding metadata only for web crawlers.
+		let dataelem = document.createElement("script")
+		dataelem.type = "application/ld+json"
+		
+		let data = {
+			"@content": "https://schema.org",
+			"@type": "FAQPage",
+			"mainEntity": []
+		}
+		
+		for (i = 0; i < acc.length; i++) {
+			let elem = acc[i]
+			let markup = {
+				"@type": "Question", 
+				"acceptedAnswer": {
+					"@type": "Answer"
+				}
+			}
+			markup.name = elem.innerHTML
+			markup.acceptedAnswer.text = elem.nextElementSibling.firstElementChild.innerHTML
+			data.mainEntity.push(markup)
+		}
+
+		dataelem.innerHTML = JSON.stringify(data)
+		document.body.appendChild(dataelem)
     </script>
 
 
