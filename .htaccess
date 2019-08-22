@@ -59,6 +59,9 @@ Header set Cache-Control "max-age=86400, public, stale-if-error=8640000"
 Header set Cache-Control "max-age=259200, public, stale-if-error=8640000"
 </FilesMatch>
 
+#Remove trailing slash if path doesn't match an existing directory.
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)/+$ $1 [R,L]
 
 #If the path doesn't exist, but a file with the same name and a .html extension does, serve the .html file.
 RewriteCond %{REQUEST_FILENAME} !-d
