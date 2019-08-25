@@ -35,7 +35,7 @@ function calculateDirection(usgsNumber) {
             }
             else if (current === previous) {
                 //Water level stable
-                return " – " //En dash surrounded by thin spaces.
+                return " –" //En dash preceeded by a thin space.
             }
 
         }

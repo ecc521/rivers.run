@@ -14,13 +14,13 @@ html, body {
     height: 80vw;
     max-height: 90vh;
 }
-/*★☆*/
-/*Make sure I have the two star images above in a font.*/
+/*★☆⬆⬇*/
+/*Make sure I have the two star images being the same size, and arrows that look how I want, in a font.*/
 @font-face {
   font-family: 'Noto Sans HK';
   font-style: normal;
   font-weight: 400;
-  src: url(data:font/woff2;charset=utf-8;base64,d09GMk9UVE8AAARoAAwAAAAABwQAAAQdAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAADYVQBmAOCABYATYCJAMIBAYFg3AHIBckGAgbMwbIxAe/LXvJkFnLKqUKbWqG1YWtwqkgtjYczNYFqOjvfbl6gCD/c01dlO5smM8HNsXIf5G0TMyyvSMdUETbHeAEJyBTmJsDdJ7RLYbAYgEhxLreMI3zgn2ZzjVTz43G+3uC6aoT59hJ1k5yOT7cTg4SaA5RzWHt3D6LmsS16o7qrQ6gKaWvr2tjR/gIB1B7jY9igMxrVYFFfCyQ1XyMqJ521BFyxTXb92Sve2KZkdqcTsYTpvC6PdOnQD7js9liScQIRcWEhGmm5rpcGzdudAZLTc6w0eua6BT7XCmSGREUZjoYifZqV7uFERM+w4j3RMWqvrCz1XGUtOhcI/SBsnPyKVZFon1m0tx87OmmLk/2xUNBM1N90hfti6aTYYAwSjRQvEVAAA2UkFaHneT5ODuEXkRPd9jJkZzM/t17O6BREJyPY2S44o8V//j+ksc6/nisGHjM+uAfituK95a2Ve7VC2PKV9nU24WprNimq7vLF9qsH0q9uPJ8XcUdspmN8u3yVFZxF/8gUp6q/uyWtaV6clfJrZUuLPTbjqm/6xSV37KDuqLqW6b+PqjLO1RQaer7o1l5j4zIe1TkaF5p8nvWUjj/zu5b9pzuuLPktR4v5Isv2fbqCupbpv7Ws3vknepyxdQ3J/fLu2RM3qViJ08oJr9hVre8U16ePc2sx9XfujVQ3tRtsx7//QCTAf1Z6bv+V3ZEv27Sc8rHpF+3Bv44zg7XTT9fTRr5jJp778jDWc/bSvytxBjP8sP5e/97Rs5Vk/6b/jRrqX6ZcwBND+b01xrfbLrl1HWc33L2Ot6c5+2lbQP+t6mjOQfAVub0exrvabrnE87v+YQ353l7adsAaNqH5DgYQLP0YgBraJZeDJAr4SUrANrEAMCmFuNjn9/vw+JxbJyupWqHAMshIq7uIHX1W+gI+hkAAf2ZsVRnQnPBToJQ2qifDwuEDTZISHycXqtBwriPyn2CAAdhX9TRjjLpTB2tlyhw7et/XndV6/z/6jXtR5H5kLx3R9hSHqh+bErVta1N0vF3LIeqXwJND5YHVj5qSq3SZ9UT7UdEMA5jgQf2HKhHjIylgeEQmZCaCQaTNjNFC6FmDSvx6LCl3cwQwcVmHWMwXWgLpgNIwISJFObCBRcyCCONJFIwoXUiI7QHThhIIw4X/FiJtVgPAyYMnIcg+mDZiTWYinMR3d6PHgSRxoWIIj0WDJQKeOGE2w7OQ0Jg4VrYQLnH74SHMIulvQiiG9EelTFEsQnR0TAD42diBmZgDqbNN38f/PDDh3k7+9U8LMFy+LEUK2o9IylBTBC7afVaNzyYjimp9QyYbZQuQQQGQnvlm3Cv2EY76kSwHXOeP98LFyYauPYLRtb2wgurmLSB/Fvlv0dXm1m5jA90oADMwzwA) format('woff2'),
+  src: url(data:font/woff2;charset=utf-8;base64,d09GMk9UVE8AAAS8AAwAAAAAB3AAAARyAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAADYYfBmAOCABsATYCJAMMBAYFg3AHIBckGAwbngbIxIfezXqTMKFXUuXYs0pqhtiq0FV6KojVwtF0XWqyvyciMsAg//+949rat3AsDSzl9vu3sTbOZZ0vFgc0xrY+YBhg4JSWbTW1MLxcFk6VDIFOB0KIcZOqqWf6+gc613ecEYoM9voSUwdOryBDFWR4WK6qIEcI2EcF9jHx2EEdb5XF3O7crZWAIe6W60vpqFxdCeRfk2vpJQtLrHeF3ABso1xPSi2DnpCLL9+1f+i6J1aq8W2JWCSqKXarzdkOmuu1ecryoOoPKc1RTYsvsFi2bNli9o1qzAG1z9JiVq5zoRIbUHyKlvAFQ33qbI+ihhWPqkZ6Q8ra/oBZVNxKQulcr7iusfLgY6wNhvq1mLbttsfrWBXrj/h92sD0Bzyh/lAiFgAIFQjtJCIEgIAAFAIhJZUVZERurIBSCQjflFeQ0R6l4gtEsRxUAMFZGCdVZAUJc/mx1B/fn/9Y+R+PpboeMz74B5dNqXvTO7P3Ssn6zKUm/nayg6ZKJX535hyT8UPmcrPP67NWvymoZm9nOmjWmvqDWKaD/zfFG9IF5K60VUyfkxw0jfO/9Vxg39IjEhf4t5T/fURid3AfF/n3Y0PsHhZk9/Dg2AgX2fe0OHnWnT237J8pvzNtN04kR1IvmQ5IHPxbyv+WhvazO/lFnPJvpg6xu1iY3cXDU5Ocsm+o0cruZBcNzVDjBP9bMnZltvaYjBO/H6asS3qWea7/lY5K17U+xz2UeSVj1x8T9JjeeRZvrXmGL7i35tiQ7W2u/M2VetuqYyP3/vcMW8Bb/3M+TYtXp5sI+5p9KTJH8gITW5m5EreTV7KVIxL/KXkq/ylzKi12y0+nPmPPm/jK5JX8y8yVfOWQxH7KnMp+Sipv7svhD5TMg8PSa4VvGm6Zvk6Wbzl+nVw0Ipeld574v4mPSWy6Zsc9hfcY7vlElu/5xFdAFD8kE6BoEIaE8wCsL6XIJbCT1X2CgSJyLlM6L3u8Xg+WNdI2vRjPHwV0R4lyWTnRm4hQLXxmvAqkT8YmxlcbxBRV0EBIKeStgg7NFOkQgdAotenzeaCRtkkq9lHm3exGRQSyNjT3cEGOAI0SIgRoM3jbmVVHPiUACdFhvrRk0X8Fovjj6uSH5L07TF1mDv/RENeXhiAYnFy/NfflUyzLzMl+ZIifUxMtI+KPCKIRDbjCWdH1N2SBAoTPZ9GdwICfNLcigpNJqUhAMRFEItbg0V6dLKII4jyRhHo43y2GE0AUGjTEsQAWWDCAABKIIQ4NHDMG3u2FGSoSiMACL9ZgAzZBhQYVZ8KHfsh2Yj06cAZC6wfRCx8SOAchJPZFKvIV2GGGNfYtRFRDYBZtJs3mMcNGNJf5ffChB6ENxWGEsBWhvZELw91wwYX5cBxv+h544YUHC6/sVwuxHKvgxQqsntXsaVIICuGms5dbYYMT7a28C83z+csRhAr/tRI1P1fYEofM8Mlgvv9MHyxo8XrxOxiYPwA7olxSCvJvTv6CuHl39kIiUIFaYCEWog52) format('woff2'),
   url("resources/stars.woff") format("woff"); /*I could inline woff instead, but Safari 9.3 can go slower.*/
 }
 
@@ -144,7 +144,7 @@ Those include name,section,skill,quality, and flow info*/
 
 .riverspan {
     display:inline-block;
-    margin:0px; /*Used 2px, but not enough space*/
+    margin:0px;
     /*overflow:scroll;*/
     /*Scrollbars showing when not needed in Safari desktop. Need to debug*/
 }
@@ -174,6 +174,7 @@ Those include name,section,skill,quality, and flow info*/
 }
 .riverspan:nth-child(6) {
     margin-left: 1%;
+    font-family: BlinkMacSystemFont, "Noto Sans HK", Arial, Helvetica, sans-serif; /*Noto Sans HK contains the arrows that I want. On Apple Macs, use the system font.*/
 }
 
 @media screen and (min-width: 550px) {
@@ -188,7 +189,7 @@ Those include name,section,skill,quality, and flow info*/
         min-width:29%;
         max-width:29%;
     }
-	
+
     .skillspan {
         width:5% !important;
         min-width:5% !important;
@@ -202,7 +203,7 @@ Those include name,section,skill,quality, and flow info*/
         min-width:10% !important;
         max-width:10% !important;
 	}
-	
+
 	#topbar > .skillspan {
 		/*Let "Skill" use up however much space it needs*/
 		width: auto !important;
@@ -213,7 +214,6 @@ Those include name,section,skill,quality, and flow info*/
 
 @media screen and (max-width:309px) {
     /*Smart watch mode.*/
-    /*TODO: Show both class and skill in smart watch mode.*/
     .riverspan:nth-child(1) {
         width:40%;
         min-width:40%;
@@ -249,7 +249,7 @@ Those include name,section,skill,quality, and flow info*/
     h1 {
         font-size: 18vw; /*Prevent the River Information text from going off the screen and making the device zoom out.*/
     }
-	
+
 	/*Stop disastorous overflow in the topbar.*/
 	#topbar > .classspan {
 		/*Make "Class" use up only the space it needs.*/
@@ -366,7 +366,7 @@ Those include name,section,skill,quality, and flow info*/
     .riverbutton {
         font-size: 3.48vw; /*Any bigger than this, and we get quite a bit of text overlapping.*/
 		padding-left: 4px; /*Leave a little more space for other stuff than the standard 8px.*/
-		padding-right: 2px; /*Give a bit more space. Rarely is this padding noticed at all.*/
+		padding-right: 0; /*Give a bit more space. Rarely was this padding noticed at all.*/
     }
 }
 
