@@ -68,26 +68,7 @@ function TopBar() {
             addClassSpan()
         }
 
-
-		//The rating span needs to be the same size as the stars.
-		span = NewSpan("")
-		//Create an invisible star span. This will make the spans width the same as the ratings.
-        let empty = document.createElement("span")
-		empty.className = "emptyStars"
-		empty.innerHTML = "☆☆☆☆☆"
-		empty.style.opacity = "0" //Invisible
-
-		//Create the text span.
-		let realContent = document.createElement("span")
-		realContent.innerHTML = "Rating⇅"
-		//Make sure that the span is positioned correctly.
-		realContent.style.position = "absolute"
-		realContent.style.left = 0
-		realContent.style.bottom = 0
-
-		span.appendChild(empty)
-		span.appendChild(realContent)
-
+	    span = NewSpan("Rating⇅")
         addSorting(span, "rating", false) //We want greatest first, not least first, on the first sort. Pass 0 to not reverse
         button.appendChild(span)
 

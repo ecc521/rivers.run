@@ -4,6 +4,103 @@ html, body {
     background-color:#dffaff;
 }
 
+:root {
+    --defaultFontSize: 3.2vw;
+
+    --riverRatingSize: 2vw;
+    --riverNameWidth: 24.25%;
+    --riverSectionWidth: 30%;
+    --riverSkillWidth: 8%;
+    --riverClassWidth: var(--riverSkillWidth);
+    --displaySpan4: none;
+}
+
+@media screen and (min-width: 550px) {
+    :root {
+        /*Larger screen mode for .riverbutton*/
+        --riverNameWidth: 19%;
+        --riverSectionWidth: 29%;
+        --riverSkillWidth: 5%;
+        --riverClassWidth: 10%;
+        --displaySpan4: inline-block;
+    }
+}
+
+@media screen and (max-width:309px) {
+    /*Smart Watch Mode*/
+    :root {
+        --defaultFontSize: 5.3vw;
+
+        /*.riverbutton*/
+        --riverRatingSize: 4vw;
+        --riverNameWidth: 40%;
+        --riverSectionWidth: 60%;
+        --riverSkillWidth: 8%;
+        --riverClassWidth: 20%;
+        --displaySpan4: inline-block;
+    }
+}
+
+/*Font size breakpoints.*/
+@media screen and (max-width: 370px) {
+    :root {
+        --defaultFontSize: 3.48vw; /*Any bigger than this, and we get quite a bit of text overlapping.*/
+    }
+}
+
+
+.riverspan:nth-child(5) {
+    transform: scaleY(1.25) /*Make the stars larger without using more horizontal space.*/
+}
+@media screen and (min-width: 500px) {
+    :root {
+        --defaultFontSize: 2.8vw;
+        --riverRatingSize: var(--defaultFontSize);
+    }
+
+    .riverspan:nth-child(5) {
+        transform: scaleY(1); /*Remove the vertical scaling.*/
+    }
+}
+
+@media screen and (min-width: 550px) {
+    :root {
+        --defaultFontSize: 2.4vw; /*Make more space for the 4th span.*/
+
+    }
+}
+
+@media screen and (min-width: 800px) {
+    :root {
+        --defaultFontSize: 2vw;
+    }
+}
+
+@media screen and (min-width: 1000px) {
+    :root {
+        --defaultFontSize: 1.7vw;
+    }
+}
+
+@media screen and (min-width: 1250px) {
+    :root {
+        --defaultFontSize: 1.4vw;
+    }
+}
+
+@media screen and (min-width: 1500px) {
+    :root {
+        --defaultFontSize: 1.2vw;
+    }
+}
+
+@media screen and (min-width: 1750px) {
+    :root {
+        --defaultFontSize: 21px;
+    }
+}
+
+
 /*Chart CSS*/
 .graph {
     display: block;
@@ -16,6 +113,9 @@ html, body {
 }
 /*★☆⬆⬇*/
 /*Make sure I have the two star images being the same size, and arrows that look how I want, in a font.*/
+/*
+https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
+*/
 @font-face {
   font-family: 'Noto Sans HK';
   font-style: normal;
@@ -24,7 +124,7 @@ html, body {
   url("resources/stars.woff") format("woff"); /*I could inline woff instead, but Safari 9.3 can go slower.*/
 }
 
-/*position: relative is on container (riverspan:nth-child(4)).*/
+/*position: relative is on container (riverspan:nth-child(5)).*/
 /*Some stuff with emptyStars is set in River.js*/
 /*fullStars width set in River.js*/
 	.emptyStars, .fullStars {
@@ -33,6 +133,7 @@ html, body {
 		margin:0;
 		display:inline-block;
         font-family: 'Noto Sans HK', Arial, Helvetica, sans-serif;
+        font-size: var(--riverRatingSize);
 	}
 
 	.fullStars {
@@ -69,12 +170,6 @@ html, body {
 	position:static;
 	top:0px;
 	left:0px;
-}
-
-@media screen and (max-width:500px) {
-    .emptyStars, .fullStars {
-        font-size: 2.035vw; /*Reduce overflow onto second line.*/
-    }
 }
 
 .oldDataWarning, #topOldDataWarning {
@@ -150,27 +245,36 @@ Those include name,section,skill,quality, and flow info*/
 }
 
 .riverspan:nth-child(1) {
-    width:24.25%;
-    min-width:24.25%;
-    max-width:24.25%;
+    width: var(--riverNameWidth);
+    min-width: var(--riverNameWidth);
+    max-width: var(--riverNameWidth);
 }
 .riverspan:nth-child(2) {
-    width:30%;
-    min-width:30%;
-    max-width:30%;
+    width: var(--riverSectionWidth);
+    min-width: var(--riverSectionWidth);
+    max-width: var(--riverSectionWidth);
 }
-.riverspan:nth-child(3) {
-    width:8%;
-    min-width:8%;
-    max-width:8%;
-}
+
 /*Child number 4 is only displayed on larger screens.*/
 .riverspan:nth-child(4) {
-    display: none;
+    display: var(--displaySpan4);
 }
+
+.skillspan {
+    width: var(--riverSkillWidth);
+    min-width: var(--riverSkillWidth);
+    max-width: var(--riverSkillWidth);
+}
+.classspan {
+    width: var(--riverClassWidth);
+    min-width: var(--riverClassWidth);
+    max-width: var(--riverClassWidth);
+}
+
 /*Child #5 acts as a tooltip too. That declaration is a around 40 lines below (May change. Do a search for nth-child(5))*/
 .riverspan:nth-child(5) {
 	position: relative;
+    min-width: calc(var(--riverRatingSize) * 5); /*There are 5 stars - and each star is as wide as the font size in pixels.*/
 }
 .riverspan:nth-child(6) {
     margin-left: 1%;
@@ -178,32 +282,6 @@ Those include name,section,skill,quality, and flow info*/
 }
 
 @media screen and (min-width: 550px) {
-    /*Add the 4th span. Resize others so that it fits.*/
-    .riverspan:nth-child(1) {
-        width:19%;
-        min-width:19%;
-        max-width:19%;
-    }
-    .riverspan:nth-child(2) {
-        width:29%;
-        min-width:29%;
-        max-width:29%;
-    }
-
-    .skillspan {
-        width:5% !important;
-        min-width:5% !important;
-        max-width:5% !important;
-    }
-    .riverspan:nth-child(4) {
-        display: inline-block;
-    }
-    .classspan {
-        width:10% !important;
-        min-width:10% !important;
-        max-width:10% !important;
-	}
-
 	#topbar > .skillspan {
 		/*Let "Skill" use up however much space it needs*/
 		width: auto !important;
@@ -214,34 +292,8 @@ Those include name,section,skill,quality, and flow info*/
 
 @media screen and (max-width:309px) {
     /*Smart watch mode.*/
-    .riverspan:nth-child(1) {
-        width:40%;
-        min-width:40%;
-        max-width:40%;
-    }
-    .riverspan:nth-child(2) {
-        width:60%;
-        min-width:60%;
-        max-width:60%;
-    }
-    .skillspan {
-        width:8% !important;
-        min-width:8% !important;
-        max-width:8% !important;
-    }
-    .riverspan:nth-child(4) {
-        display: inline-block;
-    }
-    .classspan {
-        width:20% !important;
-        min-width:20% !important;
-        max-width:20% !important;
-	}
     .riverspan:nth-child(6) {
         margin-left: 2%;
-    }
-    .emptyStars, .fullStars {
-        font-size: 4vw;
     }
     .riverbutton {
         flex-wrap: wrap;
@@ -350,21 +402,12 @@ Those include name,section,skill,quality, and flow info*/
 
 /*Controlling font size smoothly based on screen size*/
 .riverbutton {
-    font-size:3.2vw;
+    font-size: var(--defaultFontSize);
 	min-height: 32px; /*Make buttons easier to click on mobile, and more uniformly sized.*/
-}
-
-
-@media screen and (max-width: 309px) {
-    /*Smart watch mode.*/
-    .riverbutton {
-        font-size:5.3vw !important;
-    }
 }
 
 @media screen and (max-width: 370px) {
     .riverbutton {
-        font-size: 3.48vw; /*Any bigger than this, and we get quite a bit of text overlapping.*/
 		padding-left: 4px; /*Leave a little more space for other stuff than the standard 8px.*/
 		padding-right: 0; /*Give a bit more space. Rarely was this padding noticed at all.*/
     }
@@ -376,66 +419,6 @@ Those include name,section,skill,quality, and flow info*/
         width: auto !important;
         min-width: none !important;
         max-width: none !important;
-    }
-    /*TODO: In topbar, use min-width to scale Rating column to stars on larger screens, and use width so that on smaller screens, the rating column fits the word rating.*/
-}
-
-@media screen and (min-width: 400px) {
-    .riverbutton {
-        font-size: 3.15vw;
-    }
-}
-
-@media screen and (min-width: 500px) {
-    .riverbutton {
-        font-size: 2.6vw;
-    }
-}
-
-@media screen and (min-width: 600px) {
-    .riverbutton {
-        font-size: 2.3vw;
-
-    }
-}
-@media screen and (min-width: 700px) {
-    .riverbutton {
-        font-size: 2.0vw;
-    }
-}
-@media screen and (min-width: 800px) {
-    .riverbutton {
-        font-size: 1.7vw;
-    }
-}
-@media screen and (min-width: 1000px) {
-    .riverbutton {
-        font-size: 1.5vw;
-    }
-}
-@media screen and (min-width: 1250px) {
-    .riverbutton {
-        font-size: 1.4vw;
-    }
-}
-@media screen and (min-width: 1350px) {
-    .riverbutton {
-        font-size: 1.32vw;
-    }
-}
-@media screen and (min-width: 1450px) {
-    .riverbutton {
-        font-size: 1.24vw;
-    }
-}
-@media screen and (min-width: 1600px) {
-    .riverbutton {
-        font-size: 1.15vw;
-    }
-}
-@media screen and (min-width: 1900px) {
-    .riverbutton {
-        font-size: 21px;
     }
 }
 /*End of riverbutton style*/
@@ -458,11 +441,6 @@ Those include name,section,skill,quality, and flow info*/
 .center {
     text-align:center;
 }
-
-.pixel18 {
-    font-size:18px;
-}
-
 
 
 @media (prefers-color-scheme: dark) {
