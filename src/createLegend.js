@@ -62,7 +62,8 @@ function drawStripes(canvas, newColor = window.darkMode ? "rgba(256,256,256,0.4)
 	console.log(gradient)
 
     context.fillStyle = gradient
-    context.fillRect(0,canvas.height/2,canvas.width,canvas.height)
+	//Apply stripes to bottom 40% of legend.
+    context.fillRect(0,canvas.height*3/5,canvas.width,canvas.height)
 }
 
 

@@ -348,7 +348,7 @@ function addHandlers(button, locate) {
 }
 
 
-function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.2)":"rgba(170,170,170,0.33)", oldColor = "rgba(0,0,0,0)") {
+function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.25)":"rgba(170,170,170,0.33)", oldColor = "rgba(0,0,0,0)") {
 		//If the river has a dam, stripe it.
 
 		let background = "linear-gradient(150deg"
