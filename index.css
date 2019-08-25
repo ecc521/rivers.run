@@ -370,6 +370,16 @@ Those include name,section,skill,quality, and flow info*/
     }
 }
 
+@media screen and (max-width: 499px) {
+    #topbar > .skillspan {
+        /*Let "Skill" use up however much space it needs*/
+        width: auto !important;
+        min-width: none !important;
+        max-width: none !important;
+    }
+    /*TODO: In topbar, use min-width to scale Rating column to stars on larger screens, and use width so that on smaller screens, the rating column fits the word rating.*/
+}
+
 @media screen and (min-width: 400px) {
     .riverbutton {
         font-size: 3.15vw;
@@ -381,6 +391,7 @@ Those include name,section,skill,quality, and flow info*/
         font-size: 2.6vw;
     }
 }
+
 @media screen and (min-width: 600px) {
     .riverbutton {
         font-size: 2.3vw;
