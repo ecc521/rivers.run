@@ -18,7 +18,7 @@ function drawColors(canvas, height) {
 	canvas.width = document.documentElement.clientWidth
     canvas.height = height
 
-    let gradient = context.createLinearGradient(0,0,canvas.width,canvas.height) //Not sure about parameters
+    let gradient = context.createLinearGradient(0,0,canvas.width,0) //Horizontal gradient
 
     let redColor = "hsl(0,100%," + tooLowLightness + ")"
     let blueColor = "hsl(240,100%," + tooHighLightness + ")"
@@ -45,6 +45,26 @@ function drawColors(canvas, height) {
 }
 
 
+//To makes these stand out slightly better, styles have been changed from the striping applied to the rivers.
+//In addition, the canvas does some weird things (why did changing from transparent black to transparent white do anything?),
+//and makes some features of linear-gradient tough to use.
+function drawStripes(canvas, newColor = window.darkMode ? "rgba(256,256,256,0.4)":"rgba(170,170,170,0.33)", oldColor = window.darkMode? "rgba(255,255,255,0)":"rgba(0,0,0,0)") {
+	//Stripe the bottom (has dam) portion of the legend.
+    let context = canvas.getContext("2d")
+
+	let angle = 60 / 180 * Math.PI //First number is degrees
+    let gradient = context.createLinearGradient(0,0, canvas.width * Math.cos(angle), canvas.width * Math.sin(angle))
+
+	for (let i=0;i<37;i++) {
+		gradient.addColorStop(i/36, i%3 ? oldColor:newColor)
+	}
+	
+	console.log(gradient)
+
+    context.fillStyle = gradient
+    context.fillRect(0,canvas.height/2,canvas.width,canvas.height)
+}
+
 
 function drawText(canvas, fontSize) {
 
@@ -61,9 +81,16 @@ function drawText(canvas, fontSize) {
     context.font = fontSize + "px Arial"
 
     context.textAlign = "start"
+		
     context.fillText("Too Low", 0, height, maxWidth)
 
     context.textAlign = "center"
+	
+	//Draw the "Has Dam text at the center on the bottom, in smaller text."
+	context.font = fontSize/1.15 + "px Arial"
+	context.fillText("Has Dam", canvas.width/2, (canvas.height - height/4))
+    context.font = fontSize + "px Arial"
+
     //Low Flow and High Flow confine the legend, making the range for low-high flow between 8% and 92%. Because of this, lowflow is 29% (8+84*0.25), and highflow is 71%.
     context.fillText("Low Flow", canvas.width*0.29, height, maxWidth)
     context.fillText("Mid Flow", canvas.width/2, height, maxWidth)
@@ -139,6 +166,7 @@ function updateLegend() {
 
     drawColors(canvas, height)
     drawText(canvas, fontSize)
+	drawStripes(canvas)
     makeSticky(canvas)
     }
     catch (e) {

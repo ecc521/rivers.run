@@ -523,7 +523,8 @@ function River(locate, event) {
 				if (localStorage.getItem("colorBlindMode") === "true" && calculateColor(this) && this.running !== undefined) {
 					value += "(" + Math.round(this.running*10)/10 + ")"
 				}
-				value += this.dam ? "Dam" : ""
+				//TODO: Show the text "Dam" if there is plenty of space to do so. Consider using a smaller icon instead.
+				//value += this.dam ? "Dam" : ""
                 AddSpan(value)
             }
 			else if (this.dam) {AddSpan("Dam")}
