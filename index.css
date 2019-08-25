@@ -150,9 +150,9 @@ Those include name,section,skill,quality, and flow info*/
 }
 
 .riverspan:nth-child(1) {
-    width:24.5%;
-    min-width:24.5%;
-    max-width:24.5%;
+    width:24.25%;
+    min-width:24.25%;
+    max-width:24.25%;
 }
 .riverspan:nth-child(2) {
     width:30%;
