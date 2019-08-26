@@ -213,69 +213,70 @@ async function httprequest(req,res) {
 		}
 	
 	
-		if (req.method === "POST" && req.url.startsWith("/node/googleassistant/rivers.run")) {
-			let query = (await getData()).toString()
-			query = JSON.parse(query)
+		try {
+			if (req.method === "POST" && req.url.startsWith("/node/googleassistant/rivers.run")) {
+				let query = (await getData()).toString()
+				fs.appendFileSync(path.join(__dirname, 'assistanterror.log'), query + "\n");
+				query = JSON.parse(query)
 
-			let reply =     {
-			  "fulfillmentText": "This is a text response",
-			  "fulfillmentMessages": [
-				{
-				  "card": {
-					"title": "Rivers.run Flow Info (Test)",
-					"subtitle": "card text",
-					"imageUri": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
-					"buttons": [
-					  {
-						"text": "View on Rivers.run)",
-						"postback": "https://rivers.run/"
+				let reply =     {
+				  "fulfillmentText": "This is a text response",
+				  "fulfillmentMessages": [
+					{
+					  "card": {
+						"title": "Rivers.run Flow Info (Test)",
+						"subtitle": "Rivers.run provides river information, such as real time water levels.",
+						"imageUri": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
+						"buttons": [
+						  {
+							"text": "View on Rivers.run",
+							"postback": "https://rivers.run/"
+						  }
+						]
 					  }
-					]
-				  }
-				}
-			  ],
-			  "source": "https://rivers.run/",
-			  "payload": {
-				"google": {
-				  "expectUserResponse": false,
-				  "richResponse": {
-					"items": [
-					  {
-						"simpleResponse": {
-						  "textToSpeech": "this is a simple response"
-						}
+					}
+				  ],
+				  "source": "https://rivers.run/",
+				  "payload": {
+					"google": {
+					  "expectUserResponse": false,
+					  "richResponse": {
+						"items": [
+						  {
+							"simpleResponse": {
+							  "textToSpeech": "rivers.run is still in development and tesing."
+							}
+						  }
+						]
 					  }
-					]
+					}
+				  },
+				  "outputContexts": [
+					{
+					  "name": "projects/${PROJECT_ID}/agent/sessions/${SESSION_ID}/contexts/context name",
+					  "lifespanCount": 5,
+					  "parameters": {
+						"param": "param value"
+					  }
+					}
+				  ],
+				  "followupEventInput": {
+					"name": "event name",
+					"languageCode": "en-US",
+					"parameters": {
+					  "param": "param value"
+					}
 				  }
-				},
-				"facebook": {
-				  "text": "Hello, Facebook!"
-				},
-				"slack": {
-				  "text": "This is a text response for Slack."
 				}
-			  },
-			  "outputContexts": [
-				{
-				  "name": "projects/${PROJECT_ID}/agent/sessions/${SESSION_ID}/contexts/context name",
-				  "lifespanCount": 5,
-				  "parameters": {
-					"param": "param value"
-				  }
-				}
-			  ],
-			  "followupEventInput": {
-				"name": "event name",
-				"languageCode": "en-US",
-				"parameters": {
-				  "param": "param value"
-				}
-			  }
+
+				res.statusCode = 200;
+				res.setHeader('Content-Type', 'text/json');
+				res.end(JSON.stringify(reply));
 			}
-			
-			res.statusCode = 200;
-			res.setHeader('Content-Type', 'text/json');
-			res.end(JSON.stringify(reply));
+		}
+		catch(e) {
+			console.error(e)
+			fs.appendFileSync(path.join(__dirname, 'assistanterror.log'), String(e) + "\n");
 		}
 	
 		//TODO: Check for /node/notifications soon. req.url.startsWith("/node/notifications")
