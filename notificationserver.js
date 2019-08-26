@@ -133,6 +133,7 @@ async function httprequest(req,res) {
 						zipper.stderr.pipe(errorStream)
 						
 						res.statusCode = 200;
+                        res.setHeader('Content-Type', 'application/zip');
 						zipper.stdout.pipe(res) //Respond with the zip file.
 					}
 					return
