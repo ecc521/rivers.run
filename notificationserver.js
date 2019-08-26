@@ -250,25 +250,11 @@ async function httprequest(req,res) {
 						]
 					  }
 					}
-				  },
-				  "outputContexts": [
-					{
-					  "name": "projects/${PROJECT_ID}/agent/sessions/${SESSION_ID}/contexts/context name",
-					  "lifespanCount": 5,
-					  "parameters": {
-						"param": "param value"
-					  }
-					}
-				  ],
-				  "followupEventInput": {
-					"name": "event name",
-					"languageCode": "en-US",
-					"parameters": {
-					  "param": "param value"
-					}
 				  }
 				}
 
+				reply.outputContexts = query.outputContexts
+				
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/json');
 				res.end(JSON.stringify(reply));
