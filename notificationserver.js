@@ -177,6 +177,8 @@ async function httprequest(req,res) {
 			console.error(e)
 			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), String(e) + "\n");
 		}
+	
+	
 		
 	
 		if (req.method === "GET" && req.url.startsWith("/node/ip2location")) {
@@ -210,6 +212,72 @@ async function httprequest(req,res) {
 		}
 	
 	
+		if (req.method === "POST" && req.url.startsWith("/node/googleassistant/rivers.run")) {
+			let query = (await getData()).toString()
+			query = JSON.parse(query)
+
+			let reply =     {
+			  "fulfillmentText": "This is a text response",
+			  "fulfillmentMessages": [
+				{
+				  "card": {
+					"title": "Rivers.run Flow Info (Test)",
+					"subtitle": "card text",
+					"imageUri": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
+					"buttons": [
+					  {
+						"text": "View on Rivers.run)",
+						"postback": "https://rivers.run/"
+					  }
+					]
+				  }
+				}
+			  ],
+			  "source": "https://rivers.run/",
+			  "payload": {
+				"google": {
+				  "expectUserResponse": false,
+				  "richResponse": {
+					"items": [
+					  {
+						"simpleResponse": {
+						  "textToSpeech": "this is a simple response"
+						}
+					  }
+					]
+				  }
+				},
+				"facebook": {
+				  "text": "Hello, Facebook!"
+				},
+				"slack": {
+				  "text": "This is a text response for Slack."
+				}
+			  },
+			  "outputContexts": [
+				{
+				  "name": "projects/${PROJECT_ID}/agent/sessions/${SESSION_ID}/contexts/context name",
+				  "lifespanCount": 5,
+				  "parameters": {
+					"param": "param value"
+				  }
+				}
+			  ],
+			  "followupEventInput": {
+				"name": "event name",
+				"languageCode": "en-US",
+				"parameters": {
+				  "param": "param value"
+				}
+			  }
+			}
+			
+			res.statusCode = 200;
+			res.setHeader('Content-Type', 'text/json');
+			res.end(JSON.stringify(reply));
+		}
+	
+		//TODO: Check for /node/notifications soon. req.url.startsWith("/node/notifications")
 		if (req.method === "POST") {
 			let data = JSON.parse((await getData()).toString())
 			
