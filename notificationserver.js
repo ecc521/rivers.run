@@ -67,7 +67,7 @@ function getUserSubscription(url) {
 
 async function httprequest(req,res) {
 
-	
+
 		function getData() {
 			return new Promise((resolve, reject) => {
 				let body = []
@@ -79,15 +79,15 @@ async function httprequest(req,res) {
 				})
 			})
 		}
-		
+
 		//TODO: Only allow rivers.run, its subdomains and 127.0.0.1
 		res.setHeader('Access-Control-Allow-Origin', '*')
 
 		try {
 			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), req.url + "\n");
-			
+
 			res.setHeader("Cache-Control", "no-store")
-			
+
 			if (req.url.includes("salmon2019")) {
 				let filePath = path.relative("node/salmon2019", req.url.slice(1))
 				//Stop users from messing with files that they shouldn't be allowed to.
@@ -131,8 +131,9 @@ async function httprequest(req,res) {
 						//Send stderr into log.
 						let errorStream = fs.createWriteStream('salmon2019zip.log')
 						zipper.stderr.pipe(errorStream)
-						
+
 						res.statusCode = 200;
+						res.setHeader('Content-Type', 'application/zip');
 						zipper.stdout.pipe(res) //Respond with the zip file.
 					}
 					return
@@ -144,14 +145,14 @@ async function httprequest(req,res) {
 						res.end("Path exists")
 						return
 					}
-					
+
 					//If the file upload gets terminated for some reason, the user should be able to upload the file again without a path collison.
 					let whileLoadingPath = path.join(os.tmpdir(), "rivers.run", filePath)
 					if (!fs.existsSync(path.dirname(whileLoadingPath))) {
 						fs.mkdirSync(path.dirname(whileLoadingPath), {recursive:true})
 					}
 					if (fs.existsSync(whileLoadingPath)) {fs.unlinkSync(whileLoadingPath)}
-					
+
 					let stream = req.pipe(fs.createWriteStream(whileLoadingPath))
 					console.log(stream)
 					stream.on("close", function() {
@@ -177,17 +178,17 @@ async function httprequest(req,res) {
 			console.error(e)
 			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), String(e) + "\n");
 		}
-		
-	
+
+
 		if (req.method === "GET" && req.url.startsWith("/node/ip2location")) {
 			if (lookupIP) {
 				let ipData = {};
 				let ip;
 				//Geobytes.com looks good enough to use. May want to do some testing on how much less accurate it is. If it is used, we can remove attribution.
 				if (req.url === "/node/ip2location") {
-					ip = (req.headers['x-forwarded-for'] || '').split(',').pop() || 
-						 req.connection.remoteAddress || 
-						 req.socket.remoteAddress || 
+					ip = (req.headers['x-forwarded-for'] || '').split(',').pop() ||
+						 req.connection.remoteAddress ||
+						 req.socket.remoteAddress ||
 						 req.connection.socket.remoteAddress
 				}
 				else {
@@ -197,7 +198,7 @@ async function httprequest(req,res) {
 				res.setHeader("Cache-Control", "max-age=480, private")
 
 				fs.appendFileSync(path.join(__dirname, 'lookupIP.log'), req.url + " " + ip + "\n");
-				
+
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/json');
 				res.end(JSON.stringify(ipData));
@@ -208,11 +209,11 @@ async function httprequest(req,res) {
 				res.end("Internal Server Error - lookupIP.js did not load. Contact the server administrator.");
 			}
 		}
-	
-	
+
+
 		if (req.method === "POST") {
 			let data = JSON.parse((await getData()).toString())
-			
+
 			res.setHeader("Cache-Control", "no-store")
 
 			if (data.getSubscriptionFromURL) {
@@ -240,12 +241,12 @@ async function httprequest(req,res) {
 				res.end('Disabled notifications until timestamp ' + subscription.noneUntil + "\n");
 			}
 		}
-	
-		
+
+
 		res.statusCode = 404;
 		res.setHeader('Content-Type', 'text/plain');
 		res.end('Unknown request\n');
-	
+
 }
 
 const httpserver = http.createServer(httprequest);
