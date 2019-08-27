@@ -1,4 +1,4 @@
-window.toDecimalDegrees = function(coord) {
+(globalThis || window).toDecimalDegrees = function(coord) {
 	if (!isNaN(Number(coord))) {
 		return Number(coord) //Coordinate is already in decimal form.
 	}
@@ -437,7 +437,7 @@ function advancedSearch(list, query) {
 
 
 
-export {
+module.exports = {
     normalSearch,
     advancedSearch
 }

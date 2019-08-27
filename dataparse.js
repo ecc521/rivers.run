@@ -164,6 +164,5 @@ function writeToDisk(data, id) {
         console.log("There are " + complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
     })
 
-    let string = "window.riverarray = " + JSON.stringify(complete)
-    fs.writeFileSync(path.join(__dirname, "riverarray.js"), string)
+    fs.writeFileSync(path.join(__dirname, "riverdata.json"), JSON.stringify(complete))
 }())

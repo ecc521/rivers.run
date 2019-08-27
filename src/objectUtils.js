@@ -83,7 +83,7 @@ function recursiveAssign(target, ...objects) {
 	return target
 }
 
-export {
+module.exports = {
 	recursiveAssign,
 	deleteMatchingPortions,
 	objectsEqual

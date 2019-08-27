@@ -51,17 +51,6 @@ Object.assign(window, require("./search.js"))
 
 window.usgsarray = {}
 
-
-//ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list.
-window.ItemHolder = []
-riverarray.map(function(event, index) {
-	ItemHolder[index] = new River(index, event)
-})
-
-//Fetch data from USGS
-//ItemHolder has been filled, so this can be run here (and needs to be.... Otherwise window.usgsarray is undefined)
-require("./loadUSGS.js").loadUSGS()
-
 //Defines recursiveAssign, deleteMatchingPortions, and objectsEqual
 Object.assign(window, require("./objectUtils.js"))
 require("./advancedSearchParameters.js") //Defines window.setMenuFromSearch and window.getAdvancedSearchParameters
@@ -74,55 +63,85 @@ document.getElementById("Rivers").appendChild(new TopBar().create())
 //createLegend.js needs a #Rivers > .riverbutton to get font-size using getComputedStyle
 require("./createLegend.js")
 
+;(async function() {
 
-//If there is a custom search link, use it. Otherwise, just call NewList.
-if (window.location.hash.length > 0) {
-	let search = decodeURI(window.location.hash.slice(1))
-
-if (search.startsWith("{")) {
 	
-	console.log(search)
-		//Advanced search
-		let query = JSON.parse(search)
-
-		//TODO: Set the advanced search areas to the query.
-
-		//We have no usgs data yet. Wait to flow search/sort.
-		if (window.usgsDataAge === undefined) {
-			let oldQuery = recursiveAssign({}, query)
-			delete query.flow
-			if (query.sort && query.sort.query === "running") {
-				delete query.sort
-			}
-			function dataNowLoaded() {
-				//If the user has made any changes that caused the list to reload, or it has been over 5 seconds, ask.
-				if (timesNewListCalled <= 2 || confirm("Flow data has now loaded. Would you like to apply your original search link?")) {
-					setMenuFromSearch(oldQuery)
-					NewList()
-				}
-				window.removeEventListener("usgsDataUpdated", dataNowLoaded)
-			}
-			if (!objectsEqual(query, oldQuery)) {
-				window.addEventListener("usgsDataUpdated", dataNowLoaded)
-				let searchNotFinished = document.createElement("p")
-				searchNotFinished.id = "topOldDataWarning" //Reuse styling
-				searchNotFinished.innerHTML = "Portions of your search link use flow data, which is still loading. "
-				//loadUSGS.js will delete searchNotFinished when it is not needed due to the id overlap.
-				let legend = document.getElementById("legend")
-				legend.parentNode.insertBefore(searchNotFinished, legend)
-		}
-	}
-		setMenuFromSearch(query)
-		NewList()
+	
+	//Load flow information. This is async, and will finish whenever.
+	require("./loadUSGS.js").loadUSGS()
+	
+	//Load river data so that the page can be rendered.
+	let fileName = "riverdata.json"
+	if (window.fetch) {
+		let response = await fetch(fileName)
+		window.riverarray = await response.json()
 	}
 	else {
-		//Normal search
-		let query = window.getAdvancedSearchParameters()
-		query.normalSearch = search
-		setMenuFromSearch(query)
+		//For browsers that don't support fetch
+		let request = new XMLHttpRequest()
+		let response = await new Promise((resolve, reject) => {
+			request.onload = function(event) {resolve(event.target.response)};
+			request.open("GET", fileName);
+			request.send()
+		})
+		window.riverarray = JSON.parse(response)
+	}
+	
+	//ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list.
+	window.ItemHolder = []
+	riverarray.map(function(event, index) {
+		ItemHolder[index] = new River(index, event)
+	})
+
+	//If there is a custom search link, use it. Otherwise, just call NewList.
+	if (window.location.hash.length > 0) {
+		let search = decodeURI(window.location.hash.slice(1))
+
+	if (search.startsWith("{")) {
+
+		console.log(search)
+			//Advanced search
+			let query = JSON.parse(search)
+
+			//TODO: Set the advanced search areas to the query.
+
+			//We have no usgs data yet. Wait to flow search/sort.
+			if (window.usgsDataAge === undefined) {
+				let oldQuery = recursiveAssign({}, query)
+				delete query.flow
+				if (query.sort && query.sort.query === "running") {
+					delete query.sort
+				}
+				function dataNowLoaded() {
+					//If the user has made any changes that caused the list to reload, or it has been over 5 seconds, ask.
+					if (timesNewListCalled <= 2 || confirm("Flow data has now loaded. Would you like to apply your original search link?")) {
+						setMenuFromSearch(oldQuery)
+						NewList()
+					}
+					window.removeEventListener("usgsDataUpdated", dataNowLoaded)
+				}
+				if (!objectsEqual(query, oldQuery)) {
+					window.addEventListener("usgsDataUpdated", dataNowLoaded)
+					let searchNotFinished = document.createElement("p")
+					searchNotFinished.id = "topOldDataWarning" //Reuse styling
+					searchNotFinished.innerHTML = "Portions of your search link use flow data, which is still loading. "
+					//loadUSGS.js will delete searchNotFinished when it is not needed due to the id overlap.
+					let legend = document.getElementById("legend")
+					legend.parentNode.insertBefore(searchNotFinished, legend)
+			}
+		}
+			setMenuFromSearch(query)
+			NewList()
+		}
+		else {
+			//Normal search
+			let query = window.getAdvancedSearchParameters()
+			query.normalSearch = search
+			setMenuFromSearch(query)
+			NewList()
+		}
+	}
+	else {
 		NewList()
 	}
-}
-else {
-	NewList()
-}
+}())

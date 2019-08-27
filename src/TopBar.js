@@ -107,6 +107,6 @@ function TopBar() {
 }
 
 
-export {
+module.exports = {
     TopBar
 }

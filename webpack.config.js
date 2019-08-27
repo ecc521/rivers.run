@@ -38,6 +38,7 @@ const path = require("path")
 						options: {
 							cacheDirectory: true, //Huge performance boost. Avoid recompiling when unneeded.
 							cacheCompression: true, //true is default. Compress cached data written to disk.
+  							sourceType: 'unambiguous', //Allow mixing CommonJS and ES6 modules.
 							presets: [
 								[
 									'@babel/preset-env', {

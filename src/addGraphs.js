@@ -133,6 +133,6 @@ function addGraphs(div, data) {
 }
 
 
-export {
+module.exports = {
     addGraphs
 }
