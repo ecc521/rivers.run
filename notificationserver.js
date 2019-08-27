@@ -5,6 +5,9 @@ const http = require("http")
 const os = require("os")
 const child_process = require("child_process")
 
+let getRiverData = require("./getRiverData.js")
+
+
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
 let vapidKeys = {};
@@ -219,20 +222,36 @@ async function httprequest(req,res) {
 				fs.appendFileSync(path.join(__dirname, 'assistanterror.log'), query + "\n");
 				query = JSON.parse(query)
 
-				let reply =     {
+				let queryResult = getRiverData.getAssistantReply(riverName)
+				let buttons = [];
+				
+				if (typeof queryResult === "string") {
+					buttons.push({
+						"text": "View Rivers.run FAQ",
+						"openUriAction": {
+							uri: "https://rivers.run/FAQ" //TODO: Send user to dedicated page for contributing content.
+						}					
+					})
+				}
+				else {
+					buttons.push({
+						"text": "View Full Search",
+						"openUriAction": {
+							uri: "https://rivers.run/#" + queryResult.name 
+						}
+					})
+					//TODO: Add edit this river link.
+				}
+				
+				let reply = {
 				  "fulfillmentText": "This is a text response",
 				  "fulfillmentMessages": [
 					{
-					  "card": {
-						"title": "Rivers.run Flow Info (Test)",
+					  "basicCard": {
+						"title": "Rivers.run Flow Info",
 						"subtitle": "Rivers.run provides river information, such as real time water levels.",
-						"imageUri": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
-						"buttons": [
-						  {
-							"text": "View on Rivers.run",
-							"postback": "https://rivers.run/"
-						  }
-						]
+						"image": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
+						"buttons": JSON.stringify(buttons)
 					  }
 					}
 				  ],
@@ -244,7 +263,7 @@ async function httprequest(req,res) {
 						"items": [
 						  {
 							"simpleResponse": {
-							  "textToSpeech": "rivers.run is still in development and tesing."
+							  "textToSpeech": queryResult.str
 							}
 						  }
 						]
