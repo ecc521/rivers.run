@@ -222,7 +222,8 @@ async function httprequest(req,res) {
 				fs.appendFileSync(path.join(__dirname, 'assistanterror.log'), query + "\n");
 				query = JSON.parse(query)
 
-				let riverName = query.outputContexts["river-name.original"]
+				//Not sure if outputContexts works for this.
+				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"]
 				let queryResult = getRiverData.getAssistantReply(riverName)
 				let buttons = [];
 				
