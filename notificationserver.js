@@ -230,17 +230,13 @@ async function httprequest(req,res) {
 				if (typeof queryResult === "string") {
 					buttons.push({
 						"text": "View Rivers.run FAQ",
-						"openUriAction": {
-							"uri": "https://rivers.run/FAQ" //TODO: Send user to dedicated page for contributing content.
-						}					
+						"postback": "https://rivers.run/FAQ" //TODO: Send user to dedicated page for contributing content.				
 					})
 				}
 				else {
 					buttons.push({
 						"text": "View Full Search",
-						"openUriAction": {
-							"uri": "https://rivers.run/#" + queryResult.name 
-						}
+						"postback": "https://rivers.run/#" + queryResult.name
 					})
 					//TODO: Add edit this river link.
 				}
@@ -249,10 +245,10 @@ async function httprequest(req,res) {
 				  "fulfillmentText": queryResult.str,
 				  "fulfillmentMessages": [
 					{
-					  "basicCard": {
+					  "card": {
 						"title": "Rivers.run Flow Info",
 						"subtitle": "Rivers.run provides river information, such as real time water levels.",
-						"image": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
+						"imageUri": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
 						"buttons": buttons
 					  }
 					}
