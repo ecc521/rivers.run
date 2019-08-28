@@ -327,6 +327,14 @@ async function httprequest(req,res) {
 
 const httpserver = http.createServer(httprequest);
 
-httpserver.listen(httpport, hostname, () => {
-  console.log(`Server running at http://${hostname}:${httpport}/`);
-});
+module.exports = function() {
+	try {
+		httpserver.listen(httpport, hostname, () => {
+		  console.log(`Server running at http://${hostname}:${httpport}/`);
+		});
+	}
+	catch(e) {
+		console.error(e)
+		fs.appendFileSync(path.join(__dirname, 'startnotificationserver.log'), e.toString() + "\n");
+	}
+}

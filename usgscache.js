@@ -13,15 +13,20 @@ const child_process = require("child_process")
 
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
 //Use child_process.execSync to allow for synchronus execution.
-process.stdout.write("Generating riverarray.js - this may take a while (should be no more than 200 milliseconds per river)\n")
+process.stdout.write("Generating riverdata.json - this may take a while (should be no more than 200 milliseconds per river)\n")
 child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
-process.stdout.write("riverarray.js generated.\n")
+process.stdout.write("riverdata.json generated.\n")
 setInterval(function() {
 	child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
 }, 1000*60*60*24)
 
 
-require("./notificationserver.js") //On reboot, run notificationserver.js
+//Some actions should be performed at installation, but there is no need to start the server.
+//Although I used to always start the server, an error in server.listen because of the port already being uesd
+//lead to the entire program being terminated.
+let notificationServer = require("./notificationserver.js") //On reboot, run notificationserver.js
+if (process.argv[2] !== "--install") {notificationServer()}
+
 const sendNotifications = require("./sendnotifications.js");
 
 const flowDataParser = require("./flowDataParser.js")
@@ -31,14 +36,11 @@ const precompress = require("./precompress.js")
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
 
 
-let riverarray;
-{
-	let window = {}
-	eval(fs.readFileSync(path.join(__dirname, "riverarray.js")).toString()) //Defines window.riverarray.
-	riverarray = window.riverarray
-}
-
 async function updateCachedData() {
+	console.log("Preparing flow data.\n")
+	
+	let riverarray = JSON.parse(fs.readFileSync("riverdata.json", {encoding:"utf8"}))
+
 	let timeToRequest = 1000*86400 //Milliseconds of time to request
 
     var sites = []
@@ -55,7 +57,6 @@ async function updateCachedData() {
 	        }
 		}
     }
-
 
     let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00045&siteStatus=all"
 
@@ -74,10 +75,9 @@ async function updateCachedData() {
 	
 	let usgsarray2 = flowDataParser.reformatUSGS(usgsarray)
 	fs.writeFileSync(path.join(__dirname, "flowdata2.json"), JSON.stringify(usgsarray2))
+
+	console.log("Flow data prepared.\n")
 	
-	sendNotifications()
-
-
 	//Run whenever the minutes on the hour is a multiple of 15.
 	let currentTime = new Date()
 	if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
@@ -88,8 +88,11 @@ async function updateCachedData() {
 
 	//End install script
 	if (process.argv[2] === "--install") {
+		console.log("To update river and flow data in the future, run node usgscache.js --install (if you are running the server, data automatically updates).")
 		process.exit()
 	}
+	
+	sendNotifications()
 	
 	console.log("Precompressing files...")
 	precompress()
@@ -98,5 +101,4 @@ async function updateCachedData() {
 	console.log(timer)
 }
 
-process.stdout.write("Preparing flow data.\n")
 updateCachedData()
