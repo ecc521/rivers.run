@@ -8,8 +8,9 @@ function getAssistantReply(name) {
 
 	//Delete the words river and section (plus the leading space), if it exists in any casing.
 	name = name.split(/ river/i).join("")
+	let responseName = name
 	name = name.split(/ section/i).join("")
-
+	
 	let topRanked = []
 
 	let buckets = normalSearch(riverarray, name, true)
@@ -34,7 +35,11 @@ function getAssistantReply(name) {
 
 	//Don't use the word "The " for creeks.
 	//Consider using the original name here - so before the word "River" was removed.
-	let starter = (name.toLowerCase().includes("creek")?"":"The ") + name
+	let useThe = true
+	if (responseName.toLowerCase().includes("creek") || responseName.toLowerCase().includes("section")) {
+		useThe = false
+	}
+	let starter = (useThe?"The ":"") + responseName
 
 	
 	if (topRanked[0] === undefined) {
@@ -83,7 +88,7 @@ function getAssistantReply(name) {
 	return {
 		str,
 		riverid: topRanked[0].id,
-		name
+		responseName
 	}
 }
 
