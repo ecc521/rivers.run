@@ -4,7 +4,7 @@ const path = require("path")
 let normalSearch = require("./src/search.js").normalSearch
 
 function getAssistantReply(name) {
-	let riverarray = JSON.parse(fs.readFileSync("riverdata.json", {encoding:"utf8"}))
+	let riverarray = JSON.parse(fs.readFileSync(path.join(__dirname, "riverdata.json"), {encoding:"utf8"}))
 
 	//Delete the word river (plus the leading space), if it exists in any casing.
 	name = name.split(/ river/i).join("")
