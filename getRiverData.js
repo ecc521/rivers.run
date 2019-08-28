@@ -45,14 +45,16 @@ function getAssistantReply(name) {
 	
 	let gauge = flowData[topRanked[0].usgs]
 
+	let cfs;
+	let feet;
 	try {
-		let cfs = gauge.cfs[gauge.cfs.length-1]
-		let feet = gauge.feet[gauge.feet.length-1]
+		cfs = gauge.cfs[gauge.cfs.length-1].value
+		feet = gauge.feet[gauge.feet.length-1].value
 	}
 	catch(e) {console.error(e)}
 
 
-	let str = starter + " is at "
+	let str = starter + " had a flow level of "
 	if (cfs && feet) {
 		str += cfs + " cfs or " + feet + " feet"
 	}
@@ -62,6 +64,13 @@ function getAssistantReply(name) {
 	else if (feet) {
 		str += feet + " feet"
 	}
+	let timeAgo = Date.now() - (gauge.feet[gauge.feet.length-1].dateTime)
+	let hoursAgo = Math.floor(timeAgo/1000/3600)
+	let minutesAgo = Math.ceil(timeAgo/1000%3600/60)
+	
+	let timeString = (hoursAgo > 0?`${hoursAgo} hours and `:"") + minutesAgo + " minutes ago"
+	
+	str += " as of " + timeString
 	str += ", according to the gauge " + gauge.name + "."
 	
 	//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values.
@@ -75,7 +84,9 @@ function getAssistantReply(name) {
 	
 	return {
 		str,
-		riverid: river.id,
+		riverid: topRanked[0].id,
 		name
 	}
 }
+
+module.exports = {getAssistantReply}
