@@ -231,7 +231,7 @@ async function httprequest(req,res) {
 					buttons.push({
 						"text": "View Rivers.run FAQ",
 						"openUriAction": {
-							uri: "https://rivers.run/FAQ" //TODO: Send user to dedicated page for contributing content.
+							"uri": "https://rivers.run/FAQ" //TODO: Send user to dedicated page for contributing content.
 						}					
 					})
 				}
@@ -239,21 +239,21 @@ async function httprequest(req,res) {
 					buttons.push({
 						"text": "View Full Search",
 						"openUriAction": {
-							uri: "https://rivers.run/#" + queryResult.name 
+							"uri": "https://rivers.run/#" + queryResult.name 
 						}
 					})
 					//TODO: Add edit this river link.
 				}
 				
 				let reply = {
-				  "fulfillmentText": "This is a text response",
+				  "fulfillmentText": queryResult.str,
 				  "fulfillmentMessages": [
 					{
 					  "basicCard": {
 						"title": "Rivers.run Flow Info",
 						"subtitle": "Rivers.run provides river information, such as real time water levels.",
 						"image": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
-						"buttons": JSON.stringify(buttons)
+						"buttons": buttons
 					  }
 					}
 				  ],
