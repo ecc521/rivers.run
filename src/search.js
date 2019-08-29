@@ -248,15 +248,6 @@ function skillFilter(list, parameters) {
 
 
 
-
-function ratingFilter(list, parameters) {
-	console.error("Rating based filtering is not yet implemented")
-	return list
-}
-
-
-
-
 let calculateDistance = require("./distance.js").lambert //Lambert formula
 
 function locationFilter(list, parameters) {
@@ -339,6 +330,27 @@ function tagsFilter(list, parameters) {
 	}
 	return list
 }
+
+
+function ratingFilter(list, parameters) {
+
+	let query = parameters.query
+	let min = query[0]
+	let max = query[1]
+
+	for (let item in list) {
+		let river = list[item]
+
+        if (river.rating === "Error" && !parameters.includeUnknown) {
+			delete list[item]
+		}
+		else if (Number(river.rating) < min || Number(river.rating) > max) {
+			delete list[item]
+		}
+	}
+	return list
+}
+
 
 //Query is in form of:
 //{
