@@ -20,9 +20,10 @@ Header always set Strict-Transport-Security "max-age=63072000; preload; includeS
 
 #Allow rivers.run, *.rivers.run, 127.0.0.1:*, and 192.168.1.*
 #Keep in mind that this trick doesn't appear to work in Firefox - so I guess Chrome is needed for development.
-SetEnvIf Origin "http(s)?://(www\.)?(rivers.run|*.rivers.run|127.0.0.1:*|192.168.1.*)$" AccessControlAllowOrigin=$0
+SetEnvIf Origin "^http(s)?://(.+\.)?(localhost|stackoverflow.com|example1.com)(:[0-9]+)?$" AccessControlAllowOrigin=$0
 Header set Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
 Header merge Vary Origin
+
 
 
 #Block access to .git files
