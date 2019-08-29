@@ -32,9 +32,8 @@ function getAssistantReply(name) {
 		useThe = false
 	}
 	let starter = (useThe?"The ":"") + responseName
-	let ender = "Is there anything else I can do for you? "
 	if (topRanked === undefined) {
-		return starter + " does not exist on rivers.run. Go to https://rivers.run/FAQ to learn how to add it. " + ender
+		return starter + " does not exist on rivers.run. Go to https://rivers.run/FAQ to learn how to add it. "
 	}
 	
 	if (topRanked.length > 1) {
@@ -87,8 +86,6 @@ function getAssistantReply(name) {
 		str = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge, go to https://rivers.run/FAQ to learn how to update the gauge. "
 	}
 	
-	
-	str += ender
 	//Consider seeing if the response matches some pre-defined formats, to reduce issues with google mis-processing.
 	//Consider telling user what we got sent as river-name.
 	//TODO: Consider telling the user what river we took the gauge from. This will help prevent issues if google misinterprets things,
@@ -97,6 +94,7 @@ function getAssistantReply(name) {
 	
 	return {
 		str,
+		ssml: str,
 		riverid: topRanked[0].id,
 		responseName,
 		search: name
