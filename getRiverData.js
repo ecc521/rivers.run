@@ -68,7 +68,22 @@ function getAssistantReply(name) {
 	}
 	catch(e) {console.error(e)}
 
-
+	if (!topRanked[0].usgs) {
+		queryResult.ssml = starter + " has no gauge on rivers.run. Go to https://rivers.run/FAQ to learn how to add a gauge. " + ender
+		return queryResult
+	}
+	else if (!cfs && !feet) {
+		if (gauge) {
+			queryResult.ssml = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge, go to https://rivers.run/FAQ to learn how to update the gauge. " + ender
+		}
+		else {
+			//TODO: Tell user the gauge that we tried to use (river.usgs)
+			queryResult.ssml = starter + " does not have a working gauge. You can go to https://rivers.run/FAQ to learn how to update the gauge. " + ender
+		}
+		return queryResult
+	}
+	
+	
 	let str = starter + " had a flow level of "
 	if (cfs && feet) {
 		str += cfs + " cfs or " + feet + " feet"
@@ -79,7 +94,7 @@ function getAssistantReply(name) {
 	else if (feet) {
 		str += feet + " feet"
 	}
-	let timeAgo = Date.now() - (gauge.feet[gauge.feet.length-1].dateTime)
+	let timeAgo = Date.now() - (gauge.feet[gauge.feet.length-1].dateTime)	
 	let hoursAgo = Math.floor(timeAgo/1000/3600)
 	let minutesAgo = Math.ceil(timeAgo/1000%3600/60)
 	
@@ -89,23 +104,14 @@ function getAssistantReply(name) {
 	str += ", according to the gauge " + gauge.name + ". "
 	
 	//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values.
-
-	if (!topRanked[0].usgs) {
-		str = starter + " has no gauge on rivers.run. Go to https://rivers.run/FAQ to learn how to add a gauge. "
-	}
-	else if (!cfs && !feet) {
-		str = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge, go to https://rivers.run/FAQ to learn how to update the gauge. "
-	}
 	
 	//Consider seeing if the response matches some pre-defined formats, to reduce issues with google mis-processing.
 	//Consider telling user what we got sent as river-name.
 	//TODO: Consider telling the user what river we took the gauge from. This will help prevent issues if google misinterprets things,
 	//and sends back a basic query. Ex. Hopeville Canyon > Canyon > Cheat Canyon
 	//Checking that part of the river name is in the search should work just fine. 
-	
-	str += ender
-	
-	queryResult.ssml = str
+		
+	queryResult.ssml = str + ender
 	
 	return queryResult
 }
