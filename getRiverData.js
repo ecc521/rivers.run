@@ -32,9 +32,9 @@ function getAssistantReply(name) {
 		useThe = false
 	}
 	let starter = (useThe?"The ":"") + responseName
-	
+	let ender = "Is there anything else I can do for you? "
 	if (topRanked === undefined) {
-		return starter + " does not exist on rivers.run. Click Add a River to learn how to add it. "
+		return starter + " does not exist on rivers.run. Go to https://rivers.run/FAQ to learn how to add it. " + ender
 	}
 	
 	if (topRanked.length > 1) {
@@ -76,17 +76,19 @@ function getAssistantReply(name) {
 	let timeString = (hoursAgo > 0?`${hoursAgo} hours and `:"") + minutesAgo + " minutes ago"
 	
 	str += " as of " + timeString
-	str += ", according to the gauge " + gauge.name + "."
+	str += ", according to the gauge " + gauge.name + ". "
 	
 	//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values.
 
 	if (!topRanked[0].usgs) {
-		str = starter + " has no gauge on rivers.run. Click Edit this River to learn how to add a gauge. "
+		str = starter + " has no gauge on rivers.run. Go to https://rivers.run/FAQ to learn how to add a gauge. "
 	}
 	else if (!cfs && !feet) {
-		str = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge to use, click Edit this River to learn how to fix this issue. "
+		str = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge, go to https://rivers.run/FAQ to learn how to update the gauge. "
 	}
 	
+	
+	str += ender
 	//Consider seeing if the response matches some pre-defined formats, to reduce issues with google mis-processing.
 	//Consider telling user what we got sent as river-name.
 	//TODO: Consider telling the user what river we took the gauge from. This will help prevent issues if google misinterprets things,
