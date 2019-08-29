@@ -226,11 +226,7 @@ async function httprequest(req,res) {
 				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"]
 				let queryResult = getRiverData.getAssistantReply(riverName)
 				let buttons = [];
-				
-				queryResult.str += "If you have more questions, feel free to ask! Otherwise, you can say \"exit\" to close rivers.run. "
-				queryResult.ssml += "<break time=\"1s\"/>If you have more questions, feel free to ask! Otherwise, you can say \"exit\" to close rivers.run. "
-				queryResult.ssml = "<speak>" + queryResult.ssml + "</speak>"
-				
+								
 				let continueConversation = true; //Currently, I am testing always keeping the conversation open. 
 				//If this doesn't work, just keep open on error.
 
@@ -250,7 +246,7 @@ async function httprequest(req,res) {
 				
 				
 				let reply = {
-				  "fulfillmentText": queryResult.str,
+				  "fulfillmentText": queryResult.ssml,
 				  "fulfillmentMessages": [
 					{
 					  "card": {

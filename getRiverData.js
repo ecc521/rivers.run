@@ -23,6 +23,9 @@ function getAssistantReply(name) {
 
 	let flowData = JSON.parse(fs.readFileSync(path.join(__dirname, "flowdata2.json"), {encoding:"utf8"}))
 
+	let alwaysStart = "<speak>"
+	let ender = "<break time=\"1s\"/>If you have more questions, feel free to ask! Otherwise, you can say \"exit\" to close rivers.run. </speak>"
+	
 	//TODO: Ask the user to break ties if multiple rivers in topRanked.
 
 	//Don't use the word "The " for creeks, or when section was labeled.
@@ -31,9 +34,17 @@ function getAssistantReply(name) {
 	if (responseName.toLowerCase().includes("creek") || responseName.toLowerCase().includes("section")) {
 		useThe = false
 	}
-	let starter = (useThe?"The ":"") + responseName
-	if (topRanked === undefined) {
-		return starter + " does not exist on rivers.run. Go to https://rivers.run/FAQ to learn how to add it. "
+	
+	let queryResult = {
+		responseName,
+		search: name
+	}
+	if (topRanked && topRanked.length > 0) {queryResult.riverid = topRanked[0].id}
+	
+	let starter = alwaysStart + (useThe?"The ":"") + responseName
+	if (topRanked === undefined || topRanked.length === 0) {
+		queryResult.ssml = starter + " does not exist on rivers.run. Go to https://rivers.run/FAQ to learn how to add it. " + ender
+		return queryResult
 	}
 	
 	if (topRanked.length > 1) {
@@ -41,7 +52,7 @@ function getAssistantReply(name) {
 		for (let i=0;i<topRanked.length;i++) {
 			start = start || topRanked[i].name
 			if (topRanked[i].name !== start) {
-				starter = "Warning: Different rivers matched the search " + responseName + ". There were "+ topRanked.length + " total matches. " + "Picking " + topRanked[0].name + " " + responseName + ". " + starter
+				starter = alwaysStart + "Warning: Different rivers matched the search " + responseName + ". There were "+ topRanked.length + " total matches. " + "Picking " + topRanked[0].name + " " + responseName + ". " + starter
 				break;
 			}
 		}
@@ -92,13 +103,11 @@ function getAssistantReply(name) {
 	//and sends back a basic query. Ex. Hopeville Canyon > Canyon > Cheat Canyon
 	//Checking that part of the river name is in the search should work just fine. 
 	
-	return {
-		str,
-		ssml: str,
-		riverid: topRanked[0].id,
-		responseName,
-		search: name
-	}
+	str += ender
+	
+	queryResult.ssml = str
+	
+	return queryResult
 }
 
 module.exports = {getAssistantReply}
