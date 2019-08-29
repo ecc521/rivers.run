@@ -221,7 +221,7 @@ async function httprequest(req,res) {
 				let query = (await getData()).toString()
 				fs.appendFileSync(path.join(__dirname, 'assistanterror.log'), query + "\n");
 				query = JSON.parse(query)
-
+				
 				//Not sure if outputContexts works for this.
 				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"]
 				let queryResult = getRiverData.getAssistantReply(riverName)
@@ -236,7 +236,7 @@ async function httprequest(req,res) {
 				else {
 					buttons.push({
 						"text": "View Full Search",
-						"postback": "https://rivers.run/#" + queryResult.name
+						"postback": "https://rivers.run/#" + queryResult.search
 					})
 					//TODO: Add edit this river link.
 				}
@@ -261,7 +261,8 @@ async function httprequest(req,res) {
 						"items": [
 						  {
 							"simpleResponse": {
-							  "textToSpeech": queryResult.str
+							  "textToSpeech": queryResult.str,
+								"displayText": queryResult.str
 							}
 						  }
 						]

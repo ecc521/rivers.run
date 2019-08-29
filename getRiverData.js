@@ -14,26 +14,18 @@ function getAssistantReply(name) {
 	let topRanked = []
 
 	let buckets = normalSearch(riverarray, name, true)
-
-	for (let i=0;i<buckets.length;i++) {
-		let bucket = buckets[i]
-		if (bucket.length > 0) {
-			if (i !== 1) {
-				topRanked = bucket
-			}
-			else {
-				//Bucket #2 is somewhat special - it is a bucket of buckets (likely with some undefined holes).
-				topRanked = bucket[0]
-			}
-			break;
-		}
+	
+	//Use the highest ranked river in bucket 2 (index 1).
+	topRanked = buckets[0]
+	if (topRanked.length === 0) {
+		topRanked = buckets[1][0]
 	}
 
 	let flowData = JSON.parse(fs.readFileSync(path.join(__dirname, "flowdata2.json"), {encoding:"utf8"}))
 
 	//TODO: Ask the user to break ties if multiple rivers in topRanked.
 
-	//Don't use the word "The " for creeks.
+	//Don't use the word "The " for creeks, or when section was labeled.
 	//Consider using the original name here - so before the word "River" was removed.
 	let useThe = true
 	if (responseName.toLowerCase().includes("creek") || responseName.toLowerCase().includes("section")) {
@@ -42,15 +34,15 @@ function getAssistantReply(name) {
 	let starter = (useThe?"The ":"") + responseName
 
 	
-	if (topRanked[0] === undefined) {
+	if (topRanked === undefined) {
 		return starter + " does not exist on rivers.run. Click Add a River to learn how to add it. "
 	}
 	
-	let gauge = flowData[topRanked[0].usgs]
-
+	let gauge;
 	let cfs;
 	let feet;
 	try {
+		gauge = flowData[topRanked[0].usgs]
 		cfs = gauge.cfs[gauge.cfs.length-1].value
 		feet = gauge.feet[gauge.feet.length-1].value
 	}
@@ -85,10 +77,16 @@ function getAssistantReply(name) {
 		str = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge to use, click Edit this River to learn how to fix this issue. "
 	}
 	
+	//Consider seeing if the response matches some pre-defined formats, to reduce issues with google mis-processing.
+	//TODO: Consider telling the user what river we took the gauge from. This will help prevent issues if google misinterprets things,
+	//and sends back a basic query. Ex. Hopeville Canyon > Canyon > Cheat Canyon
+	//Checking that part of the river name is in the search should work just fine. 
+	
 	return {
 		str,
 		riverid: topRanked[0].id,
-		responseName
+		responseName,
+		search: name
 	}
 }
 
