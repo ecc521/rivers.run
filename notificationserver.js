@@ -228,7 +228,7 @@ async function httprequest(req,res) {
 				let buttons = [];
 				
 				queryResult.str += "If you have more questions, feel free to ask! Otherwise, you can say \"exit\" to close rivers.run. "
-				queryResult.ssml += "<break time=\"2s\"/>If you have more questions, feel free to ask! Otherwise, you can say \"exit\" to close rivers.run. "
+				queryResult.ssml += "<break time=\"1s\"/>If you have more questions, feel free to ask! Otherwise, you can say \"exit\" to close rivers.run. "
 				queryResult.ssml = "<speak>" + queryResult.ssml + "</speak>"
 				
 				let continueConversation = true; //Currently, I am testing always keeping the conversation open. 
@@ -269,7 +269,6 @@ async function httprequest(req,res) {
 						"items": [
 						  {
 							"simpleResponse": {
-							  "textToSpeech": queryResult.str,
 								"ssml": queryResult.ssml
 							}
 						  }
