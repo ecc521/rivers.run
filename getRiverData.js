@@ -32,11 +32,21 @@ function getAssistantReply(name) {
 		useThe = false
 	}
 	let starter = (useThe?"The ":"") + responseName
-
 	
 	if (topRanked === undefined) {
 		return starter + " does not exist on rivers.run. Click Add a River to learn how to add it. "
 	}
+	
+	if (topRanked.length > 1) {
+		let start;
+		for (let i=0;i<topRanked.length;i++) {
+			start = start || topRanked[i].name
+			if (topRanked[i].name !== start) {
+				starter = "Warning: Different rivers matched the search " + responseName + ". There were "+ topRanked.length + " total matches. " + "Picking " + topRanked[0].name + " " + responseName + ". " + starter
+				break;
+			}
+		}
+	} 
 	
 	let gauge;
 	let cfs;
@@ -78,6 +88,7 @@ function getAssistantReply(name) {
 	}
 	
 	//Consider seeing if the response matches some pre-defined formats, to reduce issues with google mis-processing.
+	//Consider telling user what we got sent as river-name.
 	//TODO: Consider telling the user what river we took the gauge from. This will help prevent issues if google misinterprets things,
 	//and sends back a basic query. Ex. Hopeville Canyon > Canyon > Cheat Canyon
 	//Checking that part of the river name is in the search should work just fine. 
