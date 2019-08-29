@@ -17,11 +17,11 @@ RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 #Strict transport security - force https in future.
 Header always set Strict-Transport-Security "max-age=63072000; preload; includeSubdomains" env=HTTPS
 
-#Allow usgscache to be loaded by dev site and rivers.run. This is a bit too lax, but whatever.
-<FilesMatch "\.(json)$">
-Header set Access-Control-Allow-Origin *
-Header set Access-Control-Expose-Headers Date
-</FilesMatch>
+#Allow rivers.run, *.rivers.run, 127.0.0.1:*, and 192.168.1.*
+SetEnvIf Origin "http(s)?://(www\.)?(rivers.run|*.rivers.run|127.0.0.1:*|192.168.1.*)$" AccessControlAllowOrigin=$0
+Header add Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
+Header merge Vary Origin
+
 
 #Block access to .git files
 RedirectMatch 403 /\.git
