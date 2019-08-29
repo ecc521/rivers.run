@@ -227,6 +227,9 @@ async function httprequest(req,res) {
 				let queryResult = getRiverData.getAssistantReply(riverName)
 				let buttons = [];
 				
+				let continueConversation = true; //Currently, I am testing always keeping the conversation open. 
+				//If this doesn't work, just keep open on error.
+
 				if (typeof queryResult === "string") {
 					buttons.push({
 						"text": "View Rivers.run FAQ",
@@ -240,6 +243,7 @@ async function httprequest(req,res) {
 					})
 					//TODO: Add edit this river link.
 				}
+				
 				
 				let reply = {
 				  "fulfillmentText": queryResult.str,
@@ -256,7 +260,7 @@ async function httprequest(req,res) {
 				  "source": "https://rivers.run/",
 				  "payload": {
 					"google": {
-					  "expectUserResponse": false,
+					  "expectUserResponse": continueConversation,
 					  "richResponse": {
 						"items": [
 						  {
