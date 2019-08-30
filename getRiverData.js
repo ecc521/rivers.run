@@ -43,9 +43,11 @@ function getAssistantReply(name) {
 	
 	let starter = alwaysStart + (useThe?"The ":"") + responseName
 	if (topRanked === undefined || topRanked.length === 0) {
-		queryResult.ssml = starter + " does not exist on rivers.run. Go to https://rivers.run/FAQ to learn how to add it. " + ender
+		queryResult.ssml = starter + " does not exist on rivers.run. Open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add it. " + ender
 		return queryResult
 	}
+	
+	
 	
 	if (topRanked.length > 1) {
 		let start;
@@ -56,7 +58,7 @@ function getAssistantReply(name) {
 				break;
 			}
 		}
-	} 
+	}
 	
 	let gauge;
 	let cfs;
@@ -69,16 +71,16 @@ function getAssistantReply(name) {
 	catch(e) {console.error(e)}
 
 	if (!topRanked[0].usgs) {
-		queryResult.ssml = starter + " has no gauge on rivers.run. Go to https://rivers.run/FAQ to learn how to add a gauge. " + ender
+		queryResult.ssml = starter + " has no gauge on rivers.run. You can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add a gauge. " + ender
 		return queryResult
 	}
 	else if (!cfs && !feet) {
 		if (gauge) {
-			queryResult.ssml = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge, go to https://rivers.run/FAQ to learn how to update the gauge. " + ender
+			queryResult.ssml = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge, you can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to update the gauge. " + ender
 		}
 		else {
 			//TODO: Tell user the gauge that we tried to use (river.usgs)
-			queryResult.ssml = starter + " does not have a working gauge. You can go to https://rivers.run/FAQ to learn how to update the gauge. " + ender
+			queryResult.ssml = starter + " does not have a working gauge. You can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to update the gauge. " + ender
 		}
 		return queryResult
 	}

@@ -1,4 +1,4 @@
-(window || globalThis).toDecimalDegrees = function(coord) {
+((typeof window !== "undefined" && window) || globalThis).toDecimalDegrees = function(coord) {
 	if (!isNaN(Number(coord))) {
 		return Number(coord) //Coordinate is already in decimal form.
 	}
