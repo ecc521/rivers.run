@@ -43,7 +43,7 @@ function normalSearch(list, query, returnBuckets) {
 	if (query === "") {return sortUtils.sort("alphabetical", list)} //Don't search for an empty query.
 	
 	//The first buckets are better matches than later ones.
-    let buckets = [[],[],[],[],[],[]]
+    let buckets = [[],[],[],[],[],[],[]]
 	let bucket2 = [] //Bucket 2 - index 1 - is special.
 
 	list.forEach(function(event) {
@@ -92,12 +92,14 @@ function normalSearch(list, query, returnBuckets) {
 		//Thrid bucket
 		let nameMatches = event.name.toLowerCase().startsWith(query)
 		let sectionMatches = event.section.toLowerCase().startsWith(query)
+		
+		//Fourth
 		let tagsContains = (event.tags.toLowerCase().indexOf(query) !== -1)
 		
-		//Fourth bucket
+		//Fifth bucket
 		let nameContains = (event.name.toLowerCase().indexOf(query) !== -1)
 		
-		//Fifth Bucket
+		//Sixth Bucket
 		let sectionContains = (event.section.toLowerCase().indexOf(query) !== -1)
 		
 		//Final Bucket
@@ -109,15 +111,16 @@ function normalSearch(list, query, returnBuckets) {
 			bucket2[bonus] = bucket2[bonus] || []
 			bucket2[bonus].push(event)
 		}
-		else if (nameMatches || sectionMatches || tagsContains) {buckets[2].push(event)}
-		else if (nameContains) {buckets[3].push(event)}
-		else if (sectionContains) {buckets[4].push(event)}
-		else if (writeupContains) {buckets[5].push(event)}
+		else if (nameMatches || sectionMatches) {buckets[2].push(event)}
+		else if (tagsContains) {buckets[3].push(event)}
+		else if (nameContains) {buckets[4].push(event)}
+		else if (sectionContains) {buckets[5].push(event)}
+		else if (writeupContains) {buckets[6].push(event)}
     })
 	
 	//Sort each match level alphabetically by river name
 	buckets = buckets.map((bucket) => {return sortUtils.sort("alphabetical", bucket)})
-	
+		
 	bucket2.reverse() //Highest relevance ones come first in the second bucket.
 	
 	if (returnBuckets) {
