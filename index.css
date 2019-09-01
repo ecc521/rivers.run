@@ -9,10 +9,10 @@ html, body {
     display: block;
     margin: auto;
     border: 1px solid black;
-    width: 90vw;
-    max-width: 150vh;
-    height: 80vw;
-    max-height: 90vh;
+    width: auto;
+    height: 80vw; /*Try to stretch vertically on taller screens (but less wide)*/
+    max-width: 95vw;
+    max-height: 80vh;
 }
 /*★☆⬆⬇*/
 /*Make sure I have the two star images being the same size, and arrows that look how I want, in a font.*/
@@ -102,6 +102,24 @@ html, body {
     display:inline-block;
     vertical-align:middle;
     height: 36px;
+}
+
+.flowButton {
+    background-image: linear-gradient(to right, #00AAFF , #0000FF);
+    border: 0;
+    color: white;
+}
+    
+.tempButton {
+    background-image: linear-gradient(to right, red , blue);
+    border: 0;
+    color: white;
+}
+    
+.precipButton {
+    background-color: #0077BB;
+    border: 0;
+    color: white;
 }
 
 #advancedSearchWarning {

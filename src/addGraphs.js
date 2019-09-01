@@ -36,7 +36,7 @@ function toparts(arr) {
 }
 
 
-function addCanvasAsImage(appendTo, canvas) {
+function getCanvasAsImage(canvas) {
     //For some reason, only the last canvas was showing. Use images.
 	//I tried using blob urls instead of dataurls to improve performance, but they didn't help, and actually made things WORSE!!!
     //Images also allow "Save Image As"
@@ -45,13 +45,13 @@ function addCanvasAsImage(appendTo, canvas) {
 
 	img.src = canvas.toDataURL("image/png")
 
-    appendTo.appendChild(img)
+    return img
 }
 
 //In dark mode, blue doesn't show up well enough, so different colors are used.
 
 
-function addFlowGraph(div, cfs, height, data) {
+function getFlowGraph(cfs, height, data) {
     //Make sure we actually have some data, and don't create an empty graph
     if (!(cfs || height)) {return}
 
@@ -73,34 +73,43 @@ function addFlowGraph(div, cfs, height, data) {
         addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#7175f0":"blue")
     }
 
-	return addCanvasAsImage(div, canvas)
+	return getCanvasAsImage(canvas)
 }
 
 
-function addTempGraph(div, temp, data) {
+function getTempGraph(temp, data) {
     if (temp) {
         let canvas = createcanvas()
 
         let parts = toparts(temp)
         addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "red", 3, window.darkMode?"#00AAFF":"blue")
 
- 		return addCanvasAsImage(div, canvas)
+ 		return getCanvasAsImage(canvas)
     }
 }
 
 
 
-function addPrecipGraph(div, precip, data) {
+function getPrecipGraph(precip, data) {
     if (precip) {
         let canvas = createcanvas()
 
         let parts = toparts(precip)
         addLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0099FF")
 
-		return addCanvasAsImage(div, canvas)
+		return getCanvasAsImage(canvas)
     }
 }
 
+function getButton(text, className) {
+	let button = document.createElement("button")
+	button.innerHTML = text
+	button.className = className
+	button.style.padding = "8px"
+	button.style.minWidth = "20vw"
+	button.style.fontSize = "16px"
+	return button
+}
 
 function addGraphs(div, data) {
 
@@ -108,28 +117,88 @@ function addGraphs(div, data) {
     //for a specific river due to gauge problems.
     //Each canvas is wrapped individually because sometimes only some graphs have invalid data
 
+	let container = document.createElement("div")
+	let graphs = []
+	container.style.textAlign = "center"
+	
+	//TODO: We only need to synchronusly render the first graph, as only one will be displayed at once. 
+	//This will lead to speed increases when .riverbuttons are clicked.
     try {
         if (!localStorage.getItem("colorBlindMode")) {
-            addFlowGraph(div, data.cfs, data.feet, data)
+            let flowGraph = getFlowGraph(data.cfs, data.feet, data)
+			if (flowGraph) {
+				graphs.push({
+					text: "Flow Info",
+					className: "flowButton",
+					elem: flowGraph
+				})
+			}
         }
 
         else {
             //Use one graph for cfs and one for feet if the user is in color blind mode.
-            addFlowGraph(div, data.cfs, undefined, data)
-            addFlowGraph(div, undefined, data.feet, data)
+            let cfsGraph = getFlowGraph(data.cfs, undefined, data)
+			if (cfsGraph) {
+				graphs.push({
+					text: "Flow In CFS",
+					className: "flowButton",
+					elem: cfsGraph
+				})
+			}
+            let feetGraph = getFlowGraph(undefined, data.feet, data)
+			if (feetGraph) {
+				graphs.push({
+					text: "Flow In Feet",
+					className: "flowButton",
+					elem: feetGraph
+				})
+			}
         }
     }
     catch(e){console.warn("Error creating flow graph: " + e)}
 
     try {
-        addTempGraph(div, data.temp, data)
+        let tempGraph = getTempGraph(data.temp, data)
+		if (tempGraph) {
+			graphs.push({
+				text: "Water Temperature",
+				className: "tempButton",
+				elem: tempGraph
+			})
+		}
     }
     catch(e){console.warn("Error creating temperature graph: " + e)}
 
     try {
-        addPrecipGraph(div, data.precip, data)
+        let precipGraph = getPrecipGraph(data.precip, data)
+		if (precipGraph) {
+			graphs.push({
+				text: "Precipitation",
+				className: "precipButton",
+				elem: precipGraph
+			})
+		}
     }
     catch(e){console.warn("Error creating precipitation graph: " + e)}
+	
+	let buttonContainer = document.createElement("div")
+	if (graphs.length > 1) {
+		//We don't need to show selection buttons if we only have one graph.
+		container.appendChild(buttonContainer)
+	}	
+	//Add the starting graph - the flow graph.
+	container.appendChild(graphs[0].elem)
+	
+	graphs.forEach((data) => {
+		let button = getButton(data.text, data.className)	   
+		button.addEventListener("click", function() {
+			let oldGraph = container.querySelector(".graph")
+			container.replaceChild(data.elem, oldGraph)
+		})
+		buttonContainer.appendChild(button)
+	})
+	
+	div.appendChild(container)
 }
 
 
