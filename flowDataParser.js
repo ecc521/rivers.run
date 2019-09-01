@@ -39,7 +39,13 @@ function parseUSGS(usgsdata) {
             obj2.values[i].dateTime = new Date(obj2.values[i].dateTime).getTime() //Reformat to decimal based time.
           }
 
-
+		//Some rivers have code 00011 instead of 00010 (like the Yough).
+		//00011 is farenheit, instead of celcius like 00010.
+		//Don't bother converting 00011. Just use instead of 00010.
+		//TODO: Check code. Probably "Temperature, water, degrees Fahrenheit"
+        if (variablecode === "00011") {
+            variablecode = "00010" //We use 00010 to represent farenhiet.
+        }
 
         //Add the values onto the site code object
         usgsarray[sitecode][variablecode] = obj2

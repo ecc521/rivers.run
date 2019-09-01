@@ -8,7 +8,7 @@ window.updateOldDataWarning = function() {
 		//No reason to make an old data warning when data is new (within 1 hour)
 		//Make sure to change the warning text so that if the data becomes old while the page is open, they are not confused.
 		if (window.usgsDataAge < 1000*60*60) {
-			window.loadNewUSGS = "USGS Data has become old while this page was open. Click try again to update."
+			window.loadNewUSGS = "Flow Data has become old while this page was open. Click try again to update."
 			return
 		}
 
