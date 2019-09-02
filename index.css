@@ -366,9 +366,8 @@ Those include name,section,skill,quality, and flow info*/
     margin:0;
     transition: 0.2s;
     text-align:left;
+    display: -webkit-box; /*iOS 9 and 10 workaround due to lack of flexbox support for buttons.*/
 	display:flex;
-    /*display:-webkit-box; *//*iOS 9 and 10 workaround due to lack of flexbox support for buttons.*/
-    /*The workaround broke other browsers such as chrome. I'll just let iOS 9 and 10 be slightly broken for now.*/
 	align-items:center;
 }
 
