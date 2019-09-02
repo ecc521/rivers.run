@@ -15,8 +15,9 @@ function processCSS() {
 				stage: 0
 			}),
 			require('postcss-css-variables')({
-				preserve: "computed" //Allow css variables to be utilized by JavaScript.
-				//Because CSS variables don't work in some browsers, the javascript wont - but that will need to be fixed.
+				preserveAtRulesOrder: true, //If the media rules are out of order, chaos ensues.
+				preserve: "computed" //Allow css variables to be utilized by JavaScript. Although code should work just fine with false, currently using computed,
+				//because that way any issues will only affect older browsers.
 			}),
 			require('cssnano')({
 				preset: 'default',
