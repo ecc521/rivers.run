@@ -56,12 +56,26 @@ try {
 catch(e) {console.error(e)}
 
 try {
-	//IE11 Polyfill. The gauge is likely unneeded.
+	//IE11 Polyfill. The gaurd appears to be unneeded.
 	if (!NodeList.prototype.forEach) {
 		NodeList.prototype.forEach = Array.prototype.forEach;
 	}
 }
 catch(e) {console.error(e)}
+
+try {
+	//IE 11 elem.remove() polyfill
+	if (!('remove' in Element.prototype)) {
+	    Element.prototype.remove = function() {
+	        if (this.parentNode) {
+	            this.parentNode.removeChild(this);
+	        }
+	    };
+	}
+}
+catch(e) {
+	console.error(e)
+}
 
 try {
 	require("./reportErrors.js") //Collect errors.
