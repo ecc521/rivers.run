@@ -38,6 +38,7 @@
     "node-fetch": "^2.6.0",
     "postcss": "^7.0.17",
     "postcss-css-variables": "^0.13.0",
+    "postcss-custom-properties": "^9.0.2",
     "postcss-preset-env": "^6.7.0",
     "webpack": "^4.39.3",
     "webpack-cli": "^3.3.7"

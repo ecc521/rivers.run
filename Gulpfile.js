@@ -16,11 +16,15 @@ function processCSS() {
 			}),
 			require('postcss-css-variables')({
 				preserveAtRulesOrder: true, //If the media rules are out of order, chaos ensues.
-				preserve: true //As long as my bug (https://github.com/MadLittleMods/postcss-css-variables/issues/105) exists, this must be true.
+				preserve: true //As long as my bug (https://github.com/MadLittleMods/postcss-css-variables/issues/105) exists, this must be true for full support in modern browsers.
 				//Note that this doesn't fix issues in all browsers - so some browsers will behave a little weird.
 				//preserve: "computed" //Allow css variables to be utilized by JavaScript. Although code should work just fine with false, currently using computed,
 				//because that way any issues will only affect older browsers.
 			}),
+			//postcss-custom-properties currently has a few too many issues to use.
+			/*require('postcss-custom-properties')({
+				preserve: true
+			}),*/
 			require('cssnano')({
 				preset: 'default',
 			}),
