@@ -17,11 +17,14 @@ RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 #Strict transport security - force https in future.
 Header always set Strict-Transport-Security "max-age=63072000; preload; includeSubdomains" env=HTTPS
 
-#Allow usgscache to be loaded by dev site and rivers.run. This is a bit too lax, but whatever.
-<FilesMatch "\.(json)$">
-Header set Access-Control-Allow-Origin *
-Header set Access-Control-Expose-Headers Date
-</FilesMatch>
+
+#Allow rivers.run, all private IP address, and all respective subdomains and ports 
+#Keep in mind that this trick doesn't appear to work in Firefox - so I guess Chrome is needed for development.
+SetEnvIf Origin "^http(s)?://(.+\.)?(rivers.run|((^127\..+\.\d+\.\d+)|(^10\.\d+\.\d+\.\d+)|(^172\.1[6-9]\.\d+\.\d+)|(^172\.2[0-9]\.\d+\.\d+)|(^172\.3[0-1]\.\d+\.\d+)|(^192\.168\.\d+\.\d+))(:[0-9]+)?$)(:[0-9]+)?$" AccessControlAllowOrigin=$0
+Header set Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
+Header merge Vary Origin
+
+
 
 #Block access to .git files
 RedirectMatch 403 /\.git
@@ -46,12 +49,12 @@ Header set Cache-Control "max-age=43200, public, stale-if-error=8640000"
 </FilesMatch>
 
 #5 minute cache. Serve up to 1 day old if errors.
-<FilesMatch "usgscache.json">
+<FilesMatch "flowdata2.json">
 Header set Cache-Control "max-age=300, public, stale-if-error=86400"
 </FilesMatch>
 
 #1 day cache. Serve up to 100 days old if errors.
-<FilesMatch "(riverarray.js|manifest.json)">
+<FilesMatch "(riverdata.json|manifest.json)">
 Header set Cache-Control "max-age=86400, public, stale-if-error=8640000"
 </FilesMatch>
 
@@ -88,7 +91,7 @@ AddType "application/javascript" .js.br .js.gz
 AddType "application/json" .json.br .json.gz
 AddType "image/svg+xml" .svg.br .svg.gz
 
-Header append Vary Accept-Encoding
+Header merge Vary Accept-Encoding
 
 #Serve a brotli precompressed file if one exists and the user agent accepts it.
 RewriteCond %{HTTP:Accept-Encoding} br

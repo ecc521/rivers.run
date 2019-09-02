@@ -306,6 +306,6 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
 }
 
 
-export {
+module.exports = {
     addLine
 }

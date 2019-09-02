@@ -55,6 +55,13 @@ try {
 }
 catch(e) {console.error(e)}
 
+try {
+	//IE11 Polyfill. The gauge is likely unneeded.
+	if (!NodeList.prototype.forEach) {
+		NodeList.prototype.forEach = Array.prototype.forEach;
+	}
+}
+catch(e) {console.error(e)}
 
 try {
 	require("./reportErrors.js") //Collect errors.

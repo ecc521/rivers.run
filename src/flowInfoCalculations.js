@@ -213,7 +213,7 @@ function calculateColor(river, options) {
     }
 }
 
-export {
+module.exports = {
 	calculateColor,
 	calculateAge,
 	calculateDirection

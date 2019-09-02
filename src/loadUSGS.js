@@ -50,23 +50,6 @@ let loadUSGS = async function(useCache) {
 
 	timesLoadUSGSRan++
 
-	let timeToRequest = 1000*86400 //Milliseconds of time to request
-
-    var sites = []
-    for (let i=0;i<riverarray.length;i++) {
-		let values = [riverarray[i].usgs]
-		riverarray[i].relatedusgs && values.concat(riverarray[i].relatedusgs)
-		for (let i=0;i<values.length;i++) {
-			let usgsID = values[i]
-			if (!usgsID) {continue}
-			//Basic value validation (throws out virtual gauges and clearly incorrect numbers.)
-	        if (usgsID.length > 7 && usgsID.length < 16 && !isNaN(Number(usgsID))) {
-	            (sites.indexOf(usgsID) === -1) && sites.push(usgsID) //Add the site if it doesn't exist in the list.
-	        }
-		}
-    }
-
-
 	let fileName = "flowdata2.json"
 
 	if (useCache) {
@@ -94,7 +77,7 @@ let loadUSGS = async function(useCache) {
 	window.updateOldDataWarning()
 
 
-
+	if (!window.ItemHolder) {window.ItemHolder = []}
 	//Add USGS Data to Graph
 	for (let i=0;i<ItemHolder.length;i++) {
 		let river = ItemHolder[i]
@@ -138,8 +121,8 @@ window.addEventListener("usgsDataUpdated", function() {
 	) {NewList()}
 })
 
-export {
-loadUSGS
+module.exports = {
+	loadUSGS
 }
 
 window.loadUSGS = loadUSGS

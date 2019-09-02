@@ -4,6 +4,7 @@ data
 public_key
 usgscache.json
 riverarray.js
+riverdata.json
 *.log
 flowdata.json
 flowdata2.json

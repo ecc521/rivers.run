@@ -590,6 +590,6 @@ function River(locate, event) {
     }
 }
 
-export {
+module.exports = {
 	River
 }

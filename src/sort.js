@@ -145,7 +145,7 @@ function sort(method, list, reverse) {
 }
 
 
-export {
+module.exports = {
     ratingsort,
     alphabeticalsort,
     skillsort,

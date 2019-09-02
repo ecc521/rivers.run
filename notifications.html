@@ -226,7 +226,7 @@
         //URL is the unique url push notifications are received from.
         //This can be used to recover lost data if localStorage is cleared, or to sync between devices.
         async function getSubscriptionFromURL(url) {
-            await fetch("https://rivers.run/node", {
+            await fetch("https://rivers.run/node/notifications", {
                 cache: "no-store",
                 method: "POST",
                 body:JSON.stringify({

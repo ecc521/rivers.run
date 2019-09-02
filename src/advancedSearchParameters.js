@@ -78,7 +78,16 @@ window.getAdvancedSearchParameters = function(filter) {
 		includeDams: document.getElementById("includeDams").checked,
 		includeUnknown: document.getElementById("includeUnknownFlow").checked
 	}
-
+	
+	parameters.rating = {
+		type: "from",
+		query: [
+			Number(document.getElementById("ratingQuery1").value),
+			Number(document.getElementById("ratingQuery2").value)
+		],
+		includeUnknown: document.getElementById("includeUnknownRating").checked
+	}
+	
 	parameters.sort = {
 		query: document.getElementById("sortQuery").value,
 		reverse: document.getElementById("sortQueryReverse").checked
@@ -110,6 +119,10 @@ window.setMenuFromSearch = function(query) {
 	document.getElementById("skillQuery1").value = query.skill.query[0]
 	document.getElementById("skillQuery2").value = query.skill.query[1]
 	document.getElementById("includeUnknownSkill").checked = query.skill.includeUnknown
+	
+	document.getElementById("ratingQuery1").value = query.rating.query[0]
+	document.getElementById("ratingQuery2").value = query.rating.query[1]
+	document.getElementById("includeUnknownRating").checked = query.rating.includeUnknown
 
 	document.getElementById("searchbox").value = query.normalSearch
 	document.getElementById("normalSearchBoxOnAdvancedSearch").value = query.normalSearch
@@ -156,6 +169,11 @@ window.defaultAdvancedSearchParameters = {
   "skill": {
     "type": "from",
     "query": [1, 8],
+    "includeUnknown": true
+  },
+  "rating": {
+    "type": "from",
+    "query": [1, 5],
     "includeUnknown": true
   },
   "normalSearch": "",

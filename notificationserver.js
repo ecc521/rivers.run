@@ -5,6 +5,9 @@ const http = require("http")
 const os = require("os")
 const child_process = require("child_process")
 
+let getRiverData = require("./getRiverData.js")
+
+
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
 let vapidKeys = {};
@@ -180,6 +183,8 @@ async function httprequest(req,res) {
 		}
 
 
+
+
 		if (req.method === "GET" && req.url.startsWith("/node/ip2location")) {
 			if (lookupIP) {
 				let ipData = {};
@@ -211,6 +216,77 @@ async function httprequest(req,res) {
 		}
 
 
+		try {
+			if (req.method === "POST" && req.url.startsWith("/node/googleassistant/rivers.run")) {
+				let query = (await getData()).toString()
+				fs.appendFileSync(path.join(__dirname, 'assistanterror.log'), query + "\n");
+				query = JSON.parse(query)
+
+				//Not sure if outputContexts works for this.
+				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"]
+				let queryResult = getRiverData.getAssistantReply(riverName)
+				let buttons = [];
+
+				let continueConversation = true; //Currently, I am testing always keeping the conversation open.
+				//If this doesn't work, just keep open on error.
+
+				if (typeof queryResult === "string") {
+					buttons.push({
+						"text": "View Rivers.run FAQ",
+						"postback": "https://rivers.run/FAQ" //TODO: Send user to dedicated page for contributing content.
+					})
+				}
+				else {
+					buttons.push({
+						"text": "View Full Search",
+						"postback": "https://rivers.run/#" + queryResult.search
+					})
+					//TODO: Add edit this river link.
+				}
+
+
+				let reply = {
+				  "fulfillmentText": queryResult.ssml,
+				  "fulfillmentMessages": [
+					{
+					  "card": {
+						"title": "Rivers.run Flow Info",
+						"subtitle": "Rivers.run provides river information, such as real time water levels.",
+						"imageUri": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
+						"buttons": buttons
+					  }
+					}
+				  ],
+				  "source": "https://rivers.run/",
+				  "payload": {
+					"google": {
+					  "expectUserResponse": continueConversation,
+					  "richResponse": {
+						"items": [
+						  {
+							"simpleResponse": {
+								"ssml": queryResult.ssml
+							}
+						  }
+						]
+					  }
+					}
+				  }
+				}
+
+				reply.outputContexts = query.outputContexts
+
+				res.statusCode = 200;
+				res.setHeader('Content-Type', 'text/json');
+				res.end(JSON.stringify(reply));
+			}
+		}
+		catch(e) {
+			console.error(e)
+			fs.appendFileSync(path.join(__dirname, 'assistanterror.log'), String(e) + "\n");
+		}
+
+		//TODO: Check for /node/notifications soon. req.url.startsWith("/node/notifications")
 		if (req.method === "POST") {
 			let data = JSON.parse((await getData()).toString())
 
@@ -251,6 +327,14 @@ async function httprequest(req,res) {
 
 const httpserver = http.createServer(httprequest);
 
-httpserver.listen(httpport, hostname, () => {
-  console.log(`Server running at http://${hostname}:${httpport}/`);
-});
+module.exports = function() {
+	try {
+		httpserver.listen(httpport, hostname, () => {
+		  console.log(`Server running at http://${hostname}:${httpport}/`);
+		});
+	}
+	catch(e) {
+		console.error(e)
+		fs.appendFileSync(path.join(__dirname, 'startnotificationserver.log'), e.toString() + "\n");
+	}
+}

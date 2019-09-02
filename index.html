@@ -14,12 +14,15 @@
 
         <meta name="referrer" content="strict-origin-when-cross-origin">
 
-        <!-- USGS Gauges Preload -->
+        <!-- Flow Data Preload -->
+		<!-- Use crossorigin with as="fetch" requests. -->
         <link rel="preload" href="flowdata2.json" as="fetch" importance="high" crossorigin>
 
+		<!-- River Data Preload -->
+        <link rel="preload" href="riverdata.json" as="fetch" importance="high" crossorigin>
+		
         <!--JavaScript & CSS-->
         <link rel="preload" href="index.css" as="style" importance="high">
-        <link rel="preload" href="riverarray.js" as="script" importance="high">
         <link rel="preload" href="packages/index.js" as="script" importance="high">
 
         <!-- Progressive Web App Manifest -->
@@ -65,7 +68,6 @@
         <link rel="stylesheet" type="text/css" href="index.css">
         <!-- Consider combining allPages.js and index.js to save a good bit of bandwidth. This will require modifying allPages.js so that it can also use index.js to find the site root.-->
         <script src="packages/allPages.js"></script>
-        <script src="riverarray.js"></script>
 
 		<noscript><h1>JavaScript is needed in order to use rivers.run</h1></noscript>
 
@@ -160,6 +162,25 @@
 				<input id="includeUnknownFlow" type="checkbox">Include rivers without flow levels<br>
 
 
+				Rating from
+                <select id="ratingQuery1">
+                    <option value="1">1 Star</option>
+                    <option value="2">2 Stars</option>
+                    <option value="3">3 Stars</option>
+                    <option value="4">4 Stars</option>
+                    <option value="5">5 Stars</option>
+				</select>
+				to
+                <select id="ratingQuery2">
+                    <option value="1">1 Star</option>
+                    <option value="2">2 Stars</option>
+                    <option value="3">3 Stars</option>
+                    <option value="4">4 Stars</option>
+                    <option value="5">5 Stars</option>
+				</select>
+                <br>
+				<input id="includeUnknownRating" type="checkbox">Include rivers without ratings<br>
+				
 
                 Writeup
                 <select id="writeupType">

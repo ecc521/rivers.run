@@ -1,4 +1,4 @@
-window.toDecimalDegrees = function(coord) {
+((typeof window !== "undefined" && window) || globalThis).toDecimalDegrees = function(coord) {
 	if (!isNaN(Number(coord))) {
 		return Number(coord) //Coordinate is already in decimal form.
 	}
@@ -33,60 +33,111 @@ window.toDecimalDegrees = function(coord) {
 }
 
 
+
 let sortUtils = require("./sort.js")
 
-function normalSearch(list, query) {
-    query = query.toLowerCase()
-    let l = [[],[],[],[],[]]
-    list.forEach(function(event){
-        if (event.tags.toLowerCase().indexOf(query) !== -1) {
-            if (event.name.toLowerCase().indexOf(query) !== -1) {
-                l[0].push(event)
-            }
-            else {
-                l[1].push(event)
-            }
-        }
-        else if (event.name.toLowerCase().indexOf(query) !== -1) {
-            if (event.name.toLowerCase().startsWith(query)) {
-                l[0].push(event)
-            }
-            else {
-                l[2].push(event)
-            }
-        }
-        else if (event.section.toLowerCase().indexOf(query) !== -1) {
-            l[3].push(event)
-        }
-        else if (event.writeup.toLowerCase().indexOf(query) !== -1) {
-            l[4].push(event)
-        }
+
+function normalSearch(list, query, returnBuckets) {
+    query = query.toLowerCase().trim()
+	
+	if (query === "") {return sortUtils.sort("alphabetical", list)} //Don't search for an empty query.
+	
+	//The first buckets are better matches than later ones.
+    let buckets = [[],[],[],[],[],[]]
+	let bucket2 = [] //Bucket 2 - index 1 - is special.
+
+	list.forEach(function(event) {
+		
+		//First bucket
+		let nameExactMatch = (event.name.toLowerCase() === query)
+		let sectionExactMatch = (event.section.toLowerCase() === query)
+				
+		
+		
+		//Second Bucket
+		//This bucket is build to handle searches across name and section - such as "Lower Haw"
+		//As long as name and section contain all space seperated parts of the query, this bucket can be used.
+		let splitter = /[ ,]+/ //Split on spaces and commas. This handles things like "Lower, Lower Yough"
+		let words = query.split(splitter)
+		let passes = words.every((word) => {
+			return (event.name.toLowerCase().indexOf(word) !== -1) || (event.section.toLowerCase().indexOf(word) !== -1)
+		})
+		
+		let nameWords = event.name.toLowerCase().split(splitter)
+		let sectionWords = event.section.toLowerCase().split(splitter)
+		//For the search "Lower Haw", the Lower Haw should show up higher than Lower Hawksbill Creek.
+		//This works by assigning higher relevance to exact matches, then startsWith, than contains.
+		let bonus = words.reduce((bonus, word) => {
+			//TODO: Consider making .includes() and startsWith worth 7.
+			if (nameWords.includes(word)) {
+				delete nameWords[nameWords.indexOf(word)] //Remove the word so that is can't be matched twice (ex. text lower, search lower lower)
+				return bonus + 5
+			}
+			else if (sectionWords.includes(word)) {
+				delete sectionWords[sectionWords.indexOf(word)]
+				return bonus + 5
+			}
+			else if (event.name.toLowerCase().startsWith(word) || event.section.toLowerCase().startsWith(word)) {
+				return bonus + 3
+			}
+			//If name or section contains word.
+			else if ((event.name.toLowerCase().indexOf(word) !== -1) || (event.section.toLowerCase().indexOf(word) !== -1)) {
+				return bonus + 1
+			}
+			return bonus
+		}, 0)
+		
+		
+		
+		//Thrid bucket
+		let nameMatches = event.name.toLowerCase().startsWith(query)
+		let sectionMatches = event.section.toLowerCase().startsWith(query)
+		let tagsContains = (event.tags.toLowerCase().indexOf(query) !== -1)
+		
+		//Fourth bucket
+		let nameContains = (event.name.toLowerCase().indexOf(query) !== -1)
+		
+		//Fifth Bucket
+		let sectionContains = (event.section.toLowerCase().indexOf(query) !== -1)
+		
+		//Final Bucket
+		let writeupContains = (event.writeup.toLowerCase().indexOf(query) !== -1)
+		
+		if (nameExactMatch || sectionExactMatch) {buckets[0].push(event)}
+		//TODO: Use bucket 1 for even better matches in multi word.
+		else if (words.length > 1 && passes) {
+			bucket2[bonus] = bucket2[bonus] || []
+			bucket2[bonus].push(event)
+		}
+		else if (nameMatches || sectionMatches || tagsContains) {buckets[2].push(event)}
+		else if (nameContains) {buckets[3].push(event)}
+		else if (sectionContains) {buckets[4].push(event)}
+		else if (writeupContains) {buckets[5].push(event)}
     })
-
+	
 	//Sort each match level alphabetically by river name
-
-	function compareNames(river1, river2) {
-		if (river1.name > river2.name) {
-			return 1
-		}
-		if (river1.name < river2.name) {
-			return -1
-		}
-		return 0
+	buckets = buckets.map((bucket) => {return sortUtils.sort("alphabetical", bucket)})
+	
+	bucket2.reverse() //Highest relevance ones come first in the second bucket.
+	
+	if (returnBuckets) {
+		buckets[1] = bucket2  //We won't process bucket2 if returnBuckets is set.
+		return buckets
 	}
-
-	l[0] = l[0].sort(compareNames)
-	l[1] = l[1].sort(compareNames)
-	l[2] = l[2].sort(compareNames)
-	l[3] = l[3].sort(compareNames)
-	l[4] = l[4].sort(compareNames)
-
-	//Less relevant results are lower.
-    list = l[0].concat(l[1],l[2],l[3],l[4])
-
-    return list
+	
+	for (let i=0;i<bucket2.length;i++) {
+		let subbucket = bucket2[i]
+		if (subbucket) {
+			//Sort the subbucket alphabetically.
+			subbucket = sortUtils.sort("alphabetical", subbucket)
+			subbucket.forEach((value) => {
+				buckets[1].push(value)
+			})
+		}
+	}
+	
+    return [].concat(...buckets)
 }
-
 
 
 function stringQuery(parameters) {
@@ -197,15 +248,6 @@ function skillFilter(list, parameters) {
 
 
 
-
-function ratingFilter(list, parameters) {
-	console.error("Rating based filtering is not yet implemented")
-	return list
-}
-
-
-
-
 let calculateDistance = require("./distance.js").lambert //Lambert formula
 
 function locationFilter(list, parameters) {
@@ -288,6 +330,27 @@ function tagsFilter(list, parameters) {
 	}
 	return list
 }
+
+
+function ratingFilter(list, parameters) {
+
+	let query = parameters.query
+	let min = query[0]
+	let max = query[1]
+
+	for (let item in list) {
+		let river = list[item]
+
+        if (river.rating === "Error" && !parameters.includeUnknown) {
+			delete list[item]
+		}
+		else if (Number(river.rating) < min || Number(river.rating) > max) {
+			delete list[item]
+		}
+	}
+	return list
+}
+
 
 //Query is in form of:
 //{
@@ -386,7 +449,7 @@ function advancedSearch(list, query) {
 
 
 
-export {
+module.exports = {
     normalSearch,
     advancedSearch
 }
