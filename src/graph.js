@@ -169,7 +169,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
 
 
 
-    var px = Math.floor(((canvas.width)*0.07)/2.4)
+    var px = Math.floor(((canvas.width)*0.07)/2.0)
     ctx.font = (px + 'px serif')
     ctx.fillStyle = color
     //We need to create a gradient for just the text "Water Temperature (F)"
