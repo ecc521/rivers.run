@@ -105,9 +105,7 @@ function getButton(text, className) {
 	let button = document.createElement("button")
 	button.innerHTML = text
 	button.className = className
-	button.style.padding = "8px"
-	button.style.minWidth = "20vw"
-	button.style.fontSize = "16px"
+
 	return button
 }
 
@@ -161,7 +159,7 @@ function addGraphs(div, data) {
         let tempGraph = getTempGraph(data.temp, data)
 		if (tempGraph) {
 			graphs.push({
-				text: "Water Temperature",
+				text: "Temperature",
 				className: "tempButton",
 				elem: tempGraph
 			})

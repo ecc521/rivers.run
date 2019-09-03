@@ -6,12 +6,11 @@ const path = require("path")
 //Production build:
 //webpack
 
-
 	let prodConfig = {
 		mode: "production", //Build for production
 		entry: {
-			"packages/index": "./src/index.js",
-			"packages/allPages": "./src/allPages.js",
+			"packages/index.js": "./src/index.js",
+			"packages/allPages.js": "./src/allPages.js",
 			//TODO: Package serviceworker, and drop it in root directory. (could use Service-Worker-Allowed: / header, but that makes local development harder).
 		},
   		watch: true,
@@ -19,7 +18,7 @@ const path = require("path")
 		devtool: "source-map",
 		output: {
 			path: __dirname,
-			filename: "[name].js",
+			filename: "[name]",
 		},
 		optimization: {
 			minimize: true //Consider using Uglify.js for minification.
@@ -42,13 +41,6 @@ const path = require("path")
 							presets: [
 								[
 									'@babel/preset-env', {
-									targets: {
-										ie: 11,
-										firefox: 60,
-										safari: 9,
-										chrome: 57, //No idea what a good minimum on this is.
-										browsers: "last 2 versions"
-									},
 									useBuiltIns: 'usage',
 									corejs: "2.6.9"
 								}]
@@ -82,7 +74,7 @@ const path = require("path")
 		}
 	}
 
-	
+
 
 module.exports = function(env) {
 	if (env === "dev") {
