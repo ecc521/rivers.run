@@ -44,6 +44,7 @@ function parseUSGS(usgsdata) {
 		//Don't bother converting 00011. Just use instead of 00010.
 		//TODO: Check code. Probably "Temperature, water, degrees Fahrenheit"
         if (variablecode === "00011") {
+			console.log("Using code 00011 to fill temperature")
             variablecode = "00010" //We use 00010 to represent farenhiet.
         }
 

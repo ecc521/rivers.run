@@ -58,7 +58,7 @@ async function updateCachedData() {
 		}
     }
 
-    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00010,00045&siteStatus=all"
+    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all"
 
 	let start = Date.now()
 
