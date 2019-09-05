@@ -3,7 +3,20 @@ const fs = require("fs")
 const zlib = require("zlib")
 
 
-//Note - the compression is done synchronusly, which will make it very slow.
+//TODO: Paralellize.
+
+function brotliCompress(buf, compressionLevel = 9) {
+	return zlib.brotliCompressSync(buf, {
+	  chunkSize: 32 * 1024,
+	  params: {
+		[zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
+		[zlib.constants.BROTLI_PARAM_QUALITY]: compressionLevel, //11 is Maximum compression level. 9 is the last level before a performance cliff. Little reason to use 10.
+		[zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.byteLength
+	  }
+	})
+}
+
+
 function compressFile(filePath) {
 	
 	if (fs.statSync(filePath).size > 5*1024*1024) {
@@ -24,14 +37,7 @@ function compressFile(filePath) {
 		}
 	}
 	
-	let compressed = zlib.brotliCompressSync(uncompressed, {
-	  chunkSize: 32 * 1024,
-	  params: {
-		[zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
-		[zlib.constants.BROTLI_PARAM_QUALITY]: 11, //Maximum compression level.
-		[zlib.constants.BROTLI_PARAM_SIZE_HINT]: uncompressed.byteLength
-	  }
-	})
+	let compressed = brotliCompress(uncompressed, 11) //Pass 11 to compress at maximum level.
 
 	//Note that some files may be compressed (uselessly) multiple times if the uncompressed file is smaller than the compressed file.
 	if (compressed.byteLength < uncompressed.byteLength) {
@@ -95,9 +101,8 @@ function getFilesInDirectory (dir, files_){
 
 
 
-
-module.exports = function compressFiles() {
-	let files = getFilesInDirectory(__dirname)
+function compressFiles(directoryToCompress = __dirname) {
+	let files = getFilesInDirectory(directoryToCompress)
 
 	files = files.filter((filePath) => {
 		let extension = path.extname(filePath).toLowerCase()
@@ -117,4 +122,11 @@ module.exports = function compressFiles() {
 		console.log("Compressing " + i + " of " + (files.length - 1))
 		compressFile(filePath)
 	}
+}
+
+
+module.exports = {
+	compressFiles,
+	brotliCompress,
+	compressFile
 }

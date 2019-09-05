@@ -31,7 +31,7 @@ const sendNotifications = require("./sendnotifications.js");
 
 const flowDataParser = require("./flowDataParser.js")
 
-const precompress = require("./precompress.js")
+const precompress = require("./precompress.js").compressFiles
 
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
 
