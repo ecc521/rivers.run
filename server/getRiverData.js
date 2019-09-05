@@ -9,6 +9,10 @@ function getAssistantReply(name, sentence) {
 	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
 
 	if (sentence) {
+		
+		sentence = sentence.split(/Ask rivers.run for /i).join("")
+		sentence = sentence.split(/Ask rivers.run /i).join("")
+
 		let matchers = [
 			/(?:flow\s|water\s|level\s)+(?:of\s)?([^.]+)/i,
 			/(.+?)\s(?:flow|water|level)+/i
