@@ -2,8 +2,10 @@ const webpush = require("web-push")
 const path = require("path")
 const fs = require("fs")
 
-let keysDirectory = path.join(__dirname, "data", "notifications")
-let publicKeyPath = path.join(__dirname, "public_key") //Use the root directory for the public key.
+const utils = require("./utils.js")
+
+let keysDirectory = path.join(utils.getDataDirectory(), "notifications")
+let publicKeyPath = path.join(utils.getSiteRoot(), "public_key") //Use the root directory for the public key.
 let privateKeyPath = path.join(keysDirectory, "private_key")
 
 let vapidKeys = {}
@@ -16,7 +18,7 @@ webpush.setVapidDetails(
   vapidKeys.privateKey
 )
 
-let storagePath = path.join(__dirname, "data", "notifications", "subscriptions.json")
+let storagePath = path.join(utils.getDataDirectory(), "notifications", "subscriptions.json")
 
 function deleteUserSubscription(endpoint) {
 	if (!fs.existsSync(storagePath)) {
@@ -37,7 +39,7 @@ function sendNotifications(ignoreNoneUntil = false) {
 		return
 	}
 	let subscriptions = JSON.parse(fs.readFileSync(storagePath, {encoding:"utf8"}))
-	let flowData = JSON.parse(fs.readFileSync(path.join(__dirname, "flowdata2.json"), {encoding:"utf8"}))
+	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
 	for (let url in subscriptions) {
 		let user = subscriptions[url]

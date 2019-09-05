@@ -5,14 +5,14 @@ const http = require("http")
 const os = require("os")
 const child_process = require("child_process")
 
-let getRiverData = require("./getRiverData.js")
-
+const getRiverData = require("./getRiverData.js")
+const utils = require("./utils.js")
 
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
 let vapidKeys = {};
-let keysDirectory = path.join(__dirname, "data", "notifications")
-let publicKeyPath = path.join(__dirname, "public_key") //Use the root directory for the public key.
+let keysDirectory = path.join(utils.getDataDirectory(), "notifications")
+let publicKeyPath = path.join(utils.getSiteRoot(), "public_key") //Use the root directory for the public key.
 let privateKeyPath = path.join(keysDirectory, "private_key")
 
 if (!fs.existsSync(keysDirectory)) {fs.mkdirSync(keysDirectory, {recursive: true})}
@@ -35,10 +35,10 @@ webpush.setVapidDetails(
 
 let lookupIP;
 try {
-	lookupIP = require(path.join(__dirname, "lookupIP.js"))
+	lookupIP = require(path.join(utils.getLogDirectory(), "lookupIP.js"))
 }
 catch(e) {
-	fs.appendFileSync(path.join(__dirname, 'lookupIP.log'), e.toString() + "\n");
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'lookupIP.log'), e.toString() + "\n");
 	console.error(e)
 }
 
@@ -46,7 +46,7 @@ catch(e) {
 const hostname = "0.0.0.0"
 const httpport = 3000
 
-let storagePath = path.join(__dirname, "data", "notifications", "subscriptions.json")
+let storagePath = path.join(utils.getDataDirectory(), "notifications", "subscriptions.json")
 
 //Note that the current storage design is a little ineffectient because the really long endpoint url is stored twice.
 function saveUserSubscription(data) {
@@ -87,7 +87,7 @@ async function httprequest(req,res) {
 		res.setHeader('Access-Control-Allow-Origin', '*')
 
 		try {
-			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), req.url + "\n");
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'salmon2019.log'), req.url + "\n");
 
 			res.setHeader("Cache-Control", "no-store")
 
@@ -101,7 +101,7 @@ async function httprequest(req,res) {
 					res.end("Attempt to hijack server has been blocked. Logging your IP address and reporting to administrator. \n" + filePath)
 					return;
 				}
-				let pathOnSystem = path.join(__dirname, "salmon2019", filePath)
+				let pathOnSystem = path.join(utils.getSiteRoot(), "salmon2019", filePath)
 				if (req.url.endsWith("/")) {
 					if (req.method === "POST") {
 						if (fs.existsSync(pathOnSystem)) {
@@ -115,8 +115,8 @@ async function httprequest(req,res) {
 						res.statusCode = 200;
 						res.setHeader('Content-Type', 'text/plain');
 						//Apparently the configuration didn't carry into subdirectories - so link the files.
-						fs.symlinkSync(path.join(__dirname, "salmon2019", "header.html"), path.join(pathOnSystem, "header.html"))
-						fs.symlinkSync(path.join(__dirname, "salmon2019", ".htaccess"), path.join(pathOnSystem, ".htaccess"))
+						fs.symlinkSync(path.join(utils.getSiteRoot(), "salmon2019", "header.html"), path.join(pathOnSystem, "header.html"))
+						fs.symlinkSync(path.join(utils.getSiteRoot, "salmon2019", ".htaccess"), path.join(pathOnSystem, ".htaccess"))
 						res.end("Directory created")
 					}
 					else {
@@ -179,7 +179,7 @@ async function httprequest(req,res) {
 		}
 		catch(e) {
 			console.error(e)
-			fs.appendFileSync(path.join(__dirname, 'salmon2019.log'), String(e) + "\n");
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'salmon2019.log'), String(e) + "\n");
 		}
 
 
@@ -202,7 +202,7 @@ async function httprequest(req,res) {
 				ipData = lookupIP(ip)
 				res.setHeader("Cache-Control", "max-age=480, private")
 
-				fs.appendFileSync(path.join(__dirname, 'lookupIP.log'), req.url + " " + ip + "\n");
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'lookupIP.log'), req.url + " " + ip + "\n");
 
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/json');
@@ -219,7 +219,7 @@ async function httprequest(req,res) {
 		try {
 			if (req.method === "POST" && req.url.startsWith("/node/googleassistant/rivers.run")) {
 				let query = (await getData()).toString()
-				fs.appendFileSync(path.join(__dirname, 'assistanterror.log'), query + "\n");
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'assistanterror.log'), query + "\n");
 				query = JSON.parse(query)
 
 				//Not sure if outputContexts works for this.
@@ -283,7 +283,7 @@ async function httprequest(req,res) {
 		}
 		catch(e) {
 			console.error(e)
-			fs.appendFileSync(path.join(__dirname, 'assistanterror.log'), String(e) + "\n");
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'assistanterror.log'), String(e) + "\n");
 		}
 
 		//TODO: Check for /node/notifications soon. req.url.startsWith("/node/notifications")
@@ -335,6 +335,6 @@ module.exports = function() {
 	}
 	catch(e) {
 		console.error(e)
-		fs.appendFileSync(path.join(__dirname, 'startnotificationserver.log'), e.toString() + "\n");
+		fs.appendFileSync(path.join(utils.getLogDirectory(), 'startnotificationserver.log'), e.toString() + "\n");
 	}
 }

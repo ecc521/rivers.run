@@ -33,13 +33,15 @@ const flowDataParser = require("./flowDataParser.js")
 
 const precompress = require("./precompress.js").compressFiles
 
+const utils = require("./utils.js")
+
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
 
 
 async function updateCachedData() {
 	console.log("Preparing flow data.\n")
 	
-	let riverarray = JSON.parse(fs.readFileSync(path.join(__dirname, "riverdata.json"), {encoding:"utf8"}))
+	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
 
 	let timeToRequest = 1000*86400 //Milliseconds of time to request
 
@@ -66,11 +68,11 @@ async function updateCachedData() {
 	let usgsData = await response.text()
 
 	let time = Date.now() - start
-	fs.appendFileSync(path.join(__dirname, 'usgsloadingtime.log'), time + '\n');
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'usgsloadingtime.log'), time + '\n');
 
 	let flowdata2 = flowDataParser.reformatUSGS(flowDataParser.parseUSGS(JSON.parse(usgsData)))
 	flowdata2.generatedAt = Date.now()
-	fs.writeFileSync(path.join(__dirname, "flowdata2.json"), JSON.stringify(flowdata2))
+	fs.writeFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), JSON.stringify(flowdata2))
 
 	console.log("Flow data prepared.\n")
 	
@@ -79,7 +81,7 @@ async function updateCachedData() {
 	if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
 	else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes()/15)*15)}
 
-	fs.appendFileSync(path.join(__dirname, 'executiontimer.log'), (currentTime.getTime() - Date.now() + 60*1000) + '\n');
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'executiontimer.log'), (currentTime.getTime() - Date.now() + 60*1000) + '\n');
 
 
 	//End install script
