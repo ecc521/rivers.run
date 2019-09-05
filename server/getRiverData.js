@@ -59,7 +59,10 @@ function getAssistantReply(name) {
 		for (let i=0;i<topRanked.length;i++) {
 			start = start || topRanked[i].usgs
 			if (topRanked[i].usgs !== start) {
-				starter = alwaysStart + "Warning: Rivers that used different gauges matched the search " + responseName + ". There were "+ topRanked.length + " total matches. " + "Picking " + topRanked[0].section + " " + topRanked[0].name + ". <break time=\"0.5s\"/>" + starter
+				//If section is 1 word long, put section before name. Otherwise, put name before section.
+				let oneWord = (topRanked[0].section.trim().split("-").join(" ").split(" ").length === 1)
+				let selectedRiverName = oneWord? (topRanked[0].section + " " + topRanked[0].name):(topRanked[0].name + " " + topRanked[0].section)
+				starter = alwaysStart + "Warning: Rivers that used different gauges matched the search " + responseName + ". There were "+ topRanked.length + " total matches. " + "Picking " + selectedRiverName + ". <break time=\"0.5s\"/>" + starter
 				break;
 			}
 		}
