@@ -2,6 +2,8 @@ const fs = require("fs")
 const path = require("path")
 const fetch = require("node-fetch")
 
+const utils = require(path.join(__dirname, "utils.js"))
+
 const googlecloudrequestrate = 10;
 const API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
 
@@ -38,7 +40,7 @@ async function load(url, attempts = 0) {
 }
 
 function loadFromDisk(id, lastModified = 0) {
-    let filename = path.join(__dirname, "data", "drivecache", id)
+    let filename = path.join(utils.getDataDirectory(), "drivecache", id)
     //Add 5 minutes because it takes some time to download - so a file may be written to disk a minute or so after it is downloaded.
     //This is overly cautious - a freak scenario is required, and it should only be a few seconds for this to happen.
     if (fs.existsSync(filename) && fs.statSync(filename).mtime.getTime() > new Date(lastModified).getTime()+1000*60*5) {
@@ -48,7 +50,7 @@ function loadFromDisk(id, lastModified = 0) {
 }
 
 function writeToDisk(data, id) {
-    let directory = path.join(__dirname, "data", "drivecache")
+    let directory = path.join(utils.getDataDirectory(), "drivecache")
     if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
     let filename = path.join(directory, id)
     //Avoid unneeded writes to the disk - although this may be done already.
@@ -164,5 +166,5 @@ function writeToDisk(data, id) {
         console.log("There are " + complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
     })
 
-    fs.writeFileSync(path.join(__dirname, "riverdata.json"), JSON.stringify(complete))
+    fs.writeFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(complete))
 }())

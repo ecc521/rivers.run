@@ -2,7 +2,7 @@ const webpush = require("web-push")
 const path = require("path")
 const fs = require("fs")
 
-const utils = require("./utils.js")
+const utils = require(path.join(__dirname, "utils.js"))
 
 let keysDirectory = path.join(utils.getDataDirectory(), "notifications")
 let publicKeyPath = path.join(utils.getSiteRoot(), "public_key") //Use the root directory for the public key.

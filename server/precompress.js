@@ -2,7 +2,7 @@ const path = require("path")
 const fs = require("fs")
 const zlib = require("zlib")
 
-const getFilesInDirectory = require("./utils.js").getFilesInDirectory
+const getFilesInDirectory = require(path.join(__dirname, "utils.js")).getFilesInDirectory
 
 //TODO: Paralellize.
 
@@ -65,7 +65,7 @@ function compressFiles(directoryToCompress) {
 			return false
 		}
 		let dir = path.dirname(filePath)
-		if (dir.includes("node_modules") || dir.includes(".git") || dir.includes("drivecache") || dir.includes("data") || dir.includes("resources/icons")) {
+		if (dir.includes("node_modules") || dir.includes(".git") || dir.includes("data") || dir.includes("resources/icons")) {
 			return false
 		}
 		return true

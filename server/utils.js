@@ -7,15 +7,15 @@ function getSiteRoot() {
 }
 
 function getLogDirectory() {
-	let path = path.join(getSiteRoot(), "server", "logs")
-	if (!fs.existsSync(path)) {fs.mkdirSync(path, {recursive: true})}
-	return path
+	let src = path.join(getSiteRoot(), "server", "logs")
+	if (!fs.existsSync(src)) {fs.mkdirSync(src, {recursive: true})}
+	return src
 }
 
 function getDataDirectory() {
-	let path = path.join(getSiteRoot(), "server", "data")
-	if (!fs.existsSync(path)) {fs.mkdirSync(path, {recursive: true})}
-	return path
+	let src = path.join(getSiteRoot(), "server", "data")
+	if (!fs.existsSync(src)) {fs.mkdirSync(src, {recursive: true})}
+	return src
 }
 
 function getFilesInDirectory (dir, files_){

@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "webpack": "webpack & gulp cssbuild",
-    "postinstall": "node usgscache.js --install"
+    "build": "webpack & gulp cssbuild",
+    "postinstall": "node server/usgscache.js --install"
   },
   "repository": {
     "type": "git",

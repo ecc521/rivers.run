@@ -6,7 +6,7 @@ const os = require("os")
 const child_process = require("child_process")
 
 const getRiverData = require("./getRiverData.js")
-const utils = require("./utils.js")
+const utils = require(path.join(__dirname, "utils.js"))
 
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
@@ -35,7 +35,7 @@ webpush.setVapidDetails(
 
 let lookupIP;
 try {
-	lookupIP = require(path.join(utils.getLogDirectory(), "lookupIP.js"))
+	lookupIP = require(path.join(__dirname, "lookupIP.js"))
 }
 catch(e) {
 	fs.appendFileSync(path.join(utils.getLogDirectory(), 'lookupIP.log'), e.toString() + "\n");

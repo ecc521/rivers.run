@@ -1,10 +1,12 @@
 const fs = require("fs")
 const path = require("path")
 
-let normalSearch = require("./src/search.js").normalSearch
+const utils = require(path.join(__dirname, "utils.js"))
+
+let normalSearch = require(path.join(utils.getSiteRoot(), "src", "search.js")).normalSearch
 
 function getAssistantReply(name) {
-	let riverarray = JSON.parse(fs.readFileSync(path.join(__dirname, "riverdata.json"), {encoding:"utf8"}))
+	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
 
 	//Delete the words river and section (plus the leading space), if it exists in any casing.
 	name = name.split(/ river/i).join("")
@@ -21,7 +23,7 @@ function getAssistantReply(name) {
 		topRanked = buckets[1][0]
 	}
 
-	let flowData = JSON.parse(fs.readFileSync(path.join(__dirname, "flowdata2.json"), {encoding:"utf8"}))
+	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
 	let alwaysStart = "<speak>"
 	let ender = "<break time=\"1s\"/>If you have more questions, feel free to ask! Otherwise, you can say \"exit\" to close rivers.run. </speak>"
