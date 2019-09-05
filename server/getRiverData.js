@@ -22,6 +22,9 @@ function getAssistantReply(name) {
 	if (topRanked.length === 0) {
 		topRanked = buckets[1][0]
 	}
+	if (!topRanked) {
+		topRanked = buckets[2]
+	}
 
 	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
@@ -54,9 +57,9 @@ function getAssistantReply(name) {
 	if (topRanked.length > 1) {
 		let start;
 		for (let i=0;i<topRanked.length;i++) {
-			start = start || topRanked[i].name
-			if (topRanked[i].name !== start) {
-				starter = alwaysStart + "Warning: Different rivers matched the search " + responseName + ". There were "+ topRanked.length + " total matches. " + "Picking " + topRanked[0].name + " " + responseName + ". " + starter
+			start = start || topRanked[i].usgs
+			if (topRanked[i].usgs !== start) {
+				starter = alwaysStart + "Warning: Rivers that used different gauges matched the search " + responseName + ". There were "+ topRanked.length + " total matches. " + "Picking " + topRanked[0].section + " " + topRanked[0].name + ". <break time=\"0.5s\"/>" + starter
 				break;
 			}
 		}
