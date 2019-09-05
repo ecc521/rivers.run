@@ -10,8 +10,9 @@ function getAssistantReply(name, sentence) {
 
 	if (sentence) {
 		
-		sentence = sentence.split(/Ask rivers.run for /i).join("")
-		sentence = sentence.split(/Ask rivers.run /i).join("")
+		//Sometimes Google Assistant adds a space between rivers and .Run
+		sentence = sentence.split(/Ask rivers\s?.run for /i).join("")
+		sentence = sentence.split(/Ask rivers\s?.run /i).join("")
 
 		let matchers = [
 			/(?:flow\s|water\s|level\s)+(?:of\s)?([^.]+)/i,
