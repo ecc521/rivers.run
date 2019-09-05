@@ -36,7 +36,7 @@ function getAssistantReply(name) {
 	//Don't use the word "The " for creeks, or when section was labeled.
 	//Consider using the original name here - so before the word "River" was removed.
 	let useThe = true
-	if (responseName.toLowerCase().includes("creek") || responseName.toLowerCase().includes("section")) {
+	if (responseName.toLowerCase().includes(" creek") || responseName.toLowerCase().includes("section ")) {
 		useThe = false
 	}
 	
@@ -60,9 +60,9 @@ function getAssistantReply(name) {
 			start = start || topRanked[i].usgs
 			if (topRanked[i].usgs !== start) {
 				//If section is 1 word long, put section before name. Otherwise, put name before section.
-				let oneWord = (topRanked[0].section.trim().split("-").join(" ").split(" ").length === 1)
-				let selectedRiverName = oneWord? (topRanked[0].section + " " + topRanked[0].name):(topRanked[0].name + " " + topRanked[0].section)
-				starter = alwaysStart + "Warning: Rivers that used different gauges matched the search " + responseName + ". There were "+ topRanked.length + " total matches. " + "Picking " + selectedRiverName + ". <break time=\"0.5s\"/>" + starter
+				let sectionFirst = ["bottom", "bottom bottom", "lower", "middle", "upper", "top", "tip top", "upper upper", "top"].includes(topRanked[0].section.trim().toLowerCase())
+				let selectedRiverName = sectionFirst?(topRanked[0].section + " " + topRanked[0].name):(topRanked[0].name + " " + topRanked[0].section)
+				starter = alwaysStart + topRanked.length + " sections of river matched the search " + responseName + ". Picking " + selectedRiverName + ". <break time=\"0.5s\"/>" + starter
 				break;
 			}
 		}
