@@ -223,8 +223,8 @@ async function httprequest(req,res) {
 				query = JSON.parse(query)
 
 				//Not sure if outputContexts works for this.
-				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"]
-				let queryResult = getRiverData.getAssistantReply(riverName)
+				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"] //What google said the river name was.
+				let queryResult = getRiverData.getAssistantReply(riverName, query.queryResult.queryText) //Also pass the optional sentence parameter. This should allow most phrases to be exactly matched.
 				let buttons = [];
 
 				let continueConversation = true; //Currently, I am testing always keeping the conversation open.

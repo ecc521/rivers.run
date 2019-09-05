@@ -5,11 +5,40 @@ const utils = require(path.join(__dirname, "utils.js"))
 
 let normalSearch = require(path.join(utils.getSiteRoot(), "src", "search.js")).normalSearch
 
-function getAssistantReply(name) {
+function getAssistantReply(name, sentence) {
 	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
 
+	if (sentence) {
+		let matchers = [
+			/(?:flow\s|water\s|level\s)+(?:of\s)?([^.]+)/i,
+			/(.+?)\s(?:flow|water|level)+/i
+		]
+		
+		let results = []
+		matchers.forEach((regex) => {
+			let match = regex.exec(sentence)
+			if (match) {
+				let str = match[1]
+				//Sometimes the first regexp will match Water in Water Level
+				if (!str.match(/water|level|flow|of/i)) {
+					results.push(str)
+				}
+				else {console.log("Rejected " + str)}
+			}
+		})
+		
+		if (results[0]) {
+			name = results[0]
+		}
+		
+		if (results.length > 1) {
+			console.log(results)
+		}
+	}
+	
 	//Delete the words river and section (plus the leading space), if it exists in any casing.
 	name = name.split(/ river/i).join("")
+	name = name.split(/the /i).join("")
 	let responseName = name
 	name = name.split(/ section/i).join("")
 	
