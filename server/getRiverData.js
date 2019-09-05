@@ -106,8 +106,14 @@ function getAssistantReply(name, sentence) {
 	let feet;
 	try {
 		gauge = flowData[topRanked[0].usgs]
-		cfs = gauge.cfs[gauge.cfs.length-1].value
-		feet = gauge.feet[gauge.feet.length-1].value
+		try {
+			feet = gauge.feet[gauge.feet.length-1].value
+		}
+		catch(e) {console.error(e)}
+		try {
+			cfs = gauge.cfs[gauge.cfs.length-1].value
+		}
+		catch(e) {console.error(e)}
 	}
 	catch(e) {console.error(e)}
 
