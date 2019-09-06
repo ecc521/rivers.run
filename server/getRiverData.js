@@ -11,6 +11,7 @@ function getAssistantReply(name, sentence) {
 	if (sentence) {
 		
 		//TODO: Use some more specific regex to easily catch things like units.
+		//TODO: If no results obtained by this search, but googles query does, log the sentence.
 		
 		//Sometimes Google Assistant adds a space between rivers. and Run. Handle some seperation.
 		sentence = sentence.split(/Ask rivers\s?.\s?run(?: for) (?: the)?/i).join("")

@@ -213,8 +213,8 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
             fulldayprecip = fulldayprecip.toFixed(2)
             halfdayprecip = halfdayprecip.toFixed(2)
 
-            ctx.fillText("Last 24 Hours: " + fulldayprecip + " in", canvas.width-700, (canvas.height*(11/12)));
-            ctx.fillText("Last 12 Hours: " + halfdayprecip + " in", canvas.width-330, (canvas.height*(11/12)));
+            ctx.fillText("Last 24 Hours: " + fulldayprecip + "\"", canvas.width-770, (canvas.height*(11/12)));
+            ctx.fillText("Last 12 Hours: " + halfdayprecip + "\"", canvas.width-400, (canvas.height*(11/12)));
         }
         else if (GraphName === "cfs") {
             ctx.fillText("Flow (Cubic Feet/Second)", start+5, (canvas.height*(11/12)));
