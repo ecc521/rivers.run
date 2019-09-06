@@ -10,18 +10,45 @@ function getAssistantReply(name, sentence) {
 
 	if (sentence) {
 		
+		//TODO: Use some more specific regex to easily catch things like units.
+		
 		//Sometimes Google Assistant adds a space between rivers. and Run. Handle some seperation.
-		sentence = sentence.split(/Ask rivers\s?.\s?run for /i).join("")
-		sentence = sentence.split(/Ask rivers\s?.\s?run /i).join("")
+		sentence = sentence.split(/Ask rivers\s?.\s?run(?: for) (?: the)?/i).join("")
+		sentence = sentence.split(/of /i).join("")
+		sentence = sentence.split(/the /i).join("")
+		
+		let preciseMatchers = [
+			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
+		]
 
 		let matchers = [
-			/(?:flow\s|water\s|level\s)+(?:of\s)?([^.]+)/i,
-			/(.+?)\s(?:flow|water|level)+/i
+			/^(?:flow\s|water\s|level\s|cfs\s|feet\s|height\s|gauge\s)+([^.]+)/i,
+			/(.+?)\s(?:flow|water|level|cfs|feet|height|gauge)+/i,
 		]
 		
 		let results = []
-		matchers.forEach((regex) => {
+		
+		//Use the more precise ones first.
+		preciseMatchers.forEach((regex) => {
 			let match = regex.exec(sentence)
+			if (match) {
+				let groups = match.groups
+				//Shouldn't run on precise matchers.
+				results.push(groups.name)
+			}
+		})
+		
+		
+		let trimmedSentence = sentence
+		let endingMatch = / in (?:feet|cfs).?$/i.exec(trimmedSentence)
+		if (endingMatch) {
+			console.log("Trimming " + trimmedSentence)
+			trimmedSentence = trimmedSentence.slice(0, -endingMatch[0].length)
+			console.log("To " + trimmedSentence)
+		}
+		
+		matchers.forEach((regex) => {
+			let match = regex.exec(trimmedSentence)
 			if (match) {
 				let str = match[1]
 				//Sometimes the first regexp will match Water in Water Level
