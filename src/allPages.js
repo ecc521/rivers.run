@@ -323,6 +323,11 @@ try {
 	item5.href = root + "clubs.html"
 	item5.innerHTML = "Clubs"
 	items.push(item5)
+	
+	let item6 = document.createElement("a")
+	item6.href = root + "notifications.html"
+	item6.innerHTML = "Alerts"
+	items.push(item6)
 
 	for (let i=0;i<items.length;i++) {
 	    let link = items[i]
@@ -332,7 +337,7 @@ try {
 	    }
 	    topnav.appendChild(link)
 	}
-
+	
 	document.body.insertBefore(topnav, document.body.firstChild)
 
 
@@ -353,17 +358,20 @@ try {
 	text-align:center;
 	padding: 12px 13px;
 	text-decoration: none; /*Avoid the links being underlined*/
+	line-height: 17px;
 	font-size: 17px;
 	}
 	`, styleSheet.cssRules.length)
 
+	let shrinkNavbarAt = 380 //Pixels to shrink navbar at
 
-	//Make sure the header doesn't go onto multiple lines
+	//Shrink the size of the header for smaller screens.
 	styleSheet.insertRule(`
-	@media screen and (max-width: 386px) {
+	@media screen and (max-width: ${shrinkNavbarAt}px) {
 	.topnav a {
 	padding: 10px 11px;
-	font-size: 4.3vw;
+	line-height: 4.4vw;
+	font-size: 4.4vw;
 	}
 	}
 	`, styleSheet.cssRules.length)
@@ -371,7 +379,81 @@ try {
 
 	styleSheet.insertRule(".topnav a:hover {background-color: #359daa}", styleSheet.cssRules.length)
 	styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.cssRules.length)
-
+	
+	//Responsive menu to prevent overflow on smaller screens.
+	let menu = document.createElement("a")
+	menu.innerHTML = "☰" //TODO: Consider importing font, or something of the like. Trigam to Heaven icon.
+	menu.addEventListener("click", function() {
+		topnav.classList.toggle("expanded")
+	})
+	menu.className = "menu"
+	topnav.appendChild(menu)	
+	
+	//Don't show dropdown by default.
+	styleSheet.insertRule(`
+	.topnav .menu {
+	  display: none;
+	}
+	`, styleSheet.cssRules.length)
+	
+	let pxForMenu = 540 //How small must the screen be before the menu appears.
+	
+	styleSheet.insertRule(`
+	@media screen and (max-width: ${pxForMenu}px) {
+	  .topnav a.menu {
+		float: right;
+		display: block !important;
+	  }
+	}
+	`, styleSheet.cssRules.length)
+	
+	
+	//Display 5 navbar items at pxForMenu pixels
+	styleSheet.insertRule(`
+	@media screen and (max-width: ${pxForMenu}px) {
+		.topnav a:nth-child(n+6) {display: none;}
+	}
+	`, styleSheet.cssRules.length)
+		
+	//Display 4 navbar items at 400 pixels
+	styleSheet.insertRule(`
+	@media screen and (max-width: 450px) {
+		.topnav a:nth-child(n+5) {display: none;}
+	}
+	`, styleSheet.cssRules.length)
+	
+	//Display 4 navbar items at 400 pixels
+	styleSheet.insertRule(`
+	@media screen and (max-width: 400px) {
+		.topnav a:nth-child(n+5) {display: none;}
+	}
+	`, styleSheet.cssRules.length)
+	
+	//Display 3 navbar items at 310 pixels
+	styleSheet.insertRule(`
+	@media screen and (max-width: 310px) {
+		.topnav a:nth-child(n+4) {display: none;}
+	}
+	`, styleSheet.cssRules.length)
+	
+	
+	styleSheet.insertRule(`
+	@media screen and (max-width: ${pxForMenu}px) {
+	  .topnav.expanded {position: relative;}
+	  .topnav.expanded .menu {
+		position: absolute;
+		right: 0;
+		top: 0;
+	  }
+	  .topnav.expanded a {
+		float: none;
+		display: block;
+		text-align: left;
+	  }
+	}
+	`, styleSheet.cssRules.length)
+	
+	
 }
 catch (e) {
 	console.error(e)
