@@ -37,11 +37,11 @@ function parseUSGS(usgsdata) {
             }
             delete obj2.values[i].qualifiers //rivers.run doesn't check this. Always seen it saying data is provisional, and nothing else.
             obj2.values[i].dateTime = new Date(obj2.values[i].dateTime).getTime() //Reformat to decimal based time.
-			  
-			  //If the value is clearly a fake value by USGS due to issues (typically -999999), discard it.
-				if (obj2.value[i].value === -999999) {
-					delete obj2.value[i]
-				}			  
+
+			  //If the value is clearly a messed up value (usually because USGS intentially made it absurd to alert of an issue), discard it.
+				if (obj2.values[i].value < -50) {
+					delete obj2.values[i]
+				}
           }
 
 		//Some rivers have code 00011 instead of 00010 (like the Yough).
@@ -64,22 +64,22 @@ function parseUSGS(usgsdata) {
 function reformatUSGS(usgsarray) {
 	for (let gaugeID in usgsarray) {
 		let gauge = usgsarray[gaugeID]
-		
+
 		if (gauge["00060"]) {
 			gauge.cfs = gauge["00060"].values
 			delete gauge["00060"]
 		}
-		
+
 		if (gauge["00065"]) {
 			gauge.feet = gauge["00065"].values
 			delete gauge["00065"]
 		}
-		
+
 		if (gauge["00010"]) {
 			gauge.temp = gauge["00010"].values
 			delete gauge["00010"]
 		}
-		
+
 		if (gauge["00045"]) {
 			gauge.precip = gauge["00045"].values
 			delete gauge["00045"]

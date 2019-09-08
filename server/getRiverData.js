@@ -3,27 +3,28 @@ const path = require("path")
 
 const utils = require(path.join(__dirname, "utils.js"))
 
-let normalSearch = require(path.join(utils.getSiteRoot(), "src", "search.js")).normalSearch
+const normalSearch = require(path.join(utils.getSiteRoot(), "src", "search.js")).normalSearch
+const calculateRelativeFlow = require(path.join(utils.getSiteRoot(), "src", "flowInfoCalculations.js")).calculateRelativeFlow
 
 function getAssistantReply(name, sentence) {
 	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
 
 	let units;
 	if (sentence) {
-		
+
 		//TODO: Use some more specific regex to easily catch things like units.
 		//TODO: If no results obtained by this search, but googles query does, log the sentence.
-		
+
 		//Sometimes Google Assistant adds a space between rivers. and Run. Handle some seperation.
 		sentence = sentence.split(/Ask rivers\s?.\s?run(?: for) (?: the)?/i).join("")
 		sentence = sentence.split(/of /i).join("")
 		sentence = sentence.split(/the /i).join("")
-		
+
 		let preciseMatchers = [
 			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
 			/(?<units>flow) information for the (?<name>.+)/,
-			/is the (?<name>.+) (?<units>running)/i,
-			/is the (?<name>.+) (?<units>paddleable)/i //Check spelling.
+			/is(?: the)? (?<name>.+) (?<units>running)/i,
+			/is(?: the)? (?<name>.+) (?<units>paddleable)/i //Check spelling.
 			//
 		]
 
@@ -31,9 +32,9 @@ function getAssistantReply(name, sentence) {
 			/^(?:flow\s|water\s|level\s|cfs\s|feet\s|height\s|gauge\s)+([^.]+)/i,
 			/(.+?)\s(?:flow|water|level|cfs|feet|height|gauge)+/i,
 		]
-		
+
 		let results = []
-		
+
 		//Use the more precise ones first.
 		preciseMatchers.forEach((regex) => {
 			let match = regex.exec(sentence)
@@ -45,8 +46,7 @@ function getAssistantReply(name, sentence) {
 				})
 			}
 		})
-		
-		
+
 		let trimmedSentence = sentence
 		let endingMatch = / in (?:feet|cfs).?$/i.exec(trimmedSentence)
 		if (endingMatch) {
@@ -54,7 +54,7 @@ function getAssistantReply(name, sentence) {
 			trimmedSentence = trimmedSentence.slice(0, -endingMatch[0].length)
 			console.log("To " + trimmedSentence)
 		}
-		
+
 		matchers.forEach((regex) => {
 			let match = regex.exec(trimmedSentence)
 			if (match) {
@@ -69,27 +69,27 @@ function getAssistantReply(name, sentence) {
 				else {console.log("Rejected " + str)}
 			}
 		})
-		
+
 		if (results[0]) {
 			name = results[0].name
 			units = results[0].units
 		}
-		
+
 		if (results.length > 1) {
 			console.log(results)
 		}
 	}
-	
+
 	//Delete the words river and section (plus the leading space), if it exists in any casing.
 	name = name.split(/ river/i).join("")
 	name = name.split(/the /i).join("")
 	let responseName = name
 	name = name.split(/ section/i).join("")
-	
+
 	let topRanked = []
 
 	let buckets = normalSearch(riverarray, name, true)
-	
+
 	//Use the highest ranked river in bucket 2 (index 1).
 	topRanked = buckets[0]
 	if (topRanked.length === 0) {
@@ -103,7 +103,7 @@ function getAssistantReply(name, sentence) {
 
 	let alwaysStart = "<speak>"
 	let ender = "<break time=\"1s\"/>If you have more questions, feel free to ask! Otherwise, you can say \"exit\" to close rivers.run. </speak>"
-	
+
 	//TODO: Ask the user to break ties if multiple rivers in topRanked.
 
 	//Don't use the word "The " for creeks, or when section was labeled.
@@ -112,21 +112,21 @@ function getAssistantReply(name, sentence) {
 	if (responseName.toLowerCase().includes(" creek") || responseName.toLowerCase().includes("section ")) {
 		useThe = false
 	}
-	
+
 	let queryResult = {
 		responseName,
 		search: name
 	}
 	if (topRanked && topRanked.length > 0) {queryResult.riverid = topRanked[0].id}
-	
+
 	let starter = alwaysStart + (useThe?"The ":"") + responseName
 	if (topRanked === undefined || topRanked.length === 0) {
 		queryResult.ssml = starter + " does not exist on rivers.run. Open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add it. " + ender
 		return queryResult
 	}
-	
-	
-	
+
+
+
 	if (topRanked.length > 1) {
 		let start;
 		for (let i=0;i<topRanked.length;i++) {
@@ -140,7 +140,7 @@ function getAssistantReply(name, sentence) {
 			}
 		}
 	}
-	
+
 	let gauge;
 	let cfs;
 	let feet;
@@ -176,8 +176,8 @@ function getAssistantReply(name, sentence) {
 		}
 		return queryResult
 	}
-	
-	
+
+
 	//TODO: Inform the user of the trend.
 	let str = starter + " had a flow level of "
 	if (cfs && feet) {
@@ -193,33 +193,53 @@ function getAssistantReply(name, sentence) {
 		//If temp is the only value, still tell them it.
 		str = starter + " had a temperature of " + temp + " degrees."
 	}
-	
+
 	if ((cfs || feet) && temp) {
 		str += " and a temperature of " + temp + " degrees"
 	}
-	
-	let timeAgo = Date.now() - (gauge.feet[gauge.feet.length-1].dateTime)	
+
+	let timeAgo = Date.now() - (gauge.feet[gauge.feet.length-1].dateTime)
 	let hoursAgo = Math.floor(timeAgo/1000/3600)
 	let minutesAgo = Math.ceil(timeAgo/1000%3600/60)
-	
+
 	let timeString = (hoursAgo > 0?`${hoursAgo} hours and `:"") + minutesAgo + " minutes ago"
-	
+
 	str += " as of " + timeString
 	str += ", according to the gauge " + gauge.name + ". "
-	
+
 	if (["running", "paddleable"].includes(units)) {
-		//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values. 
+		//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values.
+		topRanked[0].cfs = cfs
+		topRanked[0].feet = feet
+		let relativeFlow = calculateRelativeFlow(topRanked[0])
+
+		if (relativeFlow === null) {
+			str += "Relative flows are currently unknown. To learn how to add them, go to <say-as interpret-as=\"characters\">/FAQ</say-as> in your browser. "
+		}
+		else if (relativeFlow === 0) {
+			str += "This river is currently too low, with a minimum of " + topRanked[0].minrun + "."
+		}
+		else if (relativeFlow === 4) {
+			str += "This river is currently too high for typical paddlers, with a maximum of " + topRanked[0].maxrun + "."
+		}
+		else if (relativeFlow > 3.5) {
+			str += "This river is currently at a very high level, bordering on too high. The maximum is " + topRanked[0].maxrun + "."
+		}
+		else if (relativeFlow < 0.5) {
+			str += "This river is currently at a very low level, bordering on too low. The minimum level is " + topRanked[0].minrun + "."
+		}
+		//TODO: Add remaining values.
 	}
-	
-	
+
+
 	//Consider seeing if the response matches some pre-defined formats, to reduce issues with google mis-processing.
 	//Consider telling user what we got sent as river-name.
 	//TODO: Consider telling the user what river we took the gauge from. This will help prevent issues if google misinterprets things,
 	//and sends back a basic query. Ex. Hopeville Canyon > Canyon > Cheat Canyon
-	//Checking that part of the river name is in the search should work just fine. 
-		
+	//Checking that part of the river name is in the search should work just fine.
+
 	queryResult.ssml = str + ender
-	
+
 	return queryResult
 }
 

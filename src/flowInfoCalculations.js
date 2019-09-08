@@ -10,6 +10,8 @@ function calculateDirection(usgsNumber) {
             let current;
             let previous;
 
+            //TODO: Ignore insignificant changes.
+
             //We will go back 4 datapoints (1 hour) if possible.
             //Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
             let stop = Math.max(data.length-5, 0)
@@ -63,16 +65,7 @@ function calculateAge(usgsNumber) {
 }
 
 
-
-function calculateColor(river, options) {
-    //hsla color values
-    //hsla(hue, saturation, lightness, opacity)
-    //Saturation hue is 0 red 120 green 240 blue
-    //Saturation - use 100%
-    //Lightness - use 50%
-    //Opacity - Decimal 0 to 1
-
-
+function calculateRelativeFlow(river) {
     //Defines river.running
     //0-4
     //0 is too low, 4 is too high, other values in between
@@ -89,7 +82,7 @@ function calculateColor(river, options) {
             values[i] = undefined
             continue;
         }
-		str = str.split("(computer)").join("")
+        str = str.split("(computer)").join("")
         str = str.trim()
         let value = parseFloat(str)
         let currentType = str.match(/[^\d|.]+/) //Match a series of non-digits
@@ -128,9 +121,9 @@ function calculateColor(river, options) {
     //related to their level. This would also help in determining if something is just barely
     //too low, and may come up with rain, or is truely too low.
 
-	//If we don't have some values, fill them in using logarithms
-	//Although these calculations are not needed when flow is below minrun or above maxrun. they can be useful in
-	//alerting people what values are being used, so that they can
+    //If we don't have some values, fill them in using logarithms
+    //Although these calculations are not needed when flow is below minrun or above maxrun. they can be useful in
+    //alerting people what values are being used, so that they can
 
     function logDist(low, high, ratio = 0.5) {
         //ratio is how a decimal between 0 and 1. 0.5 means to factor lowLog and highLog evenly. Values greater than 0.5 factor in highLog more, vice versa.
@@ -143,40 +136,32 @@ function calculateColor(river, options) {
         return 10**(lowLog + (highLog - lowLog)*ratio)
     }
 
-	let minrun = values[0]
-	let maxrun = values[4]
-	//For midflow, use the nearest values to calculate midflow.
-	let midflow = values[2] //Prefer the specified midflow.
+    let minrun = values[0]
+    let maxrun = values[4]
+    //For midflow, use the nearest values to calculate midflow.
+    let midflow = values[2] //Prefer the specified midflow.
     midflow = midflow || logDist(values[1], values[3]) //Average lowflow and highflow
     midflow = midflow || logDist(values[0], values[3], 2/3) // two-thirds of the way between minrun and highflow
     midflow = midflow || logDist(values[1], values[4], 1/3) // one-third of the way between lowflow and maxrun
     midflow = midflow || logDist(minrun, maxrun) //Average minrun and maxrun.
-	let lowflow = values[1] || logDist(minrun, midflow)
-	let highflow = values[3] || logDist(midflow, maxrun)
+    let lowflow = values[1] || logDist(minrun, midflow)
+    let highflow = values[3] || logDist(midflow, maxrun)
 
-	//Add computer generated properties to the river object so that they will display and people can see the values used in calculations.
-	values[1] || (river.lowflow = parseFloat(lowflow.toFixed(2)) + type + " (computer)")
-	values[2] || (river.midflow = parseFloat(midflow.toFixed(2)) + type + " (computer)")
-	values[3] || (river.highflow = parseFloat(highflow.toFixed(2)) + type + " (computer)")
+    //Add computer generated properties to the river object so that they will display and people can see the values used in calculations.
+    values[1] || (river.lowflow = parseFloat(lowflow.toFixed(2)) + type + " (computer)")
+    values[2] || (river.midflow = parseFloat(midflow.toFixed(2)) + type + " (computer)")
+    values[3] || (river.highflow = parseFloat(highflow.toFixed(2)) + type + " (computer)")
 
 
     if (flow <= minrun) {
         //Too low
         river.running = 0
-	    let lightness = (options && options.highlighted)? (window.darkMode? "28%": "63%"):  window.darkMode? "23%": "67%"
-        return "hsl(0,100%," + lightness + ")"
     }
     else if (flow >= maxrun) {
         //Too high
         river.running = 4
-    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "67%"):  window.darkMode? "20%": "69%"
-        return "hsl(240,100%," + lightness + ")"
     }
     else {
-
-		//Normal Flow lightness values
-		//Tough to see a difference when highlighted amount the more middle values in light mode.
-    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "65%"): window.darkMode? "25%": "70%"
 
         function calculateRatio(low, high, current) {
             low = Math.log(low)
@@ -201,20 +186,52 @@ function calculateColor(river, options) {
         else if (flow < highflow && midflow) {
             river.running = 2+calculateRatio(midflow, highflow, flow)
         }
-		//Use else if and comparison against maxrun to go to the else in case of isNaN(maxrun)
+        //Use else if and comparison against maxrun to go to the else in case of isNaN(maxrun)
         else if (flow < maxrun && highflow) {
             river.running = 3+calculateRatio(highflow, maxrun, flow)
         }
-		else {
-			return "" //We can't calculate a color or ratio. We lack enough information. Example: only have minrun and flow above minrun.
-		}
+        else {
+            return null //We can't calculate a ratio, as we lack information. Example: only have minrun and flow above minrun.
+        }
+    }
+    return river.running
+}
 
-        return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
+
+function calculateColor(river, options) {
+    //hsla color values
+    //hsla(hue, saturation, lightness, opacity)
+    //Saturation hue is 0 red 120 green 240 blue
+    //Saturation - use 100%
+    //Lightness - use 50%
+    //Opacity - Decimal 0 to 1
+
+    let relativeFlow = calculateRelativeFlow(river)
+
+    if (relativeFlow === null) {
+        return ""
+    }
+    else if (relativeFlow === 0) {
+        //Too low
+	    let lightness = (options && options.highlighted)? (window.darkMode? "28%": "63%"):  window.darkMode? "23%": "67%"
+        return "hsl(0,100%," + lightness + ")"
+    }
+    else if (relativeFlow === 4) {
+        //Too high
+    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "67%"):  window.darkMode? "20%": "69%"
+        return "hsl(240,100%," + lightness + ")"
+    }
+    else {
+		//Normal Flow lightness values
+		//Tough to see a difference when highlighted amount the more middle values in light mode.
+    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "65%"): window.darkMode? "25%": "70%"
+        return "hsl(" + (0 + 60*relativeFlow) + ",100%," + lightness + ")"
     }
 }
 
 module.exports = {
 	calculateColor,
 	calculateAge,
-	calculateDirection
+	calculateDirection,
+    calculateRelativeFlow
 }
