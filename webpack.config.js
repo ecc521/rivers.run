@@ -10,7 +10,7 @@ const path = require("path")
 		mode: "production", //Build for production
 		entry: {
 			"packages/index.js": "./src/index.js",
-			"packages/allPages.js": "./src/allPages.js",
+			"packages/allPages.js": "./src/allPages/allPages.js",
 			//TODO: Package serviceworker, and drop it in root directory. (could use Service-Worker-Allowed: / header, but that makes local development harder).
 		},
   		watch: true,
