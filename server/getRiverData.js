@@ -88,7 +88,7 @@ function getAssistantReply(name, sentence) {
 	let responseName = name
 
 	//Handle something like "Little Falls of the Potomac" or "Nantahala from Pattons to NOC"
-	name = name.split(/ of the/i).join("")
+	name = name.split(/ of/i).join("")
 	name = name.split(/ from/i).join("")
 
 	name = name.split(/ section/i).join("")
