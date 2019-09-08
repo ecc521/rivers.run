@@ -82,9 +82,15 @@ function getAssistantReply(name, sentence) {
 	console.log(name)
 
 	//Delete the words river and section (plus the leading space), if it exists in any casing.
+
 	name = name.split(/ river/i).join("")
 	name = name.split(/the /i).join("")
 	let responseName = name
+
+	//Handle something like "Little Falls of the Potomac" or "Nantahala from Pattons to NOC"
+	name = name.split(/ of the/i).join("")
+	name = name.split(/ from/i).join("")
+
 	name = name.split(/ section/i).join("")
 
 	let topRanked = []
