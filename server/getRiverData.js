@@ -103,7 +103,7 @@ function getAssistantReply(name, sentence) {
 	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
 	let alwaysStart = "<speak>"
-	let ender = "<break time=\"1s\"/>If you have more questions, feel free to ask! Otherwise, you can say \"exit\" to close rivers.run. </speak>"
+	let ender = "<break time=\"0.3s\"/>Happy Paddling! Bye! </speak>"
 
 	//TODO: Ask the user to break ties if multiple rivers in topRanked.
 

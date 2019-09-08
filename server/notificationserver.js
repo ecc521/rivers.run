@@ -227,8 +227,7 @@ async function httprequest(req,res) {
 				let queryResult = getRiverData.getAssistantReply(riverName, query.queryResult.queryText) //Also pass the optional sentence parameter. This should allow most phrases to be exactly matched.
 				let buttons = [];
 
-				let continueConversation = true; //Currently, I am testing always keeping the conversation open.
-				//If this doesn't work, just keep open on error.
+				let continueConversation = false;
 
 				if (typeof queryResult === "string") {
 					buttons.push({
