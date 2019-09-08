@@ -77,11 +77,11 @@ async function calculateCoordinates() {
 			if (status.state === "granted") {
 				//If we do have location permission, odds are that the browser did not. Tell that to the user.
 				//Browsers used to do this, but it looks like they now give a POSITION_UNAVAILABLE error.
-				output = "It appears that your browser could not access your location. Make sure that location services is enabled and allowed for your browser."
+				output = "It appears that your browser could not access your location. Make sure that location services is enabled and allowed for your device and browser."
 			}
 			else if (status.state === "denied"){
 				//If the user denied permission, tell the user that they need to enable it.
-				output = "You denied rivers.run access to your location. Please enable location permission in site settings."
+				output = "Rivers.run does not have permission access to your location. Please enable location permission in site settings. You will also want to check that location is on for your device and/or browser."
 			}
 			else if (status.state === "prompt") {
 				//If the user dismissed the prompt, tell them that they need to click Allow.
@@ -102,6 +102,11 @@ async function calculateCoordinates() {
 	document.getElementById("latitudeQuery").value = coords.latitude
 	document.getElementById("longitudeQuery").value = coords.longitude
 	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
+	
+	//Alert the user if the potential error is greater than 10 miles..
+	if (coords.accuracy > 10*1609.344) {
+		alert("Your device stated that GPS readings could be up to " + Math.ceil(coords.accuracy/1609.344) + " miles off target. You may want to make sure the coordinates are working properly.")
+	}
 
 	NewList()
 }
@@ -125,11 +130,20 @@ for (let i=0;i<elements.length;i++) {
 
 let ipLocation = document.getElementById("ipLocation")
 try {
-    if (window.fetch) {
+	//IP based Geolocation only appears to be accurate with WIFI. 
+	//Although most browsers don't support it, try not to use IP based geolocation for mobile users.
+	//Note that the IP geolocation service should be able to tell us if the user is mobile.
+	
+	let notWifi
+	if (window.navigator && navigator.connection && navigator.connection.type) {
+		notWifi = (navigator.connection.type !== "wifi")
+	}
+	
+    if (window.fetch && !notWifi) {
         fetch("https://rivers.run/node/ip2location").then((response) => {
     		response.json().then((locationInfo) => {
 
-    			ipLocation.innerHTML = "Would you like to use coordinates for " + locationInfo.city + ", " + locationInfo.region + "?"
+    			ipLocation.innerHTML = "Would you like to use coordinates for " + locationInfo.city + ", " + locationInfo.region + "? (From IP Address) "
     			ipLocation.style.display = "block"
 
     			function close() {

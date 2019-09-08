@@ -157,6 +157,13 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 	width: 110px;
 }
 
+#calculateCoordinates {
+	background-color: lightgreen;
+	border: none;
+	border-radius: 5px;
+	padding: 4px;
+}
+
 #ipLocation {
 	display:none;
 	transition: all 3s ease-in;
