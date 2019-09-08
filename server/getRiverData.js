@@ -223,12 +223,26 @@ function getAssistantReply(name, sentence) {
 			str += "This river is currently too high for typical paddlers, with a maximum of " + topRanked[0].maxrun + "."
 		}
 		else if (relativeFlow > 3.5) {
-			str += "This river is currently at a very high level, bordering on too high. The maximum is " + topRanked[0].maxrun + "."
+			str += "This river is currently at a very high level, bordering on too high, and may be significantly more difficult than rated. The maximum is " + topRanked[0].maxrun + "."
 		}
 		else if (relativeFlow < 0.5) {
 			str += "This river is currently at a very low level, bordering on too low. The minimum level is " + topRanked[0].minrun + "."
 		}
-		//TODO: Add remaining values.
+		else if (relativeFlow < 1) {
+			str += "This river is currently a little lower than preferred. The minimum level is " + topRanked[0].minrun + ", however levels above " + topRanked[0].lowflow + " are preferred."
+		}
+		else if (relativeFlow > 3) {
+			str += "This river is currently a little high, and may be more difficult than rated. The maximum levels is " + topRanked[0].maximum + ", however levels above " + topRanked[0].highflow + " are considered high."
+		}
+		else if (relativeFlow > 2.5) {
+			str += "This river is within reccomended levels, although close to being a little high. Levels above " + topRanked[0].highflow + " are considered high, while " + topRanked[0].midflow + " is considered the middle level."
+		}
+		else if (relativeFlow < 1.5) {
+			str += "This river is within reccomended levels, although close to being a little low. Levels below " + topRanked[0].lowflow + " are considered low, while " + topRanked[0].midflow + " is considered the middle level."
+		}
+		else {
+			str += "This river is within reccomended levels. Levels below " + topRanked[0].lowflow + " are considered low, levels above " + topRanked[0].highflow + " are considered high, and " + topRanked[0].midflow + " is considered the middle level."
+		}
 	}
 
 
