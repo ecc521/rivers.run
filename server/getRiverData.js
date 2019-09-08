@@ -17,15 +17,11 @@ function getAssistantReply(name, sentence) {
 
 		//Sometimes Google Assistant adds a space between rivers. and Run. Handle some seperation.
 		sentence = sentence.split(/Ask rivers\s?.\s?run(?: for) (?: the)?/i).join("")
-		sentence = sentence.split(/of /i).join("")
-		sentence = sentence.split(/the /i).join("")
 
 		let preciseMatchers = [
 			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
 			/(?<units>flow) information for the (?<name>.+)/,
-			/is(?: the)? (?<name>.+) (?<units>running)/i,
-			/is(?: the)? (?<name>.+) (?<units>paddleable)/i //Check spelling.
-			//
+			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?<units>running|paddleable)/i,
 		]
 
 		let matchers = [
@@ -55,6 +51,9 @@ function getAssistantReply(name, sentence) {
 			console.log("To " + trimmedSentence)
 		}
 
+		trimmedSentence = trimmedSentence.split(/of /i).join("")
+		trimmedSentence = trimmedSentence.split(/the /i).join("")
+
 		matchers.forEach((regex) => {
 			let match = regex.exec(trimmedSentence)
 			if (match) {
@@ -79,6 +78,8 @@ function getAssistantReply(name, sentence) {
 			console.log(results)
 		}
 	}
+
+	console.log(name)
 
 	//Delete the words river and section (plus the leading space), if it exists in any casing.
 	name = name.split(/ river/i).join("")
