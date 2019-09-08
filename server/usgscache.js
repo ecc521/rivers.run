@@ -60,6 +60,8 @@ async function updateCachedData() {
 		}
     }
 
+	//TODO: Calls should be batched up. I believe that USGS has a url length limit of 4096 characters.
+	//Probably use about 100-200 rivers per call due to performance reasons. When using 400, performance was almost 4 times worse.
     let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all"
 
 	let start = Date.now()

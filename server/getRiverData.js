@@ -8,6 +8,7 @@ let normalSearch = require(path.join(utils.getSiteRoot(), "src", "search.js")).n
 function getAssistantReply(name, sentence) {
 	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
 
+	let units;
 	if (sentence) {
 		
 		//TODO: Use some more specific regex to easily catch things like units.
@@ -20,6 +21,10 @@ function getAssistantReply(name, sentence) {
 		
 		let preciseMatchers = [
 			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
+			/(?<units>flow) information for the (?<name>.+)/,
+			/is the (?<name>.+) (?<units>running)/i,
+			/is the (?<name>.+) (?<units>paddleable)/i //Check spelling.
+			//
 		]
 
 		let matchers = [
@@ -34,8 +39,10 @@ function getAssistantReply(name, sentence) {
 			let match = regex.exec(sentence)
 			if (match) {
 				let groups = match.groups
-				//Shouldn't run on precise matchers.
-				results.push(groups.name)
+				results.push({
+					name: groups.name,
+					units: groups.units
+				})
 			}
 		})
 		
@@ -54,14 +61,18 @@ function getAssistantReply(name, sentence) {
 				let str = match[1]
 				//Sometimes the first regexp will match Water in Water Level
 				if (!str.match(/water|level|flow|of/i)) {
-					results.push(str)
+					results.push({
+						name: str,
+						units: "flow"
+					})
 				}
 				else {console.log("Rejected " + str)}
 			}
 		})
 		
 		if (results[0]) {
-			name = results[0]
+			name = results[0].name
+			units = results[0].units
 		}
 		
 		if (results.length > 1) {
@@ -124,7 +135,7 @@ function getAssistantReply(name, sentence) {
 				//If section is 1 word long, put section before name. Otherwise, put name before section.
 				let sectionFirst = ["bottom", "bottom bottom", "lower", "middle", "upper", "top", "tip top", "upper upper", "top"].includes(topRanked[0].section.trim().toLowerCase())
 				let selectedRiverName = sectionFirst?(topRanked[0].section + " " + topRanked[0].name):(topRanked[0].name + " " + topRanked[0].section)
-				starter = alwaysStart + topRanked.length + " sections of river matched the search " + responseName + ". Picking " + selectedRiverName + ". <break time=\"0.5s\"/>" + starter
+				starter = alwaysStart + topRanked.length + " sections of river showed up for the search " + responseName + ". Picking " + selectedRiverName + ". <break time=\"0.5s\"/>" + starter
 				break;
 			}
 		}
@@ -133,6 +144,7 @@ function getAssistantReply(name, sentence) {
 	let gauge;
 	let cfs;
 	let feet;
+	let temp;
 	try {
 		gauge = flowData[topRanked[0].usgs]
 		try {
@@ -141,6 +153,10 @@ function getAssistantReply(name, sentence) {
 		catch(e) {console.error(e)}
 		try {
 			cfs = gauge.cfs[gauge.cfs.length-1].value
+		}
+		catch(e) {console.error(e)}
+		try {
+			temp = gauge.temp[gauge.temp.length-1].value
 		}
 		catch(e) {console.error(e)}
 	}
@@ -162,6 +178,7 @@ function getAssistantReply(name, sentence) {
 	}
 	
 	
+	//TODO: Inform the user of the trend.
 	let str = starter + " had a flow level of "
 	if (cfs && feet) {
 		str += cfs + " cfs or " + feet + " feet"
@@ -172,6 +189,15 @@ function getAssistantReply(name, sentence) {
 	else if (feet) {
 		str += feet + " feet"
 	}
+	else if (temp) {
+		//If temp is the only value, still tell them it.
+		str = starter + " had a temperature of " + temp + " degrees."
+	}
+	
+	if ((cfs || feet) && temp) {
+		str += " and a temperature of " + temp + " degrees"
+	}
+	
 	let timeAgo = Date.now() - (gauge.feet[gauge.feet.length-1].dateTime)	
 	let hoursAgo = Math.floor(timeAgo/1000/3600)
 	let minutesAgo = Math.ceil(timeAgo/1000%3600/60)
@@ -181,7 +207,10 @@ function getAssistantReply(name, sentence) {
 	str += " as of " + timeString
 	str += ", according to the gauge " + gauge.name + ". "
 	
-	//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values.
+	if (["running", "paddleable"].includes(units)) {
+		//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values. 
+	}
+	
 	
 	//Consider seeing if the response matches some pre-defined formats, to reduce issues with google mis-processing.
 	//Consider telling user what we got sent as river-name.
