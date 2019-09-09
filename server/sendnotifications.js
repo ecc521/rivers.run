@@ -3,6 +3,7 @@ const path = require("path")
 const fs = require("fs")
 
 const utils = require(path.join(__dirname, "utils.js"))
+const subscriptionManager = require(path.join(__dirname, "subscriptionManager.js"))
 
 let keysDirectory = path.join(utils.getDataDirectory(), "notifications")
 let publicKeyPath = path.join(utils.getSiteRoot(), "public_key") //Use the root directory for the public key.
@@ -17,20 +18,6 @@ webpush.setVapidDetails(
   vapidKeys.publicKey,
   vapidKeys.privateKey
 )
-
-let storagePath = path.join(utils.getDataDirectory(), "notifications", "subscriptions.json")
-
-function deleteUserSubscription(endpoint) {
-	if (!fs.existsSync(storagePath)) {
-        console.error("Can't delete subscription. storagePath doesn't exist.")
-        return;
-	}
-    let current = fs.readFileSync(storagePath, {encoding:"utf8"})
-	let obj = JSON.parse(current)
-	delete obj[endpoint]
-	fs.writeFileSync(storagePath, JSON.stringify(obj), {encoding:"utf8"})
-}
-
 
 function sendNotifications(ignoreNoneUntil = false) {
 	if (!fs.existsSync(storagePath)) {
@@ -72,6 +59,24 @@ function sendNotifications(ignoreNoneUntil = false) {
                 data[prop] = rivers[prop]
 			}
 		}
+		
+		//Consider if we should overrule user.noneUntil on changes.
+		let previousData = user.previousMessage
+		
+		//Don't send empty unless it is a change.
+		//TODO: Consider sending the user a demo message if this is their first time (so if previousData is not defined
+		
+		if (!previousData || JSON.stringify(previousData) === "{}") {
+			if (JSON.stringify(data) === "{}") {
+				continue; //We are sending an empty message, and we either already sent one or never sent a message in the first place.
+			}
+		} 
+		
+		user.previousMessage = data
+		subscriptionManager.saveUserSubscription(user)
+		
+		
+		
         //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
         webpush.sendNotification(user.subscription, JSON.stringify(data), {
             //Not sure if vapidDetails is needed, because webpush.setVapidDetails was used above.
@@ -85,7 +90,7 @@ function sendNotifications(ignoreNoneUntil = false) {
             console.error(e)
             //The users subscription is either now invalid, or never was valid.
             if (e.statusCode === 410 || e.statusCode === 404) {
-                deleteUserSubscription(user.subscription.endpoint)
+                subscriptionManager.deleteUserSubscription(user.subscription.endpoint)
             }
         }).then(console.log)
 	}
