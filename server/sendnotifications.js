@@ -5,13 +5,7 @@ const fs = require("fs")
 const utils = require(path.join(__dirname, "utils.js"))
 const subscriptionManager = require(path.join(__dirname, "subscriptionManager.js"))
 
-let keysDirectory = path.join(utils.getDataDirectory(), "notifications")
-let publicKeyPath = path.join(utils.getSiteRoot(), "public_key") //Use the root directory for the public key.
-let privateKeyPath = path.join(keysDirectory, "private_key")
-
-let vapidKeys = {}
-vapidKeys.publicKey = fs.readFileSync(publicKeyPath, {encoding:"utf8"})
-vapidKeys.privateKey = fs.readFileSync(privateKeyPath, {encoding:"utf8"})
+const vapidKeys = require(path.join(__dirname, "vapidKeys.js"))
 
 webpush.setVapidDetails(
   'mailto:admin@rivers.run',

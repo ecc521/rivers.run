@@ -250,6 +250,8 @@ function getAssistantReply(name, sentence) {
 		else {
 			str += "This river is within reccomended levels. Levels below " + topRanked[0].lowflow + " are considered low, levels above " + topRanked[0].highflow + " are considered high, and " + topRanked[0].midflow + " is considered the middle level."
 		}
+		
+		str = str.split("(computer)").join("(computer estimate)")
 	}
 
 

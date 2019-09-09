@@ -1,4 +1,6 @@
 const path = require("path")
+const fs = require("fs")
+const utils = require(path.join(__dirname, "utils.js"))
 
 let storagePath = path.join(utils.getDataDirectory(), "notifications", "subscriptions.json")
 

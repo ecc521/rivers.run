@@ -1,39 +1,12 @@
-const webpush = require('web-push');
 const fs = require("fs")
 const path = require("path")
 const http = require("http")
-const os = require("os")
-const child_process = require("child_process")
-
-const getRiverData = require(path.join(__dirname, "getRiverData.js"))
+const assistantRequest = require(path.join(__dirname, "assistantRequest.js"))
+const salmon2019 = require(path.join(__dirname, "salmon2019.js"))
 const utils = require(path.join(__dirname, "utils.js"))
 const subscriptionManager = require(path.join(__dirname, "subscriptionManager.js"))
+require(path.join(__dirname, "vapidKeys.js")) //Generate vapid keys if they don't already exist.
 
-
-//Either use the existing VAPID keys, or generate new ones.
-//The private key must not be web accessable.
-let vapidKeys = {};
-let keysDirectory = path.join(utils.getDataDirectory(), "notifications")
-let publicKeyPath = path.join(utils.getSiteRoot(), "public_key") //Use the root directory for the public key.
-let privateKeyPath = path.join(keysDirectory, "private_key")
-
-if (!fs.existsSync(keysDirectory)) {fs.mkdirSync(keysDirectory, {recursive: true})}
-
-if (fs.existsSync(publicKeyPath) && fs.existsSync(privateKeyPath)) {
-	vapidKeys.publicKey = fs.readFileSync(publicKeyPath, {encoding:"utf8"})
-	vapidKeys.privateKey = fs.readFileSync(privateKeyPath, {encoding:"utf8"})
-}
-else {
-	vapidKeys = webpush.generateVAPIDKeys();
-	fs.writeFileSync(publicKeyPath, vapidKeys.publicKey, {encoding:"utf8"})
-	fs.writeFileSync(privateKeyPath, vapidKeys.privateKey, {encoding:"utf8"})
-}
-
-webpush.setVapidDetails(
-  'mailto:admin@rivers.run',
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-)
 
 let lookupIP;
 try {
@@ -44,7 +17,6 @@ catch(e) {
 	console.error(e)
 }
 
-
 const hostname = "0.0.0.0"
 const httpport = 3000
 
@@ -52,111 +24,12 @@ let storagePath = path.join(utils.getDataDirectory(), "notifications", "subscrip
 
 async function httprequest(req,res) {
 
-
-		function getData() {
-			return new Promise((resolve, reject) => {
-				let body = []
-				req.on("data", function(chunk) {
-					body.push(chunk)
-				})
-				req.on("end", function() {
-					resolve(Buffer.concat(body))
-				})
-			})
-		}
-
-		//TODO: Only allow rivers.run, its subdomains and 127.0.0.1
+		//TODO: Only allow rivers.run, its subdomains and local networks.
 		res.setHeader('Access-Control-Allow-Origin', '*')
 
 		try {
-			fs.appendFileSync(path.join(utils.getLogDirectory(), 'salmon2019.log'), req.url + "\n");
-
-			res.setHeader("Cache-Control", "no-store")
-
 			if (req.url.includes("salmon2019")) {
-				let filePath = path.relative("node/salmon2019", req.url.slice(1))
-				//Stop users from messing with files that they shouldn't be allowed to.
-				if (filePath.includes("../")) {
-					res.statusCode = 200;
-					res.setHeader('Content-Type', 'text/plain');
-					//For the laughs
-					res.end("Attempt to hijack server has been blocked. Logging your IP address and reporting to administrator. \n" + filePath)
-					return;
-				}
-				let pathOnSystem = path.join(utils.getSiteRoot(), "salmon2019", filePath)
-				if (req.url.endsWith("/")) {
-					if (req.method === "POST") {
-						if (fs.existsSync(pathOnSystem)) {
-							res.statusCode = 400;
-							res.setHeader('Content-Type', 'text/plain');
-							res.end("Path exists")
-							return
-						}
-						//Create the directory
-						fs.mkdirSync(pathOnSystem, {recursive:true})
-						res.statusCode = 200;
-						res.setHeader('Content-Type', 'text/plain');
-						//Apparently the configuration didn't carry into subdirectories - so link the files.
-						fs.symlinkSync(path.join(utils.getSiteRoot(), "salmon2019", "header.html"), path.join(pathOnSystem, "header.html"))
-						fs.symlinkSync(path.join(utils.getSiteRoot, "salmon2019", ".htaccess"), path.join(pathOnSystem, ".htaccess"))
-						res.end("Directory created")
-					}
-					else {
-						if (!fs.existsSync(pathOnSystem)) {
-							res.statusCode = 400;
-							res.setHeader('Content-Type', 'text/plain');
-							res.end("Path does not exist.")
-							return
-						}
-						//Send the user a zip file.
-						let zipper = child_process.spawn("zip", ["-9", "-r", "-x", "header.html", "-x", ".htaccess", "-x", "*.br", "-", "."], {
-							cwd: pathOnSystem,
-							stido: ["ignore", "pipe", "pipe"] //Ingore stdin. Pipe others.
-						})
-						//Send stderr into log.
-						let errorStream = fs.createWriteStream('salmon2019zip.log')
-						zipper.stderr.pipe(errorStream)
-
-						res.statusCode = 200;
-						res.setHeader('Content-Type', 'application/zip');
-						zipper.stdout.pipe(res) //Respond with the zip file.
-					}
-					return
-				}
-				else {
-					if (fs.existsSync(pathOnSystem)) {
-						res.statusCode = 400;
-						res.setHeader('Content-Type', 'text/plain');
-						res.end("Path exists")
-						return
-					}
-
-					//If the file upload gets terminated for some reason, the user should be able to upload the file again without a path collison.
-					let whileLoadingPath = path.join(os.tmpdir(), "rivers.run", filePath)
-					if (!fs.existsSync(path.dirname(whileLoadingPath))) {
-						fs.mkdirSync(path.dirname(whileLoadingPath), {recursive:true})
-					}
-					if (fs.existsSync(whileLoadingPath)) {fs.unlinkSync(whileLoadingPath)}
-
-					let stream = req.pipe(fs.createWriteStream(whileLoadingPath))
-					console.log(stream)
-					stream.on("close", function() {
-						fs.renameSync(whileLoadingPath, pathOnSystem)
-						res.statusCode = 200;
-						res.setHeader('Content-Type', 'text/plain');
-						res.end("File created")
-					})
-					stream.on("error", function(e) {
-						if (fs.existsSync(whileLoadingPath)) {fs.unlinkSync(whileLoadingPath)}
-						res.statusCode = 500;
-						res.setHeader('Content-Type', 'text/plain');
-						res.end("Internal Server Error " + e.toString())
-					})
-					return;
-				}
-				res.statusCode = 200;
-				res.setHeader('Content-Type', 'text/plain');
-				res.end("Oh no! This request didn't work!\n" + req.url)
+				salmon2019.handleRequest(req, res)
 			}
 		}
 		catch(e) {
@@ -165,13 +38,10 @@ async function httprequest(req,res) {
 		}
 
 
-
-
 		if (req.method === "GET" && req.url.startsWith("/node/ip2location")) {
 			if (lookupIP) {
 				let ipData = {};
 				let ip;
-				//Geobytes.com looks good enough to use. May want to do some testing on how much less accurate it is. If it is used, we can remove attribution.
 				if (req.url === "/node/ip2location") {
 					ip = (req.headers['x-forwarded-for'] || '').split(',').pop() ||
 						 req.connection.remoteAddress ||
@@ -179,7 +49,7 @@ async function httprequest(req,res) {
 						 req.connection.socket.remoteAddress
 				}
 				else {
-					//ip = req.url.slice("/node/ip2location".length) //Uncomment to allow custom IPs. May be wanted in future.
+					//ip = req.url.slice("/node/ip2location/".length) //Uncomment to allow custom IPs. May be wanted in future.
 				}
 				ipData = lookupIP(ip)
 				res.setHeader("Cache-Control", "max-age=480, private")
@@ -200,66 +70,7 @@ async function httprequest(req,res) {
 
 		try {
 			if (req.method === "POST" && req.url.startsWith("/node/googleassistant/rivers.run")) {
-				let query = (await getData()).toString()
-				fs.appendFileSync(path.join(utils.getLogDirectory(), 'assistanterror.log'), query + "\n");
-				query = JSON.parse(query)
-
-				//Not sure if outputContexts works for this.
-				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"] //What google said the river name was.
-				let queryResult = getRiverData.getAssistantReply(riverName, query.queryResult.queryText) //Also pass the optional sentence parameter. This should allow most phrases to be exactly matched.
-				let buttons = [];
-
-				let continueConversation = false;
-
-				if (typeof queryResult === "string") {
-					buttons.push({
-						"text": "View Rivers.run FAQ",
-						"postback": "https://rivers.run/FAQ" //TODO: Send user to dedicated page for contributing content.
-					})
-				}
-				else {
-					buttons.push({
-						"text": "View Full Search",
-						"postback": "https://rivers.run/#" + queryResult.search
-					})
-					//TODO: Add edit this river link.
-				}
-
-
-				let reply = {
-				  "fulfillmentText": queryResult.ssml,
-				  "fulfillmentMessages": [
-					{
-					  "card": {
-						"title": "Rivers.run Flow Info",
-						"subtitle": "Rivers.run provides river information, such as real time water levels.",
-						"imageUri": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
-						"buttons": buttons
-					  }
-					}
-				  ],
-				  "source": "https://rivers.run/",
-				  "payload": {
-					"google": {
-					  "expectUserResponse": continueConversation,
-					  "richResponse": {
-						"items": [
-						  {
-							"simpleResponse": {
-								"ssml": queryResult.ssml
-							}
-						  }
-						]
-					  }
-					}
-				  }
-				}
-
-				reply.outputContexts = query.outputContexts
-
-				res.statusCode = 200;
-				res.setHeader('Content-Type', 'text/json');
-				res.end(JSON.stringify(reply));
+				assistantRequest.handleRequest(res)
 			}
 		}
 		catch(e) {
@@ -269,7 +80,7 @@ async function httprequest(req,res) {
 
 		//TODO: Check for /node/notifications soon. req.url.startsWith("/node/notifications")
 		if (req.method === "POST") {
-			let data = JSON.parse((await getData()).toString())
+			let data = JSON.parse((await (utils.getData(req))).toString())
 
 			res.setHeader("Cache-Control", "no-store")
 
