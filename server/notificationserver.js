@@ -87,7 +87,7 @@ async function httprequest(req,res) {
 			if (data.getSubscriptionFromURL) {
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/json');
-				res.end(JSON.stringify(subscriptionManager.getUserSubscription(data.getSubscriptionFromURL)));
+				res.end(JSON.stringify(subscriptionManager.getUserSubscription(data.getSubscriptionFromURL)) || "No Subscription");
 			}
 			else if (data.subscription && data.parameters) {
 				//data.subscription contains the details needed to send push notifications.
