@@ -70,7 +70,7 @@ async function httprequest(req,res) {
 
 		try {
 			if (req.method === "POST" && req.url.startsWith("/node/googleassistant/rivers.run")) {
-				await assistantRequest.handleRequest(res)
+				await assistantRequest.handleRequest(req, res)
 			}
 		}
 		catch(e) {

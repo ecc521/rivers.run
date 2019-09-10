@@ -3,7 +3,7 @@ const path = require("path")
 const utils = require(path.join(__dirname, "utils.js"))
 const getRiverData = require(path.join(__dirname, "getRiverData.js"))
 
-async function handleRequest(res) {
+async function handleRequest(req, res) {
 				
 				
 				let query = (await utils.getData(req)).toString()
