@@ -21,9 +21,10 @@ function getAssistantReply(name, sentence) {
 		let preciseMatchers = [
 			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
 			/(?<units>flow) information for the (?<name>.+)/,
-			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?:at a )?(?<units>running|paddleable|runnable)/i, //TODO: Check if paddleable ever actually shows up based on spelling, etc.
+			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?:at a )?(?<units>running|runnable|paddleable)/i, //TODO: Check if paddleable ever actually shows up based on spelling, etc.
 		]
 
+		
 		let matchers = [
 			/^(?:flow\s|water\s|level\s|cfs\s|feet\s|height\s|gauge\s)+([^.]+)/i,
 			/(.+?)\s(?:flow|water|level|cfs|feet|height|gauge)+/i,
@@ -214,7 +215,7 @@ function getAssistantReply(name, sentence) {
 	str += " as of " + timeString
 	str += ", according to the gauge " + gauge.name + ". "
 
-	if (["running", "paddleable"].includes(units)) {
+	if (["running", "runnable", "paddleable"].includes(units)) {
 		//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values.
 		topRanked[0].cfs = cfs
 		topRanked[0].feet = feet
