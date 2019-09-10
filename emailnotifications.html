@@ -296,7 +296,7 @@
 
             document.getElementById("unsubscribe").addEventListener("click", async function() {
 				if (confirm("Delete all flow notifications (including non-email ones)?")) {
-					localStorage.deleteItem("flownotifications")
+					localStorage.removeItem("flownotifications")
 					await syncWithServer()	
 					await updateSubscriptionStatus()
 				}
