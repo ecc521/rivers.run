@@ -234,6 +234,7 @@
         async function syncWithServer(timeStamp = 0) {
             await fetch("https://rivers.run/node/notifications", {
                 method: "POST",
+                cache: "no-store",
                 body:JSON.stringify({
 					type: "email",
 					address: getEmail(),
