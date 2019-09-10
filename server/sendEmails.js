@@ -23,7 +23,7 @@ function sendEmail(addresses, data) {
 		}
 	});
 	
-	let mailInfo = getMessage(data)
+	let mailInfo = getMessage(data, addresses[0])
 	
 	const mailOptions = {
 	  from: 'rivergauges@rivers.run',
@@ -42,7 +42,7 @@ function sendEmail(addresses, data) {
 }
 
 
-function getMessage(data) {
+function getMessage(data, address) {
     let title = "River(s) are running!";
     let body = "";
 
@@ -141,7 +141,7 @@ function getMessage(data) {
     body.push(`<h1 style="margin-bottom:0.5em"><img src="rivers.run/resources/icons/64x64-Water-Drop.png" style="vertical-align: text-top; height:1em; width: 1em;"><a href="https://rivers.run" style="color:black">rivers.run</a></h1>`)
 	body.push("<p><a href='mailto:support@rivers.run'>support@rivers.run</a></p>")
 	
-	body.push(`Click <a href="https://rivers.run/emailnotifications.html#${addresses[0]}">here</a> to manage your subscription, or to unsubscribe.`)
+	body.push(`Click <a href="https://rivers.run/emailnotifications.html#${address}">here</a> to manage your subscription, or to unsubscribe.`)
 	
 	body.push("</body></html>")
 	
