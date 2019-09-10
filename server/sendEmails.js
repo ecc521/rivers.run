@@ -1,6 +1,8 @@
-const utils = require(path.join(__dirname, "utils.js"))
 const fs = require("fs")
+const path = require("path")
 const nodemailer = require("nodemailer")
+
+const utils = require(path.join(__dirname, "utils.js"))
 
 let password;
 try {
