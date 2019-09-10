@@ -14,12 +14,12 @@ webpush.setVapidDetails(
 )
 
 function sendNotifications(ignoreNoneUntil = false) {
-	if (!fs.existsSync(storagePath)) {
+	if (!fs.existsSync(subscriptionManager.storagePath)) {
 		//There are no subscriptions
 		console.warn("No subscriptions. ")
 		return
 	}
-	let subscriptions = JSON.parse(fs.readFileSync(storagePath, {encoding:"utf8"}))
+	let subscriptions = JSON.parse(fs.readFileSync(subscriptionManager.storagePath, {encoding:"utf8"}))
 	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
 	for (let url in subscriptions) {

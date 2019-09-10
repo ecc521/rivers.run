@@ -39,5 +39,6 @@ function deleteUserSubscription(endpoint) {
 module.exports = {
 	deleteUserSubscription,
 	getUserSubscription,
-	deleteUserSubscription
+	deleteUserSubscription,
+	storagePath
 }

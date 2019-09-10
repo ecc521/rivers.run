@@ -20,8 +20,6 @@ catch(e) {
 const hostname = "0.0.0.0"
 const httpport = 3000
 
-let storagePath = path.join(utils.getDataDirectory(), "notifications", "subscriptions.json")
-
 async function httprequest(req,res) {
 
 		//TODO: Only allow rivers.run, its subdomains and local networks.
