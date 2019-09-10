@@ -4,8 +4,12 @@
     </head>
     <body>
 
-        <h1>River Email notifications (Testing)</h1>
+        <h1>River Email notifications (Extreme Beta)</h1>
 		
+		<div style="text-align: center">
+			<p>If you would like to use browser based notifications, go <a href="notifications.html">here</a> instead.</p>
+		</div>
+			
 		<div style="text-align: center;">
 			<input id="email" type="text" placeholder="Your Email">
 		</div>
@@ -272,14 +276,14 @@
         async function updateSubscriptionStatus() {
             //TODO: Handle the scenario where the public key has changed. This will need code changes in other places too.
             if (getEmail() === undefined || await getSubscriptionFromURL(getEmail()) === "") {
-                document.getElementById("notificationsStatus").innerHTML = "No Notifications for this email."
+                document.getElementById("notificationsStatus").innerHTML = "Notifications disabled for this email."
                 document.getElementById("unsubscribe").style.display = "none"
                 document.getElementById("subscribe").style.display = "inline-block"
                 document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
                 currentSelections.style.opacity = 0.5
             }
             else {
-                document.getElementById("notificationsStatus").innerHTML = "Notifications are enabled."
+                document.getElementById("notificationsStatus").innerHTML = "Notifications enabled for this email."
                 document.getElementById("subscribe").style.display = "none"
                 document.getElementById("unsubscribe").style.display = "inline-block"
                 document.getElementById("notificationsState").style.backgroundColor = ""
