@@ -21,7 +21,7 @@ function getAssistantReply(name, sentence) {
 		let preciseMatchers = [
 			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
 			/(?<units>flow) information for the (?<name>.+)/,
-			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?<units>running|paddleable|runnable)/i, //TODO: Check if paddleable ever actually shows up based on spelling, etc.
+			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?:at a )?(?<units>running|paddleable|runnable)/i, //TODO: Check if paddleable ever actually shows up based on spelling, etc.
 		]
 
 		let matchers = [
