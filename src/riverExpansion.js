@@ -4,83 +4,23 @@ const {calculateAge} = require("./flowInfoCalculations.js")
 
 //Code that runs when the button is clicked
     function riverbuttonClicked(button, river) {
-		
         if (river.expanded === 0) {
             river.expanded = 1
-            var div = document.createElement("div")
-
-			div.innerHTML = ""
-
-			//Only show a link if river.dam is a link. This allows rivers to be marked as dams and explainations to be put in the writeups.
-			if (river.dam && river.dam.trim().startsWith("http")) {
-                //Adding to div.innerHTML works, but logs CSP errors
-                let link = document.createElement("a")
-                link.target = "_blank"
-                link.rel = "noopener"
-                link.href = river.dam
-                link.innerHTML = "This river has a dam. View information."
-                div.appendChild(link)
-				div.appendChild(document.createElement("br"))
-				div.appendChild(document.createElement("br"))
+            createExpansion(button, river)
+        }
+        else {
+			//Delete the expansion.
+            river.expanded = 0
+            var elem = document.getElementById(river.base + 2)
+            if (elem) {
+                elem.parentNode.removeChild(elem)
             }
 
-			div.innerHTML += river.writeup + "<br><br>"
-
-			if (river.class && river.skill) {
-				div.innerHTML += "This river is class " + river.class + " and is rated " + skillTranslations[river.skill] + ".<br>"
-			}
-			else if (river.class) {
-				div.innerHTML += "This river is rated class " + river.class + ".<br>"
-			}
-			else if (river.skill) {
-				div.innerHTML += "This river is rated " + skillTranslations[river.skill] + ".<br>"
-			}
+        }
+    }
 
 
-			if (river.averagegradient) {div.innerHTML += "Average gradient: " + river.averagegradient + " feet per mile.<br>"}
-			if (river.maxgradient) {div.innerHTML += "Maximum gradient: " + river.maxgradient + " feet per mile.<br>"}
-
-			if (river.plat && river.plon) {
-                div.innerHTML += "Put-In GPS Coordinates: " + river.plat + ", " + river.plon + "<br>"
-            }
-
-            if (river.tlat && river.tlon) {
-                div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
-            }
-
-			//Show the user the values being used for determining relative flow.
-            let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
-			let flowRange = document.createElement("p")
-			flowRange.innerHTML = ""
-            for (let i=0;i<values.length;i++) {
-                let name = values[i]
-                if (river[name] && !isNaN(parseFloat(river[name]))) {
-                    flowRange.innerHTML += name + ":" + river[name] + " "
-                }
-            }
-			if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
-
-			//river.id should always be defined.
-            div.appendChild(document.createElement("br"))
-            let link = document.createElement("a")
-            link.target = "_blank"
-            link.rel = "noopener"
-            link.href = "https://docs.google.com/document/d/" + river.id
-            link.innerHTML = "Edit this river"
-            div.appendChild(link)
-
-            if (river.aw) {
-                div.appendChild(document.createElement("br"))
-                let link = document.createElement("a")
-                link.target = "_blank"
-                link.rel = "noopener"
-                link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
-                link.innerHTML = "View this river on American Whitewater"
-                div.appendChild(link)
-            }
-
-
-			function addNotificationsSelector(usgsID) {
+			function createNotificationsSelector(river, usgsID) {
 				let data = {
 					id: river.id,
 					name: river.name
@@ -104,7 +44,6 @@ const {calculateAge} = require("./flowInfoCalculations.js")
 				//Container for the river alert creator.
 				let container = document.createElement("div")
 				container.className = "notificationsContainer"
-				div.appendChild(container)
 
 				//Describe what this does, and alert the user if their browser is unsupported.
 				let description = document.createElement("p")
@@ -199,7 +138,84 @@ const {calculateAge} = require("./flowInfoCalculations.js")
 				container.appendChild(units)
 				container.appendChild(save)
 				container.appendChild(manage)
+				return container
 			}
+
+
+
+
+function createExpansion(button, river) {
+            var div = document.createElement("div")
+
+			div.innerHTML = ""
+
+			//Only show a link if river.dam is a link. This allows rivers to be marked as dams and explainations to be put in the writeups.
+			if (river.dam && river.dam.trim().startsWith("http")) {
+                //Adding to div.innerHTML works, but logs CSP errors
+                let link = document.createElement("a")
+                link.target = "_blank"
+                link.rel = "noopener"
+                link.href = river.dam
+                link.innerHTML = "This river has a dam. View information."
+                div.appendChild(link)
+				div.appendChild(document.createElement("br"))
+				div.appendChild(document.createElement("br"))
+            }
+
+			div.innerHTML += river.writeup + "<br><br>"
+
+			if (river.class && river.skill) {
+				div.innerHTML += "This river is class " + river.class + " and is rated " + skillTranslations[river.skill] + ".<br>"
+			}
+			else if (river.class) {
+				div.innerHTML += "This river is rated class " + river.class + ".<br>"
+			}
+			else if (river.skill) {
+				div.innerHTML += "This river is rated " + skillTranslations[river.skill] + ".<br>"
+			}
+
+
+			if (river.averagegradient) {div.innerHTML += "Average gradient: " + river.averagegradient + " feet per mile.<br>"}
+			if (river.maxgradient) {div.innerHTML += "Maximum gradient: " + river.maxgradient + " feet per mile.<br>"}
+
+			if (river.plat && river.plon) {
+                div.innerHTML += "Put-In GPS Coordinates: " + river.plat + ", " + river.plon + "<br>"
+            }
+
+            if (river.tlat && river.tlon) {
+                div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
+            }
+
+			//Show the user the values being used for determining relative flow.
+            let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
+			let flowRange = document.createElement("p")
+			flowRange.innerHTML = ""
+            for (let i=0;i<values.length;i++) {
+                let name = values[i]
+                if (river[name] && !isNaN(parseFloat(river[name]))) {
+                    flowRange.innerHTML += name + ":" + river[name] + " "
+                }
+            }
+			if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
+
+			//river.id should always be defined.
+            div.appendChild(document.createElement("br"))
+            let link = document.createElement("a")
+            link.target = "_blank"
+            link.rel = "noopener"
+            link.href = "https://docs.google.com/document/d/" + river.id
+            link.innerHTML = "Edit this river"
+            div.appendChild(link)
+
+            if (river.aw) {
+                div.appendChild(document.createElement("br"))
+                let link = document.createElement("a")
+                link.target = "_blank"
+                link.rel = "noopener"
+                link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
+                link.innerHTML = "View this river on American Whitewater"
+                div.appendChild(link)
+            }
 
 
             if (river.usgs) {
@@ -266,7 +282,7 @@ const {calculateAge} = require("./flowInfoCalculations.js")
 					div.appendChild(document.createElement("br"))
 					div.appendChild(document.createElement("br"))
 				}
-				addNotificationsSelector(usgsID)
+				div.appendChild(createNotificationsSelector(river, usgsID))
 
 				console.time("Add Graphs")
 				addGraphs(div, data)
@@ -288,16 +304,9 @@ const {calculateAge} = require("./flowInfoCalculations.js")
             div.style.padding = "6px"
             div.id = river.base + 2
             button.parentNode.insertBefore(div, button.nextSibling)
-        }
-        else {
-            river.expanded = 0
-            var elem = document.getElementById(river.base + 2)
-            if (elem) {
-                elem.parentNode.removeChild(elem)
-            }
+}
 
-        }
-    }
+
 	
 	module.exports = {
 		riverbuttonClicked
