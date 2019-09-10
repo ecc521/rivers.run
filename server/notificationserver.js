@@ -116,12 +116,19 @@ async function httprequest(req,res) {
 				res.end('Saved Subscription\n');
 				//data.sendTime : the time every day to send notificcations at.We will send on first cycle after.
 			}
+			else {
+				res.statusCode = 404;
+				res.setHeader('Content-Type', 'text/plain');
+				res.end('Invalid POST request\n');
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'badrequest.log'), req.url + "\n" + JSON.stringify(data) + "\n");
+			}
 		}
 
 
 		res.statusCode = 404;
 		res.setHeader('Content-Type', 'text/plain');
 		res.end('Unknown request\n');
+		fs.appendFileSync(path.join(utils.getLogDirectory(), 'badrequest.log'), req.url + "\n" + JSON.stringify(data) + "\n");
 
 }
 
