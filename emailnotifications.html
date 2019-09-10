@@ -4,9 +4,11 @@
     </head>
     <body>
 
-        <h1>River notifications (Beta)</h1>
-
-        <p id="notificationPermission"></p>
+        <h1>River Email notifications (Testing)</h1>
+		
+		<div style="text-align: center;">
+			<input id="email" type="text" placeholder="Your Email">
+		</div>
 		
         <div id="notificationsState">
             <p id="notificationsStatus"></p>
@@ -32,6 +34,14 @@
         h1 {
             text-align: center
         }
+			
+			#email {
+				padding: 8px;
+				border-radius: 8px;
+				width: 300px;
+				margin-bottom: 8px;
+				font-size: 16px;
+			}
 
         .row {
             padding:8px;
@@ -100,13 +110,6 @@
             color: red;
         }
 
-        #notificationPermission {
-            font-size: 20px;
-            background-color: #ffff55;
-            text-align: center;
-            padding:8px;
-        }
-
 
         #currentSelections > :first-child > .deleteButton {
             color: inherit;
@@ -138,6 +141,16 @@
 
         <script src="packages/allPages.js"></script>
         <script>
+		document.getElementById("email").value = localStorage.getItem("notificationsemail")
+		if (window.location.hash) {
+			let data = window.location.hash.slice(1)
+			if (data.includes("@")) {
+				//Probably an email. Use this email link to autofill.
+				document.getElementById("email").value = data
+			}
+		}
+			
+			
         //TODO: Add a way for users to sync between devices.
         //TODO: Add a way to see the river id. Support for multiple sections (section names)
 
@@ -222,7 +235,8 @@
             await fetch("https://rivers.run/node/notifications", {
                 method: "POST",
                 body:JSON.stringify({
-                    subscription: await (await navigator.serviceWorker.ready).pushManager.getSubscription(),
+					type: "email",
+					address: getEmail(),
                     parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}"),
                     noneUntil: timeStamp
                 })
@@ -232,19 +246,32 @@
         //URL is the unique url push notifications are received from.
         //This can be used to recover lost data if localStorage is cleared, or to sync between devices.
         async function getSubscriptionFromURL(url) {
-            await fetch("https://rivers.run/node/notifications", {
+            let response = await fetch("https://rivers.run/node/notifications", {
                 cache: "no-store",
                 method: "POST",
                 body:JSON.stringify({
                     getSubscriptionFromURL: url
                 })
             })
+			let result = await response.text()
+			if (result === "") {return result}
+			return JSON.parse(result)
+		
         }
 
+			function getEmail() {
+				let email = document.getElementById("email").value
+				localStorage.setItem("notificationsemail", email)
+				return email
+			}
+			
+			document.getElementById("email").addEventListener("keyup", updateSubscriptionStatus)
+			document.getElementById("email").addEventListener("change", updateSubscriptionStatus)
+			
         async function updateSubscriptionStatus() {
             //TODO: Handle the scenario where the public key has changed. This will need code changes in other places too.
-            if (await sw.pushManager.getSubscription() === null) {
-                document.getElementById("notificationsStatus").innerHTML = "Notifications are disabled."
+            if (getEmail() === undefined || await getSubscriptionFromURL(getEmail()) === "") {
+                document.getElementById("notificationsStatus").innerHTML = "No Notifications for this email."
                 document.getElementById("unsubscribe").style.display = "none"
                 document.getElementById("subscribe").style.display = "inline-block"
                 document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
@@ -259,84 +286,25 @@
             }
         }
 
-        function updatePermissionNotice() {
-            if (!("PushManager" in window) || !("Notification" in window) || !("serviceWorker" in navigator)) {
-                document.getElementById("notificationPermission").style.display = "block"
-                document.getElementById("notificationPermission").innerHTML = "Your browser does not support flow notifications."
-            }
-            else if (Notification.permission === "denied") {
-                document.getElementById("notificationPermission").style.display = "block"
-                document.getElementById("notificationPermission").innerHTML = "You denied rivers.run notifications permission. You will need to change this in site settings."
-            }
-            else {
-                //If the permission state is either granted or prompt, don't bother the user.
-                document.getElementById("notificationPermission").style.display = "none"
-            }
-        }
-
-        //Used to convert base64 vapidKey to Uint8Array.
-        function urlBase64ToUint8Array(base64String) {
-          const padding = '='.repeat((4 - base64String.length % 4) % 4);
-          const base64 = (base64String + padding)
-            .replace(/-/g, '+')
-            .replace(/_/g, '/');
-
-          const rawData = window.atob(base64);
-          const outputArray = new Uint8Array(rawData.length);
-
-          for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
-          }
-          return outputArray;
-        }
-
 
         ;(async function() {
 
             window.sw = await navigator.serviceWorker.ready
-
-            updatePermissionNotice()
-
-            try {
-                //If the permission status changes, update the permission notice.
-                (await navigator.permissions.query({name:"notifications"})).onchange = updatePermissionNotice
-            }
-            catch(e) {console.error(e)}
-
+						
             updateSubscriptionStatus()
 
 
             document.getElementById("unsubscribe").addEventListener("click", async function() {
-                if (confirm("Are you sure that you no longer want to receive notifications when rivers become runnable?")) {
-                    try {
-                        let subscription = await sw.pushManager.getSubscription()
-                        await subscription.unsubscribe()
-                    }
-                    catch (e) {
-                        alert("Failed to unsubscribe from river notifications. Error message: \n\n" + e)
-                    }
-                    updateSubscriptionStatus()
-                }
+				if (confirm("Delete all flow notifications (including non-email ones)?")) {
+					localStorage.deleteItem("flownotifications")
+					await syncWithServer()	
+					await updateSubscriptionStatus()
+				}
             })
 
-
             document.getElementById("subscribe").addEventListener("click", async function() {
-                try {
-                    await Notification.requestPermission()
-                    //Load the public key.
-                    let vapidKey = await fetch("public_key")
-                    vapidKey = await vapidKey.text()
-                    vapidKey = urlBase64ToUint8Array(vapidKey)
-                    let subscription = await sw.pushManager.subscribe({
-                        userVisibleOnly: true, //Chrome requires this to be set to true.
-                        applicationServerKey: vapidKey
-                    })
-                }
-                catch (e) {
-                    alert("Failed to subscribe to river notifications. Error message: \n\n" + e)
-                }
-                updateSubscriptionStatus()
-                syncWithServer()
+				await syncWithServer()
+				await updateSubscriptionStatus()
             })
 
 

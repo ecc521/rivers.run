@@ -12,7 +12,7 @@ function saveUserSubscription(data) {
 		current = fs.readFileSync(storagePath, {encoding:"utf8"})
 	}
 	let obj = JSON.parse(current)
-	obj[data.subscription.endpoint] = data
+	obj[(data.subscription && data.subscription.endpoint) || data.address] = data
 	fs.writeFileSync(storagePath, JSON.stringify(obj), {encoding:"utf8"})
 }
 

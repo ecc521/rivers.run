@@ -108,6 +108,14 @@ async function httprequest(req,res) {
 				res.setHeader('Content-Type', 'text/plain');
 				res.end('Disabled notifications until timestamp ' + subscription.noneUntil + "\n");
 			}
+			else if (data.type === "email" && data.address) {
+				//Handle email notifications
+				subscriptionManager.saveUserSubscription(data)
+				res.statusCode = 200;
+				res.setHeader('Content-Type', 'text/plain');
+				res.end('Saved Subscription\n');
+				//data.sendTime : the time every day to send notificcations at.We will send on first cycle after.
+			}
 		}
 
 

@@ -5,6 +5,8 @@ const fs = require("fs")
 const utils = require(path.join(__dirname, "utils.js"))
 const subscriptionManager = require(path.join(__dirname, "subscriptionManager.js"))
 
+const sendEmails = require(path.join(__dirname, "sendEmails.js"))
+
 const vapidKeys = require(path.join(__dirname, "vapidKeys.js"))
 
 webpush.setVapidDetails(
@@ -44,8 +46,15 @@ function sendNotifications(ignoreNoneUntil = false) {
 
 				let latest = values[values.length - 1].value
 
+				//Don't delete for email notifications
 				if (!(river.minimum < latest && latest < river.maximum)) {
-					delete rivers[prop]
+					if (data.type === "email") {
+						rivers[prop].running = false
+						river.current = latest
+					}
+					else {
+						delete rivers[prop]
+					}
 				}
 				else {
 					river.current = latest
@@ -69,7 +78,12 @@ function sendNotifications(ignoreNoneUntil = false) {
 		user.previousMessage = data
 		subscriptionManager.saveUserSubscription(user)
 		
-		
+		if (user.type === "email") {
+			sendEmails.sendEmail([user.address], data)
+			//Handle email notifications
+			//user.address
+			continue;
+		}
 		
         //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
         webpush.sendNotification(user.subscription, JSON.stringify(data), {
