@@ -70,7 +70,7 @@ async function httprequest(req,res) {
 
 		try {
 			if (req.method === "POST" && req.url.startsWith("/node/googleassistant/rivers.run")) {
-				assistantRequest.handleRequest(res)
+				await assistantRequest.handleRequest(res)
 			}
 		}
 		catch(e) {
@@ -80,7 +80,7 @@ async function httprequest(req,res) {
 
 		//TODO: Check for /node/notifications soon. req.url.startsWith("/node/notifications")
 		if (req.method === "POST") {
-			let data = JSON.parse((await (utils.getData(req))).toString())
+			let data = JSON.parse((await utils.getData(req)).toString())
 
 			res.setHeader("Cache-Control", "no-store")
 

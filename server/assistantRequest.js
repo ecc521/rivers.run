@@ -3,10 +3,10 @@ const path = require("path")
 const utils = require(path.join(__dirname, "utils.js"))
 const getRiverData = require(path.join(__dirname, "getRiverData.js"))
 
-function handleRequest(res) {
+async function handleRequest(res) {
 				
 				
-				let query = (await (utils.getData(req))).toString()
+				let query = (await utils.getData(req)).toString()
 				fs.appendFileSync(path.join(utils.getLogDirectory(), 'assistanterror.log'), query + "\n");
 				query = JSON.parse(query)
 
