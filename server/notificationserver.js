@@ -28,6 +28,7 @@ async function httprequest(req,res) {
 		try {
 			if (req.url.includes("salmon2019")) {
 				salmon2019.handleRequest(req, res)
+				return;
 			}
 		}
 		catch(e) {
@@ -69,6 +70,7 @@ async function httprequest(req,res) {
 		try {
 			if (req.method === "POST" && req.url.startsWith("/node/googleassistant/rivers.run")) {
 				await assistantRequest.handleRequest(req, res)
+				return;
 			}
 		}
 		catch(e) {
