@@ -26,8 +26,10 @@ function sendEmail(addresses, data) {
 	
 	let mailInfo = getMessage(data, addresses[0])
 	
+	if (mailInfo === false) {return false}; //All rivers are too low.
+	
 	const mailOptions = {
-	  from: 'rivergauges@rivers.run',
+	  from: 'rivergauges@rivers.run', //In order to have the profile image, this should be an alternative email for the gmail account.
 	  to: addresses, // list of receivers
 	  subject: mailInfo.subject, // Subject line
 	  html: '<p>' + mailInfo.body + '</p>'// Body
@@ -82,6 +84,8 @@ function getMessage(data, address) {
 
 		return encodeURI("https://rivers.run/#" + JSON.stringify(searchQuery))
 	}
+	
+	if (tooHigh + running === 0) {return false;}
 	
     console.log(data)
 	console.log(running)

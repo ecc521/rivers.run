@@ -79,7 +79,11 @@ function sendNotifications(ignoreNoneUntil = false) {
 		subscriptionManager.saveUserSubscription(user)
 		
 		if (user.type === "email") {
-			sendEmails.sendEmail([user.address], data)
+			let res = sendEmails.sendEmail([user.address], data)
+			if (res !== false) {
+				user.noneUntil = Date.now() + 1000*60*60*8 //No emails for 8 hours.
+				subscriptionManager.saveUserSubscription(user)
+			}
 			//Handle email notifications
 			//user.address
 			continue;
