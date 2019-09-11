@@ -1,43 +1,38 @@
 const path = require("path")
 const fs = require("fs")
 const zlib = require("zlib")
+const child_process = require("child_process")
 const stream = require("stream")
+const Buffer = require("buffer").Buffer
+const os = require("os")
 
 const utils = require(path.join(__dirname, "utils.js"))
 
-//TODO: Paralellize.
-
-function brotliCompress(buf, compressionLevel = 9) {
-	return zlib.brotliCompressSync(buf, {
-	  chunkSize: 32 * 1024,
-	  params: {
-		[zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
-		[zlib.constants.BROTLI_PARAM_QUALITY]: compressionLevel, //11 is Maximum compression level. 9 is the last level before a performance cliff. Little reason to use 10.
-		[zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.byteLength
-	  }
+async function brotliCompressAsync(input, compressionLevel = 9, priority = os.constants.priority.PRIORITY_LOW) {
+	let args = [compressionLevel]
+	
+	if (input instanceof Buffer) {args.push(input.byteLength)}
+	console.log(args)
+	let compressor = child_process.fork(path.join(__dirname, "brotliCompress.js"), args, {stdio: "pipe"})
+	
+	os.setPriority(compressor.pid, priority)
+		
+	if (input instanceof stream) {
+		input.pipe(compressor.stdin)	
+	}
+	else if (input instanceof Buffer) {
+		compressor.stdin.write(input)
+		compressor.stdin.end()
+	}
+	
+	compressor.stderr.on("data", function(data) {
+		throw data.toString()
 	})
+
+	return await utils.getData(compressor.stdout)
 }
 
-
-async function brotliCompressAsync(buf, compressionLevel = 9) {
-	const compress = zlib.createBrotliCompress({
-	  chunkSize: 32 * 1024,
-	  params: {
-		[zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
-		[zlib.constants.BROTLI_PARAM_QUALITY]: compressionLevel, //11 is Maximum compression level. 9 is the last level before a performance cliff. Little reason to use 10.
-		[zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.byteLength
-	  }
-	});
-	
-	let inputStream = new stream.Readable()
-	inputStream.push(buf) //TODO: Split this up to avoid long running CPU blocks.
-	inputStream.push(null)
-	
-	let compressionStream = inputStream.pipe(compress);
-	return await utils.getData(compressionStream)
-}
-
-function compressFile(filePath) {
+async function compressFile(filePath) {
 	
 	if (fs.statSync(filePath).size > 5*1024*1024) {
 		console.log(filePath + " is over 5MiB. Not compressing.")
@@ -57,7 +52,7 @@ function compressFile(filePath) {
 		}
 	}
 	
-	let compressed = brotliCompress(uncompressed, 11) //Pass 11 to compress at maximum level.
+	let compressed = await brotliCompressAsync(uncompressed, 11) //Pass 11 to compress at maximum level.
 
 	//Note that some files may be compressed (uselessly) multiple times if the uncompressed file is smaller than the compressed file.
 	if (compressed.byteLength < uncompressed.byteLength) {
@@ -72,7 +67,7 @@ function compressFile(filePath) {
 	}
 }
 
-function compressFiles(directoryToCompress) {
+async function compressFiles(directoryToCompress) {
 	if (!fs.existsSync(directoryToCompress)) {throw "Directory " + directoryToCompress + " does not exist!"}
 	
 	let files = utils.getFilesInDirectory(directoryToCompress)
@@ -93,14 +88,13 @@ function compressFiles(directoryToCompress) {
 	for (let i=0;i<files.length;i++) {
 		let filePath = files[i]
 		console.log("Compressing " + i + " of " + (files.length - 1))
-		compressFile(filePath)
+		await compressFile(filePath)
 	}
 }
 
 
 module.exports = {
 	compressFiles,
-	brotliCompress,
 	compressFile,
 	brotliCompressAsync
 }
