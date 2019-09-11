@@ -17,7 +17,8 @@ function sendEmail(addresses, data) {
 	//We can give them lots of info we couldn't before.
 	var transporter = nodemailer.createTransport({
 		service: 'gmail',
-	 	auth: {
+		secure: true,
+		auth: {
 			user: 'email.rivers.run@gmail.com',
 			pass: password
 		}
