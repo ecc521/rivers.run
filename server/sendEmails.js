@@ -6,7 +6,7 @@ const utils = require(path.join(__dirname, "utils.js"))
 
 let password;
 try {
-	const password = fs.readFileSync(path.join(utils.getDataDirectory(), "notifications", "gmailpassword.txt"), {encoding:"utf8"}) //gmailpassword should be an application key. 2 factor auth needed.
+	password = fs.readFileSync(path.join(utils.getDataDirectory(), "notifications", "gmailpassword.txt"), {encoding:"utf8"}) //gmailpassword should be an application key. 2 factor auth needed.
 }
 catch (e) {
 	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailpassword.log'), e.toString() + "\n");
@@ -16,8 +16,8 @@ function sendEmail(addresses, data) {
 	//Create the email
 	//We can give them lots of info we couldn't before.
 	var transporter = nodemailer.createTransport({
-	 service: 'gmail',
-	 auth: {
+		service: 'gmail',
+	 	auth: {
 			user: 'email.rivers.run@gmail.com',
 			pass: password
 		}

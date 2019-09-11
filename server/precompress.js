@@ -18,6 +18,18 @@ function brotliCompress(buf, compressionLevel = 9) {
 }
 
 
+function brotliCompressAsync(buf, compressionLevel = 9) {
+	//TODO: Async brotli compression
+	return zlib.brotliCompressSync(buf, {
+	  chunkSize: 32 * 1024,
+	  params: {
+		[zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
+		[zlib.constants.BROTLI_PARAM_QUALITY]: compressionLevel, //11 is Maximum compression level. 9 is the last level before a performance cliff. Little reason to use 10.
+		[zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.byteLength
+	  }
+	})
+}
+
 function compressFile(filePath) {
 	
 	if (fs.statSync(filePath).size > 5*1024*1024) {
