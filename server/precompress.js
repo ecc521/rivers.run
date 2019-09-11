@@ -1,8 +1,9 @@
 const path = require("path")
 const fs = require("fs")
 const zlib = require("zlib")
+const stream = require("stream")
 
-const getFilesInDirectory = require(path.join(__dirname, "utils.js")).getFilesInDirectory
+const utils = require(path.join(__dirname, "utils.js"))
 
 //TODO: Paralellize.
 
@@ -28,17 +29,12 @@ async function brotliCompressAsync(buf, compressionLevel = 9) {
 	  }
 	});
 	
-	const input = fs.createReadStream(filename);
-	const output = fs.createWriteStream(filename + '.br');
-
-	input.pipe(compress).pipe(output);
-	output.on('finish', () => {
-	  resolve();
-	});
-	output.on('error', ex => {
-	  reject(ex);
-	});
-  });
+	let inputStream = new stream.Readable()
+	inputStream.push(buf) //TODO: Split this up to avoid long running CPU blocks.
+	inputStream.push(null)
+	
+	let compressionStream = inputStream.pipe(compress);
+	return await utils.getData(compressionStream)
 }
 
 function compressFile(filePath) {
@@ -79,7 +75,7 @@ function compressFile(filePath) {
 function compressFiles(directoryToCompress) {
 	if (!fs.existsSync(directoryToCompress)) {throw "Directory " + directoryToCompress + " does not exist!"}
 	
-	let files = getFilesInDirectory(directoryToCompress)
+	let files = utils.getFilesInDirectory(directoryToCompress)
 
 	files = files.filter((filePath) => {
 		let extension = path.extname(filePath).toLowerCase()
@@ -105,5 +101,6 @@ function compressFiles(directoryToCompress) {
 module.exports = {
 	compressFiles,
 	brotliCompress,
-	compressFile
+	compressFile,
+	brotliCompressAsync
 }
