@@ -10,8 +10,8 @@
 			<p>If you would like to use browser based notifications, go <a href="notifications.html">here</a> instead.</p>
 		</div>
 			
-		<div style="text-align: center;">
-			<input id="email" type="text" placeholder="Your Email">
+		<div id="emailEntry" style="text-align: center;">
+			<input id="email" type="text" placeholder="Your Email"><input id="saveEmail" type="button" value="Save">
 		</div>
 		
         <div id="notificationsState">
@@ -39,14 +39,24 @@
             text-align: center
         }
 			
+			#emailEntry {
+				margin-bottom: 8px;
+			}
+			
 			#email {
 				padding: 8px;
 				border-radius: 8px;
 				width: 300px;
-				margin-bottom: 8px;
 				font-size: 16px;
 			}
 
+			#saveEmail {
+				padding: 8px;
+				border-radius: 8px;
+				font-size:16px;
+			}
+			
+			
         .row {
             padding:8px;
             background-color: #bbbbbb;
@@ -155,6 +165,7 @@
 		}
 			
 			
+			
         //TODO: Add a way for users to sync between devices.
         //TODO: Add a way to see the river id. Support for multiple sections (section names)
 
@@ -168,8 +179,7 @@
         currentSelections.firstChild.innerHTML += '<span class="deleteButton">Delete</span>'
 
 
-        function redrawRows() {
-            syncWithServer() //TODO: This is async, and we never confirm that this actually happened.
+        async function redrawRows() {
             //Clear the current list.
             let rows = currentSelections.children
             //The first child element is the header. Don't delete the firstChild, but the nextSibling.
@@ -177,8 +187,8 @@
                 currentSelections.firstChild.nextSibling.remove()
             }
 
-            let selections = JSON.parse(localStorage.getItem("flownotifications") || "{}")
-
+            let selections = (await getSubscriptionFromURL(getEmail())).parameters
+			
             for (let gauge in selections) {
                 for (let id in selections[gauge]) {
 
@@ -232,7 +242,8 @@
                 }
             }
         }
-        redrawRows()
+			
+			if (getEmail().includes("@")) {redrawRows()}
 
 
         async function syncWithServer(timeStamp = 0) {
@@ -259,8 +270,9 @@
                 })
             })
 			let result = await response.text()
-			if (result === "") {return result}
-			return JSON.parse(result)
+			if (result === "") {return ""}
+			let obj = JSON.parse(result)
+			return obj
 		
         }
 
@@ -270,18 +282,35 @@
 				return email
 			}
 			
-			document.getElementById("email").addEventListener("keyup", updateSubscriptionStatus)
-			document.getElementById("email").addEventListener("change", updateSubscriptionStatus)
+			document.getElementById("saveEmail").addEventListener("click", updateSubscriptionStatus)
 			
         async function updateSubscriptionStatus() {
             //TODO: Handle the scenario where the public key has changed. This will need code changes in other places too.
-            if (getEmail() === undefined || await getSubscriptionFromURL(getEmail()) === "") {
+			if (!getEmail().includes("@")) {
+               document.getElementById("notificationsStatus").innerHTML = "Invalid Email"
+                document.getElementById("unsubscribe").style.display = "none"
+                document.getElementById("subscribe").style.display = "inline-block"
+                document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
+                currentSelections.style.opacity = 0.5
+				return
+			}
+			
+			let obj = await getSubscriptionFromURL(getEmail())
+            if (obj === "") {
                 document.getElementById("notificationsStatus").innerHTML = "Notifications disabled for this email."
                 document.getElementById("unsubscribe").style.display = "none"
                 document.getElementById("subscribe").style.display = "inline-block"
                 document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
                 currentSelections.style.opacity = 0.5
             }
+			else if (JSON.stringify(obj.parameters) === "{}") {
+				//Currently, disabling notifications merely makes parameters empty.
+                document.getElementById("notificationsStatus").innerHTML = "This email will receive no notifications."
+                document.getElementById("subscribe").style.display = "none"
+                document.getElementById("unsubscribe").style.display = "none"
+                document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
+                currentSelections.style.opacity = 0.5
+			}
             else {
                 document.getElementById("notificationsStatus").innerHTML = "Notifications enabled for this email."
                 document.getElementById("subscribe").style.display = "none"
@@ -300,7 +329,7 @@
 
 
             document.getElementById("unsubscribe").addEventListener("click", async function() {
-				if (confirm("Delete all flow notifications (including non-email ones)?")) {
+				if (confirm("Delete all flow notifications (warning: currently disabled non-email ones too.)?")) {
 					localStorage.removeItem("flownotifications")
 					await syncWithServer()	
 					await updateSubscriptionStatus()
