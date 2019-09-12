@@ -32,6 +32,10 @@ function deleteUserSubscription(endpoint) {
 	}
     let current = fs.readFileSync(storagePath, {encoding:"utf8"})
 	let obj = JSON.parse(current)
+	if (typeof endpoint === "object") {
+		//Allow deleting a subscription object by passing the subscription object
+		endpoint = (data.subscription && data.subscription.endpoint) || data.address
+	}
 	delete obj[endpoint]
 	fs.writeFileSync(storagePath, JSON.stringify(obj), {encoding:"utf8"})
 }
