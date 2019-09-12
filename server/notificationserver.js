@@ -112,8 +112,6 @@ async function httprequest(req,res) {
 			}
 			else if (data.delete === true) {
 				subscriptionManager.deleteUserSubscription(data)
-				//Handle email notifications
-				subscriptionManager.saveUserSubscription(data)
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/plain');
 				res.end('Deleted Subscription');
