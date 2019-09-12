@@ -20,7 +20,7 @@
 		async function deleteEmailSubscription(key) {
 			let result = await sendToServer({
 				delete: true,
-				address: getEmail(),
+				address: key,
 			})
 			if (result === "Deleted Subscription") {return true}
 			else {return result}
@@ -40,6 +40,8 @@
 			if (result === "Saved Subscription") {return true}
 			else {return result}
 		}
+
+
 
 		function setDisabledView() {
                 document.getElementById("unsubscribe").style.display = "none"
