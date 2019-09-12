@@ -131,7 +131,7 @@ function getMessage(data, address) {
 	}
 	
 	if (running.length > 0) {
-		body.push(createHeader("Rivers that are Running:")
+		body.push(createHeader("Rivers that are Running:"))
 		body.push("<ul>")
 		running.forEach((river) => {
 			body.push(createListItem(river))
@@ -141,7 +141,7 @@ function getMessage(data, address) {
 	}
 	
 	if (tooLow.length > 0) {
-		body.push(createHeader("Rivers that are Too Low:")
+		body.push(createHeader("Rivers that are Too Low:"))
 		body.push("<ul>")
 		tooLow.forEach((river) => {
 			body.push(createListItem(river))
