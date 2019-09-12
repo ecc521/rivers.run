@@ -154,195 +154,108 @@
         </style>
 
         <script src="packages/allPages.js"></script>
+		
+		<script src="notifications.js"></script>
+		
         <script>
+			
+		let subscription;
+			
+		//Figure out what the email will initially be.
 		document.getElementById("email").value = localStorage.getItem("notificationsemail")
 		if (window.location.hash) {
 			let data = window.location.hash.slice(1)
 			if (data.includes("@")) {
-				//Probably an email. Use this email link to autofill.
+				//Probably an email link. Use this email link to autofill.
 				document.getElementById("email").value = data
+				getEmail()
 			}
+		}			
+			
+		//Get the email. Also saves the updated version.
+		function getEmail() {
+			let email = document.getElementById("email").value
+			localStorage.setItem("notificationsemail", email)
+			return email
 		}
 			
+		document.getElementById("saveEmail").addEventListener("click", emailUpdated)
 			
 			
-        //TODO: Add a way for users to sync between devices.
-        //TODO: Add a way to see the river id. Support for multiple sections (section names)
-
-        let currentSelections = document.getElementById("currentSelections")
-        //Add the header
-        //This was HTML, but a space was added in between the spans, unless the spans had no whitespace between them.
-        currentSelections.innerHTML += '<div class="row"></div>'
-        currentSelections.firstChild.innerHTML += '<span class="gaugeColumn">Gauge</span>'
-        currentSelections.firstChild.innerHTML += '<span class="nameColumn">Name</span>'
-        currentSelections.firstChild.innerHTML += '<span class="rangeColumn">Range</span>'
-        currentSelections.firstChild.innerHTML += '<span class="deleteButton">Delete</span>'
-
-
-        async function redrawRows() {
-            //Clear the current list.
-            let rows = currentSelections.children
-            //The first child element is the header. Don't delete the firstChild, but the nextSibling.
-            while (currentSelections.firstChild.nextSibling) {
-                currentSelections.firstChild.nextSibling.remove()
-            }
-
-            let selections = (await getSubscriptionFromURL(getEmail())).parameters
-			
-            for (let gauge in selections) {
-                for (let id in selections[gauge]) {
-
-                    let row = document.createElement("div")
-                    row.className = "row"
-
-                    let gaugeColumn = document.createElement("span")
-                    gaugeColumn.className = "gaugeColumn"
-                    gaugeColumn.innerHTML = gauge
-                    row.appendChild(gaugeColumn)
-
-                    let nameColumn = document.createElement("span")
-                    nameColumn.className = "nameColumn"
-                    nameColumn.innerHTML = selections[gauge][id].name
-                    row.appendChild(nameColumn)
-
-                    let minColumn = document.createElement("span")
-                    minColumn.className = "rangeColumn"
-                    minColumn.innerHTML = selections[gauge][id].minimum + "-" + selections[gauge][id].maximum + selections[gauge][id].units
-                    row.appendChild(minColumn)
-
-                    let deleteButton = document.createElement("span")
-                    deleteButton.className = "deleteButton"
-                    deleteButton.innerHTML = "✖"
-                    row.appendChild(deleteButton)
-
-                    deleteButton.addEventListener("click", function() {
-                        if (confirm("Remove " + selections[gauge][id].name + " at gauge " + gauge + "?")) {
-                            delete selections[gauge][id]
-                            //Trim out the gauge object if it is empty.
-                            if (Object.keys(selections[gauge]).length === 0) {
-                                delete selections[gauge]
-                            }
-                            localStorage.setItem("flownotifications", JSON.stringify(selections))
-                            redrawRows()
-                        }
-                    })
-
-                    currentSelections.appendChild(row)
-
-                    let panel = document.createElement("div")
-                    panel.innerHTML = "id: " + id
-
-                    row.addEventListener("click", function() {
-                        let currentlyExists = (panel.offsetHeight > 0)
-                        panel.remove() //Doesn't do anything if panel doesn't exist.
-                        if (!currentlyExists) {
-                            currentSelections.insertBefore(panel, row.nextSibling)
-                        }
-                    });
-                }
-            }
-        }
-			
-			if (getEmail().includes("@")) {redrawRows()}
-
-
-        async function syncWithServer(timeStamp = 0) {
-            await fetch("https://rivers.run/node/notifications", {
-                method: "POST",
-                cache: "no-store",
-                body:JSON.stringify({
-					type: "email",
-					address: getEmail(),
-                    parameters: JSON.parse(localStorage.getItem("flownotifications") || "{}"),
-                    noneUntil: timeStamp
-                })
-            })
-        }
-
-        //URL is the unique url push notifications are received from.
-        //This can be used to recover lost data if localStorage is cleared, or to sync between devices.
-        async function getSubscriptionFromURL(url) {
-            let response = await fetch("https://rivers.run/node/notifications", {
-                cache: "no-store",
-                method: "POST",
-                body:JSON.stringify({
-                    getSubscriptionFromURL: url
-                })
-            })
-			let result = await response.text()
-			if (result === "") {return ""}
-			let obj = JSON.parse(result)
-			return obj
-		
-        }
-
-			function getEmail() {
-				let email = document.getElementById("email").value
-				localStorage.setItem("notificationsemail", email)
-				return email
-			}
-			
-			document.getElementById("saveEmail").addEventListener("click", updateSubscriptionStatus)
-			
-        async function updateSubscriptionStatus() {
-            //TODO: Handle the scenario where the public key has changed. This will need code changes in other places too.
+        function updateSubscriptionStatus() {
 			if (!getEmail().includes("@")) {
-               document.getElementById("notificationsStatus").innerHTML = "Invalid Email"
-                document.getElementById("unsubscribe").style.display = "none"
-                document.getElementById("subscribe").style.display = "inline-block"
-                document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
-                currentSelections.style.opacity = 0.5
-				return
+                document.getElementById("notificationsStatus").innerHTML = "Invalid Email"
+                setDisabledView()
 			}
-			
-			let obj = await getSubscriptionFromURL(getEmail())
-            if (obj === "") {
+            if (subscription === null) {
                 document.getElementById("notificationsStatus").innerHTML = "Notifications disabled for this email."
-                document.getElementById("unsubscribe").style.display = "none"
-                document.getElementById("subscribe").style.display = "inline-block"
-                document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
-                currentSelections.style.opacity = 0.5
+                setDisabledView()
             }
-			else if (JSON.stringify(obj.parameters) === "{}") {
-				//Currently, disabling notifications merely makes parameters empty.
-                document.getElementById("notificationsStatus").innerHTML = "This email will receive no notifications."
-                document.getElementById("subscribe").style.display = "none"
-                document.getElementById("unsubscribe").style.display = "none"
-                document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
-                currentSelections.style.opacity = 0.5
-			}
             else {
                 document.getElementById("notificationsStatus").innerHTML = "Notifications enabled for this email."
-                document.getElementById("subscribe").style.display = "none"
-                document.getElementById("unsubscribe").style.display = "inline-block"
-                document.getElementById("notificationsState").style.backgroundColor = ""
-                currentSelections.style.opacity = 1
+                setEnabledView()
             }
         }
 
+			
+			async function emailUpdated() {
+				if (!getEmail().includes("@")) {
+					subscription = null
+				}
+				else {
+					subscription = await getSubscription(getEmail())
+					if (subscription !== null && localStorage.getItem("addparameters") !== null) {
+						let parameter = JSON.parse(localStorage.getItem("addparameters") || "{}")
+						for (let key in parameter) {
+							//Only one key, but whatever.
+							subscription.parameters[key] = parameter[key]
+							
+						}
+						await updateSubscription(subscription)
+						localStorage.removeItem("addparameters")
+						//TODO: Add parametersToAdd to subscription.
+						//update subscription.
+					}
+				}
+				updateSubscriptionStatus()
+				redrawRows()
+			}
 
         ;(async function() {
-
-            window.sw = await navigator.serviceWorker.ready
-						
-            updateSubscriptionStatus()
-
-
+			
             document.getElementById("unsubscribe").addEventListener("click", async function() {
-				if (confirm("Delete all flow notifications (warning: currently disabled non-email ones too.)?")) {
-					localStorage.removeItem("flownotifications")
-					await syncWithServer()	
-					await updateSubscriptionStatus()
+				if (confirm("Are you sure you want to remove this email from notifications?")) {
+					await deleteEmailSubscription(getEmail())	
+					emailUpdated()
 				}
             })
 
             document.getElementById("subscribe").addEventListener("click", async function() {
-				await syncWithServer()
-				await updateSubscriptionStatus()
+				if (subscription === null) {
+					if (!getEmail().includes("@")) {
+						alert("Invalid email")
+						return
+					}
+					
+					await updateSubscription({
+						type: "email",
+						address: getEmail(),
+						parameters: {},
+						//noneUntil: timeStamp
+					})
+				}
+				else {
+					console.error("Subscribe button clicked, yet subscription not null.")
+				}
+				await emailUpdated()
             })
+			
+			
+			if (getEmail().includes("@")) {
+				emailUpdated()
+			}
 
-
-
+			
         }());
         </script>
     </body>

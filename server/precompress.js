@@ -12,7 +12,7 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 	let args = [compressionLevel]
 	
 	if (input instanceof Buffer) {args.push(input.byteLength)}
-	console.log(args)
+
 	let compressor = child_process.fork(path.join(__dirname, "brotliCompress.js"), args, {stdio: "pipe"})
 	
 	os.setPriority(compressor.pid, priority)
