@@ -112,31 +112,39 @@ function getMessage(data, address) {
 		`<html><head></head><body>`,
 	]
 	
+	function createListItem(river) {
+		return "<li>" + `<a href="${getSearchLink([river.id])}">${river.name}<a>` + ": " + river.current + river.units + " (" + river.minimum + river.units + " - " + river.maximum + river.units + ")" + "</li>"
+	}
+	
+	function createHeader(text) {
+		return `<h2 style="margin-bottom: 0">${text}</h2>`
+	}
+	
 	if (tooHigh.length > 0) {
-		body.push(`<h2 style="margin-bottom: 0">Rivers that are Too High:</h2>`)
+		body.push(createHeader("Rivers that are Too High:"))
 		body.push("<ul>")
 		tooHigh.forEach((river) => {
-			body.push("<li>" + `<a href="${getSearchLink([river.id])}">${river.name}<a>` + ": " + river.current + river.units + " (" + river.minimum + river.units + " - " + river.maximum + river.units + ")" + "</li>")
+			body.push(createListItem(river))
 		})
 		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(tooHigh))}">View all these on rivers.run</a></li>`)
 		body.push("</ul>")
 	}
 	
 	if (running.length > 0) {
-		body.push(`<h2 style="margin-bottom: 0">Rivers that are Running:</h2>`)
+		body.push(createHeader("Rivers that are Running:")
 		body.push("<ul>")
 		running.forEach((river) => {
-			body.push("<li>" + `<a href="${getSearchLink([river.id])}">${river.name}<a>` + ": " + river.current + river.units + " (" + river.minimum + river.units + " - " + river.maximum + river.units + ")" + "</li>")
+			body.push(createListItem(river))
 		})
 		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(running))}">View all these on rivers.run</a></li>`)
 		body.push("</ul>")
 	}
 	
 	if (tooLow.length > 0) {
-		body.push(`<h2 style="margin-bottom: 0">Rivers that are Too Low:</h2>`)
+		body.push(createHeader("Rivers that are Too Low:")
 		body.push("<ul>")
 		tooLow.forEach((river) => {
-			body.push("<li>" + `<a href="${getSearchLink([river.id])}">${river.name}<a>` + ": " + river.current + river.units + " (" + river.minimum + river.units + " - " + river.maximum + river.units + ")" + "</li>")
+			body.push(createListItem(river))
 		})
 		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(tooLow))}">View all these on rivers.run</a></li>`)
 		body.push("</ul>")
