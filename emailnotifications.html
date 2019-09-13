@@ -11,7 +11,7 @@
 		</div>
 			
 		<div id="emailEntry" style="text-align: center;">
-			<input id="email" type="text" placeholder="Your Email"><input id="saveEmail" type="button" value="Save">
+			<input id="email" type="text" placeholder="Your Email"><input id="saveEmail" type="button" value="Select">
 		</div>
 		
         <div id="notificationsState">
@@ -265,7 +265,7 @@
 			
 			
 			document.getElementById("disable").addEventListener("click", async function() {
-				let hours = prompt("How many hours would you like to disable notifications for?")
+				let hours = prompt("How many hours (from now) would you like to disable notifications for?")
 				let disableUntil = new Date(Date.now() + hours*1000*60*60)
 				await updateNoneUntil(getEmail(), disableUntil.getTime())
 				alert(getDisabledUntilPhrase(disableUntil))
