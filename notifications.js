@@ -129,13 +129,15 @@ let currentSelections = document.getElementById("currentSelections")
                             if (Object.keys(selections[gauge]).length === 0) {
                                 delete selections[gauge]
                             }
-                            localStorage.setItem("flownotifications", JSON.stringify(selections))
+							subscription.parameters = selections
+							updateSubscription(subscription)
                             redrawRows()
                         }
                     })
 
                     currentSelections.appendChild(row)
 
+					//TODO: Make sure if this element is deleted, it's panel is too.
                     let panel = document.createElement("div")
                     panel.innerHTML = "id: " + id
 

@@ -1,7 +1,7 @@
 const {skillTranslations} = require("./skillTranslations.js")    
 const addGraphs = require("./addGraphs.js").addGraphs
 const {calculateAge} = require("./flowInfoCalculations.js")
-const {createNotificationsWidget} = require("./notificationsWidget.js")
+const {createDeviceNotificationsWidget, createEmailNotificationsWidget} = require("./notificationsWidget.js")
 
 //Code that runs when the button is clicked
     function riverbuttonClicked(button, river) {
@@ -161,7 +161,8 @@ function createExpansion(button, river) {
 					div.appendChild(document.createElement("br"))
 					div.appendChild(document.createElement("br"))
 				}
-				div.appendChild(createNotificationsWidget(river, usgsID))
+				div.appendChild(createDeviceNotificationsWidget(river, usgsID))
+				div.appendChild(createEmailNotificationsWidget(river, usgsID))
 
 				console.time("Add Graphs")
 				addGraphs(div, data)

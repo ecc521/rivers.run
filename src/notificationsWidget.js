@@ -1,9 +1,4 @@
-//TODO: How should email notificatios get handled?			
-
-//Proposal: Seperate widget. Save button may want to actually save instead of opening the window.
-
-
-			function createNotificationsWidget(river, usgsID, isEmail) {
+			function createDeviceNotificationsWidget(river, usgsID) {
 				let data = {
 					id: river.id,
 					name: river.name
@@ -31,11 +26,11 @@
 				//Describe what this does, and alert the user if their browser is unsupported.
 				let description = document.createElement("p")
 				container.appendChild(description)
-				description.innerHTML = "Set alerts for " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + ":<br>"
+				description.innerHTML = "Receive notifications for " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + ":<br>"
 				description.style.marginBottom = "0.5em" //Make the description closer to what it is describing...
 
 				if (!("PushManager" in window) || !("Notification" in window) || !("serviceWorker" in navigator)) {
-					description.innerHTML += "Your browser does not support flow alerts. You can try using Firefox, Chrome, Opera, or Edge, or Samsung Internet. On iOS, Apple provides no reasonable way to send web notifications, and uses their control of the App Store to prevent other browsers from supporting notifications. Rivers.run is working on email notifications to remedy this situation. "
+					description.innerHTML += "Your browser does not support flow alerts. (iOS users - blame apply for abusive app store monopoly behavior). You may however utilize email notifications."
 					return;
 				}
 
@@ -124,8 +119,115 @@
 				return container
 			}
 			
+
+
+
+//TODO: How should email notificatios get handled?			
+
+//Proposal: Seperate widget. Save button may want to actually save instead of opening the window.
+//TODO: Remove a lot of duplication
+
+			function createEmailNotificationsWidget(river, usgsID) {
+				let data = {
+					id: river.id,
+					name: river.name
+				}
+
+				//Container for the river alert creator.
+				let container = document.createElement("div")
+				container.className = "notificationsContainer"
+
+				//Describe what this does, and alert the user if their browser is unsupported.
+				let description = document.createElement("p")
+				container.appendChild(description)
+				description.innerHTML = "Receive Emails for " + ((usgsarray[usgsID] && usgsarray[usgsID].name) || "this river") + ":<br>"
+				description.style.marginBottom = "0.5em" //Make the description closer to what it is describing...
+
+				let low = document.createElement("input")
+				low.className = "minimum"
+				low.type = "number"
+				low.placeholder = "Minimum"
+
+				let high = document.createElement("input")
+				high.className = "maximum"
+				high.placeholder = "Maximum"
+				high.type = "number"
+
+				let units = document.createElement("select")
+
+				let blank = document.createElement("option")
+				blank.selected = true
+				blank.disabled = true
+				blank.value = ""
+				blank.innerHTML = "Units"
+				units.appendChild(blank)
+
+				let feet = document.createElement("option")
+				feet.value = "ft"
+				feet.innerHTML = "Feet"
+				feet.pattern = "[0-9]"
+				units.appendChild(feet)
+
+				let cfs = document.createElement("option")
+				cfs.value = "cfs"
+				cfs.innerHTML = "CFS"
+				cfs.pattern = "[0-9]"
+				units.appendChild(cfs)
+
+				let save = document.createElement("button")
+				save.innerHTML = "Save"
+
+				save.addEventListener("click", function() {
+					let addparameters = {}
+					
+			        let lowValue = parseFloat(low.value)
+					let highValue = parseFloat(high.value)
+
+					data.minimum = lowValue
+					data.maximum = highValue
+					data.units = units.value
+
+					if (isNaN(lowValue)) {
+						alert("Minimum must be a number. Ex: 2.37, 3000")
+						return
+					}
+
+					if (isNaN(highValue)) {
+						alert("Maximum must be a number. Ex: 2.37, 3000")
+						return
+					}
+
+					if (!units.value) {
+						alert("Please specify whether feet or cfs should be used.")
+						return;
+					}
+
+					addparameters[usgsID] = {}
+					addparameters[usgsID][river.id] = data
+
+					localStorage.setItem("addparameters", JSON.stringify(addparameters))
+
+					window.open("emailnotifications.html")
+				})
+
+				let manage = document.createElement("button")
+				manage.innerHTML = "Manage Notifications"
+				manage.addEventListener("click", function() {
+					window.open("emailnotifications.html")
+				})
+
+				container.appendChild(low)
+				container.appendChild(high)
+				container.appendChild(units)
+				container.appendChild(save)
+				container.appendChild(manage)
+				return container
+			}
+			
+
 			
 			
 			module.exports = {
-				createNotificationsWidget
+				createDeviceNotificationsWidget,
+				createEmailNotificationsWidget
 			}
