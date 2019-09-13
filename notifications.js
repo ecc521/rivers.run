@@ -41,10 +41,10 @@
 			else {return result}
 		}
 
-		async function updateNoneUntil(noneUntil) {
-			let subscription = await getSubscription
-			subscription.noneUntil = noneUntil
-			return updateSubscription(subscription)
+		async function updateNoneUntil(key, noneUntil) {
+			let sub = await getSubscription(key)
+			sub.noneUntil = noneUntil
+			return updateSubscription(sub)
 		}
 
 		function setDisabledView(options) {

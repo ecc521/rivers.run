@@ -1,4 +1,9 @@
-			function createNotificationsWidget(river, usgsID) {
+//TODO: How should email notificatios get handled?			
+
+//Proposal: Seperate widget. Save button may want to actually save instead of opening the window.
+
+
+			function createNotificationsWidget(river, usgsID, isEmail) {
 				let data = {
 					id: river.id,
 					name: river.name

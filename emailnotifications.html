@@ -80,7 +80,7 @@
         }
 
         #subscribe {
-            background: linear-gradient(45deg, yellow, #00FFFF); /*linear-gradient(45deg, lightyellow, lightgreen, lightblue);*/
+            background: linear-gradient(45deg, yellow, #00FF00 ,#00FFFF);
         }
 
         #unsubscribe {
@@ -89,7 +89,7 @@
         }
 			
 			#disable {
-				background: linear-gradient(45deg, orange, #66FF66, #00FFFF)
+				background: linear-gradient(45deg, orange, yellow, lightgreen)
 			}
 
         #notificationsState {
@@ -187,6 +187,11 @@
 		document.getElementById("saveEmail").addEventListener("click", emailUpdated)
 			
 			
+			function getDisabledUntilPhrase(DateObj) {
+				if (!(DateObj instanceof Date)) {DateObj = new Date(DateObj)} //Allow time strings or milliseconds since epoch.
+				return "Notifications disabled until " + DateObj.toLocaleDateString() + " at " + DateObj.toLocaleTimeString()
+			}
+			
         function updateSubscriptionStatus() {
 			if (!getEmail().includes("@")) {
                 document.getElementById("notificationsStatus").innerHTML = "Invalid Email"
@@ -197,8 +202,8 @@
                 setDisabledView()
             }
 			else if (subscription.noneUntil > Date.now()) {
-                document.getElementById("notificationsStatus").innerHTML = "Notifications temporarily disabled until " + new Date(subscription.noneUntil).toLocaleTimeString() + new Date(subscription.noneUntil).toLocaleDateString()
-                setDisabledView({temporaryDisable: true})
+                document.getElementById("notificationsStatus").innerHTML = getDisabledUntilPhrase(subscription.noneUntil)
+				setDisabledView({temporaryDisable: true})
 			}
             else {
                 document.getElementById("notificationsStatus").innerHTML = "Notifications available for this email."
@@ -244,14 +249,11 @@
 					if (!getEmail().includes("@")) {
 						alert("Invalid email")
 						return
-					}
-					
-					await updateNoneUntil(0)
+					}					
 				}
 				else {
-					//Update noneUntil
-					subscription.noneUntil = 0
-					await updateSubscription(subscription)
+					//Clear noneUntil
+					await updateNoneUntil(getEmail(), 0)
 				}
 				await emailUpdated()
             })
@@ -260,8 +262,8 @@
 			document.getElementById("disable").addEventListener("click", async function() {
 				let hours = prompt("How many hours would you like to disable notifications for?")
 				let disableUntil = new Date(Date.now() + hours*1000*60*60)
-				await updateNoneUntil(disableUntil.getTime())
-				alert("Notifications disabled until " + disabledUntil.toLocaleTimeString() + " " + disabledUntil.toLocaleDateString())
+				await updateNoneUntil(getEmail(), disableUntil.getTime())
+				alert(getDisabledUntilPhrase(disableUntil))
 			})
 			
 			if (getEmail().includes("@")) {
