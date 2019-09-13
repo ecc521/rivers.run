@@ -74,8 +74,9 @@ async function compressFiles(directoryToCompress) {
 
 	files = files.filter((filePath) => {
 		let extension = path.extname(filePath).toLowerCase()
-		if ([".png",".jpeg", ".jpg", ".br"].includes(extension)) {
+		if ([".png",".jpeg", ".jpg", ".br", ".log"].includes(extension)) {
 			//Don't compress some precompessed file types.
+			//Also avoid compressing log files (mainly for performance reasons, as log files will almost always have changed)
 			return false
 		}
 		let dir = path.dirname(filePath)
