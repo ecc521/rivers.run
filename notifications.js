@@ -41,13 +41,25 @@
 			else {return result}
 		}
 
+		async function updateNoneUntil(noneUntil) {
+			let subscription = await getSubscription
+			subscription.noneUntil = noneUntil
+			return updateSubscription(subscription)
+		}
 
-
-		function setDisabledView() {
+		function setDisabledView(options) {
                 document.getElementById("unsubscribe").style.display = "none"
                 document.getElementById("subscribe").style.display = "inline-block"
                 document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
                 currentSelections.style.opacity = 0.5
+			
+				if (options && options.temporaryDisable) {
+					//Show notification disabler
+					document.getElementById("disable").style.display = "inline-block"
+				}
+				else {
+                	document.getElementById("disable").style.display = "none"
+				}
 			}
 			
 			function setEnabledView() {
@@ -55,6 +67,7 @@
                 document.getElementById("unsubscribe").style.display = "inline-block"
                 document.getElementById("notificationsState").style.backgroundColor = ""
                 currentSelections.style.opacity = 1
+				document.getElementById("disable").style.display = "inline-block"
 			}
 
 

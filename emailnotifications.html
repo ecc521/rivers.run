@@ -17,7 +17,8 @@
         <div id="notificationsState">
             <p id="notificationsStatus"></p>
             <button id="subscribe">Enable Notifications</button>
-            <button id="unsubscribe">Disable Notifications</button>
+            <button id="disable">Temporarily Disable Notifications</button>
+            <button id="unsubscribe">Unsubscribe from Notifications</button>
         </div>
 
         <div id="currentSelections"></div>
@@ -46,7 +47,7 @@
 			#email {
 				padding: 8px;
 				border-radius: 8px;
-				width: 300px;
+				width: 250px;
 				font-size: 16px;
 			}
 
@@ -71,7 +72,7 @@
             background-color:lightgreen;
         }
 
-        #subscribe, #unsubscribe {
+        #subscribe, #disable, #unsubscribe {
             font-size: 16px;
             border-radius: 10px;
             padding:8px;
@@ -79,13 +80,17 @@
         }
 
         #subscribe {
-            background: linear-gradient(45deg, lightyellow, lightgreen, lightblue);
+            background: linear-gradient(45deg, yellow, #00FFFF); /*linear-gradient(45deg, lightyellow, lightgreen, lightblue);*/
         }
 
         #unsubscribe {
             background: linear-gradient(45deg, #FF9999, #9999FF)
             /*linear-gradient(45deg, #FF6666, #FFaaaa, lightblue, #6666FF);   Text shows up better, but I don't like it as much.*/
         }
+			
+			#disable {
+				background: linear-gradient(45deg, orange, #66FF66, #00FFFF)
+			}
 
         #notificationsState {
             text-align: center;
@@ -188,11 +193,15 @@
                 setDisabledView()
 			}
             if (subscription === null) {
-                document.getElementById("notificationsStatus").innerHTML = "Notifications disabled for this email."
+                document.getElementById("notificationsStatus").innerHTML = "This email is not signed up for notifications."
                 setDisabledView()
             }
+			else if (subscription.noneUntil > Date.now()) {
+                document.getElementById("notificationsStatus").innerHTML = "Notifications temporarily disabled until " + new Date(subscription.noneUntil).toLocaleTimeString() + new Date(subscription.noneUntil).toLocaleDateString()
+                setDisabledView({temporaryDisable: true})
+			}
             else {
-                document.getElementById("notificationsStatus").innerHTML = "Notifications enabled for this email."
+                document.getElementById("notificationsStatus").innerHTML = "Notifications available for this email."
                 setEnabledView()
             }
         }
@@ -221,8 +230,10 @@
 
         ;(async function() {
 			
+			//TODO: Add an option to turn off for a certain amount of time using noneUntil.
+			
             document.getElementById("unsubscribe").addEventListener("click", async function() {
-				if (confirm("Are you sure you want to remove this email from notifications?")) {
+				if (confirm("Are you sure you want to remove this email from notifications (you can't undo this action)?")) {
 					await deleteEmailSubscription(getEmail())	
 					emailUpdated()
 				}
@@ -235,24 +246,30 @@
 						return
 					}
 					
-					await updateSubscription({
-						type: "email",
-						address: getEmail(),
-						parameters: {},
-						//noneUntil: timeStamp
-					})
+					await updateNoneUntil(0)
 				}
 				else {
-					console.error("Subscribe button clicked, yet subscription not null.")
+					//Update noneUntil
+					subscription.noneUntil = 0
+					await updateSubscription(subscription)
 				}
 				await emailUpdated()
             })
 			
 			
+			document.getElementById("disable").addEventListener("click", async function() {
+				let hours = prompt("How many hours would you like to disable notifications for?")
+				let disableUntil = new Date(Date.now() + hours*1000*60*60)
+				await updateNoneUntil(disableUntil.getTime())
+				alert("Notifications disabled until " + disabledUntil.toLocaleTimeString() + " " + disabledUntil.toLocaleDateString())
+			})
+			
 			if (getEmail().includes("@")) {
 				emailUpdated()
 			}
 
+			
+			
 			
         }());
         </script>
