@@ -206,7 +206,7 @@
 				setDisabledView({temporaryDisable: true})
 			}
             else {
-                document.getElementById("notificationsStatus").innerHTML = "Notifications available for this email."
+                document.getElementById("notificationsStatus").innerHTML = "Notifications enabled for this email."
                 setEnabledView()
             }
         }
@@ -249,7 +249,12 @@
 					if (!getEmail().includes("@")) {
 						alert("Invalid email")
 						return
-					}					
+					}
+					updateSubscription({
+						type: "email",
+						address: getEmail(),
+						parameters: {}
+					})
 				}
 				else {
 					//Clear noneUntil
@@ -264,6 +269,7 @@
 				let disableUntil = new Date(Date.now() + hours*1000*60*60)
 				await updateNoneUntil(getEmail(), disableUntil.getTime())
 				alert(getDisabledUntilPhrase(disableUntil))
+				emailUpdated()
 			})
 			
 			if (getEmail().includes("@")) {

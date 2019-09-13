@@ -48,17 +48,19 @@
 		}
 
 		function setDisabledView(options) {
-                document.getElementById("unsubscribe").style.display = "none"
                 document.getElementById("subscribe").style.display = "inline-block"
-                document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
                 currentSelections.style.opacity = 0.5
 			
 				if (options && options.temporaryDisable) {
 					//Show notification disabler
 					document.getElementById("disable").style.display = "inline-block"
+                	document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#333300":"#ffffaa"
+                	document.getElementById("unsubscribe").style.display = "inline-block"
 				}
 				else {
                 	document.getElementById("disable").style.display = "none"
+                	document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
+                	document.getElementById("unsubscribe").style.display = "none"
 				}
 			}
 			
