@@ -35,6 +35,7 @@
     "gulp": "^4.0.2",
     "gulp-postcss": "^8.0.0",
     "gulp-sourcemaps": "^2.6.5",
+    "ip2location-nodejs": "^8.2.0",
     "node-fetch": "^2.6.0",
     "nodemailer": "^6.3.0",
     "pitboss-ng": "^1.1.0",
