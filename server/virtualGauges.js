@@ -82,7 +82,7 @@ async function getVirtualGauges(usgsarray) {
 		
 		//If a name is not specified, choose one for them.
 		if (gauges[gaugeIdentifier].name) {gauges[gaugeIdentifier].name = "Virtual: " + gauges[gaugeIdentifier].name}
-		else {gauges[gaugeIdentifier] = "Virtual " + gaugeIdentifier}
+		else {gauges[gaugeIdentifier].name = "Virtual: " + filename}
 	}
 	
 	return gauges

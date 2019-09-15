@@ -37,6 +37,7 @@
     "gulp-sourcemaps": "^2.6.5",
     "node-fetch": "^2.6.0",
     "nodemailer": "^6.3.0",
+    "pitboss-ng": "^1.1.0",
     "postcss": "^7.0.17",
     "postcss-css-variables": "^0.13.0",
     "postcss-custom-properties": "^9.0.2",
@@ -47,7 +48,6 @@
   "dependencies": {
     "@babel/runtime": "^7.5.5",
     "@webcomponents/custom-elements": "^1.2.4",
-    "pitboss-ng": "^1.1.0",
     "web-push": "^3.3.5"
   }
 }
