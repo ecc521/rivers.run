@@ -47,6 +47,7 @@
   "dependencies": {
     "@babel/runtime": "^7.5.5",
     "@webcomponents/custom-elements": "^1.2.4",
+    "pitboss-ng": "^1.1.0",
     "web-push": "^3.3.5"
   }
 }

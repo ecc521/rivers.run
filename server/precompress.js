@@ -34,18 +34,18 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 
 async function compressFile(filePath) {
 	
-	if (fs.statSync(filePath).size > 5*1024*1024) {
+	if (await fs.promises.stat(filePath).size > 5*1024*1024) {
 		console.log(filePath + " is over 5MiB. Not compressing.")
 		return;
 	}
 	
-	let uncompressed = fs.readFileSync(filePath)
+	let uncompressed = await fs.promises.readFile(filePath)
 	
 	let compressedPath = filePath + ".br"
 	
 	if (fs.existsSync(compressedPath)) {
 		//If there is an existing file that decompressed to the input, don't waste time compressing again.
-		let currentlyCompressed = zlib.brotliDecompressSync(fs.readFileSync(compressedPath))
+		let currentlyCompressed = zlib.brotliDecompressSync(await fs.promises.readFile(compressedPath))
 		if (currentlyCompressed.toString() === uncompressed.toString()) {
 			console.log(filePath + " is already compressed.")
 			return;
@@ -61,7 +61,7 @@ async function compressFile(filePath) {
 	}
 	else {
 		if (fs.existsSync(compressedPath)) {
-			fs.unlinkSync(compressedPath)
+			await fs.promises.unlink(compressedPath)
 		}
 		console.log("Failed to compress " + filePath)
 	}

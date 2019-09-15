@@ -96,6 +96,7 @@ let currentSelections = document.getElementById("currentSelections")
 
 			let selections = subscription.parameters
 			
+			//TODO: Tell the user when they are not signed up for any rivers.
             for (let gauge in selections) {
                 for (let id in selections[gauge]) {
 
