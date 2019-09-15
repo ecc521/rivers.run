@@ -73,15 +73,16 @@ async function getVirtualGauges(usgsarray) {
 	
 	for (let i=0;i<gaugeFiles.length;i++) {
 		let src = gaugeFiles[i]
-		let fallbackGaugeName = path.basename(src, ".js")
+		let filename = path.basename(src, ".js")
+		let gaugeIdentifier = "virtual:" + filename
 		
-		if (gauges[fallbackGaugeName]) {console.error("Naming conflict for " + fallbackGaugeName); continue;}
+		if (gauges[gaugeIdentifier]) {console.error("Naming conflict for " + gaugeIdentifier); continue;}
 		
-		gauges[fallbackGaugeName] = await computeVirtualGauge(src)
+		gauges[gaugeIdentifier] = await computeVirtualGauge(src)
 		
 		//If a name is not specified, choose one for them.
-		if (gauges[fallbackGaugeName].name) {gauges[fallbackGaugeName].name = "Virtual: " + gauges[fallbackGaugeName]}
-		else {gauges[fallbackGaugeName] = "Virtual " + fallbackGaugeName}
+		if (gauges[gaugeIdentifier].name) {gauges[gaugeIdentifier].name = "Virtual: " + gauges[gaugeIdentifier].name}
+		else {gauges[gaugeIdentifier] = "Virtual " + gaugeIdentifier}
 	}
 	
 	return gauges
