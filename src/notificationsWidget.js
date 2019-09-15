@@ -31,7 +31,7 @@
 
 				if (!("PushManager" in window) || !("Notification" in window) || !("serviceWorker" in navigator)) {
 					description.innerHTML += "Your browser does not support flow alerts. (iOS users - blame apply for abusive app store monopoly behavior). You may however utilize email notifications."
-					return;
+					return description;
 				}
 
 				let low = document.createElement("input")
@@ -225,8 +225,6 @@
 			}
 			
 
-			
-			
 			module.exports = {
 				createDeviceNotificationsWidget,
 				createEmailNotificationsWidget
