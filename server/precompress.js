@@ -34,7 +34,7 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 
 async function compressFile(filePath) {
 	
-	if (await fs.promises.stat(filePath).size > 5*1024*1024) {
+	if ((await fs.promises.stat(filePath)).size > 5*1024*1024) {
 		console.log(filePath + " is over 5MiB. Not compressing.")
 		return;
 	}
@@ -51,6 +51,8 @@ async function compressFile(filePath) {
 			return;
 		}
 	}
+	
+	console.log("Compressing " + filePath)
 	
 	let compressed = await brotliCompressAsync(uncompressed, 11) //Pass 11 to compress at maximum level.
 
