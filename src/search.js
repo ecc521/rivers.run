@@ -45,7 +45,7 @@ function normalSearch(list, query, returnBuckets) {
 	//The first buckets are better matches than later ones.
     let buckets = [[],[],[],[],[],[],[]]
 	let bucket2 = [] //Bucket 2 - index 1 - is special.
-
+	
 	list.forEach(function(event) {
 		
 		//First bucket
@@ -71,23 +71,25 @@ function normalSearch(list, query, returnBuckets) {
 			//TODO: Consider making .includes() and startsWith worth 7.
 			if (nameWords.includes(word)) {
 				delete nameWords[nameWords.indexOf(word)] //Remove the word so that is can't be matched twice (ex. text lower, search lower lower)
-				return bonus + 5
+				return bonus + 10
 			}
 			else if (sectionWords.includes(word)) {
 				delete sectionWords[sectionWords.indexOf(word)]
-				return bonus + 5
+				return bonus + 10
 			}
 			else if (event.name.toLowerCase().startsWith(word) || event.section.toLowerCase().startsWith(word)) {
-				return bonus + 3
+				return bonus + 6
 			}
 			//If name or section contains word.
 			else if ((event.name.toLowerCase().indexOf(word) !== -1) || (event.section.toLowerCase().indexOf(word) !== -1)) {
-				return bonus + 1
+				return bonus + 2
 			}
 			return bonus
 		}, 0)
 		
-		
+		//If the total number of words in the query are equal to the number of words in name and section (so all words matched), add one point.
+		//This makes things like the Lower Yough show up above the Lower Lower Yough for the search Lower Yough
+		if (bonus && nameWords.length + sectionWords.length === words.length) {bonus += 1}
 		
 		//Thrid bucket
 		let nameMatches = event.name.toLowerCase().startsWith(query)

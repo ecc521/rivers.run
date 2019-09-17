@@ -24,24 +24,37 @@ setInterval(function() {
 //Some actions should be performed at installation, but there is no need to start the server.
 //Although I used to always start the server, an error in server.listen because of the port already being uesd
 //lead to the entire program being terminated.
-let notificationServer = require("./notificationserver.js") //On reboot, run notificationserver.js
+let notificationServer = require(path.join(__dirname, "notificationserver.js")) //On reboot, run notificationserver.js
 if (process.argv[2] !== "--install") {notificationServer()}
 
-const sendNotifications = require("./sendnotifications.js");
+const sendNotifications = require(path.join(__dirname, "sendnotifications.js"));
 
-const flowDataParser = require("./flowDataParser.js")
+const flowDataParser = require(path.join(__dirname, "flowDataParser.js"))
 
-const precompress = require("./precompress.js").compressFiles
+const precompress = require(path.join(__dirname, "precompress.js")).compressFiles
 
 const utils = require(path.join(__dirname, "utils.js"))
 
-fs.chmodSync(__filename, 0o775) //Make sure this file is executable.
+
+let virtualGauges;
+
+try {
+	virtualGauges = require(path.join(__dirname, "virtualGauges.js"))
+}
+catch(e) {
+	console.error(e)
+	fs.appendFileSync(path.join(utils.getLogDirectory(), "virtualGaugeError.log"), e.toString() + "\n")
+}
+
+
+
+fs.chmodSync(__filename, 0o775) //Make sure this file is executable. This will help prevent crontab setup issues.
 
 
 async function updateCachedData() {
 	console.log("Preparing flow data.\n")
 	
-	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
+	let riverarray = JSON.parse(await fs.promises.readFile(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
 
 	let timeToRequest = 1000*86400 //Milliseconds of time to request
 
@@ -52,14 +65,22 @@ async function updateCachedData() {
 		for (let i=0;i<values.length;i++) {
 			let usgsID = values[i]
 			if (!usgsID) {continue}
-			//Gauges used by virtual gauges should be in relatedusgs
-			//Basic value validation (throws out virtual gauges and clearly incorrect numbers.)
-	        if (usgsID.length > 7 && usgsID.length < 16 && !isNaN(Number(usgsID))) {
-	            (sites.indexOf(usgsID) === -1) && sites.push(usgsID) //Add the site if it doesn't exist in the list.
-	        }
+			sites.push(usgsID)
 		}
     }
+	
+	//Don't ask USGS for non-USGS gauges.
+	sites = sites.filter((usgsID) => {
+		return usgsID.length > 7 && usgsID.length < 16 && !isNaN(Number(usgsID))
+	})
+	
+	if (virtualGauges) {
+		sites = sites.concat(await virtualGauges.getRequiredGauges())
+	}
 
+	//Filter out duplicate site names.
+	sites = [...new Set(sites)];
+	
 	//TODO: Calls should be batched up. I believe that USGS has a url length limit of 4096 characters.
 	//Probably use about 100-200 rivers per call due to performance reasons. When using 400, performance was almost 4 times worse.
     let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all"
@@ -70,11 +91,18 @@ async function updateCachedData() {
 	let usgsData = await response.text()
 
 	let time = Date.now() - start
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'usgsloadingtime.log'), time + '\n');
+	await fs.promises.appendFile(path.join(utils.getLogDirectory(), 'usgsloadingtime.log'), time + '\n');
 
 	let flowdata2 = flowDataParser.reformatUSGS(flowDataParser.parseUSGS(JSON.parse(usgsData)))
 	flowdata2.generatedAt = Date.now()
-	fs.writeFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), JSON.stringify(flowdata2))
+	
+	if (virtualGauges) {
+		console.log("Computing virtual gauges...")
+		flowdata2 = await virtualGauges.getVirtualGauges(flowdata2)
+		console.log("Virtual gauges computed...")
+	}
+	
+	await fs.promises.writeFile(path.join(utils.getSiteRoot(), "flowdata2.json"), JSON.stringify(flowdata2))
 
 	console.log("Flow data prepared.\n")
 	
@@ -83,7 +111,7 @@ async function updateCachedData() {
 	if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
 	else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes()/15)*15)}
 
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'executiontimer.log'), (currentTime.getTime() - Date.now() + 60*1000) + '\n');
+	await fs.promises.appendFile(path.join(utils.getLogDirectory(), 'executiontimer.log'), (currentTime.getTime() - Date.now() + 60*1000) + '\n');
 
 
 	//End install script

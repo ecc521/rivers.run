@@ -3,14 +3,11 @@ const path = require("path")
 const fs = require("fs")
 
 const utils = require(path.join(__dirname, "utils.js"))
+const subscriptionManager = require(path.join(__dirname, "subscriptionManager.js"))
 
-let keysDirectory = path.join(utils.getDataDirectory(), "notifications")
-let publicKeyPath = path.join(utils.getSiteRoot(), "public_key") //Use the root directory for the public key.
-let privateKeyPath = path.join(keysDirectory, "private_key")
+const sendEmails = require(path.join(__dirname, "sendEmails.js"))
 
-let vapidKeys = {}
-vapidKeys.publicKey = fs.readFileSync(publicKeyPath, {encoding:"utf8"})
-vapidKeys.privateKey = fs.readFileSync(privateKeyPath, {encoding:"utf8"})
+const vapidKeys = require(path.join(__dirname, "vapidKeys.js"))
 
 webpush.setVapidDetails(
   'mailto:admin@rivers.run',
@@ -18,27 +15,13 @@ webpush.setVapidDetails(
   vapidKeys.privateKey
 )
 
-let storagePath = path.join(utils.getDataDirectory(), "notifications", "subscriptions.json")
-
-function deleteUserSubscription(endpoint) {
-	if (!fs.existsSync(storagePath)) {
-        console.error("Can't delete subscription. storagePath doesn't exist.")
-        return;
-	}
-    let current = fs.readFileSync(storagePath, {encoding:"utf8"})
-	let obj = JSON.parse(current)
-	delete obj[endpoint]
-	fs.writeFileSync(storagePath, JSON.stringify(obj), {encoding:"utf8"})
-}
-
-
 function sendNotifications(ignoreNoneUntil = false) {
-	if (!fs.existsSync(storagePath)) {
+	if (!fs.existsSync(subscriptionManager.storagePath)) {
 		//There are no subscriptions
 		console.warn("No subscriptions. ")
 		return
 	}
-	let subscriptions = JSON.parse(fs.readFileSync(storagePath, {encoding:"utf8"}))
+	let subscriptions = JSON.parse(fs.readFileSync(subscriptionManager.storagePath, {encoding:"utf8"}))
 	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
 	for (let url in subscriptions) {
@@ -63,8 +46,15 @@ function sendNotifications(ignoreNoneUntil = false) {
 
 				let latest = values[values.length - 1].value
 
+				//Don't delete for email notifications
 				if (!(river.minimum < latest && latest < river.maximum)) {
-					delete rivers[prop]
+					if (data.type === "email") {
+						rivers[prop].running = false
+						river.current = latest
+					}
+					else {
+						delete rivers[prop]
+					}
 				}
 				else {
 					river.current = latest
@@ -72,6 +62,33 @@ function sendNotifications(ignoreNoneUntil = false) {
                 data[prop] = rivers[prop]
 			}
 		}
+		
+		//Consider if we should overrule user.noneUntil on changes.
+		let previousData = user.previousMessage
+		
+		//Don't send empty unless it is a change.
+		//TODO: Consider sending the user a demo message if this is their first time (so if previousData is not defined
+		
+		if (!previousData || JSON.stringify(previousData) === "{}") {
+			if (JSON.stringify(data) === "{}") {
+				continue; //We are sending an empty message, and we either already sent one or never sent a message in the first place.
+			}
+		} 
+		
+		user.previousMessage = data
+		subscriptionManager.saveUserSubscription(user)
+		
+		if (user.type === "email") {
+			let res = sendEmails.sendEmail([user.address], data)
+			if (res !== false) {
+				user.noneUntil = Date.now() + 1000*60*60*8 //No emails for 8 hours.
+				subscriptionManager.saveUserSubscription(user)
+			}
+			//Handle email notifications
+			//user.address
+			continue;
+		}
+		
         //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
         webpush.sendNotification(user.subscription, JSON.stringify(data), {
             //Not sure if vapidDetails is needed, because webpush.setVapidDetails was used above.
@@ -85,7 +102,7 @@ function sendNotifications(ignoreNoneUntil = false) {
             console.error(e)
             //The users subscription is either now invalid, or never was valid.
             if (e.statusCode === 410 || e.statusCode === 404) {
-                deleteUserSubscription(user.subscription.endpoint)
+                subscriptionManager.deleteUserSubscription(user.subscription.endpoint)
             }
         }).then(console.log)
 	}

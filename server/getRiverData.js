@@ -21,9 +21,10 @@ function getAssistantReply(name, sentence) {
 		let preciseMatchers = [
 			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
 			/(?<units>flow) information for the (?<name>.+)/,
-			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?<units>running|paddleable|runnable)/i, //TODO: Check if paddleable ever actually shows up based on spelling, etc.
+			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?:at a )?(?<units>running|runnable|paddleable)/i, //TODO: Check if paddleable ever actually shows up based on spelling, etc.
 		]
 
+		
 		let matchers = [
 			/^(?:flow\s|water\s|level\s|cfs\s|feet\s|height\s|gauge\s)+([^.]+)/i,
 			/(.+?)\s(?:flow|water|level|cfs|feet|height|gauge)+/i,
@@ -96,7 +97,7 @@ function getAssistantReply(name, sentence) {
 	let topRanked = []
 
 	let buckets = normalSearch(riverarray, name, true)
-
+	
 	//Use the highest ranked river in bucket 2 (index 1).
 	topRanked = buckets[0]
 	if (topRanked.length === 0) {
@@ -105,11 +106,11 @@ function getAssistantReply(name, sentence) {
 	if (!topRanked) {
 		topRanked = buckets[2]
 	}
-
+	
 	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
 	let alwaysStart = "<speak>"
-	let ender = "<break time=\"0.3s\"/>Happy Paddling! Bye! </speak>"
+	let ender = " <break time=\"0.3s\"/>Happy Paddling! Bye! </speak>"
 
 	//TODO: Ask the user to break ties if multiple rivers in topRanked.
 
@@ -214,14 +215,14 @@ function getAssistantReply(name, sentence) {
 	str += " as of " + timeString
 	str += ", according to the gauge " + gauge.name + ". "
 
-	if (["running", "paddleable"].includes(units)) {
+	if (["running", "runnable", "paddleable"].includes(units)) {
 		//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values.
 		topRanked[0].cfs = cfs
 		topRanked[0].feet = feet
 		let relativeFlow = calculateRelativeFlow(topRanked[0])
 
 		if (relativeFlow === null) {
-			str += "Relative flows are currently unknown. To learn how to add them, go to <say-as interpret-as=\"characters\">/FAQ</say-as> in your browser. "
+			str += "Relative flows are currently unknown. To learn how to add them, go to <say-as interpret-as=\"characters\">/FAQ</say-as> in your browser."
 		}
 		else if (relativeFlow === 0) {
 			str += "This river is currently too low, with a minimum of " + topRanked[0].minrun + "."
@@ -242,14 +243,16 @@ function getAssistantReply(name, sentence) {
 			str += "This river is currently a little high, and may be more difficult than rated. The maximum levels is " + topRanked[0].maximum + ", however levels above " + topRanked[0].highflow + " are considered high."
 		}
 		else if (relativeFlow > 2.5) {
-			str += "This river is within reccomended levels, although close to being a little high. Levels above " + topRanked[0].highflow + " are considered high, while " + topRanked[0].midflow + " is considered the middle level."
+			str += "This river is within reccomended levels, although on the higher end. Levels above " + topRanked[0].highflow + " are considered high, while " + topRanked[0].midflow + " is considered the middle level."
 		}
 		else if (relativeFlow < 1.5) {
-			str += "This river is within reccomended levels, although close to being a little low. Levels below " + topRanked[0].lowflow + " are considered low, while " + topRanked[0].midflow + " is considered the middle level."
+			str += "This river is within reccomended levels, although on the lower end. Levels below " + topRanked[0].lowflow + " are considered low, while " + topRanked[0].midflow + " is considered the middle level."
 		}
 		else {
 			str += "This river is within reccomended levels. Levels below " + topRanked[0].lowflow + " are considered low, levels above " + topRanked[0].highflow + " are considered high, and " + topRanked[0].midflow + " is considered the middle level."
 		}
+		
+		str = str.split("(computer)").join("(computer estimate)")
 	}
 
 

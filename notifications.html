@@ -5,7 +5,11 @@
     <body>
 
         <h1>River notifications (Beta)</h1>
-
+		
+		<div style="text-align: center">
+			<p>If you would like to use email based notifications, go <a href="emailnotifications.html">here</a> instead.</p>
+		</div>
+			
         <p id="notificationPermission"></p>
 		
         <div id="notificationsState">
@@ -219,7 +223,7 @@
 
 
         async function syncWithServer(timeStamp = 0) {
-            await fetch("https://rivers.run/node", {
+            await fetch("https://rivers.run/node/notifications", {
                 method: "POST",
                 body:JSON.stringify({
                     subscription: await (await navigator.serviceWorker.ready).pushManager.getSubscription(),
