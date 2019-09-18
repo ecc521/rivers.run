@@ -88,8 +88,9 @@ function getAssistantReply(name, sentence) {
 	name = name.split(/the /i).join("") //This breaks phrasing of something like "Little Falls of the Potomac". Should be fixed.
 	let responseName = name
 
-	//Handle something like "Little Falls of the Potomac" or "Nantahala from Pattons to NOC"
+	//Handle something like "Little Falls of the Potomac", "Nantahala from Pattons to NOC", of "Big Laurel Creek at Hot Springs"
 	name = name.split(/ of/i).join("")
+	name = name.split(/ at/i).join("")
 	name = name.split(/ from/i).join("")
 
 	name = name.split(/ section/i).join("")
