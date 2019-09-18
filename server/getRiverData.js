@@ -236,10 +236,10 @@ function getAssistantReply(name, sentence) {
 			str += "This river is currently too high for typical paddlers, with a maximum of " + topRanked[0].maxrun + "."
 		}
 		else if (relativeFlow > 3.5) {
-			str += "This river is currently at a very high level, bordering on too high, and may be significantly more difficult than rated. The maximum is " + topRanked[0].maxrun + "."
+			str += "This river is currently at a very high level, bordering on too high, and may be significantly more difficult than rated. The maximum is " + topRanked[0].maxrun + ", but levels above " + topRanked[0].highflow + " are considered high."
 		}
 		else if (relativeFlow < 0.5) {
-			str += "This river is currently at a very low level, bordering on too low. The minimum level is " + topRanked[0].minrun + "."
+			str += "This river is currently at a very low level, bordering on too low. The minimum level is " + topRanked[0].minrun + ", however levels above " + topRanked[0].lowflow + " are preferred."
 		}
 		else if (relativeFlow < 1) {
 			str += "This river is currently a little lower than preferred. The minimum level is " + topRanked[0].minrun + ", however levels above " + topRanked[0].lowflow + " are preferred."
@@ -259,13 +259,6 @@ function getAssistantReply(name, sentence) {
 		
 		str = str.split("(computer)").join("(computer estimate)")
 	}
-
-
-	//Consider seeing if the response matches some pre-defined formats, to reduce issues with google mis-processing.
-	//Consider telling user what we got sent as river-name.
-	//TODO: Consider telling the user what river we took the gauge from. This will help prevent issues if google misinterprets things,
-	//and sends back a basic query. Ex. Hopeville Canyon > Canyon > Cheat Canyon
-	//Checking that part of the river name is in the search should work just fine.
 
 	queryResult.ssml = str + ender
 
