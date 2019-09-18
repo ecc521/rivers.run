@@ -92,8 +92,8 @@ function getAssistantReply(name, sentence) {
 	name = name.split(/ of/i).join("")
 	name = name.split(/ at/i).join("")
 	name = name.split(/ from/i).join("")
-
-	name = name.split(/ section/i).join("")
+	
+	name = name.split(/section /i).join("")
 
 	let topRanked = []
 
