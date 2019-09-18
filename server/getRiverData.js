@@ -85,7 +85,7 @@ function getAssistantReply(name, sentence) {
 	//Delete the words river and section (plus the leading space), if it exists in any casing.
 
 	name = name.split(/ river/i).join("")
-	name = name.split(/the /i).join("")
+	name = name.split(/the /i).join("") //This breaks phrasing of something like "Little Falls of the Potomac". Should be fixed.
 	let responseName = name
 
 	//Handle something like "Little Falls of the Potomac" or "Nantahala from Pattons to NOC"
