@@ -10,7 +10,7 @@ const virtualGaugesPath = path.join(utils.getSiteRoot(), "../", "rivers.run-virt
 
 
 let gaugeFiles = utils.getFilesInDirectory(virtualGaugesPath)
-gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js"})
+gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js" && !path.dirname(src).includes("utils")})
 
 let gauges = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
@@ -49,8 +49,8 @@ async function computeRequiredGauges(src) {
 
 	return await new Promise((resolve, reject) => {
 		sandbox.run({}, function (err, result) {
-			if (err !== null) {console.error(err);}
-			resolve(result)
+			if (err !== null) {reject(err)}
+			else {resolve(result)}
 			sandbox.kill();
 		});
 	})
@@ -78,8 +78,19 @@ async function getVirtualGauges(usgsarray) {
 		
 		if (gauges[gaugeIdentifier]) {console.error("Naming conflict for " + gaugeIdentifier); continue;}
 		
-		gauges[gaugeIdentifier] = await computeVirtualGauge(src)
+		try {
+			gauges[gaugeIdentifier] = await computeVirtualGauge(src)
+		}
+		catch (e) {
+			console.error(e)
+			continue;
+		}
 		
+		if (!gauges[gaugeIdentifier]) {
+			console.error(gaugeIdentifier + " returned undefined.")
+			continue;
+		}
+				
 		//If a name is not specified, choose one for them.
 		if (gauges[gaugeIdentifier].name) {gauges[gaugeIdentifier].name = "Virtual: " + gauges[gaugeIdentifier].name}
 		else {gauges[gaugeIdentifier].name = "Virtual: " + filename}
@@ -89,6 +100,8 @@ async function getVirtualGauges(usgsarray) {
 }
 
 module.exports = {
-	getRequiredGauges,
-	getVirtualGauges 
+	getRequiredGauges, //Get all gauges for directory
+	getVirtualGauges, //Updates usgsarray with all gauges
+	computeRequiredGauges, //Needed gauges for one river.
+	computeVirtualGauge //Returns computed data for one river.
 }

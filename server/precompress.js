@@ -32,11 +32,16 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 	return await utils.getData(compressor.stdout)
 }
 
-async function compressFile(filePath) {
+async function compressFile(filePath, keepLastModified) {
 	
 	if ((await fs.promises.stat(filePath)).size > 5*1024*1024) {
 		console.log(filePath + " is over 5MiB. Not compressing.")
 		return;
+	}
+	
+	let fileTimes;
+	if (keepLastModified) {
+		fileTimes = await fs.promises.stat(filePath)
 	}
 	
 	let uncompressed = await fs.promises.readFile(filePath)
@@ -60,6 +65,11 @@ async function compressFile(filePath) {
 	if (compressed.byteLength < uncompressed.byteLength) {
 		fs.writeFileSync(compressedPath, compressed)
 		console.log("Compressed " + filePath + " from " + uncompressed.byteLength + " bytes to " + compressed.byteLength + " bytes.")
+		
+		if (keepLastModified) {
+			await fs.promises.utimes(filePath, fileTimes.atime, fileTimes.mtime)
+		}
+		
 	}
 	else {
 		if (fs.existsSync(compressedPath)) {
