@@ -153,20 +153,25 @@ function getAssistantReply(name, sentence) {
 	let cfs;
 	let feet;
 	let temp;
+	let timeStamp;
 	try {
 		gauge = flowData[topRanked[0].usgs]
 		try {
 			feet = gauge.feet[gauge.feet.length-1].value
+			timeStamp = gauge.feet[gauge.feet.length-1].dateTime
 		}
 		catch(e) {console.error(e)}
 		try {
 			cfs = gauge.cfs[gauge.cfs.length-1].value
+			timeStamp = gauge.cfs[gauge.cfs.length-1].dateTime
 		}
 		catch(e) {console.error(e)}
 		try {
 			temp = gauge.temp[gauge.temp.length-1].value
+			if (!timeStamp) {timeStamp = gauge.temp[gauge.temp.length-1].dateTime} //I believe that I have seen temperature update less often on some gauges.
 		}
 		catch(e) {console.error(e)}
+		console.log(cfs)
 	}
 	catch(e) {console.error(e)}
 
@@ -206,7 +211,7 @@ function getAssistantReply(name, sentence) {
 		str += " and a temperature of " + temp + " degrees"
 	}
 
-	let timeAgo = Date.now() - (gauge.feet[gauge.feet.length-1].dateTime)
+	let timeAgo = Date.now() - timeStamp
 	let hoursAgo = Math.floor(timeAgo/1000/3600)
 	let minutesAgo = Math.ceil(timeAgo/1000%3600/60)
 
