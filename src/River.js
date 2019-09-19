@@ -238,8 +238,8 @@ function River(locate, event) {
 			//Make sure it is expanded. Otherwise, there is no need to update the expansion - and
 			//updating the expansion can take a lot of time, expecially if it causes reflow.
 			if (river.expanded) {
-				river.finished.onclick()
-				river.finished.onclick()
+				river.finished.click()
+				river.finished.click()
 			}
 		}
 
