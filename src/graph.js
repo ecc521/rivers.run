@@ -115,7 +115,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
 
 
 
-    var px = Math.floor(((canvas.width)*0.07)/2.8)
+    var px = Math.floor(((canvas.width)*0.07)/2.4)
     ctx.font = (px + 'px serif')
     if (color.length === 9) {
         color = color.slice(0,7)
@@ -127,7 +127,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     }
     else {
         //Dark Mode
-        ctx.fillStyle = "#dddddd"
+        ctx.fillStyle = "#eeeeee"
     }
 
 
@@ -242,11 +242,12 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     }
     else {
         //Dark Mode
-        ctx.fillStyle = "#cccccc"
+        ctx.fillStyle = "#eeeeee"
     }
 
     ctx.textAlign = "center";
-    ctx.fillText(Source, canvas.width/2 , canvas.height-10);
+	//Fill the name of the gauge. Max 1150px.
+    ctx.fillText(Source, canvas.width/2 , canvas.height-10, 1150);
     ctx.textAlign = "start";
 
     function H(Value) {
