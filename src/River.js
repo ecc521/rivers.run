@@ -126,6 +126,36 @@ function addRatingSpan(river, button) {
 }
 
 
+function addFlowData(river) {
+			//Load this.flow from usgsarray.
+			let data = usgsarray[river.usgs]
+			if (data) {
+	            let cfs = data.cfs
+	            let feet = data.feet
+
+	            let latestCfs, latestFeet;
+	            if (cfs) {
+	                latestCfs = cfs[cfs.length - 1].value
+	            }
+	            if (feet) {
+	                latestFeet = feet[feet.length - 1].value
+	            }
+
+	            river.feet = latestFeet
+	            river.cfs = latestCfs
+
+	            if (latestCfs && latestFeet) {
+	                river.flow = latestCfs + "cfs " + latestFeet + "ft"
+	            }
+	            else if (latestCfs) {
+	                river.flow = cfs[cfs.length - 1].value + " cfs"
+	            }
+	            else if (latestFeet) {
+	                river.flow = feet[feet.length - 1].value + " ft"
+	            }
+			}
+}
+
 function River(locate, event) {
 
     //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
@@ -178,33 +208,7 @@ function River(locate, event) {
             //Star images for rating
             addRatingSpan(this, button)
 
-			//Load this.flow from usgsarray.
-			let data = usgsarray[this.usgs]
-			if (data) {
-	            let cfs = data.cfs
-	            let feet = data.feet
-
-	            let latestCfs, latestFeet;
-	            if (cfs) {
-	                latestCfs = cfs[cfs.length - 1].value
-	            }
-	            if (feet) {
-	                latestFeet = feet[feet.length - 1].value
-	            }
-
-	            this.feet = latestFeet
-	            this.cfs = latestCfs
-
-	            if (latestCfs && latestFeet) {
-	                this.flow = latestCfs + "cfs " + latestFeet + "ft"
-	            }
-	            else if (latestCfs) {
-	                this.flow = cfs[cfs.length - 1].value + " cfs"
-	            }
-	            else if (latestFeet) {
-	                this.flow = feet[feet.length - 1].value + " ft"
-	            }
-			}
+			addFlowData(this)
 
             if (this.flow) {
 				let value = this.flow + calculateDirection(this.usgs)
