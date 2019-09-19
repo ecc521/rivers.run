@@ -45,63 +45,27 @@ function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.25)":"rg
 
 
 
+function AddSpan(text, elem) {
+	let span = document.createElement("span")
+    span.innerHTML = text
+    span.className = "riverspan"
+	elem.appendChild(span)
+    return span
+}
 
-function River(locate, event) {
 
-    //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
-    Object.assign(this, event)
-    //tags needs to be a string. It can't be undefined
-    this.tags = this.tags || ""
-    //Convert the numeric value to the filename
-
-	this.rating = parseFloat(this.rating)
-	//Consider allowing ratings less than 1.
-    if (this.rating < 1 || this.rating > 5 || isNaN(this.rating) || this.rating === undefined) {
-        this.rating = "Error"
-    }
-
-    this.skill = this.skill || "?"
-
-    this.base = "b" + locate
-    this.expanded = 0
-    this.index = locate
-
-	if (this.relatedusgs) {
-		try {
-			this.relatedusgs = JSON.parse(this.relatedusgs)
-		}
-		catch(e) {console.warn(e);}
-	}
-
-    this.create = function (forceregenerate) {
-        //Only create the button once - It's about 3 times faster.
-        if (!this.finished || forceregenerate) {
-
-            var button = document.createElement("button")
-            button.id = this.base + 1
-
-            function AddSpan(text) {
-                let span = document.createElement("span")
-                span.innerHTML = text
-                span.className = "riverspan"
-                button.appendChild(span)
-                return span
-            }
-
-            AddSpan(this.name)
-            AddSpan(this.section)
-
-			function addClassSpan(river) {
+			function addClassSpan(river, button) {
 				let riverclass = river.class || ""
 				//Put a zero width space between a parantheses and the preceeding character so that the browser knows it can split the line.
+				//This helps make the browser correctly wrap class instead of overflowing.
 				riverclass = riverclass.split("(").join("\u200b(")
-				AddSpan(riverclass).classList.add("classspan")
+				AddSpan(riverclass, button).classList.add("classspan")
 			}
 
-			function addSkillSpan(river) {
-				//Add a setting for the tooltips.
+			function addSkillSpan(river, button) {
+				//Check if the user has disabled tooltips.
 				if (localStorage.getItem("skillTooltips") === "false") {
-					AddSpan(river.skill).classList.add("skillspan")
+					AddSpan(river.skill, button).classList.add("skillspan")
 				}
 				else {
 					let skillSpan = document.createElement("span")
@@ -123,21 +87,12 @@ function River(locate, event) {
 				}
 			}
 
-			if (localStorage.getItem("classOrSkill") === "class") {
-				//Put class first so that it will show up if screen small.
-				addClassSpan(this)
-				addSkillSpan(this)
-			}
-			else {
-				//Put skill first so that it will show up if screen small.
-				addSkillSpan(this)
-				addClassSpan(this)
-			}
 
+function addRatingSpan(river, button) {
             //Star images for rating
-            if (this.rating === "Error") {
+            if (river.rating === "Error") {
 				//Make sure that the span is the correct width, but inivisble.
-                let span = AddSpan("☆☆☆☆☆")
+                let span = AddSpan("☆☆☆☆☆", button)
 				span.style.opacity = "0.2"
 				span.classList.add("emptyStars")
             }
@@ -163,11 +118,65 @@ function River(locate, event) {
 				let full = document.createElement("span")
 				full.className = "fullStars"
 				full.innerHTML = "★★★★★"
-				full.style.width = this.rating*20 + "%"
+				full.style.width = river.rating*20 + "%"
                 span.appendChild(full)
 
                 button.appendChild(span)
             }
+}
+
+
+function River(locate, event) {
+
+    //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
+    Object.assign(this, event)
+    //tags needs to be a string. It can't be undefined
+    this.tags = this.tags || ""
+    //Convert the numeric value to the filename
+
+	this.rating = parseFloat(this.rating)
+	//Consider allowing ratings less than 1.
+    if (this.rating < 1 || this.rating > 5 || isNaN(this.rating) || this.rating === undefined) {
+        this.rating = "Error"
+    }
+
+    this.skill = this.skill || "?"
+
+    this.base = "b" + locate
+    this.expanded = 0
+    this.index = locate
+	
+	if (this.relatedusgs) {
+		try {
+			this.relatedusgs = JSON.parse(this.relatedusgs)
+		}
+		catch(e) {console.warn(e);}
+	}
+
+    this.create = function (forceregenerate) {
+        //Only create the button once - It's about 3 times faster.
+        if (!this.finished || forceregenerate) {
+
+            var button = document.createElement("button")
+            button.id = this.base + 1
+
+            AddSpan(this.name, button)
+            AddSpan(this.section, button)
+
+
+			if (localStorage.getItem("classOrSkill") === "class") {
+				//Put class first so that it will show up if screen small.
+				addClassSpan(this, button)
+				addSkillSpan(this, button)
+			}
+			else {
+				//Put skill first so that it will show up if screen small.
+				addSkillSpan(this, button)
+				addClassSpan(this, button)
+			}
+
+            //Star images for rating
+            addRatingSpan(this, button)
 
 			//Load this.flow from usgsarray.
 			let data = usgsarray[this.usgs]
@@ -205,9 +214,9 @@ function River(locate, event) {
 				}
 				//TODO: Show the text "Dam" if there is plenty of space to do so. Consider using a smaller icon instead.
 				//value += this.dam ? "Dam" : ""
-                AddSpan(value)
+                AddSpan(value, button)
             }
-			else if (this.dam) {AddSpan("Dam")}
+			else if (this.dam) {AddSpan("Dam", button)}
 
 
             button.className = "riverbutton"
