@@ -35,23 +35,29 @@ catch (e) {
 	console.error(e) //PLEASE DON'T EVER RUN!
 }
 
-try {
-	window.addEventListener("error", reportError, {passive:true, capture:true},  true, true)
-}
-catch (e) {
-	console.error(e) //PLEASE DON'T EVER RUN!
-}
 
-try {
-	window.addEventListener("unhandledrejection", reportError, {passive:true, capture:true}, true, true)
-}
-catch (e) {
-	console.error(e) //PLEASE DON'T EVER RUN!
-}
+let listenersToAdd = [
+	{
+		target: window,
+		name: "error"
+	},
+	{
+		target: window,
+		name: "unhandledrejection"
+	},
+	{
+		target: document,
+		name: "error"
+	}
+]
 
-try {
-	document.addEventListener("error", reportError, {passive:true, capture:true},  true, true)
-}
-catch (e) {
-	console.error(e) //PLEASE DON'T EVER RUN!
-}
+
+listenersToAdd.forEach((listener) => {
+	try {
+		listener.target.addEventListener(listener.name, reportError, {passive:true, capture:true},  true, true)
+	}
+	catch (e) {
+		console.error(e) //PLEASE DON'T EVER RUN!
+	}
+})
+
