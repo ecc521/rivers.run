@@ -49,7 +49,6 @@
 
 		function setDisabledView(options) {
                 document.getElementById("subscribe").style.display = "inline-block"
-                currentSelections.style.opacity = 0.5
 			
 				if (options && options.temporaryDisable) {
 					//Show notification disabler
@@ -62,13 +61,16 @@
                 	document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
                 	document.getElementById("unsubscribe").style.display = "none"
 				}
+			
+				if (options && options.noEnableButton) {
+                	document.getElementById("subscribe").style.display = "none"
+				}
 			}
 			
 			function setEnabledView() {
                 document.getElementById("subscribe").style.display = "none"
                 document.getElementById("unsubscribe").style.display = "inline-block"
                 document.getElementById("notificationsState").style.backgroundColor = ""
-                currentSelections.style.opacity = 1
 				document.getElementById("disable").style.display = "inline-block"
 			}
 

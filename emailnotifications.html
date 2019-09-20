@@ -194,10 +194,10 @@
 			
         function updateSubscriptionStatus() {
 			if (!getEmail().includes("@")) {
-                document.getElementById("notificationsStatus").innerHTML = "Invalid Email"
-                setDisabledView()
+                document.getElementById("notificationsStatus").innerHTML = "Please select a valid email."
+                setDisabledView({noEnableButton: true})
 			}
-            if (subscription === null) {
+            else if (subscription === null) {
                 document.getElementById("notificationsStatus").innerHTML = "This email is not signed up for notifications."
                 setDisabledView()
             }
@@ -272,9 +272,8 @@
 				emailUpdated()
 			})
 			
-			if (getEmail().includes("@")) {
-				emailUpdated()
-			}
+			emailUpdated()
+			
 
 			
 			
