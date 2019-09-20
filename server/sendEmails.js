@@ -12,7 +12,7 @@ catch (e) {
 	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailpassword.log'), e.toString() + "\n");
 }
 
-function sendEmail(addresses, data) {
+function sendEmail(user, data) {
 	//Create the email
 	//We can give them lots of info we couldn't before.
 	var transporter = nodemailer.createTransport({
@@ -24,13 +24,13 @@ function sendEmail(addresses, data) {
 		}
 	});
 	
-	let mailInfo = getMessage(data, addresses[0])
+	let mailInfo = getMessage(data, user)
 	
 	if (mailInfo === false) {return false}; //All rivers are too low.
 	
 	const mailOptions = {
 	  from: 'rivergauges@rivers.run', //In order to have the profile image, this should be an alternative email for the gmail account.
-	  to: addresses, // list of receivers
+	  to: user.address, // list of receivers, or just a single one.
 	  subject: mailInfo.subject, // Subject line
 	  html: '<p>' + mailInfo.body + '</p>'// Body
 	};
@@ -45,7 +45,7 @@ function sendEmail(addresses, data) {
 }
 
 
-function getMessage(data, address) {
+function getMessage(data, user) {
     let title = "River(s) are running!";
     let body = "";
 
@@ -85,7 +85,9 @@ function getMessage(data, address) {
 		return encodeURI("https://rivers.run/#" + JSON.stringify(searchQuery))
 	}
 	
-	if (tooHigh + running === 0) {return false;}
+	
+	user.previousMessage = Object.assign(running, tooHigh)
+	if ((running.length + tooHigh.length) === 0 && JSON.stringify(user.previousMessage) === "{}") {return false;}
 	
     console.log(data)
 	console.log(running)
@@ -154,7 +156,7 @@ function getMessage(data, address) {
     body.push(`<h1 style="margin-bottom:0.5em"><img src="rivers.run/resources/icons/64x64-Water-Drop.png" style="vertical-align: text-top; height:1em; width: 1em;"><a href="https://rivers.run" style="color:black">rivers.run</a></h1>`)
 	body.push("<p><a href='mailto:support@rivers.run'>support@rivers.run</a></p>")
 	
-	body.push(`Click <a href="https://rivers.run/emailnotifications.html#${address}">here</a> to manage your subscription, or to unsubscribe.`)
+	body.push(`Click <a href="https://rivers.run/emailnotifications.html#${user.address}">here</a> to manage your subscription, or to unsubscribe.`)
 	
 	body.push("</body></html>")
 	

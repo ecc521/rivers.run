@@ -75,14 +75,16 @@ function sendNotifications(ignoreNoneUntil = false) {
 			}
 		} 
 		
+		if (JSON.stringify(parameters) === "{}") {continue;} //The user does not want notifications on anything right now.
+		
 		user.previousMessage = data
 		subscriptionManager.saveUserSubscription(user)
 		
 		if (user.type === "email") {
-			let res = sendEmails.sendEmail([user.address], data)
+			let res = sendEmails.sendEmail(user, data)
 			if (res !== false) {
-				user.noneUntil = Date.now() + 1000*60*60*8 //No emails for 8 hours.
-				subscriptionManager.saveUserSubscription(user)
+				user.noneUntil = Date.now() + 1000*60*60*24 //No emails for 24 hours.
+				subscriptionManager.saveUserSubscription(user) //Some properties of user should also have been modified by sendEmails.sendEmail
 			}
 			//Handle email notifications
 			//user.address
