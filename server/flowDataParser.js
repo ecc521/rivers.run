@@ -34,6 +34,7 @@ function parseUSGS(usgsdata) {
           for (let i=0;i<obj2.values.length;i++) {
             if (tempConvert) {
                 obj2.values[i].value = obj2.values[i].value * 1.8 + 32 //Convert celcius to farenheight
+                obj2.values[i].value = Math.round(obj2.values[i].value*100)/100 ///Make sure we don't get xx.000000000001 or the like by rounding to 100ths place.
             }
             delete obj2.values[i].qualifiers //rivers.run doesn't check this. Always seen it saying data is provisional, and nothing else.
             obj2.values[i].dateTime = new Date(obj2.values[i].dateTime).getTime() //Reformat to decimal based time.
