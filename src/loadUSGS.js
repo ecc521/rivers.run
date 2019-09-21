@@ -42,7 +42,7 @@ function updateUSGSDataInfo() {
 setInterval(updateUSGSDataInfo, 1000*60*1) //Every minute, make sure that the data has not become old. If it has, display a warning.
 
 let timesLoadUSGSRan = 0
-let loadUSGS = async function(useCache) {
+let loadUSGS = async function(useCache, promiseToWaitFor) {
 	//Gaurd against infinite recursion. Ignores calls when data is new. (within 5 minutes)
 	if (window.usgsDataAge < 1000*60*5) {
 		return;
@@ -76,8 +76,10 @@ let loadUSGS = async function(useCache) {
 	updateUSGSDataInfo()
 	window.updateOldDataWarning()
 
+	if (promiseToWaitFor) {
+		await promiseToWaitFor
+	}
 
-	if (!window.ItemHolder) {window.ItemHolder = []}
 	//Add USGS Data to Graph
 	for (let i=0;i<ItemHolder.length;i++) {
 		let river = ItemHolder[i]

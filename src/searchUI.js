@@ -6,7 +6,7 @@ let span = document.getElementById("advanced-search-modal-close").onclick = func
     advanced_search_modal.style.display = "none"
 }
 
-window.addEventListener("click", function(event) {
+document.addEventListener("click", function(event) {
     if (event.target === advanced_search_modal) {
         advanced_search_modal.style.display = "none"
     }
@@ -102,7 +102,7 @@ async function calculateCoordinates() {
 	document.getElementById("latitudeQuery").value = coords.latitude
 	document.getElementById("longitudeQuery").value = coords.longitude
 	status.innerHTML = "You are within " + coords.accuracy + " meters of " + coords.latitude + " degrees latitude and " + coords.longitude + " degrees longitude."
-	
+
 	//Alert the user if the potential error is greater than 10 miles..
 	if (coords.accuracy > 10*1609.344) {
 		alert("Your device stated that GPS readings could be up to " + Math.ceil(coords.accuracy/1609.344) + " miles off target. You may want to make sure the coordinates are working properly.")
@@ -130,15 +130,15 @@ for (let i=0;i<elements.length;i++) {
 
 let ipLocation = document.getElementById("ipLocation")
 try {
-	//IP based Geolocation only appears to be accurate with WIFI. 
+	//IP based Geolocation only appears to be accurate with WIFI.
 	//Although most browsers don't support it, try not to use IP based geolocation for mobile users.
 	//Note that the IP geolocation service should be able to tell us if the user is mobile.
-	
+
 	let notWifi
 	if (window.navigator && navigator.connection && navigator.connection.type) {
 		notWifi = (navigator.connection.type !== "wifi")
 	}
-	
+
     if (window.fetch && !notWifi) {
         fetch("https://rivers.run/node/ip2location").then((response) => {
     		response.json().then((locationInfo) => {
@@ -174,7 +174,7 @@ try {
     			})
     			ipLocation.appendChild(no)
     		})
-    	})    
+    	})
     }
 }
 catch (e) {
