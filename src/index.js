@@ -65,11 +65,12 @@ require("./createLegend.js")
 
 ;(async function() {
 
-	
-	
+	let endHold;
+	let promiseToWaitFor = new Promise((resolve, reject) => {endHold = resolve})
+
 	//Load flow information. This is async, and will finish whenever.
-	require("./loadUSGS.js").loadUSGS()
-	
+	require("./loadUSGS.js").loadUSGS(false, promiseToWaitFor)
+
 	//Load river data so that the page can be rendered.
 	let fileName = "riverdata.json"
 	if (window.fetch) {
@@ -86,12 +87,14 @@ require("./createLegend.js")
 		})
 		window.riverarray = JSON.parse(response)
 	}
-	
+
 	//ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list.
 	window.ItemHolder = []
 	riverarray.map(function(event, index) {
 		ItemHolder[index] = new River(index, event)
 	})
+
+	endHold()
 
 	//If there is a custom search link, use it. Otherwise, just call NewList.
 	if (window.location.hash.length > 0) {
