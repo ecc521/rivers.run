@@ -37,7 +37,7 @@ async function computeVirtualGauge(src) {
 	})
 }
 
-
+//TODO: Make sure that console.error(), console.log(), etc, do something.
 async function computeRequiredGauges(src) {
 	var code = await fs.promises.readFile(src, {encoding: "utf8"});
 

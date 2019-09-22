@@ -26,6 +26,15 @@ html, body {
     }
 }
 
+
+/*Font size breakpoints.*/
+@media screen and (max-width: 370px) {
+    :root {
+        --defaultFontSize: 3.48vw; /*Any bigger than this, and we get quite a bit of text overlapping.*/
+    }
+}
+
+
 @media screen and (max-width:309px) {
     /*Smart Watch Mode*/
     :root {
@@ -41,13 +50,6 @@ html, body {
     }
 }
 
-/*Font size breakpoints.*/
-@media screen and (max-width: 370px) {
-    :root {
-        --defaultFontSize: 3.48vw; /*Any bigger than this, and we get quite a bit of text overlapping.*/
-    }
-}
-
 
 .riverspan:nth-child(5) {
     transform: scaleY(1.25) /*Make the stars larger without using more horizontal space.*/
@@ -59,7 +61,7 @@ html, body {
     }
 
     .riverspan:nth-child(5) {
-        transform: scaleY(1); /*Remove the vertical scaling.*/
+        transform: scaleY(1); /*Remove the vertical scaling of star images.*/
     }
 }
 
