@@ -6,7 +6,7 @@ const utils = require(path.join(__dirname, "utils.js"))
 const normalSearch = require(path.join(utils.getSiteRoot(), "src", "search.js")).normalSearch
 const calculateRelativeFlow = require(path.join(utils.getSiteRoot(), "src", "flowInfoCalculations.js")).calculateRelativeFlow
 
-function getAssistantReply(name, sentence) {
+function getAssistantReply(name, sentence, options) {
 	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
 
 	let units;
@@ -24,7 +24,7 @@ function getAssistantReply(name, sentence) {
 			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?:at a )?(?<units>running|runnable|paddleable)/i, //TODO: Check if paddleable ever actually shows up based on spelling, etc.
 		]
 
-		
+
 		let matchers = [
 			/^(?:flow\s|water\s|level\s|cfs\s|feet\s|height\s|gauge\s)+([^.]+)/i,
 			/(.+?)\s(?:flow|water|level|cfs|feet|height|gauge)+/i,
@@ -71,7 +71,10 @@ function getAssistantReply(name, sentence) {
 		})
 
 		if (results[0]) {
-			name = results[0].name
+			if (!(options && options.preferProvidedName)) {
+				//TODO: Fallback to this name if the provided name does not work.
+				name = results[0].name
+			}
 			units = results[0].units
 		}
 
@@ -92,13 +95,13 @@ function getAssistantReply(name, sentence) {
 	name = name.split(/ of/i).join("")
 	name = name.split(/ at/i).join("")
 	name = name.split(/ from/i).join("")
-	
+
 	name = name.split(/(?:section )|(?: section)/i).join("")
 
 	let topRanked = []
 
 	let buckets = normalSearch(riverarray, name, true)
-	
+
 	//Use the highest ranked river in bucket 2 (index 1).
 	topRanked = buckets[0]
 	if (topRanked.length === 0) {
@@ -107,7 +110,7 @@ function getAssistantReply(name, sentence) {
 	if (!topRanked) {
 		topRanked = buckets[2]
 	}
-	
+
 	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
 	let alwaysStart = "<speak>"
@@ -257,7 +260,7 @@ function getAssistantReply(name, sentence) {
 		else {
 			str += "This river is within reccomended levels. Levels below " + topRanked[0].lowflow + " are considered low, levels above " + topRanked[0].highflow + " are considered high, and " + topRanked[0].midflow + " is considered the middle level."
 		}
-		
+
 		str = str.split("(computer)").join("(computer estimate)")
 	}
 

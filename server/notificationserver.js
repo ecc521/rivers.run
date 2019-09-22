@@ -78,6 +78,19 @@ async function httprequest(req,res) {
 			fs.appendFileSync(path.join(utils.getLogDirectory(), 'assistanterror.log'), String(e) + "\n");
 		}
 
+
+		try {
+			if (req.method === "POST" && req.url.startsWith("/node/alexaskill/rivers.run")) {
+				await assistantRequest.handleAlexaRequest(req, res)
+				return;
+			}
+		}
+		catch(e) {
+			console.error(e)
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskillerror.log'), String(e) + "\n");
+		}
+
+
 		//TODO: Check for /node/notifications soon. req.url.startsWith("/node/notifications")
 		if (req.method === "POST") {
 			let data = JSON.parse((await utils.getData(req)).toString())
