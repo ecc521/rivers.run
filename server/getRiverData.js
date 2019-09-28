@@ -9,7 +9,7 @@ const calculateRelativeFlow = require(path.join(utils.getSiteRoot(), "src", "flo
 
 
 
-function getAssistantReply(query, options) {
+function getAssistantReply(query, options) {	
 	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
 	
 	let sentence = query.sentence

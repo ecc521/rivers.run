@@ -9,15 +9,15 @@ async function handleRequest(req, res) {
 				fs.appendFileSync(path.join(utils.getLogDirectory(), 'assistanterror.log'), query + "\n");
 				query = JSON.parse(query)
 
-				//Not sure if outputContexts works for this.
-				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"] //What google said the river name was.
-				let unitName = query.queryResult.outputContexts[0].parameters["unit-name"] //What google said the unit name was. Don't use unit-name.original - synonyms make sure that
+				let sentence = query.queryResult.queryText
+				let riverName = query.queryResult.parameters["river-name"]
+				let unitName = query.queryResult.parameters["unit-name"]
 				//things like "running" get changed to "relative flow"
 				
 				let queryResult = getRiverData.getAssistantReply({
 					name: riverName, 
 					units: unitName,
-					sentence: query.queryResult.queryText
+					sentence
 				})
 				let buttons = [];
 
