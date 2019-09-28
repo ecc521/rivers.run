@@ -11,7 +11,13 @@ async function handleRequest(req, res) {
 
 				//Not sure if outputContexts works for this.
 				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"] //What google said the river name was.
-				let queryResult = getRiverData.getAssistantReply(riverName, query.queryResult.queryText, {preferProvidedName: true}) //Also pass the optional sentence parameter.
+				let unitName = query.queryResult.outputContexts[0].parameters["unit-name.original"] //What google said the unit name was.
+				
+				let queryResult = getRiverData.getAssistantReply({
+					name: riverName, 
+					units: unitName,
+					sentence: query.queryResult.queryText
+				})
 				let buttons = [];
 
 				let continueConversation = false;

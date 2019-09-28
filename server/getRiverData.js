@@ -6,83 +6,23 @@ const utils = require(path.join(__dirname, "utils.js"))
 const normalSearch = require(path.join(utils.getSiteRoot(), "src", "search.js")).normalSearch
 const calculateRelativeFlow = require(path.join(utils.getSiteRoot(), "src", "flowInfoCalculations.js")).calculateRelativeFlow
 
-function getAssistantReply(name, sentence, options) {
+
+
+
+function getAssistantReply(query, options) {
 	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
+	
+	let sentence = query.sentence
+	
+	//Use regex matching to fill in missing fields. 
+	query = Object.assign(regexMatching(sentence), query)
 
-	let units;
-	if (sentence) {
+	let name = query.name
+	let units = query.units
 
-		//TODO: Use some more specific regex to easily catch things like units.
-		//TODO: If no results obtained by this search, but googles query does, log the sentence.
-
-		//Sometimes Google Assistant adds a space between rivers. and Run. Handle some seperation.
-		sentence = sentence.split(/Ask rivers\s?.\s?run(?: for) (?: the)?/i).join("")
-
-		let preciseMatchers = [
-			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
-			/(?<units>flow) information for the (?<name>.+)/,
-			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?:at a )?(?<units>running|runnable|paddleable)/i, //TODO: Check if paddleable ever actually shows up based on spelling, etc.
-		]
-
-
-		let matchers = [
-			/^(?:flow\s|water\s|level\s|cfs\s|feet\s|height\s|gauge\s)+([^.]+)/i,
-			/(.+?)\s(?:flow|water|level|cfs|feet|height|gauge)+/i,
-		]
-
-		let results = []
-
-		//Use the more precise ones first.
-		preciseMatchers.forEach((regex) => {
-			let match = regex.exec(sentence)
-			if (match) {
-				let groups = match.groups
-				results.push({
-					name: groups.name,
-					units: groups.units
-				})
-			}
-		})
-
-		let trimmedSentence = sentence
-		let endingMatch = / in (?:feet|cfs).?$/i.exec(trimmedSentence)
-		if (endingMatch) {
-			console.log("Trimming " + trimmedSentence)
-			trimmedSentence = trimmedSentence.slice(0, -endingMatch[0].length)
-			console.log("To " + trimmedSentence)
-		}
-
-		trimmedSentence = trimmedSentence.split(/of /i).join("")
-		trimmedSentence = trimmedSentence.split(/the /i).join("")
-
-		matchers.forEach((regex) => {
-			let match = regex.exec(trimmedSentence)
-			if (match) {
-				let str = match[1]
-				//Sometimes the first regexp will match Water in Water Level
-				if (!str.match(/water|level|flow|of/i)) {
-					results.push({
-						name: str,
-						units: "flow"
-					})
-				}
-				else {console.log("Rejected " + str)}
-			}
-		})
-
-		if (results[0]) {
-			if (!(options && options.preferProvidedName)) {
-				//TODO: Fallback to this name if the provided name does not work.
-				name = results[0].name
-			}
-			units = results[0].units
-		}
-
-		if (results.length > 1) {
-			console.log(results)
-		}
-	}
-
+	//Possible units are flow level, relative flow, and temperature
+	
+	
 	console.log(name)
 
 	//Delete the words river and section (plus the leading space), if it exists in any casing.
@@ -224,8 +164,7 @@ function getAssistantReply(name, sentence, options) {
 	str += " as of " + timeString
 	str += ", according to the gauge " + gauge.name + ". "
 
-	if (["running", "runnable", "paddleable"].includes(units)) {
-		//TODO: Inform the user of the too low, lowflow, midflow, highflow, too high, values.
+	if (units === "relative flow") {
 		topRanked[0].cfs = cfs
 		topRanked[0].feet = feet
 		let relativeFlow = calculateRelativeFlow(topRanked[0])
@@ -268,5 +207,97 @@ function getAssistantReply(name, sentence, options) {
 
 	return queryResult
 }
+
+
+
+
+
+
+function regexMatching(sentence) {
+		//This regex matching is not great, and should only be used as a fallback.
+		//TODO: Use some more specific regex to easily catch things like units.
+	
+		//Sometimes Google Assistant adds a space between rivers. and Run. Handle some seperation.
+		sentence = sentence.split(/Ask rivers\s?.\s?run(?: for) (?: the)?/i).join("")
+
+	
+		//These still aren't precise enough: Something like what is the flow level of the flat river matches wrong. 
+		let preciseMatchers = [
+			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
+			/(?<units>flow) information for the (?<name>.+)/,
+			/i(?:s|f)(?: the)? (?<name>.+?) (?:is )?(?:at a )?(?<units>running|runnable|paddleable)/i, //TODO: Check if paddleable ever actually shows up based on spelling, etc.
+		]
+
+
+		let matchers = [
+			/^(?:flow\s|water\s|level\s|cfs\s|feet\s|height\s|gauge\s)+([^.]+)/i,
+			/(.+?)\s(?:flow|water|level|cfs|feet|height|gauge)+/i,
+		]
+
+		let results = []
+
+		//Use the more precise ones first.
+		preciseMatchers.forEach((regex) => {
+			let match = regex.exec(sentence)
+			if (match) {
+				let groups = match.groups
+				results.push({
+					name: groups.name,
+					units: groups.units
+				})
+			}
+		})
+
+		let trimmedSentence = sentence
+		let endingMatch = / in (?:feet|cfs).?$/i.exec(trimmedSentence)
+		if (endingMatch) {
+			console.log("Trimming " + trimmedSentence)
+			trimmedSentence = trimmedSentence.slice(0, -endingMatch[0].length)
+			console.log("To " + trimmedSentence)
+		}
+
+		trimmedSentence = trimmedSentence.split(/of /i).join("")
+		trimmedSentence = trimmedSentence.split(/the /i).join("")
+
+		matchers.forEach((regex) => {
+			let match = regex.exec(trimmedSentence)
+			if (match) {
+				let str = match[1]
+				//Sometimes the first regexp will match Water in Water Level
+				if (!str.match(/water|level|flow|of/i)) {
+					results.push({
+						name: str,
+						units: "flow"
+					})
+				}
+				else {console.log("Rejected " + str)}
+			}
+		})
+
+		//Log sentence that match multiple.
+		if (results.length > 1) {
+			console.log(results)
+		}
+	
+		if (results[0]) {
+			let result = {
+				name: results[0].name,
+				units: results[0].units
+			}
+	
+			if (["running", "runnable", "paddleable"].includes(result.units)) {
+				result.units = "relative flow"
+			}
+	
+			return result
+		}
+		else {
+			return {};
+		}
+}
+
+
+
+
 
 module.exports = {getAssistantReply}
