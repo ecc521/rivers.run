@@ -72,13 +72,16 @@ function getAssistantReply(query, options) {
 	if (topRanked && topRanked.length > 0) {queryResult.riverid = topRanked[0].id}
 
 	let starter = alwaysStart + (useThe?"The ":"") + responseName
+	
+	
+	//No rivers matched the search.
 	if (topRanked === undefined || topRanked.length === 0) {
 		queryResult.ssml = starter + " does not exist on rivers.run. Open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add it. " + ender
 		return queryResult
 	}
 
 
-
+	//Multiple rivers matched the search. Tell the use what we are choosing. TODO: Let user pick.
 	if (topRanked.length > 1) {
 		let start;
 		for (let i=0;i<topRanked.length;i++) {
@@ -119,15 +122,19 @@ function getAssistantReply(query, options) {
 	}
 	catch(e) {console.error(e)}
 
+	//River has no gauge, so we can't tell the user info on it.
 	if (!topRanked[0].usgs) {
 		queryResult.ssml = starter + " has no gauge on rivers.run. You can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add a gauge. " + ender
 		return queryResult
 	}
+	//Gauge is broken. Tell user.
 	else if (!cfs && !feet) {
 		if (gauge) {
+			//The gauge did not return the needed info.
 			queryResult.ssml = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge, you can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to update the gauge. " + ender
 		}
 		else {
+			//The gauge doesn't appear to exist.
 			//TODO: Tell user the gauge that we tried to use (river.usgs)
 			queryResult.ssml = starter + " does not have a working gauge. You can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to update the gauge. " + ender
 		}
@@ -161,46 +168,54 @@ function getAssistantReply(query, options) {
 
 	let timeString = (hoursAgo > 0?`${hoursAgo} hours and `:"") + minutesAgo + " minutes ago"
 
-	str += " as of " + timeString
-	str += ", according to the gauge " + gauge.name + ". "
+	str += " as of " + timeString + ", "
 
 	if (units === "relative flow") {
-		topRanked[0].cfs = cfs
-		topRanked[0].feet = feet
-		let relativeFlow = calculateRelativeFlow(topRanked[0])
-
+		//TODO: Consider moving temperature to before flow, and changing removing which is from "which is well within reccomended levels..."
+		
+		let river = topRanked[0]
+		
+		river.cfs = cfs
+		river.feet = feet
+		let relativeFlow = calculateRelativeFlow(river)
+		
 		if (relativeFlow === null) {
+			str += "according to the gauge " + gauge.name + ". "
 			str += "Relative flows are currently unknown. To learn how to add them, go to <say-as interpret-as=\"characters\">/FAQ</say-as> in your browser."
 		}
 		else if (relativeFlow === 0) {
-			str += "This river is currently too low, with a minimum of " + topRanked[0].minrun + "."
+			str += "which is below the minimum of " + river.minrun + " for the gauge " + gauge.name + "."
 		}
 		else if (relativeFlow === 4) {
-			str += "This river is currently too high for typical paddlers, with a maximum of " + topRanked[0].maxrun + "."
+			str += "which is above the reccomended maximum " + river.maxrun + " for the gauge " + gauge.name + "."
 		}
 		else if (relativeFlow > 3.5) {
-			str += "This river is currently at a very high level, bordering on too high, and may be significantly more difficult than rated. The maximum is " + topRanked[0].maxrun + ", but levels above " + topRanked[0].highflow + " are considered high."
+			str += "which is a very high level, bordering on too high. The maximum is " + topRanked[0].maxrun + ", but levels above " + topRanked[0].highflow + " are considered high for the gauge " + gauge.name + "."
 		}
 		else if (relativeFlow < 0.5) {
-			str += "This river is currently at a very low level, bordering on too low. The minimum level is " + topRanked[0].minrun + ", however levels above " + topRanked[0].lowflow + " are preferred."
+			str += "which a very low level, bordering on too low. The minimum level is " + topRanked[0].minrun + ", however levels above " + topRanked[0].lowflow + " are preferred for the gauge " + gauge.name + "."
 		}
 		else if (relativeFlow < 1) {
-			str += "This river is currently a little lower than preferred. The minimum level is " + topRanked[0].minrun + ", however levels above " + topRanked[0].lowflow + " are preferred."
+			str += "which is above the minimum of " + topRanked[0].minrun + ", although levels above " + topRanked[0].lowflow + " are reccomended for the gauge " + gauge.name + "."
 		}
 		else if (relativeFlow > 3) {
-			str += "This river is currently a little high, and may be more difficult than rated. The maximum levels is " + topRanked[0].maximum + ", however levels above " + topRanked[0].highflow + " are considered high."
+			str += "which is a little high. The maximum levels is " + topRanked[0].maximum + ", however levels above " + topRanked[0].highflow + " are considered high for the gauge " + gauge.name + "."
 		}
 		else if (relativeFlow > 2.5) {
-			str += "This river is within reccomended levels, although on the higher end. Levels above " + topRanked[0].highflow + " are considered high, while " + topRanked[0].midflow + " is considered the middle level."
+			str += "which is on the higher end of reccomended levels. Levels above " + topRanked[0].highflow + " are considered high, while " + topRanked[0].midflow + " is considered the middle level for the gauge " + gauge.name + "."
 		}
 		else if (relativeFlow < 1.5) {
-			str += "This river is within reccomended levels, although on the lower end. Levels below " + topRanked[0].lowflow + " are considered low, while " + topRanked[0].midflow + " is considered the middle level."
+			str += "which is on the lower end of reccomended levels. Levels below " + topRanked[0].lowflow + " are considered low, while " + topRanked[0].midflow + " is considered the middle level for the gauge " + gauge.name + "."
 		}
 		else {
-			str += "This river is within reccomended levels. Levels below " + topRanked[0].lowflow + " are considered low, levels above " + topRanked[0].highflow + " are considered high, and " + topRanked[0].midflow + " is considered the middle level."
+			str += "which is well within the reccomended levels of " + river.lowflow + " through " + river.highflow + ", and near the middle level of " + river.midflow + " for the gauge " + gauge.name + "."
 		}
 
+		//TOOO: Say "computer estimated value of ___" instead of "___ (computer estimate)" 
 		str = str.split("(computer)").join("(computer estimate)")
+	}
+	else {
+		str += "according to the gauge " + gauge.name + ". "
 	}
 
 	queryResult.ssml = str + ender

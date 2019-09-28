@@ -11,7 +11,8 @@ async function handleRequest(req, res) {
 
 				//Not sure if outputContexts works for this.
 				let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"] //What google said the river name was.
-				let unitName = query.queryResult.outputContexts[0].parameters["unit-name.original"] //What google said the unit name was.
+				let unitName = query.queryResult.outputContexts[0].parameters["unit-name"] //What google said the unit name was. Don't use unit-name.original - synonyms make sure that
+				//things like "running" get changed to "relative flow"
 				
 				let queryResult = getRiverData.getAssistantReply({
 					name: riverName, 
