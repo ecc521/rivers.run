@@ -26,7 +26,8 @@ async function computeVirtualGauge(src) {
 
 	return await new Promise((resolve, reject) => {
 		sandbox.run({
-				context: {'gauges': gauges}
+				context: {'gauges': gauges},
+  				libraries: ['console'] //Allow virtual gauges to access console.
 			}, 
 			function (err, result) {
 				if (err !== null) {console.error(err)}
