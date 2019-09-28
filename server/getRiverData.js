@@ -15,12 +15,19 @@ function getAssistantReply(query, options) {
 	let sentence = query.sentence
 	
 	//Use regex matching to fill in missing fields. 
-	query = Object.assign(regexMatching(sentence), query)
-
+	let regexMatched = regexMatching(sentence)
+	
+	//If the provided units is invalid, use regex matching.
+	if (!["flow level", "relative flow", "temperature"].includes(query.units)) {
+		query.units = regexMatched.units
+	}
+	
+	//Use regex matching to fill in any remaining fields.
+	query = Object.assign(regexMatched, query)
+	
 	let name = query.name
 	let units = query.units
 
-	//Possible units are flow level, relative flow, and temperature
 	
 	
 	console.log(name)
