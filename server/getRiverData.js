@@ -188,7 +188,7 @@ function getAssistantReply(query, options) {
 		
 		if (relativeFlow === null) {
 			str += "according to the gauge " + gauge.name + ". "
-			str += "Relative flows are currently unknown. To learn how to add them, go to <say-as interpret-as=\"characters\">/FAQ</say-as> in your browser."
+			str += "<break time=\"0.4s\"/>Relative flows are currently unknown. To learn how to add them, go to rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser."
 		}
 		else if (relativeFlow === 0) {
 			str += "which is below the minimum of " + river.minrun + " for the gauge " + gauge.name + "."
