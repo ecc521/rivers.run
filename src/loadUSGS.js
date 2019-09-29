@@ -82,17 +82,17 @@ let loadUSGS = async function(useCache, promiseToWaitFor) {
 
 	//Add USGS Data to Graph
 	for (let i=0;i<ItemHolder.length;i++) {
-		let river = ItemHolder[i]
+		try {
+			let river = ItemHolder[i]
 
-		//Add river data to river objects, and updates them for the new information.
+			//Add river data to river objects, and updates them for the new information.
 
-		//item.create(true) will force regeneration of the button
-		//Replace the current button so that the flow info shows
-		let replacement = river.create(true) //Create the new button and update the version in cache.
-		let elem = document.getElementById(river.base + "1") //Get the currently displayed button (if there is one.)
-		if (elem) {
-			let expanded = river.expanded
-			try {
+			//item.create(true) will force regeneration of the button
+			//Replace the current button so that the flow info shows
+			let replacement = river.create(true) //Create the new button and update the version in cache.
+			let elem = document.getElementById(river.base + "1") //Get the currently displayed button (if there is one.)
+			if (elem) {
+				let expanded = river.expanded
 				elem.parentNode.replaceChild(replacement, elem)
 				//If the river was expanded before, keep it expanded
 				if (expanded) {
@@ -100,9 +100,10 @@ let loadUSGS = async function(useCache, promiseToWaitFor) {
 					replacement.dispatchEvent(new Event("click"))
 				}
 			}
-			catch (e) {console.error(e)}
 		}
-
+		catch(e) {
+			console.error(e)
+		}
 	}
 
 	window.dispatchEvent(new Event("usgsDataUpdated"))
