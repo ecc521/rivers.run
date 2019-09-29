@@ -27,7 +27,10 @@ async function computeVirtualGauge(src) {
 	return await new Promise((resolve, reject) => {
 		sandbox.run({
 				context: {'gauges': gauges},
-  				libraries: ['console'] //Allow virtual gauges to access console.
+  				libraries: {
+					"console": "console", //Allow virtual gauges to access console.
+					"requireUtil": path.join(__dirname, "virtualGaugesRequire.js") //require stuff in the utils directory only.
+				} 
 			}, 
 			function (err, result) {
 				if (err !== null) {console.error(err)}
@@ -64,7 +67,11 @@ async function getRequiredGauges() {
 	let required = []
 	for (let i=0;i<gaugeFiles.length;i++) {
 		let src = gaugeFiles[i]
-		required = required.concat(await computeRequiredGauges(src))
+		try {
+			let needsGauges = await computeRequiredGauges(src)
+			required = required.concat(needsGauges)
+		}
+		catch(e) {console.error(e)}
 	}
 	return required
 }
@@ -104,5 +111,6 @@ module.exports = {
 	getRequiredGauges, //Get all gauges for directory
 	getVirtualGauges, //Updates usgsarray with all gauges
 	computeRequiredGauges, //Needed gauges for one river.
-	computeVirtualGauge //Returns computed data for one river.
+	computeVirtualGauge, //Returns computed data for one river.
+	virtualGaugesPath
 }

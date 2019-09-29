@@ -45,7 +45,10 @@ async function loadData(siteCodes) {
 	let gauges = {}
 	
 	if (virtualGauges) {
-		siteCodes = siteCodes.concat(await virtualGauges.getRequiredGauges())
+		try {
+			siteCodes = siteCodes.concat(await virtualGauges.getRequiredGauges())
+		}
+		catch (e) {console.error(e)}
 	}
 
 	//Filter out duplicate site names.
@@ -74,7 +77,10 @@ async function loadData(siteCodes) {
 	
 	if (virtualGauges) {
 		console.log("Computing virtual gauges...")
-		gauges = await virtualGauges.getVirtualGauges(gauges)
+		try {
+			gauges = await virtualGauges.getVirtualGauges(gauges)
+		}
+		catch (e) {console.log(e)}
 		console.log("Virtual gauges computed...")
 	}
 	

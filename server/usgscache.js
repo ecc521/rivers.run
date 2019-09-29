@@ -12,19 +12,20 @@ const child_process = require("child_process")
 
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
 //Use child_process.execSync to allow for synchronus execution.
-process.stdout.write("Generating riverdata.json - this may take a while (should be no more than 200 milliseconds per river)\n")
-child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
-process.stdout.write("riverdata.json generated.\n")
-setInterval(function() {
+if (!process.argv.includes("--noriverdata")) {
+	process.stdout.write("Generating riverdata.json - this may take a while (should be no more than 200 milliseconds per river)\n")
 	child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
-}, 1000*60*60*24)
-
+	process.stdout.write("riverdata.json generated.\n")
+	setInterval(function() {
+		child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
+	}, 1000*60*60*24)
+}
 
 //Some actions should be performed at installation, but there is no need to start the server.
 //Although I used to always start the server, an error in server.listen because of the port already being uesd
 //lead to the entire program being terminated.
 let notificationServer = require(path.join(__dirname, "notificationserver.js")) //On reboot, run notificationserver.js
-if (process.argv[2] !== "--install") {notificationServer()}
+if (!process.argv.includes("--install")) {notificationServer()}
 
 const sendNotifications = require(path.join(__dirname, "sendnotifications.js"));
 
