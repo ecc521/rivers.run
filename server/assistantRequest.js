@@ -6,8 +6,8 @@ const getRiverData = require(path.join(__dirname, "getRiverData.js"))
 async function handleRequest(req, res) {
 
 				let query = (await utils.getData(req)).toString()
-				fs.appendFileSync(path.join(utils.getLogDirectory(), 'assistanterror.log'), query + "\n");
 				query = JSON.parse(query)
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'assistanterror.log'), JSON.stringify(query) + "\n");
 
 				let sentence = query.queryResult.queryText
 				let riverName = query.queryResult.parameters["river-name"]
@@ -93,8 +93,8 @@ async function handleAlexaRequest(req, res) {
 
 
 				let query = (await utils.getData(req)).toString()
-				fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), query + "\n");
 				query = JSON.parse(query)
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), JSON.stringify(query) + "\n");
 
 				let queryResult = {
 					ssml: "<speak>Hello</speak>",
