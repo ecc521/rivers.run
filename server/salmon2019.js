@@ -11,7 +11,8 @@ function handleRequest(req, res) {
 
 				res.setHeader("Cache-Control", "no-store")
 				
-				let filePath = path.relative("node/salmon2019", req.url.slice(1))
+	
+				let filePath = path.relative("node/salmon2019", decodeURI(req.url.slice(1)))
 				//Stop users from messing with files that they shouldn't be allowed to.
 				if (filePath.includes("../")) {
 					res.statusCode = 200;
