@@ -44,8 +44,7 @@ async function handleRequest(req, res) {
 					{
 					  "card": {
 						"title": "Rivers.run Flow Info",
-						"subtitle": "Rivers.run provides river information, such as real time water levels.",
-						"imageUri": "https://rivers.run/resources/icons/128x128-Water-Drop.png",
+						"subtitle": "Rivers.run provides information, such as water levels, for whitewater rivers.",
 						"buttons": buttons
 					  }
 					}
@@ -60,8 +59,20 @@ async function handleRequest(req, res) {
 							"simpleResponse": {
 								"ssml": queryResult.ssml
 							}
+						  },
+							{
+								"basicCard": {
+									"title": "View on Rivers.run",
+									"formattedText": "See more information about " + queryResult.responseName + ", including trends, difficulty, location, and more!",
+								  "buttons": buttons,
+								  "image": "https://rivers.run/resources/icons/192x192-Water-Drop.png"
+								}
+							}
+						],
+						  "linkOutSuggestion": {
+							  "destinationName": "Go To rivers.run",
+						  	"openUrlAction": "https://rivers.run/"
 						  }
-						]
 					  }
 					}
 				  }
