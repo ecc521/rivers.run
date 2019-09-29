@@ -127,6 +127,7 @@ function addRatingSpan(river, button) {
 
 
 function addFlowData(river) {
+	try {
 			//Load this.flow from usgsarray.
 			let data = usgsarray[river.usgs]
 			if (data) {
@@ -154,6 +155,8 @@ function addFlowData(river) {
 	                river.flow = feet[feet.length - 1].value + " ft"
 	            }
 			}
+	}
+	catch(e) {console.error(e)}
 }
 
 function River(locate, event) {

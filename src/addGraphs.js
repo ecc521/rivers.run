@@ -179,24 +179,29 @@ function addGraphs(div, data) {
     }
     catch(e){console.warn("Error creating precipitation graph: " + e)}
 	
-	let buttonContainer = document.createElement("div")
-	if (graphs.length > 1) {
-		//We don't need to show selection buttons if we only have one graph.
-		container.appendChild(buttonContainer)
-	}	
-	//Add the starting graph - the flow graph.
-	container.appendChild(graphs[0].elem)
-	
-	graphs.forEach((data) => {
-		let button = getButton(data.text, data.className)	   
-		button.addEventListener("click", function() {
-			let oldGraph = container.querySelector(".graph")
-			container.replaceChild(data.elem, oldGraph)
+	try {
+		let buttonContainer = document.createElement("div")
+		if (graphs.length > 1) {
+			//We don't need to show selection buttons if we only have one graph.
+			container.appendChild(buttonContainer)
+		}	
+		//Add the starting graph - the flow graph.
+		container.appendChild(graphs[0].elem)
+
+		graphs.forEach((data) => {
+			let button = getButton(data.text, data.className)	   
+			button.addEventListener("click", function() {
+				let oldGraph = container.querySelector(".graph")
+				container.replaceChild(data.elem, oldGraph)
+			})
+			buttonContainer.appendChild(button)
 		})
-		buttonContainer.appendChild(button)
-	})
-	
-	div.appendChild(container)
+
+		div.appendChild(container)
+	}
+	catch(e) {
+		console.error(e)
+	}
 }
 
 
