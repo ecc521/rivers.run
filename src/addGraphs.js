@@ -6,6 +6,8 @@ function createcanvas() {
     canvas.width = 1200
     canvas.height = 800
 
+	canvas.className = "graph"
+	
     //Make sure the background is not transparent
     let ctx = canvas.getContext("2d");
     if (!window.darkMode) {
@@ -27,25 +29,13 @@ function toparts(arr) {
     let timestamps = []
 
     for (let i=0;i<arr.length;i++) {
+		if (!arr[i]) {continue;}
         let obj = arr[i]
         values.push(obj.value)
         timestamps.push(obj.dateTime)
     }
 
     return {values:values,timestamps:timestamps}
-}
-
-
-function getCanvasAsImage(canvas) {
-    //For some reason, only the last canvas was showing. Use images.
-	//I tried using blob urls instead of dataurls to improve performance, but they didn't help, and actually made things WORSE!!!
-    //Images also allow "Save Image As"
-    let img = document.createElement("img")
-    img.className = "graph"
-
-	img.src = canvas.toDataURL("image/png")
-
-    return img
 }
 
 //In dark mode, blue doesn't show up well enough, so different colors are used.
@@ -58,11 +48,11 @@ function getFlowGraph(cfs, height, data) {
     let canvas = createcanvas()
     //Time to create a dual lined graph!
     if (cfs && height) {
-        let parts = toparts(cfs)
-        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFFa0", 2)
+		let parts = toparts(cfs)
+        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFF", 2)
         parts = toparts(height)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#7175f0a0":"#0000FFa0", 2, 1)
-    }
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, window.darkMode?"#7175ff":"#0000FF", 2, 1)
+	}
     //We won't have both cfs and height. Draw a single line graph for whichever we have.
     else if (cfs) {
         let parts = toparts(cfs)
@@ -70,10 +60,10 @@ function getFlowGraph(cfs, height, data) {
     }
     else {
         let parts = toparts(height)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#7175f0":"blue")
+        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#7175ff":"blue")
     }
 
-	return getCanvasAsImage(canvas)
+	return canvas
 }
 
 
@@ -84,7 +74,7 @@ function getTempGraph(temp, data) {
         let parts = toparts(temp)
         addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "red", 3, window.darkMode?"#00AAFF":"blue")
 
- 		return getCanvasAsImage(canvas)
+ 		return canvas
     }
 }
 
@@ -97,7 +87,7 @@ function getPrecipGraph(precip, data) {
         let parts = toparts(precip)
         addLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0099FF")
 
-		return getCanvasAsImage(canvas)
+		return canvas
     }
 }
 
@@ -132,28 +122,37 @@ function addGraphs(div, data) {
 				})
 			}
         }
-
         else {
-            //Use one graph for cfs and one for feet if the user is in color blind mode.
-            let cfsGraph = getFlowGraph(data.cfs, undefined, data)
-			if (cfsGraph) {
-				graphs.push({
-					text: "Flow In CFS",
-					className: "flowButton",
-					elem: cfsGraph
-				})
+			try {
+				//Use one graph for cfs and one for feet if the user is in color blind mode.
+				let cfsGraph = getFlowGraph(data.cfs, undefined, data)
+				if (cfsGraph) {
+					graphs.push({
+						text: "Flow In CFS",
+						className: "flowButton",
+						elem: cfsGraph
+					})
+				}
 			}
-            let feetGraph = getFlowGraph(undefined, data.feet, data)
-			if (feetGraph) {
-				graphs.push({
-					text: "Flow In Feet",
-					className: "flowButton",
-					elem: feetGraph
-				})
+			catch (e) {
+				console.error(e)
+			}
+			try {
+				let feetGraph = getFlowGraph(undefined, data.feet, data)
+				if (feetGraph) {
+					graphs.push({
+						text: "Flow In Feet",
+						className: "flowButton",
+						elem: feetGraph
+					})
+				}
+			}
+			catch (e) {
+				console.error(e)
 			}
         }
     }
-    catch(e){console.warn("Error creating flow graph: " + e)}
+    catch(e){console.error("Error creating flow graph: " + e)}
 
     try {
         let tempGraph = getTempGraph(data.temp, data)
@@ -165,7 +164,7 @@ function addGraphs(div, data) {
 			})
 		}
     }
-    catch(e){console.warn("Error creating temperature graph: " + e)}
+    catch(e){console.error("Error creating temperature graph: " + e)}
 
     try {
         let precipGraph = getPrecipGraph(data.precip, data)
@@ -177,7 +176,7 @@ function addGraphs(div, data) {
 			})
 		}
     }
-    catch(e){console.warn("Error creating precipitation graph: " + e)}
+    catch(e){console.error("Error creating precipitation graph: " + e)}
 	
 	try {
 		let buttonContainer = document.createElement("div")

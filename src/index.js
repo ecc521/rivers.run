@@ -63,13 +63,32 @@ document.getElementById("Rivers").appendChild(new TopBar().create())
 //createLegend.js needs a #Rivers > .riverbutton to get font-size using getComputedStyle
 require("./createLegend.js")
 
+
+//Handle search links.
+	if (window.location.hash.length > 0) {
+		let search = decodeURI(window.location.hash.slice(1))
+		
+	if (search.startsWith("{")) {
+		//Advanced search
+			let query = JSON.parse(search)
+			setMenuFromSearch(query)
+	}
+		else {
+			//Normal search
+			let query = window.getAdvancedSearchParameters()
+			query.normalSearch = search
+			setMenuFromSearch(query)
+		}
+	}
+
+
 ;(async function() {
 
-	let endHold;
-	let promiseToWaitFor = new Promise((resolve, reject) => {endHold = resolve})
-
+	//ItemHolder is a list of all the river objects. New objects should be pushed into the list.
+	window.ItemHolder = []
+	
 	//Load flow information. This is async, and will finish whenever.
-	require("./loadUSGS.js").loadUSGS(false, promiseToWaitFor)
+	require("./loadUSGS.js").loadUSGS(false)
 
 	//Load river data so that the page can be rendered.
 	let fileName = "riverdata.json"
@@ -88,35 +107,25 @@ require("./createLegend.js")
 		window.riverarray = JSON.parse(response)
 	}
 
-	//ItemHolder is a list of all the DOM elements objects. New objects should be pushed into the list.
-	window.ItemHolder = []
 	riverarray.map(function(event, index) {
 		ItemHolder[index] = new River(index, event)
 	})
 
-	endHold()
-
 	//If there is a custom search link, use it. Otherwise, just call NewList.
-	if (window.location.hash.length > 0) {
-		let search = decodeURI(window.location.hash.slice(1))
 
-	if (search.startsWith("{")) {
-
-		console.log(search)
-			//Advanced search
-			let query = JSON.parse(search)
-
-			//TODO: Set the advanced search areas to the query.
-
+	let query = window.getAdvancedSearchParameters()
+	if (
+		window.usgsDataAge === undefined &&
+		(query.flow || query.sort.query === "running") 
+	) {
 			//We have no usgs data yet. Wait to flow search/sort.
-			if (window.usgsDataAge === undefined) {
 				let oldQuery = recursiveAssign({}, query)
 				delete query.flow
 				if (query.sort && query.sort.query === "running") {
 					delete query.sort
 				}
 				function dataNowLoaded() {
-					//If the user has made any changes that caused the list to reload, or it has been over 5 seconds, ask.
+					//If the user has made any changes that caused the list to reload, ask.
 					if (timesNewListCalled <= 2 || confirm("Flow data has now loaded. Would you like to apply your original search link?")) {
 						setMenuFromSearch(oldQuery)
 						NewList()
@@ -133,17 +142,6 @@ require("./createLegend.js")
 					legend.parentNode.insertBefore(searchNotFinished, legend)
 			}
 		}
-			setMenuFromSearch(query)
-			NewList()
-		}
-		else {
-			//Normal search
-			let query = window.getAdvancedSearchParameters()
-			query.normalSearch = search
-			setMenuFromSearch(query)
-			NewList()
-		}
-	}
 	else {
 		NewList()
 	}

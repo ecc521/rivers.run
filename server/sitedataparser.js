@@ -14,18 +14,61 @@ let dataStartIndex = legendIndex + 2
 lines = lines.map((line) => line.split("\t"))
 
 let legend = lines[legendIndex]
-let riverData = lines.slice(dataStartIndex)
+let riverData = lines.slice(dataStartIndex, -1) //The last line is messed up. It only has agency_cd defined.
 
-let sites = []
+
+let newArr = []
+
+riverData.forEach((line) => {
+	let obj = {}
+	line.forEach((value, index) => {
+		obj[legend[index]] = value
+	})
+	newArr.push(obj)
+})
+
+newArr = newArr.slice(0, 3000)
+
+function fixCasing(str) {
+   var splitStr = str.toLowerCase().split(' ');
+   for (var i = 0; i < splitStr.length; i++) {
+       splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);     
+   }
+   return splitStr.join(' '); 
+}
+
+newArr.forEach((obj, index) => {
+	let reducedObj = {}
+	
+	let siteName = obj.station_nm
+	
+	siteName = siteName.split("nr").join("near").split("NR").join("NEAR")
+	siteName = fixCasing(siteName)
+
+	let splitIndex = siteName.search(/ (?:below|above|near|at)/i)
+
+	reducedObj.name = siteName.slice(0, splitIndex).trim()
+	reducedObj.section = siteName.slice(splitIndex).trim()
+	reducedObj.tags = ""
+	reducedObj.writeup = ""
+	reducedObj.usgs = obj.site_no
+	reducedObj.plat = obj.dec_lat_va
+	reducedObj.plon = obj.dec_long_va
+	reducedObj.drainageArea = obj.drain_area_va
+
+	newArr[index] = reducedObj
+})
+
+//console.log(legend)
+//console.log(riverData[2])
+
+//console.log(newArr[2])
+
+fs.writeFileSync("rivers.run/riverdata.json", JSON.stringify(newArr))
+
+/*let sites = []
 riverData.forEach((line) => {sites.push(line[1])})
 
 console.log(sites.length)
 
-//USGS can't handle such a massive request. Try only 1000 sites.
-sites = sites.slice(0, 400)
-console.log("trimming sites...")
-console.log(sites.length)
-
-let timeToRequest = 1000*86400
-let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + sites.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all"
-fs.writeFileSync("url", url)
+console.log(sites[2])*/

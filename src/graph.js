@@ -37,13 +37,19 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
 
     color = color || "#000000"
 
-    ctx.lineWidth = Math.ceil(Math.min(width, height)/70)
+    ctx.lineWidth = Math.ceil(Math.min(width, height)/60)
 
     ctx.beginPath();
 
     if (graphtype === 2) {
         width = width*0.86 //We need to put values on both sides
-        ctx.lineWidth = Math.ceil(ctx.lineWidth/1.3) //Because there are two lines, make the lines thinner.
+		//Because there are two lines, make the second line thinner so that it can't entirely cover the first. (first is about double the size.)
+		if (numplace === 1) {
+        	ctx.lineWidth = Math.ceil(ctx.lineWidth/1.6) //Thinner
+		}
+		else {
+        	ctx.lineWidth = Math.ceil(ctx.lineWidth*1.1) //Slightly Wider
+		}
     }
     else {
         width = width*0.93
@@ -59,13 +65,18 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         //console.warn("Element " + i + " in list is an invalid number. It had a value of: " + vertical[i])
         //}
     }
-
-    var vscale = Math.max(...calcvertical) - Math.min(...calcvertical)
-    var hscale = Math.max(...horizontal) - Math.min(...horizontal)
+	
+	let verticalMax = Math.max(...calcvertical)
+	let verticalMin = Math.min(...calcvertical)
+	let horizontalMax = Math.max(...horizontal)
+	let horizontalMin = Math.min(...horizontal)
+	
+    var vscale = verticalMax - verticalMin
+    var hscale = horizontalMax - horizontalMin
     vscale = height/vscale
     hscale = width/hscale
     var voffset = Math.min(...calcvertical)
-    var hoffset = Math.min(...horizontal)
+    var hoffset = verticalMin
 
     hoffset -= (Math.max(...horizontal) - Math.min(...horizontal))*0.07
 
@@ -167,7 +178,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
 
     ctx.textAlign = "start";
 
-
+	ctx.lineJoin = "round" //Round out edges, and make sure that lines don't spike off the canvas (miter is a really bad default)
 
     var px = Math.floor(((canvas.width)*0.07)/2.0)
     ctx.font = (px + 'px serif')

@@ -45,10 +45,11 @@ function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.25)":"rg
 
 
 
-function AddSpan(text, elem) {
+function AddSpan(text, elem, className) {
 	let span = document.createElement("span")
     span.innerHTML = text
     span.className = "riverspan"
+	if (className) {span.classList.add(className)}
 	elem.appendChild(span)
     return span
 }
@@ -135,12 +136,18 @@ function addFlowData(river) {
 	            let feet = data.feet
 
 	            let latestCfs, latestFeet;
-	            if (cfs) {
-	                latestCfs = cfs[cfs.length - 1].value
-	            }
-	            if (feet) {
-	                latestFeet = feet[feet.length - 1].value
-	            }
+				try {
+					if (cfs) {
+						latestCfs = cfs[cfs.length - 1].value
+					}
+				}
+				catch(e) {console.error(e)}
+				try {
+					if (feet) {
+						latestFeet = feet[feet.length - 1].value
+					}
+				}
+				catch(e) {console.error(e)}
 
 	            river.feet = latestFeet
 	            river.cfs = latestCfs
@@ -158,6 +165,41 @@ function addFlowData(river) {
 	}
 	catch(e) {console.error(e)}
 }
+
+
+
+function addFlowSpan(river, button) {
+			//If there is already a flowspan, get rid of it.
+			let current = button.querySelector(".flowspan")
+			if (current) {current.remove()}
+	
+            if (river.flow) {
+				let value = river.flow + calculateDirection(river.usgs)
+				//If the user has color blind mode enabled, add river.running to one digit onto the flow data.
+				if (localStorage.getItem("colorBlindMode") === "true" && calculateColor(river) && river.running !== undefined) {
+					value += "(" + Math.round(river.running*10)/10 + ")"
+				}
+				//TODO: Show the text "Dam" if there is plenty of space to do so. Consider using a smaller icon instead.
+				//value += this.dam ? "Dam" : ""
+                AddSpan(value, button, "flowspan")
+            }
+			else if (river.dam) {AddSpan("Dam", button, "flowspan")}
+}
+
+
+function addFlowStyling(river, button) {
+		if (river.dam) {
+			button.style.background = createStripes()
+		}
+		if (calculateColor(river)) {
+			button.style.backgroundColor = calculateColor(river)
+		}
+		else if (river.dam) {
+			//Background color gets overwrote by background. This class uses !important to prevent that.
+			button.classList.add("riverbuttonDam")
+		}
+}
+
 
 function River(locate, event) {
 
@@ -213,17 +255,7 @@ function River(locate, event) {
 
 			addFlowData(this)
 
-            if (this.flow) {
-				let value = this.flow + calculateDirection(this.usgs)
-				//If the user has color blind mode enabled, add river.running to one digit onto the flow data.
-				if (localStorage.getItem("colorBlindMode") === "true" && calculateColor(this) && this.running !== undefined) {
-					value += "(" + Math.round(this.running*10)/10 + ")"
-				}
-				//TODO: Show the text "Dam" if there is plenty of space to do so. Consider using a smaller icon instead.
-				//value += this.dam ? "Dam" : ""
-                AddSpan(value, button)
-            }
-			else if (this.dam) {AddSpan("Dam", button)}
+			addFlowSpan(this, button)
 
 
             button.className = "riverbutton"
@@ -248,22 +280,29 @@ function River(locate, event) {
 
 		window.addEventListener("colorSchemeChanged", this.updateExpansion)
 
-		if (this.dam) {
-			this.finished.style.background = createStripes()
-		}
-		if (calculateColor(this)) {
-			this.finished.style.backgroundColor = calculateColor(this)
-		}
-		else if (this.dam) {
-			//Background color gets overwrote by background. This class uses !important to prevent that.
-			this.finished.classList.add("riverbuttonDam")
-		}
+		addFlowStyling(this, this.finished)
 
         //Return finished button
         return this.finished
 
     }
+	
+	
+	this.updateFlowData = function() {
+		addFlowData(this) //Update the flow information on the river object.
+		if (this.finished) {
+			addFlowSpan(this, this.finished) //Update the flowspan if it exists.
+			addFlowStyling(this, this.finished) //And make sure colors, etc, are updated.
+		}
+		else {
+			calculateColor(this) //Adds the lowflow, relative flow, and other values to the object.
+		}
+		if (this.updateExpansion) {
+			this.updateExpansion()
+		}
+	}
 
+	this.updateFlowData()
 
     this.delete = function () {
         let river = ItemHolder[locate]

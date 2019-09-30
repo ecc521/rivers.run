@@ -41,8 +41,26 @@ function updateUSGSDataInfo() {
 }
 setInterval(updateUSGSDataInfo, 1000*60*1) //Every minute, make sure that the data has not become old. If it has, display a warning.
 
+//When the data updates, rerun the current search.
+window.addEventListener("usgsDataUpdated", function() {
+	let query = getAdvancedSearchParameters()
+	if (
+		(//Make sure flow searching or sorting is being performed, so that re-running the search may make a difference.
+			!objectsEqual(query.flow, defaultAdvancedSearchParameters.flow) //Flow search
+			|| (query.sort.query === "running") //Flow sort
+		)
+		&& timesLoadUSGSRan >= 1 //And this is actually an update to the data, not the first load
+		&& ItemHolder.length !== 0 //And that there are actually rivers to update - the flow data could have loaded first.
+		&& (//Make sure we don't close writeups that the user is looking at without their permission.
+			ItemHolder.every(river => !river.expanded) //If no writeups are open, we can continue
+			|| confirm("USGS data has been updated. Would you like to re-run the previous search?") //Otherwise, ask the user if they would like the update.
+		)
+	) {NewList()}
+})
+
+
 let timesLoadUSGSRan = 0
-let loadUSGS = async function(useCache, promiseToWaitFor) {
+let loadUSGS = async function(useCache) {
 	//Gaurd against infinite recursion. Ignores calls when data is new. (within 5 minutes)
 	if (window.usgsDataAge < 1000*60*5) {
 		return;
@@ -72,57 +90,28 @@ let loadUSGS = async function(useCache, promiseToWaitFor) {
 		window.usgsarray = JSON.parse(response)
 	}
 
-	window.requestTime = usgsarray.generatedAt
-	updateUSGSDataInfo()
-	window.updateOldDataWarning()
-
-	if (promiseToWaitFor) {
-		await promiseToWaitFor
-	}
-
+	
+	console.time("updatingRivers")
 	//Add USGS Data to Graph
 	for (let i=0;i<ItemHolder.length;i++) {
 		try {
 			let river = ItemHolder[i]
 
-			//Add river data to river objects, and updates them for the new information.
-
-			//item.create(true) will force regeneration of the button
-			//Replace the current button so that the flow info shows
-			let replacement = river.create(true) //Create the new button and update the version in cache.
-			let elem = document.getElementById(river.base + "1") //Get the currently displayed button (if there is one.)
-			if (elem) {
-				let expanded = river.expanded
-				elem.parentNode.replaceChild(replacement, elem)
-				//If the river was expanded before, keep it expanded
-				if (expanded) {
-					replacement.dispatchEvent(new Event("click"))
-					replacement.dispatchEvent(new Event("click"))
-				}
-			}
+			river.updateFlowData()
 		}
 		catch(e) {
 			console.error(e)
 		}
 	}
+	console.timeEnd("updatingRivers")
 
+	window.requestTime = usgsarray.generatedAt
+	updateUSGSDataInfo()
+	window.updateOldDataWarning()
+	
 	window.dispatchEvent(new Event("usgsDataUpdated"))
 }
 
-window.addEventListener("usgsDataUpdated", function() {
-	let query = getAdvancedSearchParameters()
-	if (
-		(//Make sure flow searching or sorting is being performed, so that re-running the search may make a difference.
-			!objectsEqual(query.flow, defaultAdvancedSearchParameters.flow) //Flow search
-			|| (query.sort.query === "running") //Flow sort
-		)
-		&& timesLoadUSGSRan >= 1 //And this is actually an update to the data, not the first load
-		&& (//Make sure we don't close writeups that the user is looking at without their permission.
-			ItemHolder.every(river => !river.expanded) //If no writeups are open, we can continue
-			|| confirm("USGS data has been updated. Would you like to re-run the previous search?") //Otherwise, ask the user if they would like the update.
-		)
-	) {NewList()}
-})
 
 module.exports = {
 	loadUSGS

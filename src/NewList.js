@@ -25,6 +25,8 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	let completed = 0
 	let callNumber = timesNewListCalled
 
+	//TODO: After drawing around 250-500, we should stop, and only draw more if the user scrolls down near the bottom (potentially only if they click a load more button)
+	
 	function drawMore(milliseconds = 8) {
 		//Draw rivers to the screen for milliseconds milliseconds.
 		let start = Date.now()

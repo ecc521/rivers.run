@@ -81,7 +81,6 @@ function skillsort(list, reverse) {
 }
 
 
-
 function runningSort(list, reverse) {
 
     let noData = []

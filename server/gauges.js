@@ -26,7 +26,10 @@ async function loadFromUSGS(siteCodes) {
 	
 	//TODO: Calls should be batched up. I believe that USGS has a url length limit of 4096 characters.
 	//Probably use about 100-200 rivers per call due to performance reasons. When using 400, performance was almost 4 times worse.
-    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + siteCodes.join(",") +  "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()  + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all"
+	
+	let startDT = "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()
+	let endDT = "&endDT=" + new Date().toISOString() //endDT is optional. Will default to current time. USGS gauge prediction may be used if date in the future.
+    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + siteCodes.join(",") +  startDT  + endDT + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all"
 
 	let start = Date.now()
 
@@ -66,6 +69,7 @@ async function loadData(siteCodes) {
 	
 	let start = 0
 	let sitesPerBatch = 150 //150 sites at once
+	//TODO: Allow loading in paralell.
 	while (start < usgsSites.length) {
 		let end = start + sitesPerBatch
 		let arr = usgsSites.slice(start,end)
