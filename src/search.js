@@ -44,80 +44,112 @@ function normalSearch(list, query, returnBuckets) {
 	
 	//The first buckets are better matches than later ones.
     let buckets = [[],[],[],[],[],[],[]]
-	let bucket2 = [] //Bucket 2 - index 1 - is special.
+	let bucket2 = [] //Bucket 2 - index 1 in buckets - is special.
 	
+	//Chrome is taking 40 times longer splitting with the regex /[ ,]+/ than using .split(",").join(" ").split(" ")
+	//A bug will need to be filed - this level of performance is simply unacceptable.
+		
 	list.forEach(function(event) {
 		
-		//First bucket
-		let nameExactMatch = (event.name.toLowerCase() === query)
-		let sectionExactMatch = (event.section.toLowerCase() === query)
-				
+		let lowerCaseName = event.name.toLowerCase()
+		let lowerCaseSection = event.section.toLowerCase()
 		
+		
+		//First bucket
+		let nameExactMatch = (lowerCaseName === query)
+		let sectionExactMatch = (lowerCaseSection === query)
+				
+		if (nameExactMatch || sectionExactMatch) {
+			buckets[0].push(event)
+			return
+		}
+
 		
 		//Second Bucket
 		//This bucket is build to handle searches across name and section - such as "Lower Haw"
 		//As long as name and section contain all space seperated parts of the query, this bucket can be used.
-		let splitter = /[ ,]+/ //Split on spaces and commas. This handles things like "Lower, Lower Yough"
-		let words = query.split(splitter)
-		let passes = words.every((word) => {
-			return (event.name.toLowerCase().indexOf(word) !== -1) || (event.section.toLowerCase().indexOf(word) !== -1)
-		})
 		
-		let nameWords = event.name.toLowerCase().split(splitter)
-		let sectionWords = event.section.toLowerCase().split(splitter)
-		//For the search "Lower Haw", the Lower Haw should show up higher than Lower Hawksbill Creek.
-		//This works by assigning higher relevance to exact matches, then startsWith, than contains.
-		let bonus = words.reduce((bonus, word) => {
-			//TODO: Consider making .includes() and startsWith worth 7.
-			if (nameWords.includes(word)) {
-				delete nameWords[nameWords.indexOf(word)] //Remove the word so that is can't be matched twice (ex. text lower, search lower lower)
-				return bonus + 10
-			}
-			else if (sectionWords.includes(word)) {
-				delete sectionWords[sectionWords.indexOf(word)]
-				return bonus + 10
-			}
-			else if (event.name.toLowerCase().startsWith(word) || event.section.toLowerCase().startsWith(word)) {
-				return bonus + 6
-			}
-			//If name or section contains word.
-			else if ((event.name.toLowerCase().indexOf(word) !== -1) || (event.section.toLowerCase().indexOf(word) !== -1)) {
-				return bonus + 2
-			}
-			return bonus
-		}, 0)
+		//Split on spaces and commas. This handles things like "Lower, Lower Yough"
+		let words = query.split(",").join(" ").split(" ")
 		
-		//If the total number of words in the query are equal to the number of words in name and section (so all words matched), add one point.
-		//This makes things like the Lower Yough show up above the Lower Lower Yough for the search Lower Yough
-		if (bonus && nameWords.length + sectionWords.length === words.length) {bonus += 1}
+		if (words.length > 1) {
+			let passes = words.every((word) => {
+				return (lowerCaseName.indexOf(word) !== -1) || (lowerCaseSection.indexOf(word) !== -1)
+			})
+
+			let nameWords = lowerCaseName.split(",").join(" ").split(" ")
+			let sectionWords = lowerCaseSection.split(",").join(" ").split(" ")
+			//For the search "Lower Haw", the Lower Haw should show up higher than Lower Hawksbill Creek.
+			//This works by assigning higher relevance to exact matches, then startsWith, than contains.
+			let bonus = words.reduce((bonus, word) => {
+				//TODO: Consider making .includes() and startsWith worth 7.
+				if (nameWords.includes(word)) {
+					delete nameWords[nameWords.indexOf(word)] //Remove the word so that is can't be matched twice (ex. text lower, search lower lower)
+					return bonus + 10
+				}
+				else if (sectionWords.includes(word)) {
+					delete sectionWords[sectionWords.indexOf(word)]
+					return bonus + 10
+				}
+				else if (lowerCaseName.startsWith(word) || lowerCaseSection.startsWith(word)) {
+					return bonus + 6
+				}
+				//If name or section contains word.
+				else if ((lowerCaseName.indexOf(word) !== -1) || (lowerCaseSection.indexOf(word) !== -1)) {
+					return bonus + 2
+				}
+				return bonus
+			}, 0)
+
+			//If the total number of words in the query are equal to the number of words in name and section (so all words matched), add one point.
+			//This makes things like the Lower Yough show up above the Lower Lower Yough for the search Lower Yough
+			if (bonus && nameWords.length + sectionWords.length === words.length) {bonus += 1}
+
+			if (passes) {
+				bucket2[bonus] = bucket2[bonus] || []
+				bucket2[bonus].push(event)
+				return;
+			}
+		}
 		
 		//Thrid bucket
-		let nameMatches = event.name.toLowerCase().startsWith(query)
-		let sectionMatches = event.section.toLowerCase().startsWith(query)
+		let nameMatches = lowerCaseName.startsWith(query)
+		let sectionMatches = lowerCaseSection.startsWith(query)
 		
-		//Fourth
+		if (nameMatches || sectionMatches) {
+			buckets[2].push(event)
+			return;
+		}
+		
+		//Fourth bucket
 		let tagsContains = (event.tags.toLowerCase().indexOf(query) !== -1)
 		
+		if (tagsContains) {
+			buckets[3].push(event)
+			return;
+		}
+
+		
 		//Fifth bucket
-		let nameContains = (event.name.toLowerCase().indexOf(query) !== -1)
+		let nameContains = (lowerCaseName.indexOf(query) !== -1)
+		
+		if (nameContains) {
+			buckets[4].push(event)
+			return;
+		}
 		
 		//Sixth Bucket
-		let sectionContains = (event.section.toLowerCase().indexOf(query) !== -1)
+		let sectionContains = (lowerCaseSection.indexOf(query) !== -1)
+
+		if (sectionContains) {
+			buckets[5].push(event)
+			return;
+		}
 		
 		//Final Bucket
 		let writeupContains = (event.writeup.toLowerCase().indexOf(query) !== -1)
 		
-		if (nameExactMatch || sectionExactMatch) {buckets[0].push(event)}
-		//TODO: Use bucket 1 for even better matches in multi word.
-		else if (words.length > 1 && passes) {
-			bucket2[bonus] = bucket2[bonus] || []
-			bucket2[bonus].push(event)
-		}
-		else if (nameMatches || sectionMatches) {buckets[2].push(event)}
-		else if (tagsContains) {buckets[3].push(event)}
-		else if (nameContains) {buckets[4].push(event)}
-		else if (sectionContains) {buckets[5].push(event)}
-		else if (writeupContains) {buckets[6].push(event)}
+		if (writeupContains) {buckets[6].push(event)}
     })
 	
 	//Sort each match level alphabetically by river name
@@ -443,7 +475,9 @@ function advancedSearch(list, query) {
     }
 
 	list = list.filter(item => item !== undefined)
+	console.time("normalSearch")
     if (query["normalSearch"] !== undefined) {list = normalSearch(list, query["normalSearch"])}
+	console.timeEnd("normalSearch")
     if (query["sort"]) {list = sortUtils.sort(query["sort"].query, list, query["sort"].reverse)}
 
     return list

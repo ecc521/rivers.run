@@ -138,16 +138,24 @@ function addFlowData(river) {
 	            let latestCfs, latestFeet;
 				try {
 					if (cfs) {
-						latestCfs = cfs[cfs.length - 1].value
+						let latestCFSReading = cfs[cfs.length - 1]
+						if (latestCFSReading) {
+							//Equipment malfunctions, conversion table changes/creation, backwater at measurement site, etc, will result in USGS intentionally making values null.
+							latestCfs = latestCFSReading.value
+						}
 					}
 				}
-				catch(e) {console.error(e)}
+				catch(e) {console.error(e);console.log(river.usgs)}
 				try {
 					if (feet) {
-						latestFeet = feet[feet.length - 1].value
+						let latestFeetReading = feet[feet.length - 1]
+						if (latestFeetReading) {
+							//Though issues are alot rarer than with CFS, equipment malfunctions can cause this to be null. 
+							latestFeet = latestFeetReading.value
+						}
 					}
 				}
-				catch(e) {console.error(e)}
+				catch(e) {console.error(e);console.log(river.usgs)}
 
 	            river.feet = latestFeet
 	            river.cfs = latestCfs

@@ -3,7 +3,7 @@ let userInfo = require("./collectVisitorInformation.js").data
 
 function reportError(...error) {
 
-	console.log(...error)
+	console.warn(...error)
 
 	for (let i=0;i<error.length;i++) {
 		//Make sure some non-enumerable properties are included.

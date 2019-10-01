@@ -24,25 +24,31 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	//To avoid lagging, append a small amount of rivers at the start, then finish adding rivers in the background.
 	let completed = 0
 	let callNumber = timesNewListCalled
-
-	//TODO: After drawing around 250-500, we should stop, and only draw more if the user scrolls down near the bottom (potentially only if they click a load more button)
 	
-	function drawMore(milliseconds = 8) {
+	function drawMore(milliseconds = 8, lastDrawn) {
 		//Draw rivers to the screen for milliseconds milliseconds.
 		let start = Date.now()
 		for (;completed<orderedlist.length;completed++) {
+			//We won't draw more if we have already drawn more than 5 times the windows height below where the user has scrolled to.
+			//This will help keep performance reasonable.
+			//TODO: Draw only the window height. Wait small amount of time to see if NewList is called again (so typing in searchbox, etc). If not, resume drawing to 5x.
+			if (lastDrawn && lastDrawn.offsetTop - window.innerHeight * 5 > window.scrollY) {break;}
+			//If we have exceeded allocated time, or NewList has been called again (so another draw process is in place), stop drawing.
 			if (Date.now() - start > milliseconds || callNumber !== timesNewListCalled) {break;}
-			div.appendChild(orderedlist[completed].create())
+			let riverbutton = orderedlist[completed].create()
+			lastDrawn = riverbutton
+			div.appendChild(riverbutton)
 		}
 		return {
 			finished: completed >= orderedlist.length,
-			time: Date.now() - start //Really slow devices may take more than the allocated amount of time to finish
+			time: Date.now() - start, //Really slow devices may take more than the allocated amount of time to finish
+			lastDrawn
 		}
 	}
-	function asyncDraw() {
-		let drawing = drawMore()
+	function asyncDraw(lastDrawn) {
+		let drawing = drawMore(8, lastDrawn)
 		if (callNumber === timesNewListCalled && !drawing.finished) {
-			setTimeout(asyncDraw, Math.min(Math.max(16, drawing.time*2), 100))
+			setTimeout(asyncDraw, Math.max(16, drawing.time*2), drawing.lastDrawn)
 		}
 	}
 	asyncDraw()
