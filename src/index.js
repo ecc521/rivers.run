@@ -116,7 +116,7 @@ require("./createLegend.js")
 	let query = window.getAdvancedSearchParameters()
 	if (
 		window.usgsDataAge === undefined &&
-		(query.flow || query.sort.query === "running") 
+		(!objectsEqual(defaultAdvancedSearchParameters.flow, query.flow) || query.sort.query === "running") 
 	) {
 			//We have no usgs data yet. Wait to flow search/sort.
 				let oldQuery = recursiveAssign({}, query)
@@ -141,6 +141,7 @@ require("./createLegend.js")
 					let legend = document.getElementById("legend")
 					legend.parentNode.insertBefore(searchNotFinished, legend)
 			}
+			NewList(query)
 		}
 	else {
 		NewList()
