@@ -29,7 +29,7 @@ riverData.forEach((line) => {
 	newArr.push(obj)
 })
 
-newArr = newArr.slice(0, 1450)
+//newArr = newArr.slice(0, 1450)
 
 function fixCasing(str) {
    var splitStr = str.toLowerCase().split(' ');
@@ -45,10 +45,11 @@ newArr.forEach((obj, index) => {
 	
 	let siteName = obj.station_nm
 	
-	siteName = siteName.split("nr").join("near").split("NR").join("NEAR")
+	siteName = siteName.split(/ nr /i).join(" near ").split(/ bl /i).join(" below ").split(/ dnstrm /i).join(" downstream ").split(/ abv /i).join(" above ")
+		.split(" @ ").join(" at ").split(" S ").join(" South ").split(" N ").join(" North ").split(" E ").join(" East ").split(" W ").join(" West ")
 	siteName = fixCasing(siteName)
 
-	let splitIndex = siteName.search(/ (?:below|above|near|at)/i)
+	let splitIndex = siteName.search(/ (?:below|above|near|at|downstream|north of|east of|south of|west of)/i)
 
 	reducedObj.name = siteName.slice(0, splitIndex).trim()
 	reducedObj.section = siteName.slice(splitIndex).trim()
