@@ -46,9 +46,12 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 		}
 	}
 	function asyncDraw(lastDrawn) {
+		let oldCompleted = completed
 		let drawing = drawMore(8, lastDrawn)
 		if (callNumber === timesNewListCalled && !drawing.finished) {
-			setTimeout(asyncDraw, Math.max(16, drawing.time*2), drawing.lastDrawn)
+			let minTime = 16
+			if (completed === oldCompleted) {minTime = 64} //If we didn't draw any rivers (enough already drawn), save some CPU by increasing the amount of time between executions.
+			setTimeout(asyncDraw, Math.max(minTime, drawing.time*2), drawing.lastDrawn)
 		}
 	}
 	asyncDraw()

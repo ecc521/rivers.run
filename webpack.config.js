@@ -42,7 +42,7 @@ const path = require("path")
 								[
 									'@babel/preset-env', {
 									useBuiltIns: 'usage',
-									corejs: "2.6.9"
+									corejs: "3.2.1"
 								}]
 							]
 						}
@@ -54,17 +54,17 @@ const path = require("path")
 
 
 	let devConfig = {
-		mode: "production", //Build for "production" - Not sure if needed, but CSP may require.
-  		watch: true,
+		mode: "production",
 		entry: {
-			index: "./index.js",
-			allPages: "./allPages.js" //Package allPages.js for browser support.
+			"packages/index.js": "./src/index.js",
+			"packages/allPages.js": "./src/allPages/allPages.js",
 		},
+  		watch: true,
 		target: "web",
 		devtool: "source-map",
 		output: {
-			path: path.join(__dirname, "packages"),
-			filename: "[name].js",
+			path: __dirname,
+			filename: "[name]",
 		},
 		optimization: {
 			minimize: false

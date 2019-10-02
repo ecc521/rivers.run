@@ -1,4 +1,4 @@
-let {calculateColor, calculateDirection} = require("./flowInfoCalculations.js")
+let {calculateColor, calculateDirection, calculateRelativeFlow} = require("./flowInfoCalculations.js")
 
 const {skillTranslations} = require("./skillTranslations.js")
 const {riverbuttonClicked} = require("./riverExpansion.js")
@@ -213,8 +213,9 @@ function River(locate, event) {
 
     //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
     Object.assign(this, event)
-    //tags needs to be a string. It can't be undefined
+    //tags and writeup need to be a string. They can't be undefined
     this.tags = this.tags || ""
+    this.writeup = this.writeup || ""
     //Convert the numeric value to the filename
 
 	this.rating = parseFloat(this.rating)
@@ -286,7 +287,7 @@ function River(locate, event) {
 			}
 		}
 
-		window.addEventListener("colorSchemeChanged", this.updateExpansion)
+		window.addEventListener("colorSchemeChanged", this.updateExpansion) //TODO: This event listener should not remain forever.
 
 		addFlowStyling(this, this.finished)
 
@@ -303,7 +304,7 @@ function River(locate, event) {
 			addFlowStyling(this, this.finished) //And make sure colors, etc, are updated.
 		}
 		else {
-			calculateColor(this) //Adds the lowflow, relative flow, and other values to the object.
+			calculateRelativeFlow(this) //Adds the lowflow, relative flow, and other values to the object.
 		}
 		if (this.updateExpansion) {
 			this.updateExpansion()

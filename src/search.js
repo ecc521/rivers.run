@@ -46,8 +46,9 @@ function normalSearch(list, query, returnBuckets) {
     let buckets = [[],[],[],[],[],[],[]]
 	let bucket2 = [] //Bucket 2 - index 1 in buckets - is special.
 	
-	//Chrome is taking 40 times longer splitting with the regex /[ ,]+/ than using .split(",").join(" ").split(" ")
+	//corejs regexp polyfill is taking 40 times longer splitting with the regex /[ ,]+/ than using .split(",").join(" ").split(" ")
 	//A bug will need to be filed - this level of performance is simply unacceptable.
+	//See if this polyfill can be removed.
 		
 	list.forEach(function(event) {
 		

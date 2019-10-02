@@ -152,7 +152,7 @@ function writeToDisk(data, id) {
         }
 
         //Some properties need to be defined in file, even if blank.
-        ["name", "section", "tags", "writeup"].forEach((prop) => {
+        ["name", "section"].forEach((prop) => {
             if (!obj[prop]) {
                 obj[prop] = ""
             }

@@ -107,9 +107,11 @@ require("./createLegend.js")
 		window.riverarray = JSON.parse(response)
 	}
 
+	console.time("Create River Objects")
 	riverarray.map(function(event, index) {
 		ItemHolder[index] = new River(index, event)
 	})
+	console.timeEnd("Create River Objects")
 
 	//If there is a custom search link, use it. Otherwise, just call NewList.
 

@@ -47,6 +47,7 @@ newArr.forEach((obj, index) => {
 	
 	siteName = siteName.split(/ nr /i).join(" near ").split(/ bl /i).join(" below ").split(/ dnstrm /i).join(" downstream ").split(/ abv /i).join(" above ")
 		.split(" @ ").join(" at ").split(" S ").join(" South ").split(" N ").join(" North ").split(" E ").join(" East ").split(" W ").join(" West ")
+		.split(" Cr ").join(" Creek ").split(" Ck ").join(" Creek ").split(" R ").join(" River ")
 	siteName = fixCasing(siteName)
 
 	let splitIndex = siteName.search(/ (?:below|above|near|at|downstream|north of|east of|south of|west of)/i)
@@ -58,12 +59,10 @@ newArr.forEach((obj, index) => {
 		//The lookup table doesn't handle the very rare things like gauges in other countires.
 		reducedObj.state = stateLookupTable[obj.state_cd][0]
 	}
-	reducedObj.tags = ""
-	reducedObj.writeup = ""
 	reducedObj.usgs = obj.site_no
 	reducedObj.plat = obj.dec_lat_va
 	reducedObj.plon = obj.dec_long_va
-	reducedObj.drainageArea = obj.drain_area_va
+	//reducedObj.drainageArea = obj.drain_area_va //We don't use this, and it makes the file bigger.
 
 	newArr[index] = reducedObj
 })

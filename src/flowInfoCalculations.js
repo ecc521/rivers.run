@@ -15,7 +15,7 @@ function calculateDirection(usgsNumber) {
             //We will go back 4 datapoints (1 hour) if possible.
             //Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
             let stop = Math.max(data.length-5, 0)
-            for (let i=data.length;i>stop;i--) {
+            for (let i=data.length;i>=stop;i--) {
                 let item = data[i]
                 if (!item) {continue}
                 let value = item.value
@@ -39,7 +39,6 @@ function calculateDirection(usgsNumber) {
                 //Water level stable
                 return " –" //En dash preceeded by a thin space.
             }
-
         }
     }
     return; //If we got here, there is not enough USGS data.
@@ -102,6 +101,11 @@ function calculateRelativeFlow(river) {
         values[i] = value
     }
 
+	if (values.filter((value) => {return value !== undefined}).length === 0) {
+		return //If no relative flow values exist, return. This should help improve performance with gauges (lots of gauges, none have relative flows)
+	}
+
+	
     let flow;
     if (type === "cfs") {
         flow = river.cfs

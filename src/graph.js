@@ -55,15 +55,12 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         width = width*0.93
     }
 
+	//Eliminate invalid values so that they can't cause issues in calculating min/max.
     var calcvertical = []
     for (var i = 0;i<vertical.length;i++) {
         if (!isNaN(Number(vertical[i])) && (vertical[i]) !== "") {
             calcvertical.push(vertical[i])
         }
-        //else {
-        //This is a valid warning - It just got TOO ANNOYING
-        //console.warn("Element " + i + " in list is an invalid number. It had a value of: " + vertical[i])
-        //}
     }
 	
 	let verticalMax = Math.max(...calcvertical)
@@ -75,8 +72,8 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     var hscale = horizontalMax - horizontalMin
     vscale = height/vscale
     hscale = width/hscale
-    var voffset = Math.min(...calcvertical)
-    var hoffset = verticalMin
+    var voffset = verticalMin
+    var hoffset = horizontalMin
 
     hoffset -= (Math.max(...horizontal) - Math.min(...horizontal))*0.07
 
