@@ -10,6 +10,8 @@ const flowDataParser = require(path.join(__dirname, "flowDataParser.js"))
 
 const shrinkUSGS = require(path.join(__dirname, "shrinkUSGS.js"))
 
+const compressor = require(path.join(__dirname, "precompress.js"))
+
 let virtualGauges;
 
 try {
@@ -95,7 +97,18 @@ async function loadData(siteCodes) {
 		console.log("Loading sites " + start + " through " + end + " of " + usgsSites.length + ".")
 		let newGauges = await loadFromUSGS(arr)
 		for (let code in newGauges) {
-			await fs.promises.writeFile(path.join(readingsFile, code), jsonShrinker.stringify(gauges[code]))
+			let filePath = path.join(readingsFile, code)
+			let buf = Buffer.from(jsonShrinker.stringify(newGauges[code]))
+			await Promise.all([
+				fs.promises.writeFile(filePath, buf),
+				new Promise((resolve, reject) => {
+					compressor.brotliCompressAsync(buf, 9).then((compressedBuf) => {
+						//Compress at level 9. Its very good and much quicker than 11.	
+						fs.promises.writeFile(filePath + ".br", compressedBuf)
+						resolve()
+					})
+				})
+			])
 		}
 		newGauges = shrinkUSGS.shrinkUSGS(newGauges) //Shrink newGauges.
 		Object.assign(gauges, newGauges) //Objects are references (so gauges object is modified)
