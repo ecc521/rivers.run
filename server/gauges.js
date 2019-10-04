@@ -8,6 +8,7 @@ const jsonShrinker = require("json-shrinker")
 const utils = require(path.join(__dirname, "utils.js"))
 const flowDataParser = require(path.join(__dirname, "flowDataParser.js"))
 
+const shrinkUSGS = require(path.join(__dirname, "shrinkUSGS.js"))
 
 let virtualGauges;
 
@@ -19,7 +20,8 @@ catch(e) {
 	fs.appendFileSync(path.join(utils.getLogDirectory(), "virtualGaugeError.log"), e.toString() + "\n")
 }
 
-
+let readingsFile = path.join(utils.getSiteRoot(), "gaugeReadings")
+if (!fs.existsSync(readingsFile)) {fs.mkdirSync(readingsFile, {recursive: true})}
 
 let timeToRequest = 1000*86400 //Milliseconds of time to request
 
@@ -91,7 +93,12 @@ async function loadData(siteCodes) {
 		let end = start + sitesPerBatch
 		let arr = usgsSites.slice(start,end)
 		console.log("Loading sites " + start + " through " + end + " of " + usgsSites.length + ".")
-		Object.assign(gauges, await loadFromUSGS(arr)) //Objects are referenced (so gauges is modified)
+		let newGauges = await loadFromUSGS(arr)
+		for (let code in newGauges) {
+			await fs.promises.writeFile(path.join(readingsFile, code), jsonShrinker.stringify(gauges[code]))
+		}
+		newGauges = shrinkUSGS.shrinkUSGS(newGauges) //Shrink newGauges.
+		Object.assign(gauges, newGauges) //Objects are references (so gauges object is modified)
 		start = end
 	}
 	
@@ -103,14 +110,6 @@ async function loadData(siteCodes) {
 		}
 		catch (e) {console.log(e)}
 		console.log("Virtual gauges computed...")
-	}
-	
-	let readingsFile = path.join(utils.getSiteRoot(), "gaugeReadings")
-	if (!fs.existsSync(readingsFile)) {fs.mkdirSync(readingsFile, {recursive: true})}
-	for (let code in gauges) {
-		//May want to try to come up with a system that uses less files with more information apiece.
-		//Also consider compressing before writing to disk.
-		await fs.promises.writeFile(path.join(readingsFile, code), jsonShrinker.stringify(gauges[code]))
 	}
 	
 	gauges.generatedAt = Date.now()

@@ -37,8 +37,6 @@ const utils = require(path.join(__dirname, "utils.js"))
 
 const gaugeUtils = require(path.join(__dirname, "gauges.js"))
 
-const shrinkUSGS = require(path.join(__dirname, "shrinkUSGS.js"))
-
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable. This will help prevent crontab setup issues.
 
 
@@ -59,10 +57,8 @@ async function updateCachedData() {
     }
 	
 	let gauges = await gaugeUtils.loadData(sites)
-	
-	let shrunkGauges = shrinkUSGS.shrinkUSGS(gauges)
-	
-	await fs.promises.writeFile(path.join(utils.getSiteRoot(), "flowdata2.json"), jsonShrinker.stringify(shrunkGauges))
+		
+	await fs.promises.writeFile(path.join(utils.getSiteRoot(), "flowdata2.json"), jsonShrinker.stringify(gauges))
 	//Consider if we should actually offer full size. I would say not. I don't see a reason to write this much to the filsystem given that 
 	//nothing except graphs use it, and graphs load individually.
 	//await fs.promises.writeFile(path.join(utils.getSiteRoot(), "bigflowdata2.json"), JSON.stringify(gauges))
