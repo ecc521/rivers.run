@@ -1,51 +1,5 @@
 //These functions are used by River.js to calculate things based on a rivers flow.
 
-function calculateDirection(usgsNumber) {
-    let usgsData = usgsarray[usgsNumber]
-    if (usgsData) {
-
-        let data = usgsData.cfs || usgsData.feet
-
-        if (data) {
-            let current;
-            let previous;
-
-            //TODO: Ignore insignificant changes.
-
-            //We will go back 4 datapoints (1 hour) if possible.
-            //Do this because USGS sometimes does 1 hour intervals instead of 15 minutes
-            let stop = Math.max(data.length-5, 0)
-            for (let i=data.length;i>=stop;i--) {
-                let item = data[i]
-                if (!item) {continue}
-                let value = item.value
-                if (!current) {
-                    current = value
-                }
-                else {
-                    previous = value
-                }
-            }
-
-            if (current > previous) {
-                //Water level rising
-                return "⬆"
-            }
-            else if (previous > current) {
-                //Water level falling
-                return "⬇"
-            }
-            else if (current === previous) {
-                //Water level stable
-                return " –" //En dash preceeded by a thin space.
-            }
-        }
-    }
-    return; //If we got here, there is not enough USGS data.
-}
-
-
-
 function calculateDirection(usgsNumber, prop="cfs") {
 	//We will try first using cfs. If there is no conclusion, try feet. 
     let usgsData = usgsarray[usgsNumber]
