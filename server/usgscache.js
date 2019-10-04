@@ -19,7 +19,12 @@ if (!process.argv.includes("--noriverdata")) {
 	child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
 	process.stdout.write("riverdata.json generated.\n")
 	setInterval(function() {
-		child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
+		//We won't want to freeze the server every 24 hours. And after all, once we have the riverdata.json generated, we can comfortably make this async.
+		child_process.exec("node " + path.join(__dirname, "dataparse.js"), function(error, stdout, stderr) {
+			if (error) {console.error(err)}
+			if (stdout) {console.log(stdout)}
+			if (stderr) {console.error(stderr)}
+		})
 	}, 1000*60*60*24)
 }
 
@@ -31,7 +36,7 @@ if (!process.argv.includes("--install")) {notificationServer()}
 
 const sendNotifications = require(path.join(__dirname, "sendnotifications.js"));
 
-const precompress = require(path.join(__dirname, "precompress.js")).compressFiles
+const compressor = require(path.join(__dirname, "precompress.js"))
 
 const utils = require(path.join(__dirname, "utils.js"))
 
@@ -57,13 +62,23 @@ async function updateCachedData() {
     }
 	
 	let gauges = await gaugeUtils.loadData(sites)
-		
-	await fs.promises.writeFile(path.join(utils.getSiteRoot(), "flowdata2.json"), jsonShrinker.stringify(gauges))
-	//Consider if we should actually offer full size. I would say not. I don't see a reason to write this much to the filsystem given that 
-	//nothing except graphs use it, and graphs load individually.
-	//await fs.promises.writeFile(path.join(utils.getSiteRoot(), "bigflowdata2.json"), JSON.stringify(gauges))
-
+	let flowDataPath = path.join(utils.getSiteRoot(), "flowdata2.json")
+	
+	await fs.promises.writeFile(flowDataPath, jsonShrinker.stringify(gauges))
+	
 	console.log("Flow data prepared.\n")
+	
+	
+	if (process.argv[2] !== "--install") {
+		console.time("Initial compression run on flowdata2.json")
+		await compressor.compressFile(flowDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: true})
+		console.timeEnd("Initial compression run on flowdata2.json")
+		//Level 11 could take a while... Get level 9 done first. 
+		console.time("Max compression on flowdata2.json")
+		await compressor.compressFile(flowDataPath, 11, {ignoreSizeLimit: true, alwaysCompress: true})
+		console.timeEnd("Max compression on flowdata2.json")
+	}
+
 	
 	//Run whenever the minutes on the hour is a multiple of 15.
 	let currentTime = new Date()
@@ -82,7 +97,7 @@ async function updateCachedData() {
 	sendNotifications()
 	
 	console.log("Precompressing files...")
-	precompress(utils.getSiteRoot())
+	compressor.compressFiles(utils.getSiteRoot())
 	
 	let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
 	console.log(timer)

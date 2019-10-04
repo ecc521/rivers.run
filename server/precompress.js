@@ -32,15 +32,18 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 	return await utils.getData(compressor.stdout)
 }
 
-async function compressFile(filePath, keepLastModified) {
+async function compressFile(filePath, level = 11, options = {}) {
 	
-	if ((await fs.promises.stat(filePath)).size > 5*1024*1024) {
+	//ignoreSizeLimit: Compress even if over 5MiB
+	//alwaysCompress: Overwrite existing file regardless (don't check if existing file is same as current one.)
+	
+	if (!options.ignoreSizeLimit && (await fs.promises.stat(filePath)).size > 5*1024*1024) {
 		console.log(filePath + " is over 5MiB. Not compressing.")
 		return;
 	}
 	
 	let fileTimes;
-	if (keepLastModified) {
+	if (options.keepLastModified) {
 		fileTimes = await fs.promises.stat(filePath)
 	}
 	
@@ -48,25 +51,25 @@ async function compressFile(filePath, keepLastModified) {
 	
 	let compressedPath = filePath + ".br"
 	
-	if (fs.existsSync(compressedPath)) {
+	if (!options.alwaysCompress && fs.existsSync(compressedPath)) {
 		//If there is an existing file that decompressed to the input, don't waste time compressing again.
 		let currentlyCompressed = zlib.brotliDecompressSync(await fs.promises.readFile(compressedPath))
 		if (currentlyCompressed.toString() === uncompressed.toString()) {
-			console.log(filePath + " is already compressed.")
+			//console.log(filePath + " is already compressed.")
 			return;
 		}
 	}
 	
 	console.log("Compressing " + filePath)
 	
-	let compressed = await brotliCompressAsync(uncompressed, 11) //Pass 11 to compress at maximum level.
+	let compressed = await brotliCompressAsync(uncompressed, level)
 
 	//Note that some files may be compressed (uselessly) multiple times if the uncompressed file is smaller than the compressed file.
 	if (compressed.byteLength < uncompressed.byteLength) {
 		fs.writeFileSync(compressedPath, compressed)
 		console.log("Compressed " + filePath + " from " + uncompressed.byteLength + " bytes to " + compressed.byteLength + " bytes.")
 		
-		if (keepLastModified) {
+		if (options.keepLastModified) {
 			await fs.promises.utimes(filePath, fileTimes.atime, fileTimes.mtime)
 		}
 		
@@ -92,7 +95,7 @@ async function compressFiles(directoryToCompress) {
 			return false
 		}
 		let dir = path.dirname(filePath)
-		if (dir.includes("node_modules") || dir.includes(".git") || dir.includes("data") || dir.includes("resources/icons")) {
+		if (dir.includes("node_modules") || dir.includes(".git") || dir.includes("data") || dir.includes("resources/icons") || dir.includes("gaugeReadings")) {
 			return false
 		}
 		return true

@@ -102,8 +102,8 @@ async function loadData(siteCodes) {
 			await Promise.all([
 				fs.promises.writeFile(filePath, buf),
 				new Promise((resolve, reject) => {
-					compressor.brotliCompressAsync(buf, 9).then((compressedBuf) => {
-						//Compress at level 9. Its very good and much quicker than 11.	
+					compressor.brotliCompressAsync(buf, 7).then((compressedBuf) => {
+						//Compress at level 7. Its very good and much quicker than 11. Plus, we are talking like 600 bytes compressed here...
 						fs.promises.writeFile(filePath + ".br", compressedBuf)
 						resolve()
 					})
