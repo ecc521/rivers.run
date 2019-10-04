@@ -99,16 +99,12 @@ async function loadData(siteCodes) {
 		for (let code in newGauges) {
 			let filePath = path.join(readingsFile, code)
 			let buf = Buffer.from(jsonShrinker.stringify(newGauges[code]))
-			await Promise.all([
-				fs.promises.writeFile(filePath, buf),
-				new Promise((resolve, reject) => {
-					compressor.brotliCompressAsync(buf, 7).then((compressedBuf) => {
-						//Compress at level 7. Its very good and much quicker than 11. Plus, we are talking like 600 bytes compressed here...
-						fs.promises.writeFile(filePath + ".br", compressedBuf)
-						resolve()
-					})
-				})
-			])
+			//We shouldn't have issues with too many open files doing this. Add catch statements anyways.
+			fs.promises.writeFile(filePath, buf).catch((e) => {console.error(filePath, e)})
+			compressor.brotliCompressAsync(buf, 7).then((compressedBuf) => {
+				//Compress at level 7. Its very good and much quicker than 11. Plus, we are talking like 600 bytes compressed here...
+				fs.promises.writeFile(filePath + ".br", compressedBuf).catch((e) => {console.error(filePath, e)})
+			})
 		}
 		newGauges = shrinkUSGS.shrinkUSGS(newGauges) //Shrink newGauges.
 		Object.assign(gauges, newGauges) //Objects are references (so gauges object is modified)
