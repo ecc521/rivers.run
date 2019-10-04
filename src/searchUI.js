@@ -18,20 +18,34 @@ document.getElementById("advancedsearch").addEventListener("click", function() {
 
 
 //For dynamic searching, we may want to use the keyup event instead of input if there are performance issues when users hold down delete.
-
-
 //Event listeners for the normal search boxes.
+
+function searchBoxChange(event) {
+    let query = window.getAdvancedSearchParameters()
+    query.sort.query = "none" //Normal searches apply their own sorting. query.sort will override this.
+    query.normalSearch = event.target.value
+    setMenuFromSearch(query) //Make sure the user knows that the sort has been canceled.
+	NewList(query)
+}
+
 document.querySelectorAll("#searchbox, #normalSearchBoxOnAdvancedSearch").forEach((element) => {
     element.addEventListener("input", function searchBoxKeyPress(event) {
+		//If the user is backspacing, search only when key lifted up or box empty.
+		if (event.inputType === "deleteContentBackward") {
+			if (event.target.value === "") {
+				window.removeEventListener("keyup", searchBoxChange)
+				searchBoxChange(event)
+			}
+			else {
+				window.addEventListener("keyup", searchBoxChange, {once: true})
+			}
+			return
+		}
     	//If the user presses the "Go" button (Actually an Enter/Return), unfocus the searchbox.
     	if (event.keyCode === 13) {
     		event.target.blur()
     	}
-    	let query = window.getAdvancedSearchParameters()
-    	query.sort.query = "none" //Normal searches apply their own sorting. query.sort will override this.
-        query.normalSearch = event.target.value
-    	setMenuFromSearch(query) //Make sure the user knows that the sort has been canceled.
-    	NewList(query)
+    	searchBoxChange(event)
     })
 })
 
@@ -140,6 +154,7 @@ try {
 	}
 
     if (window.fetch && !notWifi) {
+		//TODO: Add XMLHttpRequest fallback.
         fetch("https://rivers.run/node/ip2location").then((response) => {
     		response.json().then((locationInfo) => {
 

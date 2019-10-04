@@ -77,15 +77,16 @@ function createExpansion(button, river) {
             }
 			if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
 
-			//river.id should always be defined.
-            div.appendChild(document.createElement("br"))
-            let link = document.createElement("a")
-            link.target = "_blank"
-            link.rel = "noopener"
-            link.href = "https://docs.google.com/document/d/" + river.id
-            link.innerHTML = "Edit this river"
-            div.appendChild(link)
-
+			if (river.id) {
+				//All rivers have an ID. All gauges do not.
+				div.appendChild(document.createElement("br"))
+				let link = document.createElement("a")
+				link.target = "_blank"
+				link.rel = "noopener"
+				link.href = "https://docs.google.com/document/d/" + river.id
+				link.innerHTML = "Edit this river"
+				div.appendChild(link)
+			}
             if (river.aw) {
                 div.appendChild(document.createElement("br"))
                 let link = document.createElement("a")
@@ -123,11 +124,8 @@ function createExpansion(button, river) {
 			function addUSGSGraphs(usgsID, relatedGauge) {
 
 				let data = self.usgsarray[usgsID]
-				if (!data) {return;}
-				else {
-					console.log("No flow data for " + usgsID)
-				}
-
+				if (!data) {console.log("No flow data for " + usgsID); return;}
+				
 				//Alert the user if the data is (at least 2 hours) old
 				let dataAge
                 try {
@@ -165,7 +163,22 @@ function createExpansion(button, river) {
 				div.appendChild(createEmailNotificationsWidget(river, usgsID))
 
 				console.time("Add Graphs")
-				addGraphs(div, data)
+				let graphs = addGraphs(data)
+				div.appendChild(graphs)
+				
+				//Fetch comprehensive flow data, then update the graphs.
+				//TODO: Add XMLHttpRequest fallback.
+				if (!usgsarray[usgsID].full) {
+					fetch("gaugeReadings/" + usgsID).then((response) => {
+						response.json().then((newData) => {
+							usgsarray[usgsID] = newData
+							usgsarray[usgsID].full = true
+							graphs.replaceWith(addGraphs(self.usgsarray[usgsID]))
+							if (oldDataWarning) {oldDataWarning.remove()}
+						})
+					})
+				}
+				
 				console.timeEnd("Add Graphs")
 			}
 
@@ -179,7 +192,6 @@ function createExpansion(button, river) {
 					}
 				}
 			}
-
 
             div.style.padding = "6px"
             div.id = river.base + 2

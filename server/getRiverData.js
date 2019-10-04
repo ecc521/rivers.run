@@ -47,7 +47,7 @@ function getAssistantReply(query, options) {
 
 	let topRanked = []
 
-	let buckets = normalSearch(riverarray, name, true)
+	let buckets = normalSearch(riverarray, name).buckets
 
 	//Use the highest ranked river in bucket 2 (index 1).
 	topRanked = buckets[0]

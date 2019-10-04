@@ -46,6 +46,56 @@ function calculateDirection(usgsNumber) {
 
 
 
+function calculateDirection(usgsNumber, prop="cfs") {
+	//We will try first using cfs. If there is no conclusion, try feet. 
+    let usgsData = usgsarray[usgsNumber]
+    if (usgsData) {
+
+        let data = usgsData[prop]
+
+        if (data) {
+            let current;
+            let previous;
+
+            //TODO: Ignore insignificant changes.
+
+            //We will go back 2 datapoints (usually 30 minutes) if possible.
+            let stop = Math.max(data.length-2, 0)
+            for (let i=data.length;i>=stop;i--) {
+                let item = data[i]
+                if (!item) {continue}
+                let value = item.value
+                if (!current) {
+                    current = value
+                }
+                else {
+                    previous = value
+                }
+            }
+
+            if (current > previous) {
+                //Water level rising
+                return "⬆"
+            }
+            else if (previous > current) {
+                //Water level falling
+                return "⬇"
+            }
+            else if (current === previous) {
+                //Water level stable
+                return " –" //En dash preceeded by a thin space.
+            }
+        }
+    }
+	
+	if (prop === "cfs") {return calculateDirection(usgsNumber, "feet")}
+    return; //If we got here, there is not enough USGS data.
+}
+
+
+
+
+
 function calculateAge(usgsNumber) {
 	//Returns millseconds old that USGS data is
     let usgsData = window.usgsarray[usgsNumber]
@@ -102,7 +152,7 @@ function calculateRelativeFlow(river) {
     }
 
 	if (values.filter((value) => {return value !== undefined}).length === 0) {
-		return //If no relative flow values exist, return. This should help improve performance with gauges (lots of gauges, none have relative flows)
+		return null //If no relative flow values exist, return. This should help improve performance with gauges (lots of gauges, none have relative flows)
 	}
 
 	
@@ -212,7 +262,7 @@ function calculateColor(river, options) {
 
     let relativeFlow = calculateRelativeFlow(river)
 
-    if (relativeFlow === null) {
+    if (relativeFlow == null || isNaN(relativeFlow)) {
         return ""
     }
     else if (relativeFlow === 0) {

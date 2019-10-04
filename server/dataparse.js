@@ -2,6 +2,8 @@ const fs = require("fs")
 const path = require("path")
 const fetch = require("node-fetch")
 
+const getGaugeSites = require(path.join(__dirname, "siteDataParser.js"))
+
 const utils = require(path.join(__dirname, "utils.js"))
 
 const googlecloudrequestrate = 10;
@@ -39,23 +41,23 @@ async function load(url, attempts = 0) {
     }
 }
 
-function loadFromDisk(id, lastModified = 0) {
+async function loadFromDisk(id, lastModified = 0) {
     let filename = path.join(utils.getDataDirectory(), "drivecache", id)
     //Add 5 minutes because it takes some time to download - so a file may be written to disk a minute or so after it is downloaded.
     //This is overly cautious - a freak scenario is required, and it should only be a few seconds for this to happen.
     if (fs.existsSync(filename) && fs.statSync(filename).mtime.getTime() > new Date(lastModified).getTime()+1000*60*5) {
-        return fs.readFileSync(filename, "utf8")
+        return await fs.promises.readFile(filename, "utf8")
     }
     else {return false} //The cache is old.
 }
 
-function writeToDisk(data, id) {
+async function writeToDisk(data, id) {
     let directory = path.join(utils.getDataDirectory(), "drivecache")
     if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
     let filename = path.join(directory, id)
     //Avoid unneeded writes to the disk - although this may be done already.
-    if (!fs.existsSync(filename) || data !== fs.readFileSync(filename, "utf8")) {
-        fs.writeFileSync(filename, data)
+    if (!fs.existsSync(filename) || data !== await fs.promises.readFile(filename, "utf8")) {
+        await fs.promises.writeFile(filename, data)
     }
 }
 
@@ -103,12 +105,12 @@ function writeToDisk(data, id) {
     async function loadText(file) {
         try {
             let request;
-            request = loadFromDisk(file.id, file.modifiedTime)
+            request = await loadFromDisk(file.id, file.modifiedTime)
             if (!request) {
                 request = await load(urlcreate(file.id))
                 request = await request.text()
                 await wait(1000/googlecloudrequestrate)
-                writeToDisk(request, file.id)
+                await writeToDisk(request, file.id)
             }
             complete.push({id: file.id, request})
             console.log(complete.length + " items have now been loaded successfully!")
@@ -166,5 +168,9 @@ function writeToDisk(data, id) {
         console.log("There are " + complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
     })
 
-    fs.writeFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(complete))
+	console.log("Adding gauge sites")
+	complete = complete.concat(await getGaugeSites.getSites())
+	console.log("There are now " + complete.length + "rivers.")
+	
+    await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(complete))
 }())

@@ -1,6 +1,7 @@
 CNAME
 node_modules
-data
+server/data
+gaugeReadings
 public_key
 usgscache.json
 riverarray.js

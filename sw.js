@@ -17,7 +17,7 @@ const preloadList = [
     "index.css",
     "packages/allPages.js",
     "packages/index.js",
-    "riverarray.js",
+    "riverdata.json",
     "overviews.js",
 ]
 
@@ -90,7 +90,7 @@ function fetchHandler(event) {
 
 		let fromnetwork = fetch(event.request)
 
-		if (url.includes("docs.google.com") || url.includes("googleapis.com") || url.includes("salmon2019") || url.includes("ip2location") || url.includes("node")) {
+		if (url.includes("docs.google.com") || url.includes("googleapis.com") || url.includes("salmon2019") || url.includes("ip2location") || url.includes("node") || url.includes("gaugeReadings")) {
 			//Don't cache fileshare or ip2location.
             //Avoid filling up cache with opaque responses from docs.google.com
             //Avoid caching googleapis.com - we want the network response for writeupmaker.html (though we may want to temporarily cache images)

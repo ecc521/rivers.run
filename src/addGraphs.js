@@ -99,7 +99,7 @@ function getButton(text, className) {
 	return button
 }
 
-function addGraphs(div, data) {
+function addGraphs(data) {
 
     //The graphing is wrapped in a try-catch statement because USGS often supplies invalid data
     //for a specific river due to gauge problems.
@@ -191,12 +191,12 @@ function addGraphs(div, data) {
 			let button = getButton(data.text, data.className)	   
 			button.addEventListener("click", function() {
 				let oldGraph = container.querySelector(".graph")
-				container.replaceChild(data.elem, oldGraph)
+				oldGraph.replaceWith(data.elem)
 			})
 			buttonContainer.appendChild(button)
 		})
 
-		div.appendChild(container)
+		return container
 	}
 	catch(e) {
 		console.error(e)

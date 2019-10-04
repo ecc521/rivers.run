@@ -19,14 +19,20 @@ async function computeVirtualGauge(src) {
 	var code = await fs.promises.readFile(src, {encoding: "utf8"});
 
 	var sandbox = new Pitboss(code, {
-		memoryLimit: 256*1024, // 256 MB memory limit.
+		memoryLimit: 128*1024, // 128 MB memory limit.
 		timeout: 5000, //5000 milliseconds to run.
 		heartBeatTick: 100 //100 milliseconds between memory checks.
 	});
 
+	let requiredGauges = await computeRequiredGauges(src)
+	
 	return await new Promise((resolve, reject) => {
+		//Only provide the virtual gauge with the gauges it asked for to avoid excessive memory usage and delays in pitboss-ng.
+		let providedGauges = {}
+		requiredGauges.forEach((gaugeID) => {providedGauges[gaugeID] = gauges[gaugeID]})
+		
 		sandbox.run({
-				context: {'gauges': gauges},
+				context: {'gauges': providedGauges},
   				libraries: {
 					"console": "console", //Allow virtual gauges to access console.
 					"requireUtil": path.join(__dirname, "virtualGaugesRequire.js") //require stuff in the utils directory only.

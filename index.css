@@ -427,7 +427,15 @@ Those include name,section,skill,quality, and flow info*/
 	background-color: #e3e3e3 !important;
 }
 
-
+.riverbuttonGauge:nth-child(even) {
+	background-color: #f0bdf9 !important;
+}
+.riverbuttonGauge:nth-child(odd) {
+	background-color: #f5bdff !important;
+}
+.riverbuttonGauge:hover {
+	background-color: #efb1fb !important;
+}
 
 .riverbutton:focus {
     outline:0;
@@ -476,6 +484,11 @@ Those include name,section,skill,quality, and flow info*/
     text-align:center;
 }
 
+.gaugesBelow {
+	text-align: center !important;
+	background-color: #e06af4 !important; /*A lightish purple.*/
+}
+
 
 @media (prefers-color-scheme: dark) {
     html, body {
@@ -492,6 +505,10 @@ Those include name,section,skill,quality, and flow info*/
 		background-color: #333333;
 	}
 
+	.gaugesBelow {
+		background-color: darkmagenta !important;
+
+	}	
 
     .riverbuttonDam:nth-child(even) {
         background-color: #222222 !important;
@@ -502,8 +519,18 @@ Those include name,section,skill,quality, and flow info*/
 	.riverbuttonDam:hover {
 		background-color: #333333 !important;
 	}
-
-    #advancedSearchWarning {
+	
+	.riverbuttonGauge:nth-child(even) {
+		background-color: #380241 !important;
+	}
+	.riverbuttonGauge:nth-child(odd){
+		background-color: #3c0545 !important;
+	}	
+	.riverbuttonGauge:hover{
+		background-color: #4d0b58 !important;
+	}	
+	
+	#advancedSearchWarning {
         background-color:darkblue;
     }
 

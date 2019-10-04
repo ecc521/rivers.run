@@ -37,7 +37,7 @@
 let sortUtils = require("./sort.js")
 
 
-function normalSearch(list, query, returnBuckets) {
+function normalSearch(list, query) {
     query = query.toLowerCase().trim()
 	
 	if (query === "") {return sortUtils.sort("alphabetical", list)} //Don't search for an empty query.
@@ -158,11 +158,6 @@ function normalSearch(list, query, returnBuckets) {
 		
 	bucket2.reverse() //Highest relevance ones come first in the second bucket.
 	
-	if (returnBuckets) {
-		buckets[1] = bucket2  //We won't process bucket2 if returnBuckets is set.
-		return buckets
-	}
-	
 	for (let i=0;i<bucket2.length;i++) {
 		let subbucket = bucket2[i]
 		if (subbucket) {
@@ -174,7 +169,9 @@ function normalSearch(list, query, returnBuckets) {
 		}
 	}
 	
-    return [].concat(...buckets)
+    let result = [].concat(...buckets)
+	result.buckets = buckets
+	return result
 }
 
 
@@ -433,7 +430,6 @@ function IDSearch(list, query) {
 
 
 
-
 //This doesn't work for difficulty and rating - no greater than or equal to.
 //That needs to be added
 function advancedSearch(list, query) {
@@ -480,7 +476,31 @@ function advancedSearch(list, query) {
     if (query["normalSearch"] !== undefined) {list = normalSearch(list, query["normalSearch"])}
 	console.timeEnd("normalSearch")
     if (query["sort"]) {list = sortUtils.sort(query["sort"].query, list, query["sort"].reverse)}
+	
+	let gaugesList = []
+	if (list.buckets) {
+		gaugesList = gaugesList.concat(...list.buckets.slice(0,3)) //Buckets 0, 1 and 2
+	}
+	else {
+		gaugesList = list
+	}
 
+	let riverAmount = gaugesList.reduce((total, value) => {return total + (value.id !== undefined ? 1:0)}, 0) //Number of good river matches.
+	
+	if (list.buckets) {
+		let additionalRivers = ([].concat(...list.buckets.slice(3))).reduce((total, value) => {return total + (value.id !== undefined ? 1:0)}, 0)
+		list.gaugeAmount = list.length - riverAmount - additionalRivers
+		list.riverAmount = riverAmount + additionalRivers
+		
+	}
+	else {
+		list.gaugeAmount = list.length - riverAmount
+		list.riverAmount = riverAmount
+	}
+	
+	if (riverAmount === 0) {list.useGauges = true}
+	else {list.useGauges = false}
+		
     return list
 }
 

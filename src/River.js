@@ -182,7 +182,7 @@ function addFlowSpan(river, button) {
 			if (current) {current.remove()}
 	
             if (river.flow) {
-				let value = river.flow + calculateDirection(river.usgs)
+				let value = river.flow + (calculateDirection(river.usgs) || "")
 				//If the user has color blind mode enabled, add river.running to one digit onto the flow data.
 				if (localStorage.getItem("colorBlindMode") === "true" && calculateColor(river) && river.running !== undefined) {
 					value += "(" + Math.round(river.running*10)/10 + ")"
@@ -243,6 +243,10 @@ function River(locate, event) {
 
             var button = document.createElement("button")
             button.id = this.base + 1
+			
+			if (!this.id) {
+				button.classList.add("riverbuttonGauge")
+			}			
 
             AddSpan(this.name, button)
             AddSpan(this.section, button)
@@ -267,7 +271,7 @@ function River(locate, event) {
 			addFlowSpan(this, button)
 
 
-            button.className = "riverbutton"
+            button.classList.add("riverbutton")
             //Add the click handler
             addHandlers(button, locate)
 
