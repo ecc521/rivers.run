@@ -124,13 +124,16 @@ async function writeToDisk(data, id) {
         }
     }
 
-    process.stdout.write("Loading Rivers...")
+    console.log("Loading Rivers...")
+    
     let promises = []
     for (let i=0;i<files.length;i++) {
         promises.push(loadText(files[i]))
     }
 
     await Promise.all(promises)
+
+    process.stdout.write("\n") //Make sure the next statement starts on a new line.
 
     for (let i=0;i<failed.length;i++) {
         console.error("Loading of file with file id of " + failed[i] + " failed.")
