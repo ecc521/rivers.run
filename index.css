@@ -225,11 +225,11 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 .flowButton {
     background-image: linear-gradient(to right, #00AAFF , #0000FF);
 }
-    
+
 .tempButton {
     background-image: linear-gradient(to right, red , blue);
 }
-    
+
 .precipButton {
     background-color: #0077BB;
 }
@@ -417,16 +417,6 @@ Those include name,section,skill,quality, and flow info*/
 }
 
 
-.riverbuttonDam:nth-child(even) {
-    background-color: #f4f4f4 !important;
-}
-.riverbuttonDam:nth-child(odd) {
-    background-color: #f7f7f7 !important;
-}
-.riverbuttonDam:hover {
-	background-color: #e3e3e3 !important;
-}
-
 .riverbuttonGauge:nth-child(even) {
 	background-color: #f0bdf9 !important;
 }
@@ -508,28 +498,18 @@ Those include name,section,skill,quality, and flow info*/
 	.gaugesBelow {
 		background-color: darkmagenta !important;
 
-	}	
-
-    .riverbuttonDam:nth-child(even) {
-        background-color: #222222 !important;
-    }
-    .riverbuttonDam:nth-child(odd) {
-        background-color: #252525 !important;
-    }
-	.riverbuttonDam:hover {
-		background-color: #333333 !important;
 	}
-	
+
 	.riverbuttonGauge:nth-child(even) {
 		background-color: #380241 !important;
 	}
 	.riverbuttonGauge:nth-child(odd){
 		background-color: #3c0545 !important;
-	}	
+	}
 	.riverbuttonGauge:hover{
 		background-color: #4d0b58 !important;
-	}	
-	
+	}
+
 	#advancedSearchWarning {
         background-color:darkblue;
     }

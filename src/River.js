@@ -15,9 +15,6 @@ function addHandlers(button, locate) {
 				})
 
 				window.addEventListener("colorSchemeChanged", function() {
-					if (river.dam) {
-						button.style.background = createStripes()
-					}
 					button.style.backgroundColor = calculateColor(river)
 				})
 
@@ -150,7 +147,7 @@ function addFlowData(river) {
 					if (feet) {
 						let latestFeetReading = feet[feet.length - 1]
 						if (latestFeetReading) {
-							//Though issues are alot rarer than with CFS, equipment malfunctions can cause this to be null. 
+							//Though issues are alot rarer than with CFS, equipment malfunctions can cause this to be null.
 							latestFeet = latestFeetReading.value
 						}
 					}
@@ -180,7 +177,7 @@ function addFlowSpan(river, button) {
 			//If there is already a flowspan, get rid of it.
 			let current = button.querySelector(".flowspan")
 			if (current) {current.remove()}
-	
+
             if (river.flow) {
 				let value = river.flow + (calculateDirection(river.usgs) || "")
 				//If the user has color blind mode enabled, add river.running to one digit onto the flow data.
@@ -197,14 +194,10 @@ function addFlowSpan(river, button) {
 
 function addFlowStyling(river, button) {
 		if (river.dam) {
-			button.style.background = createStripes()
+			button.style.backgroundImage = createStripes()
 		}
 		if (calculateColor(river)) {
 			button.style.backgroundColor = calculateColor(river)
-		}
-		else if (river.dam) {
-			//Background color gets overwrote by background. This class uses !important to prevent that.
-			button.classList.add("riverbuttonDam")
 		}
 }
 
@@ -229,7 +222,7 @@ function River(locate, event) {
     this.base = "b" + locate
     this.expanded = 0
     this.index = locate
-	
+
 	if (this.relatedusgs) {
 		try {
 			this.relatedusgs = JSON.parse(this.relatedusgs)
@@ -243,10 +236,10 @@ function River(locate, event) {
 
             var button = document.createElement("button")
             button.id = this.base + 1
-			
+
 			if (!this.id) {
 				button.classList.add("riverbuttonGauge")
-			}			
+			}
 
             AddSpan(this.name, button)
             AddSpan(this.section, button)
@@ -299,8 +292,8 @@ function River(locate, event) {
         return this.finished
 
     }
-	
-	
+
+
 	this.updateFlowData = function() {
 		addFlowData(this) //Update the flow information on the river object.
 		if (this.finished) {
