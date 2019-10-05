@@ -40,7 +40,7 @@ function parseUSGS(usgsdata) {
             obj2.values[i].dateTime = new Date(obj2.values[i].dateTime).getTime() //Reformat to decimal based time.
 			  
 			  //Convert the value to a number if it is a string.
-			  if (Number(obj2.values[i].value)) {
+			  if (!isNaN(Number(obj2.values[i].value))) {
 			  	obj2.values[i].value = Number(obj2.values[i].value)
 			  }
 			  
