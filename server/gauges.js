@@ -65,8 +65,8 @@ async function loadFromUSGS(siteCodes) {
 
 
 	async function writeBatchToDisk(newGauges) {
-		//TODO: Run in paralell.
-		//Make sure not to run too much stuff at once - some systems don't like that.
+		//This should be done in paralell - however be careful not to run too much stuff at once...
+		//Some systems REALLY don't like that (and kernel freezes at 100% CPU, 100% Disk Read).
 		console.time("Write Files to Disk")
 		for (let code in newGauges) {
 			let filePath = path.join(readingsFile, code)
@@ -135,7 +135,7 @@ async function loadData(siteCodes) {
 		start = end
 	}
 
-	await Promise.allSettled(currentWrites)
+	await currentWrites
 
 	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
 	if (virtualGauges) {
