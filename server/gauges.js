@@ -122,7 +122,7 @@ async function loadData(siteCodes) {
 		await currentWrites
 		if (process.hrtime.bigint() - waitStart > BigInt(1e6)) {
 			//If we waited more than 0.001 seconds (1 millisecond), tell the user.
-			console.log("Waited " + Number(process.hrtime.bigint() - waitStart) / Number(1e6) + " milliseconds for disk writes to finish.")
+			console.log("Waiting for Disk Writes to Finish: " + Number(process.hrtime.bigint() - waitStart) / Number(1e6) + "ms")
 		}
 
 		currentWrites = writeBatchToDisk(newGauges)
