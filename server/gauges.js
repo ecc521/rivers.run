@@ -135,6 +135,7 @@ async function loadData(siteCodes) {
 				console.timeEnd("Shrink newGauges")
 
 				Object.assign(gauges, newGauges)
+				resolve()
 			})
 		})
 
