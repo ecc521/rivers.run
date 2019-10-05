@@ -52,11 +52,11 @@ function parseUSGS(usgsdata) {
           }
 
 		//Some rivers have code 00011 instead of 00010 (like the Yough).
-		//00011 is farenheit, instead of celcius like 00010.
-		//Don't bother converting 00011. Just use instead of 00010.
+		//00011 is farenheit, instead of celcius like 00010, so we don't need to
+		//run any conversions on 00011. Just use instead of 00010.
 		//TODO: Check code. Probably "Temperature, water, degrees Fahrenheit"
         if (variablecode === "00011") {
-			console.log("Using code 00011 to fill temperature")
+			//console.log("Using code 00011 to fill temperature")
             variablecode = "00010" //We use 00010 to represent farenhiet.
         }
 

@@ -114,7 +114,7 @@ async function writeToDisk(data, id) {
             }
             complete.push({id: file.id, request})
             process.stdout.write("\r\033[2K") //Clear current line
-            process.stdout.write(complete.length + " items have now been loaded successfully!")
+            process.stdout.write(complete.length + " of " + files.length + " items have now been loaded successfully!")
         }
         catch(e) {
             console.error(e)
