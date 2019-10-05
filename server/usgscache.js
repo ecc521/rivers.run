@@ -12,20 +12,27 @@ const child_process = require("child_process")
 
 const jsonShrinker = require("json-shrinker")
 
-//On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
-//Use child_process.execSync to allow for synchronus execution.
-if (!process.argv.includes("--noriverdata")) {
+async function updateRiverData() {
 	process.stdout.write("Generating riverdata.json - this may take a while (should be no more than 200 milliseconds per river)\n")
-	child_process.execSync("node " + path.join(__dirname, "dataparse.js") + (process.argv.includes("--nogauges")?" --nogauges":""))
+	let args = [path.join(__dirname, "dataparse.js")]
+	if (process.argv.includes("--nogauges")) {args.push("--nogauges")}
+
+	let dataparse = child_process.spawn("node", args)
+
+	dataparse.stdout.on("data", function(data) {console.log(data.toString())})
+	dataparse.stderr.on("data", function(data) {console.log(data.toString())})
+	await new Promise((resolve, reject) => {
+		dataparse.on("close", resolve)
+		dataparse.on("error", reject)
+	})
 	process.stdout.write("riverdata.json generated.\n")
-	setInterval(function() {
-		//We won't want to freeze the server every 24 hours. And after all, once we have the riverdata.json generated, we can comfortably make this async.
-		child_process.exec("node " + path.join(__dirname, "dataparse.js") + (process.argv.includes("--nogauges")?" --nogauges":""), function(error, stdout, stderr) {
-			if (error) {console.error(err)}
-			if (stdout) {console.log(stdout)}
-			if (stderr) {console.error(stderr)}
-		})
-	}, 1000*60*60*24)
+}
+
+//On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
+let riverDataPromise;
+if (!process.argv.includes("--noriverdata")) {
+	riverDataPromise = updateRiverData()
+	setInterval(updateRiverData, 1000*60*60*24)
 }
 
 //Some actions should be performed at installation, but there is no need to start the server.
@@ -44,11 +51,20 @@ const gaugeUtils = require(path.join(__dirname, "gauges.js"))
 
 fs.chmodSync(__filename, 0o775) //Make sure this file is executable. This will help prevent crontab setup issues.
 
+let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
 
 async function updateCachedData() {
 	console.log("Preparing flow data.\n")
-	
-	let riverarray = JSON.parse(await fs.promises.readFile(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
+
+	if (riverDataPromise) {await riverDataPromise; riverDataPromise = null}
+
+	if (!fs.existsSync(riverDataPath)) {
+		//Even if the user told us not to load data, we are currently forced to.
+		console.warn("No river data available. Running updateRiverData once to permit usgscache.js to continue.")
+		updateRiverData()
+	}
+
+	let riverarray = JSON.parse(await fs.promises.readFile(riverDataPath, {encoding:"utf8"}))
 
     var sites = []
     for (let i=0;i<riverarray.length;i++) {
@@ -60,26 +76,26 @@ async function updateCachedData() {
 			sites.push(usgsID)
 		}
     }
-	
+
 	let gauges = await gaugeUtils.loadData(sites)
 	let flowDataPath = path.join(utils.getSiteRoot(), "flowdata2.json")
-	
+
 	await fs.promises.writeFile(flowDataPath, jsonShrinker.stringify(gauges))
-	
+
 	console.log("Flow data prepared.\n")
-	
-	
+
+
 	if (process.argv[2] !== "--install") {
 		console.time("Initial compression run on flowdata2.json")
 		await compressor.compressFile(flowDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: true})
 		console.timeEnd("Initial compression run on flowdata2.json")
-		//Level 11 could take a while... Get level 9 done first. 
+		//Level 11 could take a while... Get level 9 done first.
 		console.time("Max compression on flowdata2.json")
 		await compressor.compressFile(flowDataPath, 11, {ignoreSizeLimit: true, alwaysCompress: true})
 		console.timeEnd("Max compression on flowdata2.json")
 	}
 
-	
+
 	//Run whenever the minutes on the hour is a multiple of 15.
 	let currentTime = new Date()
 	if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
@@ -93,12 +109,12 @@ async function updateCachedData() {
 		console.log("To update river and flow data in the future, run node usgscache.js --install (if you are running the server, data automatically updates).")
 		process.exit()
 	}
-	
+
 	sendNotifications()
-	
+
 	console.log("Precompressing files...")
 	compressor.compressFiles(utils.getSiteRoot())
-	
+
 	let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
 	console.log(timer)
 }
