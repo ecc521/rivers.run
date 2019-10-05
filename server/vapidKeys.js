@@ -2,6 +2,8 @@ const fs = require("fs")
 const path = require("path")
 const utils = require(path.join(__dirname, "utils.js"))
 
+const webpush = require("web-push")
+
 //Either use the existing VAPID keys, or generate new ones.
 //The private key must not be web accessable.
 let vapidKeys = {};
