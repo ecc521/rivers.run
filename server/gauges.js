@@ -118,13 +118,14 @@ async function loadData(siteCodes) {
 		let newGauges = await loadFromUSGS(arr)
 
 		//Lets try to avoid too many open files at once. Wait for previous writes to finish.
-		console.time("Waiting on Disk Writes")
+		let waitStart = process.hrtime.bigint()
 		await currentWrites
-		console.timeEnd("Waiting on Disk Writes")
+		if (process.hrtime.bigint() - waitStart > BigInt(1e6)) {
+			//If we waited more than 0.001 seconds (1 millisecond), tell the user.
+			console.log("Waited " + Number(process.hrtime.bigint() - waitStart) / Number(1e6) + " milliseconds for disk writes to finish.")
+		}
 
-		console.time("Begin New Writes")
 		currentWrites = writeBatchToDisk(newGauges)
-		console.timeEnd("Begin New Writes")
 
 		console.time("Shrink newGauges")
 		newGauges = shrinkUSGS.shrinkUSGS(newGauges) //Shrink newGauges.
