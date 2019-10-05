@@ -47,6 +47,7 @@ function shrinkGauge(gauge) {
 			gauge[shrink[i]] = arr
 			//console.log(arr)
 		}
+		return gauge
 }
 
 
@@ -54,6 +55,7 @@ function shrinkUSGS(usgsarray) {
 	for (let gaugeID in usgsarray) {
 		usgsarray[gaugeID] = shrinkGauge(usgsarray[gaugeID])
 	}
+	return usgsarray
 }
 
 module.exports = {
