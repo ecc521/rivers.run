@@ -2,11 +2,10 @@
 //TODO: Consider only initial view, or one hour only for cfs and feet.
 
 function shrinkGauge(gauge) {
+		if (!gauge) {return}
 
 		//1 hour of precipitation data is pretty much useless - don't bother with any.
 		delete gauge.precip
-
-		if (!gauge) {continue}
 
 		let shrink = ["cfs", "feet", "temp"]
 		for (let i=0;i<shrink.length;i++) {
