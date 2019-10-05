@@ -117,21 +117,27 @@ async function loadData(siteCodes) {
 		console.log("Loading sites " + start + " through " + end + " of " + usgsSites.length + ".")
 		let newGauges = await loadFromUSGS(arr)
 
-		//Lets try to avoid too many open files at once. Wait for previous writes to finish.
+		//Lets try to avoid doing too much at once. Wait for previous batch to finish.
 		let waitStart = process.hrtime.bigint()
 		await currentWrites
 		if (process.hrtime.bigint() - waitStart > BigInt(1e6)) {
 			//If we waited more than 0.001 seconds (1 millisecond), tell the user.
-			console.log("Waiting for Disk Writes to Finish: " + Number(process.hrtime.bigint() - waitStart) / Number(1e6) + "ms")
+			console.log("Waiting for Previous Batch: " + Number(process.hrtime.bigint() - waitStart) / Number(1e6) + "ms")
 		}
 
-		currentWrites = writeBatchToDisk(newGauges)
+		currentWrites = new Promise((resolve, reject) => {
+			writeBatchToDisk(newGauges).then(() => {
+				//We passed writeBatchToDisk a reference to newGauges, so we can't modify a gauge that writeBatchToDisk has not processed.
+				//Cloning is a bit resource intensive, so let's not do that. Might as well just wait.
+				//If we do need to increase performance, we can use shrinkUSGS.shrinkGauge to shrink each gauge as it is written to disk.
+				console.time("Shrink newGauges")
+				newGauges = shrinkUSGS.shrinkUSGS(newGauges) //Shrink newGauges.
+				console.timeEnd("Shrink newGauges")
 
-		console.time("Shrink newGauges")
-		newGauges = shrinkUSGS.shrinkUSGS(newGauges) //Shrink newGauges.
-		console.timeEnd("Shrink newGauges")
+				Object.assign(gauges, newGauges)
+			})
+		})
 
-		Object.assign(gauges, newGauges) //Objects are references (so gauges object is modified)
 		start = end
 	}
 

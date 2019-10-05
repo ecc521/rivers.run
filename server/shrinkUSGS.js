@@ -1,16 +1,13 @@
 //Provide only the last 1 hour of data.
 //TODO: Consider only initial view, or one hour only for cfs and feet.
 
-function shrinkUSGS (usgsarray) {
-		
-	for (let gaugeID in usgsarray) {		
-		let gauge = usgsarray[gaugeID]
-		
+function shrinkGauge(gauge) {
+
 		//1 hour of precipitation data is pretty much useless - don't bother with any.
 		delete gauge.precip
-		
+
 		if (!gauge) {continue}
-		
+
 		let shrink = ["cfs", "feet", "temp"]
 		for (let i=0;i<shrink.length;i++) {
 			let arr = gauge[shrink[i]]
@@ -47,15 +44,20 @@ function shrinkUSGS (usgsarray) {
 					}
 				}
 			}
-			
+
 			gauge[shrink[i]] = arr
-			//console.log(arr)		
+			//console.log(arr)
 		}
+}
+
+
+function shrinkUSGS(usgsarray) {
+	for (let gaugeID in usgsarray) {
+		usgsarray[gaugeID] = shrinkGauge(usgsarray[gaugeID])
 	}
-	
-	return usgsarray
 }
 
 module.exports = {
+	shrinkGauge,
 	shrinkUSGS
 }
