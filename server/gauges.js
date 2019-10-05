@@ -108,7 +108,7 @@ async function loadData(siteCodes) {
 	let start = 0
 	let sitesPerBatch = 150 //150 sites at once
 
-	let currentWrites = [];
+	let currentWrites;
 
 	//TODO: Allow loading in paralell.
 	while (start < usgsSites.length) {
@@ -119,7 +119,7 @@ async function loadData(siteCodes) {
 
 		//Lets try to avoid too many open files at once. Wait for previous writes to finish.
 		console.time("Waiting on Disk Writes")
-		await Promise.allSettled(currentWrites)
+		await currentWrites
 		console.timeEnd("Waiting on Disk Writes")
 
 		console.time("Begin New Writes")
