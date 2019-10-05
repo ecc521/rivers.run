@@ -12,9 +12,6 @@ const virtualGaugesPath = path.join(utils.getSiteRoot(), "../", "rivers.run-virt
 let gaugeFiles = utils.getFilesInDirectory(virtualGaugesPath)
 gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js" && !path.dirname(src).includes("utils")})
 
-let gauges = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
-
-
 async function computeVirtualGauge(src) {
 	var code = await fs.promises.readFile(src, {encoding: "utf8"});
 
@@ -26,25 +23,28 @@ async function computeVirtualGauge(src) {
 
 	let requiredGauges = await computeRequiredGauges(src)
 	
-	return await new Promise((resolve, reject) => {
-		//Only provide the virtual gauge with the gauges it asked for to avoid excessive memory usage and delays in pitboss-ng.
-		let providedGauges = {}
-		requiredGauges.forEach((gaugeID) => {providedGauges[gaugeID] = gauges[gaugeID]})
-		
-		sandbox.run({
-				context: {'gauges': providedGauges},
-  				libraries: {
-					"console": "console", //Allow virtual gauges to access console.
-					"requireUtil": path.join(__dirname, "virtualGaugesRequire.js") //require stuff in the utils directory only.
-				} 
-			}, 
-			function (err, result) {
-				if (err !== null) {console.error(err)}
-				resolve(result)
-				sandbox.kill();
-			}
-		);
+	//Only provide the virtual gauge with the gauges it asked for to avoid excessive memory usage and delays in pitboss-ng.
+	let providedGauges = {}
+	requiredGauges.forEach((gaugeID) => {
+		let filePath = path.join(utils.getSiteRoot(), "gaugeReadings", gaugeID)
+		providedGauges[gaugeID] = JSON.parse(await (fs.promises.readFile(filePath, {encoding:"utf8"})))
 	})
+		
+	let res;
+	await sandbox.run({
+			context: {'gauges': providedGauges},
+  			libraries: {
+				"console": "console", //Allow virtual gauges to access console.
+				"requireUtil": path.join(__dirname, "virtualGaugesRequire.js") //require stuff in the utils directory only.
+			} 
+		}, 
+		function (err, result) {
+			if (err !== null) {console.error(err)}
+			res = result
+			sandbox.kill();
+		}
+	);
+	return res
 }
 
 //TODO: Make sure that console.error(), console.log(), etc, do something.
@@ -82,9 +82,8 @@ async function getRequiredGauges() {
 	return required
 }
 
-async function getVirtualGauges(usgsarray) {
-	gauges = usgsarray
-	
+async function getVirtualGauges() {	
+	let gauges = {}
 	for (let i=0;i<gaugeFiles.length;i++) {
 		let src = gaugeFiles[i]
 		let filename = path.basename(src, ".js")

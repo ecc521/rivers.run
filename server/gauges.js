@@ -64,6 +64,23 @@ async function loadFromUSGS(siteCodes) {
 }
 
 
+	function writeBatchToDisk(newGauges) {
+		let diskWrites = []
+		for (let code in newGauges) {
+			let filePath = path.join(readingsFile, code)
+			let buf = Buffer.from(jsonShrinker.stringify(newGauges[code]))
+
+			diskWrites.push(fs.promises.writeFile(filePath, buf).catch((e) => {console.error(filePath, e)}))
+			
+			diskWrites.push(compressor.brotliCompressAsync(buf, 7).then((compressedBuf) => {
+				//Compress at level 7. Its very good and much quicker than 11. Plus, we are talking like 600 bytes compressed here...
+				fs.promises.writeFile(filePath + ".br", compressedBuf).catch((e) => {console.error(filePath, e)})
+			}))
+		}
+		return diskWrites
+	}
+
+
 async function loadData(siteCodes) {	
 	let gauges = {}
 	
@@ -90,32 +107,38 @@ async function loadData(siteCodes) {
 	
 	let start = 0
 	let sitesPerBatch = 150 //150 sites at once
+	
+	let currentWrites = [];
+	
 	//TODO: Allow loading in paralell.
 	while (start < usgsSites.length) {
 		let end = start + sitesPerBatch
 		let arr = usgsSites.slice(start,end)
 		console.log("Loading sites " + start + " through " + end + " of " + usgsSites.length + ".")
 		let newGauges = await loadFromUSGS(arr)
-		for (let code in newGauges) {
-			let filePath = path.join(readingsFile, code)
-			let buf = Buffer.from(jsonShrinker.stringify(newGauges[code]))
-			//We shouldn't have issues with too many open files doing this. Add catch statements anyways.
-			fs.promises.writeFile(filePath, buf).catch((e) => {console.error(filePath, e)})
-			compressor.brotliCompressAsync(buf, 7).then((compressedBuf) => {
-				//Compress at level 7. Its very good and much quicker than 11. Plus, we are talking like 600 bytes compressed here...
-				fs.promises.writeFile(filePath + ".br", compressedBuf).catch((e) => {console.error(filePath, e)})
-			})
-		}
+		
+		//Lets try to avoid too many open files at once. Wait for previous writes to finish.
+		console.time("Waiting on currentWrites")
+		await Promise.allSettled(currentWrites)
+		console.timeEnd("Waiting on currentWrites")
+		
+		currentWrites = writeBatchToDisk(newGauges)
+		
 		newGauges = shrinkUSGS.shrinkUSGS(newGauges) //Shrink newGauges.
 		Object.assign(gauges, newGauges) //Objects are references (so gauges object is modified)
 		start = end
 	}
 	
+	await Promise.allSettled(currentWrites)
 	
+	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
 	if (virtualGauges) {
 		console.log("Computing virtual gauges...")
 		try {
-			gauges = await virtualGauges.getVirtualGauges(gauges)
+			let newGauges = await virtualGauges.getVirtualGauges()
+			await writeBatchToDisk(newGauges)
+			newGauges = shrinkUSGS.shrinkUSGS(newGauges) //Shrink newGauges.
+			Object.assign(gauges, newGauges)
 		}
 		catch (e) {console.log(e)}
 		console.log("Virtual gauges computed...")
