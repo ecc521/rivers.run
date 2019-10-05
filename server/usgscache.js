@@ -1,7 +1,5 @@
 #!/usr/bin/node
 
-//Use crontab @reboot to make this file run on reboots.
-
 //Loads the latest USGS data and writes it to usgscache.json every 15 minutes.
 //TODO: Calculate virtual gauges here. Reccomend Pitboss npm module for sandboxing.
 //Also runs dataparse.js periodically to update the data on rivers.run.

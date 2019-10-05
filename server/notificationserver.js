@@ -90,12 +90,11 @@ async function httprequest(req,res) {
 			fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskillerror.log'), String(e) + "\n");
 		}
 
-
 		//TODO: Check for /node/notifications soon. req.url.startsWith("/node/notifications")
 		if (req.method === "POST") {
-			let data = JSON.parse((await utils.getData(req)).toString())
-
 			res.setHeader("Cache-Control", "no-store")
+
+			let data = JSON.parse((await utils.getData(req)).toString())
 
 			if (data.getSubscriptionFromURL) {
 				res.statusCode = 200;
@@ -141,7 +140,7 @@ async function httprequest(req,res) {
 		res.statusCode = 404;
 		res.setHeader('Content-Type', 'text/plain');
 		res.end('Unknown request\n');
-		fs.appendFileSync(path.join(utils.getLogDirectory(), 'badrequest.log'), req.url + "\n" + JSON.stringify(data) + "\n");
+		fs.appendFileSync(path.join(utils.getLogDirectory(), 'badrequest.log'), req.url + "\n" + JSON.stringify((await utils.getData(req)).toString()) + "\n");
 
 }
 
