@@ -45,12 +45,12 @@
     "postcss-css-variables": "^0.13.0",
     "postcss-custom-properties": "^9.0.2",
     "postcss-preset-env": "^6.7.0",
+    "web-push": "^3.4.0",
     "webpack": "^4.39.3",
     "webpack-cli": "^3.3.7"
   },
   "dependencies": {
     "@babel/runtime": "^7.5.5",
-    "@webcomponents/custom-elements": "^1.2.4",
-    "web-push": "^3.3.5"
+    "@webcomponents/custom-elements": "^1.2.4"
   }
 }
