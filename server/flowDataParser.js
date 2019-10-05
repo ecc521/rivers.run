@@ -7,8 +7,7 @@ function parseUSGS(usgsdata) {
         obj2.values = event.values[0].value //The values - ex. Gauge Height Array
 
         if (obj2.values.length === 0) {
-          console.log("Empty Array. Skipping")
-          return;
+            return;
         }
 
         obj2.units = event.variable.variableDescription //Units of values
@@ -38,12 +37,12 @@ function parseUSGS(usgsdata) {
             }
             delete obj2.values[i].qualifiers //rivers.run doesn't check this. Always seen it saying data is provisional, and nothing else.
             obj2.values[i].dateTime = new Date(obj2.values[i].dateTime).getTime() //Reformat to decimal based time.
-			  
+
 			  //Convert the value to a number if it is a string.
 			  if (!isNaN(Number(obj2.values[i].value))) {
 			  	obj2.values[i].value = Number(obj2.values[i].value)
 			  }
-			  
+
 			  //If the value is clearly a messed up value (usually because USGS intentially made it absurd to alert of an issue), discard it.
 			  //USGS usually uses -999999 to mark these (I don't think this happens all the time)- however some tidal gauges will go negative for inflow, so
 			  //we can't just check for values below -50, etc.

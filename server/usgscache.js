@@ -18,9 +18,9 @@ async function updateRiverData() {
 	if (process.argv.includes("--nogauges")) {args.push("--nogauges")}
 
 	let dataparse = child_process.spawn("node", args)
-
-	dataparse.stdout.on("data", function(data) {console.log(data.toString())})
-	dataparse.stderr.on("data", function(data) {console.log(data.toString())})
+	//Don't use console.log, as we end up with 2 newlines.
+	dataparse.stdout.on("data", function(data) {process.stdout.write(data.toString())})
+	dataparse.stderr.on("data", function(data) {process.stderr.write(data.toString())})
 	await new Promise((resolve, reject) => {
 		dataparse.on("close", resolve)
 		dataparse.on("error", reject)

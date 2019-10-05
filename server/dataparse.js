@@ -92,8 +92,8 @@ async function writeToDisk(data, id) {
     }
 
     let writeupFolder = "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof"
+    console.log("Getting List of Rivers...")
     let files = await getFilesInFolder(writeupFolder)
-    console.log(files)
 
     await wait(1000) //Let quota refresh
 
@@ -113,7 +113,8 @@ async function writeToDisk(data, id) {
                 await writeToDisk(request, file.id)
             }
             complete.push({id: file.id, request})
-            console.log(complete.length + " items have now been loaded successfully!")
+            process.stdout.write("\r\033[2K") //Clear current line
+            process.stdout.write(complete.length + " items have now been loaded successfully!")
         }
         catch(e) {
             console.error(e)
@@ -123,6 +124,7 @@ async function writeToDisk(data, id) {
         }
     }
 
+    process.stdout.write("Loading Rivers...")
     let promises = []
     for (let i=0;i<files.length;i++) {
         promises.push(loadText(files[i]))
@@ -134,6 +136,7 @@ async function writeToDisk(data, id) {
         console.error("Loading of file with file id of " + failed[i] + " failed.")
     }
 
+    console.log("Finished Loading Rivers...")
 
     let allowed = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","averagegradient","maxgradient","class"] //Property values to be included in output file
 
@@ -160,7 +163,7 @@ async function writeToDisk(data, id) {
             }
         })
 
-        console.log(complete[i].id + ": " + obj.name + " " + obj.section)
+        //console.log(complete[i].id + ": " + obj.name + " " + obj.section)
         complete[i] = obj
     }
 
@@ -171,8 +174,8 @@ async function writeToDisk(data, id) {
 	if (process.argv[2] !== "--nogauges") {
 		console.log("Adding gauge sites")
 		complete = complete.concat(await getGaugeSites.getSites())
-		console.log("There are now " + complete.length + "rivers.")
+		console.log("There are now " + complete.length + " rivers.")
 	}
-	
+
     await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(complete))
 }())
