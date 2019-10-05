@@ -64,20 +64,20 @@ async function loadFromUSGS(siteCodes) {
 }
 
 
-	function writeBatchToDisk(newGauges) {
-		let diskWrites = []
+	async function writeBatchToDisk(newGauges) {
+		//TODO: Run in paralell.
+		//Make sure not to run too much stuff at once - some systems don't like that.
+		console.time("Write Files to Disk")
 		for (let code in newGauges) {
 			let filePath = path.join(readingsFile, code)
-			let buf = Buffer.from(jsonShrinker.stringify(newGauges[code]))
-
-			diskWrites.push(fs.promises.writeFile(filePath, buf).catch((e) => {console.error(filePath, e)}))
-
-			diskWrites.push(compressor.brotliCompressAsync(buf, 7).then((compressedBuf) => {
-				//Compress at level 7. Its very good and much quicker than 11. Plus, we are talking like 600 bytes compressed here...
-				fs.promises.writeFile(filePath + ".br", compressedBuf).catch((e) => {console.error(filePath, e)})
-			}))
+			await fs.promises.writeFile(filePath, jsonShrinker.stringify(newGauges[code]))
+			//Don't bother compressing. Streaming Gzip or Brotli will do just fine for these files,
+			//given how they will be tiny and infrequently accessed.
+			//It would be nice if we could write less to the disk - perhaps store these partially or fully in memory?
+			//We could also consider not offering an uncompressed version.
+			//await compressor.compressFile(filePath, 3, {alwaysCompress: true})
 		}
-		return diskWrites
+		console.timeEnd("Write Files to Disk")
 	}
 
 
@@ -118,9 +118,9 @@ async function loadData(siteCodes) {
 		let newGauges = await loadFromUSGS(arr)
 
 		//Lets try to avoid too many open files at once. Wait for previous writes to finish.
-		console.time("Waiting on currentWrites")
+		console.time("Waiting on Disk Writes")
 		await Promise.allSettled(currentWrites)
-		console.timeEnd("Waiting on currentWrites")
+		console.timeEnd("Waiting on Disk Writes")
 
 		console.time("Begin New Writes")
 		currentWrites = writeBatchToDisk(newGauges)
