@@ -16,11 +16,11 @@ const jsonShrinker = require("json-shrinker")
 //Use child_process.execSync to allow for synchronus execution.
 if (!process.argv.includes("--noriverdata")) {
 	process.stdout.write("Generating riverdata.json - this may take a while (should be no more than 200 milliseconds per river)\n")
-	child_process.execSync("node " + path.join(__dirname, "dataparse.js"))
+	child_process.execSync("node " + path.join(__dirname, "dataparse.js") + (process.argv.includes("--nogauges")?" --nogauges":""))
 	process.stdout.write("riverdata.json generated.\n")
 	setInterval(function() {
 		//We won't want to freeze the server every 24 hours. And after all, once we have the riverdata.json generated, we can comfortably make this async.
-		child_process.exec("node " + path.join(__dirname, "dataparse.js"), function(error, stdout, stderr) {
+		child_process.exec("node " + path.join(__dirname, "dataparse.js") + (process.argv.includes("--nogauges")?" --nogauges":""), function(error, stdout, stderr) {
 			if (error) {console.error(err)}
 			if (stdout) {console.log(stdout)}
 			if (stderr) {console.error(stderr)}

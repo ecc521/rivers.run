@@ -25,26 +25,29 @@ async function computeVirtualGauge(src) {
 	
 	//Only provide the virtual gauge with the gauges it asked for to avoid excessive memory usage and delays in pitboss-ng.
 	let providedGauges = {}
-	requiredGauges.forEach((gaugeID) => {
+	for (let i=0;i<requiredGauges.length;i++) {
+		let gaugeID =  requiredGauges[i]
 		let filePath = path.join(utils.getSiteRoot(), "gaugeReadings", gaugeID)
-		providedGauges[gaugeID] = JSON.parse(await (fs.promises.readFile(filePath, {encoding:"utf8"})))
-	})
+		providedGauges[gaugeID] = JSON.parse(await fs.promises.readFile(filePath, {encoding:"utf8"}))
+	}
 		
-	let res;
-	await sandbox.run({
-			context: {'gauges': providedGauges},
-  			libraries: {
-				"console": "console", //Allow virtual gauges to access console.
-				"requireUtil": path.join(__dirname, "virtualGaugesRequire.js") //require stuff in the utils directory only.
-			} 
-		}, 
-		function (err, result) {
-			if (err !== null) {console.error(err)}
-			res = result
-			sandbox.kill();
-		}
-	);
-	return res
+	console.log()
+	
+	return await new Promise((resolve, reject) => {
+		sandbox.run({
+				context: {'gauges': providedGauges},
+				libraries: {
+					"console": "console", //Allow virtual gauges to access console.
+					"requireUtil": path.join(__dirname, "virtualGaugesRequire.js") //require stuff in the utils directory only.
+				} 
+			}, 
+			function (err, result) {
+				if (err !== null) {console.error(err)}
+				sandbox.kill();
+				resolve(result)
+			}
+		);
+	})
 }
 
 //TODO: Make sure that console.error(), console.log(), etc, do something.

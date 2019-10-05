@@ -168,9 +168,11 @@ async function writeToDisk(data, id) {
         console.log("There are " + complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
     })
 
-	console.log("Adding gauge sites")
-	complete = complete.concat(await getGaugeSites.getSites())
-	console.log("There are now " + complete.length + "rivers.")
+	if (process.argv[2] !== "--nogauges") {
+		console.log("Adding gauge sites")
+		complete = complete.concat(await getGaugeSites.getSites())
+		console.log("There are now " + complete.length + "rivers.")
+	}
 	
     await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(complete))
 }())
