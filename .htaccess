@@ -31,8 +31,9 @@ Header merge Vary Origin
 #Block access to .git files
 RedirectMatch 403 /\.git
 
-#Block all access to data directory.
-RedirectMatch 403 ^/data/.*$
+#Block all access to data and logs directory.
+RedirectMatch 403 ^/server/data/.*$
+RedirectMatch 403 ^/server/logs/.*$
 
 #Proxy /node to localhost at port 3000
 #ProxyPass doesn't work in .htaccess. Put in site config file.
