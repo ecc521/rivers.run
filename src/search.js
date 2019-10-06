@@ -2,7 +2,7 @@
 	if (!isNaN(Number(coord))) {
 		return Number(coord) //Coordinate is already in decimal form.
 	}
-	
+
 	if (typeof coord !== "string") {
 		return undefined;
 	}
@@ -28,7 +28,7 @@
 	if (isNaN(Number(degrees))) {throw "Coordinate " + coord + " could not be processed."}
 
 	if (direction === "S" || direction === "W") {degrees = -degrees}
-	
+
 	return degrees
 }
 
@@ -37,42 +37,42 @@
 let sortUtils = require("./sort.js")
 
 
-function normalSearch(list, query) {
+function normalSearch(list, query, options = {}) {
     query = query.toLowerCase().trim()
-	
+
 	if (query === "") {return sortUtils.sort("alphabetical", list)} //Don't search for an empty query.
-	
+
 	//The first buckets are better matches than later ones.
     let buckets = [[],[],[],[],[],[],[]]
 	let bucket2 = [] //Bucket 2 - index 1 in buckets - is special.
-	
+
 	//corejs regexp polyfill is taking 40 times longer splitting with the regex /[ ,]+/ than using .split(",").join(" ").split(" ")
 	//A bug will need to be filed - this level of performance is simply unacceptable.
 	//See if this polyfill can be removed.
-		
+
 	list.forEach(function(event) {
-		
+
 		let lowerCaseName = event.name.toLowerCase()
 		let lowerCaseSection = event.section.toLowerCase()
-		
-		
+
+
 		//First bucket
 		let nameExactMatch = (lowerCaseName === query)
 		let sectionExactMatch = (lowerCaseSection === query)
-				
+
 		if (nameExactMatch || sectionExactMatch) {
 			buckets[0].push(event)
 			return
 		}
 
-		
+
 		//Second Bucket
 		//This bucket is build to handle searches across name and section - such as "Lower Haw"
 		//As long as name and section contain all space seperated parts of the query, this bucket can be used.
-		
+
 		//Split on spaces and commas. This handles things like "Lower, Lower Yough"
 		let words = query.split(",").join(" ").split(" ")
-		
+
 		if (words.length > 1) {
 			let passes = words.every((word) => {
 				return (lowerCaseName.indexOf(word) !== -1) || (lowerCaseSection.indexOf(word) !== -1)
@@ -112,33 +112,39 @@ function normalSearch(list, query) {
 				return;
 			}
 		}
-		
+
 		//Thrid bucket
 		let nameMatches = lowerCaseName.startsWith(query)
 		let sectionMatches = lowerCaseSection.startsWith(query)
-		
+
 		if (nameMatches || sectionMatches) {
 			buckets[2].push(event)
 			return;
 		}
-		
+
+		if (options.strongMatchesOnly) {
+			//If only strong matches were requested, return.
+			//This should have an option to also include tags.
+			return
+		}
+
 		//Fourth bucket
 		let tagsContains = (event.tags.toLowerCase().indexOf(query) !== -1)
-		
+
 		if (tagsContains) {
 			buckets[3].push(event)
 			return;
 		}
 
-		
+
 		//Fifth bucket
 		let nameContains = (lowerCaseName.indexOf(query) !== -1)
-		
+
 		if (nameContains) {
 			buckets[4].push(event)
 			return;
 		}
-		
+
 		//Sixth Bucket
 		let sectionContains = (lowerCaseSection.indexOf(query) !== -1)
 
@@ -146,18 +152,18 @@ function normalSearch(list, query) {
 			buckets[5].push(event)
 			return;
 		}
-		
+
 		//Final Bucket
 		let writeupContains = (event.writeup.toLowerCase().indexOf(query) !== -1)
-		
+
 		if (writeupContains) {buckets[6].push(event)}
     })
-	
+
 	//Sort each match level alphabetically by river name
 	buckets = buckets.map((bucket) => {return sortUtils.sort("alphabetical", bucket)})
-		
+
 	bucket2.reverse() //Highest relevance ones come first in the second bucket.
-	
+
 	for (let i=0;i<bucket2.length;i++) {
 		let subbucket = bucket2[i]
 		if (subbucket) {
@@ -168,7 +174,7 @@ function normalSearch(list, query) {
 			})
 		}
 	}
-	
+
     let result = [].concat(...buckets)
 	result.buckets = buckets
 	return result
@@ -290,7 +296,7 @@ function locationFilter(list, parameters) {
     let maxDistance = Number(parameters.distance)
     let lat1 = toDecimalDegrees(parameters.lat)
     let lon1 = toDecimalDegrees(parameters.lon)
-		
+
     if (!(maxDistance && lat1 && lon1)) {
         //Cancel the search.
         //Technically we could be missing part of 1 coordinate, sometimes both, and eliminate some rivers, however this goes against
@@ -303,9 +309,9 @@ function locationFilter(list, parameters) {
 
 		let lat2 = toDecimalDegrees(river.plat) || toDecimalDegrees(river.tlat) || toDecimalDegrees(river.hidlat)
     	let lon2 = toDecimalDegrees(river.plon) || toDecimalDegrees(river.tlon) || toDecimalDegrees(river.hidlon)
-	
+
 		let distance = calculateDistance(lat1, lon1, lat2, lon2)
-        		
+
         let passes = (distance < maxDistance) || parameters.includeUnknown //Follow parameters.includeUnknown unless the river has been eliminated on distance.
 
         if (!passes) {
@@ -476,7 +482,7 @@ function advancedSearch(list, query) {
     if (query["normalSearch"] !== undefined) {list = normalSearch(list, query["normalSearch"])}
 	console.timeEnd("normalSearch")
     if (query["sort"]) {list = sortUtils.sort(query["sort"].query, list, query["sort"].reverse)}
-	
+
 	let gaugesList = []
 	if (list.buckets) {
 		gaugesList = gaugesList.concat(...list.buckets.slice(0,3)) //Buckets 0, 1 and 2
@@ -486,21 +492,21 @@ function advancedSearch(list, query) {
 	}
 
 	let riverAmount = gaugesList.reduce((total, value) => {return total + (value.id !== undefined ? 1:0)}, 0) //Number of good river matches.
-	
+
 	if (list.buckets) {
 		let additionalRivers = ([].concat(...list.buckets.slice(3))).reduce((total, value) => {return total + (value.id !== undefined ? 1:0)}, 0)
 		list.gaugeAmount = list.length - riverAmount - additionalRivers
 		list.riverAmount = riverAmount + additionalRivers
-		
+
 	}
 	else {
 		list.gaugeAmount = list.length - riverAmount
 		list.riverAmount = riverAmount
 	}
-	
+
 	if (riverAmount === 0) {list.useGauges = true}
 	else {list.useGauges = false}
-		
+
     return list
 }
 

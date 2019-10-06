@@ -9,27 +9,27 @@ const calculateRelativeFlow = require(path.join(utils.getSiteRoot(), "src", "flo
 
 
 
-function getAssistantReply(query, options) {	
+function getAssistantReply(query, options) {
 	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
-	
+
 	let sentence = query.sentence
-	
-	//Use regex matching to fill in missing fields. 
-	let regexMatched = regexMatching(sentence)
-	
-	//If the provided units is invalid, use regex matching.
-	if (!["flow level", "relative flow", "temperature"].includes(query.units)) {
-		query.units = regexMatched.units
+
+	if (typeof query.sentence === "string") {
+		let regexMatched = regexMatching(sentence)
+
+		//If the provided units is invalid, use regex matching.
+		if (!["flow level", "relative flow", "temperature"].includes(query.units)) {
+			query.units = regexMatched.units
+		}
+
+		query = Object.assign(regexMatched, query)
 	}
-	
-	//Use regex matching to fill in any remaining fields.
-	query = Object.assign(regexMatched, query)
-	
+
 	let name = query.name
 	let units = query.units
 
-	
-	
+
+
 	console.log(name)
 
 	//Delete the words river and section (plus the leading space), if it exists in any casing.
@@ -45,18 +45,12 @@ function getAssistantReply(query, options) {
 
 	name = name.split(/(?:section )|(?: section)/i).join("")
 
-	let topRanked = []
+	let topRanked = normalSearch(riverarray, name, {strongMatchesOnly: true})
 
-	let buckets = normalSearch(riverarray, name).buckets
+	let buckets = normalSearch(riverarray, name, {strongMatchesOnly: true})
 
-	//Use the highest ranked river in bucket 2 (index 1).
-	topRanked = buckets[0]
-	if (topRanked.length === 0) {
-		topRanked = buckets[1][0]
-	}
-	if (!topRanked) {
-		topRanked = buckets[2]
-	}
+	//TODO: How to handle gauges?
+	//TODO: Bump out gauges if user wants relative flow.
 
 	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
@@ -65,10 +59,10 @@ function getAssistantReply(query, options) {
 
 	//TODO: Ask the user to break ties if multiple rivers in topRanked.
 
-	//Don't use the word "The " for creeks, or when section was labeled.
+	//Don't use the word "The " for creeks, lakes, or when section was labeled.
 	//Consider using the original name here - so before the word "River" was removed.
 	let useThe = true
-	if (responseName.toLowerCase().includes(" creek") || responseName.toLowerCase().includes("section ")) {
+	if (responseName.toLowerCase().includes(" creek") || responseName.toLowerCase().includes(" lake") || responseName.toLowerCase().includes("section ")) {
 		useThe = false
 	}
 
@@ -79,8 +73,8 @@ function getAssistantReply(query, options) {
 	if (topRanked && topRanked.length > 0) {queryResult.riverid = topRanked[0].id}
 
 	let starter = alwaysStart + (useThe?"The ":"") + responseName
-	
-	
+
+
 	//No rivers matched the search.
 	if (topRanked === undefined || topRanked.length === 0) {
 		queryResult.ssml = starter + " does not exist on rivers.run. Open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add it. " + ender
@@ -103,6 +97,8 @@ function getAssistantReply(query, options) {
 		}
 	}
 
+
+
 	let gauge;
 	let cfs;
 	let feet;
@@ -111,18 +107,24 @@ function getAssistantReply(query, options) {
 	try {
 		gauge = flowData[topRanked[0].usgs]
 		try {
-			feet = gauge.feet[gauge.feet.length-1].value
-			timeStamp = gauge.feet[gauge.feet.length-1].dateTime
+			if (gauge.feet) {
+				feet = gauge.feet[gauge.feet.length-1].value
+				timeStamp = gauge.feet[gauge.feet.length-1].dateTime
+			}
 		}
 		catch(e) {console.error(e)}
 		try {
-			cfs = gauge.cfs[gauge.cfs.length-1].value
-			timeStamp = gauge.cfs[gauge.cfs.length-1].dateTime
+			if (gauge.cfs) {
+				cfs = gauge.cfs[gauge.cfs.length-1].value
+				timeStamp = gauge.cfs[gauge.cfs.length-1].dateTime
+			}
 		}
 		catch(e) {console.error(e)}
 		try {
-			temp = gauge.temp[gauge.temp.length-1].value
-			if (!timeStamp) {timeStamp = gauge.temp[gauge.temp.length-1].dateTime} //I believe that I have seen temperature update less often on some gauges.
+			if (gauge.temp) {
+				temp = gauge.temp[gauge.temp.length-1].value
+				if (!timeStamp) {timeStamp = gauge.temp[gauge.temp.length-1].dateTime} //Temperature sometimes updates less often.
+			}
 		}
 		catch(e) {console.error(e)}
 		console.log(cfs)
@@ -150,7 +152,7 @@ function getAssistantReply(query, options) {
 
 
 	//TODO: Inform the user of the trend.
-	let str = starter + " had a flow level of "
+	let str = starter + " had a level of "
 	if (cfs && feet) {
 		str += cfs + " cfs or " + feet + " feet"
 	}
@@ -179,13 +181,13 @@ function getAssistantReply(query, options) {
 
 	if (units === "relative flow") {
 		//TODO: Consider moving temperature to before flow, and changing removing which is from "which is well within reccomended levels..."
-		
+
 		let river = topRanked[0]
-		
+
 		river.cfs = cfs
 		river.feet = feet
 		let relativeFlow = calculateRelativeFlow(river)
-		
+
 		if (relativeFlow === null) {
 			str += "according to the gauge " + gauge.name + ". "
 			str += "<break time=\"0.4s\"/>Relative flows are currently unknown. To learn how to add them, go to rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser."
@@ -218,7 +220,7 @@ function getAssistantReply(query, options) {
 			str += "which is well within the reccomended levels of " + river.lowflow + " through " + river.highflow + ", and near the middle level of " + river.midflow + " for the gauge " + gauge.name + "."
 		}
 
-		//TOOO: Say "computer estimated value of ___" instead of "___ (computer estimate)" 
+		//TOOO: Say "computer estimated value of ___" instead of "___ (computer estimate)"
 		str = str.split("(computer)").join("(computer estimate)")
 	}
 	else {
@@ -238,12 +240,12 @@ function getAssistantReply(query, options) {
 function regexMatching(sentence) {
 		//This regex matching is not great, and should only be used as a fallback.
 		//TODO: Use some more specific regex to easily catch things like units.
-	
+
 		//Sometimes Google Assistant adds a space between rivers. and Run. Handle some seperation.
 		sentence = sentence.split(/Ask rivers\s?.\s?run(?: for) (?: the)?/i).join("")
 
-	
-		//These still aren't precise enough: Something like what is the flow level of the flat river matches wrong. 
+
+		//These still aren't precise enough: Something like what is the flow level of the flat river matches wrong.
 		let preciseMatchers = [
 			/(?:water |gauge )(?:level|height) (?:of )?(?:the )?(?<name>.+) in (?<units>cfs|feet)/i,
 			/(?<units>flow) information for the (?<name>.+)/,
@@ -300,17 +302,17 @@ function regexMatching(sentence) {
 		if (results.length > 1) {
 			console.log(results)
 		}
-	
+
 		if (results[0]) {
 			let result = {
 				name: results[0].name,
 				units: results[0].units
 			}
-	
+
 			if (["running", "runnable", "paddleable"].includes(result.units)) {
 				result.units = "relative flow"
 			}
-	
+
 			return result
 		}
 		else {
