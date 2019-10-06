@@ -64,6 +64,7 @@ async function httprequest(req,res) {
 				res.setHeader('Content-Type', 'text/plain');
 				res.end("Internal Server Error - lookupIP.js did not load. Contact the server administrator.");
 			}
+			return
 		}
 
 
@@ -134,6 +135,7 @@ async function httprequest(req,res) {
 				res.end('Invalid POST request');
 				fs.appendFileSync(path.join(utils.getLogDirectory(), 'badrequest.log'), req.url + "\n" + JSON.stringify(data) + "\n");
 			}
+			return
 		}
 
 
