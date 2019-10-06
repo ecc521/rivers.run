@@ -63,8 +63,8 @@ function getAssistantReply(query, options) {
 	name = name.split(/ from/i).join("")
 
 	name = name.split(/(?:section )|(?: section)/i).join("")
-	//Convert state names to state codes for search.
-	let topRanked = normalSearch(riverarray, siteDataParser.replaceStateNamesWithCodes(name), {strongMatchesOnly: true})
+	//Convert state names to state codes for search - pass onlyAtEnd and notStart to handle things like "Mississippi River At Example Mississippi"
+	let topRanked = normalSearch(riverarray, siteDataParser.replaceStateNamesWithCodes(name, {onlyAtEnd: true, notStart: true}), {strongMatchesOnly: true})
 
 	//TODO: How to handle gauges?
 	//TODO: Bump out gauges if user wants relative flow.
@@ -83,14 +83,15 @@ function getAssistantReply(query, options) {
 		useThe = false
 	}
 
+	if (!topRanked[0].id) {topRanked[0].id = "usgs:" + topRanked[0].usgs} //This is a gauge. Fill in id using usgs.
+
 	let queryResult = {
 		responseName,
-		search: name
+		search: name,
+		riverid: (topRanked[0] && topRanked[0].id)
 	}
-	if (topRanked && topRanked.length > 0) {queryResult.riverid = topRanked[0].id}
 
 	let starter = alwaysStart + (useThe?"The ":"") + responseName
-
 
 	//No rivers matched the search.
 	if (topRanked === undefined || topRanked.length === 0) {
@@ -108,12 +109,11 @@ function getAssistantReply(query, options) {
 				//If section is 1 word long, put section before name. Otherwise, put name before section.
 				let sectionFirst = ["bottom", "bottom bottom", "lower", "middle", "upper", "top", "tip top", "upper upper", "top"].includes(topRanked[0].section.trim().toLowerCase())
 				let selectedRiverName = sectionFirst?(topRanked[0].section + " " + topRanked[0].name):(topRanked[0].name + " " + topRanked[0].section)
-				starter = alwaysStart + topRanked.length + " sections of river showed up for the search " + responseName + ". Picking " + selectedRiverName + ". <break time=\"0.5s\"/>" + starter
+				starter = alwaysStart + topRanked.length + " sections of river showed up for the search " + responseName + ". Picking " + siteDataParser.fixSiteName(selectedRiverName, {convertStateCodeToName: true}) + ". <break time=\"0.5s\"/>" + starter
 				break;
 			}
 		}
 	}
-
 
 	let gauge;
 	let cfs;
@@ -152,6 +152,7 @@ function getAssistantReply(query, options) {
 		queryResult.ssml = starter + " has no gauge on rivers.run. You can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add a gauge. " + ender
 		return queryResult
 	}
+
 	//Gauge is broken. Tell user.
 	else if (!cfs && !feet) {
 		if (gauge) {

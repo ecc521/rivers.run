@@ -1,4 +1,4 @@
-const {skillTranslations} = require("./skillTranslations.js")    
+const {skillTranslations} = require("./skillTranslations.js")
 const addGraphs = require("./addGraphs.js").addGraphs
 const {calculateAge} = require("./flowInfoCalculations.js")
 const {createDeviceNotificationsWidget, createEmailNotificationsWidget} = require("./notificationsWidget.js")
@@ -77,7 +77,7 @@ function createExpansion(button, river) {
             }
 			if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
 
-			if (river.id) {
+			if (!river.isGauge) {
 				//All rivers have an ID. All gauges do not.
 				div.appendChild(document.createElement("br"))
 				let link = document.createElement("a")
@@ -125,7 +125,7 @@ function createExpansion(button, river) {
 
 				let data = self.usgsarray[usgsID]
 				if (!data) {console.log("No flow data for " + usgsID); return;}
-				
+
 				//Alert the user if the data is (at least 2 hours) old
 				let dataAge
                 try {
@@ -165,7 +165,7 @@ function createExpansion(button, river) {
 				console.time("Add Graphs")
 				let graphs = addGraphs(data)
 				div.appendChild(graphs)
-				
+
 				//Fetch comprehensive flow data, then update the graphs.
 				//TODO: Add XMLHttpRequest fallback.
 				if (!usgsarray[usgsID].full) {
@@ -178,7 +178,7 @@ function createExpansion(button, river) {
 						})
 					})
 				}
-				
+
 				console.timeEnd("Add Graphs")
 			}
 
@@ -199,7 +199,7 @@ function createExpansion(button, river) {
 }
 
 
-	
+
 	module.exports = {
 		riverbuttonClicked
 	}

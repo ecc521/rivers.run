@@ -33,12 +33,16 @@ for (let prop in stateLookupTable) {
 
 stateCodeToName["FLA"] = "Florida" //USGS likes using this one in the gauge names, even though FL is correct.
 
-function replaceStateNamesWithCodes(sentence) {
+function replaceStateNamesWithCodes(sentence, options = {}) {
     for (let stateCode in stateCodeToName) {
         if (stateCode === "FLA") {continue} //Officially FL. See above. Also, FLA contains FL.
 
         let stateName = stateCodeToName[stateCode]
-        sentence = sentence.split(new RegExp("\\b" + stateName + "\\b","i")).join(stateCode)
+        let expressionText = "\\b" + stateName + "\\b"
+        //The following two options are used so that only the ending portion of things like Mississippi River At Example Mississippi is changed.
+        if (options.onlyAtEnd) {expressionText += "$"} //State Name must be at end of sentence (don't match "North Fork Mississippi River")
+        if (options.notStart) {expressionText = "(?!^)" + expressionText} //State name may not be at the start (don't match "Mississippi").
+        sentence = sentence.split(new RegExp(expressionText,"i")).join(stateCode)
     }
     return sentence
 }
@@ -64,10 +68,6 @@ function fixSiteName(siteName, options = {}) {
         else {
             siteName += stateCode
         }
-    }
-
-    if (options.convertStateNameToCode) {
-        siteName = replaceStateNamesWithCodes(siteName)
     }
 
     return siteName
