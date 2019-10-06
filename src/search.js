@@ -46,9 +46,21 @@ function normalSearch(list, query, options = {}) {
     let buckets = [[],[],[],[],[],[],[]]
 	let bucket2 = [] //Bucket 2 - index 1 in buckets - is special.
 
-	//corejs regexp polyfill is taking 40 times longer splitting with the regex /[ ,]+/ than using .split(",").join(" ").split(" ")
-	//A bug will need to be filed - this level of performance is simply unacceptable.
-	//See if this polyfill can be removed.
+	let splitPhrase;
+	if (options.regexpSplit) {
+		//This is faster when using the native regexp engine, not corejs.
+		splitPhrase = function splitPhrase(phrase) {
+			return phrase.split(/[ ,]+/)
+		}
+	}
+	else {
+		//corejs regexp polyfill is taking 40 times longer splitting with the regex /[ ,]+/ than using .split(",").join(" ").split(" ")
+		//It appears like core-js is causing V8 to drop off the regexp fast path.
+		splitPhrase = function splitPhrase(phrase) {
+			return phrase.split(",").join(" ").split(" ")
+		}
+	}
+
 
 	list.forEach(function(event) {
 
@@ -71,15 +83,15 @@ function normalSearch(list, query, options = {}) {
 		//As long as name and section contain all space seperated parts of the query, this bucket can be used.
 
 		//Split on spaces and commas. This handles things like "Lower, Lower Yough"
-		let words = query.split(",").join(" ").split(" ")
+		let words = splitPhrase(query)
 
 		if (words.length > 1) {
 			let passes = words.every((word) => {
 				return (lowerCaseName.indexOf(word) !== -1) || (lowerCaseSection.indexOf(word) !== -1)
 			})
 
-			let nameWords = lowerCaseName.split(",").join(" ").split(" ")
-			let sectionWords = lowerCaseSection.split(",").join(" ").split(" ")
+			let nameWords = splitPhrase(lowerCaseName)
+			let sectionWords = splitPhrase(lowerCaseSection)
 			//For the search "Lower Haw", the Lower Haw should show up higher than Lower Hawksbill Creek.
 			//This works by assigning higher relevance to exact matches, then startsWith, than contains.
 			let bonus = words.reduce((bonus, word) => {

@@ -12,9 +12,9 @@ async function handleRequest(req, res) {
 				let sentence = query.queryResult.queryText
 				let riverName = query.queryResult.parameters["river-name"]
 				let unitName = query.queryResult.parameters["unit-name"]
-				
-				let queryResult = getRiverData.getAssistantReply({
-					name: riverName, 
+
+				let queryResult = await getRiverData.getAssistantReply({
+					name: riverName,
 					units: unitName,
 					sentence
 				})
@@ -80,7 +80,7 @@ async function handleRequest(req, res) {
 				reply.outputContexts = query.outputContexts
 
 				fs.appendFileSync(path.join(utils.getLogDirectory(), 'assistanterror.log'), JSON.stringify(reply) + "\n");
-	
+
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/json');
 				res.end(JSON.stringify(reply));

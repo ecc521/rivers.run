@@ -11,15 +11,15 @@ const calculateRelativeFlow = require(path.join(utils.getSiteRoot(), "src", "flo
 function createGetLatest(filePath, options = {}) {
 	let oldLastModified;
 	let fileData;
-	return function getLatest() {
+	return async function getLatest() {
 		//If the file has not changed, don't read from disk again.
-		let currentLastModified = fs.statSync(filePath).mtime.getTime()
+		let currentLastModified = (await fs.promises.stat(filePath)).mtime.getTime()
 		if (!oldLastModified || currentLastModified !== oldLastModified) {
 			if (options.isJSON) {
 				//We are passing by reference... There could be an issue if the reference is modified. (we'll assume this won't happen if option selected)
-				fileData = JSON.parse(fs.readFileSync(filePath, {encoding:"utf8"}))
+				fileData = JSON.parse(await fs.promises.readFile(filePath, {encoding:"utf8"}))
 			}
-			else {fileData = fs.readFileSync(filePath)}
+			else {fileData = await fs.promises.readFile(filePath)}
 			oldLastModified = currentLastModified
 		}
 		return fileData
@@ -28,8 +28,8 @@ function createGetLatest(filePath, options = {}) {
 
 let getLatestRiverArray = createGetLatest(path.join(utils.getSiteRoot(), "riverdata.json"),{isJSON:true})
 
-function getAssistantReply(query, options) {
-	let riverarray = getLatestRiverArray()
+async function getAssistantReply(query, options) {
+	let riverarray = await getLatestRiverArray()
 
 	let sentence = query.sentence
 
@@ -64,8 +64,10 @@ function getAssistantReply(query, options) {
 
 	name = name.split(/(?:section )|(?: section)/i).join("")
 	//Convert state names to state codes for search - pass onlyAtEnd and notStart to handle things like "Mississippi River At Example Mississippi"
-	let topRanked = normalSearch(riverarray, siteDataParser.replaceStateNamesWithCodes(name, {onlyAtEnd: true, notStart: true}), {strongMatchesOnly: true})
-
+	let topRanked = normalSearch(riverarray, siteDataParser.replaceStateNamesWithCodes(name, {onlyAtEnd: true, notStart: true}), {
+		strongMatchesOnly: true,
+		regexpSplit:true //We are using nothing that should cause RegExp not to use the fast path, so this should significantly improve performance.
+	})
 	//TODO: How to handle gauges?
 	//TODO: Bump out gauges if user wants relative flow.
 	//TODO: When a search returns a gauge, but there were multiple options, the gauge is repeated twice.
@@ -109,7 +111,7 @@ function getAssistantReply(query, options) {
 				//If section is 1 word long, put section before name. Otherwise, put name before section.
 				let sectionFirst = ["bottom", "bottom bottom", "lower", "middle", "upper", "top", "tip top", "upper upper", "top"].includes(topRanked[0].section.trim().toLowerCase())
 				let selectedRiverName = sectionFirst?(topRanked[0].section + " " + topRanked[0].name):(topRanked[0].name + " " + topRanked[0].section)
-				starter = alwaysStart + topRanked.length + " sections of river showed up for the search " + responseName + ". Picking " + siteDataParser.fixSiteName(selectedRiverName, {convertStateCodeToName: true}) + ". <break time=\"0.5s\"/>" + starter
+				starter = alwaysStart + topRanked.length + " results showed up for the search " + responseName + ". Picking " + siteDataParser.fixSiteName(selectedRiverName, {convertStateCodeToName: true}) + ". <break time=\"0.5s\"/>" + starter
 				break;
 			}
 		}
@@ -121,7 +123,7 @@ function getAssistantReply(query, options) {
 	let temp;
 	let timeStamp;
 	try {
-		gauge = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(),"gaugeReadings",topRanked[0].usgs)))
+		gauge = JSON.parse(await fs.promises.readFile(path.join(utils.getSiteRoot(),"gaugeReadings",topRanked[0].usgs)))
 		try {
 			if (gauge.feet) {
 				feet = gauge.feet[gauge.feet.length-1].value
@@ -143,7 +145,6 @@ function getAssistantReply(query, options) {
 			}
 		}
 		catch(e) {console.error(e)}
-		console.log(cfs)
 	}
 	catch(e) {console.error(e)}
 
@@ -157,7 +158,7 @@ function getAssistantReply(query, options) {
 	else if (!cfs && !feet) {
 		if (gauge) {
 			//The gauge did not return the needed info.
-			queryResult.ssml = starter + " does not have a working gauge. If " + gauge.name + " is not the correct gauge, you can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to update the gauge. " + ender
+			queryResult.ssml = starter + " does not have a working gauge. If " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + " is not the correct gauge, you can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to update the gauge. " + ender
 		}
 		else {
 			//The gauge doesn't appear to exist.
