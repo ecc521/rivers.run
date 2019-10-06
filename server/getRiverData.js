@@ -3,6 +3,8 @@ const path = require("path")
 
 const utils = require(path.join(__dirname, "utils.js"))
 
+const siteDataParser = require(path.join(__dirname, "siteDataParser.js"))
+
 const normalSearch = require(path.join(utils.getSiteRoot(), "src", "search.js")).normalSearch
 const calculateRelativeFlow = require(path.join(utils.getSiteRoot(), "src", "flowInfoCalculations.js")).calculateRelativeFlow
 
@@ -51,6 +53,8 @@ function getAssistantReply(query, options) {
 
 	//TODO: How to handle gauges?
 	//TODO: Bump out gauges if user wants relative flow.
+	//TODO: When a search returns a gauge, but there were multiple options, the gauge is repeated twice.
+	//TODO: Reformat gauge name (use siteDataParser.js).
 
 	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
@@ -224,7 +228,7 @@ function getAssistantReply(query, options) {
 		str = str.split("(computer)").join("(computer estimate)")
 	}
 	else {
-		str += "according to the gauge " + gauge.name + ". "
+		str += "according to the gauge " + siteDataParser.fixSiteName(gauge.name, true) + ". "
 	}
 
 	queryResult.ssml = str + ender
