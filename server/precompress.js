@@ -54,8 +54,15 @@ async function compressFile(filePath, level = 11, options = {}) {
 
 	if (!options.alwaysCompress && fs.existsSync(compressedPath)) {
 		//If there is an existing file that decompressed to the input, don't waste time compressing again.
-		let currentlyCompressed = zlib.brotliDecompressSync(await fs.promises.readFile(compressedPath))
-		if (currentlyCompressed.toString() === uncompressed.toString()) {
+		//TODO: Stream into the brotli decompressor.
+		let currentFile = await fs.promises.readFile(compressedPath)
+		let currentlyCompressed = await new Promise((resolve, reject) => {
+			zlib.brotliDecompress(currentFile, function(error, result) {
+				if (error) {reject(error)}
+				resolve(result)
+			})
+		})
+		if (currentlyCompressed.equals(uncompressed)) {
 			//console.log(filePath + " is already compressed.")
 			return;
 		}
@@ -67,7 +74,7 @@ async function compressFile(filePath, level = 11, options = {}) {
 
 	//Note that some files may be compressed (uselessly) multiple times if the uncompressed file is smaller than the compressed file.
 	if (compressed.byteLength < uncompressed.byteLength) {
-		fs.writeFileSync(compressedPath, compressed)
+		await fs.promises.writeFile(compressedPath, compressed)
 		console.log("Compressed " + filePath + " from " + uncompressed.byteLength + " bytes to " + compressed.byteLength + " bytes.")
 
 		if (options.keepLastModified) {

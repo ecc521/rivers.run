@@ -99,9 +99,6 @@ async function updateCachedData() {
 	if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
 	else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes()/15)*15)}
 
-	await fs.promises.appendFile(path.join(utils.getLogDirectory(), 'executiontimer.log'), (currentTime.getTime() - Date.now() + 60*1000) + '\n');
-
-
 	//End install script
 	if (process.argv[2] === "--install") {
 		console.log("To update river and flow data in the future, run node usgscache.js --install (if you are running the server, data automatically updates).")

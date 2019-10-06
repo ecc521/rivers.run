@@ -22,7 +22,6 @@ function sendNotifications(ignoreNoneUntil = false) {
 		return
 	}
 	let subscriptions = JSON.parse(fs.readFileSync(subscriptionManager.storagePath, {encoding:"utf8"}))
-	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
 
 	for (let url in subscriptions) {
 		let user = subscriptions[url]
@@ -35,14 +34,14 @@ function sendNotifications(ignoreNoneUntil = false) {
         let data = {};
 		for (let gauge in parameters) {
 			let rivers = parameters[gauge]
-			let flow = flowData[gauge]
+			let flow = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(),"gaugeReadings",gauge)))
 			for (let prop in rivers) {
 				let river = rivers[prop]
 
 				let values;
 
-				if (river.units === "cfs") {values = flowData[gauge].cfs}
-				if (river.units === "ft") {values = flowData[gauge].feet}
+				if (river.units === "cfs") {values = flow.cfs}
+				if (river.units === "ft") {values = flow.feet}
 
 				let latest = values[values.length - 1].value
 
@@ -62,24 +61,24 @@ function sendNotifications(ignoreNoneUntil = false) {
                 data[prop] = rivers[prop]
 			}
 		}
-		
+
 		//Consider if we should overrule user.noneUntil on changes.
 		let previousData = user.previousMessage
-		
+
 		//Don't send empty unless it is a change.
 		//TODO: Consider sending the user a demo message if this is their first time (so if previousData is not defined
-		
+
 		if (!previousData || JSON.stringify(previousData) === "{}") {
 			if (JSON.stringify(data) === "{}") {
 				continue; //We are sending an empty message, and we either already sent one or never sent a message in the first place.
 			}
-		} 
-		
+		}
+
 		if (JSON.stringify(parameters) === "{}") {continue;} //The user does not want notifications on anything right now.
-		
+
 		user.previousMessage = data
 		subscriptionManager.saveUserSubscription(user)
-		
+
 		if (user.type === "email") {
 			let res = sendEmails.sendEmail(user, data)
 			if (res !== false) {
@@ -90,7 +89,7 @@ function sendNotifications(ignoreNoneUntil = false) {
 			//user.address
 			continue;
 		}
-		
+
         //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
         webpush.sendNotification(user.subscription, JSON.stringify(data), {
             //Not sure if vapidDetails is needed, because webpush.setVapidDetails was used above.
