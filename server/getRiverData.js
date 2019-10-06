@@ -191,35 +191,35 @@ function getAssistantReply(query, options) {
 		let relativeFlow = calculateRelativeFlow(river)
 
 		if (relativeFlow === null) {
-			str += "according to the gauge " + gauge.name + ". "
+			str += "according to the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". "
 			str += "<break time=\"0.4s\"/>Relative flows are currently unknown. To learn how to add them, go to rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser."
 		}
 		else if (relativeFlow === 0) {
-			str += "which is below the minimum of " + river.minrun + " for the gauge " + gauge.name + "."
+			str += "which is below the minimum of " + river.minrun + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + "."
 		}
 		else if (relativeFlow === 4) {
-			str += "which is above the reccomended maximum " + river.maxrun + " for the gauge " + gauge.name + "."
+			str += "which is above the reccomended maximum of " + river.maxrun + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + "."
 		}
 		else if (relativeFlow > 3.5) {
-			str += "which is a very high level, bordering on too high. The maximum is " + topRanked[0].maxrun + ", but levels above " + topRanked[0].highflow + " are considered high for the gauge " + gauge.name + "."
+			str += "which is a very high level, bordering on too high. The maximum is " + topRanked[0].maxrun + ", but levels above " + topRanked[0].highflow + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + "."
 		}
 		else if (relativeFlow < 0.5) {
-			str += "which a very low level, bordering on too low. The minimum level is " + topRanked[0].minrun + ", however levels above " + topRanked[0].lowflow + " are preferred for the gauge " + gauge.name + "."
+			str += "which a very low level, bordering on too low. The minimum level is " + topRanked[0].minrun + ", however levels above " + topRanked[0].lowflow + " are preferred for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + "."
 		}
 		else if (relativeFlow < 1) {
-			str += "which is above the minimum of " + topRanked[0].minrun + ", although levels above " + topRanked[0].lowflow + " are reccomended for the gauge " + gauge.name + "."
+			str += "which is above the minimum of " + topRanked[0].minrun + ", although levels above " + topRanked[0].lowflow + " are reccomended for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + "."
 		}
 		else if (relativeFlow > 3) {
-			str += "which is a little high. The maximum levels is " + topRanked[0].maximum + ", however levels above " + topRanked[0].highflow + " are considered high for the gauge " + gauge.name + "."
+			str += "which is a little high. The maximum levels is " + topRanked[0].maximum + ", however levels above " + topRanked[0].highflow + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + "."
 		}
 		else if (relativeFlow > 2.5) {
-			str += "which is on the higher end of reccomended levels. Levels above " + topRanked[0].highflow + " are considered high, while " + topRanked[0].midflow + " is considered the middle level for the gauge " + gauge.name + "."
+			str += "which is on the higher end of reccomended levels. Levels above " + topRanked[0].highflow + " are considered high, while " + topRanked[0].midflow + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + "."
 		}
 		else if (relativeFlow < 1.5) {
-			str += "which is on the lower end of reccomended levels. Levels below " + topRanked[0].lowflow + " are considered low, while " + topRanked[0].midflow + " is considered the middle level for the gauge " + gauge.name + "."
+			str += "which is on the lower end of reccomended levels. Levels below " + topRanked[0].lowflow + " are considered low, while " + topRanked[0].midflow + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + "."
 		}
 		else {
-			str += "which is well within the reccomended levels of " + river.lowflow + " through " + river.highflow + ", and near the middle level of " + river.midflow + " for the gauge " + gauge.name + "."
+			str += "which is well within the reccomended levels of " + river.lowflow + " through " + river.highflow + ", and near the middle level of " + river.midflow + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + "."
 		}
 
 		//TOOO: Say "computer estimated value of ___" instead of "___ (computer estimate)"

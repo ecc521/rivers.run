@@ -61,7 +61,7 @@ async function compressFile(filePath, level = 11, options = {}) {
 		}
 	}
 
-	console.log("Compressing " + filePath)
+	console.log("Compressing " + filePath) //TODO: This should overwrite the previous line like how dataparse.js does.
 
 	let compressed = await brotliCompressAsync(uncompressed, level)
 

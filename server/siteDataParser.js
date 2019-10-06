@@ -44,9 +44,9 @@ function replaceStateNamesWithCodes(sentence) {
 }
 
 function fixSiteName(siteName, options = {}) {
-    siteName = siteName.split(/ nr /i).join(" near ").split(/ bl /i).join(" below ").split(/ dnstrm /i).join(" downstream ").split(/ abv /i).join(" above ")
-        .split(" @ ").join(" at ").split(" S ").join(" South ").split(" N ").join(" North ").split(" E ").join(" East ").split(" W ").join(" West ")
-        .split(/ Cr /i).join(" Creek ").split(/ Ck /i).join(" Creek ").split(/ R /i).join(" River ").split(/ CYN /i).join(" Canyon ")
+    siteName = siteName.split(/\bnr\b/i).join("near").split(/\bbl\b/i).join("below").split(/\bdnstrm\b/i).join("downstream").split(/\babv\b/i).join("above")
+        .split(/\b@\b/).join("at").split(/\bS\b/).join("South").split(/\bN\b/).join("North").split(/\bE\b/).join("East").split(/\bW\b/).join("West")
+        .split(/\bCr\b/i).join("Creek").split(/\bCk\b/i).join("Creek").split(/\bR\b/i).join("River").split(/\bCYN\b/i).join("Canyon").split(/\bSTA\b/i).join("Station")
 
     siteName = fixCasing(siteName)
     //TODO: Add a way to convert from state name to state codes. This would help with searches where the user says the state name.
