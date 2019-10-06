@@ -8,11 +8,28 @@ const siteDataParser = require(path.join(__dirname, "siteDataParser.js"))
 const normalSearch = require(path.join(utils.getSiteRoot(), "src", "search.js")).normalSearch
 const calculateRelativeFlow = require(path.join(utils.getSiteRoot(), "src", "flowInfoCalculations.js")).calculateRelativeFlow
 
+function createGetLatest(filePath, options = {}) {
+	let oldLastModified;
+	let fileData;
+	return function getLatest() {
+		//If the file has not changed, don't read from disk again.
+		let currentLastModified = fs.statSync(filePath).mtime.getTime()
+		if (!oldLastModified || currentLastModified !== oldLastModified) {
+			if (options.isJSON) {
+				//We are passing by reference... There could be an issue if the reference is modified. (we'll assume this won't happen if option selected)
+				fileData = JSON.parse(fs.readFileSync(filePath, {encoding:"utf8"}))
+			}
+			else {fileData = fs.readFileSync(filePath)}
+			oldLastModified = currentLastModified
+		}
+		return fileData
+	}
+}
 
-
+let getLatestRiverArray = createGetLatest(path.join(utils.getSiteRoot(), "riverdata.json"),{isJSON:true})
 
 function getAssistantReply(query, options) {
-	let riverarray = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "riverdata.json"), {encoding:"utf8"}))
+	let riverarray = getLatestRiverArray()
 
 	let sentence = query.sentence
 
