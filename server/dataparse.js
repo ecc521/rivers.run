@@ -125,7 +125,7 @@ async function writeToDisk(data, id) {
     }
 
     console.log("Loading Rivers...")
-    
+
     let promises = []
     for (let i=0;i<files.length;i++) {
         promises.push(loadText(files[i]))

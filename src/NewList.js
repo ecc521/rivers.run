@@ -21,28 +21,28 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	document.querySelectorAll(".gaugesBelow").forEach((elem) => {elem.remove()})
 
 	let useGauges = orderedlist.useGauges
-	
+
 	//Append New
 	var div = document.getElementById("Rivers")
 	//To avoid lagging, append a small amount of rivers at the start, then finish adding rivers in the background.
 	let completed = 0
 	let callNumber = timesNewListCalled
-	
+
 	function drawMore(milliseconds = 8, options = {}) {
 		let lastDrawn = options.lastDrawn
-		
+
 		//We won't draw more if we have already drawn more than 5 times the windows height below where the user has scrolled to.
 		//This will help keep performance reasonable.
 		//TODO: Draw only the window height. Wait small amount of time to see if NewList is called again (so typing in searchbox, etc). If not, resume drawing to 5x.
 		//If we do this inside the loop, it destroys performance of rendering.
 		if (lastDrawn && lastDrawn.offsetTop - window.innerHeight * 5 > window.scrollY) {return {lastDrawn, finished: false, time: 0}}
-		
+
 		//Draw rivers to the screen for milliseconds milliseconds.
 		let start = Date.now()
 		for (;completed<orderedlist.length;completed++) {
-			
-			if (!orderedlist[completed].id && !options.useGauges) {continue}
-			if (orderedlist[completed].id && options.onlyGauges) {continue}
+
+			if (orderedlist[completed].isGauge && !options.useGauges) {continue}
+			if (!orderedlist[completed].isGauge && options.onlyGauges) {continue}
 
 			//If we have exceeded allocated time, or NewList has been called again (so another draw process is in place), stop drawing.
 			if (Date.now() - start > milliseconds || callNumber !== timesNewListCalled) {break;}
@@ -60,7 +60,7 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 		let oldCompleted = completed
 		let drawing = drawMore(8, options)
 		if (drawing.finished && !useGauges) {
-			useGauges = true; 
+			useGauges = true;
 			completed = 0;
 			drawing.finished = false
 			if (orderedlist.gaugeAmount > 0) {
@@ -79,8 +79,8 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 			let minTime = 16
 			if (completed === oldCompleted) {minTime = 64} //If we didn't draw any rivers (enough already drawn), save some CPU by increasing the amount of time between executions.
 			setTimeout(asyncDraw, Math.max(minTime, drawing.time*2), {
-				lastDrawn: drawing.lastDrawn, 
-				useGauges, 
+				lastDrawn: drawing.lastDrawn,
+				useGauges,
 				onlyGauges: (useGauges !== orderedlist.useGauges)
 			})
 		}
@@ -102,9 +102,9 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 		link = encodeURI(window.root + "#" + JSON.stringify(query))
 		//There are advanced search parameters other than normalSearch. Show the advanced search warning.
 	}
-	
+
 	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
-	
+
 	try {
 		history.replaceState("",document.title, link)
 	}

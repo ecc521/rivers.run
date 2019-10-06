@@ -491,10 +491,10 @@ function advancedSearch(list, query) {
 		gaugesList = list
 	}
 
-	let riverAmount = gaugesList.reduce((total, value) => {return total + (value.id !== undefined ? 1:0)}, 0) //Number of good river matches.
+	let riverAmount = gaugesList.reduce((total, river) => {return total + (!river.isGauge ? 1:0)}, 0) //Number of good river matches.
 
 	if (list.buckets) {
-		let additionalRivers = ([].concat(...list.buckets.slice(3))).reduce((total, value) => {return total + (value.id !== undefined ? 1:0)}, 0)
+		let additionalRivers = ([].concat(...list.buckets.slice(3))).reduce((total, river) => {return total + (!river.isGauge ? 1:0)}, 0)
 		list.gaugeAmount = list.length - riverAmount - additionalRivers
 		list.riverAmount = riverAmount + additionalRivers
 

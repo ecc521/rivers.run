@@ -46,10 +46,8 @@ function getAssistantReply(query, options) {
 	name = name.split(/ from/i).join("")
 
 	name = name.split(/(?:section )|(?: section)/i).join("")
-
-	let topRanked = normalSearch(riverarray, name, {strongMatchesOnly: true})
-
-	let buckets = normalSearch(riverarray, name, {strongMatchesOnly: true})
+	//Convert state names to state codes for search.
+	let topRanked = normalSearch(riverarray, siteDataParser.replaceStateNamesWithCodes(name), {strongMatchesOnly: true})
 
 	//TODO: How to handle gauges?
 	//TODO: Bump out gauges if user wants relative flow.
@@ -228,7 +226,7 @@ function getAssistantReply(query, options) {
 		str = str.split("(computer)").join("(computer estimate)")
 	}
 	else {
-		str += "according to the gauge " + siteDataParser.fixSiteName(gauge.name, true) + ". "
+		str += "according to the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". "
 	}
 
 	queryResult.ssml = str + ender

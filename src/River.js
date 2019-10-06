@@ -219,6 +219,11 @@ function River(locate, event) {
 
     this.skill = this.skill || "?"
 
+	if (!this.id) {
+		this.id = "usgs:" + this.usgs
+		this.isGauge = true
+	}
+
     this.base = "b" + locate
     this.expanded = 0
     this.index = locate
@@ -237,7 +242,7 @@ function River(locate, event) {
             var button = document.createElement("button")
             button.id = this.base + 1
 
-			if (!this.id) {
+			if (this.isGauge) {
 				button.classList.add("riverbuttonGauge")
 			}
 

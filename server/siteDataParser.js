@@ -31,25 +31,45 @@ for (let prop in stateLookupTable) {
     stateCodeToName[stateCode] = stateName
 }
 
-function fixSiteName(siteName, convertStateCode) {
+stateCodeToName["FLA"] = "Florida" //USGS likes using this one in the gauge names, even though FL is correct.
+
+function replaceStateNamesWithCodes(sentence) {
+    for (let stateCode in stateCodeToName) {
+        if (stateCode === "FLA") {continue} //Officially FL. See above. Also, FLA contains FL.
+
+        let stateName = stateCodeToName[stateCode]
+        sentence = sentence.split(new RegExp("\\b" + stateName + "\\b","i")).join(stateCode)
+    }
+    return sentence
+}
+
+function fixSiteName(siteName, options = {}) {
     siteName = siteName.split(/ nr /i).join(" near ").split(/ bl /i).join(" below ").split(/ dnstrm /i).join(" downstream ").split(/ abv /i).join(" above ")
         .split(" @ ").join(" at ").split(" S ").join(" South ").split(" N ").join(" North ").split(" E ").join(" East ").split(" W ").join(" West ")
         .split(/ Cr /i).join(" Creek ").split(/ Ck /i).join(" Creek ").split(/ R /i).join(" River ").split(/ CYN /i).join(" Canyon ")
 
     siteName = fixCasing(siteName)
+    //TODO: Add a way to convert from state name to state codes. This would help with searches where the user says the state name.
+    if (siteName.endsWith(".")) {siteName = siteName.slice(0,-1)}
 
-    let stateCode = siteName.slice(-2).toUpperCase()
+    let stateCode = siteName.split(/[ ,]+/)
+    stateCode = stateCode[stateCode.length - 1].toUpperCase()
     let stateName = stateCodeToName[stateCode]
     //Make stateCode upperCase if convertStateCode is false. Otherwise, replace with stateName.
     if (stateName) {
-        siteName = siteName.slice(0, -2)
-        if (convertStateCode) {
+        siteName = siteName.slice(0, -stateCode.length)
+        if (options.convertStateCodeToName) {
             siteName += stateName
         }
         else {
             siteName += stateCode
         }
     }
+
+    if (options.convertStateNameToCode) {
+        siteName = replaceStateNamesWithCodes(siteName)
+    }
+
     return siteName
 }
 
@@ -116,7 +136,7 @@ async function getSites() {
 			//The lookup table doesn't handle the very rare things like gauges in other countires.
 			reducedObj.state = stateLookupTable[obj.state_cd][0]
 		}
-		reducedObj.usgs = obj.site_no
+        reducedObj.usgs = obj.site_no
 		reducedObj.plat = obj.dec_lat_va
 		reducedObj.plon = obj.dec_long_va
 		//reducedObj.drainageArea = obj.drain_area_va //We don't use this, and it makes the file bigger.
@@ -132,5 +152,6 @@ async function getSites() {
 
 module.exports = {
 	getSites,
-    fixSiteName
+    fixSiteName,
+    replaceStateNamesWithCodes
 }
