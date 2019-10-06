@@ -54,8 +54,6 @@ function getAssistantReply(query, options) {
 	//TODO: When a search returns a gauge, but there were multiple options, the gauge is repeated twice.
 	//TODO: Reformat gauge name (use siteDataParser.js).
 
-	let flowData = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(), "flowdata2.json"), {encoding:"utf8"}))
-
 	let alwaysStart = "<speak>"
 	let ender = " <break time=\"0.3s\"/>Happy Paddling! Bye! </speak>"
 
@@ -100,14 +98,13 @@ function getAssistantReply(query, options) {
 	}
 
 
-
 	let gauge;
 	let cfs;
 	let feet;
 	let temp;
 	let timeStamp;
 	try {
-		gauge = flowData[topRanked[0].usgs]
+		gauge = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(),"gaugeReadings",topRanked[0].usgs)))
 		try {
 			if (gauge.feet) {
 				feet = gauge.feet[gauge.feet.length-1].value
