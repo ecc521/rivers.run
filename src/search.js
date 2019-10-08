@@ -46,21 +46,20 @@ function normalSearch(list, query, options = {}) {
     let buckets = [[],[],[],[],[],[],[]]
 	let bucket2 = [] //Bucket 2 - index 1 in buckets - is special.
 
-	let splitPhrase;
-	if (options.regexpSplit) {
-		//This is faster when using the native regexp engine, not corejs.
-		splitPhrase = function splitPhrase(phrase) {
-			return phrase.split(/[ ,]+/)
-		}
-	}
-	else {
-		//corejs regexp polyfill is taking 40 times longer splitting with the regex /[ ,]+/ than using .split(",").join(" ").split(" ")
+    let splitPhrase;
+    if (options.regexpSplit) {
+        //This is faster when using the native regexp engine.
+        splitPhrase = function splitPhrase(phrase) {
+            return phrase.split(/[ ,]+/)
+        }
+    }
+    else {
+        //corejs regexp polyfill is making it take 40 times longer to split with the regex /[ ,]+/ than using .split(",").join(" ").split(" ")
 		//It appears like core-js is causing V8 to drop off the regexp fast path.
-		splitPhrase = function splitPhrase(phrase) {
-			return phrase.split(",").join(" ").split(" ")
-		}
-	}
-
+        splitPhrase = function splitPhrase(phrase) {
+            return phrase.split(",").join(" ").split(" ")
+        }
+    }
 
 	list.forEach(function(event) {
 
@@ -370,13 +369,31 @@ function flowFilter(list, parameters) {
 
 function tagsFilter(list, parameters) {
 	let query = parameters.query
-	let components = parameters.query.split(" ").join("").split(",")
+	let components = parameters.query.toLowerCase().split(" ").join("").split(",")
 
 	for (let item in list) {
 		let river = list[item]
 
 		for (let i=0;i<components.length;i++) {
-			if (typeof river.tags !== "string" || !river.tags.toLowerCase().includes(components[i].toLowerCase())) {
+			if (!river.tags.toLowerCase().includes(components[i])) {
+				delete list[item]
+			}
+		}
+	}
+	return list
+}
+
+
+function stateFilter(list, query) {
+	if (!query) {return list}
+	let components = query.toLowerCase().split(/[ ,]+/)
+
+	for (let item in list) {
+		let river = list[item]
+
+		for (let i=0;i<components.length;i++) {
+			//TODO: Add option for rivers without a specified state.
+			if (typeof river.state !== "string" || !river.state.toLowerCase().includes(components[i])) {
 				delete list[item]
 			}
 		}
@@ -480,6 +497,9 @@ function advancedSearch(list, query) {
         }
 		else if (property === "tags") {
 			list = tagsFilter(list, parameters)
+		}
+		else if (property === "state") {
+			list = stateFilter(list, parameters)
 		}
 		else if (property === "id") {
 			list = IDSearch(list, parameters)

@@ -141,7 +141,7 @@ async function writeToDisk(data, id) {
 
     console.log("Finished Loading Rivers...")
 
-    let allowed = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","averagegradient","maxgradient","class"] //Property values to be included in output file
+    let allowed = ["name","section","skill","rating","writeup","tags","state","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","averagegradient","maxgradient","class"] //Property values to be included in output file
 
     for (let i=0;i<complete.length;i++) {
         let item = complete[i].request.split("\n")

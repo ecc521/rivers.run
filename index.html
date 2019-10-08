@@ -110,7 +110,14 @@
                 </select>
                 <input id="sectionQuery" type="text" placeholder="Search Query">
                 <br>
-
+				
+				
+				<label for="stateQuery">State is (codes, comma seperated list):</label>
+                <input id="stateQuery" type="text" placeholder="Enter States..." list="stateOptions" multiple>
+				<datalist id="stateOptions"></datalist>
+                <br>
+				
+				
                 Skill
                 <!-- Consider reusing skillToNumber code to avoid excessive duplication-->
                 <select id="skillQuery1">

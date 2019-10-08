@@ -51,7 +51,7 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <input id="section" placeholder="Section Name" type="text"  style="width:100%">
 <br>
 <select id="skill" onchange="UpdateWriteup()">
-  <option value="">Skill</option>
+  <option value="" selected>Skill</option>
   <option value="FW">Flat Water</option>
   <option value="B">Beginner</option>
   <option value="N">Novice</option>
@@ -74,6 +74,9 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 </select>
 <br>
 <input id="class" placeholder="Class" type="text"  style="width:100%">
+<br>
+<input id="state" placeholder="State" type="text"  style="width:100%" list="stateOptions">
+<datalist id="stateOptions"></datalist>
 <br>
 <input id="length" placeholder="Length of Section (Currently not used)" type="text"  style="width:100%">
 <br>
@@ -176,8 +179,24 @@ quill.getModule("toolbar").handlers.video = function imageHandler(value) {
         let File_ID = prompt("Please type in the File ID of the video in Google Drive. (To get the file id, click on the file, click the three dot menu in the top right hand corner, click open in new window. Copy out the section between /d/ and /view).")
         quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
 }
+	
+	
+	
+	
+let datalist = document.getElementById("stateOptions")
 
-var List = ["name","section","skill","rating","writeup","tags","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","class","averagegradient","maxgradient","length"]
+let states = {"DE":"Delaware","DC":"District of Columbia","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming","AS":"American Samoa","GU":"Guam","MP":"Northern Mariana Islands","PR":"Puerto Rico","UM":"U.S. Minor Outlying Islands","VI":"U.S. Virgin Islands","AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut"}
+
+for (let stateCode in states) {
+	let option = document.createElement("option")
+	option.value = stateCode
+	option.innerHTML = states[stateCode]
+	datalist.appendChild(option)
+}
+	
+	
+
+var List = ["name","section","skill","rating","writeup","tags","state","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","class","averagegradient","maxgradient","length"]
 
 List.forEach(function(value){
   console.log(value)
