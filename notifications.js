@@ -42,8 +42,11 @@
 		}
 
 		async function updateNoneUntil(key, noneUntil) {
-			let sub = await getSubscription(key)
-			sub.noneUntil = noneUntil
+			//Server supports updating only noneUntil.
+			let sub = {
+				getSubscriptionFromURL: key,
+				noneUntil
+			}
 			return updateSubscription(sub)
 		}
 

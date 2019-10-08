@@ -384,16 +384,20 @@ function tagsFilter(list, parameters) {
 }
 
 
-function stateFilter(list, query) {
-	if (!query) {return list}
-	let components = query.toLowerCase().split(/[ ,]+/)
+function stateFilter(list, parameters) {
+	let components = parameters.query.toLowerCase().split(/[ ,]+/)
 
 	for (let item in list) {
 		let river = list[item]
 
 		for (let i=0;i<components.length;i++) {
 			//TODO: Add option for rivers without a specified state.
-			if (typeof river.state !== "string" || !river.state.toLowerCase().includes(components[i])) {
+			if (!river.state) {
+				if (!parameters.includeUnknown) {
+					delete list[item]
+				}
+			}
+			else if (!river.state.toLowerCase().includes(components[i])) {
 				delete list[item]
 			}
 		}
