@@ -97,12 +97,7 @@ async function httprequest(req,res) {
 
 			let data = JSON.parse((await utils.getData(req)).toString())
 
-			if (data.getSubscriptionFromURL) {
-				res.statusCode = 200;
-				res.setHeader('Content-Type', 'text/json');
-				res.end(JSON.stringify(subscriptionManager.getUserSubscription(data.getSubscriptionFromURL)) || "No Subscription");
-			}
-			else if ((data.subscription && data.parameters) || (data.type === "email" && data.address)) {
+			if ((data.subscription && data.parameters) || (data.type === "email" && data.address)) {
 				//data.subscription contains the details needed to send push notifications.
 				//data.parameters contains the conditions under which to send notifications.
 				//TODO: Consider preserving noneUntil if it is not present in the POST request.
@@ -128,6 +123,11 @@ async function httprequest(req,res) {
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/plain');
 				res.end('Deleted Subscription');
+			}
+			else if (data.getSubscriptionFromURL) {
+				res.statusCode = 200;
+				res.setHeader('Content-Type', 'text/json');
+				res.end(JSON.stringify(subscriptionManager.getUserSubscription(data.getSubscriptionFromURL)) || "No Subscription");
 			}
 			else {
 				res.statusCode = 404;
