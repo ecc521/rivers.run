@@ -112,10 +112,10 @@ async function httprequest(req,res) {
 				res.setHeader('Content-Type', 'text/plain');
 				res.end('Saved Subscription');
 			}
-			else if (data.subscription && data.noneUntil !== undefined) {
+			else if (data.getSubscriptionFromURL && data.noneUntil !== undefined) {
 				//Update noneUntil (disables notifications temporarily)
 				//Currently used by browser notifications to make sure that we stop sending once user dismisses.
-				let subscription = subscriptionManager.getUserSubscription(data.subscription.endpoint)
+				let subscription = subscriptionManager.getUserSubscription(data.getSubscriptionFromURL)
 				subscription.noneUntil = data.noneUntil
 				subscriptionManager.saveUserSubscription(subscription)
 

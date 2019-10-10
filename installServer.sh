@@ -60,7 +60,9 @@ sudo systemctl restart apache2
 sudo apt-get install -y certbot python-certbot-apache -t stretch-backports
 sudo certbot --apache
 
-echo "Run crontab -e (may need sudo). Add the following line:"
-echo "@reboot node $HOME/rivers.run/server/usgscache.js >> $HOME/rivers.run/server/logs/usgscache.log"
+echo "Add stuff about gmailpassword.txt
 
-echo "Add stuff about gmailpassword.txt"
+echo "Run crontab -e (may need sudo). Add the following lines:"
+echo "@reboot node $HOME/rivers.run/server/usgscache.js >> $HOME/rivers.run/server/logs/usgscache.log"
+echo "*/15 * * * * node $HOME/rivers.run/server/restartServer.js >> $HOME/rivers.run/server/logs/restartServer.log"
+
