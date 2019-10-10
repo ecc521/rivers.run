@@ -65,4 +65,5 @@ echo "Add stuff about gmailpassword.txt
 echo "Run crontab -e (may need sudo). Add the following lines:"
 echo "@reboot node $HOME/rivers.run/server/usgscache.js >> $HOME/rivers.run/server/logs/usgscache.log"
 echo "*/15 * * * * node $HOME/rivers.run/server/restartServer.js >> $HOME/rivers.run/server/logs/restartServer.log"
+#TODO: Use crontab or something to run certbot renew on reboot, and restart apache if certificates actually are renewed.
 

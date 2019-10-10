@@ -192,6 +192,8 @@ async function getAssistantReply(query, options) {
 	let timeAgo = Date.now() - timeStamp
 	let hoursAgo = Math.floor(timeAgo/1000/3600)
 	let minutesAgo = Math.ceil(timeAgo/1000%3600/60)
+	
+	if (minutesAgo === 60) {minutesAgo = 0;hoursAgo++} //Use 1 hour instead of 60 minutes when time is 59 minutes something seconds.
 
 	let timeString = (hoursAgo > 0?`${hoursAgo} hours and `:"") + minutesAgo + " minutes ago"
 
