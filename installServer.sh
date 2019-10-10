@@ -37,6 +37,7 @@ sudo a2enmod rewrite
 sudo a2enmod headers
 sudo a2enmod proxy #This is needed for the NodeJS server portion, but not the rest of the site. Enable it now anyways.
 sudo a2enmod proxy_http
+sudo a2enmod http2
 
 #Enable reverse proxy to /node.
 echo "LoadModule proxy_module modules/mod_proxy.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
@@ -44,6 +45,10 @@ echo "LoadModule proxy_http_module modules/mod_proxy_http.so" >> $HOME/rivers.ru
 echo "ProxyRequests on" >> $HOME/rivers.run/NODERIVERSRUN.conf
 echo "ProxyPass /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf
 echo "ProxyPassReverse /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf
+
+echo "LoadModule http2_module modules/mod_http2.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
+echo "Protocols h2 http/1.1" >> $HOME/rivers.run/NODERIVERSRUN.conf
+
 
 sudo mv $HOME/rivers.run/NODERIVERSRUN.conf /etc/apache2/conf-available/NODERIVERSRUN.conf
 sudo a2enconf NODERIVERSRUN #To disable, run sudo a2disconf NODERIVERSRUN
