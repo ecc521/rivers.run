@@ -385,19 +385,14 @@ function tagsFilter(list, parameters) {
 
 
 function stateFilter(list, parameters) {
+	if (parameters.query.length === 0) {return list}
 	let components = parameters.query.toLowerCase().split(/[ ,]+/)
 
 	for (let item in list) {
 		let river = list[item]
 
 		for (let i=0;i<components.length;i++) {
-			//TODO: Add option for rivers without a specified state.
-			if (!river.state) {
-				if (!parameters.includeUnknown) {
-					delete list[item]
-				}
-			}
-			else if (!river.state.toLowerCase().includes(components[i])) {
+			if (!river.state || !river.state.toLowerCase().includes(components[i])) {
 				delete list[item]
 			}
 		}

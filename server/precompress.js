@@ -39,7 +39,7 @@ async function compressFile(filePath, level = 11, options = {}) {
 	//keepLastModified: Copy lastModified from the uncompressed file onto the compressed one. (Should this happen by default?)
 
 	if (!options.ignoreSizeLimit && (await fs.promises.stat(filePath)).size > 5*1024*1024) {
-		console.log(filePath + " is over 5MiB. Not compressing.")
+		console.log("\n" + filePath + " is over 5MiB. Not compressing.")
 		return;
 	}
 
@@ -68,13 +68,14 @@ async function compressFile(filePath, level = 11, options = {}) {
 		}
 	}
 
-	console.log("Compressing " + filePath) //TODO: This should overwrite the previous line like how dataparse.js does.
+	process.stdout.write("\nCompressing " + filePath) //TODO: This should overwrite the previous line like how dataparse.js does.
 
 	let compressed = await brotliCompressAsync(uncompressed, level)
 
 	//Note that some files may be compressed (uselessly) multiple times if the uncompressed file is smaller than the compressed file.
 	if (compressed.byteLength < uncompressed.byteLength) {
 		await fs.promises.writeFile(compressedPath, compressed)
+        process.stdout.write("\r\033[2K") //Clear current line		
 		console.log("Compressed " + filePath + " from " + uncompressed.byteLength + " bytes to " + compressed.byteLength + " bytes.")
 
 		if (options.keepLastModified) {
@@ -108,10 +109,11 @@ async function compressFiles(directoryToCompress) {
 		}
 		return true
 	})
-
+	
 	for (let i=0;i<files.length;i++) {
 		let filePath = files[i]
-		console.log("Compressing " + i + " of " + (files.length - 1))
+        process.stdout.write("\r\033[2K") //Clear current line		
+		process.stdout.write("Compressing " + i + " of " + (files.length - 1))
 		await compressFile(filePath)
 	}
 }

@@ -71,7 +71,6 @@ window.getAdvancedSearchParameters = function(filter) {
 	
 	parameters.state = {
 		query: document.getElementById("stateQuery").value,
-		includeUnknown: document.getElementById("includeUnknownState").checked
 	}
 
 	parameters.flow = {
@@ -122,7 +121,6 @@ window.setMenuFromSearch = function(query) {
 	document.getElementById("tagsQuery").value = query.tags.query
 	
 	document.getElementById("stateQuery").value = query.state.query
-	document.getElementById("includeUnknownState").checked = query.state.includeUnknown
 
 	document.getElementById("skillQuery1").value = query.skill.query[0]
 	document.getElementById("skillQuery2").value = query.skill.query[1]
@@ -176,7 +174,6 @@ window.defaultAdvancedSearchParameters = {
   },
   "state": {
 	  "query": "",
-	  "includeUnknown": true
   },
   "skill": {
     "type": "from",
