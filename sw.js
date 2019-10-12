@@ -19,6 +19,9 @@ const preloadList = [
     "packages/index.js",
     "riverdata.json",
     "overviews.js",
+    "legal/Privacy Policy.html",
+    "legal/Terms of Service.html",
+    "legal/DISCLAIMER.html",
 ]
 
 function rebaseURL(url) {
@@ -75,10 +78,6 @@ function fetchHandler(event) {
         let cache = await caches.open(cacheName)
 
         let url = event.request.url
-
-		if (url.includes("waterservices.usgs.gov")) {
-			url = url.slice(0,url.indexOf("?"))
-		}
 
         let fromcache = await caches.match(url)
 
@@ -154,7 +153,7 @@ async function disableNotificationsUntil(timeStamp = 0) {
     await fetch("https://rivers.run/node", {
         method: "POST",
         body:JSON.stringify({
-            subscription: await self.registration.pushManager.getSubscription(),
+            getSubscriptionFromURL: (await self.registration.pushManager.getSubscription()).endpoint,
             noneUntil: timeStamp
         })
     })

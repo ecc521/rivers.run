@@ -31,11 +31,21 @@ try {
 	item5.href = root + "clubs.html"
 	item5.innerHTML = "Clubs"
 	items.push(item5)
-	
+
 	let item6 = document.createElement("a")
-	item6.href = root + "notifications.html"
-	item6.innerHTML = "Alerts"
+	item6.href = root + "emailnotifications.html"
+	item6.innerHTML = "Email Alerts"
 	items.push(item6)
+
+	let item7 = document.createElement("a")
+	item7.href = root + "notifications.html"
+	item7.innerHTML = "Browser Alerts"
+	items.push(item7)
+
+	let item8 = document.createElement("a")
+	item8.href = root + "voice.html"
+	item8.innerHTML = "Voice"
+	items.push(item8)
 
 	for (let i=0;i<items.length;i++) {
 	    let link = items[i]
@@ -45,7 +55,7 @@ try {
 	    }
 	    topnav.appendChild(link)
 	}
-	
+
 	document.body.insertBefore(topnav, document.body.firstChild)
 
 
@@ -87,7 +97,7 @@ try {
 
 	styleSheet.insertRule(".topnav a:hover {background-color: #359daa}", styleSheet.cssRules.length)
 	styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.cssRules.length)
-	
+
 	//Responsive menu to prevent overflow on smaller screens.
 	let menu = document.createElement("a")
 	menu.innerHTML = "☰" //TODO: Consider importing font, or something of the like. Trigam to Heaven icon.
@@ -95,17 +105,17 @@ try {
 		topnav.classList.toggle("expanded")
 	})
 	menu.className = "menu"
-	topnav.appendChild(menu)	
-	
+	topnav.appendChild(menu)
+
 	//Don't show dropdown by default.
 	styleSheet.insertRule(`
 	.topnav .menu {
 	  display: none;
 	}
 	`, styleSheet.cssRules.length)
-	
+
 	let pxForMenu = 540 //How small must the screen be before the menu appears.
-	
+
 	styleSheet.insertRule(`
 	@media screen and (max-width: ${pxForMenu}px) {
 	  .topnav a.menu {
@@ -114,37 +124,37 @@ try {
 	  }
 	}
 	`, styleSheet.cssRules.length)
-	
-	
+
+
 	//Display 5 navbar items at pxForMenu pixels
 	styleSheet.insertRule(`
 	@media screen and (max-width: ${pxForMenu}px) {
 		.topnav a:nth-child(n+6) {display: none;}
 	}
 	`, styleSheet.cssRules.length)
-		
+
 	//Display 4 navbar items at 400 pixels
 	styleSheet.insertRule(`
 	@media screen and (max-width: 450px) {
 		.topnav a:nth-child(n+5) {display: none;}
 	}
 	`, styleSheet.cssRules.length)
-	
+
 	//Display 4 navbar items at 400 pixels
 	styleSheet.insertRule(`
 	@media screen and (max-width: 400px) {
 		.topnav a:nth-child(n+5) {display: none;}
 	}
 	`, styleSheet.cssRules.length)
-	
+
 	//Display 3 navbar items at 310 pixels
 	styleSheet.insertRule(`
 	@media screen and (max-width: 310px) {
 		.topnav a:nth-child(n+4) {display: none;}
 	}
 	`, styleSheet.cssRules.length)
-	
-	
+
+
 	styleSheet.insertRule(`
 	@media screen and (max-width: ${pxForMenu}px) {
 	  .topnav.expanded {position: relative;}
@@ -160,8 +170,8 @@ try {
 	  }
 	}
 	`, styleSheet.cssRules.length)
-	
-	
+
+
 }
 catch (e) {
 	console.error(e)
