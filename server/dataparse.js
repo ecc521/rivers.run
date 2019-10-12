@@ -32,7 +32,7 @@ async function load(url, attempts = 0) {
     }
     else if (request.status == 403) {
         await wait(1000/googlecloudrequestrate) //A queue should be used instead, but oh well.
-        return load(url, attempts++) //We hit the quota. Time to retry.
+        return await load(url, attempts++) //We hit the quota. Time to retry.
     }
     else {
         console.log("Failed to load " + url)
