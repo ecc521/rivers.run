@@ -391,11 +391,16 @@ function stateFilter(list, parameters) {
 	for (let item in list) {
 		let river = list[item]
 
+		let passes = false
+
 		for (let i=0;i<components.length;i++) {
-			if (!river.state || !river.state.toLowerCase().includes(components[i])) {
-				delete list[item]
+			if (river.state && components[i] && river.state.toLowerCase().includes(components[i])) {
+				passes = true
+				break;
 			}
 		}
+
+		if (!passes) {delete list[item]}
 	}
 	return list
 }
