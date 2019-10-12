@@ -114,7 +114,7 @@ try {
 	}
 	`, styleSheet.cssRules.length)
 
-	let pxForMenu = 540 //How small must the screen be before the menu appears.
+	let pxForMenu = 775 //How small must the screen be before the menu appears.
 
 	styleSheet.insertRule(`
 	@media screen and (max-width: ${pxForMenu}px) {
@@ -125,10 +125,25 @@ try {
 	}
 	`, styleSheet.cssRules.length)
 
+	//TODO: Dynamically generate the pixel values for when things should be hidden.
 
-	//Display 5 navbar items at pxForMenu pixels
+	//Display 7 navbar items at pxForMenu pixels
 	styleSheet.insertRule(`
 	@media screen and (max-width: ${pxForMenu}px) {
+		.topnav a:nth-child(n+8) {display: none;}
+	}
+	`, styleSheet.cssRules.length)
+
+	//Display 6 navbar items at 700 pixels
+	styleSheet.insertRule(`
+	@media screen and (max-width: 700px) {
+		.topnav a:nth-child(n+7) {display: none;}
+	}
+	`, styleSheet.cssRules.length)
+
+	//Display 6 navbar items at 570 pixels
+	styleSheet.insertRule(`
+	@media screen and (max-width: 570px) {
 		.topnav a:nth-child(n+6) {display: none;}
 	}
 	`, styleSheet.cssRules.length)
