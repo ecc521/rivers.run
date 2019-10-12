@@ -102,7 +102,7 @@ function sendNotifications(ignoreNoneUntil = false) {
         }).catch((e) => {
             console.error(e)
             //The users subscription is either now invalid, or never was valid.
-            if (e.statusCode === 410 || e.statusCode === 404 || e.statusCode === 403) {
+            if ([401,403,404,410].includes(e.statusCode)) {
                 subscriptionManager.deleteUserSubscription(user.subscription.endpoint)
             }
         }).then(console.log)
