@@ -260,6 +260,10 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
     font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
 }
 
+#searchlink {
+    word-break: break-all; /*Allow breaking the advanced search link so it doesn't widen the page.*/
+}
+
 #searchbox::placeholder {
     /*Make the text show up a little better.*/
     font-weight: bold;
