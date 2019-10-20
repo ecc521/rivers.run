@@ -85,7 +85,7 @@ async function getAssistantReply(query, options) {
 		useThe = false
 	}
 
-	if (!topRanked[0].id) {topRanked[0].id = "usgs:" + topRanked[0].usgs} //This is a gauge. Fill in id using usgs.
+	if (topRanked[0] && !topRanked[0].id) {topRanked[0].id = "usgs:" + topRanked[0].usgs} //This is a gauge. Fill in id using usgs.
 
 	let queryResult = {
 		responseName,
