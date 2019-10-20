@@ -13,7 +13,7 @@ function isServerUp() {
 	let processID;
 	try {
 		//Get the process ID that owns port 3000..
-		processID = child_process.execSync("netstat -nlp | grep 3000").toString().match(/\d+\/node/)[0].match(/\d+/)[0]
+		processID = Number(child_process.execSync("netstat -nlp | grep 3000").toString().match(/\d+\/node/)[0].match(/\d+/)[0])
 	}
 	catch(e) {
 		//No process owns port 3000. The server must be down.
@@ -32,18 +32,16 @@ function isServerUp() {
 }
 
 
-
-
 let status = isServerUp()
 
-if (typeof status === "number") {
-	fs.appendFileSync(path.join(utils.getLogDirectory(), "servercrashed.log"), "Killing server as it is not working")
+if (typeof status === "number" && !isNaN(status)) {
+	fs.appendFileSync(path.join(utils.getLogDirectory(), "servercrashed.log"), "Killing server as it is not working\n")
 	//Kill the current server.
 	child_process.execSync("kill " + status)
 }
 if (status !== true) {
 	//Start up a new server.
-	fs.appendFileSync(path.join(utils.getLogDirectory(), "servercrashed.log"), "Restarting the server, as it is not running")
+	fs.appendFileSync(path.join(utils.getLogDirectory(), "servercrashed.log"), "Restarting the server, as it is not running\n")
 	
 	let writeStream = fs.createWriteStream(path.join(utils.getLogDirectory(), "usgscache.log"), {flags:"a"})
 	
