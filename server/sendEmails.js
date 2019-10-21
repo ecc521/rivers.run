@@ -86,10 +86,10 @@ function getMessage(data, user) {
 	}
 	
 	
-	user.previousMessage = Object.assign(running, tooHigh)
 	if ((running.length + tooHigh.length) === 0 && JSON.stringify(user.previousMessage) === "{}") {return false;}
-	
-    console.log(data)
+	user.previousMessage = Object.assign({}, running, tooHigh)
+
+	console.log(data)
 	console.log(running)
 
     if (running.length === 0) {

@@ -59,15 +59,13 @@ function sendNotifications(ignoreNoneUntil = false) {
 		}
 
 		//Consider if we should overrule user.noneUntil on changes.
-		let previousData = user.previousMessage
+		user.previousMessage = user.previousMessage || {}
 
 		//Don't send empty unless it is a change.
 		//TODO: Consider sending the user a demo message if this is their first time (so if previousData is not defined
 
-		if (!previousData || JSON.stringify(previousData) === "{}") {
-			if (JSON.stringify(data) === "{}") {
-				continue; //We are sending an empty message, and we either already sent one or never sent a message in the first place.
-			}
+		if (JSON.stringify(previousData) === "{}" && JSON.stringify(data) === "{}") {
+			continue; //We are sending an empty message, and we either already sent one or never sent a message in the first place.
 		}
 
 		if (JSON.stringify(parameters) === "{}") {continue;} //The user does not want notifications on anything right now.
