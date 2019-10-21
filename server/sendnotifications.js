@@ -47,7 +47,7 @@ function sendNotifications(ignoreNoneUntil = false) {
 
 				//Don't delete for email notifications
 				if (!(river.minimum < river.current && river.current < river.maximum)) {
-					if (parameters.type === "email") {
+					if (user.type === "email") {
 						rivers[prop].running = false //For email only, add the river even if it is not running.
 						data[prop] = rivers[prop]
 					}
