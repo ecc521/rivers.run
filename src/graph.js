@@ -1,3 +1,207 @@
+function fillParameters(options) {
+	//Process options, filling in parameters with defaults.
+	
+	//Should y1 and y2, or even each individual line, be able to set xAlias and yAlias? (I would think so).
+	options.xAlias = options.xAlias || "x"
+	options.yAlias = options.yAlias || "y"
+
+	function sortPoints(a,b) {return a[options.xAlias]-b[options.xAlias]} //Sort the points in a line, x values ascending
+	
+	function prepareYAxis(y) {
+		//If lines is a line, instead of an array of lines, put it in an array.
+		if (!(y.lines[0] instanceof Array)) {
+			y.lines = [y.lines]
+		}
+		//Iterate through each point and find the minimum and maximum x and y values
+		//TODO: Delete invalid points and lines without any points (after invalid points removed).
+		y.lines.forEach((line) => {
+			line.forEach((point) => {
+				if (point[options.xAlias] < y.xmin || isNaN(y.xmin)) {y.xmin = point[options.xAlias]}
+				if (point[options.xAlias] > y.xmax || isNaN(y.xmax)) {y.xmax = point[options.xAlias]}
+				if (point[options.yAlias] < y.ymin || isNaN(y.ymin)) {y.ymin = point[options.yAlias]}
+				if (point[options.yAlias] > y.ymax || isNaN(y.ymax)) {y.ymax = point[options.yAlias]}
+			})
+			line = line.sort(sortPoints)
+		})
+		//If the user didn't explicitly define the range for y2, use ymin and ymax
+		if (isNaN(y.max)) {y.max = y.ymax}
+		if (isNaN(y.min)) {y.min = y.ymin}	
+		if (y.min > y.max) {
+			let temp = y.min
+			y.min = y.max
+			y.max = temp
+			console.warn("y.min was greater than y.max. Swapped.")
+		}
+		y.range = y.max - y.min
+		y.yrange = y.ymax - y.ymin
+		y.xrange = y.xmax - y.xmin
+		return y
+	}
+	
+	options.y1 = prepareYAxis(options.y1)
+	
+	if (options.y2) {
+		options.y2 = prepareYAxis(options.y2)
+	}
+	
+	
+	//We don't allow for 2 x-axis.
+	//The x1 parameter is optional, and used to set bounds other than those required to display all points.
+	options.x1 = options.x1 || {}
+	//If the user didn't provide a minimum or a maximum, fill it in using xmin and xmax on y1 and (possibly) y2.
+	if (isNaN(options.x1.min)) {
+		options.x1.min = options.y1.xmin;
+		if (options.y2) {options.x1.min = Math.min(options.x1.min, options.y2.xmin)}
+	}
+	if (isNaN(options.x1.max)) {
+		options.x1.max = options.y1.xmax;
+		if (options.y2) {options.x1.max = Math.min(options.x1.max, options.y2.xmax)}
+	}
+	if (options.x1.min > options.x1.max) {
+		let temp = options.x1.min
+		options.x1.min = options.x1.max
+		options.x1.max = temp
+		console.warn("x1.min was greater than x1.max. Swapped.")
+	}
+	options.x1.range = options.x1.max - options.x1.min
+	
+	return options
+}
+
+
+function createGraph(options) {
+	
+	options = fillParameters(options)
+
+	console.log(options)
+	
+	let lineCanvas = document.createElement("canvas")
+	lineCanvas.width = options.width || 600
+	lineCanvas.height = options.height || 400
+	
+	let ctx = lineCanvas.getContext("2d")
+	
+	if (options.backgroundColor) {
+		let initial = ctx.fillStyle
+		ctx.fillStyle = options.backgroundColor
+		ctx.fillRect(0, 0, lineCanvas.width, lineCanvas.height)
+		ctx.fillStyle = initial
+	}
+		
+	ctx.lineWidth = options.lineWidth || Math.ceil(lineCanvas.width/75)
+	ctx.lineJoin = options.lineJoin || "round" //Round will make sure that lines don't spike way through the point they stop at, unlike miter, a bad default.
+	
+	//Function to scale x and y values to their location on the graph. 
+	//TODO: Add logarithmic scale. Consider whether one axis should be able to be logarithmic while the other is linear.
+	function getVerticalCoordinate(value, minvalue, range) {
+		let offset = value-minvalue
+		if (offset !== 0) {offset /= range}
+		return lineCanvas.height - lineCanvas.height * offset
+	}
+	
+	function getHorizontalCoordinate(value, minvalue, range) {
+		let offset = value-minvalue
+		if (offset !== 0) {offset /= range}
+		return lineCanvas.width * offset
+	}
+	
+	function goToPoint(point, min, range, move = false) {
+		let horizontal = getHorizontalCoordinate(point[options.xAlias], options.x1.min, options.x1.range)
+		let vertical = getVerticalCoordinate(point[options.yAlias], min, range)
+				
+		if (move) {ctx.moveTo(horizontal, vertical)}
+		else {
+			ctx.lineTo(horizontal, vertical)
+		}
+	}
+	
+	let index = 0
+	function nextLineColor() {
+		let color = (options.lineColors && options.lineColors[index++])	
+		if (color) {
+			if (typeof color === "string") {
+				ctx.strokeStyle = color
+			}
+			else if (color instanceof Array){
+				//An array containing all the color stops that need to be added.
+				//Ex. [[0,"#00FF00"],[1,"#0000FF"]] to go from green to blue.
+	    		let gradient = ctx.createLinearGradient(0, lineCanvas.height, 0, 0); //Color stop 0 is bottom of graph. Color stop 1 is top of graph.
+				color.forEach((colorStop) => {
+					gradient.addColorStop(colorStop[0], colorStop[1])
+				})
+        		ctx.strokeStyle = gradient;
+			}
+			else {
+				throw "Unsupported color type " + color
+			}
+		}
+	}
+	
+	options.y1.lines.forEach((line) => {
+		nextLineColor()
+		ctx.beginPath()
+		line.forEach((point, index) => {
+			if (index === 0) {goToPoint(point, options.y1.min, options.y1.range, true)}
+			goToPoint(point, options.y1.min, options.y1.range)
+		})
+		ctx.stroke()
+	})
+	
+	options.y2.lines.forEach((line) => {
+		nextLineColor()
+		ctx.beginPath()
+		line.forEach((point, index) => {
+			if (index === 0) {goToPoint(point, options.y2.min, options.y2.range, true)}
+			goToPoint(point, options.y2.min, options.y2.range)
+		})
+		ctx.stroke()
+	})	
+	
+	
+				
+	return lineCanvas
+	
+}
+
+
+window.createGraph = createGraph
+
+/*
+var arr1 = usgsarray["01650500"].feet;
+var arr2 = usgsarray["01650500"].cfs;
+console.time("createCanvas");
+var canvas = createGraph({
+	xAlias:"dateTime",
+	yAlias:"value",
+	lineColors:["#00FFFF",[[0,"#FF0000"],[0.5,"#00FF00"],[1,"#0000FF"]]],
+	backgroundColor: "black",
+	y1: {
+		lines: arr1
+	},
+	y2: {
+		lines:arr2
+	}
+})
+console.timeEnd("createCanvas");
+document.documentElement.insertBefore(canvas, document.body)
+*/
+
+/*
+createGraph({
+	y1: {
+		lines: [
+			{x: 100, y:200} //An individual point.
+		] //Array of points, or an array of arrays of points.
+		min: //Optional. Specify minimum y value for this axis.
+		max: //Optional. Specify maximum y value for this axis
+	}
+	y2: {} //Optional. Same as y1, except other axis.
+})
+*/
+
+
+
+
 //Graph Code
 //It's Ugly... It should be fixed
 //BUT IT WORKS
@@ -13,6 +217,7 @@
 //numplace - Use only if you are using graphtype = 2.
 //If you specify 0 or do not pass a value, the line's scale will be on the left side of the graph.
 //If you specify 1, the line's scale will be on the right side of the graph
+
 function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
     if (graphtype === 3) {
         var endcolor = numplace
@@ -316,5 +521,6 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
 
 
 module.exports = {
-    addLine
+    addLine,
+	createGraph
 }

@@ -87,7 +87,7 @@ async function compressFile(filePath, level = 11, options = {}) {
 		if (fs.existsSync(compressedPath)) {
 			await fs.promises.unlink(compressedPath)
 		}
-		console.log("Failed to compress " + filePath)
+		console.log(" - Failed to compress " + filePath)
 	}
 }
 

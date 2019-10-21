@@ -65,5 +65,8 @@ echo "Add stuff about gmailpassword.txt
 echo "Run crontab -e (may need sudo). Add the following lines:"
 echo "@reboot node $HOME/rivers.run/server/usgscache.js >> $HOME/rivers.run/server/logs/usgscache.log"
 echo "*/15 * * * * node $HOME/rivers.run/server/restartServer.js >> $HOME/rivers.run/server/logs/restartServer.log"
-#TODO: Use crontab or something to run certbot renew on reboot, and restart apache if certificates actually are renewed.
+echo "0 4   *   *   *    /sbin/shutdown -r"
+echo "@reboot sudo certbot renew  >> $HOME/rivers.run/server/logs/updateCertificate.log"
 
+echo "\nExplaination: Run server on reboot. Run restartServer.js every 15 minutes. Reboot at 4am every day. Run certbot renew on each reboot."
+echo "We reboot the server at 4am every day in an attempt to resolve an issue where, after running for a few days, the server (probably kernel) would lock up, reading at full speed from the disk and doing nothing else."

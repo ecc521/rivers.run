@@ -175,6 +175,7 @@ window.defaultAdvancedSearchParameters = {
   "state": {
 	  "query": "",
   },
+  "id": undefined,
   "skill": {
     "type": "from",
     "query": [1, 8],
