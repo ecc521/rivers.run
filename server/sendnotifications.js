@@ -43,22 +43,18 @@ function sendNotifications(ignoreNoneUntil = false) {
 				if (river.units === "cfs") {values = flow.cfs}
 				if (river.units === "ft") {values = flow.feet}
 
-				let latest = values[values.length - 1].value
+				river.current = values[values.length - 1].value
 
 				//Don't delete for email notifications
-				if (!(river.minimum < latest && latest < river.maximum)) {
-					if (data.type === "email") {
-						rivers[prop].running = false
-						river.current = latest
-					}
-					else {
-						delete rivers[prop]
+				if (!(river.minimum < river.current && river.current < river.maximum)) {
+					if (parameters.type === "email") {
+						rivers[prop].running = false //For email only, add the river even if it is not running.
+						data[prop] = rivers[prop]
 					}
 				}
 				else {
-					river.current = latest
+					data[prop] = rivers[prop] //Add the river if it is running
 				}
-                data[prop] = rivers[prop]
 			}
 		}
 
