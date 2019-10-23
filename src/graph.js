@@ -147,15 +147,17 @@ function createGraph(options) {
 		ctx.stroke()
 	})
 	
-	options.y2.lines.forEach((line) => {
-		nextLineColor()
-		ctx.beginPath()
-		line.forEach((point, index) => {
-			if (index === 0) {goToPoint(point, options.y2.min, options.y2.range, true)}
-			goToPoint(point, options.y2.min, options.y2.range)
-		})
-		ctx.stroke()
-	})	
+	if (options.y2) {
+		options.y2.lines.forEach((line) => {
+			nextLineColor()
+			ctx.beginPath()
+			line.forEach((point, index) => {
+				if (index === 0) {goToPoint(point, options.y2.min, options.y2.range, true)}
+				goToPoint(point, options.y2.min, options.y2.range)
+			})
+			ctx.stroke()
+		})	
+	}
 	
 	
 				
