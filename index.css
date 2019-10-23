@@ -50,7 +50,6 @@ html, body {
     }
 }
 
-
 .riverspan:nth-child(5) {
     transform: scaleY(1.25) /*Make the stars larger without using more horizontal space.*/
 }
@@ -504,6 +503,19 @@ Those include name,section,skill,quality, and flow info*/
 
 	}
 
+	select, input {
+		background-color: #1e2021;
+		border: 1px solid #585858;
+	}
+	
+	input {
+		padding-left: 4px;
+	}
+	
+	select, input, input::placeholder {
+		color: #e8e6e3;
+	}
+	
 	.riverbuttonGauge:nth-child(even) {
 		background-color: #380241 !important;
 	}
