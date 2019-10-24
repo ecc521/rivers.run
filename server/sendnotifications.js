@@ -74,13 +74,14 @@ function sendNotifications(ignoreNoneUntil = false) {
 		subscriptionManager.saveUserSubscription(user)
 
 		if (user.type === "email") {
-			let res = sendEmails.sendEmail(user, data)
-			if (res !== false) {
-				user.noneUntil = Date.now() + 1000*60*60*24 //No emails for 24 hours.
-				subscriptionManager.saveUserSubscription(user) //Some properties of user should also have been modified by sendEmails.sendEmail
-			}
-			//Handle email notifications
-			//user.address
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
+			sendEmails.sendEmail(user, data).then((res) => {
+				if (res !== false) {
+					user.noneUntil = Date.now() + 1000*60*60*24 //No emails for 24 hours.
+					fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
+					subscriptionManager.saveUserSubscription(user) //Some properties of user should also have been modified by sendEmails.sendEmail
+				}
+			})
 			continue;
 		}
 
