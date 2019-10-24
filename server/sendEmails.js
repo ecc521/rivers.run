@@ -25,8 +25,10 @@ async function sendEmail(user, data) {
 	});
 	
 	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(data) + "\n");	
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
 	let mailInfo = getMessage(data, user)
 	if (mailInfo === false) {return false}; //All rivers are too low.
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
 	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(mailInfo) + "\n");
 	
 	const mailOptions = {
@@ -40,11 +42,11 @@ async function sendEmail(user, data) {
 	await new Promise((resolve, reject) => {
 		transporter.sendMail(mailOptions, function (err, info) {
 		   if(err) {
-				fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), err.toString() + "\n");
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(err) + "\n");
 			   resolve(false)
 		   }
 		   else {
-				fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), info.toString() + "\n");
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(info) + "\n");
 			   resolve(info)
 		   }
 		});
@@ -96,6 +98,7 @@ function getMessage(data, user) {
 	if ((running.length + tooHigh.length) === 0 && JSON.stringify(user.previousMessage) === "{}") {return false;}
 	user.previousMessage = Object.assign({}, running, tooHigh)
 
+	
 	console.log(data)
 	console.log(running)
 
