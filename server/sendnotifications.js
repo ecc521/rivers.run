@@ -64,7 +64,7 @@ function sendNotifications(ignoreNoneUntil = false) {
 		//Don't send empty unless it is a change.
 		//TODO: Consider sending the user a demo message if this is their first time (so if previousData is not defined
 
-		if (JSON.stringify(previousData) === "{}" && JSON.stringify(data) === "{}") {
+		if (JSON.stringify(user.previousMessage) === "{}" && JSON.stringify(data) === "{}") {
 			continue; //We are sending an empty message, and we either already sent one or never sent a message in the first place.
 		}
 
