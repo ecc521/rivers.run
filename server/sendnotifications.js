@@ -70,9 +70,6 @@ function sendNotifications(ignoreNoneUntil = false) {
 
 		if (JSON.stringify(parameters) === "{}") {continue;} //The user does not want notifications on anything right now.
 
-		user.previousMessage = data
-		subscriptionManager.saveUserSubscription(user)
-
 		if (user.type === "email") {
 			fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
 			sendEmails.sendEmail(user, data).then((res) => {
@@ -98,9 +95,14 @@ function sendNotifications(ignoreNoneUntil = false) {
             console.error(e)
             //The users subscription is either now invalid, or never was valid.
             if ([401,403,404,410].includes(e.statusCode)) {
-                subscriptionManager.deleteUserSubscription(user.subscription.endpoint)
+                subscriptionManager.deleteUserSubscription(user)
             }
-        }).then(console.log)
+        }).then(() => {
+			user.previousMessage = data
+			subscriptionManager.saveUserSubscription(user)
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(user) + "\n");	
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(data) + "\n");	
+		})
 	}
 }
 
