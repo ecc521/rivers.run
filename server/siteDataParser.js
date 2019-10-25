@@ -51,6 +51,7 @@ function fixSiteName(siteName, options = {}) {
     siteName = siteName.split(/\bnr\b/i).join("near").split(/\bbl\b/i).join("below").split(/\bdnstrm\b/i).join("downstream").split(/\babv\b/i).join("above")
         .split(/\b@\b/).join("at").split(/\bS\b/).join("South").split(/\bN\b/).join("North").split(/\bE\b/).join("East").split(/\bW\b/).join("West")
         .split(/\bCr\b/i).join("Creek").split(/\bCk\b/i).join("Creek").split(/\bR\b/i).join("River").split(/\bCYN\b/i).join("Canyon").split(/\bSTA\b/i).join("Station")
+        .split(/\bRv\b/i).join("River")
 
     siteName = fixCasing(siteName)
     //TODO: Add a way to convert from state name to state codes. This would help with searches where the user says the state name.
