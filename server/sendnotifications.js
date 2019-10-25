@@ -43,50 +43,42 @@ function sendNotifications(ignoreNoneUntil = false) {
 				if (river.units === "cfs") {values = flow.cfs}
 				if (river.units === "ft") {values = flow.feet}
 
-				let latest = values[values.length - 1].value
+				river.current = values[values.length - 1].value
 
 				//Don't delete for email notifications
-				if (!(river.minimum < latest && latest < river.maximum)) {
-					if (data.type === "email") {
-						rivers[prop].running = false
-						river.current = latest
-					}
-					else {
-						delete rivers[prop]
+				if (!(river.minimum < river.current && river.current < river.maximum)) {
+					if (user.type === "email") {
+						rivers[prop].running = false //For email only, add the river even if it is not running.
+						data[prop] = rivers[prop]
 					}
 				}
 				else {
-					river.current = latest
+					data[prop] = rivers[prop] //Add the river if it is running
 				}
-                data[prop] = rivers[prop]
 			}
 		}
 
 		//Consider if we should overrule user.noneUntil on changes.
-		let previousData = user.previousMessage
+		user.previousMessage = user.previousMessage || {}
 
 		//Don't send empty unless it is a change.
 		//TODO: Consider sending the user a demo message if this is their first time (so if previousData is not defined
 
-		if (!previousData || JSON.stringify(previousData) === "{}") {
-			if (JSON.stringify(data) === "{}") {
-				continue; //We are sending an empty message, and we either already sent one or never sent a message in the first place.
-			}
+		if (JSON.stringify(user.previousMessage) === "{}" && JSON.stringify(data) === "{}") {
+			continue; //We are sending an empty message, and we either already sent one or never sent a message in the first place.
 		}
 
 		if (JSON.stringify(parameters) === "{}") {continue;} //The user does not want notifications on anything right now.
 
-		user.previousMessage = data
-		subscriptionManager.saveUserSubscription(user)
-
 		if (user.type === "email") {
-			let res = sendEmails.sendEmail(user, data)
-			if (res !== false) {
-				user.noneUntil = Date.now() + 1000*60*60*24 //No emails for 24 hours.
-				subscriptionManager.saveUserSubscription(user) //Some properties of user should also have been modified by sendEmails.sendEmail
-			}
-			//Handle email notifications
-			//user.address
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
+			sendEmails.sendEmail(user, data).then((res) => {
+				if (res !== false) {
+					user.noneUntil = Date.now() + 1000*60*60*24 //No emails for 24 hours.
+					fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
+					subscriptionManager.saveUserSubscription(user) //Some properties of user should also have been modified by sendEmails.sendEmail
+				}
+			})
 			continue;
 		}
 
@@ -103,9 +95,14 @@ function sendNotifications(ignoreNoneUntil = false) {
             console.error(e)
             //The users subscription is either now invalid, or never was valid.
             if ([401,403,404,410].includes(e.statusCode)) {
-                subscriptionManager.deleteUserSubscription(user.subscription.endpoint)
+                subscriptionManager.deleteUserSubscription(user)
             }
-        }).then(console.log)
+        }).then(() => {
+			user.previousMessage = data
+			subscriptionManager.saveUserSubscription(user)
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(user) + "\n");	
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(data) + "\n");	
+		})
 	}
 }
 

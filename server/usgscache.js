@@ -54,12 +54,16 @@ let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
 async function updateCachedData() {
 	console.log("Preparing flow data.\n")
 
-	if (riverDataPromise) {await riverDataPromise; riverDataPromise = null}
-
 	if (!fs.existsSync(riverDataPath)) {
-		//Even if the user told us not to load data, we are currently forced to.
-		console.warn("No river data available. Running updateRiverData once to permit usgscache.js to continue.")
-		updateRiverData()
+		if (riverDataPromise) {
+			await riverDataPromise; 
+			riverDataPromise = null
+		}
+		else {
+			//Even if the user told us not to load data, we are currently forced to.
+			console.warn("No river data available. Running updateRiverData once to permit usgscache.js to continue.")
+			await updateRiverData()
+		}
 	}
 
 	let riverarray = JSON.parse(await fs.promises.readFile(riverDataPath, {encoding:"utf8"}))

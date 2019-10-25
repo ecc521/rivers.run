@@ -12,7 +12,7 @@ catch (e) {
 	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailpassword.log'), e.toString() + "\n");
 }
 
-function sendEmail(user, data) {
+async function sendEmail(user, data) {
 	//Create the email
 	//We can give them lots of info we couldn't before.
 	var transporter = nodemailer.createTransport({
@@ -24,24 +24,33 @@ function sendEmail(user, data) {
 		}
 	});
 	
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(data) + "\n");	
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
 	let mailInfo = getMessage(data, user)
-	
 	if (mailInfo === false) {return false}; //All rivers are too low.
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(mailInfo) + "\n");
 	
 	const mailOptions = {
 	  from: 'rivergauges@rivers.run', //In order to have the profile image, this should be an alternative email for the gmail account.
 	  to: user.address, // list of receivers, or just a single one.
 	  subject: mailInfo.subject, // Subject line
-	  html: '<p>' + mailInfo.body + '</p>'// Body
+	  html: mailInfo.body// Body
 	};
 	
 	//Send the email
-	transporter.sendMail(mailOptions, function (err, info) {
-	   if(err)
-		 console.log(err)
-	   else
-		 console.log(info);
-	});
+	await new Promise((resolve, reject) => {
+		transporter.sendMail(mailOptions, function (err, info) {
+		   if(err) {
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(err) + "\n");
+			   resolve(false)
+		   }
+		   else {
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(info) + "\n");
+			   resolve(info)
+		   }
+		});
+	})
 }
 
 
@@ -86,10 +95,11 @@ function getMessage(data, user) {
 	}
 	
 	
-	user.previousMessage = Object.assign(running, tooHigh)
 	if ((running.length + tooHigh.length) === 0 && JSON.stringify(user.previousMessage) === "{}") {return false;}
+	user.previousMessage = Object.assign({}, running, tooHigh)
+
 	
-    console.log(data)
+	console.log(data)
 	console.log(running)
 
     if (running.length === 0) {
@@ -162,7 +172,7 @@ function getMessage(data, user) {
 	
 	return {
 		subject: title,
-		body: body.join("")
+		body: body.join(""),
 	}
 }
 

@@ -5,6 +5,12 @@ const utils = require(path.join(__dirname, "utils.js"))
 let storagePath = path.join(utils.getDataDirectory(), "notifications", "subscriptions.json")
 
 
+function getStorageKey(data) {
+	//Get the identifier that the data should be stored at
+	return (data.subscription && data.subscription.endpoint) || data.address
+}
+
+
 //Note that the current storage design is a little ineffectient because the really long endpoint url is stored twice.
 function saveUserSubscription(data) {
 	let current = "{}";
@@ -12,17 +18,17 @@ function saveUserSubscription(data) {
 		current = fs.readFileSync(storagePath, {encoding:"utf8"})
 	}
 	let obj = JSON.parse(current)
-	obj[(data.subscription && data.subscription.endpoint) || data.address] = data
+	obj[getStorageKey(data)] = data
 	fs.writeFileSync(storagePath, JSON.stringify(obj), {encoding:"utf8"})
 }
 
-function getUserSubscription(url) {
+function getUserSubscription(key) {
 	if (!fs.existsSync(storagePath)) {
 		return null
 	}
 	let current = fs.readFileSync(storagePath, {encoding:"utf8"})
 	let obj = JSON.parse(current)
-	return obj[url]
+	return obj[key]
 }
 
 function deleteUserSubscription(key) {
@@ -34,7 +40,7 @@ function deleteUserSubscription(key) {
 	let obj = JSON.parse(current)
 	if (typeof key === "object") {
 		//Allow deleting a subscription object by passing the subscription object
-		key = (key.subscription && key.subscription.endpoint) || key.address
+		key = getStorageKey(key)
 	}
 	delete obj[key]
 	fs.writeFileSync(storagePath, JSON.stringify(obj), {encoding:"utf8"})
@@ -44,5 +50,6 @@ module.exports = {
 	deleteUserSubscription,
 	getUserSubscription,
 	saveUserSubscription,
+	getStorageKey,
 	storagePath
 }

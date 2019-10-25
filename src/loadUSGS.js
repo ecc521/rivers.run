@@ -55,7 +55,7 @@ window.addEventListener("usgsDataUpdated", function() {
 			ItemHolder.every(river => !river.expanded) //If no writeups are open, we can continue
 			|| confirm("USGS data has been updated. Would you like to re-run the previous search?") //Otherwise, ask the user if they would like the update.
 		)
-	) {NewList()}
+	) {NewList(undefined,{noSameSearch:true})}
 })
 
 
