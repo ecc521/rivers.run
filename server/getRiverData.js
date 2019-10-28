@@ -101,7 +101,6 @@ async function getAssistantReply(query, options) {
 		return queryResult
 	}
 
-
 	//Multiple rivers matched the search. Tell the use what we are choosing. TODO: Let user pick.
 	if (topRanked.topMatches.length > 1) {
 		//TODO: This checks everything, not just the top matches.

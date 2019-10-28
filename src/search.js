@@ -177,6 +177,11 @@ function normalSearch(list, query, options = {}) {
 	
 	bucket2.reverse() //Highest relevance ones come first in the second bucket.
 
+	let topMatches = (buckets[0] && buckets[0].length > 0 && buckets[0]) || 
+		bucket2[bucket2.findIndex((value,index) => {if (value.length > 0) {return true}})] || 
+		buckets[buckets.findIndex((value,index) => {if (index > 1 && value.length > 0) {return true}})]
+	
+	
 	for (let i=0;i<bucket2.length;i++) {
 		let subbucket = bucket2[i]
 		if (subbucket) {
@@ -187,14 +192,11 @@ function normalSearch(list, query, options = {}) {
 			})
 		}
 	}
-
+	
     let result = [].concat(...buckets)
 
 	result.buckets = buckets
-	
-	result.topMatches = (buckets[0] && buckets[0].length > 0 && buckets[0]) || 
-		buckets[1][buckets[1].findIndex((value,index) => {if (value.length > 0) {return true}})] || 
-		buckets[buckets.findIndex((value,index) => {if (index > 1 && value.length > 0) {return true}})]
+	result.topMatches = topMatches
 	
 	return result
 }
