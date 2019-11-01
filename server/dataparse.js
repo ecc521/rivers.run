@@ -22,11 +22,12 @@ function wait(ms) {
 
 async function load(url, attempts = 0) {
     //TODO: Handle 500, internal server errors too. Google sends them somewhat commonly.
+	//TODO: Handle requests that take unreasonably long to reply (as of 15+ seconds)
     let request = await fetch(url)
     if (request.ok) {
         return request
     }
-    else if (attempts > 20) {
+    else if (attempts > 10) {
         console.error("Repeatedly 403'ed on " + url)
         throw "Repeatedly 403'ed on " + url
     }

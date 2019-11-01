@@ -101,17 +101,17 @@ async function getAssistantReply(query, options) {
 		return queryResult
 	}
 
-
 	//Multiple rivers matched the search. Tell the use what we are choosing. TODO: Let user pick.
-	if (topRanked.length > 1) {
+	if (topRanked.topMatches.length > 1) {
+		//TODO: This checks everything, not just the top matches.
 		let start;
-		for (let i=0;i<topRanked.length;i++) {
-			start = start || topRanked[i].usgs
-			if (topRanked[i].usgs !== start) {
+		for (let i=0;i<topRanked.topMatches.length;i++) {
+			start = start || topRanked.topMatches[i].usgs
+			if (topRanked.topMatches[i].usgs !== start) {
 				//If section is 1 word long, put section before name. Otherwise, put name before section.
-				let sectionFirst = ["bottom", "bottom bottom", "lower", "middle", "upper", "top", "tip top", "upper upper", "top"].includes(topRanked[0].section.trim().toLowerCase())
-				let selectedRiverName = sectionFirst?(topRanked[0].section + " " + topRanked[0].name):(topRanked[0].name + " " + topRanked[0].section)
-				starter = alwaysStart + topRanked.length + " results showed up for the search " + responseName + ". Picking " + siteDataParser.fixSiteName(selectedRiverName, {convertStateCodeToName: true}) + ". <break time=\"0.5s\"/>" + starter
+				let sectionFirst = ["bottom", "bottom bottom", "lower", "middle", "upper", "top", "tip top", "upper upper", "top"].includes(topRanked.topMatches[0].section.trim().toLowerCase())
+				let selectedRiverName = sectionFirst?(topRanked.topMatches[0].section + " " + topRanked.topMatches[0].name):(topRanked.topMatches[0].name + " " + topRanked.topMatches[0].section)
+				starter = alwaysStart + topRanked.topMatches.length + " results showed up for the search " + responseName + ". Picking " + siteDataParser.fixSiteName(selectedRiverName, {convertStateCodeToName: true}) + ". <break time=\"0.5s\"/>" + starter
 				break;
 			}
 		}

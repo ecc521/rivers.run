@@ -25,16 +25,16 @@ catch(e) {
 let readingsFile = path.join(utils.getSiteRoot(), "gaugeReadings")
 if (!fs.existsSync(readingsFile)) {fs.mkdirSync(readingsFile, {recursive: true})}
 
-let timeToRequest = 1000*86400 //Milliseconds of time to request
-
+let timeInPast = 1000*60*60*24 //Milliseconds of time to request. This is 24 hours of history.
+let timeInFuture = 0 //Milliseconds of prediction to request - Note: USGS does not currently send predictions. Those will have to be retrieved from NWS AHPS.
 
 async function _loadFromUSGS(siteCodes) {
 
 	//TODO: Calls should be batched up. I believe that USGS has a url length limit of 4096 characters.
 	//Probably use about 100-200 rivers per call due to performance reasons. When using 400, performance was almost 4 times worse.
 
-	let startDT = "&startDT=" + new Date(Date.now()-timeToRequest).toISOString()
-	let endDT = "&endDT=" + new Date().toISOString() //endDT is optional. Will default to current time. USGS gauge prediction may be used if date in the future.
+	let startDT = "&startDT=" + new Date(Date.now() - timeInPast).toISOString()
+	let endDT = "&endDT=" + new Date(Date.now() + timeInFuture).toISOString() //endDT is optional. Will default to current time. USGS gauge prediction may be used if date in the future.
     let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + siteCodes.join(",") +  startDT  + endDT + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all"
 
 	let start = Date.now()

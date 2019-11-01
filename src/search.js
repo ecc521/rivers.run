@@ -171,10 +171,17 @@ function normalSearch(list, query, options = {}) {
     })
 
 	//Sort each match level alphabetically by river name
-	buckets = buckets.map((bucket) => {return sortUtils.sort("alphabetical", bucket)})
-
+	buckets = buckets.map((bucket) => {
+		return sortUtils.sort("alphabetical", bucket)
+	})
+	
 	bucket2.reverse() //Highest relevance ones come first in the second bucket.
 
+	let topMatches = (buckets[0] && buckets[0].length > 0 && buckets[0]) || 
+		bucket2[bucket2.findIndex((value,index) => {if (value.length > 0) {return true}})] || 
+		buckets[buckets.findIndex((value,index) => {if (index > 1 && value.length > 0) {return true}})]
+	
+	
 	for (let i=0;i<bucket2.length;i++) {
 		let subbucket = bucket2[i]
 		if (subbucket) {
@@ -185,9 +192,12 @@ function normalSearch(list, query, options = {}) {
 			})
 		}
 	}
-
+	
     let result = [].concat(...buckets)
+
 	result.buckets = buckets
+	result.topMatches = topMatches
+	
 	return result
 }
 

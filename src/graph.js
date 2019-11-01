@@ -220,7 +220,7 @@ createGraph({
 //If you specify 0 or do not pass a value, the line's scale will be on the left side of the graph.
 //If you specify 1, the line's scale will be on the right side of the graph
 
-function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace) {
+function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, color, graphtype, numplace, maxDigitsBeforeRounding = 6) {
     if (graphtype === 3) {
         var endcolor = numplace
         }
@@ -249,7 +249,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     ctx.beginPath();
 
     if (graphtype === 2) {
-        width = width*0.86 //We need to put values on both sides
+        width = width*0.83 //We need to put values on both sides
 		//Because there are two lines, make the second line thinner so that it can't entirely cover the first. (first is about double the size.)
 		if (numplace === 1) {
         	ctx.lineWidth = Math.ceil(ctx.lineWidth/1.6) //Thinner
@@ -282,7 +282,7 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
     var voffset = verticalMin
     var hoffset = horizontalMin
 
-    hoffset -= (Math.max(...horizontal) - Math.min(...horizontal))*0.07
+    hoffset -= (Math.max(...horizontal) - Math.min(...horizontal))*0.1
 
     var px = Math.floor(((canvas.width)*0.07)/2.6)
     ctx.font = (px + 'px serif')
@@ -300,6 +300,11 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         ctx.fillStyle = grd;
     }
 
+	function round(Text) {
+		let precision = Math.max(0, Math.min(maxDigitsBeforeRounding-String(Math.round(Text)).length, 2))
+		return Number(Text.toFixed(precision))
+	}
+	
     if (numplace === 0 || numplace === undefined) {
         var start = 1
         }
@@ -308,26 +313,15 @@ function addLine(GraphName, timeframe, Source, canvas, horizontal, vertical, col
         }
         ctx.font = "bold " + ctx.font
     for(var i = 1;i<11;i++) {
-        var Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
-
-        let precision = Math.max(0, 3-String(Math.round(Text)).length)
-
-        Text = Number(Text.toFixed(precision))
+        var Text = round(((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical))
 
         ctx.fillText(Text, start, (height*(11-i))/10-5);
     }
 
     //Top one
-    Text = ((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical)
-
-    let precision = Math.max(0, 3-String(Math.round(Text)).length)
-
-    Text = Number(Text.toFixed(precision))
-
+    Text = round(((Math.max(...calcvertical) - Math.min(...calcvertical))*((i-1)/10))+Math.min(...calcvertical))
+	
     ctx.fillText(Text, start, 27);
-
-
-
 
 
     var px = Math.floor(((canvas.width)*0.07)/2.4)

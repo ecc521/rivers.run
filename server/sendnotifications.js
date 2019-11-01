@@ -54,6 +54,7 @@ function sendNotifications(ignoreNoneUntil = false) {
 				}
 				else {
 					data[prop] = rivers[prop] //Add the river if it is running
+					data[prop].running = true
 				}
 			}
 		}
