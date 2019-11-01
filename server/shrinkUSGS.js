@@ -1,6 +1,10 @@
 //Provide only the last 1 hour of data.
 //TODO: Consider only initial view, or one hour only for cfs and feet.
 
+
+//TODO: We will need to handle gauge prediction.
+
+
 function shrinkGauge(gauge) {
 		if (!gauge) {return}
 

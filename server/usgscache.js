@@ -54,7 +54,7 @@ let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
 async function updateCachedData() {
 	console.log("Preparing flow data.\n")
 
-	if (!fs.existsSync(riverDataPath)) {
+	if (!fs.existsSync(riverDataPath) || process.argv.includes("--waitforriverdata")) {
 		if (riverDataPromise) {
 			await riverDataPromise; 
 			riverDataPromise = null

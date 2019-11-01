@@ -44,19 +44,21 @@ function toparts(arr) {
 function getFlowGraph(cfs, height, data) {
     //Make sure we actually have some data, and don't create an empty graph
     if (!(cfs || height)) {return}
+	
+	//We will pass 3 with CFS so that values are rounded once they exceed 3 characters - with feet, we will use the default of 6 characters long
 
     let canvas = createcanvas()
     //Time to create a dual lined graph!
     if (cfs && height) {
 		let parts = toparts(cfs)
-        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFF", 2)
+        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFF", 2, undefined, 3)
         parts = toparts(height)
         addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, window.darkMode?"#7175ff":"#0000FF", 2, 1)
 	}
     //We won't have both cfs and height. Draw a single line graph for whichever we have.
     else if (cfs) {
         let parts = toparts(cfs)
-        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFF")
+        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFF", undefined, undefined, 3)
     }
     else {
         let parts = toparts(height)
