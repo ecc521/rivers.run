@@ -47,7 +47,9 @@ function normalSearch(list, query, options = {}) {
 	let bucket2 = [] //Bucket 2 - index 1 in buckets - is special.
 
     let splitPhrase;
-    if (options.regexpSplit) {
+	//Core-js polyfills used to cause some deoptimizations.
+	//If such deoptimizations happen again, change the default from using regexpSplit to not using regexpSplit.
+    if (options.regexpSplit !== false) {
         //This is faster when using the native regexp engine.
         splitPhrase = function splitPhrase(phrase) {
             return phrase.split(/[ ,]+/)
@@ -174,14 +176,14 @@ function normalSearch(list, query, options = {}) {
 	buckets = buckets.map((bucket) => {
 		return sortUtils.sort("alphabetical", bucket)
 	})
-	
+
 	bucket2.reverse() //Highest relevance ones come first in the second bucket.
 
-	let topMatches = (buckets[0] && buckets[0].length > 0 && buckets[0]) || 
-		bucket2[bucket2.findIndex((value,index) => {if (value.length > 0) {return true}})] || 
+	let topMatches = (buckets[0] && buckets[0].length > 0 && buckets[0]) ||
+		bucket2[bucket2.findIndex((value,index) => {if (value.length > 0) {return true}})] ||
 		buckets[buckets.findIndex((value,index) => {if (index > 1 && value.length > 0) {return true}})]
-	
-	
+
+
 	for (let i=0;i<bucket2.length;i++) {
 		let subbucket = bucket2[i]
 		if (subbucket) {
@@ -192,12 +194,12 @@ function normalSearch(list, query, options = {}) {
 			})
 		}
 	}
-	
+
     let result = [].concat(...buckets)
 
 	result.buckets = buckets
 	result.topMatches = topMatches
-	
+
 	return result
 }
 

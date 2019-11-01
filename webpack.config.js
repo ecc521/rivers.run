@@ -42,7 +42,7 @@ const path = require("path")
 								[
 									'@babel/preset-env', {
 									useBuiltIns: 'usage',
-									corejs: "3.2.1"
+									corejs: "3.3.6"
 								}]
 							]
 						}
