@@ -45,6 +45,15 @@ try {
 catch(e) {console.error(e)}
 
 try {
+	//Polyfill window.scrollY
+	(window.scrollY !== undefined) || Object.defineProperty(window, "scrollY", {get: function() {return window.pageYOffset}})
+}
+catch(e) {
+	console.error(e)
+}
+
+
+try {
 	//IE11 Polyfill. The gaurd appears to be unneeded.
 	if (!NodeList.prototype.forEach) {
 		NodeList.prototype.forEach = Array.prototype.forEach;
