@@ -42,9 +42,9 @@ sudo a2enmod http2
 #Enable reverse proxy to /node.
 echo "LoadModule proxy_module modules/mod_proxy.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
 echo "LoadModule proxy_http_module modules/mod_proxy_http.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
-echo "ProxyRequests on" >> $HOME/rivers.run/NODERIVERSRUN.conf
+#echo "ProxyRequests on" >> $HOME/rivers.run/NODERIVERSRUN.conf #Doesn't appear to be needed. Having this removed should prevent the server from being abused as an open proxy.
 echo "ProxyPass /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf
-echo "ProxyPassReverse /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf
+#echo "ProxyPassReverse /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf #Doesn't appear to be needed. 
 
 echo "LoadModule http2_module modules/mod_http2.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
 echo "Protocols h2 http/1.1" >> $HOME/rivers.run/NODERIVERSRUN.conf
