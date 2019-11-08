@@ -90,7 +90,8 @@ function runningSort(list, reverse) {
     let knownState = []
 
     list.forEach((item) => {
-        if (item.running !== undefined && !isNaN(item.running)) {knownState.push(item)}
+		if (item.isGauge) {noData.push(item)} //Don't bother checking river.running if it is a gauge.
+        else if (item.running != undefined && !isNaN(item.running)) {knownState.push(item)}
         //If there is gauge data, the user may be able to determine level themselves
         //As such, put rivers with gauges second
         else if (item.flow && item.dam) {hasGaugeAndDam.push(item)}
@@ -98,7 +99,6 @@ function runningSort(list, reverse) {
 		else if (item.dam) {hasDam.push(item)}
         else {noData.push(item)}
     })
-
     knownState = simpleSort(knownState, "running")
 
 	//Default order should be highest flow first.

@@ -49,7 +49,7 @@ window.addEventListener("usgsDataUpdated", function() {
 			!objectsEqual(query.flow, defaultAdvancedSearchParameters.flow) //Flow search
 			|| (query.sort.query === "running") //Flow sort
 		)
-		&& timesLoadUSGSRan >= 1 //And this is actually an update to the data, not the first load
+		&& timesLoadUSGSRan >= 2 //And this is actually an update to the data, not the first load
 		&& ItemHolder.length !== 0 //And that there are actually rivers to update - the flow data could have loaded first.
 		&& (//Make sure we don't close writeups that the user is looking at without their permission.
 			ItemHolder.every(river => !river.expanded) //If no writeups are open, we can continue
@@ -89,14 +89,17 @@ let loadUSGS = async function(useCache) {
 		})
 		window.usgsarray = JSON.parse(response)
 	}
-
 	
+	window.requestTime = usgsarray.generatedAt
+	updateUSGSDataInfo()
+	
+	window.dispatchEvent(new Event("usgsDataUpdated"))
+
 	console.time("updatingRivers")
 	//Add USGS Data to Graph
 	for (let i=0;i<ItemHolder.length;i++) {
 		try {
 			let river = ItemHolder[i]
-
 			river.updateFlowData()
 		}
 		catch(e) {
@@ -104,17 +107,9 @@ let loadUSGS = async function(useCache) {
 		}
 	}
 	console.timeEnd("updatingRivers")
-
-	window.requestTime = usgsarray.generatedAt
-	updateUSGSDataInfo()
-	window.updateOldDataWarning()
-	
-	window.dispatchEvent(new Event("usgsDataUpdated"))
 }
 
 
 module.exports = {
 	loadUSGS
 }
-
-window.loadUSGS = loadUSGS

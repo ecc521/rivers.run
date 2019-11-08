@@ -3,45 +3,6 @@ let {calculateColor, calculateDirection, calculateRelativeFlow} = require("./flo
 const {skillTranslations} = require("./skillTranslations.js")
 const {riverbuttonClicked} = require("./riverExpansion.js")
 
-function addHandlers(button, locate) {
-		let river = ItemHolder[locate]
-
-		button.addEventListener("mouseover", function(){
-					button.style.backgroundColor =  calculateColor(river, {highlighted: true})
-				})
-
-				button.addEventListener("mouseout", function(){
-					button.style.backgroundColor = calculateColor(river)
-				})
-
-				window.addEventListener("colorSchemeChanged", function() {
-					button.style.backgroundColor = calculateColor(river)
-				})
-
-
-	button.addEventListener("click", function() {
-		riverbuttonClicked(button, river)
-	})
-}
-
-
-function createStripes(newColor = window.darkMode ? "rgba(256,256,256,0.25)":"rgba(170,170,170,0.33)", oldColor = "rgba(0,0,0,0)") {
-		//If the river has a dam, stripe it.
-
-		let background = "linear-gradient(150deg"
-
-		for (let i=0;i<19;i++) {
-			background += ", "
-			background += i % 3 ? oldColor:newColor
-		}
-
-        background += ")"
-
-		return background
-}
-
-
-
 function AddSpan(text, elem, className) {
 	let span = document.createElement("span")
     span.innerHTML = text
@@ -62,6 +23,7 @@ function AddSpan(text, elem, className) {
 
 			function addSkillSpan(river, button) {
 				//Check if the user has disabled tooltips.
+				//Creating the tooltips is expensive. Try creating them only when the user hovers.
 				if (localStorage.getItem("skillTooltips") === "false") {
 					AddSpan(river.skill, button).classList.add("skillspan")
 				}
@@ -125,53 +87,70 @@ function addRatingSpan(river, button) {
 
 
 function addFlowData(river) {
-	try {
-			//Load this.flow from usgsarray.
+	Object.defineProperty(river, "feet", {
+		get: function getLatestFeet() {
 			let data = usgsarray[river.usgs]
 			if (data) {
-	            let cfs = data.cfs
-	            let feet = data.feet
-
-	            let latestCfs, latestFeet;
-				try {
-					if (cfs) {
-						let latestCFSReading = cfs[cfs.length - 1]
-						if (latestCFSReading) {
-							//Equipment malfunctions, conversion table changes/creation, backwater at measurement site, etc, will result in USGS intentionally making values null.
-							latestCfs = latestCFSReading.value
-						}
-					}
-				}
-				catch(e) {console.error(e);console.log(river.usgs)}
+				let feet = data.feet
 				try {
 					if (feet) {
 						let latestFeetReading = feet[feet.length - 1]
 						if (latestFeetReading) {
 							//Though issues are alot rarer than with CFS, equipment malfunctions can cause this to be null.
-							latestFeet = latestFeetReading.value
+							return latestFeetReading.value
 						}
 					}
 				}
 				catch(e) {console.error(e);console.log(river.usgs)}
-
-	            river.feet = latestFeet
-	            river.cfs = latestCfs
-
-	            if (latestCfs && latestFeet) {
-	                river.flow = latestCfs + "cfs " + latestFeet + "ft"
-	            }
-	            else if (latestCfs) {
-	                river.flow = cfs[cfs.length - 1].value + " cfs"
-	            }
-	            else if (latestFeet) {
-	                river.flow = feet[feet.length - 1].value + " ft"
-	            }
 			}
-	}
-	catch(e) {console.error(e)}
+		}
+	})
+	
+	Object.defineProperty(river, "cfs", {
+		get: function getLatestCFS() {
+			let data = usgsarray[river.usgs]
+			if (data) {
+				let cfs = data.cfs
+				try {
+					if (cfs) {
+						let latestCFSReading = cfs[cfs.length - 1]
+						if (latestCFSReading) {
+							//Though issues are alot rarer than with CFS, equipment malfunctions can cause this to be null.
+							return latestCFSReading.value
+						}
+					}
+				}
+				catch(e) {console.error(e);console.log(river.usgs)}
+			}
+		}
+	})
+	
+	Object.defineProperty(river, "flow", {
+		get: function getRiverFlow() {
+			let latestCFS = river.cfs
+			let latestFeet = river.feet
+			
+			if (latestCFS && latestFeet) {
+	            return latestCFS + "cfs " + latestFeet + "ft"
+	        }
+            else if (latestCFS) {
+                return latestCFS + " cfs"
+            }
+            else if (latestFeet) {
+                return latestFeet + " ft"
+            }
+		}
+	})
 }
 
 
+function updateSettings() {
+	window.colorBlindMode = (localStorage.getItem("colorBlindMode") === "true")
+	window.classOrSkill = localStorage.getItem("classOrSkill")
+}
+
+window.addEventListener("storage", updateSettings)
+updateSettings()
 
 function addFlowSpan(river, button) {
 			//If there is already a flowspan, get rid of it.
@@ -181,7 +160,8 @@ function addFlowSpan(river, button) {
             if (river.flow) {
 				let value = river.flow + (calculateDirection(river.usgs) || "")
 				//If the user has color blind mode enabled, add river.running to one digit onto the flow data.
-				if (localStorage.getItem("colorBlindMode") === "true" && calculateColor(river) && river.running !== undefined) {
+				//TODO: Add a faster way to check values, other than localStorage.
+				if (window.colorBlindMode && river.running !== undefined) {
 					value += "(" + Math.round(river.running*10)/10 + ")"
 				}
 				//TODO: Show the text "Dam" if there is plenty of space to do so. Consider using a smaller icon instead.
@@ -193,17 +173,19 @@ function addFlowSpan(river, button) {
 
 
 function addFlowStyling(river, button) {
-		if (river.dam) {
-			button.style.backgroundImage = createStripes()
-		}
-		if (calculateColor(river)) {
-			button.style.backgroundColor = calculateColor(river)
-		}
+	if (river.dam) {
+		button.classList.add("riverbuttonDam")
+	}
+	if (calculateColor(river)) {
+		button.style.backgroundColor = calculateColor(river)
+	}
 }
 
 
 function River(locate, event) {
-
+	
+	let river = this //Allow for incapsulation if this changes.
+	
     //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
     Object.assign(this, event)
     //tags and writeup need to be a string. They can't be undefined
@@ -250,7 +232,7 @@ function River(locate, event) {
             AddSpan(this.section, button)
 
 
-			if (localStorage.getItem("classOrSkill") === "class") {
+			if (window.classOrSkill === "class") {
 				//Put class first so that it will show up if screen small.
 				addClassSpan(this, button)
 				addSkillSpan(this, button)
@@ -264,15 +246,20 @@ function River(locate, event) {
             //Star images for rating
             addRatingSpan(this, button)
 
-			addFlowData(this)
-
 			addFlowSpan(this, button)
 
 
             button.classList.add("riverbutton")
-            //Add the click handler
-            addHandlers(button, locate)
 
+			button.addEventListener("click", function() {
+				riverbuttonClicked(button, river)
+			})		
+			
+			window.addEventListener("colorSchemeChanged", function() {
+				river.updateExpansion()
+				river.finished.style.backgroundColor = calculateColor(river)
+			})
+			
             //Store button for reuse later
             this.finished = button
 
@@ -280,7 +267,6 @@ function River(locate, event) {
 
 		this.updateExpansion = function() {
 			//Do not use "this". If called from event listener on window it will fail.
-			let river = ItemHolder[locate]
 			//Make sure it is expanded. Otherwise, there is no need to update the expansion - and
 			//updating the expansion can take a lot of time, expecially if it causes reflow.
 			if (river.expanded) {
@@ -289,8 +275,6 @@ function River(locate, event) {
 			}
 		}
 
-		window.addEventListener("colorSchemeChanged", this.updateExpansion) //TODO: This event listener should not remain forever.
-
 		addFlowStyling(this, this.finished)
 
         //Return finished button
@@ -298,15 +282,13 @@ function River(locate, event) {
 
     }
 
-
+	addFlowData(this) //Defines river.cfs, river.feet, and river.flow
+	calculateRelativeFlow(this)
+	
 	this.updateFlowData = function() {
-		addFlowData(this) //Update the flow information on the river object.
 		if (this.finished) {
 			addFlowSpan(this, this.finished) //Update the flowspan if it exists.
 			addFlowStyling(this, this.finished) //And make sure colors, etc, are updated.
-		}
-		else {
-			calculateRelativeFlow(this) //Adds the lowflow, relative flow, and other values to the object.
 		}
 		if (this.updateExpansion) {
 			this.updateExpansion()
@@ -314,7 +296,7 @@ function River(locate, event) {
 	}
 
 	this.updateFlowData()
-
+	
     this.delete = function () {
         let river = ItemHolder[locate]
         function Remove(Code) {

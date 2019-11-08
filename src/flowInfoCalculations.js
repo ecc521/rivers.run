@@ -72,12 +72,17 @@ function calculateRelativeFlow(river) {
     //Defines river.running
     //0-4
     //0 is too low, 4 is too high, other values in between
-
+	
+	if (river.relativeFlowType) {
+		return;
+	}
 
     let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
 
     let type; //Currently, we skip a value if one datapoint is cfs and another feet
 
+	let currentMax;
+	
     for (let i=0;i<values.length;i++) {
 
         let str = river[values[i]]
@@ -85,7 +90,6 @@ function calculateRelativeFlow(river) {
             values[i] = undefined
             continue;
         }
-        str = str.split("(computer)").join("")
         str = str.trim()
         let value = parseFloat(str)
         let currentType = str.match(/[^\d|.]+/) //Match a series of non-digits
@@ -101,22 +105,22 @@ function calculateRelativeFlow(river) {
             values[i] = undefined
             continue;
         }
-
+		
+		if (value < currentMax) {
+            console.warn(values[i] + " is smaller than a value that comes before it on " + river.name + " " + river.section + " and has been skipped")
+            values[i] = undefined
+            continue;
+		}
+		
+		currentMax = value
         values[i] = value
     }
 
 	if (values.filter((value) => {return value !== undefined}).length === 0) {
 		return null //If no relative flow values exist, return. This should help improve performance with gauges (lots of gauges, none have relative flows)
 	}
-
 	
-    let flow;
-    if (type === "cfs") {
-        flow = river.cfs
-    }
-    else if (type === "feet" || type==="ft") {
-        flow = river.feet
-    }
+	river.relativeFlowType = type	
 
 
     //Use or equal to
@@ -144,97 +148,126 @@ function calculateRelativeFlow(river) {
         return 10**(lowLog + (highLog - lowLog)*ratio)
     }
 
-    let minrun = values[0]
-    let maxrun = values[4]
-    //For midflow, use the nearest values to calculate midflow.
-    let midflow = values[2] //Prefer the specified midflow.
-    midflow = midflow || logDist(values[1], values[3]) //Average lowflow and highflow
-    midflow = midflow || logDist(values[0], values[3], 2/3) // two-thirds of the way between minrun and highflow
-    midflow = midflow || logDist(values[1], values[4], 1/3) // one-third of the way between lowflow and maxrun
-    midflow = midflow || logDist(minrun, maxrun) //Average minrun and maxrun.
-    let lowflow = values[1] || logDist(minrun, midflow)
-    let highflow = values[3] || logDist(midflow, maxrun)
+    river.minrun = values[0]
+    river.maxrun = values[4]
+	
+	//Use getters so that we only compute a property when neccessary.
+	if (values[2]) {river.midflow = values[2]}
+	else {
+	    Object.defineProperty(river, "midflow", {
+			configurable: true,
+			get: function getMidflow() {
+				//Use nearest values to calculate midflow
+				let midflow = logDist(values[1], values[3])//Average lowflow and highflow
+					|| logDist(values[0], values[3], 2/3) // two-thirds of the way between minrun and highflow
+					|| logDist(values[1], values[4], 1/3) // one-third of the way between lowflow and maxrun
+					|| logDist(river.minrun, river.maxrun) //Average minrun and maxrun.
+				delete river.midflow
+				return river.midflow = midflow
+			}
+		})
+	}
+	
+	if (values[1]) {river.lowflow = values[1]}
+	else {
+		Object.defineProperty(river, "lowflow", {
+			configurable: true,
+			get: function getLowflow() {
+				delete river.lowflow
+				return river.lowflow = logDist(river.minrun, river.midflow)
+			}
+		})
+	}
+	
+	if (values[3]) {river.highflow = values[3]}
+	else {
+		Object.defineProperty(river, "highflow", {
+			configurable: true,
+			get: function getHighflow() {
+				delete river.highflow
+				return river.highflow = logDist(river.midflow, river.maxrun)
+			}
+		})
+	}
+	
+	function calculateRatio(low, high, current) {
+		low = Math.log(low)
+		high = Math.log(high)
 
-    //Add computer generated properties to the river object so that they will display and people can see the values used in calculations.
-    values[1] || (river.lowflow = parseFloat(lowflow.toFixed(2)) + type + " (computer)")
-    values[2] || (river.midflow = parseFloat(midflow.toFixed(2)) + type + " (computer)")
-    values[3] || (river.highflow = parseFloat(highflow.toFixed(2)) + type + " (computer)")
+		current = Math.log(current)
 
 
-    if (flow <= minrun) {
-        //Too low
-        river.running = 0
-    }
-    else if (flow >= maxrun) {
-        //Too high
-        river.running = 4
-    }
-    else {
+		let range = high-low
+		let value = current-low
 
-        function calculateRatio(low, high, current) {
-            low = Math.log(low)
-            high = Math.log(high)
-
-            current = Math.log(current)
-
-
-            let range = high-low
-            let value = current-low
-
-            return value/range
-
-        }
-
-        if (flow < lowflow && minrun) {
-            river.running = calculateRatio(minrun, lowflow, flow)
-        }
-        else if (flow < midflow && lowflow) {
-            river.running = 1+calculateRatio(lowflow, midflow, flow)
-        }
-        else if (flow < highflow && midflow) {
-            river.running = 2+calculateRatio(midflow, highflow, flow)
-        }
-        //Use else if and comparison against maxrun to go to the else in case of isNaN(maxrun)
-        else if (flow < maxrun && highflow) {
-            river.running = 3+calculateRatio(highflow, maxrun, flow)
-        }
-        else {
-            return null //We can't calculate a ratio, as we lack information. Example: only have minrun and flow above minrun.
-        }
-    }
-    return river.running
+		return value/range
+	}
+	
+	let oldFlow;
+	let oldRunning;
+	
+	Object.defineProperty(river, "running", {
+		//TODO: Remember old result, and return it if flow hasn't changed.
+		get: function getRunning() {
+			
+			let flowLevel;
+			
+			if (river.relativeFlowType === "cfs") {
+				flowLevel = river.cfs
+			}
+			else if (river.relativeFlowType === "feet" || river.relativeFlowType === "ft") {
+				flowLevel = river.feet
+			}
+			
+			if (oldFlow === flowLevel) {
+				return oldRunning
+			}
+			
+			let running;
+			
+			//TODO: Consider ordering rivers, even if above/below minrun/maxrun.
+			if (flowLevel <= river.minrun) {
+				running = 0
+			}
+			else if (flowLevel >= river.maxrun) {
+				running = 4
+			}
+			else if (flowLevel < river.lowflow && river.minrun) {
+				running = calculateRatio(river.minrun, river.lowflow, flowLevel)
+			}
+			else if (flowLevel < river.midflow && river.lowflow) {
+				running = 1+calculateRatio(river.lowflow, river.midflow, flowLevel)
+			}
+			else if (flowLevel < river.highflow && river.midflow) {
+				running = 2+calculateRatio(river.midflow, river.highflow, flowLevel)
+			}
+			//Use else if and comparison against maxrun to go to the else in case of isNaN(maxrun)
+			else if (flowLevel < river.maxrun && river.highflow) {
+				running = 3+calculateRatio(river.highflow, river.maxrun, flowLevel)
+			}
+			else {
+				running = null //We can't calculate a ratio, as we lack information. Example: only have minrun and flow above minrun.
+			}
+			
+			oldRunning = running
+			oldFlow = flowLevel
+			
+			return running
+		}
+	})
 }
 
 
-function calculateColor(river, options) {
-    //hsla color values
-    //hsla(hue, saturation, lightness, opacity)
-    //Saturation hue is 0 red 120 green 240 blue
-    //Saturation - use 100%
-    //Lightness - use 50%
-    //Opacity - Decimal 0 to 1
+function calculateColor(river) {
+    calculateRelativeFlow(river)
 
-    let relativeFlow = calculateRelativeFlow(river)
-
-    if (relativeFlow == null || isNaN(relativeFlow)) {
-        return ""
-    }
-    else if (relativeFlow === 0) {
-        //Too low
-	    let lightness = (options && options.highlighted)? (window.darkMode? "28%": "63%"):  window.darkMode? "23%": "67%"
-        return "hsl(0,100%," + lightness + ")"
-    }
-    else if (relativeFlow === 4) {
-        //Too high
-    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "67%"):  window.darkMode? "20%": "69%"
-        return "hsl(240,100%," + lightness + ")"
-    }
-    else {
-		//Normal Flow lightness values
-		//Tough to see a difference when highlighted amount the more middle values in light mode.
-    	let lightness = (options && options.highlighted)? (window.darkMode? "30%": "65%"): window.darkMode? "25%": "70%"
-        return "hsl(" + (0 + 60*relativeFlow) + ",100%," + lightness + ")"
-    }
+	if (river.running == null) {
+		return ""
+	}
+	
+	//Normal Flow lightness values
+    let lightness = window.darkMode? "22%": "70%"	
+	return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
 }
 
 module.exports = {

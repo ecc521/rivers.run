@@ -108,7 +108,7 @@ require("./createLegend.js")
 	}
 
 	console.time("Create River Objects")
-	riverarray.map(function(event, index) {
+	riverarray.forEach(function(event, index) {
 		ItemHolder[index] = new River(index, event)
 	})
 	console.timeEnd("Create River Objects")

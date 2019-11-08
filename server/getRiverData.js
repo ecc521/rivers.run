@@ -207,41 +207,47 @@ async function getAssistantReply(query, options) {
 		river.cfs = cfs
 		river.feet = feet
 		let relativeFlow = calculateRelativeFlow(river)
+		
+		function round(level) {
+			if (river.relativeFlowType === "cfs") {
+				return Math.round(level)
+			}
+			else {
+				return Math.round(level*100)/100
+			}
+		}
 
 		if (relativeFlow === null) {
 			str += "according to the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". "
 			str += "<break time=\"0.4s\"/>Relative flows are currently unknown. To learn how to add them, go to rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser. <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else if (relativeFlow === 0) {
-			str += "which is below the minimum of " + river.minrun + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Keep rain dancing!"
+			str += "which is below the minimum of " + round(river.minrun) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Keep rain dancing!"
 		}
 		else if (relativeFlow === 4) {
-			str += "which is above the reccomended maximum of " + river.maxrun + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Stop rain dancing!"
+			str += "which is above the reccomended maximum of " + round(river.maxrun) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Stop rain dancing!"
 		}
 		else if (relativeFlow > 3.5) {
-			str += "which is a very high level, bordering on too high. The maximum is " + river.maxrun + ", but levels above " + river.highflow + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to stop rain dancing!"
+			str += "which is a very high level, bordering on too high. The maximum is " + round(river.maxrun) + ", but levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to stop rain dancing!"
 		}
 		else if (relativeFlow < 0.5) {
-			str += "which a very low level, bordering on too low. The minimum level is " + river.minrun + ", however levels above " + river.lowflow + " are preferred for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to start rain dancing!"
+			str += "which a very low level, bordering on too low. The minimum level is " + round(river.minrun) + ", however levels above " + round(river.lowflow) + " are preferred for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to start rain dancing!"
 		}
 		else if (relativeFlow < 1) {
-			str += "which is above the minimum of " + river.minrun + ", although levels above " + river.lowflow + " are reccomended for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is above the minimum of " + round(river.minrun) + ", although levels above " + round(river.lowflow) + " are reccomended for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else if (relativeFlow > 3) {
-			str += "which is a little high. The maximum levels is " + river.maximum + ", however levels above " + river.highflow + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is a little high. The maximum levels is " + round(river.maximum) + ", however levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else if (relativeFlow > 2.5) {
-			str += "which is on the higher end of reccomended levels. Levels above " + river.highflow + " are considered high, while " + river.midflow + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is on the higher end of reccomended levels. Levels above " + round(river.highflow) + " are considered high, while " + round(river.midflow) + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else if (relativeFlow < 1.5) {
-			str += "which is on the lower end of reccomended levels. Levels below " + river.lowflow + " are considered low, while " + river.midflow + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is on the lower end of reccomended levels. Levels below " + round(river.lowflow) + " are considered low, while " + round(river.midflow) + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else {
-			str += "which is well within the reccomended levels of " + river.lowflow + " through " + river.highflow + ", and near the middle level of " + river.midflow + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is well within the reccomended levels of " + round(river.lowflow) + " through " + round(river.highflow) + ", and near the middle level of " + round(river.midflow) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
-
-		//TOOO: Say "computer estimated value of ___" instead of "___ (computer estimate)"
-		str = str.split("(computer)").join("(computer estimate)")
 	}
 	else {
 		str += "according to the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"

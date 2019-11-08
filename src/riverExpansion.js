@@ -65,6 +65,15 @@ function createExpansion(button, river) {
                 div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
             }
 
+			function round(level) {
+				if (river.relativeFlowType === "cfs") {
+					return Math.round(level)
+				}
+				else {
+					return Math.round(level*100)/100
+				}
+			}
+	
 			//Show the user the values being used for determining relative flow.
             let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
 			let flowRange = document.createElement("p")
@@ -72,7 +81,7 @@ function createExpansion(button, river) {
             for (let i=0;i<values.length;i++) {
                 let name = values[i]
                 if (river[name] && !isNaN(parseFloat(river[name]))) {
-                    flowRange.innerHTML += name + ":" + river[name] + " "
+                    flowRange.innerHTML += name + ":" + round(river[name]) + river.relativeFlowType + " "
                 }
             }
 			if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}

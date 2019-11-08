@@ -11,17 +11,15 @@ function drawColors(canvas, height) {
 
     //This seems to be the only simple cross browser solution, although it fails if numerous rotations are made
 
-	let tooLowLightness = window.darkMode? "23%": "67%"
-	let tooHighLightness = window.darkMode? "20%": "69%"
-	let normalValueLightness = window.darkMode? "25%": "70%"
+	let lightness = window.darkMode? "22%": "70%"
 
 	canvas.width = document.documentElement.clientWidth
     canvas.height = height
 
     let gradient = context.createLinearGradient(0,0,canvas.width,0) //Horizontal gradient
 
-    let redColor = "hsl(0,100%," + tooLowLightness + ")"
-    let blueColor = "hsl(240,100%," + tooHighLightness + ")"
+    let redColor = "hsl(0,100%," + lightness + ")"
+    let blueColor = "hsl(240,100%," + lightness + ")"
 
     gradient.addColorStop(0, redColor)
     gradient.addColorStop(0.08, redColor)
@@ -33,7 +31,7 @@ function drawColors(canvas, height) {
     //240 is number of whole number hsl values
 
     for (let i=0;i<=240;i++) {
-        gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%," + normalValueLightness + ")")
+        gradient.addColorStop(start + (i/240*range), "hsl(" + i + ",100%," + lightness + ")")
     }
 
     gradient.addColorStop(0.92, blueColor)
