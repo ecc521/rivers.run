@@ -217,32 +217,32 @@ async function getAssistantReply(query, options) {
 			}
 		}
 
-		if (relativeFlow === null) {
+		if (river.running === null) {
 			str += "according to the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". "
 			str += "<break time=\"0.4s\"/>Relative flows are currently unknown. To learn how to add them, go to rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser. <break time=\"0.3s\"/>Happy Paddling!"
 		}
-		else if (relativeFlow === 0) {
+		else if (river.running === 0) {
 			str += "which is below the minimum of " + round(river.minrun) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Keep rain dancing!"
 		}
-		else if (relativeFlow === 4) {
+		else if (river.running === 4) {
 			str += "which is above the reccomended maximum of " + round(river.maxrun) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Stop rain dancing!"
 		}
-		else if (relativeFlow > 3.5) {
+		else if (river.running > 3.5) {
 			str += "which is a very high level, bordering on too high. The maximum is " + round(river.maxrun) + ", but levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to stop rain dancing!"
 		}
-		else if (relativeFlow < 0.5) {
+		else if (river.running < 0.5) {
 			str += "which a very low level, bordering on too low. The minimum level is " + round(river.minrun) + ", however levels above " + round(river.lowflow) + " are preferred for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to start rain dancing!"
 		}
-		else if (relativeFlow < 1) {
+		else if (river.running < 1) {
 			str += "which is above the minimum of " + round(river.minrun) + ", although levels above " + round(river.lowflow) + " are reccomended for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
-		else if (relativeFlow > 3) {
+		else if (river.running > 3) {
 			str += "which is a little high. The maximum levels is " + round(river.maximum) + ", however levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
-		else if (relativeFlow > 2.5) {
+		else if (river.running > 2.5) {
 			str += "which is on the higher end of reccomended levels. Levels above " + round(river.highflow) + " are considered high, while " + round(river.midflow) + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
-		else if (relativeFlow < 1.5) {
+		else if (river.running < 1.5) {
 			str += "which is on the lower end of reccomended levels. Levels below " + round(river.lowflow) + " are considered low, while " + round(river.midflow) + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else {
