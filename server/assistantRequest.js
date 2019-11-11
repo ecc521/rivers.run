@@ -24,14 +24,14 @@ async function handleRequest(req, res) {
 
 				if (typeof queryResult === "string") {
 					buttons.push({
-						"text": "View Rivers.run FAQ",
-						"postback": "https://rivers.run/FAQ" //TODO: Send user to dedicated page for contributing content.
+						"title": "View Rivers.run FAQ",
+						"openUrlAction": "https://rivers.run/FAQ" //TODO: Send user to dedicated page for contributing content.
 					})
 				}
 				else {
 					buttons.push({
-						"text": "View Full Search",
-						"postback": "https://rivers.run/#" + queryResult.search
+						"title": "View Full Search",
+						"openUrlAction": "https://rivers.run/#" + queryResult.search
 					})
 					//TODO: Add edit this river link.
 				}
@@ -39,7 +39,7 @@ async function handleRequest(req, res) {
 
 				let reply = {
 				  "fulfillmentText": queryResult.ssml,
-				  "fulfillmentMessages": [
+				  /*"fulfillmentMessages": [
 					{
 					  "card": {
 						"title": "Rivers.run Flow Info",
@@ -47,7 +47,7 @@ async function handleRequest(req, res) {
 						"buttons": buttons
 					  }
 					}
-				  ],
+				],*/
 				  "source": "https://rivers.run/",
 				  "payload": {
 					"google": {
@@ -61,10 +61,9 @@ async function handleRequest(req, res) {
 						  },
 							{
 								"basicCard": {
-									"title": "View on Rivers.run",
-									"formattedText": "See more information about " + queryResult.responseName + ", including trends, difficulty, location, and more!",
-								  "buttons": buttons,
-								  "image": "https://rivers.run/resources/icons/192x192-Water-Drop.png"
+									"title": riverName + " Info",
+									"formattedText": queryResult.ssml,
+								  "buttons": buttons
 								}
 							}
 						],
