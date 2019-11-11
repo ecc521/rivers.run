@@ -207,13 +207,13 @@ async function getAssistantReply(query, options) {
 		river.cfs = cfs
 		river.feet = feet
 		let relativeFlow = calculateRelativeFlow(river)
-		
+
 		function round(level) {
 			if (river.relativeFlowType === "cfs") {
-				return Math.round(level)
+				return Math.round(level) + river.relativeFlowType
 			}
 			else {
-				return Math.round(level*100)/100
+				return Math.round(level*100)/100 + river.relativeFlowType
 			}
 		}
 
