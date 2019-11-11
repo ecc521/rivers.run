@@ -172,21 +172,21 @@ async function getAssistantReply(query, options) {
 	//TODO: Inform the user of the trend.
 	let str = starter + " had a level of "
 	if (cfs && feet) {
-		str += cfs + " cfs or " + feet + " feet"
+		str += cfs + "cfs or " + feet + "ft"
 	}
 	else if (cfs) {
-		str += cfs + " cfs"
+		str += cfs + "cfs"
 	}
 	else if (feet) {
-		str += feet + " feet"
+		str += feet + "ft"
 	}
 	else if (temp) {
 		//If temp is the only value, still tell them it.
-		str = starter + " had a temperature of " + temp + " degrees."
+		str = starter + " had a temperature of " + temp + "°"
 	}
 
 	if ((cfs || feet) && temp) {
-		str += " and a temperature of " + temp + " degrees"
+		str += " and a temperature of " + temp + "°"
 	}
 
 	let timeAgo = Date.now() - timeStamp
@@ -231,7 +231,7 @@ async function getAssistantReply(query, options) {
 			str += "which is a very high level, bordering on too high. The maximum is " + round(river.maxrun) + ", but levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to stop rain dancing!"
 		}
 		else if (river.running < 0.5) {
-			str += "which a very low level, bordering on too low. The minimum level is " + round(river.minrun) + ", however levels above " + round(river.lowflow) + " are preferred for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to start rain dancing!"
+			str += "which is a very low level, bordering on too low. The minimum level is " + round(river.minrun) + ", however levels above " + round(river.lowflow) + " are preferred for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to start rain dancing!"
 		}
 		else if (river.running < 1) {
 			str += "which is above the minimum of " + round(river.minrun) + ", although levels above " + round(river.lowflow) + " are reccomended for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
