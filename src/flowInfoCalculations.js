@@ -137,6 +137,8 @@ function calculateRelativeFlow(river) {
     //Although these calculations are not needed when flow is below minrun or above maxrun. they can be useful in
     //alerting people what values are being used, so that they can
 
+	//TODO: Estmate all values, even if we do not have values on each side of them. This is actually quite accurate, although maxrun is usually too high to
+	//calculate the other values correctly. (the calculated maxruns are reasonable, but the provided maxruns are too high)
     function logDist(low, high, ratio = 0.5) {
         //ratio is how a decimal between 0 and 1. 0.5 means to factor lowLog and highLog evenly. Values greater than 0.5 factor in highLog more, vice versa.
         let lowLog = Math.log10(low)

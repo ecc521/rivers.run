@@ -269,7 +269,62 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 }
 
 #legend {
-    display: block; /*Remove space at bottom.*/
+	display: block;
+	z-index: 100; /*Nothing shall be on top of this legend.*/
+	position: -webkit-sticky;
+	position: sticky;
+	top: 0;
+	color: black;
+	width: 100%;
+	font-size: calc(var(--defaultFontSize) * 1.1);
+	line-height: calc(var(--defaultFontSize) * 1.4);
+	font-weight: bold;
+	background-image: linear-gradient(to right, hsl(0,100%,70%) , hsl(60,100%,70%), hsl(120,100%,70%), hsl(180,100%,70%), hsl(240,100%,70%));
+}
+
+
+#lowflow, #highflow {
+	width: 18.5%;
+}
+
+#midflow {
+	width: 20%;
+	text-align: center;
+	padding-bottom: calc(var(--defaultFontSize)*0.25); /*Shove the Stripes = Has Dam further down.*/
+}
+
+#toolow, #toohigh {
+	width: 20%;
+}
+
+#toohigh {
+	/*Was having issues with this overflowing*/
+	position: absolute;
+	right:2px;
+	color:white;
+}
+
+#toolow {
+	padding-left: 2px; /*Prevent the text from touching the side.*/
+}
+
+#toohigh, #highflow {
+	text-align: right;
+}
+
+#legend > span {
+	display: inline-block;
+	min-height: 60%;
+}
+
+#legend:after {
+	content:"Stripes = Has Dam";
+	display:block;
+	text-align: center;
+	line-height: calc(var(--defaultFontSize) * 1.3);
+	font-size: calc(var(--defaultFontSize) * 0.9);
+	background-image:repeating-linear-gradient(150deg, transparent, rgba(0, 0, 0, 0.13), transparent 16%);
+	height:40%;
 }
 
 /*riverspans are the spans that actually hold the information - there are 6 riverspans for each river.
@@ -503,9 +558,17 @@ Those include name,section,skill,quality, and flow info*/
 		background-image: repeating-linear-gradient(150deg, transparent, rgba(255, 255, 255, 0.2), transparent 16%);
 	}
 	
+	#legend {
+		background-image: linear-gradient(to right, hsl(0,100%,22%) , hsl(60,100%,22%), hsl(120,100%,22%), hsl(180,100%,22%), hsl(240,100%,22%));
+		color:white;
+	}
+	
+	#legend:after {
+		background-image: repeating-linear-gradient(150deg, transparent, rgba(255, 255, 255, 0.2), transparent 16%);
+	}
+	
 	.gaugesBelow {
 		background-color: darkmagenta !important;
-
 	}
 
 	select, input {

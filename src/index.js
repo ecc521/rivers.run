@@ -60,9 +60,6 @@ require("./searchUI.js") //Adds listeners to the searchbox and advanced search m
 require("./NewList.js") //Defines window.NewList
 
 document.getElementById("Rivers").appendChild(new TopBar().create())
-//createLegend.js needs a #Rivers > .riverbutton to get font-size using getComputedStyle
-require("./createLegend.js")
-
 
 //Handle search links.
 	if (window.location.hash.length > 0) {
