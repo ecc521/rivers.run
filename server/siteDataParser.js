@@ -174,5 +174,6 @@ async function getSites() {
 module.exports = {
 	getSites,
     fixSiteName,
+	fixCasing,
     replaceStateNamesWithCodes
 }

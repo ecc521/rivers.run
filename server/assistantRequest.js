@@ -3,6 +3,8 @@ const path = require("path")
 const utils = require(path.join(__dirname, "utils.js"))
 const getRiverData = require(path.join(__dirname, "getRiverData.js"))
 
+const fixCasing = require(path.join(__dirname, "siteDataParser.js")).fixCasing
+
 async function handleRequest(req, res) {
 
 				let query = (await utils.getData(req)).toString()
@@ -87,14 +89,30 @@ async function handleRequest(req, res) {
 }
 
 
+try {
+	//Wrap this in a try-catch, because the AWS SDK is a mess.
+	var { SkillRequestSignatureVerifier, TimestampVerifier } = require('ask-sdk-express-adapter');
+}
+catch(e) {console.error(e)}
 
 async function handleAlexaRequest(req, res) {
 
 
 				let query = (await utils.getData(req)).toString()
-				query = JSON.parse(query)
-				fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), JSON.stringify(query) + "\n");
+				fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), query + "\n");
 
+				try {
+					let start = Date.now()
+					await new SkillRequestSignatureVerifier().verify(query, req.headers);
+					await new TimestampVerifier().verify(query);
+					fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), "Useless but required Alexa Skill cryptography consumed " + Date.now() - start + "ms." + "\n");
+				}
+				catch(e) {
+					return
+				}
+	
+				query = JSON.parse(query)
+	
 				let queryResult = {
 					ssml: "<speak>There was an error while generating a reply. This is probably a software bug, which you can report to support@rivers.run</speak>",
 					text: "There was an error while generating a reply. This is probably a software bug, which you can report to support@rivers.run",
@@ -124,7 +142,7 @@ async function handleAlexaRequest(req, res) {
 				    },
 				    "card": {
 				      "type": "Standard",
-				      "title": queryResult.responseName + " Information",
+				      "title": fixCasing(queryResult.responseName + " Information"),
 				      "text": queryResult.text,
 				      "image": {
 				        "smallImageUrl": "https://rivers.run/resources/icons/128x128-Water-Drop.png", //May not be needed.
