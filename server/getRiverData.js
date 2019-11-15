@@ -98,6 +98,7 @@ async function getAssistantReply(query, options) {
 	//No rivers matched the search.
 	if (topRanked.length === 0) {
 		queryResult.ssml = starter + " does not exist on rivers.run. Open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add it. " + ender
+		queryResult.text = queryResult.ssml.replace(/<.+?>/g, "")
 		return queryResult
 	}
 
@@ -151,6 +152,7 @@ async function getAssistantReply(query, options) {
 	//River has no gauge, so we can't tell the user info on it.
 	if (!topRanked[0].usgs) {
 		queryResult.ssml = starter + " has no gauge on rivers.run. You can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add a gauge. <break time=\"0.3s\"/>Happy Paddling!" + ender
+		queryResult.text = queryResult.ssml.replace(/<.+?>/g, "")
 		return queryResult
 	}
 
@@ -165,6 +167,7 @@ async function getAssistantReply(query, options) {
 			//TODO: Tell user the gauge that we tried to use (river.usgs)
 			queryResult.ssml = starter + " does not have a working gauge. You can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to update the gauge. <break time=\"0.3s\"/>Happy Paddling!" + ender
 		}
+		queryResult.text = queryResult.ssml.replace(/<.+?>/g, "")
 		return queryResult
 	}
 
@@ -254,7 +257,7 @@ async function getAssistantReply(query, options) {
 	}
 
 	queryResult.ssml = str + ender
-
+	queryResult.text = queryResult.ssml.replace(/<.+?>/g, "")
 	return queryResult
 }
 

@@ -38,7 +38,7 @@ async function handleRequest(req, res) {
 
 
 				let reply = {
-				  "fulfillmentText": queryResult.ssml,
+				  "fulfillmentText": queryResult.text,
 				  /*"fulfillmentMessages": [
 					{
 					  "card": {
@@ -62,7 +62,7 @@ async function handleRequest(req, res) {
 							{
 								"basicCard": {
 									"title": riverName + " Info",
-									"formattedText": queryResult.ssml,
+									"formattedText": queryResult.text,
 								  "buttons": buttons
 								}
 							}
@@ -96,24 +96,22 @@ async function handleAlexaRequest(req, res) {
 				fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), JSON.stringify(query) + "\n");
 
 				let queryResult = {
-					ssml: "<speak>Hello</speak>",
-					responseName: "Test River"
+					ssml: "<speak>There was an error while generating a reply. This is probably a software bug, which you can report to support@rivers.run</speak>",
+					text: "There was an error while generating a reply. This is probably a software bug, which you can report to support@rivers.run",
+					responseName: "Server Error..."
 				}
 				
 				try {
 					let riverName = query.request.intent.slots.river_name.value
 					queryResult = await getRiverData.getAssistantReply({
-						name: riverName
+						name: riverName,
+						units: "relative flow"
 					})
 				}
 				catch(e) {
 					fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), String(e) + "\n");
 				}
 	
-				//Not sure if outputContexts works for this.
-				//let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"] //What google said the river name was.
-				//let queryResult = getRiverData.getAssistantReply(riverName, query.queryResult.queryText) //Also pass the optional sentence parameter. This should allow most phrases to be exactly matched.
-
 				let continueConversation = false;
 
 				let reply = {
@@ -127,10 +125,9 @@ async function handleAlexaRequest(req, res) {
 				    "card": {
 				      "type": "Standard",
 				      "title": queryResult.responseName + " Information",
-				      "text": queryResult.ssml, //TODO: This needs to be text, not SSML.
+				      "text": queryResult.text,
 				      "image": {
 				        "smallImageUrl": "https://rivers.run/resources/icons/128x128-Water-Drop.png", //May not be needed.
-				        //"largeImageUrl": ""
 				      }
 				    },
 				    "shouldEndSession": !continueConversation
