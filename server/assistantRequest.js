@@ -101,7 +101,7 @@ async function handleAlexaRequest(req, res) {
 				}
 				
 				try {
-					let riverName = query.request.intent.slots.river_name
+					let riverName = query.request.intent.slots.river_name.value
 					queryResult = await getRiverData.getAssistantReply({
 						name: riverName
 					})
