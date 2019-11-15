@@ -99,6 +99,17 @@ async function handleAlexaRequest(req, res) {
 					ssml: "<speak>Hello</speak>",
 					responseName: "Test River"
 				}
+				
+				try {
+					let riverName = query.request.intent.slots.river_name
+					queryResult = await getRiverData.getAssistantReply({
+						name: riverName
+					})
+				}
+				catch(e) {
+					fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), String(e) + "\n");
+				}
+	
 				//Not sure if outputContexts works for this.
 				//let riverName = query.queryResult.outputContexts[0].parameters["river-name.original"] //What google said the river name was.
 				//let queryResult = getRiverData.getAssistantReply(riverName, query.queryResult.queryText) //Also pass the optional sentence parameter. This should allow most phrases to be exactly matched.
@@ -116,7 +127,7 @@ async function handleAlexaRequest(req, res) {
 				    "card": {
 				      "type": "Standard",
 				      "title": queryResult.responseName + " Information",
-				      "text": queryResult.ssml, //May actually need to be text.
+				      "text": queryResult.ssml, //TODO: This needs to be text, not SSML.
 				      "image": {
 				        "smallImageUrl": "https://rivers.run/resources/icons/128x128-Water-Drop.png", //May not be needed.
 				        //"largeImageUrl": ""
