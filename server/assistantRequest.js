@@ -115,6 +115,7 @@ async function handleAlexaRequest(req, res) {
 					fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), "Useless but required Alexa Skill cryptography consumed " + Date.now() - start + "ms." + "\n");
 				}
 				catch(e) {
+					fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), String(e) + "\n");
 					res.statusCode = 400;
 					res.end()
 					return
