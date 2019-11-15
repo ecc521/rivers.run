@@ -93,7 +93,9 @@ try {
 	//Wrap this in a try-catch, because the AWS SDK is a mess.
 	var { SkillRequestSignatureVerifier, TimestampVerifier } = require('ask-sdk-express-adapter');
 }
-catch(e) {console.error(e)}
+catch(e) {
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), String(e) + "\n");
+}
 
 async function handleAlexaRequest(req, res) {
 
@@ -103,6 +105,7 @@ async function handleAlexaRequest(req, res) {
 
 				if (!TimestampVerifier) {
 					//AWS SDK did not load
+					fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), "AWS SDK did not load " + "\n");
 					res.statusCode = 500
 					res.end("AWS SDK failed to load. Please contact the server administrator at admin@rivers.run")
 					return
