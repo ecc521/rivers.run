@@ -101,6 +101,13 @@ async function handleAlexaRequest(req, res) {
 				let query = (await utils.getData(req)).toString()
 				fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), query + "\n");
 
+				if (!TimestampVerifier) {
+					//AWS SDK did not load
+					res.statusCode = 500
+					res.end("AWS SDK failed to load. Please contact the server administrator at admin@rivers.run")
+					return
+				}			
+	
 				try {
 					let start = Date.now()
 					await new SkillRequestSignatureVerifier().verify(query, req.headers);
@@ -108,6 +115,8 @@ async function handleAlexaRequest(req, res) {
 					fs.appendFileSync(path.join(utils.getLogDirectory(), 'alexaskill.log'), "Useless but required Alexa Skill cryptography consumed " + Date.now() - start + "ms." + "\n");
 				}
 				catch(e) {
+					res.statusCode = 400;
+					res.end()
 					return
 				}
 	
