@@ -5,7 +5,7 @@ try {
 	.modal {
 	display: none;
 	position:fixed;
-	z-index:2;
+	z-index:100;
 	padding-top: 5%;
 	left:0;
 	top:0;

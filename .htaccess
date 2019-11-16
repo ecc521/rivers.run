@@ -31,6 +31,9 @@ Header merge Vary Origin
 #Block access to .git files
 RedirectMatch 403 /\.git
 
+#Block access to node_modules directory
+RedirectMatch 403 ^/node_modules/.*$
+
 #Block all access to data and logs directory.
 RedirectMatch 403 ^/server/data/.*$
 RedirectMatch 403 ^/server/logs/.*$
