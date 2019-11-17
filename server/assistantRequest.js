@@ -145,6 +145,16 @@ async function handleAlexaRequest(req, res) {
 	
 				let continueConversation = false;
 
+				//Handle things like "Alexa, open water levels"
+				if (query.request.intent === undefined) {
+					queryResult = {
+						ssml: "<speak>Welcome to Rivers.run Water Levels! I can provide flow information on thousands of rivers across the country - just try \"Cheat Narrows Level\".</speak>",
+						text: "I can provide information on thousands of rivers across the country - just try \"Cheat Narrows Level\".",
+						responseName: "Welcome to Rivers.run Water Levels!"
+					}
+					continueConversation = true
+				}
+	
 				let reply = {
 				  "version": "1.0", //Consider simply returning the request version parameter.
 				  "response": {
