@@ -148,7 +148,7 @@ async function handleAlexaRequest(req, res) {
 				//Handle things like "Alexa, open water levels"
 				if (query.request.intent === undefined) {
 					queryResult = {
-						ssml: "<speak>Welcome to Rivers.run Water Levels! I can provide flow information on thousands of rivers across the country - just try \"Cheat Narrows Level\".</speak>",
+						ssml: "<speak>Welcome to Rivers.run Water Levels! I can provide flow information on thousands of rivers across the country - just try \"Lower Gauley Level\" or \"is the Cheat Narrows running\".</speak>",
 						text: "I can provide information on thousands of rivers across the country - just try \"Lower Gauley Level\" or \"is the Cheat Narrows running\".",
 						responseName: "Welcome to Rivers.run Water Levels!"
 					}
