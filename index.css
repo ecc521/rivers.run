@@ -276,8 +276,8 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 	top: 0;
 	color: black;
 	width: 100%;
-	font-size: calc(var(--defaultFontSize) * 1.1);
-	line-height: calc(var(--defaultFontSize) * 1.4);
+	font-size: calc(var(--defaultFontSize) * 1.15);
+	line-height: calc(var(--defaultFontSize) * 1.55);
 	font-weight: bold;
 	background-image: linear-gradient(to right, hsl(0,100%,70%) , hsl(60,100%,70%), hsl(120,100%,70%), hsl(180,100%,70%), hsl(240,100%,70%));
 }

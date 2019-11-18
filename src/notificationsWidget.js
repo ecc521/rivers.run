@@ -30,7 +30,7 @@
 				description.style.marginBottom = "0.5em" //Make the description closer to what it is describing...
 
 				if (!("PushManager" in window) || !("Notification" in window) || !("serviceWorker" in navigator)) {
-					description.innerHTML += "Your browser does not support flow alerts. (iOS users - blame apply for abusive app store monopoly behavior). You may however utilize email notifications."
+					description.innerHTML += "Your browser does not support flow alerts. (iOS users - blame Apple for abusive app store monopoly behavior). You may however utilize email notifications."
 					return description;
 				}
 
