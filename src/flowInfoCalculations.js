@@ -67,13 +67,78 @@ function calculateAge(usgsNumber) {
     return null; //If we got here, there is not enough USGS data.
 }
 
+    //If we don't have some values, fill them in using logarithms
+    //Although these calculations are not needed when flow is below minrun or above maxrun. they can be useful in
+    //alerting people what values are being used, so that they can edit them if neccessary. 
+
+
+
+function logDist(low, high, ratio = 0.5) {
+    //ratio is how a decimal between 0 and 1. 0.5 means to factor lowLog and highLog evenly. Values greater than 0.5 factor in highLog more, vice versa.
+    let lowLog = Math.log10(low)
+    let highLog = Math.log10(high)
+    if (lowLog > highLog) {
+        let temp = lowLog
+		lowLog = highLog
+		highLog = temp
+    }
+    return 10**(lowLog + (highLog - lowLog)*ratio)
+}
+	
+		
+	//Estmate all values, even if we do not have values on each side of them. This is actually quite accurate, although sometimes maxrun is far too high to
+	//calculate the other values correctly. (the calculated maxruns are reasonable, but the provided maxruns are too high)
+//TODO: Consider if we should blacklist the provided maxrun
+
+	function calculateArrayPosition(arr, pos) {	
+		if (arr[pos]) {return arr[pos]} //The value is already in the array!
+		
+		//Find closest values on either side.
+		let negativeOptions = []
+		let positiveOptions = []
+		arr.forEach((value, index) => {
+			if (value) {
+				let optionNum = index - pos
+				if (optionNum > 0) {
+					positiveOptions.push(index)
+				}
+				if (optionNum < 0) {
+					negativeOptions.push(index)
+				}
+			}
+		})
+		
+		//Sort positiveOptions ascending.
+		positiveOptions = positiveOptions.sort((a,b) => {return a-b})
+		//Sort negativeOptions descending.
+		negativeOptions = negativeOptions.sort((a,b) => {return b-a})
+		
+		//Get closest values, with one on each side if possible.
+		let bottomPos = negativeOptions[0]
+		let topPos = positiveOptions[0]
+		
+		if (bottomPos == undefined) {bottomPos = positiveOptions[1]}
+		if (topPos == undefined) {topPos = negativeOptions[1]}
+		
+		if (topPos == undefined || bottomPos == undefined) {
+			//We don't have enough datapoints - we need at least 2.
+			return undefined;
+		}
+				
+		//Note: topPos is not neccessarily greater than bottomPos
+		let denominator = Math.abs(topPos - bottomPos)
+		let numerator = pos-bottomPos
+
+		return logDist(arr[topPos], arr[bottomPos], numerator/denominator)
+	}
+
 
 function calculateRelativeFlow(river) {
     //Defines river.running
     //0-4
     //0 is too low, 4 is too high, other values in between
 	
-	if (river.relativeFlowType) {
+	if (river.relativeFlowType || river.relativeFlowType === null) {
 		return;
 	}
 
@@ -115,82 +180,43 @@ function calculateRelativeFlow(river) {
 		currentMax = value
         values[i] = value
     }
+	
+	river.relativeFlowType = type || null
 
-	if (values.filter((value) => {return value !== undefined}).length === 0) {
+	if (!type) {
 		return null //If no relative flow values exist, return. This should help improve performance with gauges (lots of gauges, none have relative flows)
 	}
-	
-	river.relativeFlowType = type	
 
 
-    //Use or equal to
-    //While that technically may not be correct (says that river is too low at minrun), it makes no significant difference
-    //In addition, values equal to minrun or maxrun result in a river.running of 0 or 4
-    //Meaning that they may be included in the middle of a darker highlighted rivers
-    //When sorting by runnability is used.
-
-    //It would be better if rivers that are too high or too low are still given river.running values
-    //related to their level. This would also help in determining if something is just barely
-    //too low, and may come up with rain, or is truely too low.
-
-    //If we don't have some values, fill them in using logarithms
-    //Although these calculations are not needed when flow is below minrun or above maxrun. they can be useful in
-    //alerting people what values are being used, so that they can
-
-	//TODO: Estmate all values, even if we do not have values on each side of them. This is actually quite accurate, although maxrun is usually too high to
-	//calculate the other values correctly. (the calculated maxruns are reasonable, but the provided maxruns are too high)
-    function logDist(low, high, ratio = 0.5) {
-        //ratio is how a decimal between 0 and 1. 0.5 means to factor lowLog and highLog evenly. Values greater than 0.5 factor in highLog more, vice versa.
-        let lowLog = Math.log10(low)
-        let highLog = Math.log10(high)
-        if (lowLog > highLog) {
-            console.error("Low greater than high on " + river.name + " " + river.section)
-            return;
-        }
-        return 10**(lowLog + (highLog - lowLog)*ratio)
-    }
-
-    river.minrun = values[0]
-    river.maxrun = values[4]
+    river.minrun = calculateArrayPosition(values, 0)
+    river.maxrun = calculateArrayPosition(values, 4)
 	
 	//Use getters so that we only compute a property when neccessary.
-	if (values[2]) {river.midflow = values[2]}
-	else {
 	    Object.defineProperty(river, "midflow", {
 			configurable: true,
 			get: function getMidflow() {
-				//Use nearest values to calculate midflow
-				let midflow = logDist(values[1], values[3])//Average lowflow and highflow
-					|| logDist(values[0], values[3], 2/3) // two-thirds of the way between minrun and highflow
-					|| logDist(values[1], values[4], 1/3) // one-third of the way between lowflow and maxrun
-					|| logDist(river.minrun, river.maxrun) //Average minrun and maxrun.
 				delete river.midflow
-				return river.midflow = midflow
+				return river.midflow = calculateArrayPosition(values, 2)
 			}
 		})
-	}
 	
-	if (values[1]) {river.lowflow = values[1]}
-	else {
+
 		Object.defineProperty(river, "lowflow", {
 			configurable: true,
 			get: function getLowflow() {
 				delete river.lowflow
-				return river.lowflow = logDist(river.minrun, river.midflow)
+				return river.lowflow = calculateArrayPosition(values, 1)
 			}
 		})
-	}
-	
-	if (values[3]) {river.highflow = values[3]}
-	else {
+
 		Object.defineProperty(river, "highflow", {
 			configurable: true,
 			get: function getHighflow() {
 				delete river.highflow
-				return river.highflow = logDist(river.midflow, river.maxrun)
+				return river.highflow = calculateArrayPosition(values, 3)
 			}
 		})
-	}
+	
 	
 	function calculateRatio(low, high, current) {
 		low = Math.log(low)
@@ -228,6 +254,16 @@ function calculateRelativeFlow(river) {
 			let running;
 			
 			//TODO: Consider ordering rivers, even if above/below minrun/maxrun.
+    		//This would also help in determining if something is just barely
+    		//too low, and may come up with rain, or is truely too low. (when using flow sort)
+			
+
+			//Use or equal to
+			//While that technically may not be correct (says that river is too low at minrun), it makes no significant difference
+			//In addition, values equal to minrun or maxrun result in a river.running of 0 or 4
+			//Meaning that they may be included in the middle of a darker highlighted rivers
+			//When sorting by runnability is used.
+			
 			if (flowLevel <= river.minrun) {
 				running = 0
 			}
@@ -248,7 +284,7 @@ function calculateRelativeFlow(river) {
 				running = 3+calculateRatio(river.highflow, river.maxrun, flowLevel)
 			}
 			else {
-				running = null //We can't calculate a ratio, as we lack information. Example: only have minrun and flow above minrun.
+				running = null //We can't calculate a ratio, as we lack information. 
 			}
 			
 			oldRunning = running
