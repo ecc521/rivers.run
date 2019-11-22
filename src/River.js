@@ -105,7 +105,7 @@ function addFlowData(river) {
 			}
 		}
 	})
-	
+
 	Object.defineProperty(river, "cfs", {
 		get: function getLatestCFS() {
 			let data = usgsarray[river.usgs]
@@ -124,12 +124,12 @@ function addFlowData(river) {
 			}
 		}
 	})
-	
+
 	Object.defineProperty(river, "flow", {
 		get: function getRiverFlow() {
 			let latestCFS = river.cfs
 			let latestFeet = river.feet
-			
+
 			if (latestCFS && latestFeet) {
 	            return latestCFS + "cfs " + latestFeet + "ft"
 	        }
@@ -183,9 +183,9 @@ function addFlowStyling(river, button) {
 
 
 function River(locate, event) {
-	
+
 	let river = this //Allow for incapsulation if this changes.
-	
+
     //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
     Object.assign(this, event)
     //tags and writeup need to be a string. They can't be undefined
@@ -253,13 +253,13 @@ function River(locate, event) {
 
 			button.addEventListener("click", function() {
 				riverbuttonClicked(button, river)
-			})		
-			
+			})
+
 			window.addEventListener("colorSchemeChanged", function() {
 				river.updateExpansion()
 				river.finished.style.backgroundColor = calculateColor(river)
 			})
-			
+
             //Store button for reuse later
             this.finished = button
 
@@ -284,7 +284,7 @@ function River(locate, event) {
 
 	addFlowData(this) //Defines river.cfs, river.feet, and river.flow
 	calculateRelativeFlow(this)
-	
+
 	this.updateFlowData = function() {
 		if (this.finished) {
 			addFlowSpan(this, this.finished) //Update the flowspan if it exists.
@@ -296,7 +296,7 @@ function River(locate, event) {
 	}
 
 	this.updateFlowData()
-	
+
     this.delete = function () {
         let river = ItemHolder[locate]
         function Remove(Code) {

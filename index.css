@@ -553,20 +553,24 @@ Those include name,section,skill,quality, and flow info*/
 	.riverbutton:hover {
 		filter: saturate(1.05) brightness(1.3);
 	}
-	
+
+    .emptyStars {
+        opacity: 0.35; /*Greatly dim outline in dark mode*/
+    }
+
 	.riverbuttonDam {
 		background-image: repeating-linear-gradient(150deg, transparent, rgba(255, 255, 255, 0.2), transparent 16%);
 	}
-	
+
 	#legend {
 		background-image: linear-gradient(to right, hsl(0,100%,22%) , hsl(60,100%,22%), hsl(120,100%,22%), hsl(180,100%,22%), hsl(240,100%,22%));
 		color:white;
 	}
-	
+
 	#legend:after {
 		background-image: repeating-linear-gradient(150deg, transparent, rgba(255, 255, 255, 0.2), transparent 16%);
 	}
-	
+
 	.gaugesBelow {
 		background-color: darkmagenta !important;
 	}
@@ -575,15 +579,15 @@ Those include name,section,skill,quality, and flow info*/
 		background-color: #1e2021;
 		border: 1px solid #585858;
 	}
-	
+
 	input {
 		padding-left: 4px;
 	}
-	
+
 	select, input, input::placeholder {
 		color: #e8e6e3;
 	}
-	
+
 	.riverbuttonGauge:nth-child(even) {
 		background-color: #380241 !important;
 	}
