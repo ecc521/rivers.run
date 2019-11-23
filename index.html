@@ -2,15 +2,14 @@
 <html lang="en">
     <head>
         <!-- Secure page against user generated content -->
-        <!-- upgrade-insecure-requests should also be used, but it messed up development. It will be added back at some point-->
-        <!-- I would like to be able to use blobs for the images instead of data urls as they are faster and would prevent people from adding incredibly long data urls directly into their river writeups. The issue is that the current design for opening a river writeup is synchronus, and canvas.toBlob is asynchronus -->
+		<!-- With style-src, 'unsafe-eval' allows for things like CSSStyleSheet.insertRule(), and other JavaScript methods. -->
         <meta http-equiv="Content-Security-Policy" content="
                                                             default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:*;
-                                                            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* ws://localhost:* https://waterservices.usgs.gov https://docs.google.com;
-                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://www.googleapis.com data:;
-                                                            font-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;"
+                                                            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://docs.google.com https://www.googleapis.com;
+                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://www.googleapis.com;
+                                                            font-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;
+															style-src https://rivers.run https://*.rivers.run http://127.0.0.1:* 'unsafe-eval'"
               >
-        <!-- Curently the img-src can be bypassed with a Data URL. This should be changed so that cannot be done-->
 
         <meta name="referrer" content="strict-origin-when-cross-origin">
 
@@ -239,6 +238,5 @@
         </div>
 
         <script src="packages/index.js"></script>
-        <script src="overviews.js" defer></script> <!-- This isn't needed at initial page load. -->
     </body>
 </html>

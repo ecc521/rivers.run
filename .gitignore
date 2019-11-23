@@ -3,11 +3,9 @@ node_modules
 server/data
 gaugeReadings
 public_key
-usgscache.json
-riverarray.js
 riverdata.json
-*.log
-flowdata.json
 flowdata2.json
+overviews.json
+*.log
 *.br
 *.BIN

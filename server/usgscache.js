@@ -11,7 +11,6 @@ const child_process = require("child_process")
 const jsonShrinker = require("json-shrinker")
 
 async function updateRiverData() {
-	process.stdout.write("Generating riverdata.json - this may take a while (should be no more than 200 milliseconds per river)\n")
 	let args = [path.join(__dirname, "dataparse.js")]
 	if (process.argv.includes("--nogauges")) {args.push("--nogauges")}
 
@@ -23,7 +22,6 @@ async function updateRiverData() {
 		dataparse.on("close", resolve)
 		dataparse.on("error", reject)
 	})
-	process.stdout.write("riverdata.json generated.\n")
 }
 
 //On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.

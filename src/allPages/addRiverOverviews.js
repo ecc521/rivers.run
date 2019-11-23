@@ -88,15 +88,41 @@ try {
 	    constructor() {
 	        super();
 
-	        function openOverview() {
-	            let text = "This overview (" + this.innerHTML + ") is not available. This is likely due to a programming or data entry error"
-	            if (window.overviews && window.overviews[this.innerText.trim()]) {
-	                text = window.overviews[this.innerText.trim()]
-	            }
-
-	            overview_modal_text.innerHTML = text
+	        async function openOverview() {
 	            overview_modal.style.display = "block"
+				try {
+					if (!window.overviews) {
+						overview_modal_text.innerHTML = "Loading list of overviews. This should only take a few seconds. "
+						let request = await fetch(window.root + "overviews.json")
+						window.overviews = await request.json()
+					}
 
+					let overviewName = this.innerText.trim()
+
+					if (window.overviews && window.overviews[overviewName]) {
+						overview_modal_text.innerHTML = "Loading " + overviewName + " overview... Please wait..."
+						let File_ID = window.overviews[overviewName]
+						const API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+						let mimeType = "text%2Fhtml" //"text%2Fplain"
+						let request = await fetch('https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=' + mimeType + '&key=' + API_KEY)
+						let text = await request.text()
+						overview_modal_text.innerHTML = "<a href=\"https://docs.google.com/document/d/" + File_ID + "\" target=\"_blank\">Edit this Overview</a><br><br>"
+						//TODO: HTML uses some inline style that is blocked by CSP on main page, even in an iframe. This should be fixed.
+						//Note: iframe code not finished yet, because the CSP is blocking the styles. 
+						//let iframe = document.createElement("iframe")
+						//iframe.sandbox = ""
+						//iframe.srcdoc = text
+						//overview_modal_text.appendChild(iframe)
+						overview_modal_text.innerHTML += text
+					}
+					else {
+						overview_modal_text.innerHTML = "This overview (" + overviewName + ") is not available. This is likely due to a data entry error"
+					}
+				}
+				catch(e) {
+					console.error(e)
+					overview_modal_text.innerHTML = "Something went horribly wrong. You may want to check your internet connection. \n\n" + e
+				}
 	        }
 
 			let element = this

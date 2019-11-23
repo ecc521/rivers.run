@@ -62,13 +62,13 @@ async function writeToDisk(data, id) {
     }
 }
 
-(async function() {
+
 
     async function getFilesInFolder(id, output = [], promises=[], wasFirst = true) {
         //Use fields=* to get all fields.
         //Do not cache directory requests - last modified dates of files inside will be wrong (folder last modified is when files last added/removed).
-
-        let response = await load("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
+		//wasFirst is used so the Promise.all call only happens on the first invocation, which was not added to the primises list.
+        let response = await load("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id,name)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
         let obj = await response.json()
 
         if (obj.incompleteSearch) {console.warn("Search may have been incomplete")}
@@ -81,17 +81,43 @@ async function writeToDisk(data, id) {
             if (file.mimeType === "application/vnd.google-apps.folder") {
                 promises.push(getFilesInFolder(file.id, output, promises, false))
             }
-            else if (file.mimeType === "application/vnd.google-apps.document") {
+			//Google Docs supports other formats, including Word and OpenOffice.
+            //else if (file.mimeType === "application/vnd.google-apps.document") {
                 output.push(file)
-            }
-            else {
-                console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
-            }
+            //}
+            //else {
+              //  console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
+            //}
         }
         if (wasFirst) {await Promise.all(promises)}
         return output
     }
 
+
+
+async function loadOverviews() {
+	console.log("Creating overviews.json")
+	let overviewsFolder = "1U3S5oxwqtnKJrIy7iDChmak2hvjekBBr"
+	let files = await getFilesInFolder(overviewsFolder)
+	
+	let overviews = {}
+	files.forEach((file) => {
+		let name = file.name.trim()
+		//Trim off extensions.
+		name = name.match(/[^.]+/)[0]
+		if (overviews[name]) {console.warn("Multiple writups had the same name of " + name + ". ")}
+		overviews[name] = file.id
+	})
+    await fs.promises.writeFile(path.join(utils.getSiteRoot(), "overviews.json"), JSON.stringify(overviews))
+	console.log("overviews.json generated")
+}
+
+
+(async function() {
+	
+	await loadOverviews()
+
+	console.log("Generating riverdata.json - this may take a while (should be no more than 200 milliseconds per river)\n")
     let writeupFolder = "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof"
     console.log("Getting List of Rivers...")
     let files = await getFilesInFolder(writeupFolder)
@@ -182,4 +208,5 @@ async function writeToDisk(data, id) {
 	}
 
     await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(complete))
+	console.log("riverdata.json generated")
 }())
