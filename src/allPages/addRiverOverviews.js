@@ -108,6 +108,7 @@ try {
 						let text = await request.text()
 						overview_modal_text.innerHTML = "<a href=\"https://docs.google.com/document/d/" + File_ID + "\" target=\"_blank\">Edit this Overview</a><br><br>"
 						//TODO: HTML uses some inline style that is blocked by CSP on main page, even in an iframe. This should be fixed.
+						//We need to make sure that dark mode text coloring is preserved though. 
 						//Note: iframe code not finished yet, because the CSP is blocking the styles. 
 						//let iframe = document.createElement("iframe")
 						//iframe.sandbox = ""
