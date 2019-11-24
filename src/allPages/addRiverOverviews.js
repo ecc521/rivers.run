@@ -118,9 +118,20 @@ try {
 						//Not all pages have a CSP, so to make stuff the same on all pages, delete the styling.
 						text = text.replace(/style=".*?"/g, "").replace(/<style>.*?<\/style>/g, "")
 						overview_modal_text.innerHTML += text
+						//Make sure all links open in a new tab
+						overview_modal_text.querySelectorAll("a").forEach((elem) => {
+							elem.target = "_blank"
+							//Undo Google Open Redirect
+							let regexp = /(?:https:\/\/www.google.com\/url\?q=)(.+?)(?:&)/ //Yuck...
+							let resolvedURL = regexp.exec(decodeURIComponent(elem.href)) //Use decodeURIComponent to handle things like hash links.
+							if (resolvedURL) {
+								console.log("Converting " + elem.href + " to " + resolvedURL[1])
+								elem.href = resolvedURL[1]
+							}
+						})
 					}
 					else {
-						overview_modal_text.innerHTML = "This overview (" + overviewName + ") is not available. This is likely due to a data entry error"
+						overview_modal_text.innerHTML = "This overview (" + overviewName + ") is not available. This is likely due to a data entry error. (Make sure the overview is a Google Doc and the name is correct)."
 					}
 				}
 				catch(e) {

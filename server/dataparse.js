@@ -81,13 +81,13 @@ async function writeToDisk(data, id) {
             if (file.mimeType === "application/vnd.google-apps.folder") {
                 promises.push(getFilesInFolder(file.id, output, promises, false))
             }
-			//Google Docs supports other formats, including Word and OpenOffice.
-            //else if (file.mimeType === "application/vnd.google-apps.document") {
+			//Exports only support Google Docs
+            else if (file.mimeType === "application/vnd.google-apps.document") {
                 output.push(file)
-            //}
-            //else {
-              //  console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
-            //}
+            }
+            else {
+            	console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
+            }
         }
         if (wasFirst) {await Promise.all(promises)}
         return output
