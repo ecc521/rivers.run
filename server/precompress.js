@@ -16,7 +16,7 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 	let compressor = child_process.fork(path.join(__dirname, "brotliCompress.js"), args, {stdio: "pipe"})
 
 	os.setPriority(compressor.pid, priority)
-
+	
 	if (input instanceof stream) {
 		input.pipe(compressor.stdin)
 	}
@@ -24,6 +24,8 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 		compressor.stdin.write(input)
 		compressor.stdin.end()
 	}
+	
+	//Make sure that these processes are closed.
 
 	compressor.stderr.on("data", function(data) {
 		throw data.toString()

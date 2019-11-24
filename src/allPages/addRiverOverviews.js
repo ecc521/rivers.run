@@ -114,6 +114,9 @@ try {
 						//iframe.sandbox = ""
 						//iframe.srcdoc = text
 						//overview_modal_text.appendChild(iframe)
+						
+						//Not all pages have a CSP, so to make stuff the same on all pages, delete the styling.
+						text = text.replace(/style=".*?"/g, "").replace(/<style>.*?<\/style>/g, "")
 						overview_modal_text.innerHTML += text
 					}
 					else {
