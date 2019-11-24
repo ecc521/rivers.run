@@ -5,7 +5,7 @@ gaugeReadings
 public_key
 riverdata.json
 flowdata2.json
-overviews.json
+overviews
 *.log
 *.br
 *.BIN

@@ -10,8 +10,9 @@ const googlecloudrequestrate = 10;
 const API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
 
 
-function urlcreate(File_ID) {
-    return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=text%2Fplain&key=' + API_KEY
+function urlcreate(File_ID, mime="text/plain") {
+	mime = encodeURIComponent(mime)
+    return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=' + mime + '&key=' + API_KEY
 }
 
 function wait(ms) {
@@ -42,8 +43,9 @@ async function load(url, attempts = 0) {
     }
 }
 
-async function loadFromDisk(id, lastModified = 0) {
-    let filename = path.join(utils.getDataDirectory(), "drivecache", id)
+async function loadFromDisk(id, lastModified = 0, mime="text/plain") {
+	mime = mime.split("/").join("_")
+    let filename = path.join(utils.getDataDirectory(), "drivecache", mime, id)
     //Add 5 minutes because it takes some time to download - so a file may be written to disk a minute or so after it is downloaded.
     //This is overly cautious - a freak scenario is required, and it should only be a few seconds for this to happen.
     if (fs.existsSync(filename) && fs.statSync(filename).mtime.getTime() > new Date(lastModified).getTime()+1000*60*5) {
@@ -52,8 +54,9 @@ async function loadFromDisk(id, lastModified = 0) {
     else {return false} //The cache is old.
 }
 
-async function writeToDisk(data, id) {
-    let directory = path.join(utils.getDataDirectory(), "drivecache")
+async function writeToDisk(data, id, mime="text/plain") {
+	mime = mime.split("/").join("_")
+    let directory = path.join(utils.getDataDirectory(), "drivecache", mime)
     if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
     let filename = path.join(directory, id)
     //Avoid unneeded writes to the disk - although this may be done already.
@@ -95,12 +98,48 @@ async function writeToDisk(data, id) {
 
 
 
+function loadFiles(files, mime) {
+
+	let complete = []
+	let failed = []
+	
+    async function loadText(file, mime="text/plain") {
+        try {
+            let request;
+            request = await loadFromDisk(file.id, file.modifiedTime, mime) //Load file from disk if it is cached, and hasn't been modified
+            if (!request) {
+                request = await load(urlcreate(file.id, mime))
+                request = await request.text()
+                await writeToDisk(request, file.id, mime)
+            }
+            complete.push({id: file.id, request, name:file.name})
+            process.stdout.write("\r\033[2K") //Clear current line
+            process.stdout.write(complete.length + " of " + files.length + " items have now been loaded successfully!")
+        }
+        catch(e) {
+            console.error(e)
+            failed.push({id: file.id, request, name:file.name})
+            console.warn("Requesting the file with a fild id of " + file.id + " failed. The response is below")
+            console.warn(request)
+        }
+    }
+	
+	let promises = []
+    for (let i=0;i<files.length;i++) {
+        promises.push(loadText(files[i], mime))
+    }
+	
+	return {promises, complete, failed}
+}
+
+
+
 async function loadOverviews() {
-	console.log("Creating overviews.json")
+	console.log("Loading overviews")
 	let overviewsFolder = "1U3S5oxwqtnKJrIy7iDChmak2hvjekBBr"
 	let files = await getFilesInFolder(overviewsFolder)
 	
-	let overviews = {}
+	/*let overviews = {}
 	files.forEach((file) => {
 		let name = file.name.trim()
 		//Trim off extensions.
@@ -108,8 +147,38 @@ async function loadOverviews() {
 		if (overviews[name]) {console.warn("Multiple writups had the same name of " + name + ". ")}
 		overviews[name] = file.id
 	})
-    await fs.promises.writeFile(path.join(utils.getSiteRoot(), "overviews.json"), JSON.stringify(overviews))
-	console.log("overviews.json generated")
+    await fs.promises.writeFile(path.join(utils.getSiteRoot(), "overviews.json"), JSON.stringify(overviews))*/
+	
+    let directory = path.join(utils.getSiteRoot(), "overviews")
+    if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
+	
+	let result = loadFiles(files, "text/html")
+	await Promise.allSettled(result.promises)
+
+	console.log("")
+	
+    for (let i=0;i<result.failed.length;i++) {
+        console.error("Loading of file with file id of " + result.failed[i] + " failed.")
+    }
+	
+	for (let i=0;i<result.complete.length;i++) {
+		let item = result.complete[i]
+		
+		//Remove slashes from paths.
+		item.name = item.name.trim().split("/").join("_")
+		
+		//Add edit this river link.
+		let output = `<a href="https://docs.google.com/document/d/${item.id}" target="_blank">Edit this Overview</a><br><br>` + item.request
+		
+		//Resolve Google Open Redirect URLs
+		output = output.replace(/(?:https:\/\/www.google.com\/url\?q=)(.+?)(?:&[^"']+)/g, function(matchedString, group1) {
+			return decodeURIComponent(group1)		
+		})
+		
+		await fs.promises.writeFile(path.join(directory, item.name), output)
+	}
+	//TODO: Overviews should be served from a seperate domain so that they couldn't execute scripts, even if opened directly.
+	console.log("Overviews loaded successfully")
 }
 
 
@@ -124,56 +193,26 @@ async function loadOverviews() {
 
     await wait(1000) //Let quota refresh
 
-    globalThis.complete = []
-    globalThis.failed = []
-
-    //TODO: Use modifiedTime to avoid loading some files.
-
-    async function loadText(file) {
-        try {
-            let request;
-            request = await loadFromDisk(file.id, file.modifiedTime)
-            if (!request) {
-                request = await load(urlcreate(file.id))
-                request = await request.text()
-                await wait(1000/googlecloudrequestrate)
-                await writeToDisk(request, file.id)
-            }
-            complete.push({id: file.id, request})
-            process.stdout.write("\r\033[2K") //Clear current line
-            process.stdout.write(complete.length + " of " + files.length + " items have now been loaded successfully!")
-        }
-        catch(e) {
-            console.error(e)
-            failed.push({id: file.id, request})
-            console.warn("Requesting the file with a fild id of " + file.id + " failed. The response is below")
-            console.warn(request)
-        }
-    }
-
     console.log("Loading Rivers...")
 
-    let promises = []
-    for (let i=0;i<files.length;i++) {
-        promises.push(loadText(files[i]))
-    }
+    let result = loadFiles(files, "text/plain")
 
-    await Promise.all(promises)
+    await Promise.allSettled(result.promises)
 
-    process.stdout.write("\n") //Make sure the next statement starts on a new line.
+    console.log("") //Make sure the next statement starts on a new line.
 
-    for (let i=0;i<failed.length;i++) {
-        console.error("Loading of file with file id of " + failed[i] + " failed.")
+    for (let i=0;i<result.failed.length;i++) {
+        console.error("Loading of file with file id of " + result.failed[i] + " failed.")
     }
 
     console.log("Finished Loading Rivers...")
 
     let allowed = ["name","section","skill","rating","writeup","tags","state","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","averagegradient","maxgradient","class"] //Property values to be included in output file
 
-    for (let i=0;i<complete.length;i++) {
-        let item = complete[i].request.split("\n")
+    for (let i=0;i<result.complete.length;i++) {
+        let item = result.complete[i].request.split("\n")
         let obj = {}
-        obj.id = complete[i].id
+        obj.id = result.complete[i].id
         for (let i=0;i<item.length;i++) {
             let prop = item[i]
             let name = prop.slice(0,prop.indexOf(":")).trim().toLowerCase()
@@ -194,19 +233,19 @@ async function loadOverviews() {
         })
 
         //console.log(complete[i].id + ": " + obj.name + " " + obj.section)
-        complete[i] = obj
+        result.complete[i] = obj
     }
 
     allowed.forEach((name) => {
-        console.log("There are " + complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
+        console.log("There are " + result.complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
     })
 
 	if (process.argv[2] !== "--nogauges") {
 		console.log("Adding gauge sites")
-		complete = complete.concat(await getGaugeSites.getSites())
-		console.log("There are now " + complete.length + " rivers.")
+		result.complete = result.complete.concat(await getGaugeSites.getSites())
+		console.log("There are now " + result.complete.length + " rivers.")
 	}
 
-    await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(complete))
+    await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(result.complete))
 	console.log("riverdata.json generated")
 }())

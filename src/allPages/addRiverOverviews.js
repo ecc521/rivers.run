@@ -23,7 +23,7 @@ try {
 	padding: 20px;
 	border: 1px solid #888;
 	width: 90%;
-	margin-bottom:100px;
+	margin-bottom:20px;
 	margin-top:60px;
 	}`,styleSheet.cssRules.length)
 
@@ -91,51 +91,34 @@ try {
 	        async function openOverview() {
 	            overview_modal.style.display = "block"
 				try {
-					if (!window.overviews) {
-						overview_modal_text.innerHTML = "Loading list of overviews. This should only take a few seconds. "
-						let request = await fetch(window.root + "overviews.json")
-						window.overviews = await request.json()
-					}
+					let overviewName = this.innerText.trim().split("/").join("_")
 
-					let overviewName = this.innerText.trim()
-
-					if (window.overviews && window.overviews[overviewName]) {
-						overview_modal_text.innerHTML = "Loading " + overviewName + " overview... Please wait..."
-						let File_ID = window.overviews[overviewName]
-						const API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
-						let mimeType = "text%2Fhtml" //"text%2Fplain"
-						let request = await fetch('https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=' + mimeType + '&key=' + API_KEY)
-						let text = await request.text()
-						overview_modal_text.innerHTML = "<a href=\"https://docs.google.com/document/d/" + File_ID + "\" target=\"_blank\">Edit this Overview</a><br><br>"
-						//TODO: HTML uses some inline style that is blocked by CSP on main page, even in an iframe. This should be fixed.
-						//We need to make sure that dark mode text coloring is preserved though. 
-						//Note: iframe code not finished yet, because the CSP is blocking the styles. 
-						//let iframe = document.createElement("iframe")
-						//iframe.sandbox = ""
-						//iframe.srcdoc = text
-						//overview_modal_text.appendChild(iframe)
-						
-						//Not all pages have a CSP, so to make stuff the same on all pages, delete the styling.
-						text = text.replace(/style=".*?"/g, "").replace(/<style>.*?<\/style>/g, "")
-						overview_modal_text.innerHTML += text
-						//Make sure all links open in a new tab
-						overview_modal_text.querySelectorAll("a").forEach((elem) => {
+					overview_modal_text.innerHTML = ""
+					
+					let iframe = document.createElement("iframe")
+					iframe.src = window.root + "overviews/" + overviewName
+					iframe.style.width = "100%"
+					iframe.style.height = "75vh"
+					iframe.style.border = "none"
+					//TODO: Should we use invert(1) to invert everything? Need to make sure we don't hit images.
+					iframe.sandbox = "allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+					
+					iframe.addEventListener("load", function() {
+						//Remove Google Docs maxWidth and padding
+						iframe.contentDocument.body.style.maxWidth = ""
+						iframe.contentDocument.body.style.padding = ""
+						iframe.contentDocument.body.querySelectorAll("a").forEach((elem) => {
 							elem.target = "_blank"
-							//Undo Google Open Redirect
-							let regexp = /(?:https:\/\/www.google.com\/url\?q=)(.+?)(?:&)/ //Yuck...
-							let resolvedURL = regexp.exec(decodeURIComponent(elem.href)) //Use decodeURIComponent to handle things like hash links.
-							if (resolvedURL) {
-								console.log("Converting " + elem.href + " to " + resolvedURL[1])
-								elem.href = resolvedURL[1]
-							}
 						})
-					}
-					else {
-						overview_modal_text.innerHTML = "This overview (" + overviewName + ") is not available. This is likely due to a data entry error. (Make sure the overview is a Google Doc and the name is correct)."
-					}
+					})
+					
+
+					overview_modal_text.appendChild(iframe)
 				}
 				catch(e) {
 					console.error(e)
+					//TODO: Handle 404 errors with the next below.
+					//overview_modal_text.innerHTML = "This overview (" + overviewName + ") is not available. This is likely due to a data entry error. (Make sure the overview is a Google Doc and the name is correct)."
 					overview_modal_text.innerHTML = "Something went horribly wrong. You may want to check your internet connection. \n\n" + e
 				}
 	        }
