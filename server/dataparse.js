@@ -138,17 +138,7 @@ async function loadOverviews() {
 	console.log("Loading overviews")
 	let overviewsFolder = "1U3S5oxwqtnKJrIy7iDChmak2hvjekBBr"
 	let files = await getFilesInFolder(overviewsFolder)
-	
-	/*let overviews = {}
-	files.forEach((file) => {
-		let name = file.name.trim()
-		//Trim off extensions.
-		name = name.match(/[^.]+/)[0]
-		if (overviews[name]) {console.warn("Multiple writups had the same name of " + name + ". ")}
-		overviews[name] = file.id
-	})
-    await fs.promises.writeFile(path.join(utils.getSiteRoot(), "overviews.json"), JSON.stringify(overviews))*/
-	
+
     let directory = path.join(utils.getSiteRoot(), "overviews")
     if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
 	
@@ -177,7 +167,7 @@ async function loadOverviews() {
 		
 		await fs.promises.writeFile(path.join(directory, item.name), output)
 	}
-	//TODO: Overviews should be served from a seperate domain so that they couldn't execute scripts, even if opened directly.
+	//TODO: Overviews should be served from a seperate domain so that they couldn't modify the site context, even if opened in a new tab.
 	console.log("Overviews loaded successfully")
 }
 

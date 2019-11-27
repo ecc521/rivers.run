@@ -24,11 +24,11 @@ async function updateRiverData() {
 	})
 }
 
-//On reboot, and every 24 hours, run dataparse.js to keep the data on rivers.run current.
+//On reboot, and every 6 hours, run dataparse.js to keep the data on rivers.run current.
 let riverDataPromise;
 if (!process.argv.includes("--noriverdata")) {
 	riverDataPromise = updateRiverData()
-	setInterval(updateRiverData, 1000*60*60*24)
+	setInterval(updateRiverData, 1000*60*60*6)
 }
 
 //Some actions should be performed at installation, but there is no need to start the server.

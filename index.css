@@ -259,6 +259,10 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
     font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
 }
 
+#advanced-search-modal-close {
+    font-size: 28px !important; /*Set back to the default (the selector above would override)*/
+}
+
 #searchlink {
     word-break: break-all; /*Allow breaking the advanced search link so it doesn't widen the page.*/
 }

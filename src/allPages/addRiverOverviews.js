@@ -6,7 +6,6 @@ try {
 	display: none;
 	position:fixed;
 	z-index:100;
-	padding-top: 5%;
 	left:0;
 	top:0;
 	width:100%;
@@ -20,16 +19,17 @@ try {
 	color:black;
 	background-color: #fefefe;
 	margin: auto;
-	padding: 20px;
+	padding: 12px;
+	padding-top:0px;
+	padding-bottom: 0px;
 	border: 1px solid #888;
-	width: 90%;
-	margin-bottom:20px;
-	margin-top:60px;
+	width: 92%;
+	margin-top:50px;
 	}`,styleSheet.cssRules.length)
 
 	styleSheet.insertRule(`
 	.modal-close {
-	color: #aaaaaa;
+	color: #aaa;
 	float: right;
 	font-size: 28px;
 	font-weight: bold;
@@ -37,7 +37,7 @@ try {
 
 	styleSheet.insertRule(`
 	.modal-close:hover, .modal-close:focus {
-	color: #000;
+	color: #888;
 	text-decoration: none;
 	cursor: pointer;
 	}`,styleSheet.cssRules.length)
@@ -48,8 +48,8 @@ try {
 	background-color:black !important;
 	color:#cfcfcf !important;
 	`)
-
-
+	
+	
 	//Create the modal element
 	let overview_modal = document.createElement("div")
 	overview_modal.className = "modal"
@@ -90,37 +90,55 @@ try {
 
 	        async function openOverview() {
 	            overview_modal.style.display = "block"
-				try {
-					let overviewName = this.innerText.trim().split("/").join("_")
+				let overviewName = this.innerText.trim().split("/").join("_")
 
-					overview_modal_text.innerHTML = ""
+				overview_modal_text.innerHTML = ""
 					
-					let iframe = document.createElement("iframe")
-					iframe.src = window.root + "overviews/" + overviewName
-					iframe.style.width = "100%"
-					iframe.style.height = "75vh"
-					iframe.style.border = "none"
-					//TODO: Should we use invert(1) to invert everything? Need to make sure we don't hit images.
-					iframe.sandbox = "allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+				let iframe = document.createElement("iframe")
+				iframe.src = window.root + "overviews/" + overviewName
+				iframe.style.width = "100%"
+				iframe.style.height = "82vh"
+				iframe.style.border = "none"					
 					
-					iframe.addEventListener("load", function() {
-						//Remove Google Docs maxWidth and padding
-						iframe.contentDocument.body.style.maxWidth = ""
-						iframe.contentDocument.body.style.padding = ""
-						iframe.contentDocument.body.querySelectorAll("a").forEach((elem) => {
-							elem.target = "_blank"
-						})
+				iframe.sandbox = "allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+				
+				iframe.addEventListener("load", function() {
+					let doc = iframe.contentDocument
+					//Remove Google Docs maxWidth and padding
+					doc.body.style.maxWidth = ""
+					doc.body.style.padding = ""
+					doc.body.querySelectorAll("a").forEach((elem) => {
+						elem.target = "_blank"
 					})
 					
+					//Invert the Google Doc, excluding images (double invert = normal).
+					let darkModeInversionCSS = `
+					body {
+						background-color: black !important;
+						filter: invert(1) !important;
+					}
+					img {
+						filter: invert(1) !important;
+					}
+					`
+					
+					function setDarkMode() {
+						let toDelete = doc.querySelector("#darkModeInversionCSS")
+						if (toDelete) {toDelete.remove()}
+						if (window.darkMode) {
+							let elem = doc.createElement("style")
+							elem.innerHTML = darkModeInversionCSS
+							elem.id = "darkModeInversionCSS"
+							doc.body.appendChild(elem)
+						}
+					}
+					
+					setDarkMode()
+					window.addEventListener("colorSchemeChanged", setDarkMode)
+				})
+					
 
-					overview_modal_text.appendChild(iframe)
-				}
-				catch(e) {
-					console.error(e)
-					//TODO: Handle 404 errors with the next below.
-					//overview_modal_text.innerHTML = "This overview (" + overviewName + ") is not available. This is likely due to a data entry error. (Make sure the overview is a Google Doc and the name is correct)."
-					overview_modal_text.innerHTML = "Something went horribly wrong. You may want to check your internet connection. \n\n" + e
-				}
+				overview_modal_text.appendChild(iframe)
 	        }
 
 			let element = this

@@ -3,6 +3,7 @@
     <head>
         <!-- Secure page against user generated content -->
 		<!-- With style-src, 'unsafe-eval' allows for things like CSSStyleSheet.insertRule(), and other JavaScript methods. -->
+		<!-- TODO: Consider allowing image requests over all https connections-->
         <meta http-equiv="Content-Security-Policy" content="
                                                             default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:*;
                                                             connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://docs.google.com https://www.googleapis.com;
