@@ -24,10 +24,11 @@
 
     <button class="accordion">How do I add a new river?</button>
     <div class="panel">
-        <p>If you would like to add a new river, please fill out the <a href="resources/writeupmaker.html" target="_blank">writeup maker</a> to the best of your ability,
-        then press the copy output to clipboard button, and send the output in an email to <a href="mailto:support@rivers.run" target="_blank" rel="noopener">support@rivers.run</a>.
-        <br>
-        If you would like access to add and edit rivers yourself, please email <a href="mailto:admin@rivers.run" target="_blank" rel="noopener">admin@rivers.run</a>.<br>
+        <p>If you would like to add a new river, please fill out the <a href="resources/writeupmaker.html" target="_blank">writeup maker</a> to the best of your ability, then press the button "Submit As New River Suggestion".
+		<br>
+		You can also email <a href="mailto:support@rivers.run" target="_blank" rel="noopener">support@rivers.run</a> telling us about the river you would like to be added.
+		<br><br>
+        If you would like permission to edit directly, approve edits, add rivers, and confirm river additions, please email <a href="mailto:admin@rivers.run" target="_blank" rel="noopener">admin@rivers.run</a>.<br>
         If you are already an editor, follow the directions <a href="https://docs.google.com/document/d/1tk0O3W7lAdzLmUsy4n-iaqJokA25nmmHL_16-oHZdKE/edit" target="blank" rel="noopener">here</a>.
     </p>
     </div>
@@ -35,10 +36,9 @@
     <button class="accordion">How do I improve an existing river?</button>
     <div class="panel">
         <p>
-            You can email <a href="mailto:support@rivers.run" target="_blank" rel="noopener">support@rivers.run</a> telling us what you would like to be changed.
+			All rivers and overviews have an "Edit this Overview/River" link that allows you to suggest changes. You can also email <a href="mailto:support@rivers.run" target="_blank" rel="noopener">support@rivers.run</a> telling us what you would like to be changed.
             <br>
-            If you would like access to add and edit rivers yourself, please email <a href="mailto:admin@rivers.run" target="_blank" rel="noopener">admin@rivers.run</a>.<br>
-            If you are already an editor, follow the directions <a href="https://docs.google.com/document/d/1tk0O3W7lAdzLmUsy4n-iaqJokA25nmmHL_16-oHZdKE/edit" target="blank" rel="noopener">here</a>.
+            If you would like permission to edit directly, approve edits, add rivers, and confirm river additions, please email <a href="mailto:admin@rivers.run" target="_blank" rel="noopener">admin@rivers.run</a>.<br>
         </p>
     </div>
 
@@ -161,7 +161,7 @@
 
     <button class="accordion">How do I link to a specific search?</button>
     <div class="panel">
-        <p>Do your search - the search url will be in both the url bar (javascript tricks!) and at the bottom of the advanced search menu.</p>
+        <p>Do your search - the search url will be in both the url bar (javascript trickery...) and at the bottom of the advanced search menu.</p>
     </div>
 
     <script>
@@ -182,6 +182,7 @@
 		
 		//Add metadata - TODO: Consider adding metadata only for web crawlers.
 		//This doesn't appear to be working. Google claims that all question and answer text ust be visible though, so that may be what is doing it.
+		//It is also possible that metadata is looked for before running javascript. 
 		let dataelem = document.createElement("script")
 		dataelem.type = "application/ld+json"
 		

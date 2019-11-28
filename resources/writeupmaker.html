@@ -1,14 +1,16 @@
 <p>Your progress in creating this writeup is automatically saved. It will be available the next time this page is loaded, unless one of the following occours:<br>
 1. localStorage is cleared. Browsers may do this if you click "clear cache" or "clear cookies and other side data".<br>
 2. Multiple tabs of this page open at once - The tabs will overwrite each other.</p>
-<br><br>
+<br>
+<button onclick="clearAllFields()">Clear All Fields</button>
 
-<p>The 3 Fields below this may not apply to all rivers. Don't worry. You can leave them blank.</p>
+<p>Gauge Information (Strongly Reccomended)</p>
 <input id="usgs" type="text" placeholder="USGS Gauge Number"  style="width:100%">
 <br>
-<input id="relatedusgs" type="text" placeholder="Related USGS Gauges (comma seperated list)"  style="width:100%">
+<input id="relatedusgs" type="text" placeholder="Other Related USGS Gauges (comma seperated list)"  style="width:100%">
 <br>
-<p>You <strong>MUST</strong> put either ft, feet, or cfs after the value (ex. 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet).</p>
+<p>Relative Water Levels (Reccomended)</p>
+<p>Units are required (ft, feet, or cfs). Examples: 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet</p>
 <input id="minrun" type="text" placeholder="Minimum runnable water level"  style="width:100%">
 <br>
 <input id="maxrun" type="text" placeholder="Maximum runnable water level"  style="width:100%">
@@ -19,7 +21,8 @@
 <br>
 <input id="highflow" type="text" placeholder="High Water"  style="width:100%">
 <br>
-<p>Rivers.run should work with most coordinate formats.</p>
+<p>GPS Coordinates (Reccomended):</p>
+<p>Note: Rivers.run should work with most coordinate formats. If you encounter an issue with one of them, please email <a href="support@rivers.run">support@rivers.run</a></p>
 <input id="plat" type="text" placeholder="Put-in GPS Latitude"  style="width:100%">
 <br>
 <input id="plon" type="text" placeholder="Put-in GPS Longitude"  style="width:100%">
@@ -28,18 +31,17 @@
 <br>
 <input id="tlon" type="text" placeholder="Take-out GPS Longitude"  style="width:100%">
 <br>
-<p><strong>IF YOU DID NOT INPUT PUT-IN OR TAKEOUT GPS:</strong></p>
+<p>Approxtimate Coordinates (Optional, Will NOT be shown to user)</p>
+<p>If you did not specify put-in or take-out coordinates, these coordinates will be used for geolocation searching</p>
 <input id="hidlat" type="text" placeholder="Approxtimate GPS Longitude"  style="width:100%">
 <input id="hidlon" type="text" placeholder="Approxtimate GPS Longitude"  style="width:100%">
-<p>GPS coordinites that you input in the 2 boxes above will not be shown to the user, however will be used in GPS sorting.</p>
-<br><br>
+<br>
+<p>American Whitewater River Number (Optional)</p>
 <input id="aw" type="text" placeholder="AW River Number"  style="width:100%">
-<br>
-<p>If the river has a dam, fill in the field below. <br>
-If you type in a link, a link with the text "This river has a dam, View Information" will be put at the top of the writeup.<br>
-You can type "true" in this field to prevent that link from showing up. This allows you to further customize the link in the writeup (ex. "Santeelah Dam Release Schedule"), or not provide a link at all.</p>
-<input id="dam" type="text" placeholder="Dam Information" style="width:100%">
-<br>
+<br><br>
+This river has dam releases <input id="dam" type="checkbox">
+<br><br>
+<p>Tags (used by search tools)</p>
 <input id="tags" type="text" placeholder="Input Tags Here, seperated by commas"  style="width:100%">
 <br>
 <p>Tag Examples: CCCWOR, Ice-Cream, Monacacy, NC, PA, TN, CA, MI, WV, ext.
@@ -100,19 +102,50 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 </script>
 <br><br>
 
-
+<style>
+	
+	input {
+		padding-left: 5px;
+	}
+	
+	@media (prefers-color-scheme: dark) {
+		html, body {
+			background-color: black;
+			color: white;
+		}
+		
+		input {
+			background-color:black;
+			color: white;
+			border: 1px solid #777;
+		}
+		
+		input::placeholder {
+			color: #cccccc;
+		}
+		
+		#Output {
+			filter: invert(1);
+		}	
+		
+		.ql-toolbar {
+			background-color: white;
+			filter: invert(1);
+		}
+	}
+	
+</style>
 
 <!-- Quill can misbehave. Add a button to reset it.-->
-<input type="button" value="Clear Writeup" onclick="if (confirm('Are you sure you want to clear the writeup?')) {quill.root.innerHTML = '';UpdateWriteup()}">
+<button onclick="if (confirm('Are you sure you want to clear the writeup?')) {quill.root.innerHTML = '';UpdateWriteup()}">Clear Writeup</button>
 <div id="editor-container" style="height: fit-content; max-height:80vh; min-height:150px;"></div>
 <br>
 
 
 
 <br><br><br>
-<input type="button" value="Copy Output To Clipboard" onclick="copyStringToClipboard()">
-<input type="button" value="Clear All Fields" onclick="clearAllFields()">
-<textarea id="Output" readonly="" placeholder="Output Will Appear Here. Copy and Paste it into the Google Doc."rows = "25" style="width:100%"></textarea>
+<button onclick="copyStringToClipboard()">Copy Output To Clipboard</button><button onclick="submitAsNewRiver()">Submit As New River Suggestion</button><a href="https://drive.google.com/drive/u/0/folders/1yq4C_4aG_7E18nAxYofLbKHmnZFI-0R_" target="_blank"> Open Review Queue</a>
+<textarea id="Output" readonly="" placeholder="Output Will Appear Here."rows = "25" style="width:100%"></textarea>
 <br>
 
 
@@ -194,7 +227,6 @@ for (let stateCode in states) {
 	datalist.appendChild(option)
 }
 	
-	
 
 var List = ["name","section","skill","rating","writeup","tags","state","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","class","averagegradient","maxgradient","length"]
 
@@ -202,8 +234,14 @@ List.forEach(function(value){
   console.log(value)
   console.log(document.getElementById(value))
   if (value !== "writeup") {
-      document.getElementById(value).value = localStorage.getItem(value)
-      document.getElementById(value).addEventListener("keyup", UpdateWriteup)
+	  let elem = document.getElementById(value)
+	  if (elem.type === "checkbox") {
+	  	elem.checked = (localStorage.getItem(value) === "true")
+	  }
+	  else {
+      	elem.value = localStorage.getItem(value)
+	  }
+      elem.addEventListener("keyup", UpdateWriteup)
   }
   else {
       //Start quill off with stored value.
@@ -220,20 +258,9 @@ function clearAllFields() {
     }
 }
 
-function UpdateWriteup() {
-
-    List.forEach(function(value){
-        if (value !== "writeup") {
-            localStorage.setItem(value, document.getElementById(value).value.trim())
-        }
-        else {
-            //Save quill to localStorage
-            localStorage.setItem(value, quill.root.innerHTML)
-        }
-    })
-
+	
+function getOutputText() {
     var Text = ""
-    var EndText = ""
     List.forEach(function(value, index){
       if (value === "writeup") {
           Text += "\n" + value + ": " + quill.root.innerHTML
@@ -249,11 +276,79 @@ function UpdateWriteup() {
           Text += "\n" + value + ": " + document.getElementById(value).value.trim()
       }
     })
+	return Text.trim()
+}
+	
+function UpdateWriteup() {
 
-    document.getElementById("Output").value = Text.trim()
+    List.forEach(function(value){
+        if (value !== "writeup") {
+			let elem = document.getElementById(value)
+			let text;
+			
+			if (elem.type === "checkbox") {
+				text = elem.checked
+			}
+			else {
+				text = elem.value.trim()			
+			}
+			
+            localStorage.setItem(value, text)
+        }
+        else {
+            //Save quill to localStorage
+            localStorage.setItem(value, quill.root.innerHTML)
+        }
+    })
+
+
+    document.getElementById("Output").value = getOutputText()
 }
 UpdateWriteup()
 //Initial update
+	
+	
+	
+function submitAsNewRiver() {
+	 let url = "https://script.google.com/macros/s/AKfycbxhxpImVHh-UBAlVOGppV4wYRVtO4ldLHn_q128vckXshCl6B8/exec"
+	 let type = "river"
+	 let name = prompt("What would you like the file name for this section to be? ")
+	 let editors = prompt("Optional: Enter email addresses that you would like to give edit access to this file. (comma seperated list)")
+	 
+	 console.log(name)
+	 console.log(editors)
+	
+	let nonce = Math.round(Math.random() * (2**30))
+	
+	let requestURL = url + "?type=" + type + "&name=" + name + "&nonce=" + nonce + (editors?("&editors=" + editors):"")
+	console.log(requestURL) 
+	
+	 let request = fetch(requestURL, {
+		method: "POST",
+		 body: getOutputText(),
+		 mode: "no-cors"
+	 })
+	 
+	 alert("We are attempting to submit your river. You should receive an alert in about 10 seconds if it succeeds. ")
+
+	;(async function() {
+		let response = await request
+		let result = await response.text()
+		console.log(result)
+		const API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+		let checkReq = await fetch("https://www.googleapis.com/drive/v3/files/16sAPFOmyzg5Ds-oHdt9Ra5LKmhjXNC6Q0_2WMBXaCtU/export?mimeType=text/plain&key=" + API_KEY, {cache: "no-store"})
+		let checkResp = await checkReq.text()
+		console.log(checkResp)
+		console.log(name + nonce)
+		if (checkResp === (name + nonce)) {
+			alert("Your river has been successfully submitted. ")
+		}
+		else {
+			alert("Submission appears to have failed. Please try again. (you can confirm that it failed or succeeded by clicking on 'Open Review Queue')")
+		}
+	 }())
+}
+	
 </script>
 
 <script src="../packages/allPages.js"></script>

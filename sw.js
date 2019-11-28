@@ -88,11 +88,10 @@ function fetchHandler(event) {
 
 		let fromnetwork = fetch(event.request)
 
-		if (url.includes("docs.google.com") || (url.includes("googleapis.com") && url.includes("?alt=media")) || url.includes("salmon2019") || url.includes("ip2location") || url.includes("node") || url.includes("gaugeReadings")) {
+		if (url.includes("docs.google.com") || url.includes("googleapis.com") || url.includes("salmon2019") || url.includes("ip2location") || url.includes("node") || url.includes("gaugeReadings")) {
 			//Don't cache fileshare or ip2location.
             //Avoid filling up cache with opaque responses from docs.google.com
             //Avoid caching some responses from googleapis.com - we want the network response for writeupmaker.html (though we may want to temporarily cache images)
-			//Area overviews do come from googleapis.com though.
 			return fromnetwork
 		}
 

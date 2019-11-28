@@ -31,9 +31,7 @@ if (!process.argv.includes("--noriverdata")) {
 	setInterval(updateRiverData, 1000*60*60*6)
 }
 
-//Some actions should be performed at installation, but there is no need to start the server.
-//Although I used to always start the server, an error in server.listen because of the port already being uesd
-//lead to the entire program being terminated.
+//Some actions should be performed at installation, but there is no need to start the server (and starting the server can lead to port errors).
 let notificationServer = require(path.join(__dirname, "notificationserver.js")) //On reboot, run notificationserver.js
 if (!process.argv.includes("--install")) {notificationServer()}
 
