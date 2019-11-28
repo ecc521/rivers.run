@@ -4,6 +4,53 @@
 <br>
 <button onclick="clearAllFields()">Clear All Fields</button>
 
+<p>Basic River Information</p>
+<input id="name" type="text" placeholder="River Name (Required)"  style="width:100%">
+<br>
+<input id="section" placeholder="Section Name (Required)" type="text"  style="width:100%">
+<br>
+<select id="skill" onchange="UpdateWriteup()">
+  <option value="" selected>Skill (Required)</option>
+  <option value="FW">Flat Water</option>
+  <option value="B">Beginner</option>
+  <option value="N">Novice</option>
+  <option value="N+">Novice Plus</option>
+  <option value="LI-">Low-Intermediate Minus</option>
+  <option value="LI">Low-Intermediate</option>
+  <option value="LI+">Low-Intermediate Plus</option>
+  <option value="I-">Intermediate Minus</option>
+  <option value="I">Intermediate</option>
+  <option value="I+">Intermediate Plus</option>
+  <option value="HI-">High-Intermediate Minus</option>
+  <option value="HI">High-Intermediate</option>
+  <option value="HI+">High-Intermediate Plus</option>
+  <option value="A-">Advanced Minus</option>
+  <option value="A">Advanced</option>
+  <option value="A+">Advanced Plus</option>
+  <option value="E-">Expert Minus</option>
+  <option value="E">Expert</option>
+  <option value="E+">Expert Plus</option>
+</select>
+<br>
+<input id="class" placeholder="Class (Optional)" type="text"  style="width:100%">
+<br>
+<input id="state" placeholder="State (Required if no GPS coordinates provided)" type="text"  style="width:100%" list="stateOptions">
+<datalist id="stateOptions"></datalist>
+<br>
+<select id="rating" onchange="UpdateWriteup()">
+  <option selected value="">Rating (Optional)</option>
+</select>
+
+<p>More Section Statistics (Optional)</p>
+This river has dam releases <input id="dam" type="checkbox">
+<br>
+<input id="length" placeholder="Length of Section (Currently not used)" type="text"  style="width:100%">
+<br>
+<input id="averagegradient" type="text" placeholder="Average gradient (feet per mile)"  style="width:100%">
+<br>
+<input id="maxgradient" type="text" placeholder="Maximum gradient (feet per mile)"  style="width:100%">
+<br>
+
 <p>Gauge Information (Strongly Reccomended)</p>
 <input id="usgs" type="text" placeholder="USGS Gauge Number"  style="width:100%">
 <br>
@@ -38,57 +85,18 @@
 <br>
 <p>American Whitewater River Number (Optional)</p>
 <input id="aw" type="text" placeholder="AW River Number"  style="width:100%">
-<br><br>
-This river has dam releases <input id="dam" type="checkbox">
-<br><br>
-<p>Tags (used by search tools)</p>
+<br>
+<p>Tags (Optional, used by search tools)</p>
 <input id="tags" type="text" placeholder="Input Tags Here, seperated by commas"  style="width:100%">
 <br>
 <p>Tag Examples: CCCWOR, Ice-Cream, Monacacy, NC, PA, TN, CA, MI, WV, ext.
 <br>
 Put C1 after the tag if you can get to the river within an hour from that area (ex. CCCWORC1), put C if you can get to the river in 1-2 hours from that area (ex. CCCWORC), and put nothing if it takes 2+ hours (ex. CCCWOR). Do not put the tag if it is unreasonable to paddle the river from the area.</p>
 <br>
-<input id="name" type="text" placeholder="River Name"  style="width:100%">
+
+<p>Comments (Optional. Not shown on site, but visible to all editors. )</p>
+<input id="comments" type="text" placeholder="Comments about this writeup"  style="width:100%">
 <br>
-<input id="section" placeholder="Section Name" type="text"  style="width:100%">
-<br>
-<select id="skill" onchange="UpdateWriteup()">
-  <option value="" selected>Skill</option>
-  <option value="FW">Flat Water</option>
-  <option value="B">Beginner</option>
-  <option value="N">Novice</option>
-  <option value="N+">Novice Plus</option>
-  <option value="LI-">Low-Intermediate Minus</option>
-  <option value="LI">Low-Intermediate</option>
-  <option value="LI+">Low-Intermediate Plus</option>
-  <option value="I-">Intermediate Minus</option>
-  <option value="I">Intermediate</option>
-  <option value="I+">Intermediate Plus</option>
-  <option value="HI-">High-Intermediate Minus</option>
-  <option value="HI">High-Intermediate</option>
-  <option value="HI+">High-Intermediate Plus</option>
-  <option value="A-">Advanced Minus</option>
-  <option value="A">Advanced</option>
-  <option value="A+">Advanced Plus</option>
-  <option value="E-">Expert Minus</option>
-  <option value="E">Expert</option>
-  <option value="E+">Expert Plus</option>
-</select>
-<br>
-<input id="class" placeholder="Class" type="text"  style="width:100%">
-<br>
-<input id="state" placeholder="State" type="text"  style="width:100%" list="stateOptions">
-<datalist id="stateOptions"></datalist>
-<br>
-<input id="length" placeholder="Length of Section (Currently not used)" type="text"  style="width:100%">
-<br>
-<input id="averagegradient" type="text" placeholder="Average gradient (feet per mile)"  style="width:100%">
-<br>
-<input id="maxgradient" type="text" placeholder="Maximum gradient (feet per mile)"  style="width:100%">
-<br>
-<select id="rating" onchange="UpdateWriteup()">
-  <option selected value="">Rating</option>
-</select>
 
 <script>
 	var rating = document.getElementById("rating")
@@ -145,7 +153,7 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 
 <br><br><br>
 <button onclick="copyStringToClipboard()">Copy Output To Clipboard</button><button onclick="submitAsNewRiver()">Submit As New River Suggestion</button><a href="https://drive.google.com/drive/u/0/folders/1yq4C_4aG_7E18nAxYofLbKHmnZFI-0R_" target="_blank"> Open Review Queue</a>
-<textarea id="Output" readonly="" placeholder="Output Will Appear Here."rows = "25" style="width:100%"></textarea>
+<textarea id="Output" readonly="" placeholder="Output Will Appear Here."rows = "50" style="width:100%"></textarea>
 <br>
 
 
@@ -228,7 +236,7 @@ for (let stateCode in states) {
 }
 	
 
-var List = ["name","section","skill","rating","writeup","tags","state","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","class","averagegradient","maxgradient","length"]
+var List = ["name","section","skill","rating","writeup","tags","state","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","class","averagegradient","maxgradient","length", "comments"]
 
 List.forEach(function(value){
   console.log(value)

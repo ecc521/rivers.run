@@ -67,7 +67,7 @@ echo "Google Cloud Compute Engine: https://badlywired.com/2016/08/15/adding-swap
 echo "Run crontab -e (may need sudo). Add the following lines:"
 echo "@reboot node $HOME/rivers.run/server/usgscache.js >> $HOME/rivers.run/server/logs/usgscache.log"
 echo "*/15 * * * * node $HOME/rivers.run/server/restartServer.js >> $HOME/rivers.run/server/logs/restartServer.log"
-echo "0 4   *   *   *    /sbin/shutdown -r"
+echo "0 4   *   *   *    sudo reboot"
 echo "@reboot sudo certbot renew  >> $HOME/rivers.run/server/logs/updateCertificate.log"
 
 echo "\nExplaination: Run server on reboot. Run restartServer.js every 15 minutes. Reboot at 4am every day. Run certbot renew on each reboot."
