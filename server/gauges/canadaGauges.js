@@ -8,6 +8,7 @@ const siteDataParser = require(path.join(__dirname, "../", "siteDataParser.js"))
 
 let canadianGauges;
 
+//TODO: Instead of loading all gauges individually, load the file containing data for each region.
 async function loadCanadianGauge(gaugeID) {
 	//https://dd.weather.gc.ca/hydrometric/csv/
 

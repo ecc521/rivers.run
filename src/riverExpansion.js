@@ -181,8 +181,6 @@ function createExpansion(button, river) {
                     console.log("No flow data for " + usgsID + ". Trying to load from network (may not exist though). ");
                 }
 
-                //TODO: Along with the comprehinsive data, we should include the source links (gauge.source.link and gauge.source.text)
-                //TODO: Update river.flow and the oldDataWarnings along with this (the data could still be old, so removing it doesn't work).
                 //Fetch comprehensive flow data, then update the graphs.
                 //TODO: Add XMLHttpRequest fallback.
                 if (!usgsarray[usgsID] || !usgsarray[usgsID].full) {

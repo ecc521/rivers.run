@@ -52,9 +52,16 @@ This river has dam releases <input id="dam" type="checkbox">
 <br>
 
 <p>Gauge Information (Strongly Reccomended)</p>
-<input id="usgs" type="text" placeholder="USGS Gauge Number"  style="width:100%">
+<p>The Gauge ID should be prefixed with the agency code. For example, type "USGS: 03192000" for <a href="https://waterdata.usgs.gov/nwis/uv?site_no=03192000" target="_blank">this</a> USGS gauge.</p>
+<p>Available agency codes:</p>
+<ul>
+    <li>USGS (United States Geological Survey)</li>
+    <li>NWS (National Weather Service)</li>
+    <li>canada (Meterological Service of Canada)</li>
+</ul>
+<input id="gauge" type="text" placeholder="Gauge ID"  style="width:100%">
 <br>
-<input id="relatedusgs" type="text" placeholder="Other Related USGS Gauges (comma seperated list)"  style="width:100%">
+<input id="relatedgaugess" type="text" placeholder="Other Related Gauges (comma seperated list)"  style="width:100%">
 <br>
 <p>Relative Water Levels (Reccomended)</p>
 <p>Units are required (ft, feet, or cfs). Examples: 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet</p>
@@ -111,37 +118,37 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <br><br>
 
 <style>
-	
+
 	input {
 		padding-left: 5px;
 	}
-	
+
 	@media (prefers-color-scheme: dark) {
 		html, body {
 			background-color: black;
 			color: white;
 		}
-		
+
 		input {
 			background-color:black;
 			color: white;
 			border: 1px solid #777;
 		}
-		
+
 		input::placeholder {
 			color: #cccccc;
 		}
-		
+
 		#Output {
 			filter: invert(1);
-		}	
-		
+		}
+
 		.ql-toolbar {
 			background-color: white;
 			filter: invert(1);
 		}
 	}
-	
+
 </style>
 
 <!-- Quill can misbehave. Add a button to reset it.-->
@@ -220,10 +227,10 @@ quill.getModule("toolbar").handlers.video = function imageHandler(value) {
         let File_ID = prompt("Please type in the File ID of the video in Google Drive. (To get the file id, click on the file, click the three dot menu in the top right hand corner, click open in new window. Copy out the section between /d/ and /view).")
         quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
 }
-	
-	
-	
-	
+
+
+
+
 let datalist = document.getElementById("stateOptions")
 
 let states = {"DE":"Delaware","DC":"District of Columbia","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming","AS":"American Samoa","GU":"Guam","MP":"Northern Mariana Islands","PR":"Puerto Rico","UM":"U.S. Minor Outlying Islands","VI":"U.S. Virgin Islands","AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut"}
@@ -234,9 +241,9 @@ for (let stateCode in states) {
 	option.innerHTML = states[stateCode]
 	datalist.appendChild(option)
 }
-	
 
-var List = ["name","section","skill","rating","writeup","tags","state","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","class","averagegradient","maxgradient","length", "comments"]
+
+var List = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgaugess","class","averagegradient","maxgradient","length", "comments"]
 
 List.forEach(function(value){
   console.log(value)
@@ -266,14 +273,14 @@ function clearAllFields() {
     }
 }
 
-	
+
 function getOutputText() {
     var Text = ""
     List.forEach(function(value, index){
       if (value === "writeup") {
           Text += "\n" + value + ": " + quill.root.innerHTML
       }
-      else if (value === "relatedusgs") {
+      else if (value === "relatedgaugess") {
           Text += "\n" + value + ": "
           //Convert comma seperated list into javascript list
           if (document.getElementById(value).value.trim().split(" ").join("").split(",").length > 0) {
@@ -286,21 +293,21 @@ function getOutputText() {
     })
 	return Text.trim()
 }
-	
+
 function UpdateWriteup() {
 
     List.forEach(function(value){
         if (value !== "writeup") {
 			let elem = document.getElementById(value)
 			let text;
-			
+
 			if (elem.type === "checkbox") {
 				text = elem.checked
 			}
 			else {
-				text = elem.value.trim()			
+				text = elem.value.trim()
 			}
-			
+
             localStorage.setItem(value, text)
         }
         else {
@@ -314,29 +321,29 @@ function UpdateWriteup() {
 }
 UpdateWriteup()
 //Initial update
-	
-	
-	
+
+
+
 function submitAsNewRiver() {
 	 let url = "https://script.google.com/macros/s/AKfycbxhxpImVHh-UBAlVOGppV4wYRVtO4ldLHn_q128vckXshCl6B8/exec"
 	 let type = "river"
 	 let name = prompt("What would you like the file name for this section to be? ")
 	 let editors = prompt("Optional: Enter email addresses that you would like to give edit access to this file. (comma seperated list)")
-	 
+
 	 console.log(name)
 	 console.log(editors)
-	
+
 	let nonce = Math.round(Math.random() * (2**30))
-	
+
 	let requestURL = url + "?type=" + type + "&name=" + name + "&nonce=" + nonce + (editors?("&editors=" + editors):"")
-	console.log(requestURL) 
-	
+	console.log(requestURL)
+
 	 let request = fetch(requestURL, {
 		method: "POST",
 		 body: getOutputText(),
 		 mode: "no-cors"
 	 })
-	 
+
 	 alert("We are attempting to submit your river. You should receive an alert in about 10 seconds if it succeeds. ")
 
 	;(async function() {
@@ -356,7 +363,7 @@ function submitAsNewRiver() {
 		}
 	 }())
 }
-	
+
 </script>
 
 <script src="../packages/allPages.js"></script>
