@@ -7,13 +7,11 @@ const utils = require(path.join(__dirname, "utils.js"))
 
 const zlib = require("zlib")
 
+const csvParser = require("csv-parser")
+
 const stateLookupTable = require(path.join(__dirname, "stateCodeLookupTable.js"))
 
 let sitesFilePath = path.join(utils.getDataDirectory(), "usgsSites.txt")
-
-//Gzip file from
-//https://waterdata.usgs.gov/nwis/current?index_pmcode_STATION_NM=1&index_pmcode_DATETIME=2&index_pmcode_30208=3&index_pmcode_00061=4&index_pmcode_00065=5&group_key=county_cd&format=sitefile_output&sitefile_output_format=rdb_gz&column_name=agency_cd&column_name=site_no&column_name=station_nm&column_name=site_tp_cd&column_name=lat_va&column_name=long_va&column_name=dec_lat_va&column_name=dec_long_va&column_name=coord_meth_cd&column_name=coord_acy_cd&column_name=coord_datum_cd&column_name=dec_coord_datum_cd&column_name=district_cd&column_name=state_cd&column_name=county_cd&column_name=country_cd&column_name=land_net_ds&column_name=map_nm&column_name=map_scale_fc&column_name=alt_va&column_name=alt_meth_cd&column_name=alt_acy_va&column_name=alt_datum_cd&column_name=huc_cd&column_name=basin_cd&column_name=topo_cd&column_name=data_types_cd&column_name=instruments_cd&column_name=construction_dt&column_name=inventory_dt&column_name=drain_area_va&column_name=contrib_drain_area_va&column_name=tz_cd&column_name=local_time_fg&column_name=reliability_cd&column_name=gw_file_cd&column_name=nat_aqfr_cd&column_name=aqfr_cd&column_name=aqfr_type_cd&column_name=well_depth_va&column_name=hole_depth_va&column_name=depth_src_cd&column_name=project_no&column_name=rt_bol&column_name=peak_begin_date&column_name=peak_end_date&column_name=peak_count_nu&column_name=qw_begin_date&column_name=qw_end_date&column_name=qw_count_nu&column_name=gw_begin_date&column_name=gw_end_date&column_name=gw_count_nu&column_name=sv_begin_date&column_name=sv_end_date&column_name=sv_count_nu&sort_key_2=site_no&html_table_group_key=NONE&rdb_compression=gz&list_of_search_criteria=realtime_parameter_selection
-//When unzipped, get file sites
 
 function fixCasing(str) {
    var splitStr = str.toLowerCase().split(' ');
@@ -78,7 +76,7 @@ function fixSiteName(siteName, options = {}) {
 async function downloadSitesFile() {
 		console.log("Downloading Gauge List from USGS (May take a while)")
 		let url = "https://waterdata.usgs.gov/nwis/current?index_pmcode_STATION_NM=1&index_pmcode_DATETIME=2&index_pmcode_30208=3&index_pmcode_00061=4&index_pmcode_00065=5&group_key=county_cd&format=sitefile_output&sitefile_output_format=rdb_gz&column_name=agency_cd&column_name=site_no&column_name=station_nm&column_name=site_tp_cd&column_name=lat_va&column_name=long_va&column_name=dec_lat_va&column_name=dec_long_va&column_name=coord_meth_cd&column_name=coord_acy_cd&column_name=coord_datum_cd&column_name=dec_coord_datum_cd&column_name=district_cd&column_name=state_cd&column_name=county_cd&column_name=country_cd&column_name=land_net_ds&column_name=map_nm&column_name=map_scale_fc&column_name=alt_va&column_name=alt_meth_cd&column_name=alt_acy_va&column_name=alt_datum_cd&column_name=huc_cd&column_name=basin_cd&column_name=topo_cd&column_name=data_types_cd&column_name=instruments_cd&column_name=construction_dt&column_name=inventory_dt&column_name=drain_area_va&column_name=contrib_drain_area_va&column_name=tz_cd&column_name=local_time_fg&column_name=reliability_cd&column_name=gw_file_cd&column_name=nat_aqfr_cd&column_name=aqfr_cd&column_name=aqfr_type_cd&column_name=well_depth_va&column_name=hole_depth_va&column_name=depth_src_cd&column_name=project_no&column_name=rt_bol&column_name=peak_begin_date&column_name=peak_end_date&column_name=peak_count_nu&column_name=qw_begin_date&column_name=qw_end_date&column_name=qw_count_nu&column_name=gw_begin_date&column_name=gw_end_date&column_name=gw_count_nu&column_name=sv_begin_date&column_name=sv_end_date&column_name=sv_count_nu&sort_key_2=site_no&html_table_group_key=NONE&rdb_compression=gz&list_of_search_criteria=realtime_parameter_selection"
-
+        //The file is gzipped, so we have to unzip it.
 		let unzipper = zlib.createGunzip()
 		await new Promise((resolve, reject) => {
 			fetch(url).then((response) => {
@@ -99,11 +97,11 @@ async function getSites() {
 		console.log("Gauge sites file is not available. Running download script...")
 		await downloadSitesFile()
 	}
-	
-	//If the sites file is over 2 weeks old, download it again.
-	let age = Date.now() - (await fs.promises.stat(sitesFilePath)).mtime 
-		
-	if (age > 1000*60*60*24*14) {
+
+	//If the sites file is over 7 days old, download it again.
+	let age = Date.now() - (await fs.promises.stat(sitesFilePath)).mtime
+
+	if (age > 1000*60*60*24*7) {
 		console.log("Gauge sites file is over " + Math.floor(age/1000/60/60) + " hours old. Running download script...")
 		try {
 			await downloadSitesFile()
@@ -157,7 +155,7 @@ async function getSites() {
 			//The lookup table doesn't handle the very rare things like gauges in other countires.
 			reducedObj.state = stateLookupTable[obj.state_cd][0]
 		}
-        reducedObj.usgs = obj.site_no
+        reducedObj.gauge = "USGS:" + obj.site_no
 		reducedObj.plat = obj.dec_lat_va
 		reducedObj.plon = obj.dec_long_va
 		//reducedObj.drainageArea = obj.drain_area_va //We don't use this, and it makes the file bigger.
@@ -170,10 +168,164 @@ async function getSites() {
 	return newArr
 }
 
+let conversionsFilePath = path.join(utils.getDataDirectory(), "nws-usgs-conversions.txt")
+
+async function downloadConversionsFile() {
+    console.log("Downloading NWS conversions list")
+    let dest = fs.createWriteStream(conversionsFilePath)
+    let response = await fetch("https://hads.ncep.noaa.gov/USGS/ALL_USGS-HADS_SITES.txt")
+    await new Promise((resolve, reject) => {
+        let stream = response.body.pipe(dest)
+        stream.on("finish", resolve)
+    })
+    console.log("NWS conversions list downloaded")
+}
+
+async function getConversionsForNWS() {
+    //Make sure we have the sites file.
+    if (!fs.existsSync(conversionsFilePath)) {
+        console.log("NWS conversions file is not available. Running download script...")
+        await downloadConversionsFile()
+    }
+
+    //If the sites file is over 7 days old, download it again.
+    let age = Date.now() - (await fs.promises.stat(conversionsFilePath)).mtime
+
+    if (age > 1000*60*60*24*7) {
+        console.log("NWS conversions file is over " + Math.floor(age/1000/60/60) + " hours old. Running download script...")
+        try {
+            await downloadConversionsFile()
+        }
+        catch(e) {
+            console.error(e)
+        }
+    }
+
+    let lines = (await fs.promises.readFile(conversionsFilePath, {encoding:"utf-8"})).trim().split("\n")
+    lines = lines.slice(4)
+    console.log(lines.length + " NWS sites found also on USGS")
+    for (let i=0;i<lines.length;i++) {
+        lines[i] = lines[i].split("|")
+    }
+
+    let nwsToUSGS = {}
+    let usgsToNWS = {}
+    let nwsToName = {}
+
+    for (let i=0;i<lines.length;i++) {
+        let line = lines[i]
+        let nwsCode = line[0]
+        let usgsCode = line[1].trim()
+        nwsToUSGS[nwsCode] = usgsCode
+        usgsToNWS[usgsCode] = nwsCode
+        nwsToName[nwsCode] = line[6]
+    }
+
+    //NWS codes are case insensitive. Because of this, we will use a proxy to convert all requests to upperCase.
+    nwsToUSGS = new Proxy(nwsToUSGS,{get(target,name) {
+        return target[name.toUpperCase()]
+    }})
+
+    nwsToName = new Proxy(nwsToName,{get(target,name) {
+        return target[name.toUpperCase()]
+    }})
+
+    return {nwsToUSGS, usgsToNWS, nwsToName}
+}
+
+//Canadaian Flow Data Gauges List
+//https://dd.weather.gc.ca/hydrometric/doc/hydrometric_StationList.csv
+let canadaGaugesList = path.join(utils.getDataDirectory(), "canadaGaugesList.csv")
+
+async function downloadCanadianGaugesList() {
+    console.log("Downloading Canadian Gauges List...")
+    let dest = fs.createWriteStream(canadaGaugesList)
+    let response = await fetch("https://dd.weather.gc.ca/hydrometric/doc/hydrometric_StationList.csv")
+    await new Promise((resolve, reject) => {
+        let stream = response.body.pipe(dest)
+        stream.on("finish", resolve)
+    })
+    console.log("Canada gauges list downloaded")
+}
+
+async function getCanadianGauges(returnArray = false) {
+    //Make sure we have the sites file.
+    if (!fs.existsSync(canadaGaugesList)) {
+        console.log("Canadian Gauges List is not available. Running download script...")
+        await downloadCanadianGaugesList()
+    }
+
+    //If the sites file is over 7 days old, download it again.
+    let age = Date.now() - (await fs.promises.stat(canadaGaugesList)).mtime
+
+    if (age > 1000*60*60*24*7) {
+        console.log("Canadian Gauges List is over " + Math.floor(age/1000/60/60) + " hours old. Running download script...")
+        try {
+            await downloadCanadianGaugesList()
+        }
+        catch(e) {
+            console.error(e)
+        }
+    }
+
+    let results = [];
+    await new Promise((resolve, reject) => {
+        fs.createReadStream(canadaGaugesList)
+        .pipe(csvParser({
+            mapHeaders: function({header, index}) {
+                if (header === '﻿ ID') {return "id"}
+                else if (header === 'Name / Nom') {return "name"}
+                else if (header === "Latitude") {return "lat"}
+                else if (header === "Longitude") {return "lon"}
+                else if (header === 'Prov/Terr') {return "province"}
+                return null //Delete the header.
+            }
+        }))
+        .on('data', (data) => results.push(data))
+        .on('end', resolve);
+    })
+
+    if (returnArray) {return results}
+
+    let obj = {}
+    for (let prop in results) {
+        obj[results[prop].id] = results[prop]
+        delete obj[results[prop].id].id
+    }
+    return obj
+}
+
+async function getCanadianGaugesInRiverFormat() {
+    //Convert the gauges to the site used in riverarray.
+    let arr = await getCanadianGauges(true)
+    arr = arr.map((site) => {
+        site.state = site.province
+        delete site.province
+        site.name = fixCasing(site.name)
+
+        let splitIndex = site.name.search(/ (?:below|above|near|at|downstream|north of|east of|south of|west of) /i)
+
+        if (splitIndex === -1) {
+            site.section = ""
+        }
+        else {
+            site.section = site.name.slice(splitIndex).trim()
+            site.name = site.name.slice(0, splitIndex).trim()
+        }
+
+        site.gauge = "canada:" + site.id
+        delete site.id
+        return site
+    })
+    return arr
+}
 
 module.exports = {
 	getSites,
     fixSiteName,
 	fixCasing,
-    replaceStateNamesWithCodes
+    replaceStateNamesWithCodes,
+    getConversionsForNWS,
+    getCanadianGauges,
+    getCanadianGaugesInRiverFormat,
 }

@@ -55,7 +55,7 @@ Header set Cache-Control "max-age=43200, public, stale-if-error=8640000"
 </FilesMatch>
 
 #5 minute cache. Serve up to 1 day old if errors.
-<FilesMatch "flowdata2.json">
+<FilesMatch "flowdata3.json">
 Header set Cache-Control "max-age=300, public, stale-if-error=86400"
 </FilesMatch>
 

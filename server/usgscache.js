@@ -12,7 +12,8 @@ const jsonShrinker = require("json-shrinker")
 
 async function updateRiverData() {
 	let args = [path.join(__dirname, "dataparse.js")]
-	if (process.argv.includes("--nogauges")) {args.push("--nogauges")}
+	if (process.argv.includes("--noUSGSGauges")) {args.push("--noUSGSGauges")}
+	if (process.argv.includes("--includeCanadianGauges")) {args.push("--includeCanadianGauges")}
 
 	let dataparse = child_process.spawn("node", args)
 	//Don't use console.log, as we end up with 2 newlines.
@@ -52,7 +53,7 @@ async function updateCachedData() {
 
 	if (!fs.existsSync(riverDataPath) || process.argv.includes("--waitforriverdata")) {
 		if (riverDataPromise) {
-			await riverDataPromise; 
+			await riverDataPromise;
 			riverDataPromise = null
 		}
 		else {
@@ -66,17 +67,17 @@ async function updateCachedData() {
 
     var sites = []
     for (let i=0;i<riverarray.length;i++) {
-		let values = [riverarray[i].usgs]
-		riverarray[i].relatedusgs && values.concat(riverarray[i].relatedusgs)
+		let values = [riverarray[i].gauge]
+		riverarray[i].relatedgauges && (values = values.concat(riverarray[i].relatedgauges))
 		for (let i=0;i<values.length;i++) {
-			let usgsID = values[i]
-			if (!usgsID) {continue}
-			sites.push(usgsID)
+			let gaugeID = values[i]
+			if (!gaugeID) {continue}
+			sites.push(gaugeID)
 		}
     }
 
 	let gauges = await gaugeUtils.loadData(sites)
-	let flowDataPath = path.join(utils.getSiteRoot(), "flowdata2.json")
+	let flowDataPath = path.join(utils.getSiteRoot(), "flowdata3.json")
 
 	await fs.promises.writeFile(flowDataPath, jsonShrinker.stringify(gauges))
 
@@ -84,13 +85,13 @@ async function updateCachedData() {
 
 
 	if (process.argv[2] !== "--install") {
-		console.time("Initial compression run on flowdata2.json")
+		console.time("Initial compression run on flowdata3.json")
 		await compressor.compressFile(flowDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: true})
-		console.timeEnd("Initial compression run on flowdata2.json")
+		console.timeEnd("Initial compression run on flowdata3.json")
 		//Level 11 could take a while... Get level 9 done first.
-		console.time("Max compression on flowdata2.json")
+		console.time("Max compression on flowdata3.json")
 		await compressor.compressFile(flowDataPath, 11, {ignoreSizeLimit: true, alwaysCompress: true})
-		console.timeEnd("Max compression on flowdata2.json")
+		console.timeEnd("Max compression on flowdata3.json")
 	}
 
 

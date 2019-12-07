@@ -10,7 +10,7 @@ try {
 				window.serviceWorkerMessages.push(event.data)
 				let data = event.data
 
-				if (!data.includes("flowdata2.json")) {return;}
+				if (!data.includes("flowdata3.json")) {return;}
 
 				window.oldLoadUSGS = window.loadNewUSGS
 
@@ -64,7 +64,7 @@ document.getElementById("Rivers").appendChild(new TopBar().create())
 //Handle search links.
 	if (window.location.hash.length > 0) {
 		let search = decodeURI(window.location.hash.slice(1))
-		
+
 	if (search.startsWith("{")) {
 		//Advanced search
 			let query = JSON.parse(search)
@@ -83,7 +83,7 @@ document.getElementById("Rivers").appendChild(new TopBar().create())
 
 	//ItemHolder is a list of all the river objects. New objects should be pushed into the list.
 	window.ItemHolder = []
-	
+
 	//Load flow information. This is async, and will finish whenever.
 	require("./loadUSGS.js").loadUSGS(false)
 
@@ -115,7 +115,7 @@ document.getElementById("Rivers").appendChild(new TopBar().create())
 	let query = window.getAdvancedSearchParameters()
 	if (
 		window.usgsDataAge === undefined &&
-		(!objectsEqual(defaultAdvancedSearchParameters.flow, query.flow) || query.sort.query === "running") 
+		(!objectsEqual(defaultAdvancedSearchParameters.flow, query.flow) || query.sort.query === "running")
 	) {
 			//We have no usgs data yet. Wait to flow search/sort.
 				let oldQuery = recursiveAssign({}, query)

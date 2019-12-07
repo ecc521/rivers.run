@@ -15,7 +15,7 @@ window.updateOldDataWarning = function() {
 		let oldDataWarning = document.createElement("p")
 		oldDataWarning.id = "topOldDataWarning"
 
-		oldDataWarning.innerHTML = "All flow data is more than " + Math.floor(window.usgsDataAge/1000/60/60) + " hours old! "
+		oldDataWarning.innerHTML = "Flow previews are more than " + Math.floor(window.usgsDataAge/1000/60/60) + " hours old! "
 		oldDataWarning.innerHTML += "(" + window.loadNewUSGS + ") "
 
 					let reloadButton = document.createElement("button")
@@ -68,7 +68,7 @@ let loadUSGS = async function(useCache) {
 
 	timesLoadUSGSRan++
 
-	let fileName = "flowdata2.json"
+	let fileName = "flowdata3.json"
 
 	if (useCache) {
 		let cache = await caches.open("rivers.run")
@@ -89,10 +89,10 @@ let loadUSGS = async function(useCache) {
 		})
 		window.usgsarray = JSON.parse(response)
 	}
-	
+
 	window.requestTime = usgsarray.generatedAt
 	updateUSGSDataInfo()
-	
+
 	window.dispatchEvent(new Event("usgsDataUpdated"))
 
 	console.time("updatingRivers")

@@ -87,41 +87,30 @@ function addRatingSpan(river, button) {
 
 
 function addFlowData(river) {
-	Object.defineProperty(river, "feet", {
-		get: function getLatestFeet() {
-			let data = usgsarray[river.usgs]
-			if (data) {
-				let feet = data.feet
-				try {
-					if (feet) {
-						let latestFeetReading = feet[feet.length - 1]
-						if (latestFeetReading) {
-							//Though issues are alot rarer than with CFS, equipment malfunctions can cause this to be null.
-							return latestFeetReading.value
-						}
-					}
+
+	function getLatest(river, prop) {
+		let data = usgsarray[river.gauge]
+		if (data) {
+			let readings = data.readings
+			try {
+				let latestReading = readings[readings.length - 1]
+				if (latestReading) {
+					return latestReading[prop]
 				}
-				catch(e) {console.error(e);console.log(river.usgs)}
 			}
+			catch(e) {console.error(e);console.log(river.gauge)}
+		}
+	}
+
+	Object.defineProperty(river, "feet", {
+		get: function getLatestCFS() {
+			return getLatest(river, "feet")
 		}
 	})
 
 	Object.defineProperty(river, "cfs", {
 		get: function getLatestCFS() {
-			let data = usgsarray[river.usgs]
-			if (data) {
-				let cfs = data.cfs
-				try {
-					if (cfs) {
-						let latestCFSReading = cfs[cfs.length - 1]
-						if (latestCFSReading) {
-							//Though issues are alot rarer than with CFS, equipment malfunctions can cause this to be null.
-							return latestCFSReading.value
-						}
-					}
-				}
-				catch(e) {console.error(e);console.log(river.usgs)}
-			}
+			return getLatest(river, "cfs")
 		}
 	})
 
@@ -130,13 +119,13 @@ function addFlowData(river) {
 			let latestCFS = river.cfs
 			let latestFeet = river.feet
 
-			if (latestCFS && latestFeet) {
+			if ((latestCFS != null) && (latestFeet != null)) {
 	            return latestCFS + "cfs " + latestFeet + "ft"
 	        }
-            else if (latestCFS) {
+            else if (latestCFS != null) {
                 return latestCFS + " cfs"
             }
-            else if (latestFeet) {
+            else if (latestFeet != null) {
                 return latestFeet + " ft"
             }
 		}
@@ -158,7 +147,7 @@ function addFlowSpan(river, button) {
 			if (current) {current.remove()}
 
             if (river.flow) {
-				let value = river.flow + (calculateDirection(river.usgs) || "")
+				let value = river.flow + (calculateDirection(river.gauge) || "")
 				//If the user has color blind mode enabled, add river.running to one digit onto the flow data.
 				//TODO: Add a faster way to check values, other than localStorage.
 				if (window.colorBlindMode && river.running !== undefined) {
@@ -186,7 +175,7 @@ function River(locate, event) {
 
 	let river = this //Allow for incapsulation if this changes.
 
-    //Copies name, section, skill, rating, writeup, tags, usgs, plat,plon, tlat,tlon, aw, dam
+    //Copies name, section, skill, rating, writeup, tags, gauge, plat,plon, tlat,tlon, aw, dam
     Object.assign(this, event)
     //tags and writeup need to be a string. They can't be undefined
     this.tags = this.tags || ""
@@ -202,20 +191,13 @@ function River(locate, event) {
     this.skill = this.skill || "?"
 
 	if (!this.id) {
-		this.id = "usgs:" + this.usgs
+		this.id = this.gauge.toLowerCase() //toLowerCase to maintain backwards compatilibity with old "usgs:" + this.usgs system.
 		this.isGauge = true
 	}
 
     this.base = "b" + locate
     this.expanded = 0
     this.index = locate
-
-	if (this.relatedusgs) {
-		try {
-			this.relatedusgs = JSON.parse(this.relatedusgs)
-		}
-		catch(e) {console.warn(e);}
-	}
 
     this.create = function (forceregenerate) {
         //Only create the button once - It's about 3 times faster.

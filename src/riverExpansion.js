@@ -73,7 +73,7 @@ function createExpansion(button, river) {
 					return Math.round(level*100)/100
 				}
 			}
-	
+
 			//Show the user the values being used for determining relative flow.
             let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
 			let flowRange = document.createElement("p")
@@ -106,18 +106,6 @@ function createExpansion(button, river) {
                 div.appendChild(link)
             }
 
-
-            if (river.usgs) {
-                //Adding to div.innerHTML works, but logs CSP errors
-                div.appendChild(document.createElement("br"))
-                let link = document.createElement("a")
-                link.target = "_blank"
-                link.rel = "noopener"
-                link.href = "https://waterdata.usgs.gov/nwis/uv?site_no=" + river.usgs
-                link.innerHTML = "View flow information on USGS"
-                div.appendChild(link)
-            }
-
 			div.appendChild(document.createElement("br"))
 			let disclaimer = document.createElement("a")
 			disclaimer.href = "legal/DISCLAIMER.html"
@@ -128,76 +116,101 @@ function createExpansion(button, river) {
 			let addedUSGSDisclaimer = false
 			let addedVirtualGaugeDisclaimer = false
 
-			//Auxillary function
-			//TODO: Show button to see code used by virtual gauge.
-			function addUSGSGraphs(usgsID, relatedGauge) {
+            function addUSGSGraphs(usgsID, relatedGauge) {
 
-				let data = self.usgsarray[usgsID]
-				if (!data) {console.log("No flow data for " + usgsID); return;}
+                let data = self.usgsarray[usgsID]
+                let graphContainer = document.createElement("div");
 
-				//Alert the user if the data is (at least 2 hours) old
-				let dataAge
-                try {
-                    dataAge = calculateAge(usgsID)
+                if (data) {
+                    //Alert the user if the data is (at least 2 hours) old
+                    let dataAge
+                    try {
+                        dataAge = calculateAge(usgsID)
+                    }
+                    catch(e) {
+                        console.error(e)
+                        dataAge = null
+                    }
+                    let maxAge = 1000*60*60*2
+                    let oldDataWarning;
+                    if (dataAge > maxAge) {
+                        oldDataWarning = document.createElement("p")
+                        oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(dataAge/1000/60/60) + " hours old!"
+
+                        oldDataWarning.className = "oldDataWarning"
+                        graphContainer.appendChild(oldDataWarning)
+                    }
+
+                    if (relatedGauge) {
+                        //Space out the gauges.
+                        graphContainer.appendChild(document.createElement("br"))
+                        graphContainer.appendChild(document.createElement("br"))
+                        graphContainer.appendChild(document.createElement("br"))
+                    }
+                    graphContainer.appendChild(createDeviceNotificationsWidget(river, usgsID))
+                    graphContainer.appendChild(createEmailNotificationsWidget(river, usgsID))
+
+
+                    if (data.source) {
+                        let sourceInfo = document.createElement("p")
+                        sourceInfo.style.textAlign = "center"
+                        if (data.source.link) {
+                            sourceInfo.innerHTML = `<a href="${data.source.link}" target="_blank">${data.source.text}</a>`
+                        }
+                        else {sourceInfo.innerHTML = data.source.text}
+                        graphContainer.appendChild(sourceInfo)
+                    }
+
+                    console.time("Add Graphs")
+                    console.log(usgsarray[usgsID])
+                    console.log(graphs)
+                    let graphs = addGraphs(data)
+                    if (graphs) {
+                        //Graphs can be undefined if there was not enough data to create any.
+                        graphContainer.appendChild(graphs)
+                    }
+                    else {
+                        let elem = document.createElement("p")
+                        elem.innerHTML = "There was an error creating the graph. The gauge has probably temporarily broken. "
+                        graphContainer.appendChild(elem)
+                    }
+                    console.timeEnd("Add Graphs")
+                    div.appendChild(graphContainer)
                 }
-                catch(e) {
-                    console.error(e)
-                    dataAge = null
+                else {
+                    console.log("No flow data for " + usgsID + ". Trying to load from network (may not exist though). ");
                 }
-                let maxAge = 1000*60*60*2
-                let oldDataWarning;
-				if (dataAge > maxAge) {
-					oldDataWarning = document.createElement("p")
-					oldDataWarning.innerHTML = "Check the dates! This river data is more than " + Math.floor(dataAge/1000/60/60) + " hours old!"
 
-					oldDataWarning.className = "oldDataWarning"
-					div.appendChild(oldDataWarning)
-				}
-
-				function addDisclaimer(text) {
-					let disclaimer = document.createElement("p")
-					disclaimer.style.fontWeight = "bold"
-					disclaimer.style.textAlign = "center"
-					disclaimer.innerHTML = text
-					return div.appendChild(disclaimer)
-				}
-
-				if (relatedGauge) {
-					//Space out the gauges.
-					div.appendChild(document.createElement("br"))
-					div.appendChild(document.createElement("br"))
-					div.appendChild(document.createElement("br"))
-				}
-				div.appendChild(createDeviceNotificationsWidget(river, usgsID))
-				div.appendChild(createEmailNotificationsWidget(river, usgsID))
-
-				console.time("Add Graphs")
-				let graphs = addGraphs(data)
-				div.appendChild(graphs)
-
-				//Fetch comprehensive flow data, then update the graphs.
-				//TODO: Add XMLHttpRequest fallback.
-				if (!usgsarray[usgsID].full) {
-					fetch("gaugeReadings/" + usgsID).then((response) => {
-						response.json().then((newData) => {
-							usgsarray[usgsID] = newData
-							usgsarray[usgsID].full = true
-							graphs.replaceWith(addGraphs(self.usgsarray[usgsID]))
-							if (oldDataWarning) {oldDataWarning.remove()}
-						})
-					})
-				}
-
-				console.timeEnd("Add Graphs")
-			}
+                //TODO: Along with the comprehinsive data, we should include the source links (gauge.source.link and gauge.source.text)
+                //TODO: Update river.flow and the oldDataWarnings along with this (the data could still be old, so removing it doesn't work).
+                //Fetch comprehensive flow data, then update the graphs.
+                //TODO: Add XMLHttpRequest fallback.
+                if (!usgsarray[usgsID] || !usgsarray[usgsID].full) {
+                    fetch("gaugeReadings/" + usgsID).catch((error) => {
+                        console.log("Failed to load " + usgsID + " from network. Error below. ")
+                        console.log(error)
+                    }).then((response) => {
+                        if (response.status > 399) {
+                            console.log("Loading " + usgsID + " from network returned status code " + response.status + ". Response below. ")
+                            console.log(response)
+                            return;
+                        }
+                        response.json().then((newData) => {
+                            usgsarray[usgsID] = newData
+                            usgsarray[usgsID].full = true
+                            river.updateFlowData()
+                        })
+                    })
+                }
+            }
 
             //USGS data may not have loaded yet
 			if (self.usgsarray) {
-				river.usgs && addUSGSGraphs(river.usgs)
-				if (river.relatedusgs) {
-					for (let i=0;i<river.relatedusgs.length;i++) {
-						if (river.relatedusgs[i] === "") {continue;}
-						addUSGSGraphs(river.relatedusgs[i], true)
+				river.gauge && addUSGSGraphs(river.gauge)
+				if (river.relatedgauges) {
+					for (let i=0;i<river.relatedgauges.length;i++) {
+						if (river.relatedgauges[i] === "") {continue;}
+						addUSGSGraphs(river.relatedgauges[i], true)
 					}
 				}
 			}

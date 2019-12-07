@@ -102,7 +102,7 @@ function loadFiles(files, mime) {
 
 	let complete = []
 	let failed = []
-	
+
     async function loadText(file, mime="text/plain") {
         try {
             let request;
@@ -123,12 +123,12 @@ function loadFiles(files, mime) {
             console.warn(request)
         }
     }
-	
+
 	let promises = []
     for (let i=0;i<files.length;i++) {
         promises.push(loadText(files[i], mime))
     }
-	
+
 	return {promises, complete, failed}
 }
 
@@ -141,30 +141,30 @@ async function loadOverviews() {
 
     let directory = path.join(utils.getSiteRoot(), "overviews")
     if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
-	
+
 	let result = loadFiles(files, "text/html")
 	await Promise.allSettled(result.promises)
 
 	console.log("")
-	
+
     for (let i=0;i<result.failed.length;i++) {
         console.error("Loading of file with file id of " + result.failed[i] + " failed.")
     }
-	
+
 	for (let i=0;i<result.complete.length;i++) {
 		let item = result.complete[i]
-		
+
 		//Remove slashes from paths.
 		item.name = item.name.trim().split("/").join("_")
-		
+
 		//Add edit this river link.
 		let output = `<a href="https://docs.google.com/document/d/${item.id}" target="_blank">Edit this Overview</a><br><br>` + item.request
-		
+
 		//Resolve Google Open Redirect URLs
 		output = output.replace(/(?:https:\/\/www.google.com\/url\?q=)(.+?)(?:&[^"']+)/g, function(matchedString, group1) {
-			return decodeURIComponent(group1)		
+			return decodeURIComponent(group1)
 		})
-		
+
 		await fs.promises.writeFile(path.join(directory, item.name), output)
 	}
 	//TODO: Overviews should be served from a seperate domain so that they couldn't modify the site context, even if opened in a new tab.
@@ -173,7 +173,7 @@ async function loadOverviews() {
 
 
 (async function() {
-	
+
 	await loadOverviews()
 
 	console.log("Generating riverdata.json - this may take a while (should be no more than 200 milliseconds per river)\n")
@@ -197,23 +197,65 @@ async function loadOverviews() {
 
     console.log("Finished Loading Rivers...")
 
-    let allowed = ["name","section","skill","rating","writeup","tags","state","usgs","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedusgs","averagegradient","maxgradient","class"] //Property values to be included in output file
+    let allowed = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgauges","averagegradient","maxgradient","class"] //Property values to be included in output file
 
     for (let i=0;i<result.complete.length;i++) {
         let item = result.complete[i].request.split("\n")
         let obj = {}
-        obj.id = result.complete[i].id
+
         for (let i=0;i<item.length;i++) {
             let prop = item[i]
             let name = prop.slice(0,prop.indexOf(":")).trim().toLowerCase()
             let value = prop.slice(prop.indexOf(":") + 1).trim()
 
             obj[name] = value
-
-            if (!allowed.includes(name)) {
-                delete obj[name]
-            }
         }
+
+		//Convert .usgs parameter to .gauge
+		if (!obj.gauge && obj.usgs) {
+			obj.gauge = "USGS:" + obj.usgs
+		}
+
+		if (obj.gauge) {
+			obj.gauge = obj.gauge.split(/\s*:\s*/).join(":")
+		}
+
+		//Convert NWS gauge IDs to upperCase.
+		if (obj.gauge && obj.gauge.toUpperCase().startsWith("NWS:")) {
+			obj.gauge = obj.gauge.toUpperCase()
+		}
+		//Handle related USGS. TODO: Change to relatedGauge
+		if (obj.relatedusgs) {
+			try {
+				obj.relatedgauges = JSON.stringify(JSON.parse(obj.relatedusgs).map((gaugeID) => {
+					return "USGS:" + gaugeID
+				}))
+			}
+			catch(e) {console.error(e)}
+		}
+
+		if (obj.relatedgauges) {
+			try {
+				obj.relatedgauges = JSON.parse(obj.relatedgauges).map((gaugeID) => {
+					gaugeID = gaugeID.split(/\s*:\s*/).join(":")
+					if (gaugeID.toUpperCase().startsWith("NWS:")) {return gaugeID.toUpperCase()}
+					else {return gaugeID}
+				})
+				obj.relatedgauges = obj.relatedgauges.filter((gaugeID) => {
+					//Remove all gauges that are empty (ex. "USGS:" or "NWS:")
+					if (gaugeID.indexOf(":") + 1 === gaugeID.length) {return false}
+					return true
+				})
+				if (obj.relatedgauges.length === 0) {delete obj.relatedgauges} //If there are no gauges, don't bother with the property.
+			}
+			catch(e) {console.error(e);console.log(obj.relatedgauges)}
+		}
+
+		for (let prop in obj) {
+			if (!allowed.includes(prop)) {
+				delete obj[prop]
+			}
+		}
 
         //Some properties need to be defined in file, even if blank.
         ["name", "section"].forEach((prop) => {
@@ -222,7 +264,8 @@ async function loadOverviews() {
             }
         })
 
-        //console.log(complete[i].id + ": " + obj.name + " " + obj.section)
+		obj.id = result.complete[i].id
+
         result.complete[i] = obj
     }
 
@@ -230,9 +273,18 @@ async function loadOverviews() {
         console.log("There are " + result.complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
     })
 
-	if (process.argv[2] !== "--nogauges") {
-		console.log("Adding gauge sites")
+	if (!process.argv.includes("--noUSGSGauges")) {
+		console.log("Adding USGS gauge sites. Pass --noUSGSGauges to prevent this. ")
 		result.complete = result.complete.concat(await getGaugeSites.getSites())
+		console.log("There are now " + result.complete.length + " rivers.")
+	}
+	else {
+		console.log("Not including USGS gauges since --noUSGSGauges was passed. ")
+	}
+
+	if (process.argv.includes("--includeCanadianGauges")) {
+		console.log("Adding Canadian gauge sites")
+		result.complete = result.complete.concat(await getGaugeSites.getCanadianGaugesInRiverFormat())
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
 

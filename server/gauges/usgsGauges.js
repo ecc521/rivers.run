@@ -1,3 +1,12 @@
+//Load flow information from USGS (United States Geological Survey)
+
+const fs = require("fs")
+const path = require("path")
+
+const fetch = require("node-fetch")
+
+const utils = require(path.join(__dirname, "../", "utils.js"))
+
 function parseUSGS(usgsdata) {
 
     let usgsarray = {}
@@ -99,10 +108,102 @@ function reformatUSGS(usgsarray) {
 	return usgsarray
 }
 
+//Reformat for flowdata3.json
+//This combines the cfs, feet, temp, and precip properties into one array.
 
+function reformatGauge(gauge) {
+	let times = {}
+	let toCombine = ["cfs", "feet", "temp", "precip"]
+	toCombine.forEach((prop) => {
+		if (!gauge[prop]) {return}
+		gauge[prop].forEach((value) => {
+			times[value.dateTime] = times[value.dateTime] || {}
+			times[value.dateTime][prop] = value.value
+		})
+	})
+
+	toCombine.forEach((prop) => {delete gauge[prop]})
+
+	gauge.readings = []
+	for (let prop in times) {
+        let reading = {}
+        reading.dateTime = Number(prop) //Prop appears to be getting converted to a string. Convert it back to a number. 
+		Object.assign(reading, times[prop])
+		gauge.readings.push(reading)
+	}
+	return gauge
+}
+
+function reformatGauges(gauges) {
+	for (let id in gauges) {
+		gauges[id] = reformatGauge(gauges[id])
+	}
+	return gauges
+}
+
+
+async function _loadSitesFromUSGS(siteCodes, timeInPast, timeInFuture) {
+	//USGS does not appear to send flow predictions at the moment.
+
+	let startDT = "&startDT=" + new Date(Date.now() - timeInPast).toISOString()
+	let endDT = "&endDT=" + new Date(Date.now() + timeInFuture).toISOString() //endDT is optional. Will default to current time. USGS gauge prediction may be used if date in the future.
+    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + siteCodes.join(",") +  startDT  + endDT + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all"
+
+	let start = Date.now()
+
+	let response = await fetch(url)
+	let usgsData = await response.text()
+
+	let time = Date.now() - start
+	await fs.promises.appendFile(path.join(utils.getLogDirectory(), 'usgsloadingtime.log'), time + '\n');
+    //TODO: We should be able to consolidate these functions.
+	return reformatGauges(reformatUSGS(parseUSGS(JSON.parse(usgsData))))
+}
+
+async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24, timeInFuture = 0) {
+    siteCodes = [...new Set(siteCodes)]; //Remove duplicate IDs
+    let output = {}
+
+    //Batch calls. I believe that USGS has a url length limit of 4096 characters, but they clearly have one (7000 cha/racters failed).
+	//Use ~150 rivers/call. When using 400, performance was almost 4 times worse than 100-200 rivers/call.
+
+    let start = 0
+    let sitesPerBatch = 150
+    while (start < siteCodes.length) {
+        let end = start + sitesPerBatch
+        let arr = siteCodes.slice(start,end)
+        console.log("Loading sites " + start + " through " + Math.min(end, siteCodes.length) + " of batch of " + siteCodes.length + " gauges.")
+
+        //Try up to 5 times.
+    	for (let i=0;i<5;i++) {
+    		try {
+                let newSites = await _loadSitesFromUSGS(siteCodes, timeInPast, timeInFuture)
+                Object.assign(output, newSites)
+    		}
+    		catch(e) {
+    			console.error(e)
+    			await new Promise((resolve, reject) => {setTimeout(resolve, 2000)}) //2 second delay before retrying.
+    		}
+    	}
+
+        start = end
+    }
+
+    for (let siteCode in output) {
+        output[siteCode].source = {
+            link: "https://waterdata.usgs.gov/nwis/uv?site_no=" + siteCode,
+            text: "View this gauge on USGS"
+        }
+    }
+
+    return output
+}
+
+//TODO: Add a function to load a single site.
 
 
 module.exports = {
 	parseUSGS,
-	reformatUSGS
+	reformatUSGS,
+    loadSitesFromUSGS
 }

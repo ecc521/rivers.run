@@ -73,14 +73,6 @@
         </p>
     </div>
 
-    <button class="accordion">Where does flow information come from?</button>
-    <div class="panel">
-        <p>
-            Flow information is obtained from <a href="https://usgs.gov" target="_blank" rel="noopener">USGS</a> (United States Geolocial Survey)<br>
-			rivers.run is working on adding support for NWS (National Weather Service) gauges, as well as gauge for other countries.
-        </p>
-    </div>
-
     <button class="accordion">What are virtual gauges?</button>
     <div class="panel">
         <p>
@@ -178,24 +170,24 @@
                 panel.style.maxHeight = panel.scrollHeight + "px";
             }
         });
-    }	
-		
+    }
+
 		//Add metadata - TODO: Consider adding metadata only for web crawlers.
 		//This doesn't appear to be working. Google claims that all question and answer text ust be visible though, so that may be what is doing it.
-		//It is also possible that metadata is looked for before running javascript. 
+		//It is also possible that metadata is looked for before running javascript.
 		let dataelem = document.createElement("script")
 		dataelem.type = "application/ld+json"
-		
+
 		let data = {
 			"@content": "https://schema.org",
 			"@type": "FAQPage",
 			"mainEntity": []
 		}
-		
+
 		for (i = 0; i < acc.length; i++) {
 			let elem = acc[i]
 			let markup = {
-				"@type": "Question", 
+				"@type": "Question",
 				"acceptedAnswer": {
 					"@type": "Answer"
 				}

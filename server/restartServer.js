@@ -21,7 +21,7 @@ function isServerUp() {
 	}
 	
 	//Make sure that the flow data is recent
-	let dataLastUpdated = fs.statSync(path.join(utils.getSiteRoot(), "flowdata2.json")).mtime
+	let dataLastUpdated = fs.statSync(path.join(utils.getSiteRoot(), "flowdata3.json")).mtime
 	
 	if (Date.now() - dataLastUpdated > 30 * 60 * 1000) {
 		//If the data is over 30 minutes old, the server is probably not working.

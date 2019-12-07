@@ -54,6 +54,8 @@
     "@webcomponents/custom-elements": "^1.2.4",
     "babel-loader": "^8.0.6",
     "core-js": "^3.3.6",
+    "csv-parser": "^2.3.2",
+    "fast-xml-parser": "^3.15.0",
     "webpack": "^4.41.2"
   }
 }

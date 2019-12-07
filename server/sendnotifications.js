@@ -72,11 +72,11 @@ function sendNotifications(ignoreNoneUntil = false) {
 		if (JSON.stringify(parameters) === "{}") {continue;} //The user does not want notifications on anything right now.
 
 		if (user.type === "email") {
-			fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");
 			sendEmails.sendEmail(user, data).then((res) => {
 				if (res !== false) {
 					user.noneUntil = Date.now() + 1000*60*60*24 //No emails for 24 hours.
-					fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
+					fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");
 					subscriptionManager.saveUserSubscription(user) //Some properties of user should also have been modified by sendEmails.sendEmail
 				}
 			})
@@ -101,8 +101,8 @@ function sendNotifications(ignoreNoneUntil = false) {
         }).then(() => {
 			user.previousMessage = data
 			subscriptionManager.saveUserSubscription(user)
-			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(user) + "\n");	
-			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(data) + "\n");	
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(user) + "\n");
+			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(data) + "\n");
 		})
 	}
 }

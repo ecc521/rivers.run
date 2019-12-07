@@ -85,7 +85,7 @@ async function getAssistantReply(query, options) {
 		useThe = false
 	}
 
-	if (topRanked[0] && !topRanked[0].id) {topRanked[0].id = "usgs:" + topRanked[0].usgs} //This is a gauge. Fill in id using usgs.
+	if (topRanked[0] && !topRanked[0].id) {topRanked[0].id = topRanked[0].gauge.toLowerCase()} //This is a gauge. Fill in it's id using .gauge
 
 	let queryResult = {
 		responseName,
@@ -107,8 +107,8 @@ async function getAssistantReply(query, options) {
 		//TODO: This checks everything, not just the top matches.
 		let start;
 		for (let i=0;i<topRanked.topMatches.length;i++) {
-			start = start || topRanked.topMatches[i].usgs
-			if (topRanked.topMatches[i].usgs !== start) {
+			start = start || topRanked.topMatches[i].gauge
+			if (topRanked.topMatches[i].gauge !== start) {
 				//If section is 1 word long, put section before name. Otherwise, put name before section.
 				let sectionFirst = ["bottom", "bottom bottom", "lower", "middle", "upper", "top", "tip top", "upper upper", "top"].includes(topRanked.topMatches[0].section.trim().toLowerCase())
 				let selectedRiverName = sectionFirst?(topRanked.topMatches[0].section + " " + topRanked.topMatches[0].name):(topRanked.topMatches[0].name + " " + topRanked.topMatches[0].section)
@@ -124,7 +124,7 @@ async function getAssistantReply(query, options) {
 	let temp;
 	let timeStamp;
 	try {
-		gauge = JSON.parse(await fs.promises.readFile(path.join(utils.getSiteRoot(),"gaugeReadings",topRanked[0].usgs)))
+		gauge = JSON.parse(await fs.promises.readFile(path.join(utils.getSiteRoot(),"gaugeReadings",topRanked[0].gauge)))
 		try {
 			if (gauge.feet) {
 				feet = gauge.feet[gauge.feet.length-1].value
@@ -150,7 +150,7 @@ async function getAssistantReply(query, options) {
 	catch(e) {console.error(e)}
 
 	//River has no gauge, so we can't tell the user info on it.
-	if (!topRanked[0].usgs) {
+	if (!topRanked[0].gauge) {
 		queryResult.ssml = starter + " has no gauge on rivers.run. You can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add a gauge. <break time=\"0.3s\"/>Happy Paddling!" + ender
 		queryResult.text = queryResult.ssml.replace(/<.+?>/g, "")
 		return queryResult
@@ -164,7 +164,7 @@ async function getAssistantReply(query, options) {
 		}
 		else {
 			//The gauge doesn't appear to exist.
-			//TODO: Tell user the gauge that we tried to use (river.usgs)
+			//TODO: Tell user the gauge that we tried to use (river.gauge)
 			queryResult.ssml = starter + " does not have a working gauge. You can open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to update the gauge. <break time=\"0.3s\"/>Happy Paddling!" + ender
 		}
 		queryResult.text = queryResult.ssml.replace(/<.+?>/g, "")

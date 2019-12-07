@@ -1,97 +1,147 @@
+const {createGraph} = require("./graph.js")
 
-//Auxillary Function
-//Creates the canvas used by each of the graphs
-function createcanvas() {
-    let canvas = document.createElement("canvas")
-    canvas.width = 1200
-    canvas.height = 800
-
-	canvas.className = "graph"
-	
-    //Make sure the background is not transparent
-    let ctx = canvas.getContext("2d");
-    if (!window.darkMode) {
-        ctx.fillStyle = "white";
+function getFlowGraph(data, doNotInclude) {
+    //doNotInclude - pass either "cfs" or "feet" to not include specified graph.
+    let cfsConfig = {
+        name: "Flow (Cubic Feet/Second)",
+        textColor: "#00CCFF",
+        legendTextColor: "#00CCFF",
+        lines: [
+            {
+                color: "#00CCFF",
+                xAlias: "dateTime",
+                yAlias:"cfs",
+                points: data.readings
+            }
+        ]
     }
-    else {
-        //Dark Mode
-        ctx.fillStyle = "black"
-    }
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    return canvas
+    let feetConfig = {
+        name: "Gauge Height (Feet)",
+        //In dark mode, blue doesn't show up well enough, so different colors are used.
+        textColor: window.darkMode?"#7175ff":"blue",
+        legendTextColor: window.darkMode?"#7175ff":"blue",
+        lines: [
+            {
+                color: window.darkMode?"#7175ff":"blue",
+                xAlias: "dateTime",
+                yAlias:"feet",
+                points: data.readings
+            }
+        ]
+    }
+
+    let graph = createGraph({
+        name: data.name,
+        backgroundColor: window.darkMode?"black":"white",
+        graphNameColor: window.darkMode?"white":"black",
+        legendLineColor: window.darkMode?"white":"black",
+        width: 1200,
+        height: 800,
+        x1: {
+            textColor: window.darkMode?"white":"black",
+        },
+        y1: (doNotInclude !== "cfs")?cfsConfig:undefined,
+        y2: (doNotInclude !== "feet")?feetConfig:undefined
+    })
+    graph.className = "graph"
+    return graph
 }
 
 
-//Auxillary Function
-function toparts(arr) {
-    let values = []
-    let timestamps = []
-
-    for (let i=0;i<arr.length;i++) {
-		if (!arr[i]) {continue;}
-        let obj = arr[i]
-        values.push(obj.value)
-        timestamps.push(obj.dateTime)
-    }
-
-    return {values:values,timestamps:timestamps}
-}
-
-//In dark mode, blue doesn't show up well enough, so different colors are used.
-
-
-function getFlowGraph(cfs, height, data) {
-    //Make sure we actually have some data, and don't create an empty graph
-    if (!(cfs || height)) {return}
-	
-	//We will pass 3 with CFS so that values are rounded once they exceed 3 characters - with feet, we will use the default of 6 characters long
-
-    let canvas = createcanvas()
-    //Time to create a dual lined graph!
-    if (cfs && height) {
-		let parts = toparts(cfs)
-        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFF", 2, undefined, 3)
-        parts = toparts(height)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values, window.darkMode?"#7175ff":"#0000FF", 2, 1)
-	}
-    //We won't have both cfs and height. Draw a single line graph for whichever we have.
-    else if (cfs) {
-        let parts = toparts(cfs)
-        addLine("cfs", parts.timestamps, data.name, canvas, 0, parts.values, "#00CCFF", undefined, undefined, 3)
-    }
-    else {
-        let parts = toparts(height)
-        addLine("height", parts.timestamps, data.name, canvas, 0, parts.values,  window.darkMode?"#7175ff":"blue")
-    }
-
-	return canvas
+function getTempGraph(data) {
+    let graph = createGraph({
+        name: data.name,
+        backgroundColor: window.darkMode?"black":"white",
+        graphNameColor: window.darkMode?"white":"black",
+        legendLineColor: window.darkMode?"white":"black",
+        width: 1200,
+        height: 800,
+        x1: {
+            textColor: window.darkMode?"white":"black",
+        },
+        y1: {
+            name: "Water Temperature (°F)",
+            textColor: [[0, window.darkMode?"#00AAFF":"blue"], [1, "red"]],
+            legendTextColor: [[0, window.darkMode?"#00AAFF":"blue"], [1, "red"]],
+            lines: [
+    			{
+                    color: [[0, window.darkMode?"#00AAFF":"blue"], [1, "red"]],
+    				xAlias: "dateTime",
+    				yAlias:"temp",
+    				points: data.readings
+    			}
+    		]
+        }
+    })
+    graph.className = "graph"
+    return graph
 }
 
 
-function getTempGraph(temp, data) {
-    if (temp) {
-        let canvas = createcanvas()
+function getPrecipGraph(data) {
+    //Generate some additional info summing up total rainfall.
+    let startTime = data.readings[data.readings.length - 1].dateTime;
+    let halfDay;
+    let fullDay;
+    let sum;
+    for (let i = data.readings.length - 1; i>=0;i--) {
+        let currentTime = data.readings[i].dateTime
+        if (!sum) {
+            sum = data.readings[i].precip
+        }
+        else {
+            sum += data.readings[i].precip
+        }
+        if (halfDay === undefined && startTime - currentTime >= 1000*60*60*12) {halfDay = sum}
+        if (fullDay === undefined && startTime - currentTime >= 1000*60*60*24) {fullDay = sum}
+        sum = Math.round(sum*10000)/10000 //Handle floating point precision loss.
 
-        let parts = toparts(temp)
-        addLine("", parts.timestamps, data.name, canvas, 0, parts.values, "red", 3, window.darkMode?"#00AAFF":"blue")
-
- 		return canvas
     }
+    let summaryText;
+    if (fullDay !== undefined) {
+        summaryText = "Last 24 hours: " + fullDay + "\"" + " " + "Last 12 hours: " + halfDay + "\""
+    }
+    else if (halfDay !== undefined) {
+        summaryText = "Last 12 hours: " + halfDay + "\""
+    }
+    else if (!isNaN(sum)) {
+        summaryText = "Last " + Math.round((data.readings[data.readings.length - 1].dateTime - data.readings[0].dateTime)/1000/60/60) + " hours: " + sum + "\""
+    }
+    else {return}
+
+    let graph = createGraph({
+        name: data.name,
+        backgroundColor: window.darkMode?"black":"white",
+        graphNameColor: window.darkMode?"white":"black",
+        legendLineColor: window.darkMode?"white":"black",
+        width: 1200,
+        height: 800,
+        x1: {
+            textColor: window.darkMode?"white":"black",
+        },
+        y1: {
+            name: "Precipitation (Inches)",
+            textColor: "#0099FF",
+            legendTextColor: "#0099FF",
+            lines: [
+    			{
+                    color: "#0099FF",
+    				xAlias: "dateTime",
+    				yAlias:"precip",
+    				points: data.readings
+    			}
+    		]
+        },
+        additionalText: {
+            text: summaryText,
+            color: "#0099FF"
+        }
+    })
+    graph.className = "graph"
+    return graph
 }
 
-
-
-function getPrecipGraph(precip, data) {
-    if (precip) {
-        let canvas = createcanvas()
-
-        let parts = toparts(precip)
-        addLine("Precipitation", parts.timestamps, data.name, canvas, 0, parts.values, "#0099FF")
-
-		return canvas
-    }
-}
 
 function getButton(text, className) {
 	let button = document.createElement("button")
@@ -110,12 +160,12 @@ function addGraphs(data) {
 	let container = document.createElement("div")
 	let graphs = []
 	container.style.textAlign = "center"
-	
-	//TODO: We only need to synchronusly render the first graph, as only one will be displayed at once. 
+
+	//TODO: We only need to synchronusly render the first graph, as only one will be displayed at once.
 	//This will lead to speed increases when .riverbuttons are clicked.
     try {
         if (!localStorage.getItem("colorBlindMode")) {
-            let flowGraph = getFlowGraph(data.cfs, data.feet, data)
+            let flowGraph = getFlowGraph(data)
 			if (flowGraph) {
 				graphs.push({
 					text: "Flow Info",
@@ -127,7 +177,7 @@ function addGraphs(data) {
         else {
 			try {
 				//Use one graph for cfs and one for feet if the user is in color blind mode.
-				let cfsGraph = getFlowGraph(data.cfs, undefined, data)
+				let cfsGraph = getFlowGraph(data, "feet") //Pass "feet" as doNotInclude
 				if (cfsGraph) {
 					graphs.push({
 						text: "Flow In CFS",
@@ -140,7 +190,7 @@ function addGraphs(data) {
 				console.error(e)
 			}
 			try {
-				let feetGraph = getFlowGraph(undefined, data.feet, data)
+				let feetGraph = getFlowGraph(data, "cfs") //Pass "cfs" as doNotInclude
 				if (feetGraph) {
 					graphs.push({
 						text: "Flow In Feet",
@@ -157,7 +207,7 @@ function addGraphs(data) {
     catch(e){console.error("Error creating flow graph: " + e)}
 
     try {
-        let tempGraph = getTempGraph(data.temp, data)
+        let tempGraph = getTempGraph(data)
 		if (tempGraph) {
 			graphs.push({
 				text: "Temperature",
@@ -169,7 +219,7 @@ function addGraphs(data) {
     catch(e){console.error("Error creating temperature graph: " + e)}
 
     try {
-        let precipGraph = getPrecipGraph(data.precip, data)
+        let precipGraph = getPrecipGraph(data)
 		if (precipGraph) {
 			graphs.push({
 				text: "Precipitation",
@@ -179,18 +229,18 @@ function addGraphs(data) {
 		}
     }
     catch(e){console.error("Error creating precipitation graph: " + e)}
-	
+
 	try {
 		let buttonContainer = document.createElement("div")
 		if (graphs.length > 1) {
 			//We don't need to show selection buttons if we only have one graph.
 			container.appendChild(buttonContainer)
-		}	
+		}
 		//Add the starting graph - the flow graph.
 		container.appendChild(graphs[0].elem)
 
 		graphs.forEach((data) => {
-			let button = getButton(data.text, data.className)	   
+			let button = getButton(data.text, data.className)
 			button.addEventListener("click", function() {
 				let oldGraph = container.querySelector(".graph")
 				oldGraph.replaceWith(data.elem)
