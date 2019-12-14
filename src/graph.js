@@ -176,7 +176,6 @@ function createGraph(options) {
 		let forecastDashing = line.forecastDashing || defaultForecastDashing
 
 		line.points.forEach((point, index) => {
-			console.log(line.forecastAlias)
 			if (point[line.forecastAlias]) {
 				ctx.setLineDash(forecastDashing)
 			}
@@ -228,7 +227,6 @@ function createGraph(options) {
 	if (options.graphNameColor) {
 		ctx.fillStyle = options.graphNameColor
 	}
-	console.log(textSize)
 	ctx.textAlign = "center";
 	ctx.font = textSize * 1.15 + "px serif"
 	ctx.fillText(options.name || "", finalCanvas.width*0.5, finalCanvas.height - textSize / 3.5, finalCanvas.width) //Center bottom
@@ -297,7 +295,7 @@ function createGraph(options) {
 		//Rounds a number on the legend to a reasonable number of digits.
 		//Range variation is the distance between the minimum and maximum value that value has been over the graph.
 		let maxDigits = 2
-		let digits = Math.round(3-Math.log2(rangeVariation))
+		let digits = Math.round(2-Math.log10(rangeVariation))
 		digits = Math.max(0, Math.min(maxDigits, digits))
 		if (value > 10000) {
 			digits = 0

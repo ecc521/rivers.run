@@ -1,3 +1,39 @@
+//TODO: Need support for CMS and Meters.
+
+function createUnitsSelector() {
+	let units = document.createElement("select")
+
+	let blank = document.createElement("option")
+	blank.selected = true
+	blank.disabled = true
+	blank.value = ""
+	blank.innerHTML = "Units"
+	units.appendChild(blank)
+
+	let feet = document.createElement("option")
+	feet.value = "feet"
+	feet.innerHTML = "Feet"
+	units.appendChild(feet)
+
+	let cfs = document.createElement("option")
+	cfs.value = "cfs"
+	cfs.innerHTML = "CFS"
+	units.appendChild(cfs)
+
+	let meters = document.createElement("option")
+	meters.value = "meters"
+	meters.innerHTML = "Meters"
+	units.appendChild(meters)
+
+	let cms = document.createElement("option")
+	cms.value = "cms"
+	cms.innerHTML = "CMS"
+	units.appendChild(cms)
+
+	return units
+}
+
+
 			function createDeviceNotificationsWidget(river, usgsID) {
 				let data = {
 					id: river.id,
@@ -46,27 +82,7 @@
 				high.value = (current && current.maximum) || ""
 				high.type = "number"
 
-				let units = document.createElement("select")
-
-				let blank = document.createElement("option")
-				blank.selected = true
-				blank.disabled = true
-				blank.value = ""
-				blank.innerHTML = "Units"
-				units.appendChild(blank)
-
-				let feet = document.createElement("option")
-				feet.value = "ft"
-				feet.innerHTML = "Feet"
-				feet.pattern = "[0-9]"
-				units.appendChild(feet)
-
-				let cfs = document.createElement("option")
-				cfs.value = "cfs"
-				cfs.innerHTML = "CFS"
-				cfs.pattern = "[0-9]"
-				units.appendChild(cfs)
-
+				let units = createUnitsSelector()
 				units.value = (current && current.units) || ""
 
 				let save = document.createElement("button")
@@ -91,7 +107,7 @@
 					}
 
 					if (!units.value) {
-						alert("Please specify whether feet or cfs should be used.")
+						alert("Please specify which units should be used.")
 						return;
 					}
 
@@ -118,11 +134,11 @@
 				container.appendChild(manage)
 				return container
 			}
-			
 
 
 
-//TODO: How should email notificatios get handled?			
+
+//TODO: How should email notificatios get handled?
 
 //Proposal: Seperate widget. Save button may want to actually save instead of opening the window.
 //TODO: Remove a lot of duplication
@@ -153,38 +169,20 @@
 				high.placeholder = "Maximum"
 				high.type = "number"
 
-				let units = document.createElement("select")
-
-				let blank = document.createElement("option")
-				blank.selected = true
-				blank.disabled = true
-				blank.value = ""
-				blank.innerHTML = "Units"
-				units.appendChild(blank)
-
-				let feet = document.createElement("option")
-				feet.value = "ft"
-				feet.innerHTML = "Feet"
-				feet.pattern = "[0-9]"
-				units.appendChild(feet)
-
-				let cfs = document.createElement("option")
-				cfs.value = "cfs"
-				cfs.innerHTML = "CFS"
-				cfs.pattern = "[0-9]"
-				units.appendChild(cfs)
+				let units = createUnitsSelector()
 
 				let save = document.createElement("button")
 				save.innerHTML = "Save"
 
 				save.addEventListener("click", function() {
 					let addparameters = {}
-					
+
 			        let lowValue = parseFloat(low.value)
 					let highValue = parseFloat(high.value)
 
 					data.minimum = lowValue
 					data.maximum = highValue
+
 					data.units = units.value
 
 					if (isNaN(lowValue)) {
@@ -198,7 +196,7 @@
 					}
 
 					if (!units.value) {
-						alert("Please specify whether feet or cfs should be used.")
+						alert("Please specify which units should be used.")
 						return;
 					}
 
@@ -223,7 +221,7 @@
 				container.appendChild(manage)
 				return container
 			}
-			
+
 
 			module.exports = {
 				createDeviceNotificationsWidget,

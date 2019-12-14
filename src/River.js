@@ -114,19 +114,55 @@ function addFlowData(river) {
 		}
 	})
 
+	Object.defineProperty(river, "meters", {
+		get: function getLatestMeters() {
+			return Math.round(river.feet / meterInFeet * 100) / 100 //Round to 2 digits
+		}
+	})
+
+	Object.defineProperty(river, "cms", {
+		get: function getLatestCubicMeters() {
+			return Math.round(river.cfs / cubicMeterInFeet * 100) / 100 //Round to 2 digits
+		}
+	})
+
+	Object.defineProperty(river, "mainGaugeUnits", {
+		get: function getMainGaugeUnits() {
+			let data = usgsarray[this.gauge]
+			if (data) {
+				return data.units || "feet"
+			}
+		}
+	})
+
 	Object.defineProperty(river, "flow", {
 		get: function getRiverFlow() {
-			let latestCFS = river.cfs
-			let latestFeet = river.feet
 
-			if ((latestCFS != null) && (latestFeet != null)) {
-	            return latestCFS + "cfs " + latestFeet + "ft"
+			let volumeUnits, stageUnits;
+			if (river.mainGaugeUnits === "feet") {
+				stageUnits = "feet"
+				volumeUnits = "cfs"
+
+			}
+			else if (river.mainGaugeUnits === "m") {
+				stageUnits = "meters"
+				volumeUnits = "cms"
+			}
+
+			let latestStage = river[stageUnits]
+			let latestVolume = river[volumeUnits]
+
+			if (stageUnits === "feet") {stageUnits = "ft"}
+			if (stageUnits === "meters") {stageUnits = "m"}
+			
+			if ((latestVolume != null) && (latestStage != null)) {
+	            return latestVolume + volumeUnits + " " + latestStage + stageUnits
 	        }
-            else if (latestCFS != null) {
-                return latestCFS + " cfs"
+            else if (latestVolume != null) {
+                return latestVolume + " " + volumeUnits
             }
-            else if (latestFeet != null) {
-                return latestFeet + " ft"
+            else if (latestStage != null) {
+                return latestStage + " " + stageUnits
             }
 		}
 	})

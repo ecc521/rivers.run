@@ -86,16 +86,22 @@ function createExpansion(button, river) {
             }
 			if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
 
+            div.appendChild(document.createElement("br"))
+            let link = document.createElement("a")
+            link.target = "_blank"
+            link.rel = "noopener"
 			if (!river.isGauge) {
-				//All rivers have an ID. All gauges do not.
-				div.appendChild(document.createElement("br"))
-				let link = document.createElement("a")
-				link.target = "_blank"
-				link.rel = "noopener"
+                //Link to edit river data
 				link.href = "https://docs.google.com/document/d/" + river.id
 				link.innerHTML = "Edit this river"
-				div.appendChild(link)
 			}
+            else {
+                //Link to create a river using this gauge. 
+                link.innerHTML = "Create River using Gauge"
+                link.href = "resources/writeupmaker.html" + "#" + "name=" + river.name + "&section=" + river.section + "&gauge=" + river.gauge
+            }
+            div.appendChild(link)
+
             if (river.aw) {
                 div.appendChild(document.createElement("br"))
                 let link = document.createElement("a")
@@ -131,6 +137,7 @@ function createExpansion(button, river) {
                         console.error(e)
                         dataAge = null
                     }
+                    console.log(dataAge)
                     let maxAge = 1000*60*60*2
                     let oldDataWarning;
                     if (dataAge > maxAge) {

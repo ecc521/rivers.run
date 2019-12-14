@@ -2,22 +2,35 @@ const {createGraph} = require("./graph.js")
 
 function getFlowGraph(data, doNotInclude) {
     //doNotInclude - pass either "cfs" or "feet" to not include specified graph.
-    let cfsConfig = {
-        name: "Flow (Cubic Feet/Second)",
+    if (data.units === "m") {
+        //User wants Meters, not Feet.
+        data.readings = data.readings.map((reading) => {
+                if (reading.cfs) {
+                    reading.cms = reading.cfs / cubicMeterInFeet
+                }
+                if (reading.feet) {
+                    reading.meters = reading.feet / meterInFeet
+                }
+                return reading
+        })
+    }
+
+    let volumeConfig = {
+        name: (data.units === "m")?"Flow (Cubic Meters/Second)":"Flow (Cubic Feet/Second)",
         textColor: "#00CCFF",
         legendTextColor: "#00CCFF",
         lines: [
             {
                 color: "#00CCFF",
                 xAlias: "dateTime",
-                yAlias:"cfs",
+                yAlias: (data.units === "m")?"cms":"cfs",
                 points: data.readings
             }
         ]
     }
 
-    let feetConfig = {
-        name: "Gauge Height (Feet)",
+    let stageConfig = {
+        name: (data.units === "m")?"Gauge Height (Meters)":"Gauge Height (Feet)",
         //In dark mode, blue doesn't show up well enough, so different colors are used.
         textColor: window.darkMode?"#7175ff":"blue",
         legendTextColor: window.darkMode?"#7175ff":"blue",
@@ -25,7 +38,7 @@ function getFlowGraph(data, doNotInclude) {
             {
                 color: window.darkMode?"#7175ff":"blue",
                 xAlias: "dateTime",
-                yAlias:"feet",
+                yAlias:(data.units === "m")?"meters":"feet",
                 points: data.readings
             }
         ]
@@ -41,8 +54,8 @@ function getFlowGraph(data, doNotInclude) {
         x1: {
             textColor: window.darkMode?"white":"black",
         },
-        y1: (doNotInclude !== "cfs")?cfsConfig:undefined,
-        y2: (doNotInclude !== "feet")?feetConfig:undefined
+        y1: (doNotInclude !== "volume")?volumeConfig:undefined,
+        y2: (doNotInclude !== "stage")?stageConfig:undefined
     })
     graph.className = "graph"
     return graph
@@ -104,9 +117,7 @@ function getPrecipGraph(data) {
     }
     else if (halfDay !== undefined) {
         summaryText = "Last 12 hours: " + halfDay + "\""
-    }
-    else if (!isNaN(sum)) {
-        summaryText = "Last " + Math.round((data.readings[data.readings.length - 1].dateTime - data.readings[0].dateTime)/1000/60/60) + " hours: " + sum + "\""
+        summaryText += " Last " + Math.round((data.readings[data.readings.length - 1].dateTime - data.readings[0].dateTime)/1000/60/60) + " hours: " + sum + "\""
     }
     else {return}
 
@@ -177,7 +188,7 @@ function addGraphs(data) {
         else {
 			try {
 				//Use one graph for cfs and one for feet if the user is in color blind mode.
-				let cfsGraph = getFlowGraph(data, "feet") //Pass "feet" as doNotInclude
+				let cfsGraph = getFlowGraph(data, "stage") //Pass "stage" as doNotInclude
 				if (cfsGraph) {
 					graphs.push({
 						text: "Flow In CFS",
@@ -190,7 +201,7 @@ function addGraphs(data) {
 				console.error(e)
 			}
 			try {
-				let feetGraph = getFlowGraph(data, "cfs") //Pass "cfs" as doNotInclude
+				let feetGraph = getFlowGraph(data, "volume") //Pass "volume" as doNotInclude
 				if (feetGraph) {
 					graphs.push({
 						text: "Flow In Feet",

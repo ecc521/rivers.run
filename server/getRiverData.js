@@ -28,6 +28,7 @@ function createGetLatest(filePath, options = {}) {
 
 let getLatestRiverArray = createGetLatest(path.join(utils.getSiteRoot(), "riverdata.json"),{isJSON:true})
 
+//TODO: Add support for CMS and Meters. 
 async function getAssistantReply(query, options) {
 	let riverarray = await getLatestRiverArray()
 

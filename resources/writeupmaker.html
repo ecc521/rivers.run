@@ -1,7 +1,6 @@
-<p>Your progress in creating this writeup is automatically saved. It will be available the next time this page is loaded, unless one of the following occours:<br>
-1. localStorage is cleared. Browsers may do this if you click "clear cache" or "clear cookies and other side data".<br>
-2. Multiple tabs of this page open at once - The tabs will overwrite each other.</p>
-<br>
+<h1 style="text-align: center">Rivers.run River Creator</h1>
+
+<p>Your progress in creating this river is automatically saved. Your changes may be lost if you have multiple tabs with this page open at once, or if you clear browsing data. </p>
 <button onclick="clearAllFields()">Clear All Fields</button>
 
 <p>Basic River Information</p>
@@ -52,7 +51,7 @@ This river has dam releases <input id="dam" type="checkbox">
 <br>
 
 <p>Gauge Information (Strongly Reccomended)</p>
-<p>The Gauge ID should be prefixed with the agency code. For example, type "USGS: 03192000" for <a href="https://waterdata.usgs.gov/nwis/uv?site_no=03192000" target="_blank">this</a> USGS gauge.</p>
+<p>The Gauge ID should be prefixed with the agency code followed by a colon. For example, type "USGS: 03192000" for <a href="https://waterdata.usgs.gov/nwis/uv?site_no=03192000" target="_blank">this</a> USGS gauge.</p>
 <p>Available agency codes:</p>
 <ul>
     <li>USGS (United States Geological Survey)</li>
@@ -123,6 +122,10 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 		padding-left: 5px;
 	}
 
+    input, select, button {
+        font-size: 16px;
+    }
+
 	@media (prefers-color-scheme: dark) {
 		html, body {
 			background-color: black;
@@ -150,6 +153,8 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 	}
 
 </style>
+
+<script src="../packages/allPages.js"></script>
 
 <!-- Quill can misbehave. Add a button to reset it.-->
 <button onclick="if (confirm('Are you sure you want to clear the writeup?')) {quill.root.innerHTML = '';UpdateWriteup()}">Clear Writeup</button>
@@ -245,16 +250,32 @@ for (let stateCode in states) {
 
 var List = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgaugess","class","averagegradient","maxgradient","length", "comments"]
 
+
+let urlParams = new URLSearchParams(window.location.hash.slice(1))
+let userApprovedOverwrites = null;
+
 List.forEach(function(value){
   console.log(value)
   console.log(document.getElementById(value))
   if (value !== "writeup") {
 	  let elem = document.getElementById(value)
+      let initialValue = localStorage.getItem(value)
+
+      //Allow prefilling fields with url parameters.
+      if (urlParams.has(value)) {
+          if (userApprovedOverwrites === null && initialValue) {
+              userApprovedOverwrites = confirm("The link you followed to this page included fields that should be prefilled, however some of those fields contain saved data. Would you like to prefill those fields anyway?")
+          }
+          if (userApprovedOverwrites === true || !initialValue) {
+              initialValue = urlParams.get(value)
+          }
+      }
+
 	  if (elem.type === "checkbox") {
-	  	elem.checked = (localStorage.getItem(value) === "true")
+	  	elem.checked = (initialValue === "true")
 	  }
 	  else {
-      	elem.value = localStorage.getItem(value)
+      	elem.value = initialValue
 	  }
       elem.addEventListener("keyup", UpdateWriteup)
   }
@@ -365,5 +386,3 @@ function submitAsNewRiver() {
 }
 
 </script>
-
-<script src="../packages/allPages.js"></script>

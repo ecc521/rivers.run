@@ -30,20 +30,24 @@ function sendNotifications(ignoreNoneUntil = false) {
         if (!ignoreNoneUntil && user.noneUntil > Date.now()) {continue;}
 
 		let parameters = user.parameters
-
+        //TODO: Update for new format. Add meters support.
         let data = {};
 		for (let gauge in parameters) {
 			let rivers = parameters[gauge]
-			let flow = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(),"gaugeReadings",gauge)))
+			let flow = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(),"gaugeReadings",gauge))).readings
 			for (let prop in rivers) {
 				let river = rivers[prop]
 
-				let values;
+                flow = flow[flow.length - 1]
 
-				if (river.units === "cfs") {values = flow.cfs}
-				if (river.units === "ft") {values = flow.feet}
+                let units = river.units
 
-				river.current = values[values.length - 1].value
+                let meterInFeet = 3.2808399
+                let cubicMeterInFeet = meterInFeet**3
+                
+				if (units === "cms") {river.running = flow.cfs / cubicMeterInFeet}
+				if (river.units === "meters") {river.running = flow.feet/ meterInFeet}
+                else {river.running = flow[units]}
 
 				//Don't delete for email notifications
 				if (!(river.minimum < river.current && river.current < river.maximum)) {

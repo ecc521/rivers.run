@@ -258,6 +258,9 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 #advanced-search-modal > .modal-content > #locationSearchPortion > * {
     font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
 }
+button {
+    font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
+}
 
 #advanced-search-modal-close {
     font-size: 28px !important; /*Set back to the default (the selector above would override)*/

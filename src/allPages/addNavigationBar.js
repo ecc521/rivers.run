@@ -7,45 +7,21 @@ try {
 
 	let items = []
 
-	let item1 = document.createElement("a")
-	item1.href = root
-	item1.innerHTML = "River Info"
-	items.push(item1)
+	function addItem(text, src) {
+		let item = document.createElement("a")
+		item.innerHTML = text
+		item.href = src
+		items.push(item)
+	}
 
-	let item2 = document.createElement("a")
-	item2.href = root + "about.html"
-	item2.innerHTML = "About"
-	items.push(item2)
-
-	let item3 = document.createElement("a")
-	item3.href = root + "FAQ.html"
-	item3.innerHTML = "FAQ"
-	items.push(item3)
-
-	let item4 = document.createElement("a")
-	item4.href = root + "settings.html"
-	item4.innerHTML = "Settings"
-	items.push(item4)
-
-	let item5 = document.createElement("a")
-	item5.href = root + "clubs.html"
-	item5.innerHTML = "Clubs"
-	items.push(item5)
-
-	let item6 = document.createElement("a")
-	item6.href = root + "emailnotifications.html"
-	item6.innerHTML = "Email Alerts"
-	items.push(item6)
-
-	let item7 = document.createElement("a")
-	item7.href = root + "notifications.html"
-	item7.innerHTML = "Browser Alerts"
-	items.push(item7)
-
-	let item8 = document.createElement("a")
-	item8.href = root + "voice.html"
-	item8.innerHTML = "Voice"
-	items.push(item8)
+	addItem("River Info", root)
+	addItem("FAQ", root + "FAQ.html")
+	addItem("Settings", root + "settings.html")
+	addItem("Clubs", root + "clubs.html")
+	addItem("Email Alerts", root + "emailnotifications.html")
+	addItem("Browser Alerts", root + "notifications.html")
+	addItem("Voice", root + "voice.html")
+	addItem("About", root + "about.html")
 
 	for (let i=0;i<items.length;i++) {
 	    let link = items[i]
@@ -81,20 +57,6 @@ try {
 	}
 	`, styleSheet.cssRules.length)
 
-	let shrinkNavbarAt = 380 //Pixels to shrink navbar at
-
-	//Shrink the size of the header for smaller screens.
-	styleSheet.insertRule(`
-	@media screen and (max-width: ${shrinkNavbarAt}px) {
-	.topnav a {
-	padding: 10px 11px;
-	line-height: 4.4vw;
-	font-size: 4.4vw;
-	}
-	}
-	`, styleSheet.cssRules.length)
-
-
 	styleSheet.insertRule(".topnav a:hover {background-color: #359daa}", styleSheet.cssRules.length)
 	styleSheet.insertRule(".topnavcurrent {background-color: #25d1a7}", styleSheet.cssRules.length)
 
@@ -114,10 +76,18 @@ try {
 	}
 	`, styleSheet.cssRules.length)
 
-	let pxForMenu = 775 //How small must the screen be before the menu appears.
+
+	function widthForElemCount(elemCount = items.length) {
+		let sum = 0;
+		for (let i=0;i<Math.min(items.length, elemCount);i++) {
+			sum += items[i].offsetWidth
+		}
+		return sum
+	}
+
 
 	styleSheet.insertRule(`
-	@media screen and (max-width: ${pxForMenu}px) {
+	@media screen and (max-width: ${widthForElemCount()}px) {
 	  .topnav a.menu {
 		float: right;
 		display: block !important;
@@ -125,53 +95,8 @@ try {
 	}
 	`, styleSheet.cssRules.length)
 
-	//TODO: Dynamically generate the pixel values for when things should be hidden.
-
-	//Display 7 navbar items at pxForMenu pixels
 	styleSheet.insertRule(`
-	@media screen and (max-width: ${pxForMenu}px) {
-		.topnav a:nth-child(n+8) {display: none;}
-	}
-	`, styleSheet.cssRules.length)
-
-	//Display 6 navbar items at 700 pixels
-	styleSheet.insertRule(`
-	@media screen and (max-width: 700px) {
-		.topnav a:nth-child(n+7) {display: none;}
-	}
-	`, styleSheet.cssRules.length)
-
-	//Display 6 navbar items at 570 pixels
-	styleSheet.insertRule(`
-	@media screen and (max-width: 570px) {
-		.topnav a:nth-child(n+6) {display: none;}
-	}
-	`, styleSheet.cssRules.length)
-
-	//Display 4 navbar items at 400 pixels
-	styleSheet.insertRule(`
-	@media screen and (max-width: 450px) {
-		.topnav a:nth-child(n+5) {display: none;}
-	}
-	`, styleSheet.cssRules.length)
-
-	//Display 4 navbar items at 400 pixels
-	styleSheet.insertRule(`
-	@media screen and (max-width: 400px) {
-		.topnav a:nth-child(n+5) {display: none;}
-	}
-	`, styleSheet.cssRules.length)
-
-	//Display 3 navbar items at 310 pixels
-	styleSheet.insertRule(`
-	@media screen and (max-width: 310px) {
-		.topnav a:nth-child(n+4) {display: none;}
-	}
-	`, styleSheet.cssRules.length)
-
-
-	styleSheet.insertRule(`
-	@media screen and (max-width: ${pxForMenu}px) {
+	@media screen and (max-width: ${widthForElemCount()}px) {
 	  .topnav.expanded {position: relative;}
 	  .topnav.expanded .menu {
 		position: absolute;
@@ -180,12 +105,31 @@ try {
 	  }
 	  .topnav.expanded a {
 		float: none;
-		display: block;
+		display: block !important;
 		text-align: left;
 	  }
 	}
 	`, styleSheet.cssRules.length)
 
+	//Hide last item below widthForElemCount() pixels.
+	styleSheet.insertRule(`
+	@media screen and (max-width: ${widthForElemCount()}px) {
+		.topnav a:nth-child(n+${items.length}) {display: none;}
+	}
+	`, styleSheet.cssRules.length)
+
+	for (let i=items.length - 1;i>0;i--) {
+		let menuWidth = 45 //TODO: Calculate this dynamically.
+		let neededWidth = widthForElemCount(i) + menuWidth
+		console.log(neededWidth)
+
+		//Hide elements that do not fit below neededWidth
+		styleSheet.insertRule(`
+		@media screen and (max-width: ${neededWidth}px) {
+			.topnav a:nth-child(n+${i}) {display: none;}
+		}
+		`, styleSheet.cssRules.length)
+	}
 
 }
 catch (e) {

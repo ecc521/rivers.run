@@ -1,4 +1,5 @@
 self.usgsarray = {}
+
 window.updateOldDataWarning = function() {
 
 		let toDelete = document.getElementById("topOldDataWarning")
