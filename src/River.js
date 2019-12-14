@@ -267,12 +267,12 @@ function River(locate, event) {
 	addFlowData(this) //Defines river.cfs, river.feet, and river.flow
 	calculateRelativeFlow(this)
 
-	this.updateFlowData = function() {
+	this.updateFlowData = function(noExpansion) {
 		if (this.finished) {
 			addFlowSpan(this, this.finished) //Update the flowspan if it exists.
 			addFlowStyling(this, this.finished) //And make sure colors, etc, are updated.
 		}
-		if (this.updateExpansion) {
+		if (this.updateExpansion && !noExpansion) {
 			this.updateExpansion()
 		}
 	}
