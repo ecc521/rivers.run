@@ -62,6 +62,7 @@ async function loadCanadianGauge(gaugeID) {
 	let output = {
 		readings: results,
 		name: gaugeInfo.name,
+		units: "m",
 		source: {
 			text: "View this data on the Meteorological Service of Canada",
 			link: url //TODO: Try to find a better source url.

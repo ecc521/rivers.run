@@ -207,6 +207,10 @@ function createExpansion(button, river) {
                         })
                     })
                 }
+				else {
+					river.updateFlowData(true) //Update only flow styling and flow data column. 
+					//We do this because, otherwise, if two rivers have the gauge, the second and successive ones opened will not have their flow styling or column updated. . 
+				}
             }
 
             //USGS data may not have loaded yet
