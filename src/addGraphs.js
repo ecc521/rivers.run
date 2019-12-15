@@ -106,9 +106,9 @@ function getPrecipGraph(data) {
         else {
             sum += data.readings[i].precip
         }
+        sum = Math.round(sum*10000)/10000 //Handle floating point precision loss.
         if (halfDay === undefined && startTime - currentTime >= 1000*60*60*12) {halfDay = sum}
         if (fullDay === undefined && startTime - currentTime >= 1000*60*60*24) {fullDay = sum}
-        sum = Math.round(sum*10000)/10000 //Handle floating point precision loss.
 
     }
     let summaryText;

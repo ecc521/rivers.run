@@ -60,26 +60,6 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 		let oldCompleted = completed
 		let drawing = drawMore(8, options)
 
-		if (drawing.finished && !options.onlyGauges) {
-			//Add an element that says gauges are shown below.
-			let suggestRiver = document.createElement("div")
-
-			suggestRiver.addEventListener("click", function() {
-				window.open("resources/writeupmaker.html")
-			})
-
-			suggestRiver.classList.add("riverbutton")
-			suggestRiver.classList.add("gaugesBelow")
-
-			let span = document.createElement("span")
-			span.innerHTML = "Suggest a New River"
-			span.style.cursor = "pointer"
-
-			suggestRiver.appendChild(span)
-			span.style.width = "100%"
-			div.appendChild(suggestRiver)
-		}
-
 		if (drawing.finished && !useGauges) {
 			useGauges = true;
 			completed = 0;

@@ -82,7 +82,8 @@ try {
 		for (let i=0;i<Math.min(items.length, elemCount);i++) {
 			sum += items[i].offsetWidth
 		}
-		return sum
+		let navbarPadding = window.innerWidth - topnav.offsetWidth
+		return sum + navbarPadding
 	}
 
 
