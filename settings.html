@@ -19,7 +19,7 @@
             <option value="false">Light</option>
             <option value="true">Dark</option>
         </select>
-        <p id="darkModeDefaultExplaination">Default: Use browser/os theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your browser provides a color scheme to use)</p>
+        <p id="darkModeDefaultExplanation">Default: Use browser/os theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your browser provides a color scheme to use)</p>
 
         <h3>Class or Skill</h3>
         <select id="classOrSkill">
@@ -29,7 +29,7 @@
         </select>
         <p>Default: Skill. Setting to class will show class instead of skill on smaller devices. On larger devices, this setting determines which comes first.</p>
 
-        <h3>Skill Explainations</h3>
+        <h3>Skill Explanations</h3>
         <select id="skillExplainataions">
             <option value="null">Default</option>
             <option value="false">No</option>
@@ -127,19 +127,19 @@
             document.getElementById("classOrSkill").value = localStorage.getItem("classOrSkill")
             document.getElementById("colorBlindMode").value = localStorage.getItem("colorBlindMode")
 
-            let explaination = document.getElementById("darkModeDefaultExplaination")
+            let explanation = document.getElementById("darkModeDefaultExplanation")
             let browserSupportsDarkMode = window.matchMedia('(prefers-color-scheme: dark)').media !== "not all"
             if (browserSupportsDarkMode) {
 				window.mediaWatch = window.matchMedia('(prefers-color-scheme: dark)')
 				function setText() {
                 	let currentTheme = mediaWatch.matches ? "dark": "light"
-                	explaination.innerHTML = "Selecting Default causes rivers.run to use the theme provided by your browser (" + currentTheme + ")"
+                	explanation.innerHTML = "Selecting Default causes rivers.run to use the theme provided by your browser (" + currentTheme + ")"
 				}
 				mediaWatch.onchange = setText
 				setText()
             }
             else {
-                explaination.innerHTML = "Selecting Default causes rivers.run to use the light theme - your browser does not provide rivers.run the theme to use"
+                explanation.innerHTML = "Selecting Default causes rivers.run to use the light theme - your browser does not provide rivers.run the theme to use"
             }
 
 

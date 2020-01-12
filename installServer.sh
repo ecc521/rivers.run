@@ -44,7 +44,7 @@ echo "LoadModule proxy_module modules/mod_proxy.so" >> $HOME/rivers.run/NODERIVE
 echo "LoadModule proxy_http_module modules/mod_proxy_http.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
 #echo "ProxyRequests on" >> $HOME/rivers.run/NODERIVERSRUN.conf #Doesn't appear to be needed. Having this removed should prevent the server from being abused as an open proxy.
 echo "ProxyPass /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf
-#echo "ProxyPassReverse /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf #Doesn't appear to be needed. 
+#echo "ProxyPassReverse /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf #Doesn't appear to be needed.
 
 echo "LoadModule http2_module modules/mod_http2.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
 echo "Protocols h2 http/1.1" >> $HOME/rivers.run/NODERIVERSRUN.conf
@@ -70,5 +70,5 @@ echo "*/15 * * * * node $HOME/rivers.run/server/restartServer.js >> $HOME/rivers
 echo "0 4   *   *   *    sudo reboot"
 echo "@reboot sudo certbot renew  >> $HOME/rivers.run/server/logs/updateCertificate.log"
 
-echo "\nExplaination: Run server on reboot. Run restartServer.js every 15 minutes. Reboot at 4am every day. Run certbot renew on each reboot."
+echo "\nExplanation: Run server on reboot. Run restartServer.js every 15 minutes. Reboot at 4am every day. Run certbot renew on each reboot."
 echo "We reboot the server at 4am every day in an attempt to resolve an issue where, after running for a few days, the server (probably kernel) would lock up, reading at full speed from the disk and doing nothing else."

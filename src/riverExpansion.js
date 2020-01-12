@@ -28,7 +28,7 @@ function createExpansion(button, river) {
 
 			div.innerHTML = ""
 
-			//Only show a link if river.dam is a link. This allows rivers to be marked as dams and explainations to be put in the writeups.
+			//Only show a link if river.dam is a link. This allows rivers to be marked as dams and explanations to be put in the writeups.
 			if (river.dam && river.dam.trim().startsWith("http")) {
                 //Adding to div.innerHTML works, but logs CSP errors
                 let link = document.createElement("a")
