@@ -93,7 +93,16 @@ function addFlowData(river) {
 		if (data) {
 			let readings = data.readings
 			try {
-				let latestReading = readings[readings.length - 1]
+				let latestReading;
+
+				for (let i=readings.length - 1;i>=0;i--) {
+					//Find the latest non-forecast flow value.
+					if (readings[i].forecast !== true) {
+						latestReading = readings[i];
+						break;
+					}
+				}
+
 				if (latestReading) {
 					return latestReading[prop]
 				}
@@ -154,7 +163,7 @@ function addFlowData(river) {
 
 			if (stageUnits === "feet") {stageUnits = "ft"}
 			if (stageUnits === "meters") {stageUnits = "m"}
-			
+
 			if ((latestVolume != null) && (latestStage != null)) {
 	            return latestVolume + volumeUnits + " " + latestStage + stageUnits
 	        }

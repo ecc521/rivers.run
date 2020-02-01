@@ -38,13 +38,19 @@ function sendNotifications(ignoreNoneUntil = false) {
 			for (let prop in rivers) {
 				let river = rivers[prop]
 
-                flow = flow[flow.length - 1]
+                for (let i=flow.length - 1;i>=0;i--) {
+                    //Find the latest non-forecast flow value.
+                    if (flow[i].forecast !== true) {
+                        flow = flow[i];
+                        break;
+                    }
+                }
 
                 let units = river.units
 
                 let meterInFeet = 3.2808399
                 let cubicMeterInFeet = meterInFeet**3
-                
+
 				if (units === "cms") {river.running = flow.cfs / cubicMeterInFeet}
 				if (river.units === "meters") {river.running = flow.feet/ meterInFeet}
                 else {river.running = flow[units]}

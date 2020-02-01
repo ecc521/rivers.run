@@ -126,8 +126,19 @@ async function getAssistantReply(query, options) {
 	let timeStamp;
 	try {
 		gauge = JSON.parse(await fs.promises.readFile(path.join(utils.getSiteRoot(),"gaugeReadings",topRanked[0].gauge)))
-		gauge = gauge.readings[gauge.readings.length - 1]
-		timeStamp = gauge.readings[gauge.readings.length - 1].timeStamp
+		let readings = gauge.readings
+
+		let latestReading;
+		for (let i=readings.length - 1;i>=0;i--) {
+			//Find the latest non-forecast flow value.
+			if (readings[i].forecast !== true) {
+				latestReading = readings[i];
+				break;
+			}
+		}
+
+		gauge = latestReading
+		timeStamp = latestReading.dateTime
 	}
 	catch(e) {console.error(e)}
 
