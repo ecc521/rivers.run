@@ -64,11 +64,6 @@ Header set Cache-Control "max-age=300, public, stale-if-error=86400"
 Header set Cache-Control "max-age=86400, public, stale-if-error=8640000"
 </FilesMatch>
 
-#3 day cache (overviews don't change much). Serve up to 100 days old if errors.
-<FilesMatch "overviews.js">
-Header set Cache-Control "max-age=259200, public, stale-if-error=8640000"
-</FilesMatch>
-
 #Remove trailing slash if path doesn't match an existing directory.
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.+)/+$ $1 [R,L]
