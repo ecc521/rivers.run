@@ -34,14 +34,25 @@ function sendNotifications(ignoreNoneUntil = false) {
         let data = {};
 		for (let gauge in parameters) {
 			let rivers = parameters[gauge]
-			let flow = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(),"gaugeReadings",gauge))).readings
+
+			let readings;
+
+            try {
+                readings = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(),"gaugeReadings", gauge))).readings
+            }
+            catch(e) {
+                console.error(e)
+                continue;
+            }
+
 			for (let prop in rivers) {
 				let river = rivers[prop]
 
-                for (let i=flow.length - 1;i>=0;i--) {
+                let flow;
+                for (let i=readings.length - 1;i>=0;i--) {
                     //Find the latest non-forecast flow value.
-                    if (flow[i].forecast !== true) {
-                        flow = flow[i];
+                    if (readings[i].forecast !== true) {
+                        flow = readings[i];
                         break;
                     }
                 }
@@ -51,9 +62,9 @@ function sendNotifications(ignoreNoneUntil = false) {
                 let meterInFeet = 3.2808399
                 let cubicMeterInFeet = meterInFeet**3
 
-				if (units === "cms") {river.running = flow.cfs / cubicMeterInFeet}
-				if (river.units === "meters") {river.running = flow.feet/ meterInFeet}
-                else {river.running = flow[units]}
+				if (units === "cms") {river.current = flow.cfs / cubicMeterInFeet}
+				if (river.units === "meters") {river.current = flow.feet/ meterInFeet}
+                else {river.current = flow[units]}
 
 				//Don't delete for email notifications
 				if (!(river.minimum < river.current && river.current < river.maximum)) {
