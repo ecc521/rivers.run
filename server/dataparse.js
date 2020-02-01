@@ -287,6 +287,9 @@ async function loadOverviews() {
 		result.complete = result.complete.concat(await getGaugeSites.getCanadianGaugesInRiverFormat())
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
+	else {
+		console.log("Not including Canadian gauges since --includeCanadianGauges was not passed. ")
+	}
 
     await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(result.complete))
 	console.log("riverdata.json generated")

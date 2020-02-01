@@ -28,7 +28,7 @@ function createGetLatest(filePath, options = {}) {
 
 let getLatestRiverArray = createGetLatest(path.join(utils.getSiteRoot(), "riverdata.json"),{isJSON:true})
 
-//TODO: Add support for CMS and Meters. 
+//TODO: Add support for CMS and Meters.
 async function getAssistantReply(query, options) {
 	let riverarray = await getLatestRiverArray()
 
@@ -126,27 +126,8 @@ async function getAssistantReply(query, options) {
 	let timeStamp;
 	try {
 		gauge = JSON.parse(await fs.promises.readFile(path.join(utils.getSiteRoot(),"gaugeReadings",topRanked[0].gauge)))
-		try {
-			if (gauge.feet) {
-				feet = gauge.feet[gauge.feet.length-1].value
-				timeStamp = gauge.feet[gauge.feet.length-1].dateTime
-			}
-		}
-		catch(e) {console.error(e)}
-		try {
-			if (gauge.cfs) {
-				cfs = gauge.cfs[gauge.cfs.length-1].value
-				timeStamp = gauge.cfs[gauge.cfs.length-1].dateTime
-			}
-		}
-		catch(e) {console.error(e)}
-		try {
-			if (gauge.temp) {
-				temp = gauge.temp[gauge.temp.length-1].value
-				if (!timeStamp) {timeStamp = gauge.temp[gauge.temp.length-1].dateTime} //Temperature sometimes updates less often.
-			}
-		}
-		catch(e) {console.error(e)}
+		gauge = gauge.readings[gauge.readings.length - 1]
+		timeStamp = gauge.readings[gauge.readings.length - 1].timeStamp
 	}
 	catch(e) {console.error(e)}
 
