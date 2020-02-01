@@ -62,8 +62,8 @@ function sendNotifications(ignoreNoneUntil = false) {
                 let meterInFeet = 3.2808399
                 let cubicMeterInFeet = meterInFeet**3
 
-				if (units === "cms") {river.current = flow.cfs / cubicMeterInFeet}
-				if (river.units === "meters") {river.current = flow.feet/ meterInFeet}
+				if (river.units === "cms") {river.current = flow.cfs / cubicMeterInFeet}
+				if (river.units === "meters") {river.current = flow.feet / meterInFeet}
                 else {river.current = flow[units]}
 
 				//Don't delete for email notifications
