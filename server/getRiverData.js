@@ -125,8 +125,8 @@ async function getAssistantReply(query, options) {
 	let temp;
 	let timeStamp;
 	try {
-		gauge = JSON.parse(await fs.promises.readFile(path.join(utils.getSiteRoot(),"gaugeReadings",topRanked[0].gauge)))
-		let readings = gauge.readings
+		let gaugedata = JSON.parse(await fs.promises.readFile(path.join(utils.getSiteRoot(),"gaugeReadings",topRanked[0].gauge)))
+		let readings = gaugedata.readings
 
 		let latestReading;
 		for (let i=readings.length - 1;i>=0;i--) {
@@ -138,7 +138,11 @@ async function getAssistantReply(query, options) {
 		}
 
 		gauge = latestReading
+		gauge.name = gaugedata.name
 		timeStamp = latestReading.dateTime
+
+		feet = latestReading.feet
+		cfs = latestReading.cfs
 	}
 	catch(e) {console.error(e)}
 
