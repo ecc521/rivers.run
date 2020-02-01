@@ -127,7 +127,7 @@ function reformatGauge(gauge) {
 	gauge.readings = []
 	for (let prop in times) {
         let reading = {}
-        reading.dateTime = Number(prop) //Prop appears to be getting converted to a string. Convert it back to a number. 
+        reading.dateTime = Number(prop) //Prop appears to be getting converted to a string. Convert it back to a number.
 		Object.assign(reading, times[prop])
 		gauge.readings.push(reading)
 	}
@@ -179,6 +179,7 @@ async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24, timeInFu
     		try {
                 let newSites = await _loadSitesFromUSGS(siteCodes, timeInPast, timeInFuture)
                 Object.assign(output, newSites)
+                break;
     		}
     		catch(e) {
     			console.error(e)
