@@ -31,7 +31,7 @@
   <option value="E+">Expert Plus</option>
 </select>
 <br>
-<input id="class" placeholder="Class (Optional)" type="text"  style="width:100%">
+<input id="class" placeholder="Class (Optional, Ex: II+, IV)" type="text"  style="width:100%">
 <br>
 <input id="state" placeholder="State (Required if no GPS coordinates provided)" type="text"  style="width:100%" list="stateOptions">
 <datalist id="stateOptions"></datalist>
@@ -274,9 +274,10 @@ List.forEach(function(value){
 	  if (elem.type === "checkbox") {
 	  	elem.checked = (initialValue === "true")
 	  }
-	  else {
-      	elem.value = initialValue
+	  else if (elem.value == null){
+      	elem.value = ""
 	  }
+	  else {elem.value = initialValue}
       elem.addEventListener("keyup", UpdateWriteup)
   }
   else {
