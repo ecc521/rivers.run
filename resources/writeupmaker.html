@@ -274,7 +274,7 @@ List.forEach(function(value){
 	  if (elem.type === "checkbox") {
 	  	elem.checked = (initialValue === "true")
 	  }
-	  else if (elem.value == null){
+	  else if (initialValue == null){
       	elem.value = ""
 	  }
 	  else {elem.value = initialValue}
