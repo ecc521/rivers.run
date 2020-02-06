@@ -6,15 +6,15 @@ function calculateDirection(siteCode, prop = "cfs") {
     if (data) {
         let current;
         let previous;
-
         //We will go back 2 datapoints (usually 30 minutes) if possible.
         let stop = Math.max(data.length-3, 0)
-        for (let i=data.length - 1;i>=stop;i--) {
+        for (let i=data.length - 1;i>=Math.max(stop, 0);i--) {
             let item = data[i]
-            if (!item) {continue}
+            if (!item) {stop--; continue;}
 			if (item.forecast) {stop--; continue;}
+
             let value = item[prop]
-            if (!current) {
+            if (current == undefined) {
                 current = value
             }
             else {
@@ -25,7 +25,6 @@ function calculateDirection(siteCode, prop = "cfs") {
         //TODO: Ignore insignificant changes.
         //Insignificant changes should be changes that are not part of a trend (flow changing directions),
         //and involve only a small portion of the rivers flow. 
-
         if (current > previous) {
             //Water level rising
             return "⬆"
@@ -34,7 +33,7 @@ function calculateDirection(siteCode, prop = "cfs") {
             //Water level falling
             return "⬇"
         }
-        else if (current === previous) {
+        else if (current === previous && current != undefined) {
             //Water level stable
             return " –" //En dash preceeded by a thin space.
         }
