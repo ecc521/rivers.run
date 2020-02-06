@@ -7,8 +7,15 @@
 		return undefined;
 	}
 
+	coord = coord.toUpperCase().trim() //In case people put the direction in lowercase. 
 	let parts = coord.split(/[^.\w]+/) //Split on non-alphanumeric characters that aren't decimals.
-	console.log(parts)
+	
+	//Handle case where there is nothing seperating the direction and the first digit. 
+	if (["N","S","E","W"].includes(parts[0][0])) {
+		parts.unshift(parts[0][0])
+		parts[1] = parts[1].slice(1)
+	}
+	
 	let direction;
 	for (let i=0;i<parts.length;i++) {
 		if (["N","S","E","W"].includes(parts[i])) {
@@ -317,7 +324,7 @@ let calculateDistance = require("./distance.js").lambert //Lambert formula
 function locationFilter(list, parameters) {
 
     let maxDistance = Number(parameters.distance)
-    let lat1 = toDecimalDegrees(parameters.lat)
+   	let lat1 = toDecimalDegrees(parameters.lat)
     let lon1 = toDecimalDegrees(parameters.lon)
 
     if (!(maxDistance && lat1 && lon1)) {
@@ -330,9 +337,17 @@ function locationFilter(list, parameters) {
     for (let item in list) {
         let river = list[item]
 
-		let lat2 = toDecimalDegrees(river.plat) || toDecimalDegrees(river.tlat) || toDecimalDegrees(river.hidlat)
-    	let lon2 = toDecimalDegrees(river.plon) || toDecimalDegrees(river.tlon) || toDecimalDegrees(river.hidlon)
-
+		let lat2;
+		let lon2;
+		try {
+			lat2 = toDecimalDegrees(river.plat) || toDecimalDegrees(river.tlat) || toDecimalDegrees(river.hidlat)
+    		lon2 = toDecimalDegrees(river.plon) || toDecimalDegrees(river.tlon) || toDecimalDegrees(river.hidlon)
+		}
+		catch(e) {
+			console.error("Error parsing coordinates...")
+			console.error(river)
+		}
+		
 		let distance = calculateDistance(lat1, lon1, lat2, lon2)
 
         let passes = (distance < maxDistance) || parameters.includeUnknown //Follow parameters.includeUnknown unless the river has been eliminated on distance.

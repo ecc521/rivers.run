@@ -43,6 +43,9 @@ async function loadSiteFromNWS(siteCode) {
 					//In case of freak issues with useless digits (ex. 2.01 * 1000 = 2009.9999999998), round
 					reading.cfs = Math.round(reading.cfs * 100000) / 100000
 				}
+				else if (measurement.attributes.units === "cfs") {
+					reading.cfs = measurement.value
+				}
 				else if (measurement.attributes.units === "ft") {
 					pedts = pedts.toUpperCase()
 					//See https://hads.ncep.noaa.gov/cgi-bin/hads/interactiveDisplays/displaySHEF.pl?table=shef_desc&shef_code=
@@ -59,14 +62,17 @@ async function loadSiteFromNWS(siteCode) {
 						reading.feet = Math.round(reading.feet * 100000) / 100000
 						if (reading.feet < 0) {console.warn("Reading was negative after subtracting datum. Something probably went wrong. ")}
 					}
-					else if (pedts === "HGIFF") {
+					else if (pedts === "HGIFF" || "HGIFE") {
 						//Also not sure what to do here. The term is not defined by NWS, however is used on the forecasted values.
 						//Looks to be the same as HGIRG, though not totally sure.
+						//HGIFE looks to be a typo. 
 						reading.feet = measurement.value
 					}
-					else {console.log("Unknown pedts " + pedts)}
+					else {console.log("Unknown pedts " + pedts + ". Gauge is " + siteCode)}
 				}
-				else {console.log("Unknown units " + measurement.attributes.units)}
+				else {console.log("Unknown units " + measurement.attributes.units + ". Gauge is " + siteCode)}
+				
+				if (reading.cfs === "-999000") {delete reading.cfs}
 			}
 
 			processMeasurement(value.primary)
@@ -76,6 +82,11 @@ async function loadSiteFromNWS(siteCode) {
 		})
 	}
 
+	if (!jsonObj.site.observed) {
+		console.log(siteCode + " has no observed data. ")
+		return;
+	}
+	
 	processValues(jsonObj.site.observed.datum)
 	if (jsonObj.site.forecast.datum) {processValues(jsonObj.site.forecast.datum, true)}
 

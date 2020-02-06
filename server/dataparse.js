@@ -199,6 +199,7 @@ async function loadOverviews() {
 
     let allowed = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgauges","averagegradient","maxgradient","class"] //Property values to be included in output file
 
+	
     for (let i=0;i<result.complete.length;i++) {
         let item = result.complete[i].request.split("\n")
         let obj = {}
@@ -217,7 +218,7 @@ async function loadOverviews() {
 		}
 
 		if (obj.gauge) {
-			obj.gauge = obj.gauge.split(/\s*:\s*/).join(":")
+			obj.gauge = obj.gauge.split(/\s*:\s*/).join(":") //Remove the spaces next to the semicolon. 
 		}
 
 		//Convert NWS gauge IDs to upperCase.
@@ -243,13 +244,14 @@ async function loadOverviews() {
 				})
 				obj.relatedgauges = obj.relatedgauges.filter((gaugeID) => {
 					//Remove all gauges that are empty (ex. "USGS:" or "NWS:")
-					if (gaugeID.indexOf(":") + 1 === gaugeID.length) {return false}
+					if (gaugeID.trim().indexOf(":") + 1 === gaugeID.length) {return false}
 					return true
 				})
 				if (obj.relatedgauges.length === 0) {delete obj.relatedgauges} //If there are no gauges, don't bother with the property.
 			}
 			catch(e) {console.error(e);console.log(obj.relatedgauges)}
 		}
+		
 
 		for (let prop in obj) {
 			if (!allowed.includes(prop)) {

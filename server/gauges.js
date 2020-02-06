@@ -126,11 +126,18 @@ async function loadData(siteCodes) {
 		//This will require adjusting the usgs property of the rivers.
 		console.log("Loading NWS Site " + (i+1) + " of " + nwsSites.length + ".")
 		let nwsID = nwsSites[i]
-		let newGauge = await loadSiteFromNWS(nwsID)
-		let obj = {}
-		obj["NWS:" + nwsID] = newGauge
-		await writeBatchToDisk(obj)
-		gauges["NWS:" + nwsID] = gaugeTrimmer.shrinkGauge(newGauge)
+		
+		try {
+			let newGauge = await loadSiteFromNWS(nwsID)
+			let obj = {}
+			obj["NWS:" + nwsID] = newGauge
+			await writeBatchToDisk(obj)
+			gauges["NWS:" + nwsID] = gaugeTrimmer.shrinkGauge(newGauge)
+		}
+		catch(e) {
+			console.error("Error loading NWS gauge " + nwsID)
+			console.error(e)
+		}
 	}
 
 
