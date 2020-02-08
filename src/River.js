@@ -227,13 +227,14 @@ function River(locate, event) {
     this.writeup = this.writeup || ""
     //Convert the numeric value to the filename
 
+	
 	this.rating = parseFloat(this.rating)
 	//Consider allowing ratings less than 1.
     if (this.rating < 1 || this.rating > 5 || isNaN(this.rating) || this.rating === undefined) {
         this.rating = "Error"
     }
 
-    this.skill = this.skill || "?"
+    this.skill = (this.skill || "?").toUpperCase()
 
 	if (!this.id) {
 		this.id = this.gauge.toLowerCase() //toLowerCase to maintain backwards compatilibity with old "usgs:" + this.usgs system.

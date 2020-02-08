@@ -111,8 +111,8 @@ function logDist(low, high, ratio = 0.5) {
 		let bottomPos = negativeOptions[0]
 		let topPos = positiveOptions[0]
 
-		if (bottomPos == undefined) {bottomPos = positiveOptions[1]}
-		if (topPos == undefined) {topPos = negativeOptions[1]}
+		bottomPos = bottomPos ?? positiveOptions[1]
+		topPos = topPos ?? negativeOptions[1]
 
 		if (topPos == undefined || bottomPos == undefined) {
 			//We don't have enough datapoints - we need at least 2.
