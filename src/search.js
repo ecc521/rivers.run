@@ -7,23 +7,16 @@
 		return undefined;
 	}
 
-	coord = coord.toUpperCase().trim() //In case people put the direction in lowercase. 
-	let parts = coord.split(/[^.\w]+/) //Split on non-alphanumeric characters that aren't decimals.
-	
-	//Handle case where there is nothing seperating the direction and the first digit. 
-	if (["N","S","E","W"].includes(parts[0][0])) {
-		parts.unshift(parts[0][0])
-		parts[1] = parts[1].slice(1)
-	}
-	
+	coord = coord.toUpperCase().trim() //In case people put the direction in lowercase.
+
 	let direction;
-	for (let i=0;i<parts.length;i++) {
-		if (["N","S","E","W"].includes(parts[i])) {
-			direction = parts[i];
-			parts.splice(i, 1)
-			break;
-		}
+	if (["N","S","E","W"].includes(coord[0])) {
+		direction = coord[0];
+		coord = coord.slice(1).trim()
 	}
+
+	let parts = coord.split(/[^.\w]+/) //Split on non-alphanumeric characters that aren't decimals.
+
 	console.log(parts)
 	let degrees = Number(parts[0])
 	let minutes = Number(parts[1]) || 0
@@ -347,7 +340,7 @@ function locationFilter(list, parameters) {
 			console.error("Error parsing coordinates...")
 			console.error(river)
 		}
-		
+
 		let distance = calculateDistance(lat1, lon1, lat2, lon2)
 
         let passes = (distance < maxDistance) || parameters.includeUnknown //Follow parameters.includeUnknown unless the river has been eliminated on distance.
