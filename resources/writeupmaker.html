@@ -50,7 +50,7 @@ This river has dam releases <input id="dam" type="checkbox">
 <input id="maxgradient" type="text" placeholder="Maximum gradient (feet per mile)"  style="width:100%">
 <br>
 
-<p>Gauge Information (Strongly Reccomended)</p>
+<p>Gauge Information (Strongly Recommended)</p>
 <p>The Gauge ID should be prefixed with the agency code followed by a colon. For example, type "USGS: 03192000" for <a href="https://waterdata.usgs.gov/nwis/uv?site_no=03192000" target="_blank">this</a> USGS gauge.</p>
 <p>Available agency codes:</p>
 <ul>
@@ -60,9 +60,9 @@ This river has dam releases <input id="dam" type="checkbox">
 </ul>
 <input id="gauge" type="text" placeholder="Gauge ID"  style="width:100%">
 <br>
-<input id="relatedgaugess" type="text" placeholder="Other Related Gauges (comma seperated list)"  style="width:100%">
+<input id="relatedgauges" type="text" placeholder="Other Related Gauges (comma seperated list)"  style="width:100%">
 <br>
-<p>Relative Water Levels (Reccomended)</p>
+<p>Relative Water Levels (Recommended)</p>
 <p>Units are required (ft, feet, or cfs). Examples: 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet</p>
 <input id="minrun" type="text" placeholder="Minimum runnable water level"  style="width:100%">
 <br>
@@ -74,7 +74,7 @@ This river has dam releases <input id="dam" type="checkbox">
 <br>
 <input id="highflow" type="text" placeholder="High Water"  style="width:100%">
 <br>
-<p>GPS Coordinates (Reccomended):</p>
+<p>GPS Coordinates (Recommended):</p>
 <p>Note: Rivers.run should work with most coordinate formats. If you encounter an issue with one of them, please email <a href="support@rivers.run">support@rivers.run</a></p>
 <input id="plat" type="text" placeholder="Put-in GPS Latitude"  style="width:100%">
 <br>
@@ -331,7 +331,7 @@ for (let stateCode in states) {
 }
 
 
-var List = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgaugess","class","averagegradient","maxgradient","length", "comments"]
+var List = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgauges","class","averagegradient","maxgradient","length", "comments"]
 
 
 let urlParams = new URLSearchParams(window.location.hash.slice(1))
@@ -386,7 +386,7 @@ function getOutputText() {
       if (value === "writeup") {
           Text += "\n" + value + ": " + quill.root.innerHTML
       }
-      else if (value === "relatedgaugess") {
+      else if (value === "relatedgauges") {
           Text += "\n" + value + ": "
           //Convert comma seperated list into javascript list
           if (document.getElementById(value).value.trim().split(" ").join("").split(",").length > 0) {

@@ -61,7 +61,7 @@ sudo apt-get install -y certbot python-certbot-apache -t stretch-backports
 sudo certbot --apache
 
 echo "Add stuff about gmailpassword.txt"
-echo "Swap file reccomended, at least to bring up available memory to 512MB for this process (1GB preferred). More than 200MB will probably not be used at any one time."
+echo "Swap file recommended, at least to bring up available memory to 512MB for this process (1GB preferred). More than 200MB will probably not be used at any one time."
 echo "Google Cloud Compute Engine: https://badlywired.com/2016/08/15/adding-swap-google-compute-engine/"
 
 echo "Run crontab -e (may need sudo). Add the following lines:"

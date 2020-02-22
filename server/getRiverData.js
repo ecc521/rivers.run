@@ -200,7 +200,7 @@ async function getAssistantReply(query, options) {
 	str += " as of " + timeString + ", "
 
 	if (units === "relative flow") {
-		//TODO: Consider moving temperature to before flow, and changing removing which is from "which is well within reccomended levels..."
+		//TODO: Consider moving temperature to before flow, and changing removing which is from "which is well within recommended levels..."
 
 		let river = topRanked[0]
 
@@ -225,7 +225,7 @@ async function getAssistantReply(query, options) {
 			str += "which is below the minimum of " + round(river.minrun) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Keep rain dancing!"
 		}
 		else if (river.running === 4) {
-			str += "which is above the reccomended maximum of " + round(river.maxrun) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Stop rain dancing!"
+			str += "which is above the recommended maximum of " + round(river.maxrun) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Stop rain dancing!"
 		}
 		else if (river.running > 3.5) {
 			str += "which is a very high level, bordering on too high. The maximum is " + round(river.maxrun) + ", but levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to stop rain dancing!"
@@ -234,19 +234,19 @@ async function getAssistantReply(query, options) {
 			str += "which is a very low level, bordering on too low. The minimum level is " + round(river.minrun) + ", however levels above " + round(river.lowflow) + " are preferred for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to start rain dancing!"
 		}
 		else if (river.running < 1) {
-			str += "which is above the minimum of " + round(river.minrun) + ", although levels above " + round(river.lowflow) + " are reccomended for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is above the minimum of " + round(river.minrun) + ", although levels above " + round(river.lowflow) + " are recommended for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else if (river.running > 3) {
 			str += "which is a little high. The maximum levels is " + round(river.maximum) + ", however levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else if (river.running > 2.5) {
-			str += "which is on the higher end of reccomended levels. Levels above " + round(river.highflow) + " are considered high, while " + round(river.midflow) + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is on the higher end of recommended levels. Levels above " + round(river.highflow) + " are considered high, while " + round(river.midflow) + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else if (river.running < 1.5) {
-			str += "which is on the lower end of reccomended levels. Levels below " + round(river.lowflow) + " are considered low, while " + round(river.midflow) + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is on the lower end of recommended levels. Levels below " + round(river.lowflow) + " are considered low, while " + round(river.midflow) + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else {
-			str += "which is well within the reccomended levels of " + round(river.lowflow) + " through " + round(river.highflow) + ", and near the middle level of " + round(river.midflow) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is well within the recommended levels of " + round(river.lowflow) + " through " + round(river.highflow) + ", and near the middle level of " + round(river.midflow) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 	}
 	else {
