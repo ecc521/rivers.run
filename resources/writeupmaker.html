@@ -172,6 +172,10 @@ Put C1 after the tag if you can get to the river within an hour from that area (
 <script src="quill.min.js"></script>
 <link rel="stylesheet" type="text/css" href="quill.snow.css">
 <script>
+	
+	 let url = "https://script.google.com/macros/s/AKfycbxhxpImVHh-UBAlVOGppV4wYRVtO4ldLHn_q128vckXshCl6B8/exec"
+	
+	
 function copyStringToClipboard() {
    var str = document.getElementById("Output").value
    // Create new element
@@ -214,7 +218,7 @@ modules: {
 toolbar: toolbarOptions
 },
 placeholder: 'Create your writeup...',
-theme: 'snow'
+theme: 'snow',
 });
 
 quill.on('text-change', function() {
@@ -223,15 +227,94 @@ quill.on('text-change', function() {
 
 let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
 
-quill.getModule("toolbar").handlers.image = function imageHandler(value) {
+	
+async function saveToServer(file) {
+	 let type = "media"
+	 console.log(file)
+	 let name = file.name
+	 let editors = "" //We won't ask the user for image editors. Probably don't want future editing of images anyways.
+	 
+	 let nonce = Math.round(Math.random() * (2**30))
+	 
+	let requestURL = url + "?type=" + type + "&name=" + name + "&nonce=" + nonce + (editors?("&editors=" + editors):"")
+	
+	let fileData = await new Promise((resolve, reject) => {
+	    var reader = new FileReader();
+		reader.onload = function(e){
+			resolve(e.target.result)
+		};
+		reader.readAsArrayBuffer(file);
+	})
+	
+	console.log(fileData)
+	
+	//Google Apps Script will treat our data as a String. Convert to base 64 to avoid problems
+	function arrayBufferToBase64( buffer ) {
+		var binary = '';
+		var bytes = new Uint8Array( buffer );
+		var len = bytes.byteLength;
+		for (var i = 0; i < len; i++) {
+			binary += String.fromCharCode( bytes[ i ] );
+		}
+		return window.btoa( binary );
+	}
+	
+	let request = fetch(requestURL, {
+		method: "POST",
+		 body: arrayBufferToBase64(fileData),
+		 mode: "no-cors"
+	 })
+
+	alert("We are attempting to upload your file. You should receive an alert in about 10 seconds if it succeeds. ")
+
+	let response = await request
+	let result = await response.text()
+	console.log(result)
+	let checkReq = await fetch("https://www.googleapis.com/drive/v3/files/16sAPFOmyzg5Ds-oHdt9Ra5LKmhjXNC6Q0_2WMBXaCtU/export?mimeType=text/plain&key=" + API_KEY, {cache: "no-store"})
+	let text = await checkReq.text()
+	let checkResp = text.split("\n")[0]
+	console.log(checkResp)
+	console.log(name + nonce)
+	if (checkResp.trim() === (name + nonce).trim()) {
+		alert("File upload successful. ")
+	}
+	else {
+		alert("File upload appears to have failed. ")
+	}
+	return text.split("\n")[1] //File ID
+}
+
+
+function imageHandler() {
+	const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+	input.setAttribute('accept', 'image/*')
+    input.click();
+
+    input.onchange = () => {
+      const file = input.files[0];
+
+      // file type is only image.
+      if (/^image\//.test(file.type)) {
+        saveToServer(file).then((File_ID) => {
+			quill.insertEmbed(quill.getSelection(true), 'image', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
+		});
+      } 
+	  else {
+        console.warn('A non-image was selected.');
+      }
+    };
+}
+quill.getModule("toolbar").addHandler("image", imageHandler)
+/*quill.getModule("toolbar").handlers.image = function imageHandler(value) {
         let File_ID = prompt("Please type in the File ID of the image in Google Drive. (To get the file id, click on the file, click the three dot menu in the top right hand corner, click open in new window. Copy out the section between /d/ and /view).")
         quill.insertEmbed(quill.getSelection(true), 'image', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
 }
 
-quill.getModule("toolbar").handlers.video = function imageHandler(value) {
+quill.getModule("toolbar").handlers.video = function videoHandler(value) {
         let File_ID = prompt("Please type in the File ID of the video in Google Drive. (To get the file id, click on the file, click the three dot menu in the top right hand corner, click open in new window. Copy out the section between /d/ and /view).")
         quill.insertEmbed(quill.getSelection(true), 'video', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
-}
+}*/
 
 
 
@@ -348,7 +431,6 @@ UpdateWriteup()
 
 
 function submitAsNewRiver() {
-	 let url = "https://script.google.com/macros/s/AKfycbxhxpImVHh-UBAlVOGppV4wYRVtO4ldLHn_q128vckXshCl6B8/exec"
 	 let type = "river"
 	 let name = prompt("What would you like the file name for this section to be? ")
 	 let editors = prompt("Optional: Enter email addresses that you would like to give edit access to this file. (comma seperated list)")
@@ -373,12 +455,11 @@ function submitAsNewRiver() {
 		let response = await request
 		let result = await response.text()
 		console.log(result)
-		const API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
 		let checkReq = await fetch("https://www.googleapis.com/drive/v3/files/16sAPFOmyzg5Ds-oHdt9Ra5LKmhjXNC6Q0_2WMBXaCtU/export?mimeType=text/plain&key=" + API_KEY, {cache: "no-store"})
-		let checkResp = await checkReq.text()
+		let checkResp = await checkReq.text().split("\n")[0]
 		console.log(checkResp)
 		console.log(name + nonce)
-		if (checkResp === (name + nonce)) {
+		if (checkResp.trim() === (name + nonce).trim()) {
 			alert("Your river has been successfully submitted. ")
 		}
 		else {
