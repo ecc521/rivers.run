@@ -25,7 +25,7 @@ const {createDeviceNotificationsWidget, createEmailNotificationsWidget} = requir
 
 function createExpansion(button, river) {
             var div = document.createElement("div")
-
+			div.className = "riverWriteup"
 			div.innerHTML = ""
 
 			//Only show a link if river.dam is a link. This allows rivers to be marked as dams and explanations to be put in the writeups.
