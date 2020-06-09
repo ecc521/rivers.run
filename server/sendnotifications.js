@@ -46,37 +46,42 @@ function sendNotifications(ignoreNoneUntil = false) {
             }
 
 			for (let prop in rivers) {
-				let river = rivers[prop]
+                try {
+                    let river = rivers[prop]
 
-                let flow;
-                for (let i=readings.length - 1;i>=0;i--) {
-                    //Find the latest non-forecast flow value.
-                    if (readings[i].forecast !== true) {
-                        flow = readings[i];
-                        break;
+                    let flow;
+                    for (let i=readings.length - 1;i>=0;i--) {
+                        //Find the latest non-forecast flow value.
+                        if (readings[i].forecast !== true) {
+                            flow = readings[i];
+                            break;
+                        }
+                    }
+
+                    let units = river.units
+
+                    let meterInFeet = 3.2808399
+                    let cubicMeterInFeet = meterInFeet**3
+
+                    if (river.units === "cms") {river.current = flow.cfs / cubicMeterInFeet}
+                    if (river.units === "meters") {river.current = flow.feet / meterInFeet}
+                    else {river.current = flow[units]}
+
+                    //Don't delete for email notifications
+                    if (!(river.minimum < river.current && river.current < river.maximum)) {
+                        if (user.type === "email") {
+                            rivers[prop].running = false //For email only, add the river even if it is not running.
+                            data[prop] = rivers[prop]
+                        }
+                    }
+                    else {
+                        data[prop] = rivers[prop] //Add the river if it is running
+                        data[prop].running = true
                     }
                 }
-
-                let units = river.units
-
-                let meterInFeet = 3.2808399
-                let cubicMeterInFeet = meterInFeet**3
-
-				if (river.units === "cms") {river.current = flow.cfs / cubicMeterInFeet}
-				if (river.units === "meters") {river.current = flow.feet / meterInFeet}
-                else {river.current = flow[units]}
-
-				//Don't delete for email notifications
-				if (!(river.minimum < river.current && river.current < river.maximum)) {
-					if (user.type === "email") {
-						rivers[prop].running = false //For email only, add the river even if it is not running.
-						data[prop] = rivers[prop]
-					}
-				}
-				else {
-					data[prop] = rivers[prop] //Add the river if it is running
-					data[prop].running = true
-				}
+                catch(e) {
+                    console.error(e)
+                }
 			}
 		}
 

@@ -106,7 +106,13 @@ async function updateCachedData() {
 		process.exit()
 	}
 
-	sendNotifications()
+	try {
+		sendNotifications()
+	}
+	catch (e) {
+		console.log("ERROR: sendNotifications errored")
+		console.log(error)
+	}
 
 	console.log("Precompressing files...")
 	compressor.compressFiles(utils.getSiteRoot())
