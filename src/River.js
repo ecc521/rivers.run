@@ -125,12 +125,14 @@ function addFlowData(river) {
 
 	Object.defineProperty(river, "meters", {
 		get: function getLatestMeters() {
+			if (!river.feet) {return undefined}
 			return Math.round(river.feet / meterInFeet * 100) / 100 //Round to 2 digits
 		}
 	})
 
 	Object.defineProperty(river, "cms", {
 		get: function getLatestCubicMeters() {
+			if (!river.cfs) {return undefined}
 			return Math.round(river.cfs / cubicMeterInFeet * 100) / 100 //Round to 2 digits
 		}
 	})
@@ -227,7 +229,7 @@ function River(locate, event) {
     this.writeup = this.writeup || ""
     //Convert the numeric value to the filename
 
-	
+
 	this.rating = parseFloat(this.rating)
 	//Consider allowing ratings less than 1.
     if (this.rating < 1 || this.rating > 5 || isNaN(this.rating) || this.rating === undefined) {
