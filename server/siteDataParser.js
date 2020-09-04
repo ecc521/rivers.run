@@ -11,6 +11,9 @@ const csvParser = require("csv-parser")
 
 const stateLookupTable = require(path.join(__dirname, "stateCodeLookupTable.js"))
 
+const {getMetadata} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
+
+
 let sitesFilePath = path.join(utils.getDataDirectory(), "usgsSites.txt")
 
 function fixCasing(str) {
@@ -182,6 +185,7 @@ async function downloadConversionsFile() {
 }
 
 async function getConversionsForNWS() {
+    //TODO: If this function is called multiple times before download finishes, download might be done repeatedly.
     //Make sure we have the sites file.
     if (!fs.existsSync(conversionsFilePath)) {
         console.log("NWS conversions file is not available. Running download script...")
@@ -320,6 +324,19 @@ async function getCanadianGaugesInRiverFormat() {
     return arr
 }
 
+async function getIrishGaugesInRiverFormat() {
+    let metadata = await getMetadata()
+    let arr = []
+    for (let gaugeID in metadata) {
+        let gauge = metadata[gaugeID]
+        gauge.section = gauge.name
+        gauge.gauge = "ireland:" + gaugeID
+        gauge.name = "" //TODO: We currently have the Gauge location name, not the river name. 
+        arr.push(gauge)
+    }
+    return arr
+}
+
 module.exports = {
 	getSites,
     fixSiteName,
@@ -328,4 +345,5 @@ module.exports = {
     getConversionsForNWS,
     getCanadianGauges,
     getCanadianGaugesInRiverFormat,
+    getIrishGaugesInRiverFormat
 }

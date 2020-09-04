@@ -14,6 +14,7 @@ async function updateRiverData() {
 	let args = [path.join(__dirname, "dataparse.js")]
 	if (process.argv.includes("--noUSGSGauges")) {args.push("--noUSGSGauges")}
 	if (process.argv.includes("--includeCanadianGauges")) {args.push("--includeCanadianGauges")}
+	if (process.argv.includes("--includeIrishGauges")) {args.push("--includeIrishGauges")}
 
 	let dataparse = child_process.spawn("node", args)
 	//Don't use console.log, as we end up with 2 newlines.

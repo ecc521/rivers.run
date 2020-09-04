@@ -199,7 +199,7 @@ async function loadOverviews() {
 
     let allowed = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgauges","averagegradient","maxgradient","class"] //Property values to be included in output file
 
-	
+
     for (let i=0;i<result.complete.length;i++) {
         let item = result.complete[i].request.split("\n")
         let obj = {}
@@ -218,7 +218,7 @@ async function loadOverviews() {
 		}
 
 		if (obj.gauge) {
-			obj.gauge = obj.gauge.split(/\s*:\s*/).join(":") //Remove the spaces next to the semicolon. 
+			obj.gauge = obj.gauge.split(/\s*:\s*/).join(":") //Remove the spaces next to the semicolon.
 		}
 
 		//Convert NWS gauge IDs to upperCase.
@@ -251,7 +251,7 @@ async function loadOverviews() {
 			}
 			catch(e) {console.error(e);console.log(obj.relatedgauges)}
 		}
-		
+
 
 		for (let prop in obj) {
 			if (!allowed.includes(prop)) {
@@ -291,6 +291,15 @@ async function loadOverviews() {
 	}
 	else {
 		console.log("Not including Canadian gauges since --includeCanadianGauges was not passed. ")
+	}
+
+	if (process.argv.includes("--includeIrishGauges")) {
+		console.log("Adding Irish gauge sites")
+		result.complete = result.complete.concat(await getGaugeSites.getIrishGaugesInRiverFormat())
+		console.log("There are now " + result.complete.length + " rivers.")
+	}
+	else {
+		console.log("Not including Irish gauges since --includeIrishGauges was not passed. ")
 	}
 
     await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(result.complete))

@@ -12,6 +12,7 @@ const compressor = require(path.join(__dirname, "precompress.js"))
 const {loadSiteFromNWS} = require(path.join(__dirname, "gauges", "nwsGauges.js"))
 const {loadSitesFromUSGS} = require(path.join(__dirname, "gauges", "usgsGauges.js"))
 const {loadCanadianGauges} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
+const {loadIrelandOPWGauge} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
 
 let virtualGauges;
 
@@ -60,6 +61,7 @@ async function loadData(siteCodes) {
 	let usgsSites = []
 	let nwsSites = []
 	let canadaSites = []
+	let irelandOPWSites = []
 
 	siteCodes.forEach((code) => {
 		let resCode = code.slice(code.indexOf(":") + 1).trim()
@@ -75,6 +77,9 @@ async function loadData(siteCodes) {
 		}
 		else if (code.toLowerCase().startsWith("canada:")) {
 			canadaSites.push(resCode)
+		}
+		else if (code.toLowerCase().startsWith("ireland:")) {
+			irelandOPWSites.push(resCode)
 		}
 	})
 
@@ -120,13 +125,13 @@ async function loadData(siteCodes) {
 		start = end
 	}
 
-	//TODO: Multiple NWS calls should be made at once.
+	//TODO: Multiple NWS calls should be made at once, although we should currently only do one due to a bug that can cause multiple loading of a conversion table.
 	for (let i=0;i<nwsSites.length;i++) {
 		//We need to make sure that the same site doesn't appear multiple times, just with different casings
 		//This will require adjusting the usgs property of the rivers.
 		console.log("Loading NWS Site " + (i+1) + " of " + nwsSites.length + ".")
 		let nwsID = nwsSites[i]
-		
+
 		try {
 			let newGauge = await loadSiteFromNWS(nwsID)
 			let obj = {}
@@ -136,6 +141,27 @@ async function loadData(siteCodes) {
 		}
 		catch(e) {
 			console.error("Error loading NWS gauge " + nwsID)
+			console.error(e)
+		}
+	}
+
+
+	//TODO: Multiple Ireland calls should be made at once, although we should currently only do one due to a bug that can cause multiple loading of a conversion table.
+	for (let i=0;i<irelandOPWSites.length;i++) {
+		//We need to make sure that the same site doesn't appear multiple times, just with different casings
+		//This will require adjusting the usgs property of the rivers.
+		console.log("Loading Ireland OPW Site " + (i+1) + " of " + irelandOPWSites.length + ".")
+		let irelandId = irelandOPWSites[i]
+
+		try {
+			let newGauge = await loadIrelandOPWGauge(irelandId)
+			let obj = {}
+			obj["ireland:" + irelandId] = newGauge
+			await writeBatchToDisk(obj)
+			gauges["ireland:" + irelandId] = gaugeTrimmer.shrinkGauge(newGauge)
+		}
+		catch(e) {
+			console.error("Error loading Ireland OPW gauge " + irelandId)
 			console.error(e)
 		}
 	}
