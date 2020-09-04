@@ -96,7 +96,7 @@ function createExpansion(button, river) {
 				link.innerHTML = "Edit this river"
 			}
             else {
-                //Link to create a river using this gauge. 
+                //Link to create a river using this gauge.
                 link.innerHTML = "Create River using Gauge"
                 link.href = "resources/writeupmaker.html" + "#" + "name=" + river.name + "&section=" + river.section + "&gauge=" + river.gauge
             }
@@ -191,7 +191,7 @@ function createExpansion(button, river) {
                 //Fetch comprehensive flow data, then update the graphs.
                 //TODO: Add XMLHttpRequest fallback.
                 if (!usgsarray[usgsID] || !usgsarray[usgsID].full) {
-                    fetch("gaugeReadings/" + usgsID).catch((error) => {
+                    fetch(window.root + "/gaugeReadings/" + usgsID).catch((error) => {
                         console.log("Failed to load " + usgsID + " from network. Error below. ")
                         console.log(error)
                     }).then((response) => {
@@ -208,8 +208,8 @@ function createExpansion(button, river) {
                     })
                 }
 				else {
-					river.updateFlowData(true) //Update only flow styling and flow data column. 
-					//We do this because, otherwise, if two rivers have the gauge, the second and successive ones opened will not have their flow styling or column updated. . 
+					river.updateFlowData(true) //Update only flow styling and flow data column.
+					//We do this because, otherwise, if two rivers have the gauge, the second and successive ones opened will not have their flow styling or column updated. .
 				}
             }
 

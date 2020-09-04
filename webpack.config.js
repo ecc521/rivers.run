@@ -11,6 +11,7 @@ const path = require("path")
 		entry: {
 			"packages/index.js": "./src/index.js",
 			"packages/allPages.js": "./src/allPages/allPages.js",
+			"packages/writeupmaker.js": "./resources/writeupmaker.js",
 			//TODO: Package serviceworker, and drop it in root directory. (could use Service-Worker-Allowed: / header, but that makes local development harder).
 		},
   		watch: true,
