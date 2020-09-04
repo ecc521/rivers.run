@@ -355,6 +355,7 @@ List.forEach(function(value){
       }
 
 	  if (elem.type === "checkbox") {
+          console.log(initialValue)
 	  	elem.checked = (initialValue === "true")
 	  }
 	  else if (initialValue == null){
@@ -362,6 +363,7 @@ List.forEach(function(value){
 	  }
 	  else {elem.value = initialValue}
       elem.addEventListener("keyup", UpdateWriteup)
+      elem.addEventListener("change", UpdateWriteup)
   }
   else {
       //Start quill off with stored value.
@@ -391,6 +393,12 @@ function getOutputText() {
           //Convert comma seperated list into javascript list
           if (document.getElementById(value).value.trim().split(" ").join("").split(",").length > 0) {
               Text += JSON.stringify(document.getElementById(value).value.trim().split(" ").join("").split(","))
+          }
+      }
+      else if (value === "dam") {
+          Text += "\n" + value + ": "
+          if (document.getElementById(value).checked) {
+              Text += "true"
           }
       }
       else {
