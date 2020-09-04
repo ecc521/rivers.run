@@ -5,11 +5,11 @@ const path = require("path")
 const utils = require(path.join(__dirname, "utils.js"))
 
 function isServerUp() {
-	
-	//If we rebooted within the past 15 minutes, don't run the checks.
+
+	//If we rebooted within the past 30 minutes, don't run the checks.
 	let lastRebooted = new Date(child_process.execSync("uptime -s").toString())
-	if (Date.now() - lastRebooted < 15 * 60 * 1000) {return true}
-	
+	if (Date.now() - lastRebooted < 30 * 60 * 1000) {return true}
+
 	let processID;
 	try {
 		//Get the process ID that owns port 3000..
@@ -19,15 +19,15 @@ function isServerUp() {
 		//No process owns port 3000. The server must be down.
 		return processID || false
 	}
-	
+
 	//Make sure that the flow data is recent
 	let dataLastUpdated = fs.statSync(path.join(utils.getSiteRoot(), "flowdata3.json")).mtime
-	
+
 	if (Date.now() - dataLastUpdated > 30 * 60 * 1000) {
 		//If the data is over 30 minutes old, the server is probably not working.
 		return processID || false
 	}
-	
+
 	return true
 }
 
@@ -42,9 +42,9 @@ if (typeof status === "number" && !isNaN(status)) {
 if (status !== true) {
 	//Start up a new server.
 	fs.appendFileSync(path.join(utils.getLogDirectory(), "servercrashed.log"), "Restarting the server, as it is not running\n")
-	
+
 	let writeStream = fs.createWriteStream(path.join(utils.getLogDirectory(), "usgscache.log"), {flags:"a"})
-	
+
 	let process = child_process.spawn("node", [path.join(utils.getSiteRoot(), "server", "usgscache.js")], {
 		detached: true
 	})
