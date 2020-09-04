@@ -330,7 +330,7 @@ function generate() {
 	 }
 	 else if (value === "dam") {
 		 if (document.getElementById(value).checked) {
-			obj[value] = true
+			obj[value] = "true"
 		 }
 	 }
 	 else {
