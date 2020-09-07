@@ -315,8 +315,9 @@ alert("We are attempting to submit your river. You should receive an alert in ab
 }())
 }
 
-
-
+window.getOutputText = getOutputText
+window.submitAsNewRiver = submitAsNewRiver
+window.copyStringToClipboard = copyStringToClipboard
 
 
 function generate() {
