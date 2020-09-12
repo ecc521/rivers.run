@@ -190,6 +190,7 @@ async function addMap() {
 				if (special) {
 					//Labels introduce far too much lag. Only add a label for the river that was opened.
 					//TODO: Consider writing labels into images, to allow everywhere.
+					//Also, consider labelling the other rivers by skill.
 					if (!item.isGauge) {
 						marker.setLabel({
 							color: "black",
@@ -220,11 +221,25 @@ async function addMap() {
 
 
 	//We will draw the current item, followed by all rivers, then all gauges.
+	//Also, we will use a flat-earth based distance calculation to help render the correct area first.
 	function calcValue(item) {
 		let value = 0
 		if (item.index !== this.index) {
 			value++
 			if (item.isGauge) {value++}
+
+			//Add a bit based on distance. Speed > accuracy here.
+			let lat1 = window.toDecimalDegrees(item.plat || item.tlat)
+			let lon1 = window.toDecimalDegrees(item.plon || item.tlon)
+			let lat2 = window.toDecimalDegrees(this.plat || this.tlat)
+			let lon2 = window.toDecimalDegrees(this.plon || this.tlon)
+
+			//Calculate VERY approximate distance.
+			let distance = ((Math.abs(lat1 - lat2)**2) + (Math.abs(lon1 - lon2)**2))**0.5 //Consider dropping all exponentation here, and not even calculating diagonals, if this is slow.
+			//TODO: If we get more rivers, short distance should be able to skip some gauges ahead of non-close by rivers. 
+			if (distance > 1) {
+				value += 1-(1/distance)
+			}
 		}
 		return value
 	}
