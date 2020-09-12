@@ -1,3 +1,5 @@
+require("./toDecimalDegrees.js")
+
 let API_KEY = "AIzaSyBLmohXw1xsgeBDs1cqVN_UuRtmAHmc-WI"
 
 async function loadMapsAPI() {
@@ -82,23 +84,30 @@ async function addMap() {
 	  zoom: 20
 	});
 
-	try {
-		//TODO: The bounds code needs some serious checking to make sure the points provided are actually the correct edges.
-		//Other option is to repeatedly zoom out, check, and repeat, to use their bounds instead. 
-		let bounds = new google.maps.LatLngBounds({
-			//Southwest corner
-			lat: Math.min(PI.lat, TO.lat),
-			lng: Math.min(PI.lng, TO.lng)
-		}, {
-			//Northeast corner
-			lat: Math.max(PI.lat, TO.lat),
-			lng: Math.max(PI.lng, TO.lng)
-		})
-		console.log(bounds)
+	//TODO: The bounds code needs some serious analysis to make sure the points provided are actually the correct edges.
+	//Other option is to repeatedly zoom out, check, and repeat, to use their bounds instead.
+	let bounds = new google.maps.LatLngBounds({
+		//Southwest corner
+		lat: Math.min(PI.lat, TO.lat),
+		lng: Math.min(PI.lng, TO.lng)
+	}, {
+		//Northeast corner
+		lat: Math.max(PI.lat, TO.lat),
+		lng: Math.max(PI.lng, TO.lng)
+	})
+	console.log(bounds)
+	//
+	//Google Maps appears to be getting itself into an unrecoverable state if this errors. Therefore, catch statements being pointless, confirm there are no NaNs.
+	if (!isNaN(Math.max(PI.lat, TO.lat, PI.lon, TO.lon))) {
 		map.fitBounds(bounds)
 		map.panToBounds(bounds)
 	}
-	catch (e) {console.error(e)}
+	else {
+		//We can't bound, so zoom out a bit.
+		map.setCenter(CTR)
+		map.setZoom(14) //Should only have 1 point, so this should always be fine.
+	}
+
 
 	//Add markers for all of our rivers, and color based on relative flow.
 	//TOOO: Add/remove based on zoom, IF it helps performance.
