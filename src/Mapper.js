@@ -1,8 +1,10 @@
+//Note: We use lon internally, Google Maps uses lng internally. Be careful...
 require("./toDecimalDegrees.js")
 
 let API_KEY = "AIzaSyBLmohXw1xsgeBDs1cqVN_UuRtmAHmc-WI"
 
 async function loadMapsAPI() {
+	if (window?.google?.maps) {return}
 	//TODO: If the user manages to click this button on two rivers before it loads on one (very unlikely), we could double load.
 	var script = document.createElement('script');
 
@@ -84,26 +86,24 @@ async function addMap() {
 	  zoom: 20
 	});
 
-	//TODO: The bounds code needs some serious analysis to make sure the points provided are actually the correct edges.
-	//Other option is to repeatedly zoom out, check, and repeat, to use their bounds instead.
-	let bounds = new google.maps.LatLngBounds({
-		//Southwest corner
-		lat: Math.min(PI.lat, TO.lat),
-		lng: Math.min(PI.lng, TO.lng)
-	}, {
-		//Northeast corner
-		lat: Math.max(PI.lat, TO.lat),
-		lng: Math.max(PI.lng, TO.lng)
-	})
-	console.log(bounds)
-	//
-	//Google Maps appears to be getting itself into an unrecoverable state if this errors. Therefore, catch statements being pointless, confirm there are no NaNs.
-	if (!isNaN(Math.max(PI.lat, TO.lat, PI.lon, TO.lon))) {
-		map.fitBounds(bounds)
+	try {
+		let bounds = new google.maps.LatLngBounds()
+		bounds.extend({
+			lat: PI.lat,
+			lng: PI.lng
+		})
+		bounds.extend({
+			lat: TO.lat,
+			lng: TO.lng
+		})
+
+		console.log(bounds)
+		map.fitBounds(bounds) //Second parameter is optional, but provides padding. We want to add some.
 		map.panToBounds(bounds)
 	}
-	else {
+	catch (e) {
 		//We can't bound, so zoom out a bit.
+		console.warn("Couldn't call bounds. Coordinates were " + [PI.lat, TO.lat, PI.lng, TO.lng].join(", "))
 		map.setCenter(CTR)
 		map.setZoom(14) //Should only have 1 point, so this should always be fine.
 	}
@@ -130,39 +130,27 @@ async function addMap() {
 			fontSize = "20px"
 		}
 
-		if (item.plat && item.plon) {
-			let resources = createMarkerResources({
-				text: "PI - " + name,
-				fillColor: color,
-				scale,
-				fontSize
-			})
+		function addMarker(lat, lon, putIn = false) {
+			if (lat && lon) {
+				let resources = createMarkerResources({
+					text: (putIn?"PI - ":"TO - ") + name,
+					fillColor: color,
+					scale,
+					fontSize
+				})
 
-			var marker = new google.maps.Marker({
-				map: map,
-				position: getCoords(item, true),
-				icon: resources.markerImage,
-				label: resources.label,
-			});
+				var marker = new google.maps.Marker({
+					map: map,
+					position: getCoords(item, putIn),
+					icon: resources.markerImage,
+					label: resources.label,
+				});
+			}
 		}
 
-		if (item.tlat && item.tlon) {
-			let resources = createMarkerResources({
-				text: "TO - " + name,
-				fillColor: color,
-				scale,
-				fontSize
-			})
-
-			var marker = new google.maps.Marker({
-				map: map,
-				position: getCoords(item),
-				icon: resources.markerImage,
-				label: resources.label,
-			});
-		}
+		addMarker(item.plat, item.plon, true)
+		addMarker(item.tlat, item.tlon)
 	}
-
 
 	window.lastAddedMap = map //For development only. This global variable is NOT TO BE USED by site code.
 	div.classList.add("riverMap")
