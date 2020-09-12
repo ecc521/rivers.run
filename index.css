@@ -549,6 +549,18 @@ Those include name,section,skill,quality, and flow info*/
 	background-color: #e06af4 !important; /*A lightish purple.*/
 }
 
+.mapButton {
+    width: 50vw;
+    padding: 8px;
+    margin: 1vh;
+    margin-left: 25vw;
+    border-radius: 2000px; /*Fully round corners. */
+}
+
+.riverMap {
+    height: 70vh;
+}
+
 
 @media (prefers-color-scheme: dark) {
     html, body {

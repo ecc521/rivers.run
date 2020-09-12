@@ -17,7 +17,6 @@
 
 	let parts = coord.split(/[^.\w]+/) //Split on non-alphanumeric characters that aren't decimals.
 
-	console.log(parts)
 	let degrees = Number(parts[0])
 	let minutes = Number(parts[1]) || 0
 	let seconds = Number(parts[2]) || 0

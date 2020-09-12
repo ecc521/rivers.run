@@ -5,11 +5,11 @@
 		<!-- With style-src, 'unsafe-eval' allows for things like CSSStyleSheet.insertRule(), and other JavaScript methods. -->
 		<!-- TODO: Consider allowing image requests over all https connections-->
         <meta http-equiv="Content-Security-Policy" content="
-                                                            default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:*;
-                                                            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://docs.google.com https://www.googleapis.com;
-                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://www.googleapis.com;
-                                                            font-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data:;
-															style-src https://rivers.run https://*.rivers.run http://127.0.0.1:* 'unsafe-eval';"
+                                                            default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://maps.googleapis.com https://maps.gstatic.com;
+                                                            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://docs.google.com https://*.googleapis.com https://maps.gstatic.com;
+                                                            img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://*.googleapis.com https://maps.gstatic.com data:;
+                                                            font-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data: https://fonts.googleapis.com https://fonts.gstatic.com;
+															style-src https://rivers.run https://*.rivers.run http://127.0.0.1:* 'unsafe-eval' https://fonts.googleapis.com;"
               >
 
         <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -116,14 +116,14 @@
                 </select>
                 <input id="sectionQuery" type="text" placeholder="Search Query">
                 <br>
-				
-				
+
+
 				<label for="stateQuery">State is (codes, comma seperated list):</label>
                 <input id="stateQuery" type="text" placeholder="Enter States..." list="stateOptions" multiple>
 				<datalist id="stateOptions"></datalist>
                 <br>
-				
-				
+
+
                 Skill
                 <!-- Consider reusing skillToNumber code to avoid excessive duplication-->
                 <select id="skillQuery1">

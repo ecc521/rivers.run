@@ -2,6 +2,7 @@ const {skillTranslations} = require("./skillTranslations.js")
 const addGraphs = require("./addGraphs.js").addGraphs
 const {calculateAge} = require("./flowInfoCalculations.js")
 const {createDeviceNotificationsWidget, createEmailNotificationsWidget} = require("./notificationsWidget.js")
+const {addMap} = require("./Mapper.js")
 
 //Code that runs when the button is clicked
     function riverbuttonClicked(button, river) {
@@ -63,6 +64,19 @@ function createExpansion(button, river) {
 
             if (river.tlat && river.tlon) {
                 div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
+            }
+
+            if ((river.plat && river.plon) || (river.tlat && river.tlon)) {
+                //Offer a map.
+                let mapButton = document.createElement("button")
+                mapButton.innerHTML = "Click to Load Map"
+                mapButton.classList.add("mapButton")
+                mapButton.addEventListener("click", async function() {
+                    mapButton.innerHTML = "Loading..."
+                    let map = await addMap.call(river)
+                    mapButton.replaceWith(map)
+                })
+                div.appendChild(mapButton)
             }
 
 			function round(level) {
