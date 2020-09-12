@@ -98,13 +98,19 @@ async function addMap() {
 		})
 
 		console.log(bounds)
-		map.fitBounds(bounds) //Second parameter is optional, but provides padding. We want to add some.
-		map.panToBounds(bounds)
+		let paddingInPixels = 20
+		map.fitBounds(bounds, paddingInPixels)
+		console.log(map.getZoom())
+		setTimeout(function() {
+			//Not sure why, but sometimes (look at Chattooga 4 vs Chattahoochee Upper), Google Maps is zooming out way too far without this second call.
+			console.log(map.getZoom())
+			map.fitBounds(bounds, paddingInPixels)
+			console.log(map.getZoom())
+		}, 500)
 	}
 	catch (e) {
 		//We can't bound, so zoom out a bit.
 		console.warn("Couldn't call bounds. Coordinates were " + [PI.lat, TO.lat, PI.lng, TO.lng].join(", "))
-		map.setCenter(CTR)
 		map.setZoom(14) //Should only have 1 point, so this should always be fine.
 	}
 
@@ -147,9 +153,11 @@ async function addMap() {
 				});
 
 				const infowindow = new google.maps.InfoWindow({
-				  content: `Latitude: ${lat}<br>
+				  content: `
+				  <div class="infoWindow">Latitude: ${lat}<br>
 				  Longitude: ${lon}<br>
-				  <a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a>`
+				  <a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a><br>
+				  <a href="#${name}" target="_blank">Open in Rivers.run</a></div>` //TODO: Consider using name and section specifically, as generic search can return other results.
 				});
 				marker.addListener("click", () => {
 					//TODO: The InfoWindow should dissapear if the user clicks outside of it, not just the X button.

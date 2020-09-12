@@ -562,6 +562,9 @@ Those include name,section,skill,quality, and flow info*/
     color: black; /*Dictates text color of InfoWindows*/
 }
 
+.infoWindow {
+    min-width: 150px; /*Google's sizing is too inconsistant*/
+}
 
 @media (prefers-color-scheme: dark) {
     html, body {
