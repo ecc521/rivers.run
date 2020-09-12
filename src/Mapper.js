@@ -145,6 +145,16 @@ async function addMap() {
 					icon: resources.markerImage,
 					label: resources.label,
 				});
+
+				const infowindow = new google.maps.InfoWindow({
+				  content: `Latitude: ${lat}<br>
+				  Longitude: ${lon}<br>
+				  <a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a>`
+				});
+				marker.addListener("click", () => {
+					//TODO: The InfoWindow should dissapear if the user clicks outside of it, not just the X button.
+					infowindow.open(map, marker);
+				});
 			}
 		}
 

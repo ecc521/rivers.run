@@ -559,6 +559,7 @@ Those include name,section,skill,quality, and flow info*/
 
 .riverMap {
     height: 70vh;
+    color: black; /*Dictates text color of InfoWindows*/
 }
 
 
