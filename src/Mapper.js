@@ -137,6 +137,7 @@ async function addMap() {
 	let gaugeIcon;
 	let blankIcon;
 
+	let updatableItems = []
 	function drawItem(item) {
 		//Call with this as the primary river object
 		let color;
@@ -150,7 +151,11 @@ async function addMap() {
 
 
 		let scale = 1.25
-		if (!item.isGauge) {scale = 2}
+		let regenerateInfo = [item]
+		if (!item.isGauge) {
+			scale = 2
+			updatableItems.push(regenerateInfo)
+		}
 
 		let special = false
 		let icon;
@@ -186,6 +191,7 @@ async function addMap() {
 					position: getCoords(item, putIn),
 					icon
 				});
+				regenerateInfo.push(marker)
 
 				if (special) {
 					//Labels introduce far too much lag. Only add a label for the river that was opened.
@@ -219,6 +225,25 @@ async function addMap() {
 		addMarker(item.tlat, item.tlon)
 	}
 
+	function updateMarkers() {
+		//Update colors for new flow info.
+		//TODO: Deduplicate code.
+		updatableItems.forEach((arr) => {
+			let item = arr[0]
+			let color = "hsl(" + item.running * 60 + ", 100%, 70%)"
+			if (isNaN(item.running)) {
+				color = "white"
+			}
+			let icon = createMarkerImage({
+				fillColor: color,
+				scale: (item.index === _this.index)?4:2
+			})
+			//Skip first element.
+			arr.slice(1).forEach((marker) => {
+				marker.setIcon(icon)
+			})
+		})
+	}
 
 	//We will draw the current item, followed by all rivers, then all gauges.
 	//Also, we will use a flat-earth based distance calculation to help render the correct area first.
@@ -266,6 +291,7 @@ async function addMap() {
 
 	window.lastAddedMap = map //For development only. This global variable is NOT TO BE USED by site code.
 	div.classList.add("riverMap")
+	div.updateMarkers = updateMarkers
 	return div
 }
 

@@ -22,8 +22,6 @@ const {addMap} = require("./Mapper.js")
     }
 
 
-
-
 function createExpansion(button, river) {
             var div = document.createElement("div")
 			div.className = "riverWriteup"
@@ -66,15 +64,19 @@ function createExpansion(button, river) {
                 div.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
             }
 
-            if ((river.plat && river.plon) || (river.tlat && river.tlon)) {
+            if (river.map) {
+                div.appendChild(river.map)
+                river.map.updateMarkers() //Update markers for new flow info.
+            }
+            else if ((river.plat && river.plon) || (river.tlat && river.tlon)) {
                 //Offer a map.
                 let mapButton = document.createElement("button")
                 mapButton.innerHTML = "Click to Load Map"
                 mapButton.classList.add("mapButton")
                 mapButton.addEventListener("click", async function() {
                     mapButton.innerHTML = "Loading..."
-                    let map = await addMap.call(river)
-                    mapButton.replaceWith(map)
+                    river.map = await addMap.call(river)
+                    mapButton.replaceWith(river.map)
                 })
                 div.appendChild(mapButton)
             }
