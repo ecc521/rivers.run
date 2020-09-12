@@ -226,7 +226,7 @@ async function addMap() {
 		let value = 0
 		if (item.index !== this.index) {
 			value++
-			if (item.isGauge) {value++}
+			if (item.isGauge) {value+=0.1} //Add 0.1, so that distance can easily outweight rivers.
 
 			//Add a bit based on distance. Speed > accuracy here.
 			let lat1 = window.toDecimalDegrees(item.plat || item.tlat)
@@ -235,8 +235,8 @@ async function addMap() {
 			let lon2 = window.toDecimalDegrees(this.plon || this.tlon)
 
 			//Calculate VERY approximate distance.
-			let distance = ((Math.abs(lat1 - lat2)**2) + (Math.abs(lon1 - lon2)**2))**0.5 //Consider dropping all exponentation here, and not even calculating diagonals, if this is slow.
-			//TODO: If we get more rivers, short distance should be able to skip some gauges ahead of non-close by rivers. 
+			let distance = ((Math.abs(lat1 - lat2)**2) + (Math.abs(lon1 - lon2)**2))**0.5
+			distance = Math.log10(distance) ** 3 //Adjust dropoff rate.
 			if (distance > 1) {
 				value += 1-(1/distance)
 			}
