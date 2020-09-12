@@ -37,33 +37,49 @@ function getCoords(item, putIn = false) {
 	return false
 }
 
-function createMarkerResources(config = {}) {
-	    var pinSVGFilled = "M 12,2 C 8.1340068,2 5,5.1340068 5,9 c 0,5.25 7,13 7,13 0,0 7,-7.75 7,-13 0,-3.8659932 -3.134007,-7 -7,-7 z";
-	    var labelOriginFilled =  new google.maps.Point(12,9);
+let renderCanvas = document.createElement("canvas")
+let renderContext = renderCanvas.getContext("2d")
+let p = new Path2D("m 7.2,0.2 c -3.8659932,0 -7,3.1340068 -7,7 0,5.25 7,13 7,13 0,0 7,-7.75 7,-13 0,-3.8659932 -3.134007,-7 -7,-7 z")
+let m = document.createElementNS('http://www.w3.org/2000/svg', 'svg').createSVGMatrix();
+m.b = 0; m.c = 0;m.e = 0;m.f = 0;
 
-	    var markerImage = {
-	        path: pinSVGFilled,
-	        anchor: new google.maps.Point(12,17),
-	        fillOpacity: 1,
-	        fillColor: config.fillColor || "blue",
-	        strokeWeight: config.strokeWeight || 1,
-	        strokeColor: config.strokeColor || "#333333",
-	        scale: config.scale || 2,
-	        labelOrigin: labelOriginFilled
-	    };
-	    var label = {
-	        text: config.text,
-	        color: config.textColor || "black",
-	        fontSize: config.fontSize || "12px",
-	    };
+function prepForScale(options = {}) {
+	renderContext.clearRect(0, 0, renderCanvas.width, renderCanvas.height)
+	//Technically about 14.4x20.5.
+	renderCanvas.width = 15 * options.scale
+	renderCanvas.height = 21 * options.scale
 
-		return {markerImage, label}
+	m.a = options.scale;
+	m.d = options.scale;
+
+	//TODO: Cache renderPath where possible.
+	let renderPath = new Path2D()
+	renderPath.addPath(p, m)
+
+	renderContext.strokeStyle = options.strokeColor
+	renderContext.fillStyle = options.fillColor
+
+	renderContext.fill(renderPath)
+	renderContext.stroke(renderPath)
+	return renderCanvas.toDataURL("img/png")
+}
+
+
+function createMarkerImage(config = {}) {
+		var markerImage = prepForScale({
+			fillColor: config.fillColor || "blue",
+			strokeColor: config.strokeColor || "#333333",
+			scale: config.scale || 2
+		})
+
+		return markerImage
 }
 
 async function addMap() {
 	//Call bound to a river object.
+	let _this = this
+
 	await loadMapsAPI()
-	console.log(this)
 
 	let div = document.createElement("div")
 
@@ -118,46 +134,78 @@ async function addMap() {
 	//Add markers for all of our rivers, and color based on relative flow.
 	//TOOO: Add/remove based on zoom, IF it helps performance.
 	//map.getBounds() returns visible lat/lng range.
-	for (let i=0;i<ItemHolder.length;i++) {
-		let item = ItemHolder[i]
+	let gaugeIcon;
+	let blankIcon;
 
-		if (item.isGauge) {continue};
-
-		let name = item.name + " " + item.section
-		let color = "hsl(" + item.running * 60 + ", 100%, 70%)"
-		let fontSize = "14px"
-		if (isNaN(item.running)) {
+	function drawItem(item) {
+		//Call with this as the primary river object
+		let color;
+		if (item.isGauge) {
+			color = "#df6af1" //Purplish.
+		}
+		else if (isNaN(item.running)) {
 			color = "white"
 		}
-		let scale = 2
+		else {color = "hsl(" + item.running * 60 + ", 100%, 70%)"}
 
+
+		let scale = 1.25
+		if (!item.isGauge) {scale = 2}
+
+		let special = false
+		let icon;
 		if (item.index === this.index) {
 			scale = 4
-			fontSize = "20px"
+			special = true
 		}
+		else {
+			//If not special, and generic, cache the icon.
+			if (item.isGauge) {
+				icon = gaugeIcon = gaugeIcon || createMarkerImage({
+					fillColor: color, scale
+				})
+			}
+			else if (isNaN(item.running)) {
+				icon = blankIcon = blankIcon || createMarkerImage({
+					fillColor: color, scale
+				})
+			}
+		}
+
+		//Now, either an icon will be defined, or the color for the icon will be defined. We will cache all generic icons, and the icons for the specific river.
 
 		function addMarker(lat, lon, putIn = false) {
 			if (lat && lon) {
-				let resources = createMarkerResources({
-					text: (putIn?"PI - ":"TO - ") + name,
+				icon = icon || createMarkerImage({
 					fillColor: color,
-					scale,
-					fontSize
+					scale
 				})
 
 				var marker = new google.maps.Marker({
 					map: map,
 					position: getCoords(item, putIn),
-					icon: resources.markerImage,
-					label: resources.label,
+					icon
 				});
+
+				if (special) {
+					//Labels introduce far too much lag. Only add a label for the river that was opened.
+					//TODO: Consider writing labels into images, to allow everywhere.
+					if (!item.isGauge) {
+						marker.setLabel({
+							color: "black",
+							fontSize: "20px",
+							text: (putIn?"PI":"TO")
+						})
+					}
+					marker.setZIndex(1)
+				}
 
 				const infowindow = new google.maps.InfoWindow({
 				  content: `
 				  <div class="infoWindow">Latitude: ${lat}<br>
 				  Longitude: ${lon}<br>
 				  <a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a><br>
-				  <a href="#${name}" target="_blank">Open in Rivers.run</a></div>` //TODO: Consider using name and section specifically, as generic search can return other results.
+				  <a href="#${item.name + " " + item.section}" target="_blank">Open in Rivers.run</a></div>` //TODO: Consider using name and section specifically, as generic search can return other results. TODO, clicking this link closes map, probably due to hash. Might be a re-render problem, where the map isn't re-expanded.
 				});
 				marker.addListener("click", () => {
 					//TODO: The InfoWindow should dissapear if the user clicks outside of it, not just the X button.
@@ -169,6 +217,37 @@ async function addMap() {
 		addMarker(item.plat, item.plon, true)
 		addMarker(item.tlat, item.tlon)
 	}
+
+
+	//We will draw the current item, followed by all rivers, then all gauges.
+	function calcValue(item) {
+		let value = 0
+		if (item.index !== this.index) {
+			value++
+			if (item.isGauge) {value++}
+		}
+		return value
+	}
+
+	let drawOrder = ItemHolder.slice(0).sort(((a, b) => {
+		return calcValue.call(this, a) - calcValue.call(this, b)
+	}).bind(this))
+
+	let i=0
+	//Draw async, to allow quicker map load.
+	let drawMore = function drawMore(duration = 8, timeout = 30) {
+		let start = Date.now()
+		let done = false
+		while (Date.now() - start < duration) {
+			if (!drawOrder[i]) {break;}
+			drawItem.call(_this, drawOrder[i++])
+		}
+		if (!done) {
+			setTimeout(drawMore, timeout)
+		}
+	}
+
+	drawMore()
 
 	window.lastAddedMap = map //For development only. This global variable is NOT TO BE USED by site code.
 	div.classList.add("riverMap")
