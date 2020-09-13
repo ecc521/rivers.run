@@ -68,7 +68,7 @@ function createExpansion(button, river) {
                 div.appendChild(river.map)
                 river.map.updateMarkers() //Update markers for new flow info.
             }
-            else if ((river.plat && river.plon) || (river.tlat && river.tlon)) {
+            else if (!river.blockMaps && ((river.plat && river.plon) || (river.tlat && river.tlon))) {
                 //Offer a map.
                 let mapButton = document.createElement("button")
                 mapButton.innerHTML = "Click to Load Map"

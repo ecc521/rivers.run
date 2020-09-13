@@ -1,5 +1,6 @@
 //Note: We use lon internally, Google Maps uses lng internally. Be careful...
 require("./toDecimalDegrees.js")
+let MapPopup;
 
 let API_KEY = "AIzaSyBLmohXw1xsgeBDs1cqVN_UuRtmAHmc-WI"
 
@@ -11,7 +12,10 @@ async function loadMapsAPI() {
 	script.src = 'https://maps.googleapis.com/maps/api/js?key=' + API_KEY + '&callback=initMap';
 
 	let promise = new Promise((resolve, reject) => {
-		window.initMap = resolve
+		window.initMap = function() {
+			resolve()
+			MapPopup = require("./MapPopup.js")
+		}
 	})
 
 	document.head.appendChild(script);
@@ -207,16 +211,28 @@ async function addMap() {
 					marker.setZIndex(1)
 				}
 
-				const infowindow = new google.maps.InfoWindow({
-				  content: `
-				  <div class="infoWindow">Latitude: ${lat}<br>
-				  Longitude: ${lon}<br>
-				  <a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a><br>
-				  <a href="#${item.name + " " + item.section}" target="_blank">Open in Rivers.run</a></div>` //TODO: Consider using name and section specifically, as generic search can return other results. TODO, clicking this link closes map, probably due to hash. Might be a re-render problem, where the map isn't re-expanded.
-				});
 				marker.addListener("click", () => {
-					//TODO: The InfoWindow should dissapear if the user clicks outside of it, not just the X button.
-					infowindow.open(map, marker);
+					let div = document.createElement("div")
+
+					let info
+					let riverLink = `<a href="#${item.name + " " + item.section}" target="_blank">Open in Rivers.run</a></div><br>`
+					div.innerHTML += riverLink
+					let googleMapsLink = `<a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a>`
+					div.innerHTML += googleMapsLink
+
+					let riverObj = new River(250000 + item.index, riverarray[item.index]) //locate is pretty much irrelevant now, should work fine.
+					riverObj.blockMaps = true //Don't allow nested maps. 
+					let riverElem = riverObj.create()
+					div.appendChild(riverElem)
+					riverElem.click()
+
+					let popup = new MapPopup(marker.position, div)
+					popup.setMap(map)
+
+					let listener = map.addListener("click", function() {
+						popup.setMap(null)
+						google.maps.event.removeListener(listener)
+					})
 				});
 			}
 		}

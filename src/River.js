@@ -328,7 +328,6 @@ function River(locate, event) {
 	this.updateFlowData()
 
     this.delete = function () {
-        let river = ItemHolder[locate]
         function Remove(Code) {
             let ToDelete = document.getElementById(river.base + Code)
             if (ToDelete) {
