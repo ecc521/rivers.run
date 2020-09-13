@@ -27,6 +27,32 @@ class MapPopup extends google.maps.OverlayView {
 		this.containerDiv.appendChild(bubbleAnchor);
 		// Optionally stop clicks, etc., from bubbling up to the map.
 		MapPopup.preventMapHitsAndGesturesFrom(this.containerDiv);
+
+		this.offsetX = 0
+		this.offsetY = 0
+
+		let lastX;
+		let lastY;
+		content.draggable = true
+		let drag = (function(event) {
+			console.log(event)
+			if (lastX !== undefined && lastY !== undefined) {
+				this.offsetX += event.screenX - lastX
+				this.offsetY += event.screenY - lastY
+			}
+			lastX = event.screenX
+			lastY = event.screenY
+			this.draw()
+		}).bind(this)
+		content.ondrag = drag
+
+		content.ondragend = function(event) {
+			drag(event) //Do this to force the element back to the correct location.
+			//I suspect that, since there isn't a drop target, the last drag reverts all previous drags.
+			//The current behavior is a bit jumpy, but works. 
+			lastX = undefined
+			lastY = undefined
+		}
 	}
 	/** Called when the popup is added to the map. */
 	onAdd() {
@@ -56,8 +82,8 @@ class MapPopup extends google.maps.OverlayView {
 		: "none";
 
 		if (display === "block") {
-			this.containerDiv.style.left = divPosition.x + "px";
-			this.containerDiv.style.top = divPosition.y + "px";
+			this.containerDiv.style.left = divPosition.x + this.offsetX + "px";
+			this.containerDiv.style.top = divPosition.y + this.offsetY + "px";
 		}
 
 		if (this.containerDiv.style.display !== display) {
