@@ -279,8 +279,8 @@ async function getCanadianGauges(returnArray = false) {
             mapHeaders: function({header, index}) {
                 if (header === '﻿ ID') {return "id"}
                 else if (header === 'Name / Nom') {return "name"}
-                else if (header === "Latitude") {return "lat"}
-                else if (header === "Longitude") {return "lon"}
+                else if (header === "Latitude") {return "plat"}
+                else if (header === "Longitude") {return "plon"}
                 else if (header === 'Prov/Terr') {return "province"}
                 return null //Delete the header.
             }
@@ -331,7 +331,7 @@ async function getIrishGaugesInRiverFormat() {
         let gauge = metadata[gaugeID]
         gauge.section = gauge.name
         gauge.gauge = "ireland:" + gaugeID
-        gauge.name = "" //TODO: We currently have the Gauge location name, not the river name. 
+        gauge.name = "" //TODO: We currently have the Gauge location name, not the river name.
         arr.push(gauge)
     }
     return arr
