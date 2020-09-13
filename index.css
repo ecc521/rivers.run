@@ -615,6 +615,10 @@ Those include name,section,skill,quality, and flow info*/
   width: 200px;
 }
 
+.mapPopupCloseButton {
+    float: right;
+}
+
 
 @media (prefers-color-scheme: dark) {
     html, body {

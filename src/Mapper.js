@@ -214,14 +214,19 @@ async function addMap() {
 				marker.addListener("click", () => {
 					let div = document.createElement("div")
 
-					let info
-					let riverLink = `<a href="#${item.name + " " + item.section}" target="_blank">Open in Rivers.run</a></div><br>`
+					//TODO: Remove the inline HTML
+					let riverLink = `<a href="#${item.name + " " + item.section}" target="_blank">Open in Rivers.run</a>, `
 					div.innerHTML += riverLink
-					let googleMapsLink = `<a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a>`
+					let googleMapsLink = `<a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a>, or view below: `
 					div.innerHTML += googleMapsLink
 
+					let closeButton = document.createElement("button")
+					closeButton.className = "mapPopupCloseButton"
+					closeButton.innerHTML = "×"
+					div.appendChild(closeButton)
+
 					let riverObj = new River(250000 + item.index, riverarray[item.index]) //locate is pretty much irrelevant now, should work fine.
-					riverObj.blockMaps = true //Don't allow nested maps. 
+					riverObj.blockMaps = true //Don't allow nested maps.
 					let riverElem = riverObj.create()
 					div.appendChild(riverElem)
 					riverElem.click()
@@ -229,10 +234,14 @@ async function addMap() {
 					let popup = new MapPopup(marker.position, div)
 					popup.setMap(map)
 
-					let listener = map.addListener("click", function() {
+					let listener = map.addListener("click", closePopup)
+					closeButton.addEventListener("click", closePopup)
+
+					function closePopup() {
 						popup.setMap(null)
 						google.maps.event.removeListener(listener)
-					})
+					}
+
 				});
 			}
 		}
