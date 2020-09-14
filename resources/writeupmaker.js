@@ -342,19 +342,30 @@ function generate() {
 	return obj
 }
 
+let lastDispatched;
 function renderPreview() {
-	let container = document.getElementById("previewContainer")
-	let info = generate()
-	window.ItemHolder = []
-	window.usgsarray =  {}
-	window.usgsarray[info.gauge] = {
-		full: false,
-		readings: [],
-		name: "Real graph should load..."
+	let maxUpdateInterval = 200
+	//If we have dispatched before, and did so within the last maxUpdateInterval milliseconds, don't dispatch again.
+	if (lastDispatched && Date.now() - lastDispatched < maxUpdateInterval) {
+		console.log("Blocking preview re-render. Time elapsed was " + (Date.now() - lastDispatched))
+		return;
 	}
-	while (container.firstChild) {container.firstChild.remove()}
-	window.ItemHolder[0] = new River(0, info)
-	container.appendChild(window.ItemHolder[0].create())
-	window.ItemHolder[0].finished.click()
+	lastDispatched = Date.now()
+	setTimeout(function() {
+		let container = document.getElementById("previewContainer")
+		let info = generate()
+		window.ItemHolder = []
+		//We need to cache the data, to avoid double rendering.
+		window.usgsarray =  window.usgsarray || {}
+		window.usgsarray[info.gauge] = window.usgsarray[info.gauge] || {
+			full: false,
+			readings: [],
+			name: "Real graph should load..."
+		}
+		while (container.firstChild) {container.firstChild.remove()}
+		window.ItemHolder[0] = new River(0, info)
+		container.appendChild(window.ItemHolder[0].create())
+		window.ItemHolder[0].finished.click()
+	}, maxUpdateInterval)
 }
 window.renderPreview = renderPreview

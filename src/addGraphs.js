@@ -198,7 +198,7 @@ function addGraphs(data) {
 				}
 			}
 			catch (e) {
-				console.error(e)
+				console.warn(e)
 			}
 			try {
 				let feetGraph = getFlowGraph(data, "volume") //Pass "volume" as doNotInclude
@@ -211,11 +211,11 @@ function addGraphs(data) {
 				}
 			}
 			catch (e) {
-				console.error(e)
+				console.warn(e)
 			}
         }
     }
-    catch(e){console.error("Error creating flow graph: " + e)}
+    catch(e){console.warn("Error creating flow graph: " + e)}
 
     try {
         let tempGraph = getTempGraph(data)
@@ -227,7 +227,7 @@ function addGraphs(data) {
 			})
 		}
     }
-    catch(e){console.error("Error creating temperature graph: " + e)}
+    catch(e){console.warn("Error creating temperature graph: " + e)}
 
     try {
         let precipGraph = getPrecipGraph(data)
@@ -239,15 +239,20 @@ function addGraphs(data) {
 			})
 		}
     }
-    catch(e){console.error("Error creating precipitation graph: " + e)}
+    catch(e){console.warn("Error creating precipitation graph: " + e)}
 
 	try {
+        if (graphs.length === 0) {
+            console.warn("No graphs")
+            return container
+        }
+        
 		let buttonContainer = document.createElement("div")
 		if (graphs.length > 1) {
 			//We don't need to show selection buttons if we only have one graph.
 			container.appendChild(buttonContainer)
 		}
-		//Add the starting graph - the flow graph.
+		//Add the starting graph - usually the flow graph, unless it doesn't exist.
 		container.appendChild(graphs[0].elem)
 
 		graphs.forEach((data) => {

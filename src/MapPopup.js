@@ -35,7 +35,6 @@ class MapPopup extends google.maps.OverlayView {
 		let lastY;
 		content.draggable = true
 		let drag = (function(event) {
-			console.log(event)
 			if (lastX !== undefined && lastY !== undefined) {
 				this.offsetX += event.screenX - lastX
 				this.offsetY += event.screenY - lastY
@@ -49,7 +48,7 @@ class MapPopup extends google.maps.OverlayView {
 		content.ondragend = function(event) {
 			drag(event) //Do this to force the element back to the correct location.
 			//I suspect that, since there isn't a drop target, the last drag reverts all previous drags.
-			//The current behavior is a bit jumpy, but works. 
+			//The current behavior is a bit jumpy, but works.
 			lastX = undefined
 			lastY = undefined
 		}
