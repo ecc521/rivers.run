@@ -9,9 +9,9 @@ async function loadMapsAPI() {
 	//TODO: If the user manages to click this button on two rivers before it loads on one (very unlikely), we could double load.
 	var script = document.createElement('script');
 
-	script.src = 'https://maps.googleapis.com/maps/api/js?key=' + API_KEY + '&callback=initMap';
-
 	let promise = new Promise((resolve, reject) => {
+		script.addEventListener("error", reject)
+		script.src = 'https://maps.googleapis.com/maps/api/js?key=' + API_KEY + '&callback=initMap';
 		window.initMap = function() {
 			resolve()
 			MapPopup = require("./MapPopup.js")
@@ -79,17 +79,21 @@ function createMarkerImage(config = {}) {
 		return markerImage
 }
 
-async function addMap() {
-	//Call bound to a river object.
-	let _this = this
-
-	await loadMapsAPI()
+async function addMap(river) {
+	try {
+		await loadMapsAPI()
+	}
+	catch (e) {
+		console.error(e)
+		alert("Error loading Google Maps API: " + e.message)
+		return;
+	}
 
 	let div = document.createElement("div")
 
 	//Center in between PI and TO if possible.
-	let PI = getCoords(this, true)
-	let TO = getCoords(this)
+	let PI = getCoords(river, true)
+	let TO = getCoords(river)
 	let CTR = {};
 	if (PI && TO) {
 		CTR.lat = PI.lat + TO.lat
@@ -143,7 +147,6 @@ async function addMap() {
 
 	let updatableItems = []
 	function drawItem(item) {
-		//Call with this as the primary river object
 		let color;
 		if (item.isGauge) {
 			color = "#df6af1" //Purplish.
@@ -163,7 +166,7 @@ async function addMap() {
 
 		let special = false
 		let icon;
-		if (item.index === this.index) {
+		if (item.index === river.index) {
 			scale = 4
 			special = true
 		}
@@ -261,7 +264,7 @@ async function addMap() {
 			}
 			let icon = createMarkerImage({
 				fillColor: color,
-				scale: (item.index === _this.index)?4:2
+				scale: (item.index === river.index)?4:2
 			})
 			//Skip first element.
 			arr.slice(1).forEach((marker) => {
@@ -274,15 +277,15 @@ async function addMap() {
 	//Also, we will use a flat-earth based distance calculation to help render the correct area first.
 	function calcValue(item) {
 		let value = 0
-		if (item.index !== this.index) {
+		if (item.index !== river.index) {
 			value++
 			if (item.isGauge) {value+=0.1} //Add 0.1, so that distance can easily outweight rivers.
 
 			//Add a bit based on distance. Speed > accuracy here.
 			let lat1 = window.toDecimalDegrees(item.plat || item.tlat)
 			let lon1 = window.toDecimalDegrees(item.plon || item.tlon)
-			let lat2 = window.toDecimalDegrees(this.plat || this.tlat)
-			let lon2 = window.toDecimalDegrees(this.plon || this.tlon)
+			let lat2 = window.toDecimalDegrees(river.plat || river.tlat)
+			let lon2 = window.toDecimalDegrees(river.plon || river.tlon)
 
 			//Calculate VERY approximate distance.
 			let distance = ((Math.abs(lat1 - lat2)**2) + (Math.abs(lon1 - lon2)**2))**0.5
@@ -295,8 +298,8 @@ async function addMap() {
 	}
 
 	let drawOrder = ItemHolder.slice(0).sort(((a, b) => {
-		return calcValue.call(this, a) - calcValue.call(this, b)
-	}).bind(this))
+		return calcValue.call(river, a) - calcValue.call(river, b)
+	}))
 
 	let i=0
 	//Draw async, to allow quicker map load.
@@ -305,7 +308,7 @@ async function addMap() {
 		let done = false
 		while (Date.now() - start < duration) {
 			if (!drawOrder[i]) {break;}
-			drawItem.call(_this, drawOrder[i++])
+			drawItem(drawOrder[i++])
 		}
 		if (!done) {
 			setTimeout(drawMore, timeout)

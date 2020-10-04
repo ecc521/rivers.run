@@ -75,8 +75,14 @@ function createExpansion(button, river) {
                 mapButton.classList.add("mapButton")
                 mapButton.addEventListener("click", async function() {
                     mapButton.innerHTML = "Loading..."
-                    river.map = await addMap.call(river)
-                    mapButton.replaceWith(river.map)
+                    let map = await addMap(river)
+                    if (map) {
+                        river.map = map
+                        mapButton.replaceWith(river.map)
+                    }
+                    else {
+                        mapButton.innerHTML = "Click to Load Map"
+                    }
                 })
                 div.appendChild(mapButton)
             }
