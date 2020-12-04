@@ -88,12 +88,39 @@ function fetchHandler(event) {
 
 		let fromnetwork = fetch(event.request)
 
-		if (url.includes("docs.google.com") || url.includes("googleapis.com") || url.includes("salmon2019") || url.includes("ip2location") || url.includes("node") || url.includes("gaugeReadings")) {
+        let returnNetwork = false
+
+		if (
+            url.includes("docs.google.com")
+            || url.includes("googleapis.com")
+            || url.includes("salmon2019")
+            || url.includes("ip2location")
+            || url.includes("node")
+            || url.includes("gaugeReadings")
+            || url.includes("script.googleusercontent.com")
+            || url.includes("ih3.googleusercontent.com")
+        ) {
 			//Don't cache fileshare or ip2location.
             //Avoid filling up cache with opaque responses from docs.google.com
             //Avoid caching some responses from googleapis.com - we want the network response for writeupmaker.html (though we may want to temporarily cache images)
-			return fromnetwork
+
+            returnNetwork = true
+
+            //Cache Google Maps JavaScript
+            if (url.includes("maps.googleapis.com/maps/api/js") && url.includes("&callback=")) {
+                //Exempt main JavaScript file
+                returnNetwork = false
+            }
+            if (url.includes("maps.googleapis.com") && url.includes(".js")) {
+                //Exempt auxillary JavaScript files.
+                returnNetwork = false
+            }
 		}
+
+
+        if (returnNetwork) {
+            return fromnetwork
+        }
 
         if (!fromcache) {
             //No cache. All we can do is return network response
