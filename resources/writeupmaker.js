@@ -6,7 +6,6 @@ for (let i=4;i<21;i++) {
 	option.innerHTML = stars + " Stars"
 	rating.appendChild(option)
 }
-
 const River = require("../src/River.js").River
 
 
@@ -51,7 +50,7 @@ var toolbarOptions = [
 	['clean']
 ];
 
-var quill = new Quill('#editor-container', {
+window.quill = new Quill('#editor-container', {
 	modules: {
 		toolbar: toolbarOptions
 	},
@@ -86,6 +85,10 @@ async function saveToServer(file) {
 
 	console.log(fileData)
 
+	//Get length and width.
+	let img = new Image()
+	img.src = URL.createObjectURL(new Blob([fileData]))
+
 	//Google Apps Script will treat our data as a String. Convert to base 64 to avoid problems
 	function arrayBufferToBase64( buffer ) {
 		var binary = '';
@@ -119,9 +122,14 @@ async function saveToServer(file) {
 	else {
 		alert("File upload appears to have failed. ")
 	}
-	return text.split("\n")[1] //File ID
+	let obj = {
+		File_ID: text.split("\n")[1], //File ID
+		width: img.width,
+		length: img.height
+	}
+	URL.revokeObjectURL(img.src)
+	return obj
 }
-
 
 function imageHandler() {
 	const input = document.createElement('input');
@@ -134,8 +142,31 @@ function imageHandler() {
 
 		// file type is only image.
 		if (/^image\//.test(file.type)) {
-			saveToServer(file).then((File_ID) => {
-				quill.insertEmbed(quill.getSelection(true), 'image', 'https://www.googleapis.com/drive/v3/files/' + File_ID + '?alt=media&key=' + API_KEY);
+			saveToServer(file).then(({File_ID, width, height}) => {
+				//Quill will remove the srcset tag, so we replace it back at the end by injecting directly into HTML.
+				let selection = quill.getSelection(true)
+				quill.clipboard.dangerouslyPasteHTML(selection.index, `<img alt=${File_ID} src="localhost://bogus">`)
+
+				let elemHTML = `<img src="https://www.googleapis.com/drive/v3/files/${File_ID}?alt=media&key=${API_KEY}"`
+				let srcset = `srcset="`
+
+				;([400, 700, 1300, 2000, 3000]).forEach((size, index) => {
+					if (size-50 >= width) {return}
+					if (index !== 0) {
+						srcset += ",";
+					}
+					srcset += `https://lh3.googleusercontent.com/d/${File_ID}=w${size} ${size}w`
+				})
+
+				elemHTML += ` ${srcset}">`
+
+				let elems = document.querySelectorAll(`img[alt='${File_ID}']`)
+				for (let i=0;i<elems.length;i++) {
+					let elem = elems[i]
+					elem.outerHTML = elemHTML
+					delete elem.alt
+				}
+				UpdateWriteup()
 			});
 		}
 		else {
@@ -209,7 +240,7 @@ List.forEach(function(value){
 	}
 })
 
-function clearAllFields() {
+window.clearAllFields = function clearAllFields() {
 	if (confirm("Are you sure you want to clear all fields?")) {
 		List.forEach((value) => {
 			localStorage.removeItem(value)
