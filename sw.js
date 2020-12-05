@@ -91,28 +91,27 @@ function fetchHandler(event) {
         let returnNetwork = false
 
 		if (
-            url.includes("docs.google.com")
-            || url.includes("googleapis.com")
-            || url.includes("salmon2019")
+            url.includes("docs.google.com") //Avoid filling up cache with opaque responses from docs.google.com
+            || url.includes("googleapis.com") //May want to temporarily cache some images, but we mostly
+            || url.includes("salmon2019") //Don't cache fileshare - too much data
             || url.includes("ip2location")
             || url.includes("node")
             || url.includes("gaugeReadings")
-            || url.includes("script.googleusercontent.com")
+            || url.includes("script.googleusercontent.com") //Don't store the unused results from writeupmaker uploads and submissions.
             || url.includes("ih3.googleusercontent.com")
+            || url.includes("mt1.google.com/vt/") //Mapping code - Cached seperately
+            || url.includes("tile.openstreetmap.org") //Mapping code - Cached seperately
         ) {
-			//Don't cache fileshare or ip2location.
-            //Avoid filling up cache with opaque responses from docs.google.com
-            //Avoid caching some responses from googleapis.com - we want the network response for writeupmaker.html (though we may want to temporarily cache images)
 
             returnNetwork = true
 
-            //Cache Google Maps JavaScript
+            //Override - Cache Google Maps JavaScript
             if (url.includes("maps.googleapis.com/maps/api/js") && url.includes("&callback=")) {
-                //Exempt main JavaScript file
+                //Main JavaScript file
                 returnNetwork = false
             }
             if (url.includes("maps.googleapis.com") && url.includes(".js")) {
-                //Exempt auxillary JavaScript files.
+                //Auxillary JavaScript files.
                 returnNetwork = false
             }
 		}

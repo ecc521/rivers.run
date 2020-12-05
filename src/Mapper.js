@@ -106,9 +106,188 @@ async function addMap(river) {
 	}
 
 	let map = new google.maps.Map(div, {
-	  center: CTR,
-	  zoom: 20
+		center: CTR,
+		zoom: 20
 	});
+
+
+	//TODO: Allow users to choose higher resolution offline maps. 
+	async function loadOfflineMaps(zoom = 6) {
+		let tileCache = await caches.open("tileCache-v1")
+		let dataSource = ["openstreetmap", "google"][0]
+
+		//Download needed files to run offline maps, and add offline maps functionality.
+		//Currently, we download zoom level 6 for the US, and zoom level 3 for the rest of the world.
+		//We'll want to consider downloading global maps (or at least rivers.run supported countries) in lower-res, and US in high-res.
+
+		//This code will create higher zoomed in tiles from lower zoomed in tiles, however does NOT do the inverse.
+		//Therefore, downloading one zoom level will download all lower zoom levels as well.
+
+		async function downloadTiles(zoom, xStart = 0, xEnd=zoom**2-1, yStart = 0, yEnd = zoom**2-1) {
+			//TODO: PARALELL!!!!!!!!!!!!!!!!!!!!
+			for (let x=xStart;x<xEnd;x++) {
+				for (let y=yStart;y<yEnd;y++) {
+					let code = `${zoom}/${x}/${y}`
+
+					//Still need to decide which to use.
+					let openStreetMapUrl = `https://tile.openstreetmap.org/${code}.png`
+					let googleMapsUrl = `https://mt1.google.com/vt/lyrs=m&x=${x}&y=${y}&z=${zoom}`
+
+					let url;
+					if (dataSource === "google") {url = googleMapsUrl}
+					else if (dataSource === "openstreetmap") {url = openStreetMapUrl}
+
+					let cached = await tileCache.match(code)
+					if (cached instanceof Response && cached.status === 200) {
+						continue;
+					}
+
+					try {
+						let response = await fetch(url)
+						await tileCache.put(code, response)
+					}
+					catch (e) {console.warn("Failed to load tile: ", e)}
+				}
+			}
+
+			if (zoom > 1) {
+				//It's possible that the endings need to be increased by one, however I believe this is correct.
+				await downloadTiles(--zoom, Math.floor(xStart/2), Math.floor(xEnd/2), Math.floor(yStart/2), Math.floor(yEnd/2))
+			}
+		}
+
+		//Conversion Funtions
+		function lon2tile(lon,zoom) { return (Math.floor((lon+180)/360*Math.pow(2,zoom))); }
+		function lat2tile(lat,zoom)  { return (Math.floor((1-Math.log(Math.tan(lat*Math.PI/180) + 1/Math.cos(lat*Math.PI/180))/Math.PI)/2 *Math.pow(2,zoom))); }
+
+		//US lat lon bounds
+		let topLat = 49.3457868
+		let leftLon = -124.7844079
+		let rightLon = -66.9513812
+		let bottomLat =  24.7433195
+
+		var layerID = 'offline_map_layer';
+
+		let xStart = lon2tile(leftLon, zoom)
+		let xEnd = lon2tile(rightLon, zoom)+1
+		let yStart = lat2tile(topLat, zoom)
+		let yEnd = lat2tile(bottomLat, zoom)+1
+
+		await downloadTiles(6, xStart, xEnd, yStart, yEnd)
+		await downloadTiles(3)
+
+		//Google Maps getTileUrl is synchronus, but the image and cache loading are async.
+		//This means we need to load everything ahead of time.
+		function reverse(str) {return str.split("").reverse().join("")}
+
+		let requests = await tileCache.keys()
+		//The keys get converted to URLs. To get around that, we'll process them backwards.
+
+		let offlineData = {}
+		for (let i=0;i<requests.length;i++) {
+			let request = requests[i]
+			let str = reverse(request.url)
+			let index = str.indexOf("/")
+			let y = reverse(str.slice(0, index))
+			let x = reverse(str.slice(++index, index = str.indexOf("/", index)))
+			let zoom = reverse(str.slice(++index, index = str.indexOf("/", index)))
+
+			let key = `${zoom}/${x}/${y}`
+			let response = await tileCache.match(key)
+			let img = new Image()
+			img.src = URL.createObjectURL(new Blob([await response.arrayBuffer()]))
+			offlineData[key] = img
+		}
+
+		function obtainCanvasForZoom(zoom, x, y) {
+			let canvas = document.createElement("canvas")
+			canvas.width = canvas.height = 256
+			let ctx = canvas.getContext("2d")
+
+			if (offlineData[`${zoom}/${x}/${y}`]) {
+				ctx.drawImage(offlineData[`${zoom}/${x}/${y}`], 0, 0)
+				return canvas
+			}
+
+			if (zoom < 1) {throw "Error: Zoom level 1 not available. "}
+
+			//Details for tile one level larger.
+			let sourceCanvas = obtainCanvasForZoom(zoom-1, Math.floor(x/2), Math.floor(y/2))
+
+			//Source x,y,width,height, destination x,y,width,height
+			ctx.drawImage(sourceCanvas, 128*(x%2), 128*(y%2), 128, 128, 0, 0, 256, 256)
+			return canvas
+		}
+
+		//Update Attribution Message for map.
+		function setAttribution() {
+			let elems = document.querySelectorAll(".gmnoprint > .gm-style-cc span")
+			elems.forEach((elem) => {
+				if (dataSource === "google") {
+					elem.innerHTML = "Map Data © Google"
+				}
+				else if (dataSource === "openstreetmap") {
+					elem.innerHTML = `© <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors`
+				}
+			})
+		}
+
+		var layer = new google.maps.ImageMapType({
+			name: layerID,
+			getTileUrl: function(coord, zoom) {
+				//Totally excessive setAttribution calls, but Google resets it far too often.
+				;[400, 1000, 2000, 4000].forEach((delay) => {
+					setTimeout(setAttribution, delay)
+				})
+				return obtainCanvasForZoom(zoom, coord.x, coord.y).toDataURL("image/png")
+			},
+			tileSize: new google.maps.Size(256, 256),
+			minZoom: 1,
+			maxZoom: 20
+		});
+
+		map.mapTypes.set(layerID, layer);
+
+		// Create a div to hold the control.
+		var controlDiv = document.createElement('div');
+		controlDiv.style.margin = "10px"
+
+		// Set CSS for the control border
+		var controlUI = document.createElement('div');
+		controlUI.style.backgroundColor = '#fff';
+		controlUI.style.border = '2px solid #fff';
+		controlUI.style.cursor = 'pointer';
+		controlUI.style.marginBottom = '22px';
+		controlUI.style.textAlign = 'center';
+		controlDiv.appendChild(controlUI);
+
+		// Set CSS for the control interior
+		var controlText = document.createElement('div');
+		controlText.style.color = 'rgb(25,25,25)';
+		controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
+		controlText.style.fontSize = '16px';
+		controlText.style.lineHeight = '36px';
+		controlText.style.paddingLeft = '5px';
+		controlText.style.paddingRight = '5px';
+		controlText.innerHTML = 'Offline Mode';
+
+		//Make it clear this is us, not Google Maps
+		let icon = document.createElement("img")
+		icon.src = root + "resources/icons/24x24-Water-Drop.png"
+		icon.style.verticalAlign = "middle"
+		controlText.appendChild(icon)
+
+		controlUI.appendChild(controlText);
+
+		map.controls[google.maps.ControlPosition.TOP_LEFT].push(controlDiv)
+
+		controlDiv.addEventListener('click', function() {
+			map.setMapTypeId(layerID);
+			setAttribution()
+		});
+	}
+
+	loadOfflineMaps()
 
 	try {
 		let bounds = new google.maps.LatLngBounds()
