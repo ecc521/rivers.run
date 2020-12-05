@@ -32,7 +32,9 @@ window.updateOldDataWarning = function() {
 
 
 		let legend = document.getElementById("legend")
-		legend.parentNode.insertBefore(oldDataWarning, legend)
+		if (legend) {
+			legend.parentNode.insertBefore(oldDataWarning, legend)
+		}
 }
 
 

@@ -15,6 +15,7 @@ try {
 	}
 
 	addItem("River Info", root)
+	addItem("Map", root + "map.html")
 	addItem("FAQ", root + "FAQ.html")
 	addItem("Settings", root + "settings.html")
 	addItem("Clubs", root + "clubs.html")

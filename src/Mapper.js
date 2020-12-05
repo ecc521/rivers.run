@@ -91,25 +91,33 @@ async function addMap(river) {
 
 	let div = document.createElement("div")
 
-	//Center in between PI and TO if possible.
-	let PI = getCoords(river, true)
-	let TO = getCoords(river)
 	let CTR = {};
-	if (PI && TO) {
-		CTR.lat = PI.lat + TO.lat
-		CTR.lng = PI.lng + TO.lng
-		CTR.lat /= 2
-		CTR.lng /= 2
+	if (river) {
+		//Center in between PI and TO if possible.
+		let PI = getCoords(river, true)
+		let TO = getCoords(river)
+		if (PI && TO) {
+			CTR.lat = PI.lat + TO.lat
+			CTR.lng = PI.lng + TO.lng
+			CTR.lat /= 2
+			CTR.lng /= 2
+		}
+		else {
+			CTR = PI || TO
+		}
 	}
 	else {
-		CTR = PI || TO
+		//Somewhere around Kansas
+		CTR.lat = 39
+		CTR.lng = -98
 	}
+
 
 	let map = new google.maps.Map(div, {
 		center: CTR,
 		zoom: 20
 	});
-	window.map = map
+	window.lastAddedMap = map //For development only. This global variable is NOT TO BE USED by site code.
 
 
 	//TODO: Allow users to choose higher resolution offline maps. This should be done in a seperate page, either settings or a new maps page.
@@ -338,32 +346,37 @@ async function addMap(river) {
 		loadOfflineMaps()
 	}
 
-	try {
-		let bounds = new google.maps.LatLngBounds()
-		bounds.extend({
-			lat: PI.lat,
-			lng: PI.lng
-		})
-		bounds.extend({
-			lat: TO.lat,
-			lng: TO.lng
-		})
+	if (!river) {
+		map.setZoom(3) //Entire US View.
+	}
+	else {
+		try {
+			let bounds = new google.maps.LatLngBounds()
+			bounds.extend({
+				lat: PI.lat,
+				lng: PI.lng
+			})
+			bounds.extend({
+				lat: TO.lat,
+				lng: TO.lng
+			})
 
-		console.log(bounds)
-		let paddingInPixels = 20
-		map.fitBounds(bounds, paddingInPixels)
-		console.log(map.getZoom())
-		setTimeout(function() {
-			//Not sure why, but sometimes (look at Chattooga 4 vs Chattahoochee Upper), Google Maps is zooming out way too far without this second call.
-			console.log(map.getZoom())
+			console.log(bounds)
+			let paddingInPixels = 20
 			map.fitBounds(bounds, paddingInPixels)
 			console.log(map.getZoom())
-		}, 500)
-	}
-	catch (e) {
-		//We can't bound, so zoom out a bit.
-		console.warn("Couldn't call bounds. Coordinates were " + [PI.lat, TO.lat, PI.lng, TO.lng].join(", "))
-		map.setZoom(14) //Should only have 1 point, so this should always be fine.
+			setTimeout(function() {
+				//Not sure why, but sometimes (look at Chattooga 4 vs Chattahoochee Upper), Google Maps is zooming out way too far without this second call.
+				console.log(map.getZoom())
+				map.fitBounds(bounds, paddingInPixels)
+				console.log(map.getZoom())
+			}, 500)
+		}
+		catch (e) {
+			//We can't bound, so zoom out a bit.
+			console.warn("Couldn't call bounds. Coordinates were " + [PI.lat, TO.lat, PI.lng, TO.lng].join(", "))
+			map.setZoom(14) //Should only have 1 point, so this should always be fine.
+		}
 	}
 
 
@@ -394,7 +407,7 @@ async function addMap(river) {
 
 		let special = false
 		let icon;
-		if (item.index === river.index) {
+		if (item.index === river?.index) {
 			scale = 4
 			special = true
 		}
@@ -492,7 +505,7 @@ async function addMap(river) {
 			}
 			let icon = createMarkerImage({
 				fillColor: color,
-				scale: (item.index === river.index)?4:2
+				scale: (item.index === river?.index)?4:2
 			})
 			//Skip first element.
 			arr.slice(1).forEach((marker) => {
@@ -504,8 +517,9 @@ async function addMap(river) {
 	//We will draw the current item, followed by all rivers, then all gauges.
 	//Also, we will use a flat-earth based distance calculation to help render the correct area first.
 	function calcValue(item) {
+		if (!river) {return Math.random()}
 		let value = 0
-		if (item.index !== river.index) {
+		if (item.index !== river?.index) {
 			value++
 			if (item.isGauge) {value+=0.1} //Add 0.1, so that distance can easily outweight rivers.
 
@@ -545,9 +559,9 @@ async function addMap(river) {
 
 	drawMore()
 
-	window.lastAddedMap = map //For development only. This global variable is NOT TO BE USED by site code.
 	div.classList.add("riverMap")
 	div.updateMarkers = updateMarkers
+	console.log(div)
 	return div
 }
 

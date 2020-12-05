@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+
+        <!--Web App Manifest-->
+        <link rel="manifest" href="manifest.json">
+
+
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#317EFB"/>
+        <meta name="Description" content="Every River at your Fingertips! rivers.run helps you find the Rivers you want to paddle using information sourced from community experts! For Whitewater, Flatwater, and anything in-between, rivers.run has information for you. rivers.run even works offline - read our FAQ for details.">
+        <meta name="keywords" content="rivers.run, rivers, whitewater, river info, whitewater info, paddling, paddling info, kayak, canoe">
+
+        <title style="text-align: center">Rivers.run Map</title>
+
+    </head>
+    <body>
+
+        <h1 class="center">Rivers.run River Map</h1>
+        <p class="center">Please be patient! Drawing tens of thousands of markers to the screen can greatly slow down map load on weaker devices. </p>
+        <style>
+            html, body {
+                margin: 0
+            }
+
+            .riverMap {
+                height: 80vh !important;
+                width: 100vw;
+            }
+
+            .center {
+                text-align: center;
+            }
+
+            @media (prefers-color-scheme: dark) {
+                html, body {
+                    background-color: black;
+                    color: #cccccc;
+                }
+            }
+        </style>
+
+        <link rel="stylesheet" href="packages/index.css">
+        <script src="packages/allPages.js"></script>
+        <script src="packages/map.js"></script>
+    </body>
+</html>
