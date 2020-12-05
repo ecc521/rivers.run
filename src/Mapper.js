@@ -92,10 +92,11 @@ async function addMap(river) {
 	let div = document.createElement("div")
 
 	let CTR = {};
+	let PI, TO;
 	if (river) {
 		//Center in between PI and TO if possible.
-		let PI = getCoords(river, true)
-		let TO = getCoords(river)
+		PI = getCoords(river, true)
+		TO = getCoords(river)
 		if (PI && TO) {
 			CTR.lat = PI.lat + TO.lat
 			CTR.lng = PI.lng + TO.lng

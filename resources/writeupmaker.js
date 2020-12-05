@@ -1,3 +1,6 @@
+window.River = require("../src/River.js").River
+//Expanding the river being written up in the map will be broken. It's not worth debugging. 
+
 var rating = document.getElementById("rating")
 for (let i=4;i<21;i++) {
 	let stars = i/4
@@ -6,9 +9,6 @@ for (let i=4;i<21;i++) {
 	option.innerHTML = stars + " Stars"
 	rating.appendChild(option)
 }
-const River = require("../src/River.js").River
-
-
 
 let url = "https://script.google.com/macros/s/AKfycbxhxpImVHh-UBAlVOGppV4wYRVtO4ldLHn_q128vckXshCl6B8/exec"
 
