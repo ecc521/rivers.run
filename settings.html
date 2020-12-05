@@ -37,6 +37,23 @@
         </select>
         <p>Default: Yes. Choose if you want to see mini popups showing the expanded skill on hover.</p>
 
+        <h3>Offline Map Resolution (US and World)</h3>
+        <p>Due to limitations with the current implementation of Google Maps, increasing resolution will increase map startup time. Level 7 US and 4 World should be mostly safe, however level 8 US and 5 World may cause issues on weaker devices. </p>
+        <p>Please note - right now, you must clear your cache after changing this setting downwards in order for it to have any effect (provided you opened the map with these settings). </p>
+        <select id="usMapResolution">
+            <option value="null">Default</option>
+            <option value="6">6 US</option>
+            <option value="7">7 US</option>
+            <option value="8">8 US (Be careful!)</option>
+        </select>
+        <select id="worldMapResolution">
+            <option value="null">Default</option>
+            <option value="3">3 World</option>
+            <option value="4">4 World</option>
+            <option value="5">5 World (Be careful!)</option>
+        </select>
+
+
         <h3>Color Blind Mode</h3>
         <select id="colorBlindMode">
             <option value="null">Default (No)</option>
@@ -121,11 +138,33 @@
 				}
             })
 
+            document.getElementById("usMapResolution").addEventListener("change", function(event) {
+				//We can't just set the value to null - locaStorage would stringify it
+				if (event.target.value === "null") {
+					localStorage.removeItem("usMapResolution")
+				}
+				else {
+                	localStorage.setItem("usMapResolution", event.target.value)
+				}
+            })
+
+            document.getElementById("worldMapResolution").addEventListener("change", function(event) {
+                //We can't just set the value to null - locaStorage would stringify it
+                if (event.target.value === "null") {
+                    localStorage.removeItem("worldMapResolution")
+                }
+                else {
+                    localStorage.setItem("worldMapResolution", event.target.value)
+                }
+            })
+
 
             document.getElementById("theme").value = localStorage.getItem("prefersDarkMode")
             document.getElementById("skillExplainataions").value = localStorage.getItem("skillTooltips")
             document.getElementById("classOrSkill").value = localStorage.getItem("classOrSkill")
             document.getElementById("colorBlindMode").value = localStorage.getItem("colorBlindMode")
+            document.getElementById("usMapResolution").value = localStorage.getItem("usMapResolution")
+            document.getElementById("worldMapResolution").value = localStorage.getItem("worldMapResolution")
 
             let explanation = document.getElementById("darkModeDefaultExplanation")
             let browserSupportsDarkMode = window.matchMedia('(prefers-color-scheme: dark)').media !== "not all"

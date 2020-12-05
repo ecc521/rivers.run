@@ -122,7 +122,7 @@ async function addMap(river) {
 
 
 	//TODO: Allow users to choose higher resolution offline maps. This should be done in a seperate page, either settings or a new maps page.
-	async function loadOfflineMaps(zoom = 6) {
+	async function loadOfflineMaps() {
 		//Download needed files to run offline maps, and add offline maps functionality.
 		//Currently, we download zoom level 6 for the US, and zoom level 3 for the rest of the world.
 		//We'll want to consider downloading global maps (or at least rivers.run supported countries) in lower-res, and US in high-res.
@@ -146,32 +146,46 @@ async function addMap(river) {
 
 		//This code will create higher zoomed in tiles from lower zoomed in tiles, however does NOT do the inverse.
 		//Therefore, downloading one zoom level will download all lower zoom levels as well.
+
+		//TODO: This isn't fully paralell, as the download feature is recursive. Generating the file urls and actually downloading them should be seperate - one recursive, one not.
 		async function downloadTiles(zoom, xStart = 0, xEnd=zoom**2-1, yStart = 0, yEnd = zoom**2-1) {
-			//TODO: PARALELL!!!!!!!!!!!!!!!!!!!!
+			let remainingItems = [];
+			let maxParalell = 10;
+
 			for (let x=xStart;x<xEnd;x++) {
 				for (let y=yStart;y<yEnd;y++) {
-					let code = `${zoom}/${x}/${y}`
-
-					//Still need to decide which to use.
-					let openStreetMapUrl = `https://tile.openstreetmap.org/${code}.png`
-					let googleMapsUrl = `https://mt1.google.com/vt/lyrs=m&x=${x}&y=${y}&z=${zoom}`
-
-					let url;
-					if (dataSource === "google") {url = googleMapsUrl}
-					else if (dataSource === "openstreetmap") {url = openStreetMapUrl}
-
-					let cached = await tileCache.match(code)
-					if (cached instanceof Response && cached.status === 200) {
-						continue;
+					if (remainingItems.length > maxParalell) {
+						await Promise.race(remainingItems)
 					}
+					let promise = (async function() {
+						let code = `${zoom}/${x}/${y}`
 
-					try {
-						let response = await fetch(url)
-						await tileCache.put(code, response)
-					}
-					catch (e) {console.warn("Failed to load tile: ", e)}
+						let openStreetMapUrl = `https://tile.openstreetmap.org/${code}.png`
+						let googleMapsUrl = `https://mt1.google.com/vt/lyrs=m&x=${x}&y=${y}&z=${zoom}`
+
+						let url;
+						if (dataSource === "google") {url = googleMapsUrl}
+						else if (dataSource === "openstreetmap") {url = openStreetMapUrl}
+
+						let cached = await tileCache.match(code)
+						if (cached instanceof Response && cached.status === 200) {
+							return;
+						}
+
+						try {
+							let response = await fetch(url)
+							await tileCache.put(code, response)
+						}
+						catch (e) {console.warn("Failed to load tile: ", e)}
+					}())
+					remainingItems.push(promise)
+					promise.then(() => {
+						remainingItems.splice(remainingItems.indexOf(promise), 1)
+					})
 				}
 			}
+
+			await Promise.allSettled(remainingItems)
 
 			if (zoom > 1) {
 				//It's possible that the endings need to be increased by one, however I believe this is correct.
@@ -179,14 +193,20 @@ async function addMap(river) {
 			}
 		}
 
-		let xStart = lon2tile(leftLon, zoom)
-		let xEnd = lon2tile(rightLon, zoom)+1
-		let yStart = lat2tile(topLat, zoom)
-		let yEnd = lat2tile(bottomLat, zoom)+1
+		let usZoom = Number(localStorage.getItem("usMapResolution")) || 6
+		let worldZoom = Number(localStorage.getItem("worldMapResolution")) || 3
+
+		let xStart = lon2tile(leftLon, usZoom)
+		let xEnd = lon2tile(rightLon, usZoom)+1
+		let yStart = lat2tile(topLat, usZoom)
+		let yEnd = lat2tile(bottomLat, usZoom)+1
 
 		console.time("Download Tiles")
-		await downloadTiles(6, xStart, xEnd, yStart, yEnd)
-		await downloadTiles(3)
+		//Save some time. This may not actually help though, if caching from downloadTiles speeds up processing later.
+		if (navigator.onLine) {
+			await downloadTiles(usZoom, xStart, xEnd, yStart, yEnd)
+			await downloadTiles(worldZoom)
+		}
 		console.timeEnd("Download Tiles")
 
 		//Google Maps getTileUrl is synchronus, but the image and cache loading are async.
@@ -195,11 +215,13 @@ async function addMap(river) {
 
 		console.time("Load Cache")
 		let requests = await tileCache.keys()
+		let responses = await tileCache.matchAll()
 		//The keys get converted to URLs. To get around that, we'll process them backwards.
 
 		let offlineData = {}
 		for (let i=0;i<requests.length;i++) {
 			let request = requests[i]
+			let response = responses[i]
 			let str = reverse(request.url)
 			let index = str.indexOf("/")
 			let y = reverse(str.slice(0, index))
@@ -207,12 +229,27 @@ async function addMap(river) {
 			let zoom = reverse(str.slice(++index, index = str.indexOf("/", index)))
 
 			let key = `${zoom}/${x}/${y}`
-			let response = await tileCache.match(key)
-			let img = new Image()
-			img.src = URL.createObjectURL(new Blob([await response.arrayBuffer()], {type: "image/png"}))
-			offlineData[key] = img
+			let bufferGen = response.arrayBuffer()
+			let imageGen = new Promise((resolve, reject) => {
+				bufferGen.then((arrayBuffer) => {
+					let img = new Image()
+					img.onload = function() {resolve(img)}
+					img.onerror = reject
+					img.src = URL.createObjectURL(new Blob([arrayBuffer], {type: "image/png"}))
+				})
+			})
+
+
+			offlineData[key] = imageGen
 		}
 		console.timeEnd("Load Cache")
+
+		console.time("Generate Images")
+		for (let key in offlineData) {
+			window.offlineData = offlineData
+			offlineData[key] = await offlineData[key]
+		}
+		console.timeEnd("Generate Images")
 
 		function obtainCanvasForZoom(zoom, x, y) {
 			let canvas = document.createElement("canvas")
@@ -224,7 +261,7 @@ async function addMap(river) {
 				return canvas
 			}
 
-			if (zoom < 1) {throw "Error: Zoom level 1 not available. "}
+			if (zoom < 1) {throw `Error: Zoom level 1 not available. ${zoom}/${x}/${y}`}
 
 			//Details for tile one level larger.
 			let sourceCanvas = obtainCanvasForZoom(zoom-1, Math.floor(x/2), Math.floor(y/2))
