@@ -1,3 +1,7 @@
+//Used for converting flow values between feet and meters.
+window.meterInFeet = 3.2808399
+window.cubicMeterInFeet = meterInFeet**3
+
 let {calculateColor, calculateDirection, calculateRelativeFlow} = require("./flowInfoCalculations.js")
 
 const {skillTranslations} = require("./skillTranslations.js")
