@@ -39,6 +39,7 @@
 
         <h3>Offline Map Resolution (US and World)</h3>
         <p>Due to limitations with the current implementation of Google Maps, increasing resolution will increase map startup time. Level 7 US and 4 World should be fine, however level 8 US and 5 World will cause slowdowns of ~1 second on even the fastest devices. </p>
+        <p>When Online, the map waits for all images to download and be stored locally before showing offline view, so your next load, if online, will take disproportionately longer.</p>
         <p>Restoring this setting will probably eliminate any issues, however if those issues remain, please clear your browser cache for rivers.run. </p>
         <select id="usMapResolution">
             <option value="null">Default</option>

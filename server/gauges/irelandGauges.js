@@ -11,7 +11,9 @@ let gaugeMetadataPath = path.join(utils.getDataDirectory(), "ireland-geojson.jso
 
 
 async function downloadMetadata() {
-	return (await fetch("https://waterlevel.ie/geojson/")).body.pipe(fs.createWriteStream(gaugeMetadataPath))
+	let request = await fetch("https://waterlevel.ie/geojson/")
+	let response = await request.json()
+	return await fs.promises.writeFile(gaugeMetadataPath, JSON.stringify(response, null, "\t"))
 }
 
 async function getMetadata() {
@@ -42,8 +44,8 @@ async function getMetadata() {
 		try {
 			let gauge = {}
 			gauge.name = value.properties.name
-			gauge.lat = value.geometry.coordinates[0]
-			gauge.lon = value.geometry.coordinates[1]
+			gauge.plat = value.geometry.coordinates[1]
+			gauge.plon = value.geometry.coordinates[0]
 			let gaugeID = value.properties.ref.slice(5)
 			if (Number(gaugeID) < 41000 && Number(gaugeID) > 1) {
 				obj[gaugeID] = gauge //Other gauge IDs are stated to be unsuitable for re-publication.

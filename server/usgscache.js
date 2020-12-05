@@ -50,8 +50,6 @@ fs.chmodSync(__filename, 0o775) //Make sure this file is executable. This will h
 let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
 
 async function updateCachedData() {
-	console.log("Preparing flow data.\n")
-
 	if (!fs.existsSync(riverDataPath) || process.argv.includes("--waitforriverdata")) {
 		if (riverDataPromise) {
 			await riverDataPromise;
@@ -63,7 +61,8 @@ async function updateCachedData() {
 			await updateRiverData()
 		}
 	}
-
+	
+	console.log("Preparing flow data.\n")
 	let riverarray = JSON.parse(await fs.promises.readFile(riverDataPath, {encoding:"utf8"}))
 
     var sites = []

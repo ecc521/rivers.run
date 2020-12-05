@@ -6,7 +6,7 @@
   "scripts": {
     "build": "webpack & gulp cssbuild",
     "devbuild": "webpack --env dev & gulp cssbuild",
-    "postinstall": "node server/usgscache.js --install",
+    "postinstall": "node server/usgscache.js --install --waitforriverdata",
     "bubblewrap": "bubblewrap"
   },
   "repository": {

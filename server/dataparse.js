@@ -57,7 +57,7 @@ async function loadFromDisk(id, lastModified = 0, mime="text/plain") {
 async function writeToDisk(data, id, mime="text/plain") {
 	mime = mime.split("/").join("_")
     let directory = path.join(utils.getDataDirectory(), "drivecache", mime)
-    if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
+    if (!fs.existsSync(directory)) {fs.mkdirSync(directory, {recursive: true})}
     let filename = path.join(directory, id)
     //Avoid unneeded writes to the disk - although this may be done already.
     if (!fs.existsSync(filename) || data !== await fs.promises.readFile(filename, "utf8")) {
