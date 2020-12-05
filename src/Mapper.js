@@ -216,17 +216,30 @@ async function addMap(river) {
 		console.time("Load Cache")
 		let requests = await tileCache.keys()
 		let responses = await tileCache.matchAll()
+		console.timeEnd("Load Cache")
 		//The keys get converted to URLs. To get around that, we'll process them backwards.
 
+		console.time("Process Items")
 		let offlineData = {}
 		for (let i=0;i<requests.length;i++) {
 			let request = requests[i]
-			let response = responses[i]
 			let str = reverse(request.url)
 			let index = str.indexOf("/")
 			let y = reverse(str.slice(0, index))
 			let x = reverse(str.slice(++index, index = str.indexOf("/", index)))
 			let zoom = reverse(str.slice(++index, index = str.indexOf("/", index)))
+
+			if (zoom > usZoom) {continue;}
+
+			//Check against World
+			if (zoom > worldZoom) {
+				//If outside US bounds, continue.
+				if (x < xStart || x > xEnd || y < yStart || y > yEnd) {
+					continue;
+				}
+			}
+
+			let response = responses[i]
 
 			let key = `${zoom}/${x}/${y}`
 			let bufferGen = response.arrayBuffer()
@@ -242,14 +255,14 @@ async function addMap(river) {
 
 			offlineData[key] = imageGen
 		}
-		console.timeEnd("Load Cache")
+		console.timeEnd("Process Items")
 
-		console.time("Generate Images")
+		console.time("Finish Images")
 		for (let key in offlineData) {
 			window.offlineData = offlineData
 			offlineData[key] = await offlineData[key]
 		}
-		console.timeEnd("Generate Images")
+		console.timeEnd("Finish Images")
 
 		function obtainCanvasForZoom(zoom, x, y) {
 			let canvas = document.createElement("canvas")
