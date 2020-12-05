@@ -109,20 +109,34 @@ async function addMap(river) {
 		center: CTR,
 		zoom: 20
 	});
+	window.map = map
 
 
-	//TODO: Allow users to choose higher resolution offline maps. 
+	//TODO: Allow users to choose higher resolution offline maps. This should be done in a seperate page, either settings or a new maps page.
 	async function loadOfflineMaps(zoom = 6) {
-		let tileCache = await caches.open("tileCache-v1")
-		let dataSource = ["openstreetmap", "google"][0]
-
 		//Download needed files to run offline maps, and add offline maps functionality.
 		//Currently, we download zoom level 6 for the US, and zoom level 3 for the rest of the world.
 		//We'll want to consider downloading global maps (or at least rivers.run supported countries) in lower-res, and US in high-res.
 
+		console.log("Starting Offline Maps Load. ")
+
+		//Conversion Funtions
+		function lon2tile(lon,zoom) { return (Math.floor((lon+180)/360*Math.pow(2,zoom))); }
+		function lat2tile(lat,zoom)  { return (Math.floor((1-Math.log(Math.tan(lat*Math.PI/180) + 1/Math.cos(lat*Math.PI/180))/Math.PI)/2 *Math.pow(2,zoom))); }
+
+		//US lat lon bounds
+		let topLat = 49.3457868
+		let leftLon = -124.7844079
+		let rightLon = -66.9513812
+		let bottomLat =  24.7433195
+
+		let layerID = 'offline_map_layer';
+		let dataSource = ["openstreetmap", "google"][0]
+
+		let tileCache = await caches.open("tileCache-v1")
+
 		//This code will create higher zoomed in tiles from lower zoomed in tiles, however does NOT do the inverse.
 		//Therefore, downloading one zoom level will download all lower zoom levels as well.
-
 		async function downloadTiles(zoom, xStart = 0, xEnd=zoom**2-1, yStart = 0, yEnd = zoom**2-1) {
 			//TODO: PARALELL!!!!!!!!!!!!!!!!!!!!
 			for (let x=xStart;x<xEnd;x++) {
@@ -156,30 +170,21 @@ async function addMap(river) {
 			}
 		}
 
-		//Conversion Funtions
-		function lon2tile(lon,zoom) { return (Math.floor((lon+180)/360*Math.pow(2,zoom))); }
-		function lat2tile(lat,zoom)  { return (Math.floor((1-Math.log(Math.tan(lat*Math.PI/180) + 1/Math.cos(lat*Math.PI/180))/Math.PI)/2 *Math.pow(2,zoom))); }
-
-		//US lat lon bounds
-		let topLat = 49.3457868
-		let leftLon = -124.7844079
-		let rightLon = -66.9513812
-		let bottomLat =  24.7433195
-
-		var layerID = 'offline_map_layer';
-
 		let xStart = lon2tile(leftLon, zoom)
 		let xEnd = lon2tile(rightLon, zoom)+1
 		let yStart = lat2tile(topLat, zoom)
 		let yEnd = lat2tile(bottomLat, zoom)+1
 
+		console.time("Download Tiles")
 		await downloadTiles(6, xStart, xEnd, yStart, yEnd)
 		await downloadTiles(3)
+		console.timeEnd("Download Tiles")
 
 		//Google Maps getTileUrl is synchronus, but the image and cache loading are async.
 		//This means we need to load everything ahead of time.
 		function reverse(str) {return str.split("").reverse().join("")}
 
+		console.time("Load Cache")
 		let requests = await tileCache.keys()
 		//The keys get converted to URLs. To get around that, we'll process them backwards.
 
@@ -195,9 +200,10 @@ async function addMap(river) {
 			let key = `${zoom}/${x}/${y}`
 			let response = await tileCache.match(key)
 			let img = new Image()
-			img.src = URL.createObjectURL(new Blob([await response.arrayBuffer()]))
+			img.src = URL.createObjectURL(new Blob([await response.arrayBuffer()], {type: "image/png"}))
 			offlineData[key] = img
 		}
+		console.timeEnd("Load Cache")
 
 		function obtainCanvasForZoom(zoom, x, y) {
 			let canvas = document.createElement("canvas")
@@ -251,10 +257,11 @@ async function addMap(river) {
 		// Create a div to hold the control.
 		var controlDiv = document.createElement('div');
 		controlDiv.style.margin = "10px"
+		controlDiv.style.marginLeft = "-10px"
 
 		// Set CSS for the control border
 		var controlUI = document.createElement('div');
-		controlUI.style.backgroundColor = '#fff';
+		controlUI.style.backgroundColor = '#ddddff';
 		controlUI.style.border = '2px solid #fff';
 		controlUI.style.cursor = 'pointer';
 		controlUI.style.marginBottom = '22px';
@@ -269,7 +276,7 @@ async function addMap(river) {
 		controlText.style.lineHeight = '36px';
 		controlText.style.paddingLeft = '5px';
 		controlText.style.paddingRight = '5px';
-		controlText.innerHTML = 'Offline Mode';
+		controlText.innerHTML = 'Use Offline';
 
 		//Make it clear this is us, not Google Maps
 		let icon = document.createElement("img")
@@ -281,13 +288,55 @@ async function addMap(river) {
 
 		map.controls[google.maps.ControlPosition.TOP_LEFT].push(controlDiv)
 
+		map.addListener("maptypeid_changed", function() {
+			if ( map.getMapTypeId() !== layerID) {
+				controlText.innerText = "Use Offline"
+				controlText.appendChild(icon)
+			}
+			else {
+				controlText.innerText = "Use Online"
+				controlText.appendChild(icon)
+			}
+		})
+
+		let controlDivClick;
 		controlDiv.addEventListener('click', function() {
+
+			//Needs to run before window.controlDivOldLayer is overwritten.
+			if (controlDivClick) {
+				if (controlDivClick()) {
+					//controlDivClick returns true only when we changed away from the offline layer. Don't change back.
+					controlDivClick = undefined
+					return
+				}
+			}
+
+			window.controlDivOldLayer = map.getMapTypeId()
 			map.setMapTypeId(layerID);
+
+			controlDivClick = function() {
+				//Make sure that they aren't clicking a "Use Offline"!
+				if (map.getMapTypeId() === layerID) {
+					map.setMapTypeId(window.controlDivOldLayer)
+					return true;
+				}
+			}
 			setAttribution()
 		});
+
+		if (!navigator.onLine) {
+			controlDiv.click() //Automatically trigger offline mode.
+		}
 	}
 
-	loadOfflineMaps()
+	if (navigator.onLine) {
+		//Wait a little bit before loading offline maps - they can take a little bit to load, and we want to give the rest of the page a chance.
+		setTimeout(loadOfflineMaps, 2500)
+	}
+	else {
+		//Offline. Load offline maps ASAP.
+		loadOfflineMaps()
+	}
 
 	try {
 		let bounds = new google.maps.LatLngBounds()
