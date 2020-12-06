@@ -140,129 +140,91 @@ async function addMap(river) {
 		let bottomLat =  24.7433195
 
 		let layerID = 'offline_map_layer';
-		let dataSource = ["openstreetmap", "google"][0]
 
 		let tileCache = await caches.open("tileCache-v1")
 
 		//This code will create higher zoomed in tiles from lower zoomed in tiles, however does NOT do the inverse.
 		//Therefore, downloading one zoom level will download all lower zoom levels as well.
 
-		//TODO: This isn't fully paralell, as the download feature is recursive. Generating the file urls and actually downloading them should be seperate - one recursive, one not.
-		async function downloadTiles(zoom, xStart = 0, xEnd=zoom**2-1, yStart = 0, yEnd = zoom**2-1) {
+		async function downloadTiles(keys = []) {
+			let tiles = {}
 			let remainingItems = [];
 			let maxParalell = 10;
 
-			for (let x=xStart;x<xEnd;x++) {
-				for (let y=yStart;y<yEnd;y++) {
-					if (remainingItems.length > maxParalell) {
-						await Promise.race(remainingItems)
+			for (let i=0;i<keys.length;i++) {
+				let key = keys[i]
+				if (remainingItems.length > maxParalell) {
+					await Promise.race(remainingItems)
+				}
+				let promise = (async function() {
+					let url = `https://tile.openstreetmap.org/${key}.png`
+
+					let response;
+					let cached = await tileCache.match(url)
+					if (cached instanceof Response && cached.status === 200) {
+						response = cached
 					}
-					let promise = (async function() {
-						let code = `${zoom}/${x}/${y}`
 
-						let openStreetMapUrl = `https://tile.openstreetmap.org/${code}.png`
-						let googleMapsUrl = `https://mt1.google.com/vt/lyrs=m&x=${x}&y=${y}&z=${zoom}`
-
-						let url;
-						if (dataSource === "google") {url = googleMapsUrl}
-						else if (dataSource === "openstreetmap") {url = openStreetMapUrl}
-
-						let cached = await tileCache.match(code)
-						if (cached instanceof Response && cached.status === 200) {
+					if (!response) {
+						try {
+							let fromNetwork = await fetch(url)
+							tileCache.put(url, fromNetwork.clone())
+							response = fromNetwork
+						}
+						catch (e) {
+							console.warn("Failed to load tile: ", e)
 							return;
 						}
+					}
 
-						try {
-							let response = await fetch(url)
-							await tileCache.put(code, response)
-						}
-						catch (e) {console.warn("Failed to load tile: ", e)}
-					}())
-					remainingItems.push(promise)
-					promise.then(() => {
-						remainingItems.splice(remainingItems.indexOf(promise), 1)
+					let buffer = await response.arrayBuffer()
+					tiles[key] = await new Promise((resolve, reject) => {
+						let img = new Image()
+						img.onload = function() {resolve(img)}
+						img.onerror = reject
+						img.src = URL.createObjectURL(new Blob([buffer], {type: "image/png"}))
 					})
-				}
+				}())
+				remainingItems.push(promise)
+				promise.then(() => {
+					remainingItems.splice(remainingItems.indexOf(promise), 1)
+				})
 			}
 
 			await Promise.allSettled(remainingItems)
+			return tiles
+		}
+
+		function generateKeys(keys, zoom, xStart = 0, xEnd=zoom**2-1, yStart = 0, yEnd = zoom**2-1) {
+			for (let x=xStart;x<xEnd;x++) {
+				for (let y=yStart;y<yEnd;y++) {
+					let key = `${zoom}/${x}/${y}`
+					if (keys.indexOf(key) === -1) {
+						keys.push(`${zoom}/${x}/${y}`)
+					}
+				}
+			}
 
 			if (zoom > 1) {
-				//It's possible that the endings need to be increased by one, however I believe this is correct.
-				await downloadTiles(--zoom, Math.floor(xStart/2), Math.floor(xEnd/2), Math.floor(yStart/2), Math.floor(yEnd/2))
+				generateKeys(keys, --zoom, Math.floor(xStart/2), Math.floor(xEnd/2), Math.floor(yStart/2), Math.floor(yEnd/2))
 			}
+			return keys
 		}
 
 		let usZoom = Number(localStorage.getItem("usMapResolution")) || 6
 		let worldZoom = Number(localStorage.getItem("worldMapResolution")) || 3
 
+		//This exceeds US bounds by a bit, as tiles overflow, and we also obtain child tiles, but it's fine.
 		let xStart = lon2tile(leftLon, usZoom)
 		let xEnd = lon2tile(rightLon, usZoom)+1
 		let yStart = lat2tile(topLat, usZoom)
 		let yEnd = lat2tile(bottomLat, usZoom)+1
 
-		console.time("Download Tiles")
-		//Save some time. This may not actually help though, if caching from downloadTiles speeds up processing later.
-		if (navigator.onLine) {
-			await downloadTiles(usZoom, xStart, xEnd, yStart, yEnd)
-			await downloadTiles(worldZoom)
-		}
-		console.timeEnd("Download Tiles")
-
-		//Google Maps getTileUrl is synchronus, but the image and cache loading are async.
-		//This means we need to load everything ahead of time.
-		function reverse(str) {return str.split("").reverse().join("")}
-
-		console.time("Load Cache")
-		let requests = await tileCache.keys()
-		let responses = await tileCache.matchAll()
-		console.timeEnd("Load Cache")
-		//The keys get converted to URLs. To get around that, we'll process them backwards.
-
-		console.time("Process Items")
-		let offlineData = {}
-		for (let i=0;i<requests.length;i++) {
-			let request = requests[i]
-			let str = reverse(request.url)
-			let index = str.indexOf("/")
-			let y = reverse(str.slice(0, index))
-			let x = reverse(str.slice(++index, index = str.indexOf("/", index)))
-			let zoom = reverse(str.slice(++index, index = str.indexOf("/", index)))
-
-			if (zoom > usZoom) {continue;}
-
-			//Check against World
-			if (zoom > worldZoom) {
-				//If outside US bounds, continue.
-				if (x < xStart || x > xEnd || y < yStart || y > yEnd) {
-					continue;
-				}
-			}
-
-			let response = responses[i]
-
-			let key = `${zoom}/${x}/${y}`
-			let bufferGen = response.arrayBuffer()
-			let imageGen = new Promise((resolve, reject) => {
-				bufferGen.then((arrayBuffer) => {
-					let img = new Image()
-					img.onload = function() {resolve(img)}
-					img.onerror = reject
-					img.src = URL.createObjectURL(new Blob([arrayBuffer], {type: "image/png"}))
-				})
-			})
-
-
-			offlineData[key] = imageGen
-		}
-		console.timeEnd("Process Items")
-
-		console.time("Finish Images")
-		for (let key in offlineData) {
-			window.offlineData = offlineData
-			offlineData[key] = await offlineData[key]
-		}
-		console.timeEnd("Finish Images")
+		let keys = generateKeys(generateKeys([], worldZoom), usZoom, xStart, xEnd, yStart, yEnd)
+		console.time(`Prepare ${keys.length} Tiles`)
+		let offlineData = await downloadTiles(keys)
+		window.offlineData = offlineData
+		console.timeEnd(`Prepare ${keys.length} Tiles`)
 
 		function obtainCanvasForZoom(zoom, x, y) {
 			let canvas = document.createElement("canvas")
@@ -288,12 +250,7 @@ async function addMap(river) {
 		function setAttribution() {
 			let elems = document.querySelectorAll(".gmnoprint > .gm-style-cc span")
 			elems.forEach((elem) => {
-				if (dataSource === "google") {
-					elem.innerHTML = "Map Data © Google"
-				}
-				else if (dataSource === "openstreetmap") {
-					elem.innerHTML = `© <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors`
-				}
+				elem.innerHTML = `© <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors`
 			})
 		}
 

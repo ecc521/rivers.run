@@ -38,21 +38,20 @@
         <p>Default: Yes. Choose if you want to see mini popups showing the expanded skill on hover.</p>
 
         <h3>Offline Map Resolution (US and World)</h3>
-        <p>Due to limitations with the current implementation of Google Maps, increasing resolution will increase map startup time. Level 7 US and 4 World should be fine, however level 8 US and 5 World will cause slowdowns of ~1 second on even the fastest devices. </p>
-        <p>When Online, the map waits for all images to download and be stored locally before showing offline view, so your next load, if online, will take disproportionately longer.</p>
-        <p>Restoring this setting will probably eliminate any issues, however if those issues remain, please clear your browser cache for rivers.run. </p>
-        <select id="usMapResolution">
-            <option value="null">Default</option>
-            <option value="6">6 US</option>
-            <option value="7">7 US</option>
-            <option value="8">8 US (Might be slow!)</option>
+        <p>Increasing resolution will make offline maps take longer to load, both online and offline. They should run the same speed, possibly faster, once loaded. </p>
+        <p>After changing this setting, your next map load may take abnormally long to load. Things should speed up to normal after the first load. </p>
+        US Map Resolution: <select id="usMapResolution">
+            <option value="null">Standard - Zoom 6</option>
+            <option value="7">Enhanced (4x) - Zoom 7</option>
+            <option value="8">High (16x) - Zoom 8 - Slow!</option>
         </select>
-        <select id="worldMapResolution">
-            <option value="null">Default</option>
-            <option value="3">3 World</option>
-            <option value="4">4 World</option>
-            <option value="5">5 World (Might be slower!)</option>
+        <br>
+        World Map Resolution: <select id="worldMapResolution">
+            <option value="null">Standard - Zoom 3</option>
+            <option value="4">Enhanced (4x) - Zoom 4</option>
+            <option value="5">High (16x) - Zoom 5 - Slow!</option>
         </select>
+        <p>Default: Standard Resolution. Specified zoom levels correspond to those on most mapping applciations, including OpenStreetMap and Google Maps. </p>
 
 
         <h3>Color Blind Mode</h3>
