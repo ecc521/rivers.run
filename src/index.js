@@ -42,10 +42,6 @@ catch(e) {console.error(e)}
 //Defines window.TopBar and window.triangle
 Object.assign(window, require("./TopBar.js"))
 
-//Used for converting flow values between feet and meters.
-window.meterInFeet = 3.2808399
-window.cubicMeterInFeet = meterInFeet**3
-
 window.River = require("./River.js").River
 
 window.sort = require("./sort.js").sort
