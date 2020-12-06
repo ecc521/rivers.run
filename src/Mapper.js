@@ -345,13 +345,14 @@ async function addMap(river) {
 		}
 	}
 
+	let offlineMapLoadPromise;
 	if (navigator.onLine) {
 		//Wait a little bit before loading offline maps - they can take a little bit to load, and we want to give the rest of the page a chance.
 		setTimeout(loadOfflineMaps, 2500)
 	}
 	else {
 		//Offline. Load offline maps ASAP.
-		loadOfflineMaps()
+		offlineMapLoadPromise = loadOfflineMaps()
 	}
 
 	if (!river) {
@@ -467,7 +468,7 @@ async function addMap(river) {
 					let div = document.createElement("div")
 
 					//TODO: Remove the inline HTML
-					let riverLink = `<a href="#${item.name + " " + item.section}" target="_blank">Open in Rivers.run</a>, `
+					let riverLink = `<a href="${window.root}#${item.name + " " + item.section}" target="_blank">Open in Rivers.run</a>, `
 					div.innerHTML += riverLink
 					let googleMapsLink = `<a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a>, or view below: `
 					div.innerHTML += googleMapsLink
@@ -525,23 +526,27 @@ async function addMap(river) {
 	//We will draw the current item, followed by all rivers, then all gauges.
 	//Also, we will use a flat-earth based distance calculation to help render the correct area first.
 	function calcValue(item) {
-		if (!river) {return Math.random()}
 		let value = 0
 		if (item.index !== river?.index) {
 			value++
 			if (item.isGauge) {value+=0.1} //Add 0.1, so that distance can easily outweight rivers.
+			//If we don't have a river to compare distance against, pick randomly from the gauges.
+			if (river) {
+				//Add a bit based on distance. Speed > accuracy here.
+				let lat1 = window.toDecimalDegrees(item.plat || item.tlat)
+				let lon1 = window.toDecimalDegrees(item.plon || item.tlon)
+				let lat2 = window.toDecimalDegrees(river.plat || river.tlat)
+				let lon2 = window.toDecimalDegrees(river.plon || river.tlon)
 
-			//Add a bit based on distance. Speed > accuracy here.
-			let lat1 = window.toDecimalDegrees(item.plat || item.tlat)
-			let lon1 = window.toDecimalDegrees(item.plon || item.tlon)
-			let lat2 = window.toDecimalDegrees(river.plat || river.tlat)
-			let lon2 = window.toDecimalDegrees(river.plon || river.tlon)
-
-			//Calculate VERY approximate distance.
-			let distance = ((Math.abs(lat1 - lat2)**2) + (Math.abs(lon1 - lon2)**2))**0.5
-			distance = Math.log10(distance) ** 3 //Adjust dropoff rate.
-			if (distance > 1) {
-				value += 1-(1/distance)
+				//Calculate VERY approximate distance.
+				let distance = ((Math.abs(lat1 - lat2)**2) + (Math.abs(lon1 - lon2)**2))**0.5
+				distance = Math.log10(distance) ** 3 //Adjust dropoff rate.
+				if (distance > 1) {
+					value += 1-(1/distance)
+				}
+			}
+			else {
+				value += Math.random() * 0.09 //Avoid outweighing rivers with gauges.
 			}
 		}
 		return value
@@ -553,19 +558,29 @@ async function addMap(river) {
 
 	let i=0
 	//Draw async, to allow quicker map load.
-	let drawMore = function drawMore(duration = 8, timeout = 30) {
+	let drawMore = function drawMore(duration = 8, timeout = 30, once = false) {
 		let start = Date.now()
 		let done = false
 		while (Date.now() - start < duration) {
 			if (!drawOrder[i]) {break;}
 			drawItem(drawOrder[i++])
 		}
-		if (!done) {
+		if (!done && once === false) {
 			setTimeout(drawMore, timeout)
 		}
 	}
 
-	drawMore()
+	//If we are offline, draw the very first items, then stop.
+	if (offlineMapLoadPromise) {
+		drawMore(20, null, true)
+		offlineMapLoadPromise.then(() => {
+			console.log("Beginning Full Marker Render")
+			drawMore()
+		})
+	}
+	else {
+		drawMore()
+	}
 
 	div.classList.add("riverMap")
 	div.updateMarkers = updateMarkers
