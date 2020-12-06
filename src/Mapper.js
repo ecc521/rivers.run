@@ -146,13 +146,15 @@ async function addMap(river) {
 		//This code will create higher zoomed in tiles from lower zoomed in tiles, however does NOT do the inverse.
 		//Therefore, downloading one zoom level will download all lower zoom levels as well.
 
-		async function downloadTiles(keys = []) {
-			let tiles = {}
+		async function downloadTiles(keys = [], tiles = {}) {
 			let remainingItems = [];
 			let maxParalell = 10;
 
 			for (let i=0;i<keys.length;i++) {
 				let key = keys[i]
+
+				if (tiles[key]) {continue} //Tile already loaded, probably by a previous map.
+
 				if (remainingItems.length > maxParalell) {
 					await Promise.race(remainingItems)
 				}
@@ -222,8 +224,8 @@ async function addMap(river) {
 
 		let keys = generateKeys(generateKeys([], worldZoom), usZoom, xStart, xEnd, yStart, yEnd)
 		console.time(`Prepare ${keys.length} Tiles`)
-		let offlineData = await downloadTiles(keys)
-		window.offlineData = offlineData
+		window.offlineData = window.offlineData || {}
+		await downloadTiles(keys, window.offlineData)
 		console.timeEnd(`Prepare ${keys.length} Tiles`)
 
 		function obtainCanvasForZoom(zoom, x, y) {
