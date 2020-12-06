@@ -11,6 +11,8 @@ const waitOnFirstLoad = 2500 //Milliseconds to wait before fetching items on pre
 const preloadList = [
     "",
     "about.html",
+    "map.html", //Only load code for map page - not the Google Maps part. 
+    "packages/map.js",
     "clubs.html",
     "settings.html",
     "FAQ.html",
