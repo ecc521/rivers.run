@@ -10,10 +10,13 @@
 	coord = coord.toUpperCase().trim() //In case people put the direction in lowercase.
 
 	let direction;
-	if (["N","S","E","W"].includes(coord[0])) {
-		direction = coord[0];
-		coord = coord.slice(1).trim()
-	}
+	["N","S","E","W"].forEach((currentDirection) => {
+		if (coord.includes(currentDirection)) {
+			direction = currentDirection
+			coord = coord.slice(0, coord.indexOf(currentDirection)) + coord.slice(coord.indexOf(currentDirection) + 1)
+			coord = coord.trim()
+		}
+	})
 
 	let parts = coord.split(/[^.\w]+/) //Split on non-alphanumeric characters that aren't decimals.
 
