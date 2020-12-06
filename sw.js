@@ -86,9 +86,9 @@ function fetchHandler(event) {
 			return fromcache
 		}
 
-		let fromnetwork = fetch(event.request)
-
         let returnNetwork = false
+
+        let fromnetwork = fetch(event.request)
 
 		if (
             url.includes("docs.google.com") //Avoid filling up cache with opaque responses from docs.google.com
@@ -106,16 +106,16 @@ function fetchHandler(event) {
             returnNetwork = true
 
             //Override - Cache Google Maps JavaScript
-            if (url.includes("maps.googleapis.com/maps/api/js") && url.includes("&callback=")) {
+            if (url.includes("maps.googleapis.com/maps/api/js?")) {
                 //Main JavaScript file
                 returnNetwork = false
             }
+
             if (url.includes("maps.googleapis.com") && url.includes(".js")) {
                 //Auxillary JavaScript files.
                 returnNetwork = false
             }
 		}
-
 
         if (returnNetwork) {
             return fromnetwork
