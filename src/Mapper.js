@@ -207,7 +207,7 @@ async function addMap(river) {
 				}
 			}
 
-			if (zoom > 1) {
+			if (zoom > 0) {
 				generateKeys(keys, --zoom, Math.floor(xStart/2), Math.floor(xEnd/2), Math.floor(yStart/2), Math.floor(yEnd/2))
 			}
 			return keys
@@ -233,15 +233,17 @@ async function addMap(river) {
 			canvas.width = canvas.height = 256
 			let ctx = canvas.getContext("2d")
 
+			//If zoom is less than zero, return a blank canvas.
 			if (offlineData[`${zoom}/${x}/${y}`]) {
 				ctx.drawImage(offlineData[`${zoom}/${x}/${y}`], 0, 0)
 				return canvas
 			}
 
-			if (zoom < 1) {throw `Error: Zoom level 1 not available. ${zoom}/${x}/${y}`}
+			if (zoom < 0) {return false}
 
 			//Details for tile one level larger.
 			let sourceCanvas = obtainCanvasForZoom(zoom-1, Math.floor(x/2), Math.floor(y/2))
+			if (!sourceCanvas) {return false}
 
 			//Source x,y,width,height, destination x,y,width,height
 			ctx.drawImage(sourceCanvas, 128*(x%2), 128*(y%2), 128, 128, 0, 0, 256, 256)
@@ -263,7 +265,10 @@ async function addMap(river) {
 				;[400, 1000, 2000, 4000].forEach((delay) => {
 					setTimeout(setAttribution, delay)
 				})
-				return obtainCanvasForZoom(zoom, coord.x, coord.y).toDataURL("image/png")
+				let canvas = obtainCanvasForZoom(zoom, coord.x, coord.y)
+				if (canvas) {
+					return canvas.toDataURL("image/png")
+				}
 			},
 			tileSize: new google.maps.Size(256, 256),
 			minZoom: 1,
