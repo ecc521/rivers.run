@@ -179,13 +179,7 @@ async function addMap(river) {
 						}
 					}
 
-					let buffer = await response.arrayBuffer()
-					tiles[key] = await new Promise((resolve, reject) => {
-						let img = new Image()
-						img.onload = function() {resolve(img)}
-						img.onerror = reject
-						img.src = URL.createObjectURL(new Blob([buffer], {type: "image/png"}))
-					})
+					tiles[key] = response
 				}())
 				remainingItems.push(promise)
 				promise.then(() => {
@@ -198,8 +192,8 @@ async function addMap(river) {
 		}
 
 		function generateKeys(keys, zoom, xStart = 0, xEnd=zoom**2-1, yStart = 0, yEnd = zoom**2-1) {
-			for (let x=xStart;x<xEnd;x++) {
-				for (let y=yStart;y<yEnd;y++) {
+			for (let x=xStart;x<=xEnd;x++) {
+				for (let y=yStart;y<=yEnd;y++) {
 					let key = `${zoom}/${x}/${y}`
 					if (keys.indexOf(key) === -1) {
 						keys.push(`${zoom}/${x}/${y}`)
@@ -228,22 +222,36 @@ async function addMap(river) {
 		await downloadTiles(keys, window.offlineData)
 		console.timeEnd(`Prepare ${keys.length} Tiles`)
 
-		function obtainCanvasForZoom(zoom, x, y) {
+		async function obtainCanvasForZoom(zoom, x, y) {
 			let canvas = document.createElement("canvas")
 			canvas.width = canvas.height = 256
 			let ctx = canvas.getContext("2d")
 
-			//If zoom is less than zero, return a blank canvas.
-			if (offlineData[`${zoom}/${x}/${y}`]) {
-				ctx.drawImage(offlineData[`${zoom}/${x}/${y}`], 0, 0)
+			let requestName = `${zoom}/${x}/${y}`
+			let response = offlineData[requestName]
+
+			if (response) {
+				//Generate image for response
+				if (response instanceof Response) {
+					let clone = response.clone() //Clone simply so that if this is requested twice before replaced, it doesn't error.
+					let buffer = await clone.arrayBuffer()
+					offlineData[requestName] = await new Promise((resolve, reject) => {
+						let img = new Image()
+						img.onload = function() {resolve(img)}
+						img.onerror = reject
+						img.src = URL.createObjectURL(new Blob([buffer], {type: "image/png"}))
+					})
+				}
+				ctx.drawImage(offlineData[requestName], 0, 0)
 				return canvas
 			}
 
+			//First portion for "If zoom is less than zero, return false"
 			if (zoom < 0) {return false}
 
 			//Details for tile one level larger.
-			let sourceCanvas = obtainCanvasForZoom(zoom-1, Math.floor(x/2), Math.floor(y/2))
-			if (!sourceCanvas) {return false}
+			let sourceCanvas = await obtainCanvasForZoom(zoom-1, Math.floor(x/2), Math.floor(y/2))
+			if (!sourceCanvas) {return false} //Second portion for "If zoom is less than zero, return false"
 
 			//Source x,y,width,height, destination x,y,width,height
 			ctx.drawImage(sourceCanvas, 128*(x%2), 128*(y%2), 128, 128, 0, 0, 256, 256)
@@ -258,22 +266,58 @@ async function addMap(river) {
 			})
 		}
 
-		var layer = new google.maps.ImageMapType({
-			name: layerID,
-			getTileUrl: function(coord, zoom) {
-				//Totally excessive setAttribution calls, but Google resets it far too often.
-				;[400, 1000, 2000, 4000].forEach((delay) => {
-					setTimeout(setAttribution, delay)
-				})
-				let canvas = obtainCanvasForZoom(zoom, coord.x, coord.y)
-				if (canvas) {
-					return canvas.toDataURL("image/png")
-				}
-			},
-			tileSize: new google.maps.Size(256, 256),
-			minZoom: 1,
-			maxZoom: 20
-		});
+		// Normalizes the coords that tiles repeat across the x axis (horizontally)
+		// like the standard Google map tiles.
+		function getNormalizedCoord(coord, zoom) {
+			const y = coord.y;
+			let x = coord.x;
+			// tile range in one direction range is dependent on zoom level
+			// 0 = 1 tile, 1 = 2 tiles, 2 = 4 tiles, 3 = 8 tiles, etc
+			const tileRange = 1 << zoom;
+
+			// don't repeat across y-axis (vertically)
+			if (y < 0 || y >= tileRange) {
+				return null;
+			}
+
+			// repeat across x-axis
+			if (x < 0 || x >= tileRange) {
+				x = ((x % tileRange) + tileRange) % tileRange;
+			}
+			return { x: x, y: y };
+		}
+
+
+		class CoordMapType {
+		  constructor(tileSize) {
+		    this.maxZoom = 20;
+		    this.alt = this.name = "Offline Map Tiles";
+		    this.tileSize = tileSize;
+		  }
+		  getTile(coord, zoom, ownerDocument) {
+			  //Totally excessive setAttribution calls, but Google resets it far too often.
+			  ;[400, 1000, 2000, 4000].forEach((delay) => {
+				  setTimeout(setAttribution, delay)
+			  })
+
+			  coord = getNormalizedCoord(coord, zoom)
+
+			  if (!coord) {
+		        return "";
+		      }
+
+			  const img = ownerDocument.createElement("img");
+			  obtainCanvasForZoom(zoom, coord.x, coord.y).then((canvas) => {
+				  img.src = canvas.toDataURL("image/png")
+			  })
+			  img.style.width = this.tileSize.width + "px";
+			  img.style.height = this.tileSize.height + "px";
+			  return img
+		  }
+		  releaseTile(tile) {}
+		}
+
+		var layer = new CoordMapType(new google.maps.Size(256, 256))
 
 		map.mapTypes.set(layerID, layer);
 
