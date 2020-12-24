@@ -191,7 +191,7 @@ async function addMap(river) {
 			return tiles
 		}
 
-		function generateKeys(keys, zoom, xStart = 0, xEnd=zoom**2-1, yStart = 0, yEnd = zoom**2-1) {
+		function generateKeys(keys, zoom, xStart = 0, xEnd=2**zoom-1, yStart = 0, yEnd = 2**zoom-1) {
 			for (let x=xStart;x<=xEnd;x++) {
 				for (let y=yStart;y<=yEnd;y++) {
 					let key = `${zoom}/${x}/${y}`
@@ -458,7 +458,7 @@ async function addMap(river) {
 		else {color = "hsl(" + item.running * 60 + ", 100%, 70%)"}
 
 
-		let scale = 1.25
+		let scale = .9
 		let regenerateInfo = [item]
 		if (!item.isGauge) {
 			scale = 2
@@ -596,8 +596,8 @@ async function addMap(river) {
 					value += 1-(1/distance)
 				}
 			}
-			else {
-				value += Math.random() * 0.09 //Avoid outweighing rivers with gauges.
+			else if (item.isGauge) {
+				value -= Math.random() * 0.15 //Randomly generate rivers and gauges, with heavy priority to rivers.
 			}
 		}
 		return value
