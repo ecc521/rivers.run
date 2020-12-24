@@ -576,17 +576,20 @@ Those include name,section,skill,quality, and flow info*/
   font-family: sans-serif;
   overflow-y: auto;
   max-height: 40vh;
-  min-width: 80vw;
   box-shadow: 0px 2px 10px 1px rgba(0, 0, 0, 0.5);
 }
 
 /* The parent of the bubble. A zero-height div at the top of the tip. */
-.popup-bubble-anchor {
+.popup-bubble-anchor, .tooltip-bubble-anchor {
   /* Position the div a fixed distance above the tip. */
   position: absolute;
   width: 100%;
   bottom: 8px;
   left: 0;
+}
+
+.tooltip-bubble-anchor {
+  bottom: 2px;
 }
 
 /* This element draws the tip. */

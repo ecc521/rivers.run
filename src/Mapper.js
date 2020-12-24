@@ -1,6 +1,6 @@
 //Note: We use lon internally, Google Maps uses lng internally. Be careful...
 require("./toDecimalDegrees.js")
-let MapPopup;
+let MapPopup, MapTooltip;
 
 let API_KEY = "AIzaSyBLmohXw1xsgeBDs1cqVN_UuRtmAHmc-WI"
 
@@ -15,6 +15,7 @@ async function loadMapsAPI() {
 		window.initMap = function() {
 			resolve()
 			MapPopup = require("./MapPopup.js")
+			MapTooltip = require("./MapTooltip.js")
 		}
 	})
 
@@ -120,12 +121,105 @@ async function addMap(river) {
 	});
 	window.lastAddedMap = map //For development only. This global variable is NOT TO BE USED by site code.
 
+	// Normalizes the coords that tiles repeat across the x axis (horizontally)
+	// like the standard Google map tiles.
+	function getNormalizedCoord(coord, zoom) {
+		const y = coord.y;
+		let x = coord.x;
+		// tile range in one direction range is dependent on zoom level
+		// 0 = 1 tile, 1 = 2 tiles, 2 = 4 tiles, 3 = 8 tiles, etc
+		const tileRange = 1 << zoom;
 
-	//TODO: Allow users to choose higher resolution offline maps. This should be done in a seperate page, either settings or a new maps page.
+		// don't repeat across y-axis (vertically)
+		if (y < 0 || y >= tileRange) {
+			return null;
+		}
+
+		// repeat across x-axis
+		if (x < 0 || x >= tileRange) {
+			x = ((x % tileRange) + tileRange) % tileRange;
+		}
+		return { x: x, y: y };
+	}
+
+	function createControl(text = "") {
+		// Create a div to hold the control.
+		var controlDiv = document.createElement('div');
+
+		// Set CSS for the control border
+		var controlUI = document.createElement('div');
+		controlUI.style.backgroundColor = '#ddddff';
+		controlUI.style.border = '2px solid #fff';
+		controlUI.style.cursor = 'pointer';
+		controlUI.style.marginBottom = '22px';
+		controlUI.style.textAlign = 'center';
+		controlDiv.appendChild(controlUI);
+
+		// Set CSS for the control interior
+		var controlText = document.createElement('div');
+		controlText.style.color = 'rgb(25,25,25)';
+		controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
+		controlText.style.fontSize = '16px';
+		controlText.style.lineHeight = '36px';
+		controlText.style.paddingLeft = '5px';
+		controlText.style.paddingRight = '5px';
+		controlText.innerText = text
+
+		//Make it clear this is us, not Google Maps
+		let icon = document.createElement("img")
+		icon.src = root + "resources/icons/24x24-Water-Drop.png"
+		icon.style.verticalAlign = "middle"
+		controlText.appendChild(icon)
+
+		controlUI.appendChild(controlText);
+
+		return {controlDiv, controlUI, controlText, icon}
+	}
+
+	let weatherControl = createControl("Weather Off")
+
+	map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(weatherControl.controlDiv)
+
+	var weather = new google.maps.ImageMapType({
+		getTileUrl: function (coord, zoom) {
+		  const normalizedCoord = getNormalizedCoord(coord, zoom);
+
+		  if (!normalizedCoord) {
+			return "";
+		  }
+
+		  return `https://mesonet1.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/${zoom}/${normalizedCoord.x}/${normalizedCoord.y}.png`
+		},
+		tileSize: new google.maps.Size(256, 256),
+		maxZoom: 20, //I believe this goes to about 8.
+		minZoom: 0,
+		name: "Weather",
+		opacity: 0.5
+	  });
+
+
+	weatherControl.controlDiv.addEventListener("click", function() {
+		let weatherIndex = map.overlayMapTypes.getArray().findIndex((item) => {
+			return item === weather
+		})
+		if (weatherIndex === -1) {
+			map.overlayMapTypes.insertAt(
+				0,
+				weather
+			);
+			weatherControl.controlText.innerText = "Weather On"
+			weatherControl.controlText.appendChild(weatherControl.icon)
+		}
+		else {
+			map.overlayMapTypes.removeAt(weatherIndex)
+			weatherControl.controlText.innerText = "Weather Off"
+			weatherControl.controlText.appendChild(weatherControl.icon)
+		}
+	})
+
 	async function loadOfflineMaps() {
 		//Download needed files to run offline maps, and add offline maps functionality.
-		//Currently, we download zoom level 6 for the US, and zoom level 3 for the rest of the world.
-		//We'll want to consider downloading global maps (or at least rivers.run supported countries) in lower-res, and US in high-res.
+		//Unless changed in settings, we download zoom level 6 for the US, and zoom level 3 for the rest of the world.
 
 		console.log("Starting Offline Maps Load. ")
 
@@ -266,27 +360,6 @@ async function addMap(river) {
 			})
 		}
 
-		// Normalizes the coords that tiles repeat across the x axis (horizontally)
-		// like the standard Google map tiles.
-		function getNormalizedCoord(coord, zoom) {
-			const y = coord.y;
-			let x = coord.x;
-			// tile range in one direction range is dependent on zoom level
-			// 0 = 1 tile, 1 = 2 tiles, 2 = 4 tiles, 3 = 8 tiles, etc
-			const tileRange = 1 << zoom;
-
-			// don't repeat across y-axis (vertically)
-			if (y < 0 || y >= tileRange) {
-				return null;
-			}
-
-			// repeat across x-axis
-			if (x < 0 || x >= tileRange) {
-				x = ((x % tileRange) + tileRange) % tileRange;
-			}
-			return { x: x, y: y };
-		}
-
 
 		class CoordMapType {
 		  constructor(tileSize) {
@@ -321,53 +394,25 @@ async function addMap(river) {
 
 		map.mapTypes.set(layerID, layer);
 
-		// Create a div to hold the control.
-		var controlDiv = document.createElement('div');
-		controlDiv.style.margin = "10px"
-		controlDiv.style.marginLeft = "-10px"
+		let offlineMapsControl = createControl("Use Offline")
+		offlineMapsControl.controlDiv.style.margin = "10px"
+		offlineMapsControl.controlDiv.style.marginLeft = "-10px"
 
-		// Set CSS for the control border
-		var controlUI = document.createElement('div');
-		controlUI.style.backgroundColor = '#ddddff';
-		controlUI.style.border = '2px solid #fff';
-		controlUI.style.cursor = 'pointer';
-		controlUI.style.marginBottom = '22px';
-		controlUI.style.textAlign = 'center';
-		controlDiv.appendChild(controlUI);
-
-		// Set CSS for the control interior
-		var controlText = document.createElement('div');
-		controlText.style.color = 'rgb(25,25,25)';
-		controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
-		controlText.style.fontSize = '16px';
-		controlText.style.lineHeight = '36px';
-		controlText.style.paddingLeft = '5px';
-		controlText.style.paddingRight = '5px';
-		controlText.innerHTML = 'Use Offline';
-
-		//Make it clear this is us, not Google Maps
-		let icon = document.createElement("img")
-		icon.src = root + "resources/icons/24x24-Water-Drop.png"
-		icon.style.verticalAlign = "middle"
-		controlText.appendChild(icon)
-
-		controlUI.appendChild(controlText);
-
-		map.controls[google.maps.ControlPosition.TOP_LEFT].push(controlDiv)
+		map.controls[google.maps.ControlPosition.TOP_LEFT].push(offlineMapsControl.controlDiv)
 
 		map.addListener("maptypeid_changed", function() {
 			if ( map.getMapTypeId() !== layerID) {
-				controlText.innerText = "Use Offline"
-				controlText.appendChild(icon)
+				offlineMapsControl.controlText.innerText = "Use Offline"
+				offlineMapsControl.controlText.appendChild(offlineMapsControl.icon)
 			}
 			else {
-				controlText.innerText = "Use Online"
-				controlText.appendChild(icon)
+				offlineMapsControl.controlText.innerText = "Use Online"
+				offlineMapsControl.controlText.appendChild(offlineMapsControl.icon)
 			}
 		})
 
 		let controlDivClick;
-		controlDiv.addEventListener('click', function() {
+		offlineMapsControl.controlDiv.addEventListener('click', function() {
 
 			//Needs to run before window.controlDivOldLayer is overwritten.
 			if (controlDivClick) {
@@ -392,7 +437,7 @@ async function addMap(river) {
 		});
 
 		if (!navigator.onLine) {
-			controlDiv.click() //Automatically trigger offline mode.
+			offlineMapsControl.controlDiv.click() //Automatically trigger offline mode.
 		}
 	}
 
@@ -458,17 +503,17 @@ async function addMap(river) {
 		else {color = "hsl(" + item.running * 60 + ", 100%, 70%)"}
 
 
-		let scale = 1
+		let scale = .8
 		let regenerateInfo = [item]
 		if (!item.isGauge) {
-			scale = 2
+			scale = 1.4
 			updatableItems.push(regenerateInfo)
 		}
 
 		let special = false
 		let icon;
 		if (item.index === river?.index) {
-			scale = 4
+			scale = 2.5
 			special = true
 		}
 		else {
@@ -499,6 +544,7 @@ async function addMap(river) {
 					position: getCoords(item, putIn),
 					icon
 				});
+
 				regenerateInfo.push(marker)
 
 				if (special) {
@@ -514,6 +560,7 @@ async function addMap(river) {
 					}
 					marker.setZIndex(1)
 				}
+
 
 				marker.addListener("click", () => {
 					let div = document.createElement("div")
@@ -547,9 +594,9 @@ async function addMap(river) {
 					}
 				});
 
-				let infowindow;
+				let tooltip;
 				marker.addListener("mouseover", () => {
-					if (!infowindow) {
+					if (!tooltip) {
 						let div = document.createElement("div")
 
 						let text = `${item.name} (${item.section})`
@@ -559,21 +606,13 @@ async function addMap(river) {
 						div.innerHTML = text
 						div.style.color = "black"
 
-						infowindow = new google.maps.InfoWindow({
-							content: div,
-						});
-
-						//When we zoom in, the cursor can move onto the tooltip, where it causes the entire page to zoom, not just the map.
-						//Hide the tooltip on zoom to prevent the cursor from shifting relative to the tooltip. 
-						map.addListener("zoom_changed", function() {
-							infowindow.close()
-						})
+						tooltip = new MapTooltip(marker.position, div, 21*scale)
 
 						marker.addListener("mouseout", function() {
-							infowindow.close()
+							tooltip.setMap(null)
 						})
 					}
-					infowindow.open(map, marker)
+					tooltip.setMap(map)
 				});
 			}
 		}

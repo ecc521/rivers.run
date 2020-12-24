@@ -3,6 +3,8 @@ class MapPopup extends google.maps.OverlayView {
 		super();
 		this.position = position;
 		content.classList.add("popup-bubble");
+		content.style.minWidth = "80vw";
+
 		function bringToFront() {
 			//Set out zIndex to highest.
 			let overlays = document.querySelectorAll(".popup-bubble")
