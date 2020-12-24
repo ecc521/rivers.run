@@ -458,7 +458,7 @@ async function addMap(river) {
 		else {color = "hsl(" + item.running * 60 + ", 100%, 70%)"}
 
 
-		let scale = .9
+		let scale = 1
 		let regenerateInfo = [item]
 		if (!item.isGauge) {
 			scale = 2
@@ -545,7 +545,35 @@ async function addMap(river) {
 						popup.setMap(null)
 						google.maps.event.removeListener(listener)
 					}
+				});
 
+				let infowindow;
+				marker.addListener("mouseover", () => {
+					if (!infowindow) {
+						let div = document.createElement("div")
+
+						let text = `${item.name} (${item.section})`
+						if (item.flow) {
+							text += ": " + item.flow
+						}
+						div.innerHTML = text
+						div.style.color = "black"
+
+						infowindow = new google.maps.InfoWindow({
+							content: div,
+						});
+
+						//When we zoom in, the cursor can move onto the tooltip, where it causes the entire page to zoom, not just the map.
+						//Hide the tooltip on zoom to prevent the cursor from shifting relative to the tooltip. 
+						map.addListener("zoom_changed", function() {
+							infowindow.close()
+						})
+
+						marker.addListener("mouseout", function() {
+							infowindow.close()
+						})
+					}
+					infowindow.open(map, marker)
 				});
 			}
 		}
