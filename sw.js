@@ -11,7 +11,7 @@ const waitOnFirstLoad = 2500 //Milliseconds to wait before fetching items on pre
 const preloadList = [
     "",
     "about.html",
-    "map.html", //Only load code for map page - not the Google Maps part. 
+    "map.html", //Only load code for map page - not the Google Maps part.
     "packages/map.js",
     "clubs.html",
     "settings.html",
@@ -101,8 +101,9 @@ function fetchHandler(event) {
             || url.includes("gaugeReadings")
             || url.includes("script.googleusercontent.com") //Don't store the unused results from writeupmaker uploads and submissions.
             || url.includes("ih3.googleusercontent.com")
-            || url.includes("mt1.google.com/vt/") //Mapping code - Cached seperately
             || url.includes("tile.openstreetmap.org") //Mapping code - Cached seperately
+            || url.includes("mesonet1.agron.iastate.edu") //Weather maps - not cached.
+            || url.includes("ggpht.com") //I believe this is street view. Don't cache. 
         ) {
 
             returnNetwork = true
