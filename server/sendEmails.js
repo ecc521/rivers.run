@@ -23,21 +23,21 @@ async function sendEmail(user, data) {
 			pass: password
 		}
 	});
-	
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(data) + "\n");	
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
+
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(data) + "\n");
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");
 	let mailInfo = getMessage(data, user)
 	if (mailInfo === false) {return false}; //All rivers are too low.
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");	
+	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");
 	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(mailInfo) + "\n");
-	
+
 	const mailOptions = {
 	  from: 'rivergauges@rivers.run', //In order to have the profile image, this should be an alternative email for the gmail account.
 	  to: user.address, // list of receivers, or just a single one.
 	  subject: mailInfo.subject, // Subject line
 	  html: mailInfo.body// Body
 	};
-	
+
 	//Send the email
 	await new Promise((resolve, reject) => {
 		transporter.sendMail(mailOptions, function (err, info) {
@@ -59,14 +59,14 @@ function getMessage(data, user) {
     let body = "";
 
     let IDs = []
-	
+
 	let running = []
 	let tooHigh = []
 	let tooLow = []
-	
+
 	for (let id in data) {
 		if (data[id].running !== false) {
-	        running.push(data[id])		
+	        running.push(data[id])
 		}
 		else if (data[id].current < data[id].minimum) {
 			tooLow.push(data[id])
@@ -76,7 +76,7 @@ function getMessage(data, user) {
 		}
         IDs.push(id)
     }
-	
+
 	function getIDs(rivers) {
 		return rivers.map((river) => {
 			return river.id
@@ -93,18 +93,18 @@ function getMessage(data, user) {
 
 		return encodeURI("https://rivers.run/#" + JSON.stringify(searchQuery))
 	}
-	
-	
+
+
 	if ((running.length + tooHigh.length) === 0 && JSON.stringify(user.previousMessage) === "{}") {return false;}
 	user.previousMessage = Object.assign({}, running, tooHigh)
 
-	
+
 	console.log(data)
 	console.log(running)
 
     if (running.length === 0) {
        	title = "Rivers are no longer running"
-		
+
     }
     //If a rivers name ends with Creek, don't use the work "The"
     else if (running.length === 1) {
@@ -116,22 +116,22 @@ function getMessage(data, user) {
     else {
         title = running.length + " rivers are running!"
     }
-	
+
 	//Note: Only inline style appears to be allowed.
 	//TODO: Use a script inliner.
-	
+
 	body = [
 		`<html><head></head><body>`,
 	]
-	
+
 	function createListItem(river) {
-		return "<li>" + `<a href="${getSearchLink([river.id])}">${river.name}<a>` + ": " + river.current + river.units + " (" + river.minimum + river.units + " - " + river.maximum + river.units + ")" + "</li>"
+		return "<li>" + `<a href="${getSearchLink([river.id])}">${river.name}<a>` + `: ${river.current} ${river.units} (${river.minimum} ${river.units} - ${river.maximum} ${river.units})` + "</li>"
 	}
-	
+
 	function createHeader(text) {
 		return `<h2 style="margin-bottom: 0">${text}</h2>`
 	}
-	
+
 	if (tooHigh.length > 0) {
 		body.push(createHeader("Rivers that are Too High:"))
 		body.push("<ul>")
@@ -141,7 +141,7 @@ function getMessage(data, user) {
 		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(tooHigh))}">View all these on rivers.run</a></li>`)
 		body.push("</ul>")
 	}
-	
+
 	if (running.length > 0) {
 		body.push(createHeader("Rivers that are Running:"))
 		body.push("<ul>")
@@ -151,7 +151,7 @@ function getMessage(data, user) {
 		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(running))}">View all these on rivers.run</a></li>`)
 		body.push("</ul>")
 	}
-	
+
 	if (tooLow.length > 0) {
 		body.push(createHeader("Rivers that are Too Low:"))
 		body.push("<ul>")
@@ -161,15 +161,15 @@ function getMessage(data, user) {
 		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(tooLow))}">View all these on rivers.run</a></li>`)
 		body.push("</ul>")
 	}
-	
+
 	body.push(`<p><a href="${getSearchLink(IDs)}">View All My Rivers on rivers.run</a></p>`)
     body.push(`<h1 style="margin-bottom:0.5em"><img src="https://rivers.run/resources/icons/64x64-Water-Drop.png" style="vertical-align: text-top; height:1em; width: 1em;"><a href="https://rivers.run" style="color:black">rivers.run</a></h1>`)
 	body.push("<p><a href='mailto:support@rivers.run'>support@rivers.run</a></p>")
-	
+
 	body.push(`Click <a href="https://rivers.run/emailnotifications.html#${user.address}">here</a> to manage your subscription, or to unsubscribe.`)
-	
+
 	body.push("</body></html>")
-	
+
 	return {
 		subject: title,
 		body: body.join(""),

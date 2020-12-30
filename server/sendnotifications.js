@@ -75,6 +75,7 @@ function sendNotifications(ignoreNoneUntil = false) {
                         }
                     }
                     else {
+                        //TODO: River.current might be undefined if there are gauge errors, etc. 
                         data[prop] = rivers[prop] //Add the river if it is running
                         data[prop].running = true
                     }
