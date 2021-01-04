@@ -13,7 +13,7 @@ git clone https://github.com/ecc521/rivers.run.git
 git clone https://github.com/ecc521/rivers.run-virtual-gauges.git
 
 #Install NodeJS
-curl -sL https://deb.nodesource.com/setup_12.x | sudo bash -
+curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
 sudo apt-get install -y nodejs
 
 #Build rivers.run
@@ -23,15 +23,6 @@ npm install
 #Install apache
 sudo apt-get install -y apache2
 
-#Symlink to /var/www/html
-sudo mv /var/www/html /var/www/oldhtml #Move /var/www/html instead of deleting it... We don't want to delete anything important.
-sudo ln -s $HOME/rivers.run /var/www/html
-
-echo "You will probably need to make sure that .htaccess files are enabled."
-echo "Edit the AllowOverride statement in the /var/www/ directory selector in the file /etc/apache2/apache2.conf to say All."
-
-read -n 1 -s -r -p "Press any key to continue"
-
 #Enable needed modules
 sudo a2enmod rewrite
 sudo a2enmod headers
@@ -39,19 +30,40 @@ sudo a2enmod proxy #This is needed for the NodeJS server portion, but not the re
 sudo a2enmod proxy_http
 sudo a2enmod http2
 
-#Enable reverse proxy to /node.
-echo "LoadModule proxy_module modules/mod_proxy.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
-echo "LoadModule proxy_http_module modules/mod_proxy_http.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
-#echo "ProxyRequests on" >> $HOME/rivers.run/NODERIVERSRUN.conf #Doesn't appear to be needed. Having this removed should prevent the server from being abused as an open proxy.
-echo "ProxyPass /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf
-#echo "ProxyPassReverse /node http://127.0.0.1:3000/node" >> $HOME/rivers.run/NODERIVERSRUN.conf #Doesn't appear to be needed.
 
-echo "LoadModule http2_module modules/mod_http2.so" >> $HOME/rivers.run/NODERIVERSRUN.conf
-echo "Protocols h2 http/1.1" >> $HOME/rivers.run/NODERIVERSRUN.conf
+sudo rm /etc/apache2/sites-available/rivers.run.conf
 
+sudo tee -a /etc/apache2/sites-available/rivers.run.conf > /dev/null << EOF
+<VirtualHost *:80>
+		ServerAdmin admin@rivers.run
+		ServerName rivers.run
+		ServerAlias www.rivers.run
+		DocumentRoot $HOME/rivers.run
+		ErrorLog ${APACHE_LOG_DIR}/rivers.runerror.log
+		CustomLog ${APACHE_LOG_DIR}/rivers.runaccess.log combined
+</VirtualHost>
 
-sudo mv $HOME/rivers.run/NODERIVERSRUN.conf /etc/apache2/conf-available/NODERIVERSRUN.conf
-sudo a2enconf NODERIVERSRUN #To disable, run sudo a2disconf NODERIVERSRUN
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+ProxyPass /node ws://127.0.0.1:3000/node
+
+LoadModule http2_module modules/mod_http2.so
+Protocols h2 http/1.1
+
+AddOutputFilterByType DEFLATE application/json
+EOF
+
+sudo a2ensite rivers.run
+
+sudo tee -a /etc/apache2/conf-available/rivers.run.conf > /dev/null << EOF
+<Directory $HOME/rivers.run/>
+    	Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+</Directory>
+EOF
+
+sudo a2enconf rivers.run #To disable, run sudo a2disconf NODEQIALDB
 
 #Restart apache so configuration changes take effect.
 sudo systemctl restart apache2
@@ -64,11 +76,10 @@ echo "Add stuff about gmailpassword.txt"
 echo "Swap file recommended, at least to bring up available memory to 512MB for this process (1GB preferred). More than 200MB will probably not be used at any one time."
 echo "Google Cloud Compute Engine: https://badlywired.com/2016/08/15/adding-swap-google-compute-engine/"
 
-echo "Run crontab -e (may need sudo). Add the following lines:"
-echo "@reboot node $HOME/rivers.run/server/usgscache.js >> $HOME/rivers.run/server/logs/usgscache.log"
-echo "*/30 * * * * node $HOME/rivers.run/server/restartServer.js >> $HOME/rivers.run/server/logs/restartServer.log"
-echo "0 4   *   *   *    sudo reboot"
-echo "@reboot sudo certbot renew  >> $HOME/rivers.run/server/logs/updateCertificate.log"
-
-echo "\nExplanation: Run server on reboot. Run restartServer.js every 30 minutes. Reboot at 4am every day. Run certbot renew on each reboot."
+echo "Setting crontab to run server on reboot, run restartServer.js every 30 minutes, reboot at 4am every day, and rcun certbot renew on each reboot."
 echo "We reboot the server at 4am every day in an attempt to resolve an issue where, after running for a few days, the server (probably kernel) would lock up, reading at full speed from the disk and doing nothing else."
+
+(crontab -l ; echo "@reboot node $HOME/rivers.run/server/usgscache.js >> $HOME/rivers.run/server/logs/usgscache.log") | sort - | uniq - | crontab -
+(crontab -l ; echo "*/30 * * * * node $HOME/rivers.run/server/restartServer.js >> $HOME/rivers.run/server/logs/restartServer.log") | sort - | uniq - | crontab -
+(crontab -l ; echo "0 4   *   *   *    sudo reboot") | sort - | uniq - | crontab -
+(crontab -l ; echo "@reboot sudo certbot renew") | sort - | uniq - | crontab -
