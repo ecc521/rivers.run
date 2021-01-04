@@ -45,7 +45,7 @@ sudo tee -a /etc/apache2/sites-available/rivers.run.conf > /dev/null << EOF
 
 LoadModule proxy_module modules/mod_proxy.so
 LoadModule proxy_http_module modules/mod_proxy_http.so
-ProxyPass /node ws://127.0.0.1:3000/node
+ProxyPass /node ws://127.0.0.1:5329/node
 
 LoadModule http2_module modules/mod_http2.so
 Protocols h2 http/1.1
@@ -83,3 +83,5 @@ echo "We reboot the server at 4am every day in an attempt to resolve an issue wh
 (crontab -l ; echo "*/30 * * * * node $HOME/rivers.run/server/restartServer.js >> $HOME/rivers.run/server/logs/restartServer.log") | sort - | uniq - | crontab -
 (crontab -l ; echo "0 4   *   *   *    sudo reboot") | sort - | uniq - | crontab -
 (crontab -l ; echo "@reboot sudo certbot renew") | sort - | uniq - | crontab -
+
+echo "Rebooting now is recommended, and should start the site up properly. "

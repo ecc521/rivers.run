@@ -14,11 +14,11 @@ function isServerUp() {
 
 	let processID;
 	try {
-		//Get the process ID that owns port 3000..
-		processID = Number(child_process.execSync("netstat -nlp | grep 3000").toString().match(/\d+\/node/)[0].match(/\d+/)[0])
+		//Get the process ID that owns port 5329..
+		processID = Number(child_process.execSync("netstat -nlp | grep 5329").toString().match(/\d+\/node/)[0].match(/\d+/)[0])
 	}
 	catch(e) {
-		//No process owns port 3000. The server must be down.
+		//No process owns port 5329. The server must be down.
 		return processID || false
 	}
 
