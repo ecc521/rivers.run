@@ -125,7 +125,6 @@ async function loadData(siteCodes) {
 		start = end
 	}
 
-	//TODO: Multiple NWS calls should be made at once, although we should currently only do one due to a bug that can cause multiple loading of a conversion table.
 	for (let i=0;i<nwsSites.length;i++) {
 		//We need to make sure that the same site doesn't appear multiple times, just with different casings
 		//This will require adjusting the usgs property of the rivers.
@@ -146,7 +145,6 @@ async function loadData(siteCodes) {
 	}
 
 
-	//TODO: Multiple Ireland calls should be made at once, although we should currently only do one due to a bug that can cause multiple loading of a conversion table.
 	for (let i=0;i<irelandOPWSites.length;i++) {
 		//We need to make sure that the same site doesn't appear multiple times, just with different casings
 		//This will require adjusting the usgs property of the rivers.

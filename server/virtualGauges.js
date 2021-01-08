@@ -1,13 +1,11 @@
 const fs = require("fs")
 const path = require("path")
 
-const Pitboss = require('pitboss-ng').Pitboss; //Used for sandboxing.
+const {VM} = require("vm2")
 
 const utils = require(path.join(__dirname, "utils.js"))
 
-
 const virtualGaugesPath = path.join(utils.getSiteRoot(), "../", "rivers.run-virtual-gauges")
-
 
 let gaugeFiles = utils.getFilesInDirectory(virtualGaugesPath)
 gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js" && !path.dirname(src).includes("utils")})
@@ -15,58 +13,44 @@ gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js" && !
 async function computeVirtualGauge(src) {
 	var code = await fs.promises.readFile(src, {encoding: "utf8"});
 
-	var sandbox = new Pitboss(code, {
-		memoryLimit: 128*1024, // 128 MB memory limit.
-		timeout: 5000, //5000 milliseconds to run.
-		heartBeatTick: 100 //100 milliseconds between memory checks.
+	const vm = new VM({
+	    timeout: 2000,
+	    sandbox: {}
 	});
 
+
 	let requiredGauges = await computeRequiredGauges(src)
-	
-	//Only provide the virtual gauge with the gauges it asked for to avoid excessive memory usage and delays in pitboss-ng.
+
+	//Only provide the virtual gauge with the gauges it asked for. Was done for perf and memory, but read only objects with vm2 might fix it.
 	let providedGauges = {}
 	for (let i=0;i<requiredGauges.length;i++) {
 		let gaugeID =  requiredGauges[i]
 		let filePath = path.join(utils.getSiteRoot(), "gaugeReadings", gaugeID)
 		providedGauges[gaugeID] = JSON.parse(await fs.promises.readFile(filePath, {encoding:"utf8"}))
 	}
-		
-	console.log()
-	
-	return await new Promise((resolve, reject) => {
-		sandbox.run({
-				context: {'gauges': providedGauges},
-				libraries: {
-					"console": "console", //Allow virtual gauges to access console.
-					"requireUtil": path.join(__dirname, "virtualGaugesRequire.js") //require stuff in the utils directory only.
-				} 
-			}, 
-			function (err, result) {
-				if (err !== null) {console.error(err)}
-				sandbox.kill();
-				resolve(result)
-			}
-		);
-	})
+
+	vm.sandbox.gauges = requiredGauges
+
+	let res = vm.run(code)
+	console.log(res)
+	return res
 }
 
-//TODO: Make sure that console.error(), console.log(), etc, do something.
 async function computeRequiredGauges(src) {
 	var code = await fs.promises.readFile(src, {encoding: "utf8"});
 
-	var sandbox = new Pitboss(code, {
-		memoryLimit: 32*1024, // 32 MB memory limit.
-		timeout: 500, //500 milliseconds to run.
-		heartBeatTick: 100 //100 milliseconds between memory checks.
+	const vm = new VM({
+	    timeout: 500,
+	    sandbox: {}
 	});
 
-	return await new Promise((resolve, reject) => {
-		sandbox.run({}, function (err, result) {
-			if (err !== null) {reject(err)}
-			else {resolve(result)}
-			sandbox.kill();
-		});
-	})
+	let res = vm.run(code)
+
+	if (!(res instanceof Array) || !res.every((item) => {return typeof item === "string"})) {
+		throw "Virtual Gauge did not return an array of strings. "
+	}
+
+	return res
 }
 
 
@@ -85,15 +69,15 @@ async function getRequiredGauges() {
 	return required
 }
 
-async function getVirtualGauges() {	
+async function getVirtualGauges() {
 	let gauges = {}
 	for (let i=0;i<gaugeFiles.length;i++) {
 		let src = gaugeFiles[i]
 		let filename = path.basename(src, ".js")
 		let gaugeIdentifier = "virtual:" + filename
-		
+
 		if (gauges[gaugeIdentifier]) {console.error("Naming conflict for " + gaugeIdentifier); continue;}
-		
+
 		try {
 			gauges[gaugeIdentifier] = await computeVirtualGauge(src)
 		}
@@ -101,17 +85,17 @@ async function getVirtualGauges() {
 			console.error(e)
 			continue;
 		}
-		
+
 		if (!gauges[gaugeIdentifier]) {
 			console.error(gaugeIdentifier + " returned undefined.")
 			continue;
 		}
-				
+
 		//If a name is not specified, choose one for them.
 		if (gauges[gaugeIdentifier].name) {gauges[gaugeIdentifier].name = "Virtual: " + gauges[gaugeIdentifier].name}
 		else {gauges[gaugeIdentifier].name = "Virtual: " + filename}
 	}
-	
+
 	return gauges
 }
 

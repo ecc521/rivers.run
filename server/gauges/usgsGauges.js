@@ -3,7 +3,7 @@
 const fs = require("fs")
 const path = require("path")
 
-const fetch = require("node-fetch")
+const bent = require("bent")
 
 const utils = require(path.join(__dirname, "../", "utils.js"))
 
@@ -142,22 +142,17 @@ function reformatGauges(gauges) {
 }
 
 
+let getJSON = bent("json", "https://waterservices.usgs.gov/nwis/iv/")
 async function _loadSitesFromUSGS(siteCodes, timeInPast, timeInFuture) {
 	//USGS does not appear to send flow predictions at the moment.
 
 	let startDT = "&startDT=" + new Date(Date.now() - timeInPast).toISOString()
 	let endDT = "&endDT=" + new Date(Date.now() + timeInFuture).toISOString() //endDT is optional. Will default to current time. USGS gauge prediction may be used if date in the future.
-    let url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + siteCodes.join(",") +  startDT  + endDT + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all"
 
-	let start = Date.now()
+	let usgsData = await getJSON("?format=json&sites=" + siteCodes.join(",") +  startDT  + endDT + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all")
 
-	let response = await fetch(url)
-	let usgsData = await response.text()
-
-	let time = Date.now() - start
-	await fs.promises.appendFile(path.join(utils.getLogDirectory(), 'usgsloadingtime.log'), time + '\n');
     //TODO: We should be able to consolidate these functions.
-	return reformatGauges(reformatUSGS(parseUSGS(JSON.parse(usgsData))))
+	return reformatGauges(reformatUSGS(parseUSGS(usgsData)))
 }
 
 async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24, timeInFuture = 0) {

@@ -45,7 +45,7 @@ const utils = require(path.join(__dirname, "utils.js"))
 
 const gaugeUtils = require(path.join(__dirname, "gauges.js"))
 
-fs.chmodSync(__filename, 0o775) //Make sure this file is executable. This will help prevent crontab setup issues.
+fs.chmodSync(__filename, 0o775) //Make sure this file is executable. This will help prevent crontab setup issues (this runs on npm install).
 
 let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
 
@@ -61,7 +61,7 @@ async function updateCachedData() {
 			await updateRiverData()
 		}
 	}
-	
+
 	console.log("Preparing flow data.\n")
 	let riverarray = JSON.parse(await fs.promises.readFile(riverDataPath, {encoding:"utf8"}))
 

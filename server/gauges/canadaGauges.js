@@ -1,30 +1,31 @@
 //Load gauges from the Canada Wateroffice
 const path = require("path")
 
-const fetch = require("node-fetch")
+const bent = require("bent")
 const csvParser = require("csv-parser")
 
 const siteDataParser = require(path.join(__dirname, "../", "siteDataParser.js"))
 
-let canadianGauges;
+let canadianGaugesPromise;
 
 //TODO: Instead of loading all gauges individually, load the file containing data for each region.
 async function loadCanadianGauge(gaugeID) {
 	//https://dd.weather.gc.ca/hydrometric/csv/
 
-	if (!canadianGauges) {
-		canadianGauges = await siteDataParser.getCanadianGauges()
+	if (!canadianGaugesPromise) {
+		canadianGaugesPromise = siteDataParser.getCanadianGauges()
 	}
+	canadianGauges = await canadianGaugesPromise
+	
 	let gaugeInfo = canadianGauges[gaugeID]
 	let province = gaugeInfo.province
 	//Using daily instead of hourly gives a longer duration of data.
-	let url = "https://dd.weather.gc.ca/hydrometric/csv/" + province + "/hourly/" + province + "_" + gaugeID + "_hourly_hydrometric.csv"
-
-	let response = await fetch(url)
+	let url = `https://dd.weather.gc.ca/hydrometric/csv/${province}/hourly/${province}_${gaugeID}_hourly_hydrometric.csv`
+	let stream = await (bent(url)())
 
 	let results = [];
     await new Promise((resolve, reject) => {
-        response.body.pipe(csvParser({
+        stream.pipe(csvParser({
             mapHeaders: function({header, index}) {
                 if (header === "Water Level / Niveau d'eau (m)") {return "meters"}
 				else if (header === "Discharge / Débit (cms)") {return "cms"} //cubic meters per second.

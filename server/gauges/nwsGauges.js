@@ -2,21 +2,21 @@
 
 const path = require("path")
 
-const fetch = require("node-fetch")
+const bent = require("bent")
 const xmlParser = require("fast-xml-parser");
+
+let getXML = bent("https://water.weather.gov/ahps2/", "string")
 
 const siteDataParser = require(path.join(__dirname, "../", "siteDataParser.js"))
 
-let nwsToName;
+let nwsToNamePromise;
 async function loadSiteFromNWS(siteCode) {
 	//NWS does not compress their data, so these requests are absurdly large (XML is ~120KB, HTML (output=tabular) is ~50KB)
 	//NWS offers flow predictions though, so can be a very useful tool.
 	//TODO: See if there is a way to request less data, or to get it compressed.
 
-	let url = "https://water.weather.gov/ahps2/hydrograph_to_xml.php?gage=" + siteCode + "&output=xml"
+	let siteData = await getXML("hydrograph_to_xml.php?gage=" + siteCode + "&output=xml")
 
-	let response = await fetch(url)
-	let siteData = await response.text()
 	var jsonObj = xmlParser.parse(siteData, {
 		attrNodeName: "attributes",
 		ignoreAttributes : false,
@@ -25,9 +25,10 @@ async function loadSiteFromNWS(siteCode) {
 	});
 
 	//Grab the name conversions table so that we can get the name of this gauge.
-	if (!nwsToName) {
-		nwsToName = (await siteDataParser.getConversionsForNWS()).nwsToName
+	if (!nwsToNamePromise) {
+		nwsToNamePromise = siteDataParser.getConversionsForNWS()
 	}
+	let nwsToName = await nwsToNamePromise.nwsToName
 
 	let readings = []
 
@@ -65,19 +66,19 @@ async function loadSiteFromNWS(siteCode) {
 					else if (pedts === "HGIFF" || "HGIFE") {
 						//Also not sure what to do here. The term is not defined by NWS, however is used on the forecasted values.
 						//Looks to be the same as HGIRG, though not totally sure.
-						//HGIFE looks to be a typo. 
+						//HGIFE looks to be a typo.
 						reading.feet = measurement.value
 					}
 					else {console.log("Unknown pedts " + pedts + ". Gauge is " + siteCode)}
 				}
 				else {console.log("Unknown units " + measurement.attributes.units + ". Gauge is " + siteCode)}
-				
+
 				if (reading.cfs === "-999000") {delete reading.cfs}
 			}
 
 			processMeasurement(value.primary)
 			if (value.secondary) {processMeasurement(value.secondary)}
-			if (forecast === true) {reading.forecast = true} //Label forecasted values. 
+			if (forecast === true) {reading.forecast = true} //Label forecasted values.
 			readings.push(reading)
 		})
 	}
@@ -86,7 +87,7 @@ async function loadSiteFromNWS(siteCode) {
 		console.log(siteCode + " has no observed data. ")
 		return;
 	}
-	
+
 	processValues(jsonObj.site.observed.datum)
 	if (jsonObj.site.forecast.datum) {processValues(jsonObj.site.forecast.datum, true)}
 
