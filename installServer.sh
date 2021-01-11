@@ -1,8 +1,8 @@
-read -n 1 -s -r -p "This file is intended to set up a server to host the rivers.run website. It may overwrite stuff without asking. Press any key to continue"
+read -p "This file is intended to set up a server to host the rivers.run website. It may overwrite stuff without asking, although will attempt to avoid destroying existing config. Press enter to continue"
 
 #Get updates
 sudo apt-get update
-sudo apt-get upgrade
+sudo apt-get upgrade -y
 
 #Install git
 sudo apt-get install -y git
