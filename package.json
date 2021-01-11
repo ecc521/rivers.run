@@ -39,9 +39,7 @@
     "gulp-sourcemaps": "^2.6.5",
     "ip2location-nodejs": "^8.3.0",
     "json-shrinker": "^1.0.4",
-    "node-fetch": "^2.6.1",
     "nodemailer": "^6.4.11",
-    "pitboss-ng": "^1.1.0",
     "postcss": "^7.0.32",
     "postcss-css-variables": "^0.13.0",
     "postcss-custom-properties": "^9.1.1",
@@ -55,9 +53,11 @@
     "@babel/runtime": "^7.11.2",
     "@webcomponents/custom-elements": "^1.4.2",
     "babel-loader": "^8.1.0",
+    "bent": "^7.3.12",
     "core-js": "^3.6.5",
     "csv-parser": "^2.3.3",
     "fast-xml-parser": "^3.17.4",
+    "vm2": "^3.9.2",
     "webpack": "^4.44.1"
   }
 }

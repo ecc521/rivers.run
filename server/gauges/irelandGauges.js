@@ -1,8 +1,10 @@
 const path = require("path")
 const fs = require("fs")
 
-const fetch = require("node-fetch")
+const bent = require("bent")
 const csvParser = require("csv-parser")
+
+let getCSV = bent("https://waterlevel.ie/data/day/")
 
 const utils = require(path.join(__dirname, "../", "utils.js"))
 
@@ -11,9 +13,8 @@ let gaugeMetadataPath = path.join(utils.getDataDirectory(), "ireland-geojson.jso
 
 
 async function downloadMetadata() {
-	let request = await fetch("https://waterlevel.ie/geojson/")
-	let response = await request.json()
-	return await fs.promises.writeFile(gaugeMetadataPath, JSON.stringify(response, null, "\t"))
+	let json = await bent("https://waterlevel.ie/geojson/", "string")()
+	return await fs.promises.writeFile(gaugeMetadataPath, json)
 }
 
 async function getMetadata() {
@@ -59,11 +60,15 @@ async function getMetadata() {
 }
 
 
+let metadataPromise;
 async function loadIrelandOPWGauge(gaugeID, sensorCode = 1) {
 	//Load gauges from the Ireland Office of Public Works.
 	//API info at https://waterlevel.ie/page/api/
 
-	let metadata = await getMetadata()
+	if (!metadataPromise) {
+		metadataPromise = getMetadata()
+	}
+	metadata = await metadataPromise
 
 	//sensorCode must be a four digit string. Code 0001 is for flow levels, temperature is 0002.
 	sensorCode = String(sensorCode)
@@ -83,13 +88,11 @@ async function loadIrelandOPWGauge(gaugeID, sensorCode = 1) {
 
 	if (Number(gaugeID) >= 41000 || Number(gaugeID) <= 1) {throw "Only gaugeIDs between 1 and 41000, exclusive, are allowed. "}
 
-	let url = "https://waterlevel.ie/data/day/" + gaugeID + "_" + sensorCode + ".csv"
-
-	let response = await fetch(url)
+	let stream = await getCSV(gaugeID + "_" + sensorCode + ".csv")
 
 	let results = [];
     await new Promise((resolve, reject) => {
-        response.body.pipe(csvParser({
+        stream.pipe(csvParser({
             mapHeaders: function({header, index}) {
                 if (header === "datetime") {return "dateTime"}
 				return header
