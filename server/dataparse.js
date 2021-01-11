@@ -170,7 +170,12 @@ async function loadOverviews() {
 }
 
 
-(async function() {
+
+async function prepareRiverData({
+	includeUSGSGauges = true,
+	includeCanadianGauges = true,
+	includeincludeIrishGauges = false,
+}) {
 
 	await loadOverviews()
 
@@ -273,17 +278,17 @@ async function loadOverviews() {
         console.log("There are " + result.complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
     })
 
-	if (!process.argv.includes("--noUSGSGauges")) {
+	if (includeUSGSGauges) {
 		console.log("Adding USGS gauge sites. Pass --noUSGSGauges to prevent this. ")
 		result.complete = result.complete.concat(await getGaugeSites.getSites())
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
 	else {
-		console.log("Not including USGS gauges since --noUSGSGauges was passed. ")
+		console.log("Not including USGS gauges since --includeUSGSGauges was not passed. ")
 	}
 
-	if (process.argv.includes("--includeCanadianGauges")) {
-		console.log("Adding Canadian gauge sites")
+	if (includeCanadianGauges) {
+		console.log("Adding Canadian gauge sites. Pass --noCanadianGauges to prevent this. ")
 		result.complete = result.complete.concat(await getGaugeSites.getCanadianGaugesInRiverFormat())
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
@@ -291,8 +296,8 @@ async function loadOverviews() {
 		console.log("Not including Canadian gauges since --includeCanadianGauges was not passed. ")
 	}
 
-	if (process.argv.includes("--includeIrishGauges")) {
-		console.log("Adding Irish gauge sites")
+	if (includeincludeIrishGauges) {
+		console.log("Adding Irish gauge sites. Pass --noIrishGauges to prevent this. ")
 		result.complete = result.complete.concat(await getGaugeSites.getIrishGaugesInRiverFormat())
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
@@ -302,4 +307,6 @@ async function loadOverviews() {
 
     await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(result.complete))
 	console.log("riverdata.json generated")
-}())
+}
+
+module.exports = prepareRiverData

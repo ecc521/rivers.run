@@ -28,7 +28,7 @@ async function loadSiteFromNWS(siteCode) {
 	if (!nwsToNamePromise) {
 		nwsToNamePromise = siteDataParser.getConversionsForNWS()
 	}
-	let nwsToName = await nwsToNamePromise.nwsToName
+	let nwsToName = (await nwsToNamePromise).nwsToName
 
 	let readings = []
 

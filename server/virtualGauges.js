@@ -84,6 +84,7 @@ async function getVirtualGauges() {
 			gauges[gaugeIdentifier] = await computeVirtualGauge(src)
 		}
 		catch (e) {
+			console.log(`Virtual Gauge Failed: ${src}`)
 			console.error(e)
 			continue;
 		}
