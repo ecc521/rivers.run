@@ -13,12 +13,6 @@ gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js" && !
 async function computeVirtualGauge(src) {
 	var code = await fs.promises.readFile(src, {encoding: "utf8"});
 
-	const vm = new VM({
-	    timeout: 2000,
-	    sandbox: {}
-	});
-
-
 	let requiredGauges = await computeRequiredGauges(src)
 
 	//Only provide the virtual gauge with the gauges it asked for. Was done for perf and memory, but read only objects with vm2 might fix it.
@@ -29,10 +23,15 @@ async function computeVirtualGauge(src) {
 		providedGauges[gaugeID] = JSON.parse(await fs.promises.readFile(filePath, {encoding:"utf8"}))
 	}
 
-	vm.sandbox.gauges = requiredGauges
+	const vm = new VM({
+	    timeout: 2000,
+	    sandbox: {
+			gauges: providedGauges,
+			console
+		}
+	});
 
 	let res = vm.run(code)
-	console.log(res)
 	return res
 }
 
@@ -41,7 +40,10 @@ async function computeRequiredGauges(src) {
 
 	const vm = new VM({
 	    timeout: 500,
-	    sandbox: {}
+	    sandbox: {
+			gauges: false,
+			console
+		}
 	});
 
 	let res = vm.run(code)
