@@ -1,4 +1,4 @@
-class DataSource() {
+class DataSource {
 	constructor({
 		batchSize = 1, //Max gauges per request.
 		concurrency = 1, //Max outstanding requests.
@@ -12,7 +12,7 @@ class DataSource() {
 		this.add = function(newGaugeIDs) {
 			if (!(newGaugeIDs instanceof Array)) {newGaugeIDs = [newGaugeIDs]} //Allow passing a single gaugeID.
 			gaugeIDCache = gaugeIDCache.concat(newGaugeIDs)
-			this.flush(true) //Only flush full blocks. 
+			this.flush(true) //Only flush full blocks.
 		}
 
 		//Place gauges in gaugeIDCache into batches. Resolve when all existing calls finish.
@@ -53,7 +53,7 @@ class DataSource() {
 			let result;
 			for (let i=0;i<retries;i++) {
 				try {
-					let result = await _processBatch(batch)
+					let result = await this._processBatch(batch)
 					break;
 				}
 				catch (e) {
@@ -69,11 +69,14 @@ class DataSource() {
 		}
 	}
 
+	prefix = ""
+
 	removePrefix(code) {
+		console.log(this.prefix)
 		if (code.startsWith(this.prefix)) {return code.slice(this.prefix.length)}
 	}
 
-	getValidCode(code) {return removePrefix(code)}
+	getValidCode(code) {return this.removePrefix(code)}
 }
 
 module.exports = DataSource
