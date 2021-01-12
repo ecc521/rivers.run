@@ -143,23 +143,22 @@ function reformatGauges(gauges) {
 
 
 let getJSON = bent("json", "https://waterservices.usgs.gov/nwis/iv/")
-async function _loadSitesFromUSGS(siteCodes, timeInPast, timeInFuture) {
+async function _loadSitesFromUSGS(siteCodes, timeInPast) {
 	//USGS does not appear to send flow predictions at the moment.
 
-	let startDT = "&startDT=" + new Date(Date.now() - timeInPast).toISOString()
-	let endDT = "&endDT=" + new Date(Date.now() + timeInFuture).toISOString() //endDT is optional. Will default to current time. USGS gauge prediction may be used if date in the future.
+    let period = "&period=" + Math.round(timeInPast / (1000*60*60)) + "H"
 
-	let usgsData = await getJSON("?format=json&sites=" + siteCodes.join(",") +  startDT  + endDT + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all")
+	let usgsData = await getJSON("?format=json&sites=" + siteCodes.join(",") + period + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all")
 
     //TODO: We should be able to consolidate these functions.
 	return reformatGauges(reformatUSGS(parseUSGS(usgsData)))
 }
 
-async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24, timeInFuture = 0) {
+async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24) {
     siteCodes = [...new Set(siteCodes)]; //Remove duplicate IDs
     let output = {}
 
-    //Batch calls. I believe that USGS has a url length limit of 4096 characters, but they clearly have one (7000 cha/racters failed).
+    //Batch calls. I believe that USGS has a url length limit of 4096 characters, but they clearly have one (7000 characters failed).
 	//Use ~150 rivers/call. When using 400, performance was almost 4 times worse than 100-200 rivers/call.
 
     let start = 0
@@ -172,7 +171,7 @@ async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24, timeInFu
         //Try up to 5 times.
     	for (let i=0;i<5;i++) {
     		try {
-                let newSites = await _loadSitesFromUSGS(siteCodes, timeInPast, timeInFuture)
+                let newSites = await _loadSitesFromUSGS(siteCodes, timeInPast)
                 Object.assign(output, newSites)
                 break;
     		}

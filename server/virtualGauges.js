@@ -10,7 +10,7 @@ const virtualGaugesPath = path.join(utils.getSiteRoot(), "../", "rivers.run-virt
 let gaugeFiles = utils.getFilesInDirectory(virtualGaugesPath)
 gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js" && !path.dirname(src).includes("utils")})
 
-async function computeVirtualGauge(src) {
+async function computeVirtualGauge(src, readings) {
 	var code = await fs.promises.readFile(src, {encoding: "utf8"});
 
 	let requiredGauges = await computeRequiredGauges(src)
@@ -19,8 +19,7 @@ async function computeVirtualGauge(src) {
 	let providedGauges = {}
 	for (let i=0;i<requiredGauges.length;i++) {
 		let gaugeID =  requiredGauges[i]
-		let filePath = path.join(utils.getSiteRoot(), "gaugeReadings", gaugeID)
-		providedGauges[gaugeID] = JSON.parse(await fs.promises.readFile(filePath, {encoding:"utf8"}))
+		providedGauges[gaugeID] = readings[gaugeID]
 	}
 
 	const vm = new VM({
@@ -71,7 +70,7 @@ async function getRequiredGauges() {
 	return required
 }
 
-async function getVirtualGauges() {
+async function getVirtualGauges(readings) {
 	let gauges = {}
 	for (let i=0;i<gaugeFiles.length;i++) {
 		let src = gaugeFiles[i]
@@ -81,7 +80,7 @@ async function getVirtualGauges() {
 		if (gauges[gaugeIdentifier]) {console.error("Naming conflict for " + gaugeIdentifier); continue;}
 
 		try {
-			gauges[gaugeIdentifier] = await computeVirtualGauge(src)
+			gauges[gaugeIdentifier] = await computeVirtualGauge(src, readings)
 		}
 		catch (e) {
 			console.log(`Virtual Gauge Failed: ${src}`)
