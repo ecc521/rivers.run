@@ -143,7 +143,7 @@ function reformatGauges(gauges) {
 
 
 let getJSON = bent("json", "https://waterservices.usgs.gov/nwis/iv/")
-async function _loadSitesFromUSGS(siteCodes, timeInPast) {
+async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24) {
 	//USGS does not appear to send flow predictions at the moment.
 
     let period = "&period=" + Math.round(timeInPast / (1000*60*60)) + "H"
@@ -151,50 +151,17 @@ async function _loadSitesFromUSGS(siteCodes, timeInPast) {
 	let usgsData = await getJSON("?format=json&sites=" + siteCodes.join(",") + period + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all")
 
     //TODO: We should be able to consolidate these functions.
-	return reformatGauges(reformatUSGS(parseUSGS(usgsData)))
-}
+	let sites = reformatGauges(reformatUSGS(parseUSGS(usgsData)))
 
-async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24) {
-    siteCodes = [...new Set(siteCodes)]; //Remove duplicate IDs
-    let output = {}
-
-    //Batch calls. I believe that USGS has a url length limit of 4096 characters, but they clearly have one (7000 characters failed).
-	//Use ~150 rivers/call. When using 400, performance was almost 4 times worse than 100-200 rivers/call.
-
-    let start = 0
-    let sitesPerBatch = 150
-    while (start < siteCodes.length) {
-        let end = start + sitesPerBatch
-        let arr = siteCodes.slice(start,end)
-        console.log("Loading sites " + start + " through " + Math.min(end, siteCodes.length) + " of batch of " + siteCodes.length + " gauges.")
-
-        //Try up to 5 times.
-    	for (let i=0;i<5;i++) {
-    		try {
-                let newSites = await _loadSitesFromUSGS(siteCodes, timeInPast)
-                Object.assign(output, newSites)
-                break;
-    		}
-    		catch(e) {
-    			console.error(e)
-    			await new Promise((resolve, reject) => {setTimeout(resolve, 2000)}) //2 second delay before retrying.
-    		}
-    	}
-
-        start = end
-    }
-
-    for (let siteCode in output) {
-        output[siteCode].source = {
+    for (let siteCode in sites) {
+        sites[siteCode].source = {
             link: "https://waterdata.usgs.gov/nwis/uv?site_no=" + siteCode,
             text: "View this gauge on USGS"
         }
     }
 
-    return output
+    return sites
 }
-
-//TODO: Add a function to load a single site.
 
 
 module.exports = {

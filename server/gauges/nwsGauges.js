@@ -11,9 +11,8 @@ const siteDataParser = require(path.join(__dirname, "../", "siteDataParser.js"))
 
 let nwsToNamePromise;
 async function loadSiteFromNWS(siteCode) {
-	//NWS does not compress their data, so these requests are absurdly large (XML is ~120KB, HTML (output=tabular) is ~50KB)
-	//NWS offers flow predictions though, so can be a very useful tool.
-	//TODO: See if there is a way to request less data, or to get it compressed.
+	//NWS enabled GZIP after I repeatedly informed them of the issue, so we might be able to take advantage of their predictions a bit more.
+	//That said, they still run ~5KB per gauge, and parsing ~100KB of XML is painfully slow. 
 
 	let siteData = await getXML("hydrograph_to_xml.php?gage=" + siteCode + "&output=xml")
 

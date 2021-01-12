@@ -11,7 +11,7 @@ const compressor = require(path.join(__dirname, "precompress.js"))
 
 const {loadSiteFromNWS} = require(path.join(__dirname, "gauges", "nwsGauges.js"))
 const {loadSitesFromUSGS} = require(path.join(__dirname, "gauges", "usgsGauges.js"))
-const {loadCanadianGauges, loadCanadianGauge} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
+const {loadCanadianGauge} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
 const {loadIrelandOPWGauge} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
 
 let virtualGauges;
@@ -25,76 +25,8 @@ catch(e) {
 }
 
 
-class DataSource() {
-	constructor({
-		batchSize = 1, //Max gauges per request.
-		concurrency = 1, //Max outstanding requests.
-		batchCallback = function() {}, //Called with every batch that comes in successfully
-		retries = 5, //Number of attempt to make to load each batch.
-		//TODO: Do we add delay on retries?
-	}) {
-		let gaugeIDCache = []
-		let requestCache = []
 
-		this.add = function(newGaugeIDs) {
-			if (!(newGaugeIDs instanceof Array)) {newGaugeIDs = [newGaugeIDs]} //Allow passing a single gaugeID.
-			gaugeIDCache = gaugeIDCache.concat(newGaugeIDs)
-			this.flush(false)
-		}
-
-		//Place gauges in gaugeIDCache into batches. Resolve when all existing calls finish.
-		this.flush = function(onlyFull = false) {
-			let offset = 0
-			let slice = []
-
-			while (offset < gaugeIDCache.length) {
-				let slice = gaugeIDCache.slice(offset, offset+batchSize)
-				if (onlyFull && slice.length !== batchSize) {
-					break;
-				}
-
-				//Process slice.
-				requestCache.push(this.processBatch(slice, batchCallback))
-
-				slice = []
-				offset += batchSize
-			}
-
-			gaugeIDCache = slice
-			return Promise.allSettled(requestCache)
-		}
-
-
-		let outstanding = 0;
-		let queue = []
-
-		this.processBatch = async function(batch, callback) {
-			if (outstanding >= concurrency) {
-				//We need to wait.
-				await new Promise((resolve, reject) => {
-					queue.push(resolve)
-				})
-			}
-			concurrency++
-
-			let result;
-			for (let i=0;i<retries;i++) {
-				try {
-					let result = await _processBatch(batch)
-					break;
-				}
-				catch (e) {
-					console.error(e)
-				}
-			}
-			concurrency--
-			if (queue.length > 0) {
-				queue.pop()()
-			}
-			callback(result)
-		}
-	}
-}
+const DataSource = require(path.join(__dirname, "DataSource.js"))
 
 class USGS extends DataSource {
 	constructor(obj = {}) {
@@ -105,16 +37,19 @@ class USGS extends DataSource {
 		super(config)
 	}
 
-	isValidCode(code) {
-		return code.length > 7 && code.length < 16 && !isNaN(Number(code))
+	static prefix = "USGS:"
+
+	getValidCode(code) {
+		code = removePrefix(code)
+		if (!code) {return} //Correct prefix did not exist
+		if (code.length > 7 && code.length < 16 && !isNaN(Number(code))) {return code}
 	}
 
 	_processBatch(batch) {
-		return loadSitesFromUSGS(arr)
+		return loadSitesFromUSGS(batch)
 	}
 }
 
-//NWS enabled GZIP after I repeatedly informed them of the issue, so we might be able to increase our usage if we can get a good parsing setup.
 class NWS extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
@@ -124,9 +59,14 @@ class NWS extends DataSource {
 		super(config)
 	}
 
-	isValidCode(code) {
+	static prefix = "NWS:"
+
+	getValidCode(code) {
+		code = removePrefix(code)
+		if (!code) {return} //Correct prefix did not exist
 		//Appears to be 3-4 characters then number. Always 5 characters.
-		return resCode.length === 5 && (!isNaN(resCode[4])) && isNaN(resCode)
+		//Although NWS codes are case insensitive, JavaScript is not, so we should standardize NWS on upperCase.
+		if (resCode.length === 5 && (!isNaN(resCode[4])) && isNaN(resCode)) {return code.toUpperCase()}
 	}
 	_processBatch(batch) {
 		return loadSiteFromNWS(batch[0])
@@ -143,10 +83,10 @@ class MSC extends DataSource {
 		super(config)
 	}
 
-	isValidCode(code) {return true}
+	static prefix = "canada:"
 
 	_processBatch(batch) {
-		return loadCanadianGauge(batch[0])
+		return loadIrelandOPWGauge(batch[0])
 	}
 }
 
@@ -155,29 +95,46 @@ class OPW extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 20,
+			concurrency: 10,
 		}, obj)
 		super(config)
 	}
 
-	isValidCode(code) {return true}
+	static prefix = "ireland:"
 
 	_processBatch(batch) {
 		return loadCanadianGauge(batch[0])
 	}
 }
 
-class DataLoader {
-	constructor(gauges, callback) {
-		//Callback is called with every gauge that is computed.
-		//There, they can be compressed, stored, etc.
+function loadData(gauges, batchCallback) {
+	//batchCallback is called with every gauge that is computed.
+	//There, they can be compressed, stored, etc.
 
-	}
+	//Filter out duplicate site names.
+	gauges = [...new Set(gauges)];
 
-	deduplicate(siteCodes) {
-		//Filter out duplicate site names.
-		return [...new Set(siteCodes)];
-	}
+	let datasources = [
+		new USGS({batchCallback}),
+		new NWS({batchCallback})
+		new MSC({batchCallback})
+		new OPW({batchCallback})
+	]
+
+	gauges.forEach((gaugeID) => {
+		for (let i=0;i<datasources.length;i++) {
+			let datasource = datasources[i]
+			let code = datasource.getValidCode(gaugeID)
+			if (code) {
+				datasource.add(gaugeID)
+				break;
+			}
+		}
+	})
+
+	let promises = []
+	datasources.forEach((datasource) => {promises.push(datasource.flush())})
+	return Promise.all(promises)
 }
 
 

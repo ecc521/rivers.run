@@ -16,7 +16,7 @@ async function loadCanadianGauge(gaugeID) {
 		canadianGaugesPromise = siteDataParser.getCanadianGauges()
 	}
 	canadianGauges = await canadianGaugesPromise
-	
+
 	let gaugeInfo = canadianGauges[gaugeID]
 	let province = gaugeInfo.province
 	//Using daily instead of hourly gives a longer duration of data.
@@ -74,41 +74,6 @@ async function loadCanadianGauge(gaugeID) {
 }
 
 
-async function loadCanadianGauges(gaugeIDs, maxParalell = 10) {
-	gaugeIDs = [...new Set(gaugeIDs)]; //Remove duplicate IDs
-
-	let output = {}
-	let running = 0
-	let counter = 0
-
-	//TODO: Handle case where a gauge errors while loading.
-	return await new Promise((resolve, reject) => {
-		async function loadGauge(id) {
-			running++
-			for (let i=0;i<5;i++) {
-				try {
-					output[id] = await loadCanadianGauge(id)
-					break;
-				}
-				catch(e) {
-					console.error(e)
-				}
-			}
-			running--
-			if (counter < gaugeIDs.length - 1) {
-				loadGauge(gaugeIDs[++counter])
-			}
-			else if (running === 0){resolve(output)}
-		}
-
-		for (;counter<Math.min(maxParalell, gaugeIDs.length);counter++) {
-			loadGauge(gaugeIDs[counter])
-		}
-	})
-}
-
-
 module.exports = {
 	loadCanadianGauge,
-	loadCanadianGauges
 }

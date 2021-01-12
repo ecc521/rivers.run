@@ -126,7 +126,7 @@ async function loadIrelandOPWGauge(gaugeID, sensorCode = 1) {
 		//TODO: Add site name.
 		source: {
 			text: "View this data from Ireland's Office of Public Works",
-			link: "https://waterlevel.ie/00000" + gaugeID+ "/"
+			link: "https://waterlevel.ie/00000" + gaugeID + "/"
 		}
 	}
 
@@ -137,44 +137,7 @@ async function loadIrelandOPWGauge(gaugeID, sensorCode = 1) {
 	return output
 }
 
-
-
-async function loadIrelandOPWGauges(gaugeIDs, maxParalell = 10) {
-	gaugeIDs = [...new Set(gaugeIDs)]; //Remove duplicate IDs
-
-
-	let output = {}
-	let running = 0
-	let counter = 0
-
-	//TODO: Handle case where a gauge errors while loading.
-	return await new Promise((resolve, reject) => {
-		async function loadGauge(id) {
-			running++
-			for (let i=0;i<5;i++) {
-				try {
-					output[id] = await loadIrelandOPWGauge(id)
-					break;
-				}
-				catch(e) {
-					console.error(e)
-				}
-			}
-			running--
-			if (counter < gaugeIDs.length - 1) {
-				loadGauge(gaugeIDs[++counter])
-			}
-			else if (running === 0){resolve(output)}
-		}
-
-		for (;counter<Math.min(maxParalell, gaugeIDs.length);counter++) {
-			loadGauge(gaugeIDs[counter])
-		}
-	})
-}
-
 module.exports = {
 	loadIrelandOPWGauge,
-	loadIrelandOPWGauges,
 	getMetadata
 }
