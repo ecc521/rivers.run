@@ -38,7 +38,7 @@ async function load(url, attempts = 0) {
 		}
 		else {
 			console.log("Failed to load " + url)
-			console.error(request)
+			console.error(e)
 			throw "Failed to request " + url
 		}
 	}
@@ -174,7 +174,7 @@ async function loadOverviews() {
 async function prepareRiverData({
 	includeUSGSGauges = true,
 	includeCanadianGauges = true,
-	includeincludeIrishGauges = false,
+	includeIrishGauges = false,
 }) {
 
 	await loadOverviews()
@@ -296,7 +296,7 @@ async function prepareRiverData({
 		console.log("Not including Canadian gauges since --includeCanadianGauges was not passed. ")
 	}
 
-	if (includeincludeIrishGauges) {
+	if (includeIrishGauges) {
 		console.log("Adding Irish gauge sites. Pass --noIrishGauges to prevent this. ")
 		result.complete = result.complete.concat(await getGaugeSites.getIrishGaugesInRiverFormat())
 		console.log("There are now " + result.complete.length + " rivers.")

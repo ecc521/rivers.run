@@ -150,7 +150,7 @@ function obtainDataFromSources(gauges, batchCallback) {
 	let datasources = [
 		new USGS({batchCallback}),
 		new NWS({batchCallback}),
-		new MSC({batchCallback}),
+		new MSC({batchCallback, timeout: 15000}),
 		new OPW({batchCallback})
 	]
 
@@ -168,6 +168,11 @@ function obtainDataFromSources(gauges, batchCallback) {
 
 	let promises = []
 	datasources.forEach((datasource) => {promises.push(datasource.flush())})
+	promises[0].finally(() => {console.log("USGS Done!")})
+	promises[1].finally(() => {console.log("NWS Done!")})
+	promises[2].finally(() => {console.log("MSC Done!")})
+	promises[3].finally(() => {console.log("OPW Done!")})
+
 	return Promise.all(promises)
 }
 
@@ -184,14 +189,19 @@ async function loadData(siteCodes) {
 
 	let writes = [] //TODO: Do we need to cap the maximum number of paralell writes?
 
+	let totalLoaded = 0
 	await obtainDataFromSources(siteCodes, function(data, gaugeID) {
 		let filePath = path.join(readingsFile, gaugeID)
 		writes.push(fs.promises.writeFile(filePath, jsonShrinker.stringify(data)))
 		let shrunkenData = gaugeTrimmer.shrinkGauge(data)
 		gauges[gaugeID] = data
+		totalLoaded++
+		if (totalLoaded % 512 === 0) {console.log("Loaded " + totalLoaded + " gauges. ")}
 	})
 
+	console.log("Waiting on Writes")
 	await Promise.allSettled(writes)
+	console.log("Loaded " + totalLoaded + " gauges. ")
 
 	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
 	if (virtualGauges) {

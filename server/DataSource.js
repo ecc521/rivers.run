@@ -5,6 +5,7 @@ class DataSource {
 		batchCallback = function() {}, //Called with every batch that comes in successfully
 		retries = 5, //Number of attempt to make to load each batch.
 		retryDelay = 2000, //Delay between retries in milliseconds.
+		timeout = 36000 //Timeout in milliseconds.
 	}) {
 
 		let gaugeIDCache = []
@@ -54,19 +55,28 @@ class DataSource {
 			let result;
 			for (let i=0;i<retries;i++) {
 				try {
-					result = await this._processBatch(batch)
+					result = await new Promise((resolve, reject) => {
+						this._processBatch(batch).then(resolve, reject)
+						setTimeout(function() {
+							reject("Timeout Exceeded")
+						}, timeout)
+					})
 					break;
 				}
 				catch (e) {
-					console.error("Error on the following batch: ")
-					console.error(batch)
-					console.trace(e)
+					//We are going to suppress logging somewhat, as errors (timeout, connection reset) are very common on the Canadian gauges,
+					//however it usually works just fine on retry.
+
 					if (i + 1 === retries) {
+						console.error("Error on the following batch: ")
+						console.error(batch)
+						console.trace(e)
 						console.error("Loading Failed. Already tried" + retries + "times. ")
 					}
 					else {
-						console.error("Loading Failed. Retrying. ")
-						await new Promise((resolve, reject) => {setTimeout(resolve, retryDelay)})
+						await new Promise((resolve, reject) => {
+							setTimeout(resolve, retryDelay*(i+1))
+						})
 					}
 				}
 			}

@@ -11,6 +11,11 @@ const child_process = require("child_process")
 const jsonShrinker = require("json-shrinker")
 const prepareRiverData = require(path.join(__dirname, "dataparse.js"))
 
+process.on('uncaughtException', function(e) {
+	console.log("Uncaught Exception: ")
+	console.trace(e)
+})
+
 async function updateRiverData() {
 	//Use undefined so defaults still work.
 	//TODO: This code could be a bit more consise and extensible. Very repetitive. Should also warn if a includeGauge also has noGauge.
