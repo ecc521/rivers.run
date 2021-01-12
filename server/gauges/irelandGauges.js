@@ -76,18 +76,6 @@ async function loadIrelandOPWGauge(gaugeID, sensorCode = 1) {
 
 	if (sensorCode !== "0001") {throw "Sensor codes other than code 1 are not supported. "}
 
-
-	//gaugeID must be a five character string. Usually all digits.
-
-	//Only gaugeIDs between 00001 and 41000 are reccomended for re-publication, and it appears to be exclusive. (https://waterlevel.ie/faq/)
-	if (isNaN(gaugeID)) {
-		throw "Gauge ID should be a 5 character code, and only values between 1 and 41000, exclusive, will be allowed."
-	}
-	gaugeID = String(gaugeID)
-	gaugeID = ("0".repeat(5 - gaugeID.length)) + gaugeID
-
-	if (Number(gaugeID) >= 41000 || Number(gaugeID) <= 1) {throw "Only gaugeIDs between 1 and 41000, exclusive, are allowed. "}
-
 	let stream = await getCSV(gaugeID + "_" + sensorCode + ".csv")
 
 	let results = [];
@@ -139,5 +127,18 @@ async function loadIrelandOPWGauge(gaugeID, sensorCode = 1) {
 
 module.exports = {
 	loadIrelandOPWGauge,
-	getMetadata
+	getMetadata,
+	isValidOPWCode: function(gaugeID) {
+		//gaugeID must be a five character string. Usually all digits.
+
+		//Only gaugeIDs between 00001 and 41000 are reccomended for re-publication, and it appears to be exclusive. (https://waterlevel.ie/faq/)
+		if (isNaN(gaugeID)) {
+			return false
+		}
+		gaugeID = String(gaugeID)
+		gaugeID = ("0".repeat(5 - gaugeID.length)) + gaugeID
+
+		if (Number(gaugeID) >= 41000 || Number(gaugeID) <= 1) {return false}
+		return true
+	}
 }

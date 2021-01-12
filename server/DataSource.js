@@ -4,8 +4,9 @@ class DataSource {
 		concurrency = 1, //Max outstanding requests.
 		batchCallback = function() {}, //Called with every batch that comes in successfully
 		retries = 5, //Number of attempt to make to load each batch.
-		retryDelay = 2000 //Delay between retries in milliseconds.
+		retryDelay = 2000, //Delay between retries in milliseconds.
 	}) {
+
 		let gaugeIDCache = []
 		let requestCache = []
 
@@ -21,7 +22,7 @@ class DataSource {
 			let slice = []
 
 			while (offset < gaugeIDCache.length) {
-				let slice = gaugeIDCache.slice(offset, offset+batchSize)
+				slice = gaugeIDCache.slice(offset, offset+batchSize)
 				if (onlyFull && slice.length !== batchSize) {
 					break;
 				}
@@ -53,27 +54,49 @@ class DataSource {
 			let result;
 			for (let i=0;i<retries;i++) {
 				try {
-					let result = await this._processBatch(batch)
+					result = await this._processBatch(batch)
 					break;
 				}
 				catch (e) {
-					console.error(e)
-					await new Promise((resolve, reject) => {setTimeout(resolve, retryDelay)})
+					console.error("Error on the following batch: ")
+					console.error(batch)
+					console.trace(e)
+					if (i + 1 === retries) {
+						console.error("Loading Failed. Already tried" + retries + "times. ")
+					}
+					else {
+						console.error("Loading Failed. Retrying. ")
+						await new Promise((resolve, reject) => {setTimeout(resolve, retryDelay)})
+					}
 				}
 			}
 			concurrency--
 			if (queue.length > 0) {
 				queue.pop()()
 			}
-			callback(result)
+
+			if (batch.some((gaugeID) => {
+				return result?.[gaugeID]
+			})) {
+				//This must be an object of gauges, as at least one gaugeID existed in the object.
+				for (let gaugeID in result) {
+					try {
+						callback(result[gaugeID], this.prefix + gaugeID)
+					}
+					catch (e) {console.error(e)}
+				}
+			}
+			else if (result) {
+				//Assume this is an individual gauge.
+				callback(result, this.prefix + batch[0])
+			}
 		}
 	}
 
-	prefix = ""
-
 	removePrefix(code) {
-		console.log(this.prefix)
-		if (code.startsWith(this.prefix)) {return code.slice(this.prefix.length)}
+		if (code.startsWith(this.prefix)) {
+			return code.slice(this.prefix.length)
+		}
 	}
 
 	getValidCode(code) {return this.removePrefix(code)}

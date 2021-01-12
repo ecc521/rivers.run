@@ -12,7 +12,7 @@ const compressor = require(path.join(__dirname, "precompress.js"))
 const {loadSiteFromNWS} = require(path.join(__dirname, "gauges", "nwsGauges.js"))
 const {loadSitesFromUSGS} = require(path.join(__dirname, "gauges", "usgsGauges.js"))
 const {loadCanadianGauge} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
-const {loadIrelandOPWGauge} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
+const {loadIrelandOPWGauge, isValidOPWCode} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
 
 let virtualGauges;
 
@@ -27,20 +27,28 @@ catch(e) {
 let readingsFile = path.join(utils.getSiteRoot(), "gaugeReadings")
 if (!fs.existsSync(readingsFile)) {fs.mkdirSync(readingsFile, {recursive: true})}
 
-async function writeBatchToDisk(newGauges) {
-	//This should be done in paralell - however be careful not to run too much stuff at once...
-	//Some systems REALLY don't like that (and kernel freezes at 100% CPU, 100% Disk Read).
-	console.time("Write Files to Disk")
-	for (let code in newGauges) {
-		let filePath = path.join(readingsFile, code)
-		await fs.promises.writeFile(filePath, jsonShrinker.stringify(newGauges[code]))
-		//Don't bother compressing. Streaming Gzip or Brotli will do just fine for these files,
-		//given how they will be tiny and infrequently accessed.
-		//It would be nice if we could write less to the disk - perhaps store these partially or fully in memory?
-		//We could also consider not offering an uncompressed version.
-		//await compressor.compressFile(filePath, 3, {alwaysCompress: true})
-	}
-	console.timeEnd("Write Files to Disk")
+
+const os = require("os")
+const child_process = require("child_process")
+//Store gaugeReadings in memory, just to reduce disk writes.
+//We may want to store these before a reboot (tar.gz, etc), then restore them after, which would eliminate the downside of storing them in memory.
+//As of now, we'll simply detect the system.
+
+if (os.platform() === "darwin" && fs.statSync(__dirname).dev === fs.statSync(readingsFile).dev) {
+	console.log("Initializing RAM Disk for gaugeReadings")
+
+	let diskName = child_process.execSync("hdiutil attach -nomount ram://$((2 * 1024 * 2048))").toString().trim()
+
+	//mountName is irrelevant, as long as it doesn't conflict, I believe.
+	let mountName = "RiversRunTempDiskCanDelete"
+	child_process.execSync(`diskutil eraseVolume HFS+ ${mountName} ${diskName}`)
+
+	child_process.execSync(`umount ${diskName}`)
+
+	child_process.execSync(`diskutil mount -mountPoint ${readingsFile} ${diskName}`)
+}
+else if (os.platform() === "linux") {
+	//TODO: Symlink to /dev/shm. Or mount a tempfs/ramfs.
 }
 
 const DataSource = require(path.join(__dirname, "DataSource.js"))
@@ -48,8 +56,8 @@ const DataSource = require(path.join(__dirname, "DataSource.js"))
 class USGS extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
-			batchSize: 200,
-			concurrency: 2,
+			batchSize: 150,
+			concurrency: 1,
 		}, obj)
 		super(config)
 	}
@@ -71,7 +79,7 @@ class NWS extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 10,
+			concurrency: 5,
 		}, obj)
 		super(config)
 	}
@@ -87,6 +95,7 @@ class NWS extends DataSource {
 	}
 
 	_processBatch(batch) {
+		console.log("Loading NWS Batch")
 		return loadSiteFromNWS(batch[0])
 	}
 }
@@ -96,7 +105,7 @@ class MSC extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 20,
+			concurrency: 5,
 		}, obj)
 		super(config)
 	}
@@ -104,7 +113,7 @@ class MSC extends DataSource {
 	prefix = "canada:"
 
 	_processBatch(batch) {
-		return loadIrelandOPWGauge(batch[0])
+		return loadCanadianGauge(batch[0])
 	}
 }
 
@@ -113,15 +122,21 @@ class OPW extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 10,
+			concurrency: 5,
 		}, obj)
 		super(config)
 	}
 
 	prefix = "ireland:"
 
+	getValidCode(code) {
+		code = this.removePrefix(code)
+		if (!code) {return} //Correct prefix did not exist
+		if (isValidOPWCode(code)) {return code}
+	}
+
 	_processBatch(batch) {
-		return loadCanadianGauge(batch[0])
+		return loadIrelandOPWGauge(batch[0])
 	}
 }
 
@@ -144,7 +159,7 @@ function obtainDataFromSources(gauges, batchCallback) {
 			let datasource = datasources[i]
 			let code = datasource.getValidCode(gaugeID)
 			if (code) {
-				datasource.add(gaugeID)
+				datasource.add(code)
 				break;
 			}
 			if (i === datasources.length - 1) {console.warn("No match for " + gaugeID)}
@@ -156,32 +171,30 @@ function obtainDataFromSources(gauges, batchCallback) {
 	return Promise.all(promises)
 }
 
-
-
-
-
 async function loadData(siteCodes) {
 	let gauges = {}
 
-	/*if (virtualGauges) {
+	if (virtualGauges) {
 		try {
-			siteCodes = siteCodes.concat(await virtualGauges.getRequiredGauges())
+			let requiredGauges = await virtualGauges.getRequiredGauges()
+			siteCodes = siteCodes.concat(requiredGauges)
 		}
 		catch (e) {console.error(e)}
-	}*/
+	}
 
-	console.log(siteCodes)
-	await obtainDataFromSources(siteCodes, function(data) {
-		console.log(data)
-		let newGauges = gaugeTrimmer.shrinkGauges(newGauges) //Shrink newGauges.
-		Object.assign(gauges, newGauges)
+	let writes = [] //TODO: Do we need to cap the maximum number of paralell writes?
+
+	await obtainDataFromSources(siteCodes, function(data, gaugeID) {
+		let filePath = path.join(readingsFile, gaugeID)
+		writes.push(fs.promises.writeFile(filePath, jsonShrinker.stringify(data)))
+		let shrunkenData = gaugeTrimmer.shrinkGauge(data)
+		gauges[gaugeID] = data
 	})
 
-	console.log(gauges)
-
+	await Promise.allSettled(writes)
 
 	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
-	/*if (virtualGauges) {
+	if (virtualGauges) {
 		console.log("Computing virtual gauges...")
 		try {
 			let newGauges = await virtualGauges.getVirtualGauges(gauges)
@@ -190,7 +203,7 @@ async function loadData(siteCodes) {
 		}
 		catch (e) {console.log(e)}
 		console.log("Virtual gauges computed...")
-	}*/
+	}
 
 	gauges.generatedAt = Date.now()
 	return gauges

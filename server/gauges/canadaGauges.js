@@ -8,9 +8,13 @@ const siteDataParser = require(path.join(__dirname, "../", "siteDataParser.js"))
 
 let canadianGaugesPromise;
 
+let blacklist = {} //Will be cleared on reboots, so shouldn't be too problematic.
+
 //TODO: Instead of loading all gauges individually, load the file containing data for each region.
 async function loadCanadianGauge(gaugeID) {
 	//https://dd.weather.gc.ca/hydrometric/csv/
+
+	if (blacklist[gaugeID]) {return false}
 
 	if (!canadianGaugesPromise) {
 		canadianGaugesPromise = siteDataParser.getCanadianGauges()
@@ -21,7 +25,18 @@ async function loadCanadianGauge(gaugeID) {
 	let province = gaugeInfo.province
 	//Using daily instead of hourly gives a longer duration of data.
 	let url = `https://dd.weather.gc.ca/hydrometric/csv/${province}/hourly/${province}_${gaugeID}_hourly_hydrometric.csv`
-	let stream = await (bent(url)())
+	let stream;
+	try {
+		stream = await (bent(url)())
+	}
+	catch (e) {
+		if (e.statusCode === 404) {
+			blacklist[gaugeID] = true
+			//Gauge must be seasonal, and down at the moment.
+			return false
+		}
+		throw e
+	}
 
 	let results = [];
     await new Promise((resolve, reject) => {
@@ -66,7 +81,7 @@ async function loadCanadianGauge(gaugeID) {
 		units: "m",
 		source: {
 			text: "View this data on the Meteorological Service of Canada",
-			link: url //TODO: Try to find a better source url.
+			link: `https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=` + gaugeID
 		}
 	}
 

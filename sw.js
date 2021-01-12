@@ -71,7 +71,7 @@ self.addEventListener("install", function() {
 //When set to 0, cached data will be returned immediately, and cache will be updated in background.
 const defaultWaitPeriod = 0
 
-
+//TODO: Default to network, fallback to cache with Google Maps. Google Maps is throwing errors sometimes for unknown reasons. 
 function fetchHandler(event) {
     event.respondWith((async function(){
 		let waitperiod = defaultWaitPeriod
@@ -103,7 +103,7 @@ function fetchHandler(event) {
             || url.includes("ih3.googleusercontent.com")
             || url.includes("tile.openstreetmap.org") //Mapping code - Cached seperately
             || url.includes("mesonet1.agron.iastate.edu") //Weather maps - not cached.
-            || url.includes("ggpht.com") //I believe this is street view. Don't cache. 
+            || url.includes("ggpht.com") //I believe this is street view. Don't cache.
         ) {
 
             returnNetwork = true
