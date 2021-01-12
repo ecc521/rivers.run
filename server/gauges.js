@@ -24,7 +24,24 @@ catch(e) {
 	fs.appendFileSync(path.join(utils.getLogDirectory(), "virtualGaugeError.log"), e.toString() + "\n")
 }
 
+let readingsFile = path.join(utils.getSiteRoot(), "gaugeReadings")
+if (!fs.existsSync(readingsFile)) {fs.mkdirSync(readingsFile, {recursive: true})}
 
+async function writeBatchToDisk(newGauges) {
+	//This should be done in paralell - however be careful not to run too much stuff at once...
+	//Some systems REALLY don't like that (and kernel freezes at 100% CPU, 100% Disk Read).
+	console.time("Write Files to Disk")
+	for (let code in newGauges) {
+		let filePath = path.join(readingsFile, code)
+		await fs.promises.writeFile(filePath, jsonShrinker.stringify(newGauges[code]))
+		//Don't bother compressing. Streaming Gzip or Brotli will do just fine for these files,
+		//given how they will be tiny and infrequently accessed.
+		//It would be nice if we could write less to the disk - perhaps store these partially or fully in memory?
+		//We could also consider not offering an uncompressed version.
+		//await compressor.compressFile(filePath, 3, {alwaysCompress: true})
+	}
+	console.timeEnd("Write Files to Disk")
+}
 
 const DataSource = require(path.join(__dirname, "DataSource.js"))
 
@@ -37,10 +54,10 @@ class USGS extends DataSource {
 		super(config)
 	}
 
-	static prefix = "USGS:"
+	prefix = "USGS:"
 
 	getValidCode(code) {
-		code = removePrefix(code)
+		code = this.removePrefix(code)
 		if (!code) {return} //Correct prefix did not exist
 		if (code.length > 7 && code.length < 16 && !isNaN(Number(code))) {return code}
 	}
@@ -59,15 +76,16 @@ class NWS extends DataSource {
 		super(config)
 	}
 
-	static prefix = "NWS:"
+	prefix = "NWS:"
 
 	getValidCode(code) {
-		code = removePrefix(code)
+		code = this.removePrefix(code)
 		if (!code) {return} //Correct prefix did not exist
 		//Appears to be 3-4 characters then number. Always 5 characters.
 		//Although NWS codes are case insensitive, JavaScript is not, so we should standardize NWS on upperCase.
-		if (resCode.length === 5 && (!isNaN(resCode[4])) && isNaN(resCode)) {return code.toUpperCase()}
+		if (code.length === 5 && (!isNaN(code[4])) && isNaN(code)) {return code.toUpperCase()}
 	}
+
 	_processBatch(batch) {
 		return loadSiteFromNWS(batch[0])
 	}
@@ -83,7 +101,7 @@ class MSC extends DataSource {
 		super(config)
 	}
 
-	static prefix = "canada:"
+	prefix = "canada:"
 
 	_processBatch(batch) {
 		return loadIrelandOPWGauge(batch[0])
@@ -100,14 +118,14 @@ class OPW extends DataSource {
 		super(config)
 	}
 
-	static prefix = "ireland:"
+	prefix = "ireland:"
 
 	_processBatch(batch) {
 		return loadCanadianGauge(batch[0])
 	}
 }
 
-function loadData(gauges, batchCallback) {
+function obtainDataFromSources(gauges, batchCallback) {
 	//batchCallback is called with every gauge that is computed.
 	//There, they can be compressed, stored, etc.
 
@@ -116,8 +134,8 @@ function loadData(gauges, batchCallback) {
 
 	let datasources = [
 		new USGS({batchCallback}),
-		new NWS({batchCallback})
-		new MSC({batchCallback})
+		new NWS({batchCallback}),
+		new MSC({batchCallback}),
 		new OPW({batchCallback})
 	]
 
@@ -129,6 +147,7 @@ function loadData(gauges, batchCallback) {
 				datasource.add(gaugeID)
 				break;
 			}
+			if (i === datasources.length - 1) {console.warn("No match for " + gaugeID)}
 		}
 	})
 
@@ -144,128 +163,34 @@ function loadData(gauges, batchCallback) {
 async function loadData(siteCodes) {
 	let gauges = {}
 
-	if (virtualGauges) {
+	/*if (virtualGauges) {
 		try {
 			siteCodes = siteCodes.concat(await virtualGauges.getRequiredGauges())
 		}
 		catch (e) {console.error(e)}
-	}
+	}*/
 
-	//Filter out duplicate site names.
-	siteCodes = [...new Set(siteCodes)];
-
-	let usgsSites = []
-	let nwsSites = []
-	let canadaSites = []
-	let irelandOPWSites = []
-
-	siteCodes.forEach((code) => {
-		let resCode = code.slice(code.indexOf(":") + 1).trim()
-		if (code.toUpperCase().startsWith("USGS:")) {
-			if (resCode.length > 7 && resCode.length < 16 && !isNaN(Number(resCode))) {usgsSites.push(resCode)}
-		}
-		else if (code.toUpperCase().startsWith("NWS:")) {
-			//Appears to be 3-4 characters then number. Always 5 characters.
-			if (resCode.length === 5 && (!isNaN(resCode[4])) && isNaN(resCode)) {
-				nwsSites.push(resCode.toUpperCase()) //Although NWS codes are case insensitive, JavaScript is not, so we should standardize NWS on upperCase.
-			}
-			else {console.log(resCode + " appears to be an invalid NWS site code. ")}
-		}
-		else if (code.toLowerCase().startsWith("canada:")) {
-			canadaSites.push(resCode)
-		}
-		else if (code.toLowerCase().startsWith("ireland:")) {
-			irelandOPWSites.push(resCode)
-		}
+	console.log(siteCodes)
+	await obtainDataFromSources(siteCodes, function(data) {
+		console.log(data)
+		let newGauges = gaugeTrimmer.shrinkGauges(newGauges) //Shrink newGauges.
+		Object.assign(gauges, newGauges)
 	})
 
-	//Use gaugeTrimmer.shrinkGauges on batches to prevent memory usage from getting too extreme.
-	let sitesPerBatch = 450
-
-	while (start < usgsSites.length) {
-		let end = start + sitesPerBatch
-		let arr = usgsSites.slice(start,end)
-		console.log("Loading sites " + start + " through " + Math.min(end, usgsSites.length) + " of " + usgsSites.length + ".")
-		let newGauges = await loadSitesFromUSGS(arr)
-
-		for (let code in newGauges) {
-			newGauges["USGS:" + code] = newGauges[code]
-			delete newGauges[code]
-		}
-
-		newGauges = gaugeTrimmer.shrinkGauges(newGauges) //Shrink newGauges.
-
-		Object.assign(gauges, newGauges)
-	}
-
-	for (let i=0;i<nwsSites.length;i++) {
-		//We need to make sure that the same site doesn't appear multiple times, just with different casings
-		//This will require adjusting the usgs property of the rivers.
-		console.log("Loading NWS Site " + (i+1) + " of " + nwsSites.length + ".")
-		let nwsID = nwsSites[i]
-
-		try {
-			let newGauge = await loadSiteFromNWS(nwsID)
-			gauges["NWS:" + nwsID] = gaugeTrimmer.shrinkGauge(newGauge)
-		}
-		catch(e) {
-			console.error("Error loading NWS gauge " + nwsID)
-			console.error(e)
-		}
-	}
-
-
-	for (let i=0;i<irelandOPWSites.length;i++) {
-		//We need to make sure that the same site doesn't appear multiple times, just with different casings
-		//This will require adjusting the usgs property of the rivers.
-		console.log("Loading Ireland OPW Site " + (i+1) + " of " + irelandOPWSites.length + ".")
-		let irelandId = irelandOPWSites[i]
-
-		try {
-			let newGauge = await loadIrelandOPWGauge(irelandId)
-			gauges["ireland:" + irelandId] = gaugeTrimmer.shrinkGauge(newGauge)
-		}
-		catch(e) {
-			console.error("Error loading Ireland OPW gauge " + irelandId)
-			console.error(e)
-		}
-	}
-
-
-	sitesPerBatch = 100
-
-	while (start < canadaSites.length) {
-		let end = start + sitesPerBatch
-		let arr = canadaSites.slice(start,end)
-		console.log("Loading sites " + start + " through " + Math.min(end, canadaSites.length) + " of " + canadaSites.length + ".")
-		let newGauges = await loadCanadianGauges(arr)
-
-		for (let code in newGauges) {
-			newGauges["canada:" + code] = newGauges[code]
-			delete newGauges[code]
-		}
-
-		newGauges = gaugeTrimmer.shrinkGauges(newGauges) //Shrink newGauges.
-		console.timeEnd("Shrink newGauges")
-
-		Object.assign(gauges, newGauges)
-	}
-
+	console.log(gauges)
 
 
 	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
-	//TODO: Provide the data virtualGauges need in an unshrunken manner.
-	if (virtualGauges) {
+	/*if (virtualGauges) {
 		console.log("Computing virtual gauges...")
 		try {
 			let newGauges = await virtualGauges.getVirtualGauges(gauges)
-			await writeBatchToDisk(newGauges)
 			newGauges = gaugeTrimmer.shrinkGauges(newGauges) //Shrink newGauges.
 			Object.assign(gauges, newGauges)
 		}
 		catch (e) {console.log(e)}
 		console.log("Virtual gauges computed...")
-	}
+	}*/
 
 	gauges.generatedAt = Date.now()
 	return gauges
