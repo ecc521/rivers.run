@@ -1,30 +1,46 @@
 //Load gauges from the Canada Wateroffice
 const path = require("path")
 
-const fetch = require("node-fetch")
+const bent = require("bent")
 const csvParser = require("csv-parser")
 
 const siteDataParser = require(path.join(__dirname, "../", "siteDataParser.js"))
 
-let canadianGauges;
+let canadianGaugesPromise;
+
+let blacklist = {} //Will be cleared on reboots, so shouldn't be too problematic.
 
 //TODO: Instead of loading all gauges individually, load the file containing data for each region.
 async function loadCanadianGauge(gaugeID) {
 	//https://dd.weather.gc.ca/hydrometric/csv/
 
-	if (!canadianGauges) {
-		canadianGauges = await siteDataParser.getCanadianGauges()
+	if (blacklist[gaugeID]) {return false}
+
+	if (!canadianGaugesPromise) {
+		canadianGaugesPromise = siteDataParser.getCanadianGauges()
 	}
+	canadianGauges = await canadianGaugesPromise
+
 	let gaugeInfo = canadianGauges[gaugeID]
 	let province = gaugeInfo.province
 	//Using daily instead of hourly gives a longer duration of data.
-	let url = "https://dd.weather.gc.ca/hydrometric/csv/" + province + "/hourly/" + province + "_" + gaugeID + "_hourly_hydrometric.csv"
-
-	let response = await fetch(url)
+	let url = `https://dd.weather.gc.ca/hydrometric/csv/${province}/hourly/${province}_${gaugeID}_hourly_hydrometric.csv`
+	let stream;
+	try {
+		stream = await (bent(url)())
+	}
+	catch (e) {
+		if (e.statusCode === 404) {
+			blacklist[gaugeID] = true
+			//Gauge must be seasonal, and down at the moment.
+			return false
+		}
+		throw e
+	}
 
 	let results = [];
     await new Promise((resolve, reject) => {
-        response.body.pipe(csvParser({
+        stream.pipe(csvParser({
             mapHeaders: function({header, index}) {
                 if (header === "Water Level / Niveau d'eau (m)") {return "meters"}
 				else if (header === "Discharge / Débit (cms)") {return "cms"} //cubic meters per second.
@@ -65,7 +81,7 @@ async function loadCanadianGauge(gaugeID) {
 		units: "m",
 		source: {
 			text: "View this data on the Meteorological Service of Canada",
-			link: url //TODO: Try to find a better source url.
+			link: `https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=` + gaugeID
 		}
 	}
 
@@ -73,41 +89,6 @@ async function loadCanadianGauge(gaugeID) {
 }
 
 
-async function loadCanadianGauges(gaugeIDs, maxParalell = 10) {
-	gaugeIDs = [...new Set(gaugeIDs)]; //Remove duplicate IDs
-
-	let output = {}
-	let running = 0
-	let counter = 0
-
-	//TODO: Handle case where a gauge errors while loading.
-	return await new Promise((resolve, reject) => {
-		async function loadGauge(id) {
-			running++
-			for (let i=0;i<5;i++) {
-				try {
-					output[id] = await loadCanadianGauge(id)
-					break;
-				}
-				catch(e) {
-					console.error(e)
-				}
-			}
-			running--
-			if (counter < gaugeIDs.length - 1) {
-				loadGauge(gaugeIDs[++counter])
-			}
-			else if (running === 0){resolve(output)}
-		}
-
-		for (;counter<Math.min(maxParalell, gaugeIDs.length);counter++) {
-			loadGauge(gaugeIDs[counter])
-		}
-	})
-}
-
-
 module.exports = {
 	loadCanadianGauge,
-	loadCanadianGauges
 }

@@ -11,8 +11,8 @@ const compressor = require(path.join(__dirname, "precompress.js"))
 
 const {loadSiteFromNWS} = require(path.join(__dirname, "gauges", "nwsGauges.js"))
 const {loadSitesFromUSGS} = require(path.join(__dirname, "gauges", "usgsGauges.js"))
-const {loadCanadianGauges} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
-const {loadIrelandOPWGauge} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
+const {loadCanadianGauge} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
+const {loadIrelandOPWGauge, isValidOPWCode} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
 
 let virtualGauges;
 
@@ -28,195 +28,186 @@ let readingsFile = path.join(utils.getSiteRoot(), "gaugeReadings")
 if (!fs.existsSync(readingsFile)) {fs.mkdirSync(readingsFile, {recursive: true})}
 
 
-async function writeBatchToDisk(newGauges) {
-	//This should be done in paralell - however be careful not to run too much stuff at once...
-	//Some systems REALLY don't like that (and kernel freezes at 100% CPU, 100% Disk Read).
-	console.time("Write Files to Disk")
-	for (let code in newGauges) {
-		let filePath = path.join(readingsFile, code)
-		await fs.promises.writeFile(filePath, jsonShrinker.stringify(newGauges[code]))
-		//Don't bother compressing. Streaming Gzip or Brotli will do just fine for these files,
-		//given how they will be tiny and infrequently accessed.
-		//It would be nice if we could write less to the disk - perhaps store these partially or fully in memory?
-		//We could also consider not offering an uncompressed version.
-		//await compressor.compressFile(filePath, 3, {alwaysCompress: true})
-	}
-	console.timeEnd("Write Files to Disk")
+const os = require("os")
+const child_process = require("child_process")
+//Store gaugeReadings in memory, just to reduce disk writes.
+//We may want to store these before a reboot (tar.gz, etc), then restore them after, which would eliminate the downside of storing them in memory.
+//As of now, we'll simply detect the system.
+
+if (os.platform() === "darwin" && fs.statSync(__dirname).dev === fs.statSync(readingsFile).dev) {
+	console.log("Initializing RAM Disk for gaugeReadings")
+
+	let diskName = child_process.execSync("hdiutil attach -nomount ram://$((2 * 1024 * 2048))").toString().trim()
+
+	//mountName is irrelevant, as long as it doesn't conflict, I believe.
+	let mountName = "RiversRunTempDiskCanDelete"
+	child_process.execSync(`diskutil eraseVolume HFS+ ${mountName} ${diskName}`)
+
+	child_process.execSync(`umount ${diskName}`)
+
+	child_process.execSync(`diskutil mount -mountPoint ${readingsFile} ${diskName}`)
+}
+else if (os.platform() === "linux") {
+	//TODO: Symlink to /dev/shm. Or mount a tempfs/ramfs.
 }
 
+const DataSource = require(path.join(__dirname, "DataSource.js"))
+
+class USGS extends DataSource {
+	constructor(obj = {}) {
+		let config = Object.assign({
+			batchSize: 150,
+			concurrency: 1,
+		}, obj)
+		super(config)
+	}
+
+	prefix = "USGS:"
+
+	getValidCode(code) {
+		code = this.removePrefix(code)
+		if (!code) {return} //Correct prefix did not exist
+		if (code.length > 7 && code.length < 16 && !isNaN(Number(code))) {return code}
+	}
+
+	_processBatch(batch) {
+		return loadSitesFromUSGS(batch)
+	}
+}
+
+class NWS extends DataSource {
+	constructor(obj = {}) {
+		let config = Object.assign({
+			batchSize: 1,
+			concurrency: 5,
+		}, obj)
+		super(config)
+	}
+
+	prefix = "NWS:"
+
+	getValidCode(code) {
+		code = this.removePrefix(code)
+		if (!code) {return} //Correct prefix did not exist
+		//Appears to be 3-4 characters then number. Always 5 characters.
+		//Although NWS codes are case insensitive, JavaScript is not, so we should standardize NWS on upperCase.
+		if (code.length === 5 && (!isNaN(code[4])) && isNaN(code)) {return code.toUpperCase()}
+	}
+
+	_processBatch(batch) {
+		console.log("Loading NWS Batch")
+		return loadSiteFromNWS(batch[0])
+	}
+}
+
+//Meterological Service of Canada
+class MSC extends DataSource {
+	constructor(obj = {}) {
+		let config = Object.assign({
+			batchSize: 1,
+			concurrency: 5,
+		}, obj)
+		super(config)
+	}
+
+	prefix = "canada:"
+
+	_processBatch(batch) {
+		return loadCanadianGauge(batch[0])
+	}
+}
+
+//Ireland Office of Public Works
+class OPW extends DataSource {
+	constructor(obj = {}) {
+		let config = Object.assign({
+			batchSize: 1,
+			concurrency: 5,
+		}, obj)
+		super(config)
+	}
+
+	prefix = "ireland:"
+
+	getValidCode(code) {
+		code = this.removePrefix(code)
+		if (!code) {return} //Correct prefix did not exist
+		if (isValidOPWCode(code)) {return code}
+	}
+
+	_processBatch(batch) {
+		return loadIrelandOPWGauge(batch[0])
+	}
+}
+
+function obtainDataFromSources(gauges, batchCallback) {
+	//batchCallback is called with every gauge that is computed.
+	//There, they can be compressed, stored, etc.
+
+	//Filter out duplicate site names.
+	gauges = [...new Set(gauges)];
+
+	let datasources = [
+		new USGS({batchCallback}),
+		new NWS({batchCallback}),
+		new MSC({batchCallback, timeout: 15000}),
+		new OPW({batchCallback})
+	]
+
+	gauges.forEach((gaugeID) => {
+		for (let i=0;i<datasources.length;i++) {
+			let datasource = datasources[i]
+			let code = datasource.getValidCode(gaugeID)
+			if (code) {
+				datasource.add(code)
+				break;
+			}
+			if (i === datasources.length - 1) {console.warn("No match for " + gaugeID)}
+		}
+	})
+
+	let promises = []
+	datasources.forEach((datasource) => {promises.push(datasource.flush())})
+	promises[0].finally(() => {console.log("USGS Done!")})
+	promises[1].finally(() => {console.log("NWS Done!")})
+	promises[2].finally(() => {console.log("MSC Done!")})
+	promises[3].finally(() => {console.log("OPW Done!")})
+
+	return Promise.all(promises)
+}
 
 async function loadData(siteCodes) {
 	let gauges = {}
 
 	if (virtualGauges) {
 		try {
-			siteCodes = siteCodes.concat(await virtualGauges.getRequiredGauges())
+			let requiredGauges = await virtualGauges.getRequiredGauges()
+			siteCodes = siteCodes.concat(requiredGauges)
 		}
 		catch (e) {console.error(e)}
 	}
 
-	//Filter out duplicate site names.
-	siteCodes = [...new Set(siteCodes)];
+	let writes = [] //TODO: Do we need to cap the maximum number of paralell writes?
 
-	let usgsSites = []
-	let nwsSites = []
-	let canadaSites = []
-	let irelandOPWSites = []
-
-	siteCodes.forEach((code) => {
-		let resCode = code.slice(code.indexOf(":") + 1).trim()
-		if (code.toUpperCase().startsWith("USGS:")) {
-			if (resCode.length > 7 && resCode.length < 16 && !isNaN(Number(resCode))) {usgsSites.push(resCode)}
-		}
-		else if (code.toUpperCase().startsWith("NWS:")) {
-			//Appears to be 3-4 characters then number. Always 5 characters.
-			if (resCode.length === 5 && (!isNaN(resCode[4])) && isNaN(resCode)) {
-				nwsSites.push(resCode.toUpperCase()) //Although NWS codes are case insensitive, JavaScript is not, so we should standardize NWS on upperCase.
-			}
-			else {console.log(resCode + " appears to be an invalid NWS site code. ")}
-		}
-		else if (code.toLowerCase().startsWith("canada:")) {
-			canadaSites.push(resCode)
-		}
-		else if (code.toLowerCase().startsWith("ireland:")) {
-			irelandOPWSites.push(resCode)
-		}
+	let totalLoaded = 0
+	await obtainDataFromSources(siteCodes, function(data, gaugeID) {
+		let filePath = path.join(readingsFile, gaugeID)
+		writes.push(fs.promises.writeFile(filePath, jsonShrinker.stringify(data)))
+		let shrunkenData = gaugeTrimmer.shrinkGauge(data)
+		gauges[gaugeID] = data
+		totalLoaded++
+		if (totalLoaded % 512 === 0) {console.log("Loaded " + totalLoaded + " gauges. ")}
 	})
 
-	//For memory reasons, we don't want to hold more than ~1000 gauges worth of data at once.
-	let start = 0
-	let sitesPerBatch = 450
-
-	let currentWrites;
-
-	while (start < usgsSites.length) {
-		let end = start + sitesPerBatch
-		let arr = usgsSites.slice(start,end)
-		console.log("Loading sites " + start + " through " + Math.min(end, usgsSites.length) + " of " + usgsSites.length + ".")
-		let newGauges = await loadSitesFromUSGS(arr)
-
-		for (let code in newGauges) {
-			newGauges["USGS:" + code] = newGauges[code]
-			delete newGauges[code]
-		}
-
-		//Lets try to avoid doing too much at once. Wait for previous batch to finish.
-		let waitStart = process.hrtime.bigint()
-		await currentWrites
-		if (process.hrtime.bigint() - waitStart > BigInt(1e6)) {
-			//If we waited more than 0.001 seconds (1 millisecond), tell the user.
-			console.log("Waiting for Previous Batch: " + Number(process.hrtime.bigint() - waitStart) / Number(1e6) + "ms")
-		}
-
-		currentWrites = new Promise((resolve, reject) => {
-			writeBatchToDisk(newGauges).then(() => {
-				//We passed writeBatchToDisk a reference to newGauges, so we can't modify a gauge that writeBatchToDisk has not processed.
-				//Cloning is a bit resource intensive, so let's not do that. Might as well just wait.
-				//If we do need to increase performance, we can use gaugeTrimmer.shrinkGauge to shrink each gauge as it is written to disk.
-				console.time("Shrink newGauges")
-				newGauges = gaugeTrimmer.shrinkGauges(newGauges) //Shrink newGauges.
-				console.timeEnd("Shrink newGauges")
-
-				Object.assign(gauges, newGauges)
-				resolve()
-			})
-		})
-
-		start = end
-	}
-
-	//TODO: Multiple NWS calls should be made at once, although we should currently only do one due to a bug that can cause multiple loading of a conversion table.
-	for (let i=0;i<nwsSites.length;i++) {
-		//We need to make sure that the same site doesn't appear multiple times, just with different casings
-		//This will require adjusting the usgs property of the rivers.
-		console.log("Loading NWS Site " + (i+1) + " of " + nwsSites.length + ".")
-		let nwsID = nwsSites[i]
-
-		try {
-			let newGauge = await loadSiteFromNWS(nwsID)
-			let obj = {}
-			obj["NWS:" + nwsID] = newGauge
-			await writeBatchToDisk(obj)
-			gauges["NWS:" + nwsID] = gaugeTrimmer.shrinkGauge(newGauge)
-		}
-		catch(e) {
-			console.error("Error loading NWS gauge " + nwsID)
-			console.error(e)
-		}
-	}
-
-
-	//TODO: Multiple Ireland calls should be made at once, although we should currently only do one due to a bug that can cause multiple loading of a conversion table.
-	for (let i=0;i<irelandOPWSites.length;i++) {
-		//We need to make sure that the same site doesn't appear multiple times, just with different casings
-		//This will require adjusting the usgs property of the rivers.
-		console.log("Loading Ireland OPW Site " + (i+1) + " of " + irelandOPWSites.length + ".")
-		let irelandId = irelandOPWSites[i]
-
-		try {
-			let newGauge = await loadIrelandOPWGauge(irelandId)
-			let obj = {}
-			obj["ireland:" + irelandId] = newGauge
-			await writeBatchToDisk(obj)
-			gauges["ireland:" + irelandId] = gaugeTrimmer.shrinkGauge(newGauge)
-		}
-		catch(e) {
-			console.error("Error loading Ireland OPW gauge " + irelandId)
-			console.error(e)
-		}
-	}
-
-
-	start = 0
-	sitesPerBatch = 100
-
-	currentWrites = undefined;
-
-	while (start < canadaSites.length) {
-		let end = start + sitesPerBatch
-		let arr = canadaSites.slice(start,end)
-		console.log("Loading sites " + start + " through " + Math.min(end, canadaSites.length) + " of " + canadaSites.length + ".")
-		let newGauges = await loadCanadianGauges(arr)
-
-		for (let code in newGauges) {
-			newGauges["canada:" + code] = newGauges[code]
-			delete newGauges[code]
-		}
-
-		//Lets try to avoid doing too much at once. Wait for previous batch to finish (usually, it already has).
-		let waitStart = process.hrtime.bigint()
-		await currentWrites
-		if (process.hrtime.bigint() - waitStart > BigInt(1e6)) {
-			//If we waited more than 0.001 seconds (1 millisecond), tell the user.
-			console.log("Waiting for Previous Batch: " + Number(process.hrtime.bigint() - waitStart) / Number(1e6) + "ms")
-		}
-
-		currentWrites = new Promise((resolve, reject) => {
-			writeBatchToDisk(newGauges).then(() => {
-				//We passed writeBatchToDisk a reference to newGauges, so we can't modify a gauge that writeBatchToDisk has not processed.
-				//Cloning is a bit resource intensive, so let's not do that. Might as well just wait.
-				//If we do need to increase performance, we can use gaugeTrimmer.shrinkGauge to shrink each gauge as it is written to disk.
-				console.time("Shrink newGauges")
-				newGauges = gaugeTrimmer.shrinkGauges(newGauges) //Shrink newGauges.
-				console.timeEnd("Shrink newGauges")
-
-				Object.assign(gauges, newGauges)
-				resolve()
-			})
-		})
-
-		start = end
-	}
-
-
-	await currentWrites
+	console.log("Waiting on Writes")
+	await Promise.allSettled(writes)
+	console.log("Loaded " + totalLoaded + " gauges. ")
 
 	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
 	if (virtualGauges) {
 		console.log("Computing virtual gauges...")
 		try {
-			let newGauges = await virtualGauges.getVirtualGauges()
-			await writeBatchToDisk(newGauges)
+			let newGauges = await virtualGauges.getVirtualGauges(gauges)
 			newGauges = gaugeTrimmer.shrinkGauges(newGauges) //Shrink newGauges.
 			Object.assign(gauges, newGauges)
 		}

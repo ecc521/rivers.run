@@ -1,6 +1,6 @@
 const fs = require("fs")
 const path = require("path")
-const fetch = require("node-fetch")
+const bent = require("bent")
 
 const getGaugeSites = require(path.join(__dirname, "siteDataParser.js"))
 
@@ -24,23 +24,24 @@ function wait(ms) {
 async function load(url, attempts = 0) {
     //TODO: Handle 500, internal server errors too. Google sends them somewhat commonly.
 	//TODO: Handle requests that take unreasonably long to reply (as of 15+ seconds)
-    let request = await fetch(url)
-    if (request.ok) {
-        return request
-    }
-    else if (attempts > 10) {
-        console.error("Repeatedly 403'ed on " + url)
-        throw "Repeatedly 403'ed on " + url
-    }
-    else if (request.status == 403) {
-        await wait(1000/googlecloudrequestrate) //A queue should be used instead, but oh well.
-        return await load(url, attempts++) //We hit the quota. Time to retry.
-    }
-    else {
-        console.log("Failed to load " + url)
-        console.error(request)
-        throw "Failed to request " + url
-    }
+	try {
+		return await bent("string", url)()
+	}
+	catch (e) {
+		if (attempts > 10) {
+			console.error("Repeatedly 403'ed on " + url)
+			throw "Repeatedly 403'ed on " + url
+		}
+		else if (e.statusCode == 403) {
+			await wait(1000/googlecloudrequestrate) //A queue should be used instead, but oh well.
+			return await load(url, attempts++) //We hit the quota. Time to retry.
+		}
+		else {
+			console.log("Failed to load " + url)
+			console.error(e)
+			throw "Failed to request " + url
+		}
+	}
 }
 
 async function loadFromDisk(id, lastModified = 0, mime="text/plain") {
@@ -70,10 +71,9 @@ async function writeToDisk(data, id, mime="text/plain") {
     async function getFilesInFolder(id, output = [], promises=[], wasFirst = true) {
         //Use fields=* to get all fields.
         //Do not cache directory requests - last modified dates of files inside will be wrong (folder last modified is when files last added/removed).
-		//wasFirst is used so the Promise.all call only happens on the first invocation, which was not added to the primises list.
-        let response = await load("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id,name)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
-        let obj = await response.json()
-
+		//wasFirst is used so the Promise.all call only happens on the first invocation, which was not added to the promises list. Otherwise they all lock up waiting on each other.
+		let text = await load("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id,name)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
+		let obj = JSON.parse(text)
         if (obj.incompleteSearch) {console.warn("Search may have been incomplete")}
 
         let files = obj.files
@@ -105,11 +105,9 @@ function loadFiles(files, mime) {
 
     async function loadText(file, mime="text/plain") {
         try {
-            let request;
-            request = await loadFromDisk(file.id, file.modifiedTime, mime) //Load file from disk if it is cached, and hasn't been modified
+            let request = await loadFromDisk(file.id, file.modifiedTime, mime) //Load file from disk if it is cached, and hasn't been modified
             if (!request) {
                 request = await load(urlcreate(file.id, mime))
-                request = await request.text()
                 await writeToDisk(request, file.id, mime)
             }
             complete.push({id: file.id, request, name:file.name})
@@ -172,7 +170,12 @@ async function loadOverviews() {
 }
 
 
-(async function() {
+
+async function prepareRiverData({
+	includeUSGSGauges = true,
+	includeCanadianGauges = true,
+	includeIrishGauges = false,
+}) {
 
 	await loadOverviews()
 
@@ -275,17 +278,17 @@ async function loadOverviews() {
         console.log("There are " + result.complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
     })
 
-	if (!process.argv.includes("--noUSGSGauges")) {
+	if (includeUSGSGauges) {
 		console.log("Adding USGS gauge sites. Pass --noUSGSGauges to prevent this. ")
 		result.complete = result.complete.concat(await getGaugeSites.getSites())
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
 	else {
-		console.log("Not including USGS gauges since --noUSGSGauges was passed. ")
+		console.log("Not including USGS gauges since --includeUSGSGauges was not passed. ")
 	}
 
-	if (process.argv.includes("--includeCanadianGauges")) {
-		console.log("Adding Canadian gauge sites")
+	if (includeCanadianGauges) {
+		console.log("Adding Canadian gauge sites. Pass --noCanadianGauges to prevent this. ")
 		result.complete = result.complete.concat(await getGaugeSites.getCanadianGaugesInRiverFormat())
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
@@ -293,8 +296,8 @@ async function loadOverviews() {
 		console.log("Not including Canadian gauges since --includeCanadianGauges was not passed. ")
 	}
 
-	if (process.argv.includes("--includeIrishGauges")) {
-		console.log("Adding Irish gauge sites")
+	if (includeIrishGauges) {
+		console.log("Adding Irish gauge sites. Pass --noIrishGauges to prevent this. ")
 		result.complete = result.complete.concat(await getGaugeSites.getIrishGaugesInRiverFormat())
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
@@ -304,4 +307,6 @@ async function loadOverviews() {
 
     await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(result.complete))
 	console.log("riverdata.json generated")
-}())
+}
+
+module.exports = prepareRiverData

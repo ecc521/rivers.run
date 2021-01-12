@@ -1,7 +1,7 @@
 const fs = require("fs")
 const path = require("path")
 
-const fetch = require("node-fetch")
+const bent = require("bent")
 
 const utils = require(path.join(__dirname, "utils.js"))
 
@@ -82,11 +82,11 @@ async function downloadSitesFile() {
         //The file is gzipped, so we have to unzip it.
 		let unzipper = zlib.createGunzip()
 		await new Promise((resolve, reject) => {
-			fetch(url).then((response) => {
+            bent(url)().then((stream) => {
 				//TODO: Response is Gzipped. decompress.
 				let dest = fs.createWriteStream(sitesFilePath)
-				let stream = response.body.pipe(unzipper).pipe(dest)
-				stream.on("finish", resolve)
+				let writeStream = stream.pipe(unzipper).pipe(dest)
+				writeStream.on("finish", resolve)
 			})
 		})
 		console.log("Gauge List Downloaded")
@@ -176,10 +176,10 @@ let conversionsFilePath = path.join(utils.getDataDirectory(), "nws-usgs-conversi
 async function downloadConversionsFile() {
     console.log("Downloading NWS conversions list")
     let dest = fs.createWriteStream(conversionsFilePath)
-    let response = await fetch("https://hads.ncep.noaa.gov/USGS/ALL_USGS-HADS_SITES.txt")
+    let stream = await bent("https://hads.ncep.noaa.gov/USGS/ALL_USGS-HADS_SITES.txt")()
     await new Promise((resolve, reject) => {
-        let stream = response.body.pipe(dest)
-        stream.on("finish", resolve)
+        let writeStream = stream.pipe(dest)
+        writeStream.on("finish", resolve)
     })
     console.log("NWS conversions list downloaded")
 }
@@ -244,10 +244,10 @@ let canadaGaugesList = path.join(utils.getDataDirectory(), "canadaGaugesList.csv
 async function downloadCanadianGaugesList() {
     console.log("Downloading Canadian Gauges List...")
     let dest = fs.createWriteStream(canadaGaugesList)
-    let response = await fetch("https://dd.weather.gc.ca/hydrometric/doc/hydrometric_StationList.csv")
+    let stream = await bent("https://dd.weather.gc.ca/hydrometric/doc/hydrometric_StationList.csv")()
     await new Promise((resolve, reject) => {
-        let stream = response.body.pipe(dest)
-        stream.on("finish", resolve)
+        let writeStream = stream.pipe(dest)
+        writeStream.on("finish", resolve)
     })
     console.log("Canada gauges list downloaded")
 }

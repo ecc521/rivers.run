@@ -9,21 +9,29 @@ const path = require("path")
 const child_process = require("child_process")
 
 const jsonShrinker = require("json-shrinker")
+const prepareRiverData = require(path.join(__dirname, "dataparse.js"))
+
+process.on('uncaughtException', function(e) {
+	console.log("Uncaught Exception: ")
+	console.trace(e)
+})
 
 async function updateRiverData() {
-	let args = [path.join(__dirname, "dataparse.js")]
-	if (process.argv.includes("--noUSGSGauges")) {args.push("--noUSGSGauges")}
-	if (process.argv.includes("--includeCanadianGauges")) {args.push("--includeCanadianGauges")}
-	if (process.argv.includes("--includeIrishGauges")) {args.push("--includeIrishGauges")}
+	//Use undefined so defaults still work.
+	//TODO: This code could be a bit more consise and extensible. Very repetitive. Should also warn if a includeGauge also has noGauge.
+	let obj = {
+		includeUSGSGauges: process.argv.includes("--includeUSGSGauges")?true:undefined,
+		includeCanadianGauges: process.argv.includes("--includeCanadianGauges")?true:undefined,
+		includeIrishGauges: process.argv.includes("--includeIrishGauges")?true:undefined,
+	}
 
-	let dataparse = child_process.spawn("node", args)
-	//Don't use console.log, as we end up with 2 newlines.
-	dataparse.stdout.on("data", function(data) {process.stdout.write(data.toString())})
-	dataparse.stderr.on("data", function(data) {process.stderr.write(data.toString())})
-	await new Promise((resolve, reject) => {
-		dataparse.on("close", resolve)
-		dataparse.on("error", reject)
+	Object.assign(obj, {
+		includeUSGSGauges: process.argv.includes("--noUSGSGauges")?false:obj.includeUSGSGauges,
+		includeCanadianGauges: process.argv.includes("--noCanadianGauges")?false:obj.includeCanadianGauges,
+		includeIrishGauges: process.argv.includes("--noIrishGauges")?false:obj.includeIrishGauges,
 	})
+
+	await prepareRiverData(obj)
 }
 
 //On reboot, and every 6 hours, run dataparse.js to keep the data on rivers.run current.
@@ -45,7 +53,8 @@ const utils = require(path.join(__dirname, "utils.js"))
 
 const gaugeUtils = require(path.join(__dirname, "gauges.js"))
 
-fs.chmodSync(__filename, 0o775) //Make sure this file is executable. This will help prevent crontab setup issues.
+//TODO: Is this actually needed?!?!??!?!!?!?!?!
+fs.chmodSync(__filename, 0o775) //Make sure this file is executable. This will help prevent crontab setup issues (this runs on npm install).
 
 let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
 
@@ -61,7 +70,7 @@ async function updateCachedData() {
 			await updateRiverData()
 		}
 	}
-	
+
 	console.log("Preparing flow data.\n")
 	let riverarray = JSON.parse(await fs.promises.readFile(riverDataPath, {encoding:"utf8"}))
 
@@ -84,7 +93,7 @@ async function updateCachedData() {
 	console.log("Flow data prepared.\n")
 
 
-	if (process.argv[2] !== "--install") {
+	if (!process.argv.includes("--install")) {
 		console.time("Initial compression run on flowdata3.json")
 		await compressor.compressFile(flowDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: true})
 		console.timeEnd("Initial compression run on flowdata3.json")
@@ -101,7 +110,7 @@ async function updateCachedData() {
 	else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes()/15)*15)}
 
 	//End install script
-	if (process.argv[2] === "--install") {
+	if (process.argv.includes("--install")) {
 		console.log("To update river and flow data in the future, run node usgscache.js --install (if you are running the server, data automatically updates).")
 		process.exit()
 	}

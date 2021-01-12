@@ -16,7 +16,7 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 	let compressor = child_process.fork(path.join(__dirname, "brotliCompress.js"), args, {stdio: "pipe"})
 
 	os.setPriority(compressor.pid, priority)
-	
+
 	if (input instanceof stream) {
 		input.pipe(compressor.stdin)
 	}
@@ -24,7 +24,7 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 		compressor.stdin.write(input)
 		compressor.stdin.end()
 	}
-	
+
 	//Make sure that these processes are closed.
 
 	compressor.stderr.on("data", function(data) {
@@ -37,7 +37,7 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 async function compressFile(filePath, level = 11, options = {}) {
 
 	//ignoreSizeLimit: Compress even if over 5MiB
-	//alwaysCompress: Overwrite existing file regardless (don't check if existing file is same as current one.
+	//alwaysCompress: Overwrite existing file regardless (don't check if existing file is same as current one).
 	//keepLastModified: Copy lastModified from the uncompressed file onto the compressed one. (Should this happen by default?)
 
 	if (!options.ignoreSizeLimit && (await fs.promises.stat(filePath)).size > 5*1024*1024) {
@@ -65,7 +65,6 @@ async function compressFile(filePath, level = 11, options = {}) {
 			})
 		})
 		if (currentlyCompressed.equals(uncompressed)) {
-			//console.log(filePath + " is already compressed.")
 			return;
 		}
 	}
@@ -77,7 +76,7 @@ async function compressFile(filePath, level = 11, options = {}) {
 	//Note that some files may be compressed (uselessly) multiple times if the uncompressed file is smaller than the compressed file.
 	if (compressed.byteLength < uncompressed.byteLength) {
 		await fs.promises.writeFile(compressedPath, compressed)
-        process.stdout.write("\r\033[2K") //Clear current line		
+        process.stdout.write("\r\033[2K") //Clear current line
 		console.log("Compressed " + filePath + " from " + uncompressed.byteLength + " bytes to " + compressed.byteLength + " bytes.")
 
 		if (options.keepLastModified) {
@@ -111,10 +110,10 @@ async function compressFiles(directoryToCompress) {
 		}
 		return true
 	})
-	
+
 	for (let i=0;i<files.length;i++) {
 		let filePath = files[i]
-        process.stdout.write("\r\033[2K") //Clear current line		
+        process.stdout.write("\r\033[2K") //Clear current line
 		process.stdout.write("Compressing " + i + " of " + (files.length - 1))
 		await compressFile(filePath)
 	}
