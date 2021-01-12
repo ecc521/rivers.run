@@ -7,8 +7,8 @@ const utils = require(path.join(__dirname, "utils.js"))
 
 const virtualGaugesPath = path.join(utils.getSiteRoot(), "../", "rivers.run-virtual-gauges")
 
-let gaugeFiles = utils.getFilesInDirectory(virtualGaugesPath)
-gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js" && !path.dirname(src).includes("utils")})
+let gaugeFiles = fs.readdirSync(virtualGaugesPath)
+gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js"})
 
 async function computeVirtualGauge(src) {
 	var code = await fs.promises.readFile(src, {encoding: "utf8"});
