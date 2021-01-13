@@ -105,7 +105,7 @@ class MSC extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 25,
+			concurrency: 12,
 		}, obj)
 		super(config)
 	}
@@ -122,7 +122,7 @@ class OPW extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 12,
+			concurrency: 5,
 		}, obj)
 		super(config)
 	}
@@ -148,10 +148,10 @@ function obtainDataFromSources(gauges, batchCallback, checkBackpressure) {
 	gauges = [...new Set(gauges)];
 
 	let datasources = [
-		new USGS({batchCallback, checkBackpressure}),
-		new NWS({batchCallback, checkBackpressure}),
-		new MSC({batchCallback, checkBackpressure, timeout: 15000}),
-		new OPW({batchCallback, checkBackpressure})
+		new USGS({batchCallback}),
+		new NWS({batchCallback}),
+		new MSC({batchCallback, timeout: 15000}),
+		new OPW({batchCallback})
 	]
 
 	gauges.forEach((gaugeID) => {
@@ -187,63 +187,18 @@ async function loadData(siteCodes) {
 		catch (e) {console.error(e)}
 	}
 
-	let writes = [] //TODO: Do we need to cap the maximum number of paralell writes?
+	let writes = [] //Large numbers of parallel writes are not being an issue.
 	let totalLoaded = 0
 
-
-	//Use a 30MB additional buffer, then 250KB per batch - probably excessive, and ignores the variance between batches and types, but should be plenty to avoid major issues.
-	//Keep in mind that checkBackpressure does not instantly have an effect - the loader proceeds with the queue before calling us,
-	//So things may already be batched up coming towards us before we begin to slow things down.
-
-	/*function getMaxOpen(memPerBatch = 250000, additionalBuffer = 3e7) {
-		let mem = Math.random() * 1e8
-		return Math.max(1, Math.round((mem - additionalBuffer) / memPerBatch))
-	}
-
-	let open = 0
-	let queue = []
-	async function checkBackpressure() {
-		//This function will resolve when batches may proceed again. This is used to regulate memory usage when needed.
-		//Note that some batches will causse significantly more backpressure than others - one resolve doesn't mean
-		//we can proceed. We need to wait until pressure subsides.
-		console.log(open, getMaxOpen())
-		if (open < getMaxOpen()) {return true}
-
-		let a = Math.random()
-		console.time("Waiting " + a)
-		await new Promise((resolve, reject) => {
-			//Shift is slower, but we want FIFO behavior, so some DataSources don't eat up all of their concurrent slots while others proceed full speed.
-			queue.shift(function() {
-				console.log(open, getMaxOpen())
-				if (open < getMaxOpen()) {
-					//If we are being called, we must be the last one in the queue.
-					queue.pop()
-					resolve()
-				}
-			})
-		})
-		console.timeEnd("Waiting " + a)
-		return true
-	}*/
-
 	await obtainDataFromSources(siteCodes, async function(data, gaugeID) {
-		//open++
-		//try {
-			let filePath = path.join(readingsFile, gaugeID)
-			await new Promise((resolve, reject) => {setTimeout(resolve, 2000)})
-			await fs.promises.writeFile(filePath, jsonShrinker.stringify(data))
-			let shrunkenData = gaugeTrimmer.shrinkGauge(data)
-			gauges[gaugeID] = data
-			totalLoaded++
-			if (totalLoaded % 512 === 0) {console.log("Loaded " + totalLoaded + " gauges. ")}
-		/*}
-		finally {
-			open--
-			if (queue.length > 0) {
-				queue[queue.length - 1]()
-			}
-		}*/
-	}, /*checkBackpressure*/)
+		let filePath = path.join(readingsFile, gaugeID)
+		await new Promise((resolve, reject) => {setTimeout(resolve, 2000)})
+		await fs.promises.writeFile(filePath, jsonShrinker.stringify(data))
+		let shrunkenData = gaugeTrimmer.shrinkGauge(data)
+		gauges[gaugeID] = data
+		totalLoaded++
+		if (totalLoaded % 512 === 0) {console.log("Loaded " + totalLoaded + " gauges. ")}
+	})
 
 	console.log("Waiting on Writes")
 	await Promise.allSettled(writes)

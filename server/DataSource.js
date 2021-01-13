@@ -6,7 +6,6 @@ class DataSource {
 		retries = 5, //Number of attempt to make to load each batch.
 		retryDelay = 2000, //Delay between retries in milliseconds.
 		timeout = 36000, //Timeout in milliseconds.
-		checkBackpressure = function() {return true} //Until this resolves, batches will not proceed.
 	}) {
 
 		let gaugeIDCache = []
@@ -53,7 +52,6 @@ class DataSource {
 			}
 
 			outstanding++
-			await checkBackpressure()
 
 			let result;
 			for (let i=0;i<retries;i++) {
