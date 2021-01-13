@@ -27,9 +27,9 @@ catch(e) {
 let readingsFile = path.join(utils.getSiteRoot(), "gaugeReadings")
 if (!fs.existsSync(readingsFile)) {fs.mkdirSync(readingsFile, {recursive: true})}
 
-
 const os = require("os")
 const child_process = require("child_process")
+
 //Store gaugeReadings in memory, just to reduce disk writes.
 //We may want to store these before a reboot (tar.gz, etc), then restore them after, which would eliminate the downside of storing them in memory.
 //As of now, we'll simply detect the system.
@@ -57,7 +57,7 @@ class USGS extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 150,
-			concurrency: 2,
+			concurrency: 3,
 		}, obj)
 		super(config)
 	}
@@ -105,7 +105,7 @@ class MSC extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 12,
+			concurrency: 15,
 		}, obj)
 		super(config)
 	}
@@ -122,7 +122,7 @@ class OPW extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 5,
+			concurrency: 6,
 		}, obj)
 		super(config)
 	}
@@ -167,7 +167,7 @@ function obtainDataFromSources(gauges, batchCallback, checkBackpressure) {
 	})
 
 	let promises = []
-	datasources.forEach((datasource) => {promises.push(datasource.flush())})
+	datasources.forEach((datasource) => {promises.push(datasource.flush(false, true))})
 	promises[0].finally(() => {console.log("USGS Done!")})
 	promises[1].finally(() => {console.log("NWS Done!")})
 	promises[2].finally(() => {console.log("MSC Done!")})
@@ -188,16 +188,18 @@ async function loadData(siteCodes) {
 	}
 
 	let writes = [] //Large numbers of parallel writes are not being an issue.
+	let startedLoading = 0
 	let totalLoaded = 0
 
 	await obtainDataFromSources(siteCodes, async function(data, gaugeID) {
+		startedLoading++
 		let filePath = path.join(readingsFile, gaugeID)
 		await new Promise((resolve, reject) => {setTimeout(resolve, 2000)})
 		await fs.promises.writeFile(filePath, jsonShrinker.stringify(data))
 		let shrunkenData = gaugeTrimmer.shrinkGauge(data)
 		gauges[gaugeID] = data
 		totalLoaded++
-		if (totalLoaded % 512 === 0) {console.log("Loaded " + totalLoaded + " gauges. ")}
+		if (totalLoaded % 512 === 0) {console.log("Finished writing " + totalLoaded + " gauges. (" + (startedLoading - totalLoaded) + " more in progress)")}
 	})
 
 	console.log("Waiting on Writes")

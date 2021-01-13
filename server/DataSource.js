@@ -8,8 +8,11 @@ class DataSource {
 		timeout = 36000, //Timeout in milliseconds.
 	}) {
 
-		let gaugeIDCache = []
-		let requestCache = []
+		let gaugeIDCache = [] //Used to store gaugeIDs until a full batch can be made, or flush is called.
+
+		//Determine when the current flush finishes - all requests open at the time of the flush are done.
+		let outstandingRequests = new Map()
+		let insertIndex = 0
 
 		this.add = function(newGaugeIDs) {
 			if (!(newGaugeIDs instanceof Array)) {newGaugeIDs = [newGaugeIDs]} //Allow passing a single gaugeID.
@@ -18,7 +21,7 @@ class DataSource {
 		}
 
 		//Place gauges in gaugeIDCache into batches. Resolve when all existing calls finish.
-		this.flush = function(onlyFull = false) {
+		this.flush = function(onlyFull = false, getPromise = false) {
 			let offset = 0
 			let slice = []
 
@@ -29,21 +32,32 @@ class DataSource {
 				}
 
 				//Process slice.
-				requestCache.push(this.processBatch(slice, batchCallback))
+				outstandingRequests.set(insertIndex++, this.processBatch(slice, insertIndex, batchCallback))
 
 				slice = []
 				offset += batchSize
 			}
 
 			gaugeIDCache = slice
-			return Promise.allSettled(requestCache)
+			if (getPromise) {
+				let promises = []
+				let iterator = outstandingRequests.values()
+				let last = iterator.next()
+				while (last.done === false) {
+					promises.push(last.value)
+					last = iterator.next()
+				}
+				//TODO: It might be better to check outstandingRequests.size on every batch completed, instead of using Promise.all.
+				//Not noticing a problem here though. 
+				return Promise.allSettled(promises) //Don't bother creating a Promise.allSettled unless asked.
+			}
 		}
 
 
-		let outstanding = 0;
-		let queue = []
+		let outstanding = 0; //For limiting concurrency.
+		let queue = [] //FILO - shouldn't be a problem within an individual data source.
 
-		this.processBatch = async function(batch, callback) {
+		this.processBatch = async function(batch, insertIndex, callback) {
 			if (outstanding >= concurrency) {
 				//We need to wait.
 				await new Promise((resolve, reject) => {
@@ -58,7 +72,7 @@ class DataSource {
 				try {
 					result = await new Promise((resolve, reject) => {
 						this._processBatch(batch).then(resolve, reject)
-						setTimeout(function() {
+						setTimeout(function() { //TODO: Check this. Mem
 							reject("Timeout Exceeded")
 						}, timeout)
 					})
@@ -82,6 +96,7 @@ class DataSource {
 				}
 			}
 			outstanding--
+			outstandingRequests.delete(insertIndex)
 			if (queue.length > 0) {
 				queue.pop()()
 			}
