@@ -81,7 +81,7 @@ echo "We reboot the server at 4am every day in an attempt to resolve an issue wh
 
 (crontab -l ; echo "@reboot node $HOME/rivers.run/server/usgscache.js >> $HOME/rivers.run/server/logs/usgscache.log") | sort - | uniq - | crontab -
 (crontab -l ; echo "*/30 * * * * node $HOME/rivers.run/server/restartServer.js >> $HOME/rivers.run/server/logs/restartServer.log") | sort - | uniq - | crontab -
-(crontab -l ; echo "0 4   *   *   *    sudo reboot") | sort - | uniq - | crontab -
+(crontab -l ; echo "0 0 * * MON sudo reboot") | sort - | uniq - | crontab -
 (crontab -l ; echo "@reboot sudo certbot renew") | sort - | uniq - | crontab -
 
 echo "Rebooting now is recommended, and should start the site up properly. "
