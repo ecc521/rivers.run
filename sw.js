@@ -71,7 +71,7 @@ self.addEventListener("install", function() {
 //When set to 0, cached data will be returned immediately, and cache will be updated in background.
 const defaultWaitPeriod = 0
 
-//TODO: Default to network, fallback to cache with Google Maps. Google Maps is throwing errors sometimes for unknown reasons. 
+//TODO: Default to network, fallback to cache with Google Maps. Google Maps is throwing errors sometimes for unknown reasons.
 function fetchHandler(event) {
     event.respondWith((async function(){
 		let waitperiod = defaultWaitPeriod
@@ -111,17 +111,20 @@ function fetchHandler(event) {
             //Override - Cache Google Maps JavaScript
             if (url.includes("maps.googleapis.com/maps/api/js?")) {
                 //Main JavaScript file
-                returnNetwork = false
+                returnNetwork = "default"
             }
 
             if (url.includes("maps.googleapis.com") && url.includes(".js")) {
                 //Auxillary JavaScript files.
-                returnNetwork = false
+                returnNetwork = "default"
             }
 		}
 
-        if (returnNetwork) {
+        if (returnNetwork === true) {
             return fromnetwork
+        }
+        else if (returnNetwork === "default") {
+            waitperiod = Infinity //Wait for network to error before using cache. 
         }
 
         if (!fromcache) {
