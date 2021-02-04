@@ -45,7 +45,7 @@ sudo tee -a /etc/apache2/sites-available/rivers.run.conf > /dev/null << EOF
 
 LoadModule proxy_module modules/mod_proxy.so
 LoadModule proxy_http_module modules/mod_proxy_http.so
-ProxyPass /node ws://127.0.0.1:5329/node
+ProxyPass /node http://127.0.0.1:5329/node
 
 LoadModule http2_module modules/mod_http2.so
 Protocols h2 http/1.1
