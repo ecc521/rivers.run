@@ -10,3 +10,5 @@ overviews
 *.br
 *.BIN
 android
+ios
+capacitorDir
