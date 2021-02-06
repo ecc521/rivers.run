@@ -6,7 +6,7 @@
   "webDir": "capacitorDir",
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 0
+      "launchShowDuration": 200
     }
   },
   "cordova": {},
