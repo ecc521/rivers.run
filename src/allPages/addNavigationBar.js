@@ -20,7 +20,9 @@ try {
 	addItem("Settings", root + "settings.html")
 	addItem("Clubs", root + "clubs.html")
 	addItem("Email Alerts", root + "emailnotifications.html")
-	addItem("Browser Alerts", root + "notifications.html")
+	if (!window.Capacitor) {
+		addItem("Browser Alerts", root + "notifications.html")
+	}
 	addItem("Voice", root + "voice.html")
 	addItem("About", root + "about.html")
 
