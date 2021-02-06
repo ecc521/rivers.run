@@ -2,6 +2,20 @@
 //It defines global CSS rules, allows for forcing dark mode,
 //defines the river-overview DOM element, and makes sure a viewport meta tag exists.
 
+if (window.Capacitor) {
+	try {
+		Capacitor.Plugins.StatusBar.hide() //setOverlaysWebView doesn't work on iOS.
+		for (let i=0;i<10;i++) {
+			//Cover up the alert about using the https://rivers.run server. Might not be needed in production. 
+			Capacitor.Plugins.Toast.show({
+				text: 'Welcome to rivers.run! Happy Paddling!',
+				duration: "long"
+			})
+		}
+	}
+	catch (e) {console.error(e)}
+}
+
 try {
 	//IE11 polyfills
 	//Note that there are more places that IE11 specific code is used.

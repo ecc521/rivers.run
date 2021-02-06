@@ -1,0 +1,16 @@
+{
+  "appId": "run.rivers.twa",
+  "appName": "rivers.run",
+  "bundledWebRuntime": false,
+  "npmClient": "npm",
+  "webDir": "capacitorDir",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  },
+  "cordova": {},
+  "server": {
+      "url": "https://rivers.run/"
+  }
+}

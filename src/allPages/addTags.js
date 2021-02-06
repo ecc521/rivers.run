@@ -42,3 +42,12 @@ try {
 catch(e) {
     console.error(e)
 }
+
+try {
+	let charset = document.createElement("meta")
+	charset.setAttribute("charset", "UTF-8")
+	document.head.appendChild(charset)
+}
+catch (e) {
+	console.error(e)
+}

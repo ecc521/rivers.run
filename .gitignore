@@ -10,3 +10,8 @@ overviews
 *.br
 *.BIN
 android
+ios
+capacitorDir
+!resources/ios
+resources/ios/icon
+resources/ios/splash

@@ -17,16 +17,9 @@ RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 #Strict transport security - force https in future.
 Header always set Strict-Transport-Security "max-age=63072000; preload; includeSubdomains" env=HTTPS
 
-
-#Allow rivers.run, all private IP address, and all respective subdomains and ports
-#Fallback declaration
-Header always set Access-Control-Allow-Origin "https://rivers.run"
-#The Origin header doesn't appear to be sent in Firefox - so I guess Chrome is needed for development.
-SetEnvIf Origin "^http(s)?://(.+\.)?(rivers.run|((^127\..+\.\d+\.\d+)|(^10\.\d+\.\d+\.\d+)|(^172\.1[6-9]\.\d+\.\d+)|(^172\.2[0-9]\.\d+\.\d+)|(^172\.3[0-1]\.\d+\.\d+)|(^192\.168\.\d+\.\d+))(:[0-9]+)?$)(:[0-9]+)?$" AccessControlAllowOrigin=$0
-Header set Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
+#This was set to https://rivers.run before - Looks like it might have been an IE issue. 
+Header always set Access-Control-Allow-Origin "*"
 Header merge Vary Origin
-
-
 
 #Block access to .git files
 RedirectMatch 403 /\.git
