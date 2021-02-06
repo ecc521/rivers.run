@@ -6,11 +6,14 @@ if (window.Capacitor) {
 	try {
 		Capacitor.Plugins.StatusBar.hide() //setOverlaysWebView doesn't work on iOS.
 		for (let i=0;i<10;i++) {
-			//Cover up the alert about using the https://rivers.run server. Might not be needed in production. 
-			Capacitor.Plugins.Toast.show({
-				text: 'Welcome to rivers.run! Happy Paddling!',
-				duration: "long"
-			})
+			//Cover up the alert about using the https://rivers.run server. Might not be needed in production.
+			if (window.location.hash === "#f7s") {
+				Capacitor.Plugins.Toast.show({
+					text: 'Welcome to rivers.run! Happy Paddling!',
+					duration: "long"
+				})
+				window.location.hash = "#"
+			}
 		}
 	}
 	catch (e) {console.error(e)}
