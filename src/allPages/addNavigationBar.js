@@ -24,7 +24,9 @@ try {
 		addItem("Browser Alerts", root + "notifications.html")
 	}
 	addItem("Voice", root + "voice.html")
-	addItem("About", root + "about.html")
+	if (!window.Capacitor) {
+		addItem("About", root + "about.html")
+	}
 
 	for (let i=0;i<items.length;i++) {
 	    let link = items[i]

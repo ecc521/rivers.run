@@ -176,7 +176,10 @@ function createExpansion(button, river) {
                         graphContainer.appendChild(document.createElement("br"))
                         graphContainer.appendChild(document.createElement("br"))
                     }
-                    graphContainer.appendChild(createDeviceNotificationsWidget(river, usgsID))
+
+                    if (!window.Capacitor) {
+                      graphContainer.appendChild(createDeviceNotificationsWidget(river, usgsID))                      
+                    }
                     graphContainer.appendChild(createEmailNotificationsWidget(river, usgsID))
 
 
