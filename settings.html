@@ -4,12 +4,30 @@
         <!--Web App Manifest-->
         <link rel="manifest" href="manifest.json">
 
-        <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#317EFB"/>
 
         <title>Rivers.run - Settings</title>
     </head>
     <body>
+
+    <style>
+
+  h1 {
+    text-align: center;
+  }
+
+        select {
+            font-size: 16px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            html, body {
+                background-color: black;
+                color: #cccccc;
+            }
+        }
+    </style>
+    <script src="packages/allPages.js"></script>
 
 		<h1>Settings</h1>
 
@@ -74,23 +92,6 @@
 
         If you are color blind, please email <a href="mailto:admin@rivers.run">admin@rivers.run</a> with your opinion on this feature and how it can be improved.
     </p>
-
-        <style>
-			h1 {
-				text-align: center;
-			}
-
-            select {
-                font-size: 16px;
-            }
-
-            @media (prefers-color-scheme: dark) {
-                html, body {
-                    background-color: black;
-                    color: #cccccc;
-                }
-            }
-        </style>
 
         <script>
             document.getElementById("theme").addEventListener("change", function(event) {
@@ -184,7 +185,5 @@
 
 
         </script>
-
-        <script src="packages/allPages.js"></script>
     </body>
 </html>

@@ -5,36 +5,6 @@
     </head>
     <body>
 
-        <h1>Email Flow Notifications</h1>
-
-		<div style="text-align: center">
-			<p>Please give all operations a few seconds to complete. </p>
-		</div>
-
-		<div id="emailEntry" style="text-align: center;">
-			<input id="email" type="text" placeholder="Your Email"><input id="saveEmail" type="button" value="Select">
-		</div>
-
-        <div id="notificationsState">
-            <p id="notificationsStatus"></p>
-            <button id="subscribe">Enable Notifications</button>
-            <button id="disable">Temporarily Disable</button>
-            <button id="unsubscribe">Unsubscribe from Notifications</button>
-        </div>
-
-        <div id="currentSelections"></div>
-
-        <!-- Consider adding a gauge name column. Add an ID column. -->
-
-        <br>
-
-		<h3>If you aren't receiving emails, check your spam folder for emails from rivergauges@rivers.run - you can unmark our emails as spam and add us as a contact to help prevent issues in the future.</h3>
-
-		<br>
-		<h3>How do I add rivers for which I want to receive notifications on?</h3>
-		<p>If you would like to receive notifications for a river, go to the <a href=".">main page</a>, find the river that you want to receive
-			notifications on, click on it, and scroll down to the graphs. Above each graph you will see a tool that will allow you to add notifications for that river.</p>
-
         <style>
         h1 {
             text-align: center
@@ -159,6 +129,38 @@
         </style>
 
         <script src="packages/allPages.js"></script>
+
+
+                <h1>Email Flow Notifications</h1>
+
+        		<div style="text-align: center">
+        			<p>Please give all operations a few seconds to complete. </p>
+        		</div>
+
+        		<div id="emailEntry" style="text-align: center;">
+        			<input id="email" type="text" placeholder="Your Email"><input id="saveEmail" type="button" value="Select">
+        		</div>
+
+                <div id="notificationsState">
+                    <p id="notificationsStatus"></p>
+                    <button id="subscribe">Enable Notifications</button>
+                    <button id="disable">Temporarily Disable</button>
+                    <button id="unsubscribe">Unsubscribe from Notifications</button>
+                </div>
+
+                <div id="currentSelections"></div>
+
+                <!-- Consider adding a gauge name column. Add an ID column. -->
+
+                <br>
+
+        		<h3>If you aren't receiving emails, check your spam folder for emails from rivergauges@rivers.run - you can unmark our emails as spam and add us as a contact to help prevent issues in the future.</h3>
+
+        		<br>
+        		<h3>How do I add rivers for which I want to receive notifications on?</h3>
+        		<p>If you would like to receive notifications for a river, go to the <a href=".">main page</a>, find the river that you want to receive
+        			notifications on, click on it, and scroll down to the graphs. Above each graph you will see a tool that will allow you to add notifications for that river.</p>
+
 
 		<script src="notifications.js"></script>
 

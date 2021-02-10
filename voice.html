@@ -4,12 +4,26 @@
         <!--Web App Manifest-->
         <link rel="manifest" href="manifest.json">
 
-        <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#317EFB"/>
 
         <title>Rivers.run - Voice Assistant</title>
     </head>
     <body>
+
+    <style>
+  h1, h2 {
+    text-align: center;
+  }
+
+        @media (prefers-color-scheme: dark) {
+            html, body {
+                background-color: black;
+                color: #cccccc;
+            }
+        }
+</style>
+
+    <script src="packages/allPages.js"></script>
 
 		<h1>Rivers.run Voice Assistant</h1>
 
@@ -25,25 +39,7 @@
         <p>I am examining the possibility of building a Cortona bot.</p>
 
         <h3>For iOS Siri:</h3>
-        <p>Interfacing with Siri requires a native app. Since Apple wants quite a bit of money every year to put an app in the app store, there are currently no plans to add support for iOS Siri.</p>
-        <p>You can however, install <a href="https://apps.apple.com/us/app/google-assistant/id1220976145" target="_blank">Google Assistant for iOS</a>, and use our Google Assistant action.</p>
-
-        <h3>For MacOS Siri:</h3>
-        <p>I am looking into the possibility of building an application for Siri on MacOS, however this is quite unlikely due to issues with the Apple ecosystem.</p>
-
-        <style>
-			h1, h2 {
-				text-align: center;
-			}
-
-            @media (prefers-color-scheme: dark) {
-                html, body {
-                    background-color: black;
-                    color: #cccccc;
-                }
-            }
-		</style>
-
-        <script src="packages/allPages.js"></script>
+        <p>You can install <a href="https://apps.apple.com/us/app/google-assistant/id1220976145" target="_blank">Google Assistant for iOS</a>, and use our Google Assistant action.</p>
+        
     </body>
 </html>

@@ -3,14 +3,22 @@
         <!--Web App Manifest-->
         <link rel="manifest" href="manifest.json">
 
-
-        <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#317EFB"/>
 
         <title style="text-align: center">Rivers.run - Clubs</title>
 
   </head>
   <body>
+  <style>
+      @media (prefers-color-scheme: dark) {
+          html, body {
+              background-color: black;
+              color: #cccccc;
+          }
+      }
+  </style>
+<script src="packages/allPages.js"></script>
+
   <h1>Clubs and Regional Expertise</h1>
 <p>Regional paddling clubs and their experts provide a wealth of river information.
   This page consolidates local and regional rivers and expertise.</p>
@@ -58,15 +66,5 @@ Click on any river to see the river write-up and the most current river gauge in
         <li><river-overview>Youghiogheny River/Ohiopyle/Confluence Pa</river-overview></li>
         <li><river-overview>Blacksburg area rivers</river-overview></li>
       </ul>
-
-        <style>
-            @media (prefers-color-scheme: dark) {
-                html, body {
-                    background-color: black;
-                    color: #cccccc;
-                }
-            }
-        </style>
-    <script src="packages/allPages.js"></script>
   </body>
     </html>

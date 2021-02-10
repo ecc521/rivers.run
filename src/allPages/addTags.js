@@ -35,7 +35,7 @@ try {
 	if (!document.querySelector("meta[name=viewport]")) {
         let meta = document.createElement("meta")
         meta.name = "viewport"
-        meta.content = "width=device-width, initial-scale=1"
+        meta.content = "width=device-width, initial-scale=1, viewport-fit=cover"
         document.head.appendChild(meta)
 	}
 }

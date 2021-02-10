@@ -37,7 +37,7 @@ try {
 	    topnav.appendChild(link)
 	}
 
-	document.body.insertBefore(topnav, document.body.firstChild)
+	document.documentElement.prepend(topnav)
 
 
 	styleSheet.insertRule(`

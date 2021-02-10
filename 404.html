@@ -5,42 +5,43 @@
 <!--Favicon-->
 </head>
 <body>
+
+		<style>
+		h1, p{
+		  text-align:center
+		}
+		html, body{
+		  height:100%;
+		}
+
+			@media (prefers-color-scheme:dark) {
+				html, body {
+					background-color: black;
+					color: white;
+				}
+			}
+		</style>
+
+		<script src="packages/allPages.js"></script>
 <h1>404 - Not Found</h1>
 <p style="font-size:18px">
 The file you are looking for was not found.<br><br>
-	
+
 I could have turned on the dam early, getting the file stuck in a hydraulic.<br>
 You could have paddled down the wrong river.<br>
 The file could have made a wrong turn on the shuttle.<br><br>
-	
+
 	If you think the dam needs to be turned off, please email <a href="mailto:turnoffdam@rivers.run">turnoffdam@rivers.run</a>.<br><Br>
-	
+
 You can see the main page below, and navigate around.</p>
 <iframe style="width:100%;height:100%" id="homepage"></iframe>
 
-	<style>
-	h1, p{
-	  text-align:center
-	}
-	html, body{
-	  height:100%;
-	}
-		
-		@media (prefers-color-scheme:dark) {
-			html, body {
-				background-color: black;
-				color: white;
-			}
-		}
-	</style>
-
-	<script src="packages/allPages.js"></script>
 	<script>
 		//window.root defined in allPages.js
 		let iframe = document.getElementById("homepage")
-		
+
 		iframe.src = window.root
-		
+
 		iframe.addEventListener("load", function() {
 			//If the user clicks on a link, to rivers.run, redirect the whole page there.
 			iframe.contentDocument.addEventListener("click", function(e) {

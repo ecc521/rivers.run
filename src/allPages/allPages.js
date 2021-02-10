@@ -1,13 +1,7 @@
 //This JavaScript file should run on all pages
 //It defines global CSS rules, allows for forcing dark mode,
 //defines the river-overview DOM element, and makes sure a viewport meta tag exists.
-
 if (window.Capacitor) {
-	try {
-		Capacitor.Plugins.StatusBar.hide() //setOverlaysWebView doesn't work on iOS.
-	}
-	catch(e) {console.error(e)}
-
 	try {
 		//Cover up the alert about using the https://rivers.run server. Might not be needed in production.
 		for (let i=0;i<10;i++) {
@@ -32,6 +26,8 @@ if (window.Capacitor) {
 try {
 	//IE11 polyfills
 	//Note that there are more places that IE11 specific code is used.
+	//Rivers.run no longer supports IE11. These should be removed at some point once we can certify that they don't impact
+	//any supported browsers as well.
 	require("./IE11.js")
 }
 catch(e) {
@@ -120,6 +116,38 @@ catch (e) {
 	console.error(e)
 }
 
+if (window.Capacitor) {
+	//This code may not need to be Capacitor specific.
+	try {
+		//setOverlaysWebView doesn't work on iOS.
+		//Therefore, we must use CSS to work around the notch.
+		//We also use an element to set notch color.
+		//This elem goes above navbar, so it is here.
+		let elem = document.createElement("div")
+		elem.id = "iosStatusBarBackground"
+		document.documentElement.prepend(elem)
+
+		//Navigation bar background color.
+		styleSheet.insertRule(`
+		#iosStatusBarBackground {
+		  display: none;
+		  background-color: rgb(36, 185, 204);
+		}`)
+
+		//Cover up anything covering up the battery and clock, etc.
+		styleSheet.insertRule(`
+			@media (orientation: portrait) {
+				#iosStatusBarBackground {
+					display: block;
+					position: sticky;
+					top: 0;
+					height: env(safe-area-inset-top);
+				}
+			}
+	`, styleSheet.cssRules.length)
+	}
+	catch(e) {console.error(e)}
+}
 
 try {
 	require("./addLegalStuff.js")

@@ -622,6 +622,12 @@ Those include name,section,skill,quality, and flow info*/
     float: right;
 }
 
+@media (orientation: portrait) {
+  #legend {
+    top: env(safe-area-inset-top);
+  }
+}
+
 
 @media (prefers-color-scheme: dark) {
     html, body {
