@@ -1,6 +1,15 @@
 //This JavaScript file should run on all pages
 //It defines global CSS rules, allows for forcing dark mode,
 //defines the river-overview DOM element, and makes sure a viewport meta tag exists.
+
+try {
+	window.isAndroid = false
+	if (document.referrer && document.referrer.includes("android-app://run.rivers.twa")) {
+	  window.isAndroid = true
+	}
+}
+catch (e) {console.error(e)}
+
 if (window.Capacitor) {
 	try {
 		//Cover up the alert about using the https://rivers.run server. Might not be needed in production.
@@ -148,6 +157,25 @@ if (window.Capacitor) {
 	}
 	catch(e) {console.error(e)}
 }
+
+try {
+
+	styleSheet.insertRule(`#externalAppStoresDiv {
+		text-align: center;
+}`, styleSheet.cssRules.length)
+
+
+	styleSheet.insertRule(`#externalAppStoresDiv * {
+	height: 70px;
+	max-width: 90%;
+	margin: 16px;
+	margin-right: 8px;
+	margin-left: 8px;
+}`, styleSheet.cssRules.length)
+
+	require("./addExternalAppStores.js")
+}
+catch (e) {console.error(e)}
 
 try {
 	require("./addLegalStuff.js")

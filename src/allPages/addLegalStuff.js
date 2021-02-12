@@ -3,7 +3,7 @@ try {
 	let div = document.createElement("div")
 
 	div.style.textAlign = "center"
-	div.style.margin = "40px"
+	div.style.marginTop = "16px"
 
 	let content = document.createElement("p")
 	div.appendChild(content)
