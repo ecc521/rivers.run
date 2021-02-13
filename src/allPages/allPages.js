@@ -168,9 +168,7 @@ try {
 	styleSheet.insertRule(`#externalAppStoresDiv * {
 	height: 70px;
 	max-width: 90%;
-	margin: 16px;
-	margin-right: 8px;
-	margin-left: 8px;
+	margin: 32px 8px 16px 8px;
 }`, styleSheet.cssRules.length)
 
 	require("./addExternalAppStores.js")
