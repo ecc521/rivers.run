@@ -84,7 +84,11 @@ function fetchHandler(event) {
 
         //If it is less than 5 minutes old, return the cached data.
         //Note that the date header isn't always set.
-        if (fromcache && Date.now() - new Date(fromcache.headers.get("date")).getTime() < 60*1000*5) {
+        let age;
+        if (fromcache) {
+            age = Date.now() - new Date(fromcache.headers.get("date")).getTime()
+        }
+        if (age < 60*1000*5) {
             return fromcache
         }
 
@@ -125,6 +129,9 @@ function fetchHandler(event) {
         }
         else if (returnNetwork === "default") {
             waitperiod = false //Wait for network to error before using cache.
+        }
+        else if (age > 60*1000*60*24*3) {
+            waitperiod = 1500 //If the data is very old, wait a bit to try and get a new copy. 
         }
 
         if (!fromcache) {
