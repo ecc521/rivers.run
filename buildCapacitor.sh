@@ -1,3 +1,5 @@
+echo "Remember to run npx cap update if you installed any new native plugins"
+
 rm -rf capacitorDir
 mkdir capacitorDir
 # node copyHtmlCapacitor.js

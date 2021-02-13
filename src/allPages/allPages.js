@@ -32,6 +32,30 @@ if (window.Capacitor) {
 	catch(e) {console.error(e)}
 }
 
+//Handle universal links into the app.
+try {
+	if (window.Capacitor) {
+		Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
+		  console.log('App opened with URL: ' +  data.url);
+		  window.location = data.url
+		  window.location.reload()
+		});
+
+		Capacitor.Plugins.App.getLaunchUrl().then((ret) => {
+			if(ret && ret.url) {
+				console.log('Launch url: ', ret);
+				console.log('Current url: ', window.location.href)
+				console.log(window.location.href === ret.url)
+				if (window.location.href !== ret.url) {
+					window.location = ret.url
+					window.location.reload()
+				}
+			}
+		});
+	}
+}
+catch (e) {console.error(e)}
+
 try {
 	//IE11 polyfills
 	//Note that there are more places that IE11 specific code is used.
@@ -162,13 +186,14 @@ try {
 
 	styleSheet.insertRule(`#externalAppStoresDiv {
 		text-align: center;
+		margin-top: 40px;
 }`, styleSheet.cssRules.length)
 
 
 	styleSheet.insertRule(`#externalAppStoresDiv * {
 	height: 70px;
 	max-width: 90%;
-	margin: 32px 8px 16px 8px;
+	margin: 0px 8px 16px 8px;
 }`, styleSheet.cssRules.length)
 
 	require("./addExternalAppStores.js")
