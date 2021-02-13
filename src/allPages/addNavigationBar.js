@@ -127,7 +127,6 @@ try {
 	for (let i=items.length - 1;i>0;i--) {
 		let menuWidth = 45 //TODO: Calculate this dynamically.
 		let neededWidth = widthForElemCount(i) + menuWidth
-		console.log(neededWidth)
 
 		//Hide elements that do not fit below neededWidth
 		styleSheet.insertRule(`
