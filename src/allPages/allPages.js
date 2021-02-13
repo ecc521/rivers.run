@@ -47,7 +47,7 @@ try {
 				console.log('Current url: ', window.location.href)
 				console.log(window.location.href === ret.url)
 				if (window.location.href !== ret.url) {
-					window.location = ret.url
+					window.location.href = ret.url
 					window.location.reload()
 				}
 			}
@@ -66,18 +66,6 @@ try {
 catch(e) {
 	console.error(e)
 }
-
-try {
-	require("./reportErrors.js") //Collect errors.
-}
-catch(e) {console.error(e)}
-
-
-try {
-	require("./collectVisitorInformation.js") //Get site usage statistics.
-}
-catch(e) {console.error(e)}
-
 
 //Define window.root (the site root)
 try {
