@@ -1,7 +1,7 @@
 function messageAllClients(message) {
-return self.clients.matchAll().then(clients => {
-  clients.forEach(client => client.postMessage(message));
-})
+    return self.clients.matchAll().then(clients => {
+        clients.forEach(client => client.postMessage(message));
+    })
 }
 
 const cacheName = "rivers.run"
@@ -74,7 +74,7 @@ const defaultWaitPeriod = 0
 //TODO: Default to network, fallback to cache with Google Maps. Google Maps is throwing errors sometimes for unknown reasons.
 function fetchHandler(event) {
     event.respondWith((async function(){
-		let waitperiod = defaultWaitPeriod
+        let waitperiod = defaultWaitPeriod
 
         let cache = await caches.open(cacheName)
 
@@ -84,15 +84,15 @@ function fetchHandler(event) {
 
         //If it is less than 5 minutes old, return the cached data.
         //Note that the date header isn't always set.
-		if (fromcache && Date.now() - new Date(fromcache.headers.get("date")).getTime() < 60*1000*5) {
-			return fromcache
-		}
+        if (fromcache && Date.now() - new Date(fromcache.headers.get("date")).getTime() < 60*1000*5) {
+            return fromcache
+        }
 
         let returnNetwork = false
 
         let fromnetwork = fetch(event.request)
 
-		if (
+        if (
             url.includes("docs.google.com") //Avoid filling up cache with opaque responses from docs.google.com
             || url.includes("googleapis.com") //May want to temporarily cache some images, but we mostly
             || url.includes("salmon2019") //Don't cache fileshare - too much data
@@ -118,13 +118,13 @@ function fetchHandler(event) {
                 //Auxillary JavaScript files.
                 returnNetwork = "default"
             }
-		}
+        }
 
         if (returnNetwork === true) {
             return fromnetwork
         }
         else if (returnNetwork === "default") {
-            waitperiod = Infinity //Wait for network to error before using cache. 
+            waitperiod = false //Wait for network to error before using cache.
         }
 
         if (!fromcache) {
@@ -138,43 +138,45 @@ function fetchHandler(event) {
             //We have cached data
             return new Promise(function(resolve, reject){
 
-				let served = 0
+                let served = 0
 
                 //If the fetch event fails (ex. offline), return cached immediately
                 fromnetwork.catch(function(e){
-					messageAllClients(url + " errored. Using cache.")
-					if (!served) {
-						served = 1
-						resolve(fromcache)
-					}
+                    messageAllClients(url + " errored. Using cache.")
+                    if (!served) {
+                        served = 1
+                        resolve(fromcache)
+                    }
                 })
 
-				//Fetch from network and update cache
+                //Fetch from network and update cache
                 fromnetwork.then(function(response){
-					let otherServed = served
-					served = 1
+                    let otherServed = served
+                    served = 1
                     cache.put(url, response.clone()).then(() => {
-						if (otherServed) {
-							messageAllClients("Updated cache for " + url)
-						}
-						else {
-							messageAllClients(url + " has been loaded from the network")
-						}
-						resolve(response)
-					})
+                        if (otherServed) {
+                            messageAllClients("Updated cache for " + url)
+                        }
+                        else {
+                            messageAllClients(url + " has been loaded from the network")
+                        }
+                        resolve(response)
+                    })
                 })
 
 
-                    //If the network doesn't respond quickly enough, use cached data
+                //If the network doesn't respond quickly enough, use cached data
+                if (waitperiod !== false) {
                     setTimeout(function(){
-						if (!served) {
-							served = 1
-                        	messageAllClients(url + " took too long to load from network. Using cache")
-							resolve(fromcache)
-						}
+                        if (!served) {
+                            served = 1
+                            messageAllClients(url + " took too long to load from network. Using cache")
+                            resolve(fromcache)
+                        }
                     }, waitperiod)
-                })
-            }
+                }
+            })
+        }
     }()))
 }
 
@@ -195,7 +197,7 @@ function pushHandler(event) {
     console.log(event)
     var data = {};
     if (event.data) {
-      data = event.data.json();
+        data = event.data.json();
     }
 
     let title = "River(s) are running!";
@@ -241,16 +243,16 @@ function pushHandler(event) {
 
 
     let options = {
-      icon: "resources/icons/192x192-Water-Drop.png",
-      body,
-      badge: "resources/icons/72x72-Water-Drop.png",
-      sound: 'resources/waterfall.mp3',
-      requireInteraction: true, //Don't auto-close the notification.
-      renotify: false,
-      data: {
-          IDs,
-      },
-      tag: 'rivernotification',
+        icon: "resources/icons/192x192-Water-Drop.png",
+        body,
+        badge: "resources/icons/72x72-Water-Drop.png",
+        sound: 'resources/waterfall.mp3',
+        requireInteraction: true, //Don't auto-close the notification.
+        renotify: false,
+        data: {
+            IDs,
+        },
+        tag: 'rivernotification',
     }
 
     event.waitUntil((async function() {
@@ -264,25 +266,25 @@ self.addEventListener('push', pushHandler)
 
 
 self.addEventListener('notificationclick', function(event) {
-  //TODO: Consider showing only the river(s) being talked about.
-  if (clients.openWindow) {
-      console.log(event)
-      let data = event.notification.data
+    //TODO: Consider showing only the river(s) being talked about.
+    if (clients.openWindow) {
+        console.log(event)
+        let data = event.notification.data
 
-      let IDs = data.IDs
+        let IDs = data.IDs
 
-      let searchQuery = {
-          id: IDs.join(",")
-      }
+        let searchQuery = {
+            id: IDs.join(",")
+        }
 
-      let url = new URL(rebaseURL("")); //URL to River Info page.
-      url.hash = JSON.stringify(searchQuery)
-      event.notification.close(); //Android needs explicit close.
-      self.dispatchEvent(new Event("notificationclose")) //I thought that the event was supposed to fire when the notification was closed for
-      //any purpose, however, at least in chrome, it did not.
-      console.log(url.href)
-      clients.openWindow(url.href) //Open the specified url.
-  }
+        let url = new URL(rebaseURL("")); //URL to River Info page.
+        url.hash = JSON.stringify(searchQuery)
+        event.notification.close(); //Android needs explicit close.
+        self.dispatchEvent(new Event("notificationclose")) //I thought that the event was supposed to fire when the notification was closed for
+        //any purpose, however, at least in chrome, it did not.
+        console.log(url.href)
+        clients.openWindow(url.href) //Open the specified url.
+    }
 });
 
 self.addEventListener("notificationclose", function() {
