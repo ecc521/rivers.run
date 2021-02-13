@@ -1,0 +1,12 @@
+[
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target" : { "namespace": "android_app", "package_name": "run.rivers.twa",
+               "sha256_cert_fingerprints": ["A7:88:53:2D:87:E1:1D:B1:C7:74:46:AB:2D:A8:6E:11:98:80:7E:B8:0C:58:D0:91:90:49:92:E6:C3:92:FA:19"] }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target" : { "namespace": "android_app", "package_name": "run.rivers.twa",
+               "sha256_cert_fingerprints": ["FA:19:AA:37:16:8C:9B:E7:83:EA:77:4E:66:40:91:F3:31:88:34:34:02:F3:9F:9C:A8:32:75:32:4D:75:D7:8D"] }
+}
+]

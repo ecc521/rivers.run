@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "run.rivers.twa",
+        "paths": ["*"]
+      }
+    ]
+  }
+}
