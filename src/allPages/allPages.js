@@ -46,17 +46,17 @@ try {
 			console.log("Current URL: " + window.location.href)
 
 			let url = new URL(target)
-			if (url.href === window.location.href) {
+			if (url.hash === window.location.hash && url.pathname === window.location.pathname) {
 				console.log("Same URLs. Skipping")
 			}
 			else if (url.pathname === window.location.pathname) {
 				console.log("Same pathname. Setting and reloading. ")
-				window.location =  url.href
+				window.location.hash =  url.hash
 				window.location.reload()
 			}
 			else {
 				console.log("Different pathname. Setting")
-				window.location = url.href
+				window.location.pathname = url.pathname
 			}
 		}
 
