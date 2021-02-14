@@ -54,7 +54,6 @@
     "@babel/preset-env": "^7.11.5",
     "@babel/runtime": "^7.11.2",
     "@capacitor/ios": "^2.4.6",
-    "@ionic-native/deeplinks": "^5.31.1",
     "@webcomponents/custom-elements": "^1.4.2",
     "babel-loader": "^8.1.0",
     "bent": "^7.3.12",
