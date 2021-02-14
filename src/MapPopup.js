@@ -63,7 +63,7 @@ class MapPopup extends google.maps.OverlayView {
 			this.position
 		);
 
-		this.map.panBy(currentPixel.x - this.map.getDiv().offsetWidth * 0.5, currentPixel.y - this.map.getDiv().offsetHeight * 0.75)
+		this.map.panBy(currentPixel.x - this.map.getDiv().offsetWidth * 0.5, currentPixel.y - this.map.getDiv().offsetHeight * 0.8)
 	}
 	/** Called when the popup is removed from the map. */
 	onRemove() {

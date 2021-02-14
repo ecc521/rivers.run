@@ -37,3 +37,51 @@ try {
 catch (e) {
 	console.error(e)
 }
+
+//Add the disclaimer as a yellow bar at the bottom.
+try {
+	let storageKey = "hasSeenDisclaimer"
+	if (!localStorage.getItem(storageKey)) {
+		let disclaimer = document.createElement("div")
+		disclaimer.innerHTML = "Paddle at your own risk."
+
+		let link = document.createElement("a")
+		link.innerHTML = "Read More"
+		link.href = window.root = "legal/DISCLAIMER.html"
+		link.target = "_blank"
+		link.style.marginLeft = "4px"
+
+		disclaimer.appendChild(link)
+
+		disclaimer.style.position = "fixed"
+		disclaimer.style.bottom = "0"
+		disclaimer.style.backgroundColor = "yellow"
+		disclaimer.style.color = "black"
+		disclaimer.style.width = "100vw"
+		disclaimer.style.padding = "6px 0px 6px 0px" //Expand it on the top and bottom to make it more visible.
+		disclaimer.style.display = "flex"
+		disclaimer.style.alignItems = "center"
+		disclaimer.style.justifyContent = "center"
+		disclaimer.style.flexDirection = "row"
+
+		let closeButton = document.createElement("button")
+		closeButton.innerHTML = "✖️"
+		closeButton.style.fontSize = "20px"
+		closeButton.style.border = "none"
+		closeButton.style.background = "none"
+		closeButton.addEventListener("click", function() {
+			localStorage.setItem(storageKey, true)
+			disclaimer.remove()
+		})
+
+		disclaimer.appendChild(closeButton)
+
+		document.body.appendChild(disclaimer)
+
+		setTimeout(function() {
+			//If it remains on screen for 10 seconds, then don't show it the next page load.
+			localStorage.setItem(storageKey, true)
+		}, 10000)
+	}
+}
+catch (e) {console.error(e)}
