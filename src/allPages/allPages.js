@@ -15,13 +15,16 @@ if (window.Capacitor) {
 		//Cover up the alert about using the https://rivers.run server. Might not be needed in production.
 		for (let i=0;i<10;i++) {
 			if (window.location.hash === "#f7s") {
+				window.sessionFirstLaunch = true //App was just launched, not navigated to from another page. 
+				window.location.hash = "#"
+			}
+			if (window.sessionFirstLaunch) {
 				Capacitor.Plugins.Toast.show({
 					text: 'Welcome to rivers.run! Happy Paddling!',
 					duration: "long"
 				})
-				window.location.hash = "#"
 			}
-		}
+ 		}
 	}
 	catch (e) {console.error(e)}
 
@@ -32,48 +35,7 @@ if (window.Capacitor) {
 	catch(e) {console.error(e)}
 }
 
-//Handle universal links into the app.
-try {
-	if (window.Capacitor) {
-
-		//Properly navigates to target.
-		function processRedirect(target) {
-			//When reload is called instantly after changing href, the page doesn't navigate, and just reloads the current origin.
-			//The href change persists though.
-
-			//Therefore, we reload after changing href, and do not reload if we don't.
-
-			console.log("Current URL: " + window.location.href)
-
-			let url = new URL(target)
-			if (url.hash === window.location.hash && url.pathname === window.location.pathname) {
-				console.log("Same URLs. Skipping")
-			}
-			else if (url.pathname === window.location.pathname) {
-				console.log("Same pathname. Setting and reloading. ")
-				window.location.hash =  url.hash
-				window.location.reload()
-			}
-			else {
-				console.log("Different pathname. Setting")
-				window.location.pathname = url.pathname
-			}
-		}
-
-		Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
-		  console.log('App opened with URL: ' +  data.url);
-		  processRedirect(data.url)
-		});
-
-		Capacitor.Plugins.App.getLaunchUrl().then((ret) => {
-			if(ret && ret.url) {
-				console.log('Launch url: ', ret.url);
-				processRedirect(ret.url)
-			}
-		});
-	}
-}
-catch (e) {console.error(e)}
+require("./universalLinks.js")
 
 try {
 	//IE11 polyfills
