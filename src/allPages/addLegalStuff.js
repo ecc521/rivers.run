@@ -47,7 +47,7 @@ try {
 
 		let link = document.createElement("a")
 		link.innerHTML = "Read More"
-		link.href = window.root = "legal/DISCLAIMER.html"
+		link.href = window.root + "legal/DISCLAIMER.html"
 		link.target = "_blank"
 		link.style.marginLeft = "4px"
 
@@ -55,6 +55,7 @@ try {
 
 		disclaimer.style.position = "fixed"
 		disclaimer.style.bottom = "0"
+		disclaimer.style.zIndex = 60000 //Ridiculous. Must be on top.
 		disclaimer.style.backgroundColor = "yellow"
 		disclaimer.style.color = "black"
 		disclaimer.style.width = "100vw"
