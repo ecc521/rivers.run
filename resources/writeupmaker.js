@@ -202,9 +202,18 @@ for (let stateCode in states) {
 
 var List = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgauges","class","averagegradient","maxgradient","length", "comments"]
 
+if (window.location.hash !== "") {
+	if (confirm(`You were working on a previous writeup for the ${localStorage.getItem("name")}. Would you like to clear that writeup?`)) {
+		List.forEach((value) => {
+			localStorage.removeItem(value)
+		})
+	}
+	else {
+		window.location.hash = "#"
+	}
+}
 
 let urlParams = new URLSearchParams(window.location.hash.slice(1))
-let userApprovedOverwrites = null;
 
 List.forEach(function(value){
 	console.log(value)
@@ -215,12 +224,7 @@ List.forEach(function(value){
 
 		//Allow prefilling fields with url parameters.
 		if (urlParams.has(value)) {
-			if (userApprovedOverwrites === null && initialValue) {
-				userApprovedOverwrites = confirm(`The link you followed would like to prefill some fields, however that would overwrite data saved from a previous river you were working on. Would you like to prefill anyways?`)
-			}
-			if (userApprovedOverwrites === true || !initialValue) {
-				initialValue = urlParams.get(value)
-			}
+			initialValue = urlParams.get(value)
 		}
 
 		if (elem.type === "checkbox") {
