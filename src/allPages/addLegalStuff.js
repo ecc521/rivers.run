@@ -78,11 +78,6 @@ try {
 		disclaimer.appendChild(closeButton)
 
 		document.body.appendChild(disclaimer)
-
-		setTimeout(function() {
-			//If it remains on screen for 10 seconds, then don't show it the next page load.
-			localStorage.setItem(storageKey, true)
-		}, 10000)
 	}
 }
 catch (e) {console.error(e)}

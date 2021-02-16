@@ -25,22 +25,8 @@ const {addMap} = require("./Mapper.js")
 function createExpansion(button, river) {
             var div = document.createElement("div")
 			div.className = "riverWriteup"
-			div.innerHTML = ""
 
-			//Only show a link if river.dam is a link. This allows rivers to be marked as dams and explanations to be put in the writeups.
-			if (river.dam && river.dam.trim().startsWith("http")) {
-                //Adding to div.innerHTML works, but logs CSP errors
-                let link = document.createElement("a")
-                link.target = "_blank"
-                link.rel = "noopener"
-                link.href = river.dam
-                link.innerHTML = "This river has a dam. View information."
-                div.appendChild(link)
-				div.appendChild(document.createElement("br"))
-				div.appendChild(document.createElement("br"))
-            }
-
-			div.innerHTML += river.writeup + "<br><br>"
+			div.innerHTML = river.writeup + "<br><br>"
 
 			if (river.class && river.skill) {
 				div.innerHTML += "This river is class " + river.class + " and is rated " + skillTranslations[river.skill] + ".<br>"
@@ -51,7 +37,6 @@ function createExpansion(button, river) {
 			else if (river.skill) {
 				div.innerHTML += "This river is rated " + skillTranslations[river.skill] + ".<br>"
 			}
-
 
 			if (river.averagegradient) {div.innerHTML += "Average gradient: " + river.averagegradient + " feet per mile.<br>"}
 			if (river.maxgradient) {div.innerHTML += "Maximum gradient: " + river.maxgradient + " feet per mile.<br>"}
@@ -120,7 +105,10 @@ function createExpansion(button, river) {
             else {
                 //Link to create a river using this gauge.
                 link.innerHTML = "Create River using Gauge"
-                link.href = "resources/writeupmaker.html" + "#" + "name=" + river.name + "&section=" + river.section + "&gauge=" + river.gauge
+                //link.href = "resources/writeupmaker.html" + "#" + "name=" + river.name + "&section=" + river.section + "&gauge=" + river.gauge
+
+                //Too many people didn't edit the river or section name when those were prefilled.
+                link.href = window.root + "resources/writeupmaker.html" + "#" + "gauge=" + river.gauge
             }
             div.appendChild(link)
 
@@ -177,11 +165,7 @@ function createExpansion(button, river) {
                         graphContainer.appendChild(document.createElement("br"))
                     }
 
-                    if (!window.Capacitor) {
-                      graphContainer.appendChild(createDeviceNotificationsWidget(river, usgsID))                      
-                    }
                     graphContainer.appendChild(createEmailNotificationsWidget(river, usgsID))
-
 
                     if (data.source) {
                         let sourceInfo = document.createElement("p")
