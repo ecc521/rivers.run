@@ -2,7 +2,6 @@ const fs = require("fs")
 const path = require("path")
 const http = require("http")
 const assistantRequest = require(path.join(__dirname, "assistantRequest.js"))
-const salmon2019 = require(path.join(__dirname, "salmon2019.js"))
 const utils = require(path.join(__dirname, "utils.js"))
 const subscriptionManager = require(path.join(__dirname, "subscriptionManager.js"))
 require(path.join(__dirname, "vapidKeys.js")) //Generate vapid keys if they don't already exist.
@@ -24,18 +23,6 @@ async function httprequest(req,res) {
 
 		//TODO: Only allow rivers.run, its subdomains and local networks.
 		res.setHeader('Access-Control-Allow-Origin', '*')
-
-		try {
-			if (req.url.includes("salmon2019")) {
-				salmon2019.handleRequest(req, res)
-				return;
-			}
-		}
-		catch(e) {
-			console.error(e)
-			fs.appendFileSync(path.join(utils.getLogDirectory(), 'salmon2019.log'), String(e) + "\n");
-		}
-
 
 		if (req.method === "GET" && req.url.startsWith("/node/ip2location")) {
 			if (lookupIP) {
