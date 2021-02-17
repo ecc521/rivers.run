@@ -99,7 +99,6 @@ function fetchHandler(event) {
         if (
             url.includes("docs.google.com") //Avoid filling up cache with opaque responses from docs.google.com
             || url.includes("googleapis.com") //May want to temporarily cache some images, but we mostly
-            || url.includes("salmon2019") //Don't cache fileshare - too much data
             || url.includes("ip2location")
             || url.includes("node")
             || url.includes("gaugeReadings")
@@ -131,7 +130,7 @@ function fetchHandler(event) {
             waitperiod = false //Wait for network to error before using cache.
         }
         else if (age > 60*1000*60*24*3) {
-            waitperiod = 1500 //If the data is very old, wait a bit to try and get a new copy. 
+            waitperiod = 1500 //If the data is very old, wait a bit to try and get a new copy.
         }
 
         if (!fromcache) {

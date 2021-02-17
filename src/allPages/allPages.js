@@ -15,7 +15,7 @@ if (window.Capacitor) {
 		//Cover up the alert about using the https://rivers.run server. Might not be needed in production.
 		for (let i=0;i<10;i++) {
 			if (window.location.hash === "#f7s") {
-				window.sessionFirstLaunch = true //App was just launched, not navigated to from another page. 
+				window.sessionFirstLaunch = true //App was just launched, not navigated to from another page.
 				window.location.hash = "#"
 			}
 			if (window.sessionFirstLaunch) {
@@ -59,7 +59,7 @@ catch(e) {
 try {
 	if ('serviceWorker' in navigator) {
 	    window.addEventListener('load', function() {
-	        navigator.serviceWorker.register(root + 'sw.js');
+	        navigator.serviceWorker.register(root + 'packagedsw.js');
 	    });
 	}
 }
