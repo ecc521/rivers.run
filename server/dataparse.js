@@ -212,6 +212,8 @@ async function prepareRiverData({
             let name = prop.slice(0,prop.indexOf(":")).trim().toLowerCase()
             let value = prop.slice(prop.indexOf(":") + 1).trim()
 
+			value = value.replaceAll(`“`, `"`).replaceAll(`”`, `"`).replaceAll(`‘`, `'`).replaceAll(`’`, `'`) //Replace so called "smart-quotes"
+
             obj[name] = value
         }
 
