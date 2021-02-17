@@ -38,7 +38,7 @@ async function updateRiverData() {
 let riverDataPromise;
 if (!process.argv.includes("--noriverdata")) {
 	riverDataPromise = updateRiverData()
-	setInterval(updateRiverData, 1000*60*60*6)
+	setInterval(updateRiverData, 1000*60*60*2)
 }
 
 //Some actions should be performed at installation, but there is no need to start the server (and starting the server can lead to port errors).

@@ -129,7 +129,7 @@ function fetchHandler(event) {
         else if (returnNetwork === "default") {
             waitperiod = false //Wait for network to error before using cache.
         }
-        else if (age > 60*1000*60*24*3) {
+        else if (age > 60*1000*60*24*2) {
             waitperiod = 1500 //If the data is very old, wait a bit to try and get a new copy.
         }
 
