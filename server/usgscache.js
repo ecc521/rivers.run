@@ -127,7 +127,6 @@ async function updateCachedData() {
 	compressor.compressFiles(utils.getSiteRoot())
 
 	let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
-	console.log(timer)
 }
 
 updateCachedData()

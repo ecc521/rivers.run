@@ -13,7 +13,7 @@ git clone https://github.com/ecc521/rivers.run.git
 git clone https://github.com/ecc521/rivers.run-virtual-gauges.git
 
 #Install NodeJS
-curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
+curl -sL https://deb.nodesource.com/setup_15.x | sudo bash -
 sudo apt-get install -y nodejs
 
 #Build rivers.run
