@@ -70,14 +70,16 @@ try {
 		closeButton.style.fontSize = "20px"
 		closeButton.style.border = "none"
 		closeButton.style.background = "none"
+		document.documentElement.style.paddingBottom = "50px" //Avoid covering copyright or other stuff.
 		closeButton.addEventListener("click", function() {
 			localStorage.setItem(storageKey, true)
 			disclaimer.remove()
+			document.documentElement.style.paddingBottom = ""
 		})
 
 		disclaimer.appendChild(closeButton)
 
-		document.body.appendChild(disclaimer)
+		document.documentElement.appendChild(disclaimer)
 	}
 }
 catch (e) {console.error(e)}
