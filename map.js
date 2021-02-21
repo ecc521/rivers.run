@@ -33,7 +33,7 @@ window.River = require("./src/River.js").River
 	})
 	console.timeEnd("Create River Objects")
 
-	let map = await addMap()
+	let map = await addMap({})
 	window.addEventListener("usgsDataUpdated", function() {
 		map.updateMarkers()
 	})

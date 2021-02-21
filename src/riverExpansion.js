@@ -60,7 +60,7 @@ function createExpansion(button, river) {
                 mapButton.classList.add("mapButton")
                 mapButton.addEventListener("click", async function() {
                     mapButton.innerHTML = "Loading..."
-                    let map = await addMap(river)
+                    let map = await addMap({river})
                     if (map) {
                         river.map = map
                         mapButton.replaceWith(river.map)

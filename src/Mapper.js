@@ -1,3 +1,6 @@
+//const MarkerClusterer = require("@googlemaps/markerclustererplus").default
+//console.log(MarkerClusterer)
+
 //Note: We use lon internally, Google Maps uses lng internally. Be careful...
 require("./toDecimalDegrees.js")
 let MapPopup, MapTooltip;
@@ -80,7 +83,11 @@ function createMarkerImage(config = {}) {
 		return markerImage
 }
 
-async function addMap(river) {
+async function addMap({
+	river,
+	zoomLevel,
+	CTR = {}
+}) {
 	try {
 		await loadMapsAPI()
 	}
@@ -92,7 +99,6 @@ async function addMap(river) {
 
 	let div = document.createElement("div")
 
-	let CTR = {};
 	let PI, TO;
 	if (river) {
 		//Center in between PI and TO if possible.
@@ -110,8 +116,8 @@ async function addMap(river) {
 	}
 	else {
 		//Somewhere around Kansas
-		CTR.lat = 39
-		CTR.lng = -98
+		CTR.lat = CTR.lat ?? 39
+		CTR.lng = CTR.lng ?? -98
 	}
 
 
@@ -119,6 +125,12 @@ async function addMap(river) {
 		center: CTR,
 		zoom: 20
 	});
+
+	/*let markerCluster = new MarkerClusterer(map, [], {
+		imagePath: "https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m",
+		maxZoom: 6
+	});*/
+
 	window.lastAddedMap = map //For development only. This global variable is NOT TO BE USED by site code.
 
 	// Normalizes the coords that tiles repeat across the x axis (horizontally)
@@ -451,8 +463,8 @@ async function addMap(river) {
 		offlineMapLoadPromise = loadOfflineMaps()
 	}
 
-	if (!river) {
-		map.setZoom(3) //Entire US View.
+	if (!river || zoomLevel) {
+		map.setZoom(zoomLevel || 3) //Entire US View.
 	}
 	else {
 		try {
@@ -490,17 +502,19 @@ async function addMap(river) {
 	//map.getBounds() returns visible lat/lng range.
 	let gaugeIcon;
 	let blankIcon;
+	let tooHighIcon;
+	let tooLowIcon;
 
 	let updatableItems = []
 	function drawItem(item) {
-		let color;
+		let color, running;
 		if (item.isGauge) {
 			color = "#df6af1" //Purplish.
 		}
-		else if (isNaN(item.running)) {
+		else if (isNaN(running = item.running)) {
 			color = "white"
 		}
-		else {color = "hsl(" + item.running * 60 + ", 100%, 70%)"}
+		else {color = "hsl(" + running * 60 + ", 100%, 70%)"}
 
 
 		let scale = .8
@@ -523,8 +537,18 @@ async function addMap(river) {
 					fillColor: color, scale
 				})
 			}
-			else if (isNaN(item.running)) {
+			else if (color === "white") {
 				icon = blankIcon = blankIcon || createMarkerImage({
+					fillColor: color, scale
+				})
+			}
+			else if (running === 0) {
+				icon = tooLowIcon = tooLowIcon || createMarkerImage({
+					fillColor: color, scale
+				})
+			}
+			else if (running === 4) {
+				icon = tooHighIcon = tooHighIcon || createMarkerImage({
 					fillColor: color, scale
 				})
 			}
@@ -540,10 +564,13 @@ async function addMap(river) {
 				})
 
 				var marker = new google.maps.Marker({
-					map: map,
 					position: getCoords(item, putIn),
-					icon
+					icon,
+					zoom: item.isGauge?5:undefined,
+					map
 				});
+
+				//markerCluster.addMarker(marker)
 
 				regenerateInfo.push(marker)
 
@@ -679,25 +706,32 @@ async function addMap(river) {
 	let drawMore = function drawMore(duration = 8, timeout = 30, once = false) {
 		let start = Date.now()
 		let done = false
+		//let n1 = i
 		while (Date.now() - start < duration) {
-			if (!drawOrder[i]) {break;}
+			if (!drawOrder[i]) {
+				done = true;
+				break;
+			}
 			drawItem(drawOrder[i++])
 		}
+		//let t = Date.now() - start
+		//console.log((i-n1)/t + "/ms",i-n1, t + "ms")
 		if (!done && once === false) {
 			setTimeout(drawMore, timeout)
 		}
 	}
 
 	//If we are offline, draw the very first items, then stop.
+	//First call should be a slightly longer duration - get some markers in.
 	if (offlineMapLoadPromise) {
-		drawMore(20, null, true)
+		drawMore(50, null, true)
 		offlineMapLoadPromise.then(() => {
 			console.log("Beginning Full Marker Render")
 			drawMore()
 		})
 	}
 	else {
-		drawMore()
+		drawMore(50)
 	}
 
 	div.classList.add("riverMap")
@@ -706,6 +740,4 @@ async function addMap(river) {
 	return div
 }
 
-module.exports = {
-	addMap
-}
+module.exports = {addMap};
