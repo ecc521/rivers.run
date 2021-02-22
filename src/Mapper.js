@@ -257,9 +257,19 @@ async function addMap({
 					await Promise.race(remainingItems)
 				}
 				let promise = (async function() {
-					let url = `https://tile.openstreetmap.org/${key}.png`
 
 					let response;
+					/*if (window.Capacitor) {
+						//Attempt to load local assets.
+						let url = `tileCache/${key}.png`
+						try {
+							response = await fetch(url)
+						}
+					}*/
+
+
+					let url = `https://tile.openstreetmap.org/${key}.png`
+
 					let cached = await tileCache.match(url)
 					if (cached instanceof Response && cached.status === 200) {
 						response = cached
