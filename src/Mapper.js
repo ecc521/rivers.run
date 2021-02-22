@@ -1,6 +1,3 @@
-//const MarkerClusterer = require("@googlemaps/markerclustererplus").default
-//console.log(MarkerClusterer)
-
 //Note: We use lon internally, Google Maps uses lng internally. Be careful...
 require("./toDecimalDegrees.js")
 let MapPopup, MapTooltip;
@@ -69,7 +66,7 @@ function prepForScale(options = {}) {
 
 	renderContext.fill(renderPath)
 	renderContext.stroke(renderPath)
-	return renderCanvas.toDataURL("img/png")
+	return renderCanvas.toDataURL("img/png") //Tried converting these to blob DataURLs, but performance was no better.
 }
 
 
@@ -125,11 +122,6 @@ async function addMap({
 		center: CTR,
 		zoom: 20
 	});
-
-	/*let markerCluster = new MarkerClusterer(map, [], {
-		imagePath: "https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m",
-		maxZoom: 6
-	});*/
 
 	window.lastAddedMap = map //For development only. This global variable is NOT TO BE USED by site code.
 
@@ -570,8 +562,6 @@ async function addMap({
 					map
 				});
 
-				//markerCluster.addMarker(marker)
-
 				regenerateInfo.push(marker)
 
 				if (special) {
@@ -706,7 +696,6 @@ async function addMap({
 	let drawMore = function drawMore(duration = 8, timeout = 30, once = false) {
 		let start = Date.now()
 		let done = false
-		//let n1 = i
 		while (Date.now() - start < duration) {
 			if (!drawOrder[i]) {
 				done = true;
@@ -714,8 +703,6 @@ async function addMap({
 			}
 			drawItem(drawOrder[i++])
 		}
-		//let t = Date.now() - start
-		//console.log((i-n1)/t + "/ms",i-n1, t + "ms")
 		if (!done && once === false) {
 			setTimeout(drawMore, timeout)
 		}

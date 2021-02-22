@@ -211,8 +211,13 @@ async function loadData(siteCodes) {
 		console.log("Computing virtual gauges...")
 		try {
 			let newGauges = await virtualGauges.getVirtualGauges(gauges)
-			newGauges = gaugeTrimmer.shrinkGauges(newGauges) //Shrink newGauges.
-			Object.assign(gauges, newGauges)
+			for (let gaugeID in newGauges) {
+				let gauge = newGauges[gaugeID]
+				let filePath = path.join(readingsFile, gaugeID)
+				await fs.promises.writeFile(filePath, jsonShrinker.stringify(gauge))
+				newGauges[gaugeID] = gaugeTrimmer.shrinkGauge(gauge)
+				gauges[gaugeID] = gauge
+			}
 		}
 		catch (e) {console.log(e)}
 		console.log("Virtual gauges computed...")

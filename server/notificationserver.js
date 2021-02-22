@@ -20,8 +20,6 @@ const hostname = "0.0.0.0"
 const httpport = 5329
 
 async function httprequest(req,res) {
-
-		//TODO: Only allow rivers.run, its subdomains and local networks.
 		res.setHeader('Access-Control-Allow-Origin', '*')
 
 		if (req.method === "GET" && req.url.startsWith("/node/ip2location")) {

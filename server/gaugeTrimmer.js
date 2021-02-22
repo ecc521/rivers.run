@@ -50,15 +50,6 @@ function shrinkGauge(gauge) {
 		return gauge
 }
 
-
-function shrinkGauges(gauges) {
-	for (let gaugeID in gauges) {
-		gauges[gaugeID] = shrinkGauge(gauges[gaugeID])
-	}
-	return gauges
-}
-
 module.exports = {
-	shrinkGauge,
-	shrinkGauges
+	shrinkGauge
 }
