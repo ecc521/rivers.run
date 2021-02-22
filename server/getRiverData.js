@@ -237,7 +237,7 @@ async function getAssistantReply(query, options) {
 			str += "which is above the minimum of " + round(river.minrun) + ", although levels above " + round(river.lowflow) + " are recommended for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else if (river.running > 3) {
-			str += "which is a little high. The maximum levels is " + round(river.maximum) + ", however levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
+			str += "which is a little high. The maximum levels is " + round(river.maxrun) + ", however levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
 		}
 		else if (river.running > 2.5) {
 			str += "which is on the higher end of recommended levels. Levels above " + round(river.highflow) + " are considered high, while " + round(river.midflow) + " is considered the middle level for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
