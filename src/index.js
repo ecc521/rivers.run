@@ -1,6 +1,5 @@
 'use strict';
 
-
 try {
 	window.loadNewUSGS = "Trying to Load Data"
 	if ('serviceWorker' in navigator) {
@@ -89,20 +88,8 @@ document.getElementById("Rivers").appendChild(new TopBar().create())
 
 	//Load river data so that the page can be rendered.
 	let fileName = "riverdata.json"
-	if (window.fetch) {
-		let response = await fetch(fileName)
-		window.riverarray = await response.json()
-	}
-	else {
-		//For browsers that don't support fetch
-		let request = new XMLHttpRequest()
-		let response = await new Promise((resolve, reject) => {
-			request.onload = function(event) {resolve(event.target.response)};
-			request.open("GET", fileName);
-			request.send()
-		})
-		window.riverarray = JSON.parse(response)
-	}
+	let response = await fetch(fileName)
+	window.riverarray = await response.json()
 
 	console.time("Create River Objects")
 	riverarray.forEach(function(event, index) {
