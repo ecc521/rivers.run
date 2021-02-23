@@ -9,9 +9,5 @@
       "launchAutoHide": false
     }
   },
-  "cordova": {},
-  "server": {
-      "url": "https://rivers.run/#f7s",
-      "allowNavigation": ["rivers.run"]
-  }
+  "cordova": {}
 }

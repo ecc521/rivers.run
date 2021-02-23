@@ -78,20 +78,11 @@ let loadUSGS = async function(useCache) {
 		let response = await caches.match(fileName)
 		window.usgsarray = await response.json()
 	}
-	else if (window.fetch) {
+	else {
 		let response = await fetch(fileName)
 		window.usgsarray = await response.json()
 	}
-	else {
-		//For browsers that don't support fetch
-		let request = new XMLHttpRequest()
-		let response = await new Promise((resolve, reject) => {
-			request.onload = function(event) {resolve(event.target.response)};
-			request.open("GET", fileName);
-			request.send()
-		})
-		window.usgsarray = JSON.parse(response)
-	}
+
 
 	window.requestTime = usgsarray.generatedAt
 	updateUSGSDataInfo()

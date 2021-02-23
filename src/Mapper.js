@@ -239,10 +239,24 @@ async function addMap({
 
 		let layerID = 'offline_map_layer';
 
-		let tileCache = await caches.open("tileCache-v1")
-
 		//This code will create higher zoomed in tiles from lower zoomed in tiles, however does NOT do the inverse.
 		//Therefore, downloading one zoom level will download all lower zoom levels as well.
+
+		let useNativeMapAssets;
+		if (window.Capacitor) {
+			let deviceInfo = await window.Capacitor.Plugins.Device.getInfo()
+			if (parseFloat(deviceInfo.appVersion) >= 1.3) {
+				useNativeMapAssets = true
+			}
+			else {
+				alert("There is a rivers.run iOS app update. Please download it. ")
+			}
+		}
+
+		let tileCache
+		if (!useNativeMapAssets) {
+			tileCache = await caches.open("tileCache-v1")
+		}
 
 		async function downloadTiles(keys = [], tiles = {}) {
 			let remainingItems = [];
@@ -257,33 +271,36 @@ async function addMap({
 					await Promise.race(remainingItems)
 				}
 				let promise = (async function() {
-
 					let response;
-					/*if (window.Capacitor) {
-						//Attempt to load local assets.
-						let url = `tileCache/${key}.png`
+					if (useNativeMapAssets) {
+						//Load local assets.
+						let url = `tileImages/${key}.png`
 						try {
 							response = await fetch(url)
-						}
-					}*/
-
-
-					let url = `https://tile.openstreetmap.org/${key}.png`
-
-					let cached = await tileCache.match(url)
-					if (cached instanceof Response && cached.status === 200) {
-						response = cached
-					}
-
-					if (!response) {
-						try {
-							let fromNetwork = await fetch(url)
-							tileCache.put(url, fromNetwork.clone())
-							response = fromNetwork
 						}
 						catch (e) {
 							console.warn("Failed to load tile: ", e)
 							return;
+						}
+					}
+					else {
+						let url = `https://tile.openstreetmap.org/${key}.png`
+
+						let cached = await tileCache.match(url)
+						if (cached instanceof Response && cached.status === 200) {
+							response = cached
+						}
+
+						if (!response) {
+							try {
+								let fromNetwork = await fetch(url)
+								tileCache.put(url, fromNetwork.clone())
+								response = fromNetwork
+							}
+							catch (e) {
+								console.warn("Failed to load tile: ", e)
+								return;
+							}
 						}
 					}
 
@@ -317,6 +334,11 @@ async function addMap({
 
 		let usZoom = Number(localStorage.getItem("usMapResolution")) || 6
 		let worldZoom = Number(localStorage.getItem("worldMapResolution")) || 3
+
+		if (useNativeMapAssets) {
+			uzZoom = 8
+			worldZoom = 5
+		}
 
 		//This exceeds US bounds by a bit, as tiles overflow, and we also obtain child tiles, but it's fine.
 		let xStart = lon2tile(leftLon, usZoom)

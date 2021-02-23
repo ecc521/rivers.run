@@ -12,40 +12,12 @@ catch (e) {console.error(e)}
 
 if (window.Capacitor) {
 	try {
-		//Cover up the alert about using the https://rivers.run server. Might not be needed in production.
-		for (let i=0;i<10;i++) {
-			if (window.location.hash === "#f7s") {
-				window.sessionFirstLaunch = true //App was just launched, not navigated to from another page.
-				window.location.hash = "#"
-			}
-			if (window.sessionFirstLaunch) {
-				Capacitor.Plugins.Toast.show({
-					text: 'Welcome to rivers.run! Happy Paddling!',
-					duration: "long"
-				})
-			}
- 		}
-	}
-	catch (e) {console.error(e)}
-
-	try {
 		//Hide splash screen.
 		Capacitor.Plugins.SplashScreen.hide()
+		//Add universal link support.
+		require("./universalLinks.js")
 	}
 	catch(e) {console.error(e)}
-}
-
-require("./universalLinks.js")
-
-try {
-	//IE11 polyfills
-	//Note that there are more places that IE11 specific code is used.
-	//Rivers.run no longer supports IE11. These should be removed at some point once we can certify that they don't impact
-	//any supported browsers as well.
-	require("./IE11.js")
-}
-catch(e) {
-	console.error(e)
 }
 
 //Define window.root (the site root)
