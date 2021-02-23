@@ -56,7 +56,6 @@
         <p>Default: Yes. Choose if you want to see mini popups showing the expanded skill on hover.</p>
 
         <h3>Offline Map Resolution (US and World)</h3>
-    <div id="mapResolutionSelectors">
         <p>Increasing resolution will require a relatively small (under 20MB) download, unless the images are already stored on your device. </p>
         <p>Higher resolution maps may take (substantially) longer to load on some browsers and devices. </p>
         US Map Resolution: <select id="usMapResolution">
@@ -71,7 +70,7 @@
             <option value="5">High (16x) - Zoom 5</option>
         </select>
         <p>Default: Standard Resolution. Specified zoom levels correspond to those on most mapping applciations, including OpenStreetMap and Google Maps. </p>
-    </div>
+
 
         <h3>Color Blind Mode</h3>
         <select id="colorBlindMode">
@@ -95,10 +94,6 @@
     </p>
 
         <script>
-            if (window.Capacitor) {
-                document.getElementById("mapResolutionSelectors").innerHTML = "The iOS App includes the highest quality offline maps rivers.run offers. "
-            }
-
             document.getElementById("theme").addEventListener("change", function(event) {
 				//We can't just set the value to null - locaStorage would stringify it
 				if (event.target.value === "null") {
