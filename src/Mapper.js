@@ -249,7 +249,7 @@ async function addMap({
 				useNativeMapAssets = true
 			}
 			else {
-				alert("There is a rivers.run iOS app update. Please download it. ")
+				alert("There is a rivers.run app update available. Please download it. ")
 			}
 		}
 
