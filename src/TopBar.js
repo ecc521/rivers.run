@@ -46,29 +46,16 @@ function TopBar() {
 
         button.appendChild(NewSpan("Section"))
 
-        function addSkillSpan() {
-            span = NewSpan("Skill⇅")
-            span.classList.add("skillspan")
-            addSorting(span, "skill", false)
-            button.appendChild(span)
-        }
+        span = NewSpan("Skill⇅")
+        span.classList.add("skillspan")
+        addSorting(span, "skill", false)
+        button.appendChild(span)
 
-        function addClassSpan() {
-            span = NewSpan("Class")
-            span.classList.add("classspan")
-            button.appendChild(span)
-        }
+        span = NewSpan("Class")
+        span.classList.add("classspan")
+        button.appendChild(span)
 
-        if (localStorage.getItem("classOrSkill") === "class") {
-            addClassSpan() //Add the class span first so it shows up on small screens.
-            addSkillSpan()
-        }
-        else {
-            addSkillSpan() //Add the skill span first so it shows up on small screens.
-            addClassSpan()
-        }
-
-	    span = NewSpan("Rating⇅")
+	    span = NewSpan("Quality⇅")
         addSorting(span, "rating", false) //We want greatest first, not least first, on the first sort. Pass 0 to not reverse
         button.appendChild(span)
 

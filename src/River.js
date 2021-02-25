@@ -26,29 +26,24 @@ function AddSpan(text, elem, className) {
 			}
 
 			function addSkillSpan(river, button) {
-				//Check if the user has disabled tooltips.
 				//Creating the tooltips is expensive. Try creating them only when the user hovers.
-				if (localStorage.getItem("skillTooltips") === "false") {
-					AddSpan(river.skill, button).classList.add("skillspan")
-				}
-				else {
-					let skillSpan = document.createElement("span")
-					skillSpan.className = "riverspan skillspan tooltip"
 
-					let tooltip = document.createElement("div")
-					tooltip.innerHTML = river.skill
-					tooltip.className = "tooltip"
+				let skillSpan = document.createElement("span")
+				skillSpan.className = "riverspan skillspan tooltip"
 
-					let tooltiptext = document.createElement("span")
-					tooltiptext.innerHTML = skillTranslations[river.skill]
-					tooltiptext.className = "tooltiptext"
+				let tooltip = document.createElement("div")
+				tooltip.innerHTML = river.skill
+				tooltip.className = "tooltip"
 
-					skillSpan.style.borderBottom = "none"
+				let tooltiptext = document.createElement("span")
+				tooltiptext.innerHTML = skillTranslations[river.skill]
+				tooltiptext.className = "tooltiptext"
 
-					tooltip.appendChild(tooltiptext)
-					skillSpan.appendChild(tooltip)
-					button.appendChild(skillSpan)
-				}
+				skillSpan.style.borderBottom = "none"
+
+				tooltip.appendChild(tooltiptext)
+				skillSpan.appendChild(tooltip)
+				button.appendChild(skillSpan)
 			}
 
 

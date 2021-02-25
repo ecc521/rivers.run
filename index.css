@@ -8,11 +8,11 @@ html, body {
     --defaultFontSize: 3.2vw;
 
     --riverRatingSize: 2vw;
-    --riverNameWidth: 24.25%;
+    --riverNameWidth: 24%;
     --riverSectionWidth: 30%;
     --riverSkillWidth: 8%;
-    --riverClassWidth: var(--riverSkillWidth);
-    --displaySpan4: none;
+    --riverClassWidth: 11%;
+    --displayRatingSpan: none;
 }
 
 @media screen and (min-width: 550px) {
@@ -22,7 +22,7 @@ html, body {
         --riverSectionWidth: 29%;
         --riverSkillWidth: 5%;
         --riverClassWidth: 10%;
-        --displaySpan4: inline-block;
+        --displayRatingSpan: inline-block;
     }
 }
 
@@ -46,7 +46,7 @@ html, body {
         --riverSectionWidth: 60%;
         --riverSkillWidth: 8%;
         --riverClassWidth: 20%;
-        --displaySpan4: inline-block;
+        --displayRatingSpan: inline-block;
     }
 }
 
@@ -294,8 +294,13 @@ button {
 }
 
 
-#lowflow, #highflow {
+#lowflow {
 	width: 18.5%;
+}
+
+#highflow {
+    width: 19.5%;
+    margin-left: -1%;
 }
 
 #midflow {
@@ -359,11 +364,6 @@ Those include name,section,skill,quality, and flow info*/
     max-width: var(--riverSectionWidth);
 }
 
-/*Child number 4 is only displayed on larger screens.*/
-.riverspan:nth-child(4) {
-    display: var(--displaySpan4);
-}
-
 .skillspan {
     width: var(--riverSkillWidth);
     min-width: var(--riverSkillWidth);
@@ -379,7 +379,9 @@ Those include name,section,skill,quality, and flow info*/
 .riverspan:nth-child(5) {
 	position: relative;
     min-width: calc(var(--riverRatingSize) * 5); /*There are 5 stars - and each star is as wide as the font size in pixels.*/
+    display: var(--displayRatingSpan);
 }
+
 .riverspan:nth-child(6) {
     margin-left: 1%;
     font-family: BlinkMacSystemFont, "Noto Sans HK", Arial, Helvetica, sans-serif; /*Noto Sans HK contains the arrows that I want. On Apple Macs, use the system font.*/
