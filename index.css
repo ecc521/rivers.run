@@ -41,7 +41,7 @@ html, body {
         --defaultFontSize: 5.3vw;
 
         /*.riverbutton*/
-        --riverRatingSize: 4vw;
+        --riverRatingSize: 3.5vw;
         --riverNameWidth: 40%;
         --riverSectionWidth: 60%;
         --riverSkillWidth: 8%;
@@ -369,6 +369,12 @@ Those include name,section,skill,quality, and flow info*/
     min-width: var(--riverSkillWidth);
     max-width: var(--riverSkillWidth);
 }
+
+#topbar .skillspan {
+    margin-left: -1%;
+    margin-right: 1%; /*Add some additional space between the header for skill and the header for class*/
+}
+
 .classspan {
     width: var(--riverClassWidth);
     min-width: var(--riverClassWidth);
