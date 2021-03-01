@@ -226,10 +226,16 @@ async function prepareRiverData({
 			obj.gauge = obj.gauge.split(/\s*:\s*/).join(":") //Remove the spaces next to the semicolon.
 		}
 
-		//Convert NWS gauge IDs to upperCase.
-		if (obj.gauge && obj.gauge.toUpperCase().startsWith("NWS:")) {
+		//Convert gauge IDs to upperCase.
+		if (obj.gauge &&
+			(
+				obj.gauge.toUpperCase().startsWith("USGS:") ||
+				obj.gauge.toUpperCase().startsWith("NWS:")
+			)
+		) {
 			obj.gauge = obj.gauge.toUpperCase()
 		}
+
 		//Handle related USGS. TODO: Change to relatedGauge
 		if (obj.relatedusgs) {
 			try {
@@ -244,7 +250,10 @@ async function prepareRiverData({
 			try {
 				obj.relatedgauges = JSON.parse(obj.relatedgauges).map((gaugeID) => {
 					gaugeID = gaugeID.split(/\s*:\s*/).join(":")
-					if (gaugeID.toUpperCase().startsWith("NWS:")) {return gaugeID.toUpperCase()}
+					if (
+						gaugeID.toUpperCase().startsWith("NWS:")
+						|| gaugeID.toUpperCase().startsWith("USGS:")
+					) {return gaugeID.toUpperCase()}
 					else {return gaugeID}
 				})
 				obj.relatedgauges = obj.relatedgauges.filter((gaugeID) => {
