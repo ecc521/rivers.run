@@ -10,7 +10,7 @@
 	coord = coord.toUpperCase().trim() //In case people put the direction in lowercase.
 
 	let direction;
-	["N","S","E","W"].forEach((currentDirection) => {
+	["N","S","E","W","-"].forEach((currentDirection) => {
 		if (coord.includes(currentDirection)) {
 			direction = currentDirection
 			coord = coord.slice(0, coord.indexOf(currentDirection)) + coord.slice(coord.indexOf(currentDirection) + 1)
@@ -29,7 +29,7 @@
 
 	if (isNaN(Number(degrees))) {throw "Coordinate " + coord + " could not be processed."}
 
-	if (direction === "S" || direction === "W") {degrees = -degrees}
+	if (direction === "S" || direction === "W" || direction === "-") {degrees = -degrees}
 
 	return degrees
 }
