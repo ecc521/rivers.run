@@ -22,12 +22,12 @@ function createFavoritesWidget(river, usgsID) {
 			temp[usgsID][river.id] = {
 				id: river.id,
 				name: river.name,
-				section: river.section, //Used to help people identify at is what. 
+				section: river.section, //Used to help people identify at is what.
 
 				//We'll include the default ranges initially.
 				minimum: river.minrun,
 				maximum: river.maxrun,
-				units: river.units
+				units: river.relativeFlowType?.replace("ft", "feet")?.replace("m", "meters")
 			}
 			localStorage.setItem("favorites", JSON.stringify(temp))
 		}
