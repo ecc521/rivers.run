@@ -13,6 +13,7 @@ const path = require("path")
 			"packages/allPages.js": "./src/allPages/allPages.js",
 			"packages/writeupmaker.js": "./resources/writeupmaker.js",
 			"packages/map.js": "./map.js",
+			"packages/favorites.js": "./favorites.js",
 			"packagedsw.js": "./sw.js",
 			//TODO: Package serviceworker, and drop it in root directory. (could use Service-Worker-Allowed: / header, but that makes local development harder).
 		},

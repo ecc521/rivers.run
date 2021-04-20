@@ -4,6 +4,8 @@ const nodemailer = require("nodemailer")
 
 const utils = require(path.join(__dirname, "utils.js"))
 
+const getSearchLink = require("../src/getSearchLink.js")
+
 let password;
 try {
 	password = fs.readFileSync(path.join(utils.getDataDirectory(), "notifications", "gmailpassword.txt"), {encoding:"utf8"}) //gmailpassword should be an application key. 2 factor auth needed.
@@ -63,6 +65,7 @@ function getMessage(data, user) {
 	let running = []
 	let tooHigh = []
 	let tooLow = []
+	let invalid = []
 
 	for (let id in data) {
 		if (data[id].running !== false) {
@@ -71,8 +74,11 @@ function getMessage(data, user) {
 		else if (data[id].current < data[id].minimum) {
 			tooLow.push(data[id])
 		}
-		else {
+		else if (data[id].current > data[id].maximum){
 			tooHigh.push(data[id])
+		}
+		else {
+			invalid.push(data[id])
 		}
         IDs.push(id)
     }
@@ -82,18 +88,6 @@ function getMessage(data, user) {
 			return river.id
 		})
 	}
-
-	function getSearchLink(IDs) {
-		let searchQuery = {
-			id: IDs.join(","),
-			sort: {
-				query: "running"
-			}
-		}
-
-		return encodeURI("https://rivers.run/#" + JSON.stringify(searchQuery))
-	}
-
 
 	if ((running.length + tooHigh.length) === 0 && JSON.stringify(user.previousMessage) === "{}") {return false;}
 	user.previousMessage = Object.assign({}, running, tooHigh)
@@ -159,6 +153,16 @@ function getMessage(data, user) {
 			body.push(createListItem(river))
 		})
 		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(tooLow))}">View all these on rivers.run</a></li>`)
+		body.push("</ul>")
+	}
+
+	if (invalid.length > 0) {
+		body.push(createHeader("Unclassified Rivers:"))
+		body.push("<ul>")
+		tooLow.forEach((river) => {
+			body.push(createListItem(river))
+		})
+		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(invalid))}">View all these on rivers.run</a></li>`)
 		body.push("</ul>")
 	}
 

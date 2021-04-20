@@ -15,10 +15,13 @@ const preloadList = [
     "packages/map.js",
     "clubs.html",
     "settings.html",
+    "favorites.html",
     "FAQ.html",
     "index.css",
     "packages/allPages.js",
     "packages/index.js",
+    "packages/favorites.js",
+    "packages/map.js",
     "riverdata.json",
     "legal/Privacy Policy.html",
     "legal/Terms of Service.html",
@@ -273,23 +276,17 @@ self.addEventListener('push', pushHandler)
 
 self.addEventListener('notificationclick', function(event) {
     //TODO: Consider showing only the river(s) being talked about.
+    const getSearchLink = require("./src/getSearchLink.js")
+
     if (clients.openWindow) {
         console.log(event)
         let data = event.notification.data
 
-        let IDs = data.IDs
-
-        let searchQuery = {
-            id: IDs.join(",")
-        }
-
-        let url = new URL(rebaseURL("")); //URL to River Info page.
-        url.hash = JSON.stringify(searchQuery)
+        url = getSearchLink(data.IDs, rebaseURL(""))
         event.notification.close(); //Android needs explicit close.
-        self.dispatchEvent(new Event("notificationclose")) //I thought that the event was supposed to fire when the notification was closed for
-        //any purpose, however, at least in chrome, it did not.
-        console.log(url.href)
-        clients.openWindow(url.href) //Open the specified url.
+        self.dispatchEvent(new Event("notificationclose")) //Make sure this triggers.
+        console.log(url)
+        clients.openWindow(url) //Open the specified url.
     }
 });
 

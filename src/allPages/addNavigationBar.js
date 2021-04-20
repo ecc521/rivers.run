@@ -16,14 +16,13 @@ try {
 
 	addItem("River Info", root)
 	addItem("Map", root + "map.html")
+	addItem("Favorites", root + "favorites.html")
 	addItem("FAQ", root + "FAQ.html")
 	addItem("Settings", root + "settings.html")
 	addItem("Clubs", root + "clubs.html")
-	addItem("Email Alerts", root + "emailnotifications.html")
-	if (!window.Capacitor) {
-		addItem("Browser Alerts", root + "notifications.html")
-	}
+
 	addItem("Voice", root + "voice.html")
+
 	if (!window.Capacitor) {
 		addItem("About", root + "about.html")
 	}

@@ -42,11 +42,12 @@ function sendNotifications(ignoreNoneUntil = false) {
             }
             catch(e) {
                 console.error(e)
-                continue;
             }
 
 			for (let prop in rivers) {
                 try {
+                    if (!readings) {readings = []}
+
                     let river = rivers[prop]
 
                     let flow;
@@ -63,21 +64,19 @@ function sendNotifications(ignoreNoneUntil = false) {
                     let meterInFeet = 3.2808399
                     let cubicMeterInFeet = meterInFeet**3
 
-                    if (river.units === "cms") {river.current = flow.cfs / cubicMeterInFeet}
-                    if (river.units === "meters") {river.current = flow.feet / meterInFeet}
+                    if (river.units === "cms") {river.current = flow?.cfs / cubicMeterInFeet}
+                    if (river.units === "meters") {river.current = flow?.feet / meterInFeet}
                     else {river.current = flow[units]}
 
-                    //Don't delete for email notifications
-                    if (!(river.minimum <= river.current && river.current <= river.maximum)) {
+                    if (river.minimum <= river.current && river.current <= river.maximum) {
+                        data[prop] = rivers[prop] //Add the river if it is running
+                        data[prop].running = true
+                    }
+                    else {
                         if (user.type === "email") {
                             rivers[prop].running = false //For email only, add the river even if it is not running.
                             data[prop] = rivers[prop]
                         }
-                    }
-                    else {
-                        //TODO: River.current might be undefined if there are gauge errors, etc. 
-                        data[prop] = rivers[prop] //Add the river if it is running
-                        data[prop].running = true
                     }
                 }
                 catch(e) {
