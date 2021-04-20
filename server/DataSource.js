@@ -3,7 +3,7 @@ class DataSource {
 		batchSize = 1, //Max gauges per request.
 		concurrency = 1, //Max outstanding requests.
 		batchCallback = function() {}, //Called with every batch that comes in successfully
-		retries = 5, //Number of attempt to make to load each batch.
+		retries = 3, //Number of attempt to make to load each batch.
 		retryDelay = 2000, //Delay between retries in milliseconds.
 		timeout = 36000, //Timeout in milliseconds.
 	}) {
@@ -48,7 +48,7 @@ class DataSource {
 					last = iterator.next()
 				}
 				//TODO: It might be better to check outstandingRequests.size on every batch completed, instead of using Promise.all.
-				//Not noticing a problem here though. 
+				//Not noticing a problem here though.
 				return Promise.allSettled(promises) //Don't bother creating a Promise.allSettled unless asked.
 			}
 		}
@@ -86,7 +86,7 @@ class DataSource {
 						console.error("Error on the following batch: ")
 						console.error(batch)
 						console.trace(e)
-						console.error("Loading Failed. Already tried" + retries + "times. ")
+						console.error("Loading Failed. Already tried " + retries + " times. ")
 					}
 					else {
 						await new Promise((resolve, reject) => {

@@ -56,8 +56,8 @@ const DataSource = require(path.join(__dirname, "DataSource.js"))
 class USGS extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
-			batchSize: 150,
-			concurrency: 1,
+			batchSize: 120,
+			concurrency: 2
 		}, obj)
 		super(config)
 	}
@@ -105,7 +105,7 @@ class MSC extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 9,
+			concurrency: 8,
 		}, obj)
 		super(config)
 	}

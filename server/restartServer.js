@@ -8,9 +8,9 @@ const utils = require(path.join(__dirname, "utils.js"))
 
 function isServerUp() {
 
-	//If we rebooted within the past 30 minutes, don't run the checks.
+	//If we rebooted within the past 90 minutes, don't run the checks.
 	let lastRebooted = new Date(child_process.execSync("uptime -s").toString())
-	if (Date.now() - lastRebooted < 30 * 60 * 1000) {return true}
+	if (Date.now() - lastRebooted < 90 * 60 * 1000) {return true}
 
 	let processID;
 	try {
@@ -25,8 +25,8 @@ function isServerUp() {
 	//Make sure that the flow data is recent
 	let dataLastUpdated = fs.statSync(path.join(utils.getSiteRoot(), "flowdata3.json")).mtime
 
-	if (Date.now() - dataLastUpdated > 30 * 60 * 1000) {
-		//If the data is over 30 minutes old, the server is probably not working.
+	if (Date.now() - dataLastUpdated > 90 * 60 * 1000) {
+		//If the data is over 90 minutes old, the server is probably not working.
 		return processID || false
 	}
 
