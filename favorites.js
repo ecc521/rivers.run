@@ -100,7 +100,7 @@ async function redrawRows() {
 
 			let nameColumn = document.createElement("span")
 			nameColumn.className = "nameColumn"
-			nameColumn.innerHTML = `<a target="blank" href="${getSearchLink([id])}">${selections[gauge][id].name}</a>`
+			nameColumn.innerHTML = `<a target="blank" href="${getSearchLink([id])}">${selections[gauge][id].name + ((selections[gauge][id].section)?(" (" + selections[gauge][id].section) + ")":"")}</a>`
 			row.appendChild(nameColumn)
 
 			let minColumn = document.createElement("span")

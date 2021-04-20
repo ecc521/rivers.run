@@ -119,7 +119,7 @@ function getMessage(data, user) {
 	]
 
 	function createListItem(river) {
-		return "<li>" + `<a href="${getSearchLink([river.id])}">${river.name}<a>` + `: ${river.current} ${river.units} (${river.minimum} ${river.units} - ${river.maximum} ${river.units})` + "</li>"
+		return "<li>" + `<a href="${getSearchLink([river.id])}">${river.name + (river.section?`(${river.section})`:"")}<a>` + `: ${river.current} ${river.units} (${river.minimum} ${river.units} - ${river.maximum} ${river.units})` + "</li>"
 	}
 
 	function createHeader(text) {
@@ -170,7 +170,7 @@ function getMessage(data, user) {
     body.push(`<h1 style="margin-bottom:0.5em"><img src="https://rivers.run/resources/icons/64x64-Water-Drop.png" style="vertical-align: text-top; height:1em; width: 1em;"><a href="https://rivers.run" style="color:black">rivers.run</a></h1>`)
 	body.push("<p><a href='mailto:support@rivers.run'>support@rivers.run</a></p>")
 
-	body.push(`Click <a href="https://rivers.run/favorites.html#${user.address}">here</a> to manage your subscription, or to unsubscribe.`)
+	body.push(`<p>Click <a href="https://rivers.run/favorites.html#${user.address}">here</a> to manage your subscription, or to unsubscribe.</p>`)
 
 	body.push("</body></html>")
 

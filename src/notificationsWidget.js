@@ -21,7 +21,13 @@ function createFavoritesWidget(river, usgsID) {
 			if (!temp[usgsID]) {temp[usgsID] = {}}
 			temp[usgsID][river.id] = {
 				id: river.id,
-				name: river.name
+				name: river.name,
+				section: river.section, //Used to help people identify at is what. 
+
+				//We'll include the default ranges initially.
+				minimum: river.minrun,
+				maximum: river.maxrun,
+				units: river.units
 			}
 			localStorage.setItem("favorites", JSON.stringify(temp))
 		}
