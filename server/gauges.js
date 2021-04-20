@@ -57,7 +57,7 @@ class USGS extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 150,
-			concurrency: 3,
+			concurrency: 1,
 		}, obj)
 		super(config)
 	}
@@ -105,7 +105,7 @@ class MSC extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 15,
+			concurrency: 9,
 		}, obj)
 		super(config)
 	}
