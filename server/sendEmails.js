@@ -159,7 +159,7 @@ function getMessage(data, user) {
 	if (invalid.length > 0) {
 		body.push(createHeader("Unclassified Rivers:"))
 		body.push("<ul>")
-		tooLow.forEach((river) => {
+		invalid.forEach((river) => {
 			body.push(createListItem(river))
 		})
 		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(invalid))}">View all these on rivers.run</a></li>`)
