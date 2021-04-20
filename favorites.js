@@ -105,37 +105,12 @@ async function redrawRows() {
 
 			let minColumn = document.createElement("span")
 			minColumn.className = "minColumn"
-			minColumn.innerHTML = `<span class="underlineText">${selections[gauge][id].minimum ?? "---"}</span>`
 			row.appendChild(minColumn)
 
 			let maxColumn = document.createElement("span")
 			maxColumn.className = "maxColumn"
-			maxColumn.innerHTML = `<span class="underlineText">${selections[gauge][id].maximum ?? "---"}</span>`
 			row.appendChild(maxColumn)
 
-			minColumn.addEventListener("click", function(e) {
-				//e.stopPropagation()
-				let val = Number(prompt("What would you like the minimum to be?"))
-				if (!val || isNaN(val)) {
-					return alert("Please enter a number with no units. Ex, 425 or 8000")
-				}
-				selections[gauge][id].minimum = val
-				localStorage.setItem("favorites", JSON.stringify(selections))
-				console.log(JSON.stringify(selections))
-				dataChanged()
-			})
-
-			maxColumn.addEventListener("click", function(e) {
-				//e.stopPropagation()
-				let val = Number(prompt("What would you like the maximum to be?"))
-				if (!val || isNaN(val)) {
-					return alert("Please enter a number with no units. Ex, 425 or 8000")
-				}
-				selections[gauge][id].maximum = val
-				localStorage.setItem("favorites", JSON.stringify(selections))
-				console.log(JSON.stringify(selections))
-				dataChanged()
-			})
 
 			let unitsColumn = document.createElement("span")
 			unitsColumn.className = "unitsColumn"
@@ -172,16 +147,54 @@ async function redrawRows() {
 				return units
 			}
 
-			let selector = createUnitsSelector()
-			unitsColumn.appendChild(selector)
+			if (gaugeColumn.innerHTML === "None") {
+				unitsColumn.innerHTML = maxColumn.innerHTML = minColumn.innerHTML = "N/A"
+				;[minColumn, maxColumn].forEach((col) => {
+					col.addEventListener("click", function() {
+						alert("This favorite has no gauge. If rivers.run has a gauge for it, try deleting this favorite and creating it again. ")
+					})
+				})
+			}
+			else {
+				minColumn.innerHTML = `<span class="underlineText">${selections[gauge][id].minimum ?? "---"}</span>`
+				maxColumn.innerHTML = `<span class="underlineText">${selections[gauge][id].maximum ?? "---"}</span>`
 
-			selector.value = selections[gauge][id].units ?? "-"
+				minColumn.addEventListener("click", function(e) {
+					//e.stopPropagation()
+					let val = Number(prompt("What would you like the minimum to be?"))
+					if (!val || isNaN(val)) {
+						return alert("Please enter a number with no units. Ex, 425 or 8000")
+					}
+					selections[gauge][id].minimum = val
+					localStorage.setItem("favorites", JSON.stringify(selections))
+					console.log(JSON.stringify(selections))
+					dataChanged()
+				})
 
-			selector.addEventListener("input", function() {
-				selections[gauge][id].units = selector.value
-				localStorage.setItem("favorites", JSON.stringify(selections))
-				dataChanged()
-			})
+				maxColumn.addEventListener("click", function(e) {
+					//e.stopPropagation()
+					let val = Number(prompt("What would you like the maximum to be?"))
+					if (!val || isNaN(val)) {
+						return alert("Please enter a number with no units. Ex, 425 or 8000")
+					}
+					selections[gauge][id].maximum = val
+					localStorage.setItem("favorites", JSON.stringify(selections))
+					console.log(JSON.stringify(selections))
+					dataChanged()
+				})
+
+				let selector = createUnitsSelector()
+				unitsColumn.appendChild(selector)
+
+				selector.value = selections[gauge][id].units ?? "-"
+
+				selector.addEventListener("input", function() {
+					selections[gauge][id].units = selector.value
+					localStorage.setItem("favorites", JSON.stringify(selections))
+					dataChanged()
+				})
+			}
+
 
 
 			let deleteButton = document.createElement("span")
