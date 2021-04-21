@@ -73,7 +73,6 @@ class DataSource {
 					result = await new Promise((resolve, reject) => {
 						this._processBatch(batch).then(resolve, reject)
 						setTimeout(function() {
-							console.log("Timeout Fired")
 							reject("Timeout Exceeded")
 						}, timeout)
 					})
