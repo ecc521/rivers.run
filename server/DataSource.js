@@ -82,6 +82,8 @@ class DataSource {
 					//We are going to suppress logging somewhat, as errors (timeout, connection reset) are very common on the Canadian gauges,
 					//however it usually works just fine on retry.
 
+					console.error("Tried " + retries + " times. ")
+
 					if (i + 1 === retries) {
 						console.error("Error on the following batch: ")
 						console.error(batch)
