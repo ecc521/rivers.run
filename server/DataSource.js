@@ -72,7 +72,8 @@ class DataSource {
 				try {
 					result = await new Promise((resolve, reject) => {
 						this._processBatch(batch).then(resolve, reject)
-						setTimeout(function() { //TODO: Check this. Mem
+						setTimeout(function() {
+							console.log("Timeout Fired")
 							reject("Timeout Exceeded")
 						}, timeout)
 					})
