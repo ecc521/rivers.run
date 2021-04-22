@@ -204,7 +204,7 @@ async function loadData(siteCodes) {
 	})
 
 	console.log("Waiting on Writes")
-	await Promise.all(writes)
+	await Promise.allSettled(writes)
 	console.log("Loaded " + totalLoaded + " gauges. ")
 
 	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
