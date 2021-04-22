@@ -187,22 +187,24 @@ async function loadData(siteCodes) {
 		catch (e) {console.error(e)}
 	}
 
+	let writes = []
 	let startedLoading = 0
 	let totalLoaded = 0
 
-	//DataSource.js now waits on the callback, so 0 are in progress.
-	//We might want to change this back - we could also do that by
-	//using a sync function to place the async promises in an array. 
-	await obtainDataFromSources(siteCodes, async function(data, gaugeID) {
+	await obtainDataFromSources(siteCodes, function(data, gaugeID) {
 		startedLoading++
-		let filePath = path.join(readingsFile, gaugeID)
-		await fs.promises.writeFile(filePath, jsonShrinker.stringify(data))
-		let shrunkenData = gaugeTrimmer.shrinkGauge(data)
-		gauges[gaugeID] = data
-		totalLoaded++
-		if (totalLoaded % 512 === 0) {console.log("Finished writing " + totalLoaded + " gauges. (" + (startedLoading - totalLoaded) + " more in progress)")}
+		writes.push((async function() {
+			let filePath = path.join(readingsFile, gaugeID)
+			await fs.promises.writeFile(filePath, jsonShrinker.stringify(data))
+			let shrunkenData = gaugeTrimmer.shrinkGauge(data)
+			gauges[gaugeID] = data
+			totalLoaded++
+			if (totalLoaded % 512 === 0) {console.log("Finished writing " + totalLoaded + " gauges. (" + (startedLoading - totalLoaded) + " more in progress)")}
+		}()))
 	})
 
+	console.log("Waiting on Writes")
+	await Promise.all(writes)
 	console.log("Loaded " + totalLoaded + " gauges. ")
 
 	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
