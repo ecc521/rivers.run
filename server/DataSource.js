@@ -3,9 +3,9 @@ class DataSource {
 		batchSize = 1, //Max gauges per request.
 		concurrency = 1, //Max outstanding requests.
 		batchCallback = function() {}, //Called with every batch that comes in successfully
-		retries = 3, //Number of attempt to make to load each batch.
-		retryDelay = 2000, //Delay between retries in milliseconds.
-		timeout = 36000, //Timeout in milliseconds.
+		retries = 5, //Number of attempt to make to load each batch.
+		retryDelay = 4000, //Delay between retries in milliseconds.
+		timeout = 30000, //Timeout in milliseconds.
 	}) {
 
 		let gaugeIDCache = [] //Used to store gaugeIDs until a full batch can be made, or flush is called.
@@ -68,8 +68,11 @@ class DataSource {
 			outstanding++
 
 			let result;
-			for (let i=0;i<retries;i++) {
+			let i = 0
+			//Add one to retries since it is RE-tries
+			while (i < retries + 1) {
 				try {
+					i++
 					result = await new Promise((resolve, reject) => {
 						this._processBatch(batch).then(resolve, reject)
 						setTimeout(function() {
@@ -82,19 +85,11 @@ class DataSource {
 					//We are going to suppress logging somewhat, as errors (timeout, connection reset) are very common on the Canadian gauges,
 					//however it usually works just fine on retry.
 
-					console.error("Tried " + retries + " times. ")
+					console.error("Tried " + i + " times. ")
 
-					if (i + 1 === retries) {
-						console.error("Error on the following batch: ")
-						console.error(batch)
-						console.trace(e)
-						console.error("Loading Failed. Already tried " + retries + " times. ")
-					}
-					else {
-						await new Promise((resolve, reject) => {
-							setTimeout(resolve, retryDelay*(i+1))
-						})
-					}
+					await new Promise((resolve, reject) => {
+						setTimeout(resolve, retryDelay*(i+1))
+					})
 				}
 			}
 			outstanding--
@@ -109,14 +104,14 @@ class DataSource {
 				//This must be an object of gauges, as at least one gaugeID existed in the object.
 				for (let gaugeID in result) {
 					try {
-						callback(result[gaugeID], this.prefix + gaugeID)
+						await callback(result[gaugeID], this.prefix + gaugeID)
 					}
 					catch (e) {console.error(e)}
 				}
 			}
 			else if (result) {
 				//Assume this is an individual gauge.
-				callback(result, this.prefix + batch[0])
+				await callback(result, this.prefix + batch[0])
 			}
 		}
 	}
