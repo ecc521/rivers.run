@@ -173,7 +173,7 @@ function obtainDataFromSources(gauges, batchCallback) {
 	promises[2].finally(() => {console.log("MSC Done!")})
 	promises[3].finally(() => {console.log("OPW Done!")})
 
-	return Promise.all(promises)
+	return Promise.allSettled(promises)
 }
 
 async function loadData(siteCodes) {

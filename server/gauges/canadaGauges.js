@@ -60,16 +60,19 @@ async function loadCanadianGauge(gaugeID) {
 		let reading = results[prop]
 		//Reformat timestamps.
 		reading.dateTime = new Date(reading.dateTime).getTime()
-		if (reading.cms) {
+
+		//The properties might exist, but just be empty.
+	    //parseFloat handles strings that are numbers, but returns NaN on things like "" instead of 0.
+		if (!isNaN(parseFloat(reading.cms))) {
 			reading.cfs = Number(reading.cms) * cubicMeterInFeet
 			reading.cfs = Math.round(reading.cfs * 10)/10
-			delete reading.cms
 		}
-		if (reading.meters) {
+		delete reading.cms
+		if (!isNaN(parseFloat(reading.meters))) {
 			reading.feet = Number(reading.meters) * meterInFeet
 			reading.feet = Math.round(reading.feet * 100)/100
-			delete reading.meters
 		}
+		delete reading.meters
 	}
 
 	//Sort so that newest values are last.
