@@ -100,7 +100,7 @@ async function redrawRows() {
 
 			let nameColumn = document.createElement("span")
 			nameColumn.className = "nameColumn"
-			nameColumn.innerHTML = `<a target="blank" href="${getSearchLink([id])}">${selections[gauge][id].name + ((selections[gauge][id].section)?(" (" + selections[gauge][id].section) + ")":"")}</a>`
+			nameColumn.innerHTML = `<a target="blank" href="${getSearchLink([id], window.root)}">${selections[gauge][id].name + ((selections[gauge][id].section)?(" (" + selections[gauge][id].section) + ")":"")}</a>`
 			row.appendChild(nameColumn)
 
 			let minColumn = document.createElement("span")
@@ -222,7 +222,7 @@ async function redrawRows() {
 
 	console.log(ids)
 
-	document.getElementById("favoritesLinks").innerHTML = `${ids.length} rivers in favorites - <a href="${getSearchLink(ids, window.root)}" target="_blank">View all on rivers.run</a>`
+	document.getElementById("favoritesLinks").innerHTML = `${ids.length} rivers in favorites - <a href="${getSearchLink(ids, window.root)}" target="_blank">View all favorites on rivers.run</a>`
 }
 
 if (localStorage.getItem("favorites") === null) {localStorage.setItem("favorites", "{}")}
