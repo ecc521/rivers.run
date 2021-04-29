@@ -39,6 +39,13 @@
         </select>
         <p id="darkModeDefaultExplanation">Default: Use browser/os theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your browser provides a color scheme to use)</p>
 
+        <h3>Home Page Default Search</h3>
+        <select id="homePageDefaultSearch">
+            <option value="null">None (Display All Rivers)</option>
+            <option value="favorites">Display Favorites by Default</option>
+        </select>
+        <p>Default: None. You can choose to display your favorites by default on the home page. </p>
+
         <h3>Offline Map Resolution (US and World)</h3>
         <p>Increasing resolution will require a relatively small (under 20MB) download, unless the images are already stored on your device. </p>
         <p>Higher resolution maps may take (substantially) longer to load on some browsers and devices. </p>
@@ -123,11 +130,22 @@
                 }
             })
 
+            document.getElementById("homePageDefaultSearch").addEventListener("change", function(event) {
+                //We can't just set the value to null - locaStorage would stringify it
+                if (event.target.value === "null") {
+                    localStorage.removeItem("homePageDefaultSearch")
+                }
+                else {
+                    localStorage.setItem("homePageDefaultSearch", event.target.value)
+                }
+            })
+
 
             document.getElementById("theme").value = localStorage.getItem("prefersDarkMode")
             document.getElementById("colorBlindMode").value = localStorage.getItem("colorBlindMode")
             document.getElementById("usMapResolution").value = localStorage.getItem("usMapResolution")
             document.getElementById("worldMapResolution").value = localStorage.getItem("worldMapResolution")
+            document.getElementById("homePageDefaultSearch").value = localStorage.getItem("homePageDefaultSearch")
 
             let explanation = document.getElementById("darkModeDefaultExplanation")
             let browserSupportsDarkMode = window.matchMedia('(prefers-color-scheme: dark)').media !== "not all"

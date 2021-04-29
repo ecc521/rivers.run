@@ -61,22 +61,46 @@ require("./NewList.js") //Defines window.NewList
 
 document.getElementById("Rivers").appendChild(new TopBar().create())
 
-//Handle search links.
-	if (window.location.hash.length > 0) {
-		let search = decodeURI(window.location.hash.slice(1))
+function setSearchForLink() {
+	let search = decodeURI(window.location.hash.slice(1))
 
 	if (search.startsWith("{")) {
 		//Advanced search
-			let query = JSON.parse(search)
-			setMenuFromSearch(query)
+		let query = JSON.parse(search)
+		setMenuFromSearch(query)
 	}
-		else {
-			//Normal search
-			let query = window.getAdvancedSearchParameters()
-			query.normalSearch = search
-			setMenuFromSearch(query)
+	else {
+		//Normal search
+		let query = window.getAdvancedSearchParameters()
+		query.normalSearch = search
+		setMenuFromSearch(query)
+	}
+}
+
+//Handle search links.
+if (window.location.hash.length > 0) {
+	setSearchForLink()
+}
+else if (localStorage?.getItem("homePageDefaultSearch") === "favorites") {
+	//Default to favorites.
+	try {
+		const getSearchLink = require("./getSearchLink.js")
+
+		let favorites = JSON.parse(localStorage.getItem("favorites"))
+		let ids = []
+		for (let gaugeID in favorites) {
+			for (let riverID in favorites[gaugeID]) {
+				ids.push(riverID)
+			}
 		}
+
+		window.location.href = getSearchLink(ids, "")
+		setSearchForLink()
 	}
+	catch (e) {
+		console.error(e)
+	}
+}
 
 
 ;(async function() {

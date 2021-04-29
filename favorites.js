@@ -217,21 +217,6 @@ async function redrawRows() {
 			})
 
 			currentSelections.appendChild(row)
-
-/*
-			//TODO: Make sure if this element is deleted, it's panel is too.
-			let panel = document.createElement("div")
-			panel.innerHTML = "id: " + id
-
-			row.addEventListener("click", function() {
-				let currentlyExists = (panel.offsetHeight > 0)
-				panel.remove() //Doesn't do anything if panel doesn't exist.
-				if (!currentlyExists) {
-					currentSelections.insertBefore(panel, row.nextSibling)
-				}
-			});
-
-			*/
 		}
 	}
 
