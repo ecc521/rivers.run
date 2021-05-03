@@ -111,7 +111,7 @@ async function loadIrelandOPWGauge(gaugeID, sensorCode = 1) {
 	let output = {
 		readings: results,
 		units: "m",
-		//TODO: Add site name.
+		name: "Ireland OPW " + gaugeID, //TODO: Add site name.
 		source: {
 			text: "View this data from Ireland's Office of Public Works",
 			link: "https://waterlevel.ie/00000" + gaugeID + "/"

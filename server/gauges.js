@@ -11,6 +11,7 @@ const compressor = require(path.join(__dirname, "precompress.js"))
 
 const {loadSiteFromNWS} = require(path.join(__dirname, "gauges", "nwsGauges.js"))
 const {loadSitesFromUSGS} = require(path.join(__dirname, "gauges", "usgsGauges.js"))
+const {loadStreamBeamGauge} = require(path.join(__dirname, "gauges", "streambeamGauges.js"))
 const {loadCanadianGauge} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
 const {loadIrelandOPWGauge, isValidOPWCode} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
 
@@ -100,6 +101,24 @@ class NWS extends DataSource {
 	}
 }
 
+//StreamBeam
+class StreamBeam extends DataSource {
+	constructor(obj = {}) {
+		let config = Object.assign({
+			batchSize: 1,
+			concurrency: 1, //There aren't many of these at all. No problems here.
+		}, obj)
+		super(config)
+	}
+
+	prefix = "streambeam:"
+
+	_processBatch(batch) {
+		console.log("Loading StreamBeam Batch")
+		return loadStreamBeamGauge(batch[0])
+	}
+}
+
 //Meterological Service of Canada
 class MSC extends DataSource {
 	constructor(obj = {}) {
@@ -151,7 +170,8 @@ function obtainDataFromSources(gauges, batchCallback) {
 		new USGS({batchCallback}),
 		new NWS({batchCallback}),
 		new MSC({batchCallback, timeout: 15000}),
-		new OPW({batchCallback})
+		new OPW({batchCallback}),
+		new StreamBeam({batchCallback})
 	]
 
 	gauges.forEach((gaugeID) => {
@@ -172,6 +192,7 @@ function obtainDataFromSources(gauges, batchCallback) {
 	promises[1].finally(() => {console.log("NWS Done!")})
 	promises[2].finally(() => {console.log("MSC Done!")})
 	promises[3].finally(() => {console.log("OPW Done!")})
+	promises[4].finally(() => {console.log("StreamBeam Done!")})
 
 	return Promise.allSettled(promises)
 }
