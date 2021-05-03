@@ -119,7 +119,7 @@ function getMessage(data, user) {
 	]
 
 	function createListItem(river) {
-		return "<li>" + `<a href="${getSearchLink([river.id])}">${river.name + (river.section?`(${river.section})`:"")}<a>` + `: ${river.current} ${river.units} (${river.minimum} ${river.units} - ${river.maximum} ${river.units})` + "</li>"
+		return "<li>" + `<a href="${getSearchLink([river.id])}">${river.name + (river.section?` (${river.section})`:"")}<a>` + `: ${river.current} ${river.units} (${river.minimum} ${river.units} - ${river.maximum} ${river.units})` + "</li>"
 	}
 
 	function createHeader(text) {
