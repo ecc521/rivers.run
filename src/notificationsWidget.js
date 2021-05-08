@@ -32,7 +32,7 @@ function createFavoritesWidget(river, usgsID) {
 			localStorage.setItem("favorites", JSON.stringify(temp))
 		}
 
-		window.open("favorites.html")
+		window.location = "favorites.html"
 	})
 
 	if (currentDetails) {
