@@ -42,7 +42,7 @@
     "ip2location-nodejs": "^8.3.0",
     "json-shrinker": "^1.0.4",
     "nodemailer": "^6.4.11",
-    "postcss": "^7.0.32",
+    "postcss": "^8.2.10",
     "postcss-css-variables": "^0.13.0",
     "postcss-custom-properties": "^9.1.1",
     "postcss-preset-env": "^6.7.0",
