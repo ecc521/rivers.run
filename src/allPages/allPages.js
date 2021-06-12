@@ -10,29 +10,9 @@ try {
 }
 catch (e) {console.error(e)}
 
-if (window.Capacitor) {
-	try {
-		//Cover up the alert about using the https://rivers.run server. Might not be needed in production.
-		for (let i=0;i<10;i++) {
-			if (window.location.hash === "#f7s") {
-				window.sessionFirstLaunch = true //App was just launched, not navigated to from another page.
-				window.location.hash = "#"
-			}
-			if (window.sessionFirstLaunch) {
-				Capacitor.Plugins.Toast.show({
-					text: 'Welcome to rivers.run! Happy Paddling!',
-					duration: "long"
-				})
-			}
- 		}
-	}
-	catch (e) {console.error(e)}
-
-	try {
-		//Hide splash screen.
-		Capacitor.Plugins.SplashScreen.hide()
-	}
-	catch(e) {console.error(e)}
+//If we are in an iframe, or if Capacitor is defined, assume iOS.
+if (window.parent.location !== window.location || window.Capacitor) {
+	window.isIos = true
 }
 
 require("./universalLinks.js")
@@ -118,8 +98,8 @@ catch (e) {
 	console.error(e)
 }
 
-if (window.Capacitor) {
-	//This code may not need to be Capacitor specific.
+if (window.isIos) {
+	//This code may not need to be iOS specific.
 	try {
 		//setOverlaysWebView doesn't work on iOS.
 		//Therefore, we must use CSS to work around the notch.
@@ -144,6 +124,7 @@ if (window.Capacitor) {
 					position: sticky;
 					top: 0;
 					height: env(safe-area-inset-top);
+					z-index: 9999999;
 				}
 			}
 	`, styleSheet.cssRules.length)

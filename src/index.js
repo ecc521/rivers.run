@@ -1,6 +1,5 @@
 'use strict';
 
-
 try {
 	window.loadNewUSGS = "Trying to Load Data"
 	if ('serviceWorker' in navigator) {

@@ -23,7 +23,7 @@ try {
 
 	addItem("Voice", root + "voice.html")
 
-	if (!window.Capacitor) {
+	if (!window.isIos) {
 		addItem("About", root + "about.html")
 	}
 

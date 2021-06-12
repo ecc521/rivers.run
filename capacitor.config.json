@@ -4,14 +4,7 @@
   "bundledWebRuntime": false,
   "npmClient": "npm",
   "webDir": "capacitorDir",
-  "plugins": {
-    "SplashScreen": {
-      "launchAutoHide": false
-    }
-  },
+  "plugins": {},
   "cordova": {},
-  "server": {
-      "url": "https://rivers.run/#f7s",
-      "allowNavigation": ["rivers.run"]
-  }
+  "server": {}
 }

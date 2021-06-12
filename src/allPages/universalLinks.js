@@ -1,4 +1,5 @@
 //Handle universal links into the app.
+//TODO: Fix for new iframe design.
 try {
 	if (window.Capacitor) {
 
@@ -22,7 +23,7 @@ try {
 			}
 			else {
 				console.log("Different pathname. Setting")
-                window.location.hash = url.hash //Hash might be different too. 
+                window.location.hash = url.hash //Hash might be different too.
 				window.location.pathname = url.pathname
 			}
 		}
