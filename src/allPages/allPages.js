@@ -15,8 +15,6 @@ if (window.parent.location !== window.location || window.Capacitor) {
 	window.isIos = true
 }
 
-require("./universalLinks.js")
-
 try {
 	//IE11 polyfills
 	//Note that there are more places that IE11 specific code is used.

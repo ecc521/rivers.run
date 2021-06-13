@@ -1,135 +1,134 @@
+//TODO: Is there any way to capture and cache the google maps api code?
+//Also - if we can do that, we need to store higher res OpenStreetMap tiles offline.
+//We'd currently need to base64 encode them here (from binary), then decode on the other side,
+//as the server doesn't support text. Probably use FileReader or something for performance.
+
 require("../src/allPages/addTags.js")
 
 //Load the entire site into an iframe based on a local server.
 
 const WebServer = require("@ionic-native/web-server").WebServer
-let sourceServer = "http://127.0.0.1:6789" //"https://rivers.run"
+let sourceServer = "https://rivers.run"
 
 //If the server is already running, stop it.
 WebServer.stop().then(() => {
 	const port = 15376
 
 	WebServer.onRequest().subscribe(data => {
+		if (data.path.endsWith("/")) {
+			data.path += "index.html"
+		}
 
-	  console.log(data);
+		let headers = {
+			'Access-Control-Allow-Origin': "*"
+		}
 
-	  console.log(data.path)
+		const res = {
+			headers,
+			body: ""
+		};
 
-	  if (data.path.endsWith("/")) {
-		  data.path += "index.html"
-	  }
+		//Incomplete list.
+		if (data.path.endsWith(".html")) {
+			headers['Content-Type'] = "text/html"
+		}
+		else if (data.path.endsWith(".css")) {
+			headers['Content-Type'] = "text/css"
+		}
+		else if (data.path.endsWith(".js")) {
+			headers['Content-Type'] = "text/javascript"
+		}
+		else if (data.path.endsWith(".json")) {
+			headers['Content-Type'] = "application/json"
+		}
 
-	  console.log(data.path)
+		if (
+			!headers['Content-Type']
+			|| data.path.includes("ip2location")
+			|| data.path.includes("node")
+			|| data.path.includes("gaugeReadings")
+		) {
+			console.log("Redirecting to Network", data.path)
+			//This server plugin only supports text, not binary.
+			//Therefore, redirect these to network.
 
-	  let headers = {
-		  'Access-Control-Allow-Origin': "*"
-	  }
+			//Also, don't cache items that shouldn't be cached.
 
-	  const res = {
-		  headers,
-		  body: ""
-	  };
-let log = false
-	  //Incomplete list.
-	  if (data.path.endsWith(".html")) {
-		  headers['Content-Type'] = "text/html"
-	  }
-	  else if (data.path.endsWith(".css")) {
-		  headers['Content-Type'] = "text/css"
-	  }
-	  else if (data.path.endsWith(".js")) {
-		  headers['Content-Type'] = "text/javascript"
-	  }
-	  else if (data.path.endsWith(".json")) {
-		  headers['Content-Type'] = "application/json"
-	  }
-	  else if (data.path.endsWith(".jpg")){
-		  headers['Content-Type'] = "image/jpeg"
-		  console.warn("BINARY!")
-		  log = true
-	  }
-	  else {
-		  console.warn("UNKNOWN")
-	  }
+			res.status = 301
+			headers["Location"] = sourceServer + data.path
 
-	  //TODO: We need a way to handle images, but the server plugin only does text.
-	  //Looks like we should server the path to the file.
-	  //When we need to load from network, we may need to write a file then provide the path. A bit weird, but OK.
+			return WebServer.sendResponse(data.requestId, res)
+				.catch((error) => console.error(error));
+		}
+		console.log("Serving", data.path)
 
-	  ;((async function() {
-		  try {
-			  res.status = 200
+		;((async function() {
+			try {
+				res.status = 200
 
-			  try {
-				  //TODO: No cache requests.
-				  //Try Network First.
-				  await new Promise((resolve, reject) => {
-					  fetch(sourceServer + data.path).then((response) => {
-						  response.text().then((text) => {
-								  Capacitor.Plugins.Filesystem.writeFile({
-									  path: data.path,
-									  directory: "DATA",
-									  data: text,
-									  recursive: true,
-									  encoding: "utf8"
-								  })
-								  console.log(text.length)
-								  if (log) {
-									  console.error("Below")
-									  console.log(text)
-								  }
-							  res.body = text
-							  resolve()
-						  })
-					  })
+				try {
+					if (navigator.onLine === false) {throw "Offline"} //Instantly trigger fallback.
 
-						  setTimeout(function() {
-							  reject("Request Timeout Exceeded. ")
-						  }, 1200) //1.2 second fallback.
-				  })
-			  }
-			  catch (e) {
-				  //Try filesystem next.
-					  console.error(e)
-					  try {
-						  res.body = (await Capacitor.Plugins.Filesystem.readFile({
-							  path: data.path,
-							  directory: "DATA",
-							  encoding: "utf8"
-						  })).data
-					  }
-					  catch (e) {
-						  //Installed with App Last.
-						  console.error(e)
-						  let req = await fetch(data.path)
-						  res.body = await req.text()
-					  }
-			  }
-		  }
-		  catch (e) {
-			  console.error(e)
-			  res.status = 500
-		  }
-		  finally {
-			  if (log) {
-				  console.error("Below")
-			  }
-			 console.log(res)
-			// console.log(res.body)
-			 WebServer.sendResponse(data.requestId, res)
-			 	.catch((error) => console.error(error));
-		  }
-	  })())
+					//Try Network First.
+					await new Promise((resolve, reject) => {
+						fetch(sourceServer + data.path).then((response) => {
+							response.text().then((text) => {
+								Capacitor.Plugins.Filesystem.writeFile({
+									path: data.path,
+									directory: "DATA",
+									data: text,
+									recursive: true,
+									encoding: "utf8"
+								})
+								res.body = text
+								resolve()
+							})
+						})
+
+						setTimeout(function() {
+							reject("Request Timeout Exceeded. ")
+						}, 1200) //1.2 second fallback.
+					})
+				}
+				catch (e) {
+					//Try filesystem next.
+					console.error(e)
+					try {
+						res.body = (await Capacitor.Plugins.Filesystem.readFile({
+							path: data.path,
+							directory: "DATA",
+							encoding: "utf8"
+						})).data
+					}
+					catch (e) {
+						//Installed with App Last.
+						console.error(e)
+						let req = await fetch(data.path)
+						res.body = await req.text()
+					}
+				}
+			}
+			catch (e) {
+				console.error(e)
+				res.status = 500
+			}
+			finally {
+				console.log(res)
+				WebServer.sendResponse(data.requestId, res)
+					.catch((error) => console.error(error));
+			}
+		})())
 	});
 
 	WebServer.start(port)
-	  .catch((error) => console.error(error));
+		.catch((error) => console.error(error));
 
-	  let iframe = document.createElement("iframe")
-	  iframe.style.border = "none"
-	  iframe.style.width = "100%"
-	  iframe.style.height = "100%"
-	  document.body.appendChild(iframe)
+	let iframe = document.createElement("iframe")
+	iframe.style.border = "none"
+	iframe.style.width = "100%"
+	iframe.style.height = "100%"
+	document.body.appendChild(iframe)
 
-	iframe.src = "http://127.0.0.1:" + port + "/clubs.html"
+	iframe.src = "http://127.0.0.1:" + port
+	require("./universalLinks.js")({iframe, baseUrl: iframe.src})
 })

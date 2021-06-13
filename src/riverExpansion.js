@@ -205,7 +205,7 @@ function createExpansion(button, river) {
         //Fetch comprehensive flow data, then update the graphs.
         //TODO: Add XMLHttpRequest fallback.
         if (!usgsarray[usgsID] || !usgsarray[usgsID].full) {
-            fetch(window.root + "/gaugeReadings/" + usgsID).catch((error) => {
+            fetch(window.root + "gaugeReadings/" + usgsID).catch((error) => {
                 console.log("Failed to load " + usgsID + " from network. Error below. ")
                 console.log(error)
             }).then((response) => {
