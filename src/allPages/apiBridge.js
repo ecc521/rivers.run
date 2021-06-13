@@ -66,7 +66,11 @@ async function syncStorage() {
 	for (let prop in res) {
 		localStorage.setItem(prop, res[prop])
 	}
-	window.dispatchEvent(new Event("storage")) //Trigger dark mode to update. 
+	localStorage.setItem("hasSynced", "true")
+	window.dispatchEvent(new Event("storage")) //Trigger dark mode to update.
 }
 
-window.syncStoragePromise = syncStorage()
+//We only want to sync once every time localStorage is cleared. 
+if (!localStorage.getItem("hasSynced")) {
+	window.syncStoragePromise = syncStorage()
+}
