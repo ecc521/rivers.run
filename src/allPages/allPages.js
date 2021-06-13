@@ -11,7 +11,11 @@ try {
 catch (e) {console.error(e)}
 
 //If we are in an iframe, or if Capacitor is defined, assume iOS.
-if (window.parent.location !== window.location || window.Capacitor) {
+if (window.parent.location !== window.location) {
+	window.isIos = true
+	require("./apiBridge.js")
+}
+else if (window.Capacitor) {
 	window.isIos = true
 }
 

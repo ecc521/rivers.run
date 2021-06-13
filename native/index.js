@@ -1,3 +1,4 @@
+//Load the entire site into an iframe based on a local server.
 //Make sure to update the native/index.html csp if needed.
 
 //TODO: Is there any way to capture and cache the google maps api code?
@@ -5,12 +6,19 @@
 //We'd currently need to base64 encode them here (from binary), then decode on the other side,
 //as the server doesn't support text. Probably use FileReader or something for performance.
 
-require("../src/allPages/addTags.js")
-
-//Load the entire site into an iframe based on a local server.
-
 const WebServer = require("@ionic-native/web-server").WebServer
+
+//Called later.
+const enableUniversalLinks = require("./universalLinks.js")
+const enableFrameBridge = require("./frameBridge.js")
+const appUpdateWarning = require("./appUpdates.js")
+
 let sourceServer = "https://rivers.run"
+
+let preinstalledAssetsPath = "www" //We host preinstalled assets in a www dir.
+let localCacheAssetsPath = "filecache"
+
+require("../src/allPages/addTags.js") //Add meta tags, etc.
 
 //If the server is already running, stop it.
 WebServer.stop().then(() => {
@@ -76,7 +84,7 @@ WebServer.stop().then(() => {
 						fetch(sourceServer + data.path).then((response) => {
 							response.text().then((text) => {
 								Capacitor.Plugins.Filesystem.writeFile({
-									path: data.path,
+									path: localCacheAssetsPath + data.path,
 									directory: "DATA",
 									data: text,
 									recursive: true,
@@ -97,7 +105,7 @@ WebServer.stop().then(() => {
 					console.error(e)
 					try {
 						res.body = (await Capacitor.Plugins.Filesystem.readFile({
-							path: data.path,
+							path: localCacheAssetsPath + data.path,
 							directory: "DATA",
 							encoding: "utf8"
 						})).data
@@ -105,7 +113,7 @@ WebServer.stop().then(() => {
 					catch (e) {
 						//Installed with App Last.
 						console.error(e)
-						let req = await fetch("www" + data.path) //We host preinstalled assets in a www dir. 
+						let req = await fetch(preinstalledAssetsPath + data.path)
 						res.body = await req.text()
 					}
 				}
@@ -131,53 +139,11 @@ WebServer.stop().then(() => {
 	iframe.style.height = "100%"
 	document.body.appendChild(iframe)
 
-	iframe.src = "http://127.0.0.1:" + port
-	require("./universalLinks.js")({iframe, baseUrl: iframe.src})
+	let iframeUrl = "http://127.0.0.1:" + port
+	enableFrameBridge({iframeUrl})
+
+	iframe.src = iframeUrl
+	enableUniversalLinks({iframe, baseUrl: iframeUrl})
 })
 
-
-if (Capacitor?.getPlatform() === "ios") {
-    try {
-        ;((async function() {
-            //Alert for App Updates.
-
-            //iTunes is settings CORS headers, but those headers don't change when the CDN resends the content -
-            //if the CDN serves us, the CORS headers are for whatever origin last issued the request.
-
-            //Fail on Apple's part there. Time to start cache busting. Leave a nice note in case this leaves some weird stuff in logs.
-            //Apple takes up to a day to stop caching anyways, so this is probably a good thing from that perspective.
-
-            let req = await fetch("https://itunes.apple.com/lookup?bundleId=run.rivers.twa&YourCDNDoesNotChangeCORSHeadersSoMustCacheBust" + Math.random())
-            let res = await req.json()
-            let latestVersion = res.results[0].version
-
-            let deviceInfo = await window.Capacitor.Plugins.Device.getInfo()
-            let currentVersion = deviceInfo.appVersion
-
-            //Using numeric comparison, so version codes can't have more than one decimal.
-            if (parseFloat(currentVersion) < parseFloat(latestVersion)) {
-				let popup = document.createElement("div")
-				popup.innerHTML = `
-				<h2>App Update</h2>
-				<h3>There is a Rivers.run <a href='https://apps.apple.com/us/app/rivers-run/id1552809249' target='_blank'>app update</a>. Downloading it is recommended. You may experience if you do not update.</h3>`
-				popup.style.left = popup.style.top = popup.style.bottom = popup.style.right = "0"
-				popup.style.position = "absolute"
-				popup.style.textAlign = "center"
-				popup.style.backgroundColor = "white"
-				popup.style.color = "black"
-				popup.style.padding = "10px"
-				popup.style.paddingTop = "30px"
-				let closeButton = document.createElement("button")
-				closeButton.innerHTML = "Close"
-				closeButton.style.padding = "20px"
-				closeButton.addEventListener("click", function() {
-					popup.remove()
-				})
-
-				popup.appendChild(closeButton)
-				document.body.appendChild(popup)
-            }
-        })())
-    }
-    catch (e) {console.error(e)}
-}
+appUpdateWarning()

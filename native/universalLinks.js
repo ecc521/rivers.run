@@ -1,6 +1,5 @@
 //Handle universal links into the app.
 
-
 module.exports = function({iframe, baseUrl}) {
 	//Navigate to target.
 	function processRedirect(target) {
