@@ -13,7 +13,7 @@ mkdir capacitorDir/www/resources
 
 cp resources/* capacitorDir/www/resources #Intentionally NOT recurisve.
 
-cp riverdata.json www/riverdata.json #Make basic data available after install.
+cp riverdata.json capacitorDir/www/riverdata.json #Make basic data available after install.
 
 cp ed.jpg capacitorDir/www/ed.jpg
 
