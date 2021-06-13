@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="UTF-8">
+
         <!--Web App Manifest-->
         <link rel="manifest" href="manifest.json">
 
@@ -121,7 +123,7 @@
             })
 
             document.getElementById("worldMapResolution").addEventListener("change", function(event) {
-                //We can't just set the value to null - locaStorage would stringify it
+                //We can't just set the value to null - localStorage would stringify it
                 if (event.target.value === "null") {
                     localStorage.removeItem("worldMapResolution")
                 }

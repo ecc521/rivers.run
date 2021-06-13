@@ -15,7 +15,7 @@ const path = require("path")
 			"packages/map.js": "./map.js",
 			"packages/favorites.js": "./favorites.js",
 			"packagedsw.js": "./sw.js",
-			//TODO: Package serviceworker, and drop it in root directory. (could use Service-Worker-Allowed: / header, but that makes local development harder).
+			"native/packages/index.js": "./native/index.js",
 		},
   		watch: true,
 		target: "web",
