@@ -105,7 +105,7 @@ WebServer.stop().then(() => {
 					catch (e) {
 						//Installed with App Last.
 						console.error(e)
-						let req = await fetch(data.path)
+						let req = await fetch("www" + data.path) //We host preinstalled assets in a www dir. 
 						res.body = await req.text()
 					}
 				}
