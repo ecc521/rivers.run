@@ -198,16 +198,15 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 
 #searchimg {
     display:inline-block;
-    max-width:43px;
-    max-height:43px;
+    max-width: 38px;
     width:auto;
     height:auto;
     vertical-align:middle;
 }
 
 #advancedsearch, #addAllToFavorites {
-    display:inline-block;
-    vertical-align:middle;
+    display: inline-block;
+    vertical-align: middle;
     height: 36px;
 }
 
@@ -251,7 +250,7 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
     vertical-align:middle;
     padding:0;
     height: 36px;
-    width:30%;
+    width: 20%;
 	padding-left:5px;/*Prevent the text from being on the left edge.*/
 	font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
 }
