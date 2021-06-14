@@ -1,4 +1,5 @@
 window.timesNewListCalled = 0 //Used to handle advanced search links with flow, and to prevent drawing rivers from an older search.
+window.currentlyShown;
 let previousSearchQuery; //Used to avoid spending CPU to do the same search query again.
 window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParameters, window.getAdvancedSearchParameters()), options = {}) {
 	//For the advanced search paramters, use the defaults in all non-specified cases. This is ineffecient because we run a search with every parameter, even when that parameter is useless (as the defaults are).
@@ -13,6 +14,7 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 
 	let orderedlist = ItemHolder.slice(0); //Clone the array
 	orderedlist = advancedSearch(orderedlist, query)
+	window.currentlyShown = orderedlist
 
 	//Clear Current
 	ItemHolder.forEach(function(event) {

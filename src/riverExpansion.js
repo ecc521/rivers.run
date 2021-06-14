@@ -1,7 +1,7 @@
 const {skillTranslations} = require("./skillTranslations.js")
 const addGraphs = require("./addGraphs.js").addGraphs
 const {calculateAge} = require("./flowInfoCalculations.js")
-const {createFavoritesWidget} = require("./notificationsWidget.js")
+const {createFavoritesWidget} = require("./favoritesWidget.js")
 const {addMap} = require("./Mapper.js")
 
 //Code that runs when the button is clicked

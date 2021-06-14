@@ -20,11 +20,9 @@ try {
 	background-color: #fefefe;
 	margin: auto;
 	padding: 12px;
-	padding-top:0px;
-	padding-bottom: 0px;
 	border: 1px solid #888;
-	width: 92%;
-	margin-top:50px;
+	width: calc(92% - 24px);
+	margin-top: 60px;
 	}`,styleSheet.cssRules.length)
 
 	styleSheet.insertRule(`
@@ -48,8 +46,8 @@ try {
 	background-color:black !important;
 	color:#cfcfcf !important;
 	`)
-	
-	
+
+
 	//Create the modal element
 	let overview_modal = document.createElement("div")
 	overview_modal.className = "modal"
@@ -93,15 +91,15 @@ try {
 				let overviewName = this.innerText.trim().split("/").join("_")
 
 				overview_modal_text.innerHTML = ""
-					
+
 				let iframe = document.createElement("iframe")
 				iframe.src = window.root + "overviews/" + overviewName
 				iframe.style.width = "100%"
 				iframe.style.height = "82vh"
-				iframe.style.border = "none"					
-					
+				iframe.style.border = "none"
+
 				iframe.sandbox = "allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-				
+
 				iframe.addEventListener("load", function() {
 					let doc = iframe.contentDocument
 					//Remove Google Docs maxWidth and padding
@@ -110,7 +108,7 @@ try {
 					doc.body.querySelectorAll("a").forEach((elem) => {
 						elem.target = "_blank"
 					})
-					
+
 					//Invert the Google Doc, excluding images (double invert = normal).
 					let darkModeInversionCSS = `
 					body {
@@ -121,7 +119,7 @@ try {
 						filter: invert(1) !important;
 					}
 					`
-					
+
 					function setDarkMode() {
 						let toDelete = doc.querySelector("#darkModeInversionCSS")
 						if (toDelete) {toDelete.remove()}
@@ -132,11 +130,11 @@ try {
 							doc.body.appendChild(elem)
 						}
 					}
-					
+
 					setDarkMode()
 					window.addEventListener("colorSchemeChanged", setDarkMode)
 				})
-					
+
 
 				overview_modal_text.appendChild(iframe)
 	        }

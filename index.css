@@ -205,7 +205,7 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
     vertical-align:middle;
 }
 
-#advancedsearch {
+#advancedsearch, #addAllToFavorites {
     display:inline-block;
     vertical-align:middle;
     height: 36px;
@@ -267,7 +267,7 @@ button {
 }
 
 #advanced-search-modal-close {
-    font-size: 28px !important; /*Set back to the default (the selector above would override)*/
+    font-size: 36px !important; /*Set back to the default (the selector above would override)*/
 }
 
 #searchlink {

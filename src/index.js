@@ -78,7 +78,7 @@ function setSearchForLink() {
 
 
 ;(async function() {
-	//TODO: Do this on other pages. 
+	//TODO: Do this on other pages.
 	if (window.syncStoragePromise) {
 		console.log("Awaiting Storage Sync")
 		await window.syncStoragePromise
