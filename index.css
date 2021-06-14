@@ -198,11 +198,33 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 
 #searchimg {
     display:inline-block;
-    max-width: 38px;
+    max-width: 43px;
     width:auto;
     height:auto;
     vertical-align:middle;
 }
+
+/*Keep the search bar in one line on smaller devices. */
+@media (max-width: 400px){
+    #searchimg {
+        max-width: 9.5vw;
+    }
+
+    .searchcontain {
+        margin-left: 2px;
+    }
+}
+
+@media (max-width: 359px){
+    .searchcontain {
+        text-align: center;
+    }
+
+    #searchimg {
+        display: none;
+    }
+}
+
 
 #advancedsearch, #addAllToFavorites {
     display: inline-block;
