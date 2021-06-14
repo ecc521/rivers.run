@@ -44,10 +44,15 @@ const path = require("path")
   							sourceType: 'unambiguous', //Allow mixing CommonJS and ES6 modules.
 							presets: [
 								[
-									'@babel/preset-env', {
-									useBuiltIns: 'usage',
-									corejs: "3.3.6"
-								}]
+								"@babel/preset-env",
+								{
+									"useBuiltIns": "usage",
+									"corejs": {
+										"version": 3,
+										"proposals": true
+									}
+								}
+							]
 							]
 						}
 					}
