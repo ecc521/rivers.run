@@ -2,7 +2,7 @@
 //To fix this, we will store data here instead, and use postMessage to communicate.
 
 module.exports = function({iframeUrl}) {
-	window.addEventListener("message", (event) => {
+	window.addEventListener("message", async function(event) {
 		//Security measure, although this should never end up running.
 		if (new URL(event.origin).href !== new URL(iframeUrl).href) {
 			return console.error("Origin Not Allowed: ", event.origin)
@@ -23,12 +23,15 @@ module.exports = function({iframeUrl}) {
 					localStorage.setItem(prop, stor[prop])
 				}
 			}
+			else if (data.type === "getCurrentPosition") {
+				response.message = await Capacitor.Plugins.Geolocation.getCurrentPosition()
+			}
 			else {
 				throw "Unknown frameBridge Call"
 			}
 		}
 		catch (e) {
-			response.message = e
+			response.message = e.message
 			response.throw = true
 		}
 

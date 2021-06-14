@@ -79,11 +79,24 @@ async function calculateCoordinates() {
 
 	let position;
 	try {
-		position = await new Promise((resolve, reject) => {
-			navigator.geolocation.getCurrentPosition(resolve, reject)
-		});
+        if (window.nativeLocationRequest) {
+            position = await window.nativeLocationRequest()
+        }
+        else {
+            //We're fine with high accuracy, and probably want to enable it.
+            //Otherwise, there might be some issues with GPS not enabling or something.
+            position = await Promise.any([
+                new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: false})
+                }),
+                new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true})
+                })
+            ])
+        }
 	}
 	catch(error) {
+        if (error.errors) {error = error.errors[0]} //Handle aggregateErrors.
 		let output = "Your device encountered an error when attempting to find your position. " //Message for POSITION_UNAVAILABLE error.
 		if (error.PERMISSION_DENIED) {
 			//If the error is actually permission denied, check to see if we have location permission.
@@ -108,7 +121,7 @@ async function calculateCoordinates() {
 		status.innerHTML = output
 	}
 
-
+    console.log(position)
 	let coords = position.coords
 
 	clearInterval(progress)

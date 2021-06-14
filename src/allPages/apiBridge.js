@@ -15,7 +15,7 @@ function syncToNative() {
 				window.removeEventListener("message", listener)
 
 				if (event.data.throw === true) {
-					reject(event.data.message)
+					reject(new Error(event.data.message))
 				}
 				else {
 					resolve(event.data.message)
@@ -43,7 +43,7 @@ async function syncStorage() {
 				window.removeEventListener("message", listener)
 
 				if (event.data.throw === true) {
-					reject(event.data.message)
+					reject(new Error(event.data.message))
 				}
 				else {
 					resolve(event.data.message)
@@ -80,5 +80,36 @@ if (!localStorage.getItem("hasSynced")) {
 	])
 }
 else {
-	syncToNative() //Storage event isn't fired when the tab changes. So if we've already synced, sync now. 
+	syncToNative() //Storage event isn't fired when the tab changes. So if we've already synced, sync now.
+}
+
+
+window.nativeLocationRequest = function nativeLocationRequest() {
+	return new Promise((resolve, reject) => {
+		let randomKey = Math.random()
+
+		function listener(event) {
+			if (event.data.randomKey === randomKey) {
+				window.removeEventListener("message", listener)
+
+				if (event.data.throw === true) {
+					reject(new Error(event.data.message))
+				}
+				else {
+					resolve(event.data.message)
+				}
+			}
+			else {
+				console.log(event.data.randomKey, randomKey)
+			}
+		}
+
+		window.addEventListener("message", listener)
+
+		window.parent.postMessage({
+			type: "getCurrentPosition",
+			args: [],
+			randomKey
+		}, "*")
+	})
 }
