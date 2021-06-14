@@ -6,7 +6,7 @@
 
 //We'll wait for localStorage to load on main page. This means direct links into other pages might cause issues,
 //where localStorage doesn't match the UI, but everything else should be fine.
-window.addEventListener("storage", function() {
+function syncToNative() {
 	return new Promise((resolve, reject) => {
 		let randomKey = Math.random()
 
@@ -31,7 +31,8 @@ window.addEventListener("storage", function() {
 			randomKey
 		}, "*")
 	})
-})
+}
+window.addEventListener("storage", syncToNative)
 
 async function syncStorage() {
 	let res = await new Promise((resolve, reject) => {
@@ -70,7 +71,14 @@ async function syncStorage() {
 	window.dispatchEvent(new Event("storage")) //Trigger dark mode to update.
 }
 
-//We only want to sync once every time localStorage is cleared. 
+//We only want to sync once every time localStorage is cleared.
+//Max 500ms wait.
 if (!localStorage.getItem("hasSynced")) {
-	window.syncStoragePromise = syncStorage()
+	window.syncStoragePromise = Promise.race([
+		syncStorage(),
+		new Promise((resolve) => {setTimeout(resolve, 500)})
+	])
+}
+else {
+	syncToNative() //Storage event isn't fired when the tab changes. So if we've already synced, sync now. 
 }

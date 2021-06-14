@@ -160,8 +160,6 @@ catch(e) {
 }
 
 
-
-
 try {
 	//Custom Events Polyfill. Used for river-overview tags.
 	if (!window.customElements) {
