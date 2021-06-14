@@ -385,5 +385,12 @@ async function emailUpdated() {
 	})
 
 	emailUpdated()
-
 }());
+
+let deleteAllFavorites = document.getElementById("deleteAllFavorites")
+deleteAllFavorites.addEventListener("click", function() {
+	if (confirm("Delete all favorites?")) {
+		localStorage.setItem("favorites", "{}")
+		redrawRows()
+	}
+})

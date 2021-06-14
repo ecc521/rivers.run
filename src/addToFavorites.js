@@ -1,7 +1,14 @@
-module.exports = function(river, usgsID) {
+function loadFavorites() {
 	if (localStorage.getItem("favorites") === null) {localStorage.setItem("favorites", "{}")}
+	return JSON.parse(localStorage.getItem("favorites"))
+}
 
-	let temp = JSON.parse(localStorage.getItem("favorites"))
+function writeFavorites(temp) {
+	console.log("Wrote")
+	localStorage.setItem("favorites", JSON.stringify(temp))
+}
+
+function addToFavorites(temp, river, usgsID) {
 	if (!temp[usgsID]) {temp[usgsID] = {}}
 
 	let currentDetails = temp?.[usgsID]?.[river.id] //Current data in favorites
@@ -17,5 +24,27 @@ module.exports = function(river, usgsID) {
 		maximum: river.maxrun,
 		units: river.relativeFlowType?.replace("ft", "feet")?.replace("m", "meters")
 	}
-	localStorage.setItem("favorites", JSON.stringify(temp))
+	return temp
+}
+
+function addRiversToFavorites(rivers) {
+	let temp = loadFavorites()
+
+	rivers.forEach((river) => {
+		addToFavorites(temp, river, river.gauge)
+	})
+
+	writeFavorites(temp)
+}
+
+function addRiverToFavorites(river, usgsID) {
+	writeFavorites(
+		addToFavorites(loadFavorites(), river, usgsID)
+	)
+}
+
+module.exports = {
+	loadFavorites,
+	addRiverToFavorites,
+	addRiversToFavorites
 }

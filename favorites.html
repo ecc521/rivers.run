@@ -161,6 +161,13 @@
             display: none;
         }
 
+        #deleteAllFavorites {
+            padding: 4px 6px;
+            display: block;
+            margin: auto;
+            margin-bottom: 6px;
+        }
+
         .loader {
             filter: invert(1);
             display: inline-block;
@@ -275,6 +282,8 @@ Add link on main page to add all rivers to favorites -->
                 <p id="favoritesLinks"></p>
                 <p style="text-align: center">If you wish, you can change your <a href="settings.html">settings</a> to display favorites on the home page by default. </p>
 
+                <button id="deleteAllFavorites">Delete All Favorites</button>
+
                 <div id="currentSelections"></div>
 
                 <div id="syncSpinner">Syncing to Server...<div class="loader"></div></div>
@@ -302,6 +311,5 @@ Add link on main page to add all rivers to favorites -->
                 <p>Tap on min, max, or units in order to set or change your configuration. </p>
 
 		<script src="packages/favorites.js"></script>
-
     </body>
 </html>

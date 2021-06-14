@@ -1,4 +1,4 @@
-const addToFavorites = require("./addToFavorites.js")
+const {loadFavorites, addRiverToFavorites, addRiversToFavorites} = require("./addToFavorites.js")
 
 //What's the right code file for this function?
 //Enable the addAllToFavorites button.
@@ -21,9 +21,7 @@ addAllToFavorites.addEventListener("click", function() {
 	if (riverAmount === 0 && gaugeAmount === 0) {return alert("Your search returned 0 results, so nothing can be added. ")}
 
 	if (confirm(message + " to favorites?")) {
-		riversToAdd.forEach((river) => {
-			addToFavorites(river, river.gauge)
-		})
+		addRiversToFavorites(riversToAdd)
 
 		window.location = "favorites.html"
 	}
@@ -32,10 +30,7 @@ addAllToFavorites.addEventListener("click", function() {
 
 
 function createFavoritesWidget(river, usgsID) {
-
-	if (localStorage.getItem("favorites") === null) {localStorage.setItem("favorites", "{}")}
-	let favorites = JSON.parse(localStorage.getItem("favorites"))
-
+	let favorites = loadFavorites()
 	let currentDetails = favorites?.[usgsID]?.[river.id] //Current data in favorites
 
 	//Container for the river alert creator.
@@ -49,7 +44,7 @@ function createFavoritesWidget(river, usgsID) {
 
 	save.addEventListener("click", function() {
 		if (!currentDetails) {
-			addToFavorites(river, usgsID) //This does check for existing favorites as well, so no need.
+			addRiverToFavorites(river, usgsID) //This does check for existing favorites as well, but no reason to call loadFavorites twice.
 		}
 
 		window.location = "favorites.html"
