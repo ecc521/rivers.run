@@ -8,7 +8,6 @@
 
 const WebServer = require("@ionic-native/web-server").WebServer
 
-//Called later.
 const enableUniversalLinks = require("./universalLinks.js")
 const enableFrameBridge = require("./frameBridge.js")
 const appUpdateWarning = require("./appUpdates.js")
@@ -20,119 +19,132 @@ let localCacheAssetsPath = "filecache"
 
 require("../src/allPages/addTags.js") //Add meta tags, etc.
 
-//If the server is already running, stop it.
-WebServer.stop().then(() => {
-	const port = 15376
+function restartWebserver(callback) {
+	console.log("Starting Webserver")
+	return WebServer.stop().then(() => {
+		const port = 15376
 
-	WebServer.onRequest().subscribe(data => {
-		if (data.path.endsWith("/")) {
-			data.path += "index.html"
-		}
+		WebServer.onRequest().subscribe(data => {
+			if (data.path.endsWith("/")) {
+				data.path += "index.html"
+			}
 
-		let headers = {
-			'Access-Control-Allow-Origin': "*"
-		}
+			let headers = {
+				'Access-Control-Allow-Origin': "*"
+			}
 
-		const res = {
-			headers,
-			body: ""
-		};
+			const res = {
+				headers,
+				body: ""
+			};
 
-		//Incomplete list.
-		if (data.path.endsWith(".html")) {
-			headers['Content-Type'] = "text/html"
-		}
-		else if (data.path.endsWith(".css")) {
-			headers['Content-Type'] = "text/css"
-		}
-		else if (data.path.endsWith(".js")) {
-			headers['Content-Type'] = "text/javascript"
-		}
-		else if (data.path.endsWith(".json")) {
-			headers['Content-Type'] = "application/json"
-		}
+			//Incomplete list.
+			if (data.path.endsWith(".html")) {
+				headers['Content-Type'] = "text/html"
+			}
+			else if (data.path.endsWith(".css")) {
+				headers['Content-Type'] = "text/css"
+			}
+			else if (data.path.endsWith(".js")) {
+				headers['Content-Type'] = "text/javascript"
+			}
+			else if (data.path.endsWith(".json")) {
+				headers['Content-Type'] = "application/json"
+			}
 
-		if (
-			!headers['Content-Type']
-			|| data.path.includes("ip2location")
-			|| data.path.includes("node")
-			|| data.path.includes("gaugeReadings")
-		) {
-			console.log("Redirecting to Network", data.path)
-			//This server plugin only supports text, not binary.
-			//Therefore, redirect these to network.
+			if (
+				!headers['Content-Type']
+				|| data.path.includes("ip2location")
+				|| data.path.includes("node")
+				|| data.path.includes("gaugeReadings")
+			) {
+				console.log("Redirecting to Network", data.path)
+				//This server plugin only supports text, not binary.
+				//Therefore, redirect these to network.
 
-			//Also, don't cache items that shouldn't be cached.
+				//Also, don't cache items that shouldn't be cached.
 
-			res.status = 301
-			headers["Location"] = sourceServer + data.path
+				res.status = 301
+				headers["Location"] = sourceServer + data.path
 
-			return WebServer.sendResponse(data.requestId, res)
+				return WebServer.sendResponse(data.requestId, res)
 				.catch((error) => console.error(error));
-		}
-		console.log("Serving", data.path)
+			}
+			console.log("Serving", data.path)
 
-		;((async function() {
-			try {
-				res.status = 200
-
+			;((async function() {
 				try {
-					if (navigator.onLine === false) {throw "Offline"} //Instantly trigger fallback.
+					res.status = 200
 
-					//Try Network First.
-					await new Promise((resolve, reject) => {
-						fetch(sourceServer + data.path).then((response) => {
-							response.text().then((text) => {
-								Capacitor.Plugins.Filesystem.writeFile({
-									path: localCacheAssetsPath + data.path,
-									directory: "DATA",
-									data: text,
-									recursive: true,
-									encoding: "utf8"
-								})
-								res.body = text
-								resolve()
-							})
-						})
-
-						setTimeout(function() {
-							reject("Request Timeout Exceeded. ")
-						}, 1200) //1.2 second fallback.
-					})
-				}
-				catch (e) {
-					//Try filesystem next.
-					console.error(e)
 					try {
-						res.body = (await Capacitor.Plugins.Filesystem.readFile({
-							path: localCacheAssetsPath + data.path,
-							directory: "DATA",
-							encoding: "utf8"
-						})).data
+						if (navigator.onLine === false) {throw "Offline"} //Instantly trigger fallback.
+
+						//Try Network First.
+						await new Promise((resolve, reject) => {
+							fetch(sourceServer + data.path).then((response) => {
+								response.text().then((text) => {
+									Capacitor.Plugins.Filesystem.writeFile({
+										path: localCacheAssetsPath + data.path,
+										directory: "DATA",
+										data: text,
+										recursive: true,
+										encoding: "utf8"
+									})
+									res.body = text
+									resolve()
+								})
+							})
+
+							setTimeout(function() {
+								reject("Request Timeout Exceeded. ")
+							}, 1200) //1.2 second fallback.
+						})
 					}
 					catch (e) {
-						//Installed with App Last.
+						//Try filesystem next.
 						console.error(e)
-						let req = await fetch(preinstalledAssetsPath + data.path)
-						res.body = await req.text()
+						try {
+							res.body = (await Capacitor.Plugins.Filesystem.readFile({
+								path: localCacheAssetsPath + data.path,
+								directory: "DATA",
+								encoding: "utf8"
+							})).data
+						}
+						catch (e) {
+							//Installed with App Last.
+							console.error(e)
+							let req = await fetch(preinstalledAssetsPath + data.path)
+							res.body = await req.text()
+						}
 					}
 				}
-			}
-			catch (e) {
-				console.error(e)
-				res.status = 500
-			}
-			finally {
-				console.log(res)
-				WebServer.sendResponse(data.requestId, res)
+				catch (e) {
+					console.error(e)
+					res.status = 500
+				}
+				finally {
+					console.log(res)
+					WebServer.sendResponse(data.requestId, res)
 					.catch((error) => console.error(error));
-			}
-		})())
-	});
+				}
+			})())
+		});
 
-	WebServer.start(port)
+		WebServer.start(port)
 		.catch((error) => console.error(error));
 
+		callback()
+	})
+}
+
+Capacitor?.Plugins?.App?.addListener("appStateChange", function(event) {
+	//There's some issue with the webserver getting suspended or something.
+	//Happens when the app is left unused in the background for a while.
+	restartWebserver()
+})
+
+
+restartWebserver(function() {
 	let iframe = document.createElement("iframe")
 	iframe.style.border = "none"
 	iframe.style.width = "100%"
