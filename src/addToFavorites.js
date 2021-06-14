@@ -1,9 +1,11 @@
 module.exports = function(river, usgsID) {
+	if (localStorage.getItem("favorites") === null) {localStorage.setItem("favorites", "{}")}
+
 	let temp = JSON.parse(localStorage.getItem("favorites"))
 	if (!temp[usgsID]) {temp[usgsID] = {}}
 
 	let currentDetails = temp?.[usgsID]?.[river.id] //Current data in favorites
-	if (currentDetails) {return} //Don't overwrite existing favorites. 
+	if (currentDetails) {return} //Don't overwrite existing favorites.
 
 	temp[usgsID][river.id] = {
 		id: river.id,
