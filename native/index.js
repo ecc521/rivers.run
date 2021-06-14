@@ -12,6 +12,8 @@ const enableUniversalLinks = require("./universalLinks.js")
 const enableFrameBridge = require("./frameBridge.js")
 const appUpdateWarning = require("./appUpdates.js")
 
+const port = 15376
+
 let sourceServer = "https://rivers.run"
 
 let preinstalledAssetsPath = "www" //We host preinstalled assets in a www dir.
@@ -22,8 +24,6 @@ require("../src/allPages/addTags.js") //Add meta tags, etc.
 function restartWebserver(callback) {
 	console.log("Starting Webserver")
 	return WebServer.stop().then(() => {
-		const port = 15376
-
 		WebServer.onRequest().subscribe(data => {
 			if (data.path.endsWith("/")) {
 				data.path += "index.html"
