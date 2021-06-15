@@ -4,7 +4,6 @@ function loadFavorites() {
 }
 
 function writeFavorites(temp) {
-	console.log("Wrote")
 	localStorage.setItem("favorites", JSON.stringify(temp))
 }
 

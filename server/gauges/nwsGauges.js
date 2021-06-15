@@ -71,7 +71,7 @@ async function loadSiteFromNWS(siteCode) {
 				}
 				else {console.log("Unknown units " + measurement.attributes.units + ". Gauge is " + siteCode)}
 
-				if (reading.cfs === "-999000") {delete reading.cfs}
+				if (reading.cfs === -999000) {delete reading.cfs}
 			}
 
 			processMeasurement(value.primary)
