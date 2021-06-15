@@ -222,7 +222,18 @@ async function redrawRows() {
 
 	console.log(ids)
 
-	document.getElementById("favoritesLinks").innerHTML = `${ids.length} rivers in favorites - <a href="${getSearchLink(ids, window.root)}">View all favorites on rivers.run</a>`
+	let favoritesLinks = document.getElementById("favoritesLinks")
+	favoritesLinks.innerHTML = `${ids.length} rivers in favorites - `
+
+	//On iOS, we want the search link to point to rivers.run, but go to the local server when clicked.
+	let a = document.createElement("a")
+	a.href = getSearchLink(ids)
+	a.innerHTML = "View all favorites on rivers.run"
+	a.addEventListener("click", function(e) {
+		window.location.href = getSearchLink(ids, window.root)
+		e.preventDefault()
+	})
+	favoritesLinks.appendChild(a)
 }
 
 if (localStorage.getItem("favorites") === null) {localStorage.setItem("favorites", "{}")}

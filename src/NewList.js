@@ -106,7 +106,23 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 		//There are advanced search parameters other than normalSearch. Show the advanced search warning.
 	}
 
-	document.getElementById("searchlink").innerHTML = "Link to this search: <a target=\"_blank\" href=\"" + link + "\">" + link + "</a>"
+	let searchLink = document.getElementById("searchlink")
+	searchLink.innerHTML = "Link to this search: "
+
+	//On iOS, we want the search link to point to rivers.run, but go to the local server when clicked.
+	let a = document.createElement("a")
+	let rrunLink = new URL("https://rivers.run/")
+	rrunLink.hash = new URL(link).hash
+
+	a.href = rrunLink
+	a.innerHTML += rrunLink
+
+	a.target = "_blank"
+	a.addEventListener("click", function(e) {
+		window.open(link)
+		e.preventDefault()
+	})
+	searchLink.appendChild(a)
 
 	try {
 		history.replaceState("",document.title, link)
