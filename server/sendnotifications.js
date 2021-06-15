@@ -10,7 +10,7 @@ const sendEmails = require(path.join(__dirname, "sendEmails.js"))
 const vapidKeys = require(path.join(__dirname, "vapidKeys.js"))
 
 //We no longer offer browser notifications. We may want to add them back at some point.
-//We'd need native ones as well. 
+//We'd need native ones as well.
 webpush.setVapidDetails(
   'mailto:admin@rivers.run',
   vapidKeys.publicKey,
@@ -36,7 +36,7 @@ function sendNotifications(gauges) {
 		for (let gauge in parameters) {
 			let rivers = parameters[gauge]
 
-			let readings = gauges[gauge].readings
+			let readings = gauges[gauge]?.readings
 
 			for (let prop in rivers) {
                 try {
