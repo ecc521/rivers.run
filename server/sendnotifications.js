@@ -9,13 +9,15 @@ const sendEmails = require(path.join(__dirname, "sendEmails.js"))
 
 const vapidKeys = require(path.join(__dirname, "vapidKeys.js"))
 
+//We no longer offer browser notifications. We may want to add them back at some point.
+//We'd need native ones as well. 
 webpush.setVapidDetails(
   'mailto:admin@rivers.run',
   vapidKeys.publicKey,
   vapidKeys.privateKey
 )
 
-function sendNotifications(ignoreNoneUntil = false) {
+function sendNotifications(gauges) {
 	if (!fs.existsSync(subscriptionManager.storagePath)) {
 		//There are no subscriptions
 		console.warn("No subscriptions. ")
@@ -27,22 +29,14 @@ function sendNotifications(ignoreNoneUntil = false) {
 		let user = subscriptions[url]
 
         //Don't send the user a notification yet.
-        if (!ignoreNoneUntil && user.noneUntil > Date.now()) {continue;}
+        if (user.noneUntil > Date.now()) {continue;}
 
 		let parameters = user.parameters
-        //TODO: Update for new format. Add meters support.
         let data = {};
 		for (let gauge in parameters) {
 			let rivers = parameters[gauge]
 
-			let readings;
-
-            try {
-                readings = JSON.parse(fs.readFileSync(path.join(utils.getSiteRoot(),"gaugeReadings", gauge))).readings
-            }
-            catch(e) {
-                console.error(e)
-            }
+			let readings = gauges[gauge].readings
 
 			for (let prop in rivers) {
                 try {
@@ -106,30 +100,30 @@ function sendNotifications(ignoreNoneUntil = false) {
 					subscriptionManager.saveUserSubscription(user) //Some properties of user should also have been modified by sendEmails.sendEmail
 				}
 			})
-			continue;
 		}
-
-        //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
-        webpush.sendNotification(user.subscription, JSON.stringify(data), {
-            //Not sure if vapidDetails is needed, because webpush.setVapidDetails was used above.
-            vapidDetails: {
-                subject: 'mailto:admin@rivers.run',
-                publicKey: vapidKeys.publicKey,
-                privateKey: vapidKeys.privateKey
-            },
-            TTL: 60*60*36 //Store notification for up to 36 hours.
-        }).catch((e) => {
-            console.error(e)
-            //The users subscription is either now invalid, or never was valid.
-            if ([401,403,404,410].includes(e.statusCode)) {
-                subscriptionManager.deleteUserSubscription(user)
-            }
-        }).then(() => {
-			user.previousMessage = data
-			subscriptionManager.saveUserSubscription(user)
-			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(user) + "\n");
-			fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(data) + "\n");
-		})
+        else {
+            //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
+            webpush.sendNotification(user.subscription, JSON.stringify(data), {
+                //Not sure if vapidDetails is needed, because webpush.setVapidDetails was used above.
+                vapidDetails: {
+                    subject: 'mailto:admin@rivers.run',
+                    publicKey: vapidKeys.publicKey,
+                    privateKey: vapidKeys.privateKey
+                },
+                TTL: 60*60*36 //Store notification for up to 36 hours.
+            }).catch((e) => {
+                console.error(e)
+                //The users subscription is either now invalid, or never was valid.
+                if ([401,403,404,410].includes(e.statusCode)) {
+                    subscriptionManager.deleteUserSubscription(user)
+                }
+            }).then(() => {
+                user.previousMessage = data
+                subscriptionManager.saveUserSubscription(user)
+                fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(user) + "\n");
+                fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(data) + "\n");
+            })
+        }
 	}
 }
 

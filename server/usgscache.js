@@ -116,7 +116,7 @@ async function updateCachedData() {
 	}
 
 	try {
-		sendNotifications()
+		sendNotifications(gauges)
 	}
 	catch (e) {
 		console.log("ERROR: sendNotifications errored")
