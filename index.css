@@ -206,16 +206,6 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 
 /*Keep the search bar in one line on smaller devices. */
 @media (max-width: 400px){
-    #searchimg {
-        max-width: 9.5vw;
-    }
-
-    .searchcontain {
-        margin-left: 2px;
-    }
-}
-
-@media (max-width: 359px){
     .searchcontain {
         text-align: center;
     }
