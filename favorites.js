@@ -80,7 +80,9 @@ async function redrawRows() {
 
 	console.log(selections)
 
+	//We'll sort favorites by name.
 	let ids = []
+	let rowElems = [] //Objects. {name, row}. Stored here to sort. 
 
 	for (let gauge in selections) {
 		for (let id in selections[gauge]) {
@@ -98,9 +100,11 @@ async function redrawRows() {
 			}
 			row.appendChild(gaugeColumn)
 
+			let nameAndSection = selections[gauge][id].name + ((selections[gauge][id].section)?(" (" + selections[gauge][id].section) + ")":"")
+
 			let nameColumn = document.createElement("span")
 			nameColumn.className = "nameColumn"
-			nameColumn.innerHTML = `<a href="${getSearchLink([id], window.root)}">${selections[gauge][id].name + ((selections[gauge][id].section)?(" (" + selections[gauge][id].section) + ")":"")}</a>`
+			nameColumn.innerHTML = `<a href="${getSearchLink([id], window.root)}">${nameAndSection}</a>`
 			row.appendChild(nameColumn)
 
 			let minColumn = document.createElement("span")
@@ -195,8 +199,6 @@ async function redrawRows() {
 				})
 			}
 
-
-
 			let deleteButton = document.createElement("span")
 			deleteButton.className = "deleteButton"
 			deleteButton.innerHTML = "✖"
@@ -216,11 +218,19 @@ async function redrawRows() {
 				}
 			})
 
-			currentSelections.appendChild(row)
+			rowElems.push({row, name: nameAndSection})
 		}
 	}
 
-	console.log(ids)
+	rowElems.sort((a, b) => {
+		if (a.name > b.name) {return 1}
+		else if (a.name < b.name) {return -1}
+		return 0
+	})
+
+	rowElems.forEach((obj) => {
+		currentSelections.appendChild(obj.row)
+	})
 
 	let favoritesLinks = document.getElementById("favoritesLinks")
 	favoritesLinks.innerHTML = `${ids.length} rivers in favorites - `
