@@ -144,7 +144,9 @@
 
         .deleteButton {
             cursor:pointer;
-            color: red;
+            /*We would use color: red, however iOS handles that wrong. Use a hack - https://stackoverflow.com/questions/32413731/color-for-unicode-emoji/39776303#39776303*/
+            color: transparent;
+            text-shadow: 0 0 0 red;
             float: right;
             margin-right: min(12px, max(0px, calc(6vw - 24px))); /*Add a bit of margin when the screen is wider. Increases from 400px to 600px */
         }
