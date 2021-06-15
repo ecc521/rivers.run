@@ -405,3 +405,8 @@ deleteAllFavorites.addEventListener("click", function() {
 		redrawRows()
 	}
 })
+
+let scrollToBottom = document.getElementById("scrollToBottom")
+scrollToBottom.addEventListener("click", function() {
+	window.scrollTo(0, 1e10)
+})

@@ -163,10 +163,12 @@
             display: none;
         }
 
-        #deleteAllFavorites {
+        #deleteAllFavorites, #scrollToBottom {
             padding: 4px 6px;
-            display: block;
-            margin: auto;
+        }
+
+        #topButtonContainer {
+            text-align: center;
             margin-bottom: 6px;
         }
 
@@ -288,7 +290,10 @@ Add link on main page to add all rivers to favorites -->
                 <p id="favoritesLinks"></p>
                 <p style="text-align: center">If you wish, you can change your <a href="settings.html">settings</a> to display favorites on the home page by default. </p>
 
-                <button id="deleteAllFavorites">Delete All Favorites</button>
+                <div id="topButtonContainer">
+                    <button id="deleteAllFavorites">Delete All Favorites</button>
+                    <button id="scrollToBottom">Go to End</button>
+                </div>
 
                 <div id="currentSelections"></div>
 
