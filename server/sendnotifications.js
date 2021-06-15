@@ -60,7 +60,7 @@ function sendNotifications(gauges) {
 
                     if (river.units === "cms") {river.current = flow?.cfs / cubicMeterInFeet}
                     if (river.units === "meters") {river.current = flow?.feet / meterInFeet}
-                    else {river.current = flow[units]}
+                    else {river.current = flow?.[units]}
 
                     if (river.minimum <= river.current && river.current <= river.maximum) {
                         data[prop] = rivers[prop] //Add the river if it is running
