@@ -92,10 +92,6 @@ function getMessage(data, user) {
 	if ((running.length + tooHigh.length) === 0 && JSON.stringify(user.previousMessage) === "{}") {return false;}
 	user.previousMessage = Object.assign({}, running, tooHigh)
 
-
-	console.log(data)
-	console.log(running)
-
     if (running.length === 0) {
        	title = "Rivers are no longer running"
 
