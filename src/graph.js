@@ -227,9 +227,17 @@ function createGraph(options) {
 	tooltip.style.pointerEvents = "none"
 	graphContainerDiv.appendChild(tooltip)
 
-	finalCanvas.addEventListener("mousemove", function(event) {
+	function handleMoveEvent(event) {
+		if (event.touches) {
+			event.preventDefault() //I believe some old Android browsers need this for touch events.
+			event = event.touches[0] //Use the first touch (should usually be the only touch as well)
+		}
+
 		let bounds = finalCanvas.getBoundingClientRect()
-		let xPos = event.offsetX //layerX doesn't work on Firefox
+
+		//offsetX and offetY don't exist for touch events, so compute those.
+		let xPos = event.clientX - bounds.left
+		let yPos = event.clientY - bounds.top
 		let width = bounds.width
 
 		let percent = xPos/width
@@ -244,9 +252,9 @@ function createGraph(options) {
 		verticalLine.style.left = bounds.left + (bounds.width * percentInElem) + "px"
 
 		//Tooltip always goes to left right now, as there must always be a legend there (and therefore it won't overflow)
-		tooltip.style.transform = "translateY(-" + (bounds.height - event.offsetY) + "px)"
+		tooltip.style.transform = "translateY(-" + (bounds.height - yPos) + "px)"
 
-		if (percent < 0.25) {
+		if (percent < 0.3) {
 			tooltip.style.right = ""
 			tooltip.style.left = bounds.left + (bounds.width * percentInElem) + 10 + "px" //Add a tiny bit to get it away from mouse pointer.
 		}
@@ -279,7 +287,10 @@ function createGraph(options) {
 		if (options.y2) {
 			addLines(options.y2.lines)
 		}
-	})
+	}
+
+	finalCanvas.addEventListener("mousemove", handleMoveEvent)
+	finalCanvas.addEventListener("touchmove", handleMoveEvent)
 
 	ctx = finalCanvas.getContext("2d")
 
