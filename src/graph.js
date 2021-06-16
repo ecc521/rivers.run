@@ -270,15 +270,26 @@ function createGraph(options) {
 
 		tooltip.innerHTML = formatDate(new Date(xVal))
 
+		let isForecast;
 		function addLines(lines) {
 			lines.forEach((line) => {
-				let index = line.points.findIndex((point) => {
-					return point[line.xAlias] >= xVal //Might want to consider picking closest instead, but this makes a lot of sense (picks most recent reading before point).
+				let lastIndex;
+				let index = line.points.findIndex((point, index) => {
+					if (point?.[line.yAlias] === undefined) {return}
+					if (point[line.xAlias] > xVal) {
+						return true
+					}
+					else {
+						lastIndex = index
+					}
 				})
 
-				let point = line.points[index]
+				let point = line.points[lastIndex]
 
+				if (point?.[line.yAlias] === undefined) {return} //Avoid erroring. 
 				tooltip.innerHTML += `<br>${point[line.yAlias]} ${line.scrubUnits}`
+
+				if (point[line.forecastAlias]) {isForecast = true}
 			})
 		}
 
@@ -287,6 +298,8 @@ function createGraph(options) {
 		if (options.y2) {
 			addLines(options.y2.lines)
 		}
+
+		if (isForecast) {tooltip.innerHTML += "<br>Forecast"}
 	}
 
 	finalCanvas.addEventListener("mousemove", handleMoveEvent)
@@ -301,7 +314,8 @@ function createGraph(options) {
 		ctx.fillStyle = initial
 	}
 
-	let padding = options.padding || {top: 0, bottom:0.16, left: 0.1, right: options.y2?0.1:0} //Percentage of width and height on either side to be used for legend, etc.
+	//0.01 padding to add space on right of scrubber (so that the user can scrub to the end!)
+	let padding = options.padding || {top: 0, bottom:0.16, left: 0.1, right: options.y2?0.1:0.01} //Percentage of width and height on either side to be used for legend, etc.
 
 	//TODO: Padding should be increased if needed to fit legend. Use ctx.measureText to do this.
 	ctx.drawImage(lineCanvas, finalCanvas.width * padding.left, finalCanvas.height * padding.top, finalCanvas.width * (1 - padding.left - padding.right), finalCanvas.height * (1 - padding.top - padding.bottom))
