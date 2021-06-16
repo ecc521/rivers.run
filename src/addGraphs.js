@@ -24,7 +24,8 @@ function getFlowGraph(data, doNotInclude) {
                 color: "#00CCFF",
                 xAlias: "dateTime",
                 yAlias: (data.units === "m")?"cms":"cfs",
-                points: data.readings
+                scrubUnits: (data.units === "m")?"cms":"cfs",
+                points: data.readings,
             }
         ]
     }
@@ -39,6 +40,7 @@ function getFlowGraph(data, doNotInclude) {
                 color: window.darkMode?"#7175ff":"blue",
                 xAlias: "dateTime",
                 yAlias:(data.units === "m")?"meters":"feet",
+                scrubUnits:(data.units === "m")?"meters":"feet",
                 points: data.readings
             }
         ]
@@ -57,7 +59,8 @@ function getFlowGraph(data, doNotInclude) {
         y1: (doNotInclude !== "volume")?volumeConfig:undefined,
         y2: (doNotInclude !== "stage")?stageConfig:undefined
     })
-    graph.className = "graph"
+    graph.canvas.className = "graph"
+    graph.container.className = "graphContainer"
     return graph
 }
 
@@ -82,12 +85,14 @@ function getTempGraph(data) {
                     color: [[0, window.darkMode?"#00AAFF":"blue"], [1, "red"]],
     				xAlias: "dateTime",
     				yAlias:"temp",
-    				points: data.readings
+    				points: data.readings,
+                    scrubUnits:   "°F",
     			}
     		]
         }
     })
-    graph.className = "graph"
+    graph.canvas.className = "graph"
+    graph.container.className = "graphContainer"
     return graph
 }
 
@@ -140,6 +145,7 @@ function getPrecipGraph(data) {
                     color: "#0099FF",
     				xAlias: "dateTime",
     				yAlias:"precip",
+                    scrubUnits: "inches",
     				points: data.readings
     			}
     		]
@@ -149,7 +155,8 @@ function getPrecipGraph(data) {
             color: "#0099FF"
         }
     })
-    graph.className = "graph"
+    graph.canvas.className = "graph"
+    graph.container.className = "graphContainer"
     return graph
 }
 
@@ -246,20 +253,20 @@ function addGraphs(data) {
             console.warn("No graphs")
             return container
         }
-        
+
 		let buttonContainer = document.createElement("div")
 		if (graphs.length > 1) {
 			//We don't need to show selection buttons if we only have one graph.
 			container.appendChild(buttonContainer)
 		}
 		//Add the starting graph - usually the flow graph, unless it doesn't exist.
-		container.appendChild(graphs[0].elem)
+		container.appendChild(graphs[0].elem.container)
 
 		graphs.forEach((data) => {
 			let button = getButton(data.text, data.className)
 			button.addEventListener("click", function() {
-				let oldGraph = container.querySelector(".graph")
-				oldGraph.replaceWith(data.elem)
+				let oldGraph = container.querySelector(".graphContainer")
+				oldGraph.replaceWith(data.elem.container)
 			})
 			buttonContainer.appendChild(button)
 		})

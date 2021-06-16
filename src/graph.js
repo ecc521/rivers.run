@@ -209,6 +209,78 @@ function createGraph(options) {
 	finalCanvas.width = lineCanvas.width
 	finalCanvas.height = lineCanvas.height
 
+	let graphContainerDiv = document.createElement("div")
+	graphContainerDiv.appendChild(finalCanvas)
+
+	let verticalLine = document.createElement("div")
+	verticalLine.style.width = "2px"
+	verticalLine.style.position = "absolute"
+	verticalLine.style.backgroundColor = options.graphNameColor
+	verticalLine.style.pointerEvents = "none"
+	graphContainerDiv.appendChild(verticalLine)
+
+	let tooltip = document.createElement("div")
+	tooltip.style.position = "absolute"
+	tooltip.style.color = options.graphNameColor
+	tooltip.style.backgroundColor = options.backgroundColor
+	tooltip.style.border = "1px solid " + options.graphNameColor
+	tooltip.style.pointerEvents = "none"
+	graphContainerDiv.appendChild(tooltip)
+
+	finalCanvas.addEventListener("mousemove", function(event) {
+		let bounds = finalCanvas.getBoundingClientRect()
+		let xPos = event.offsetX //layerX doesn't work on Firefox
+		let width = bounds.width
+
+		let percent = xPos/width
+
+		//Clamp to edges.
+		percent = Math.max(padding.left, percent)
+		percent = Math.min(1 - padding.right, percent)
+
+		let percentInElem = percent //Percentage of the way in the element to place.
+		verticalLine.style.transform = "translateY(-" + bounds.height + "px)"
+		verticalLine.style.height = bounds.height * (1 - padding.bottom) + "px"
+		verticalLine.style.left = bounds.left + (bounds.width * percentInElem) + "px"
+
+		//Tooltip always goes to left right now, as there must always be a legend there (and therefore it won't overflow)
+		tooltip.style.transform = "translateY(-" + (bounds.height - event.offsetY) + "px)"
+
+		if (percent < 0.25) {
+			tooltip.style.right = ""
+			tooltip.style.left = bounds.left + (bounds.width * percentInElem) + 10 + "px" //Add a tiny bit to get it away from mouse pointer.
+		}
+		else {
+			tooltip.style.left = ""
+			tooltip.style.right = bounds.right - (bounds.width * percentInElem) + 5 + "px" //Add a bit for visuals.
+		}
+
+		//Scale within range.
+		percent = (percent - padding.left) / (1 - padding.left - padding.right)
+
+		let xVal = options.x1.min + (options.x1.range * percent)
+
+		tooltip.innerHTML = formatDate(new Date(xVal))
+
+		function addLines(lines) {
+			lines.forEach((line) => {
+				let index = line.points.findIndex((point) => {
+					return point[line.xAlias] >= xVal //Might want to consider picking closest instead, but this makes a lot of sense (picks most recent reading before point).
+				})
+
+				let point = line.points[index]
+
+				tooltip.innerHTML += `<br>${point[line.yAlias]} ${line.scrubUnits}`
+			})
+		}
+
+		addLines(options.y1.lines)
+
+		if (options.y2) {
+			addLines(options.y2.lines)
+		}
+	})
+
 	ctx = finalCanvas.getContext("2d")
 
 	if (options.backgroundColor) {
@@ -345,7 +417,7 @@ function createGraph(options) {
 		}
 	}
 	ctx.stroke()
-	return finalCanvas
+	return {container: graphContainerDiv, canvas: finalCanvas}
 }
 
 
