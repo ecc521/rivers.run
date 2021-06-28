@@ -7,9 +7,11 @@ function getFlowGraph(data, doNotInclude) {
         data.readings = data.readings.map((reading) => {
                 if (reading.cfs) {
                     reading.cms = reading.cfs / cubicMeterInFeet
+                    reading.cms = Math.round(reading.cms * 100) / 100 //Reduce precision to sane levels. 
                 }
                 if (reading.feet) {
                     reading.meters = reading.feet / meterInFeet
+                    reading.meters = Math.round(reading.meters * 100) / 100 //Reduce precision to sane levels.
                 }
                 return reading
         })

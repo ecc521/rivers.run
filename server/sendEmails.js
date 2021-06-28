@@ -162,7 +162,7 @@ function getMessage(data, user) {
 		body.push("</ul>")
 	}
 
-	body.push(`<p><a href="${getSearchLink(IDs)}">View All My Rivers on rivers.run</a></p>`)
+	body.push(`<p><a href="${getSearchLink(IDs)}">View All Favorites on rivers.run</a></p>`)
     body.push(`<h1 style="margin-bottom:0.5em"><img src="https://rivers.run/resources/icons/64x64-Water-Drop.png" style="vertical-align: text-top; height:1em; width: 1em;"><a href="https://rivers.run" style="color:black">rivers.run</a></h1>`)
 	body.push("<p><a href='mailto:support@rivers.run'>support@rivers.run</a></p>")
 
