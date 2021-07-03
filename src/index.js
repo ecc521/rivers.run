@@ -21,7 +21,7 @@ try {
 					window.loadNewUSGS = "Unable to load latest data"
 				}
 				else if (data.includes(" took too long to load from network")) {
-					window.loadNewUSGS = "Updating data in backgroud"
+					window.loadNewUSGS = "Updating data in background"
 				}
 				else if (data.includes("has been loaded from the network")) {
 					window.loadNewUSGS = "This is likely a glitch. You should be viewing the latest data."
