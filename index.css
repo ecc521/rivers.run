@@ -676,7 +676,7 @@ Those include name,section,skill,quality, and flow info*/
     }
 
 	.riverbuttonDam {
-		background-image: repeating-linear-gradient(150deg,transparent, transparent, rgba(255,255,255,.1),transparent, transparent, transparent 16%);
+		background-image: repeating-linear-gradient(150deg,transparent, transparent, rgba(255,255,255,.2),transparent, transparent, transparent 16%);
 	}
 
 	#legend {
@@ -685,7 +685,7 @@ Those include name,section,skill,quality, and flow info*/
 	}
 
 	#legend:after {
-		background-image: repeating-linear-gradient(150deg,transparent, transparent, rgba(255,255,255,.1),transparent, transparent, transparent 16%);
+		background-image: repeating-linear-gradient(150deg,transparent, transparent, rgba(255,255,255,.2),transparent, transparent, transparent 16%);
 	}
 
 	.gaugesBelow {
