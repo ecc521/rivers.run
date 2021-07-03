@@ -301,7 +301,7 @@ button {
 	font-size: calc(var(--defaultFontSize) * 1.15);
 	line-height: calc(var(--defaultFontSize) * 1.55);
 	font-weight: bold;
-	background-image: linear-gradient(to right, hsl(0,100%,70%) , hsl(60,100%,70%), hsl(120,100%,70%), hsl(180,100%,70%), hsl(240,100%,70%));
+	background-image: linear-gradient(to right, hsl(0,100%,74%) , hsl(60,100%,70%), hsl(120,100%,70%), hsl(180,100%,70%), hsl(240,100%,80%));
 }
 
 
@@ -328,7 +328,6 @@ button {
 	/*Was having issues with this overflowing*/
 	position: absolute;
 	right:2px;
-	color:white;
 }
 
 #toolow {

@@ -24,7 +24,7 @@ function calculateDirection(siteCode, prop = "cfs") {
 
         //TODO: Ignore insignificant changes.
         //Insignificant changes should be changes that are not part of a trend (flow changing directions),
-        //and involve only a small portion of the rivers flow. 
+        //and involve only a small portion of the rivers flow.
         if (current > previous) {
             //Water level rising
             return "⬆"
@@ -298,8 +298,17 @@ function calculateColor(river) {
 	}
 
 	//Normal Flow lightness values
-    let lightness = window.darkMode? "22%": "70%"
-	return "hsl(" + (0 + 60*river.running) + ",100%," + lightness + ")"
+    let lightness = window.darkMode? "22": "70"
+    if (!window.darkMode) {
+        //In light mode, dark blue is 80, dark red 74.
+        if (river.running > 3) {
+            lightness = 70 + ((river.running - 3) * 10)
+        }
+        else if (river.running < 1) {
+            lightness = 70 + ((1 - river.running) * 4)
+        }
+    }
+	return "hsl(" + (0 + 60 * river.running) + ",100%," + lightness + "%)"
 }
 
 module.exports = {
