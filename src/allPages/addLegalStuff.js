@@ -12,7 +12,6 @@ try {
 
 	let privacy = document.createElement("a")
 	privacy.innerHTML = "Privacy Policy"
-	privacy.target = "_blank"
 	privacy.href = root + "legal/" + "Privacy Policy.html"
 	content.appendChild(privacy)
 
@@ -20,7 +19,6 @@ try {
 
 	let terms = document.createElement("a")
 	terms.innerHTML = "Terms of Service"
-	terms.target = "_blank"
 	terms.href = root + "legal/" + "Terms of Service.html"
 	content.appendChild(terms)
 
@@ -28,7 +26,6 @@ try {
 
 	let disclaimer = document.createElement("a")
 	disclaimer.innerHTML = "Disclaimer"
-	disclaimer.target = "_blank"
 	disclaimer.href = root + "legal/" + "DISCLAIMER.html"
 	content.appendChild(disclaimer)
 
@@ -48,7 +45,6 @@ try {
 		let link = document.createElement("a")
 		link.innerHTML = "Read More"
 		link.href = window.root + "legal/DISCLAIMER.html"
-		link.target = "_blank"
 		link.style.marginLeft = "4px"
 
 		disclaimer.appendChild(link)

@@ -101,7 +101,6 @@ function createExpansion(button, river) {
     div.appendChild(document.createElement("br"))
     let link = document.createElement("a")
     link.target = "_blank"
-    link.rel = "noopener"
     if (!river.isGauge) {
         //Link to edit river data
         link.href = "https://docs.google.com/document/d/" + river.id
@@ -121,7 +120,6 @@ function createExpansion(button, river) {
         div.appendChild(document.createElement("br"))
         let link = document.createElement("a")
         link.target = "_blank"
-        link.rel = "noopener"
         link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
         link.innerHTML = "View this river on American Whitewater"
         div.appendChild(link)

@@ -109,25 +109,38 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	let searchLink = document.getElementById("searchlink")
 	searchLink.innerHTML = "Link to this search: "
 
-	//On iOS, we want the search link to point to rivers.run, but go to the local server when clicked.
-	let a = document.createElement("a")
+	//Clicking this link shouldn't do anything - just copy the link.
+	let span = document.createElement("a")
+
+	//On iOS, we want to make sure it points to https://rivers.run as well.
 	let rrunLink = new URL("https://rivers.run/")
 	rrunLink.hash = new URL(link).hash
 
-	a.href = rrunLink
-	a.innerHTML += rrunLink
+	span.href = link //Does nothing - we're already at this. It ensures styling works though.
+	span.innerHTML += rrunLink
 
-	a.target = "_blank"
-	a.addEventListener("click", function(e) {
-		window.open(link)
-		e.preventDefault()
-	})
-	searchLink.appendChild(a)
-
-	try {
-		history.replaceState("",document.title, link)
+	function copyStringToClipboard(str) {
+		// Create new element
+		var el = document.createElement('textarea');
+		// Set value (string to be copied)
+		el.value = str;
+		// Set non-editable to avoid focus and move outside of view
+		el.setAttribute('readonly', '');
+		el.style = {position: 'absolute', left: '-9999px'};
+		document.body.appendChild(el);
+		// Select text inside element
+		el.select();
+		// Copy text to clipboard
+		document.execCommand('copy');
+		// Remove temporary element
+		document.body.removeChild(el);
 	}
-	catch(e) {console.error(e)}
+
+	span.addEventListener("click", function(e) {
+		copyStringToClipboard(rrunLink)
+		alert("Link Copied!")
+	})
+	searchLink.appendChild(span)
 
 	//If there are parameters other than normalSearch and sort, show the advanced search warning
 	if (objectsEqual(query, {normalSearch:query.normalSearch,sort:query.sort})) {
