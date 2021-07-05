@@ -18,10 +18,20 @@ module.exports = function({iframeUrl}) {
 				response.message = JSON.stringify(localStorage)
 			}
 			else if (data.type === "setStorage") {
+				//Set new props, update existing props, and delete nonexistent props.
+				let unusedProps = Object.keys(localStorage)
+
 				let stor = JSON.parse(data.args[0])
 				for (let prop in stor) {
+					let index = unusedProps.indexOf(prop)
+					if (index !== -1) {unusedProps.splice(index, 1)}
+
 					localStorage.setItem(prop, stor[prop])
 				}
+
+				unusedProps.forEach((unusedProp) => {
+					localStorage.removeItem(unusedProp)
+				})
 			}
 			else if (data.type === "getCurrentPosition") {
 				response.message = await Capacitor.Plugins.Geolocation.getCurrentPosition()

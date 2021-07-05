@@ -19,7 +19,15 @@ try {
 	function calculateDarkMode() {
 		let startingMode = window.darkMode
 
-        let darkMode = localStorage.getItem("prefersDarkMode")
+		//TODO: Remove this at some point. 
+		//Migrate to new property name.
+		let oldPropTheme = localStorage.getItem("theme")
+		if (oldPropTheme) {
+			localStorage.setItem("userTheme", oldPropTheme)
+			localStorage.removeItem("theme")
+		}
+
+        let darkMode = localStorage.getItem("userTheme")
 
         if (darkMode === null) {
             darkMode = mediaMatch.matches

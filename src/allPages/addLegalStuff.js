@@ -37,45 +37,55 @@ catch (e) {
 
 //Add the disclaimer as a yellow bar at the bottom.
 try {
-	let storageKey = "hasSeenDisclaimer"
-	if (!localStorage.getItem(storageKey)) {
-		let disclaimer = document.createElement("div")
-		disclaimer.innerHTML = "Paddle at your own risk."
+	function addDisclaimer() {
+		let storageKey = "hasSeenDisclaimer"
+		if (!localStorage.getItem(storageKey)) {
+			let disclaimer = document.createElement("div")
+			disclaimer.innerHTML = "Paddle at your own risk."
 
-		let link = document.createElement("a")
-		link.innerHTML = "Read More"
-		link.href = window.root + "legal/DISCLAIMER.html"
-		link.style.marginLeft = "4px"
+			let link = document.createElement("a")
+			link.innerHTML = "Read More"
+			link.href = window.root + "legal/DISCLAIMER.html"
+			link.style.marginLeft = "4px"
 
-		disclaimer.appendChild(link)
+			disclaimer.appendChild(link)
 
-		disclaimer.style.position = "fixed"
-		disclaimer.style.bottom = "0"
-		disclaimer.style.zIndex = 60000 //Ridiculous. Must be on top.
-		disclaimer.style.backgroundColor = "yellow"
-		disclaimer.style.color = "black"
-		disclaimer.style.width = "100vw"
-		disclaimer.style.padding = "6px 0px 6px 0px" //Expand it on the top and bottom to make it more visible.
-		disclaimer.style.display = "flex"
-		disclaimer.style.alignItems = "center"
-		disclaimer.style.justifyContent = "center"
-		disclaimer.style.flexDirection = "row"
+			disclaimer.style.position = "fixed"
+			disclaimer.style.bottom = "0"
+			disclaimer.style.zIndex = 60000 //Ridiculous. Must be on top.
+			disclaimer.style.backgroundColor = "yellow"
+			disclaimer.style.color = "black"
+			disclaimer.style.width = "100vw"
+			disclaimer.style.padding = "6px 0px 6px 0px" //Expand it on the top and bottom to make it more visible.
+			disclaimer.style.display = "flex"
+			disclaimer.style.alignItems = "center"
+			disclaimer.style.justifyContent = "center"
+			disclaimer.style.flexDirection = "row"
 
-		let closeButton = document.createElement("button")
-		closeButton.innerHTML = "✖️"
-		closeButton.style.fontSize = "20px"
-		closeButton.style.border = "none"
-		closeButton.style.background = "none"
-		document.documentElement.style.paddingBottom = "50px" //Avoid covering copyright or other stuff.
-		closeButton.addEventListener("click", function() {
-			localStorage.setItem(storageKey, true)
-			disclaimer.remove()
-			document.documentElement.style.paddingBottom = ""
-		})
+			let closeButton = document.createElement("button")
+			closeButton.innerHTML = "✖️"
+			closeButton.style.fontSize = "20px"
+			closeButton.style.border = "none"
+			closeButton.style.background = "none"
+			document.documentElement.style.paddingBottom = "50px" //Avoid covering copyright or other stuff.
+			closeButton.addEventListener("click", function() {
+				localStorage.setItem(storageKey, true)
+				disclaimer.remove()
+				document.documentElement.style.paddingBottom = ""
+			})
 
-		disclaimer.appendChild(closeButton)
+			disclaimer.appendChild(closeButton)
 
-		document.documentElement.appendChild(disclaimer)
+			document.documentElement.appendChild(disclaimer)
+		}
 	}
+
+	if (window.syncStoragePromise) {
+		window.syncStoragePromise.then(addDisclaimer)
+	}
+	else {
+		addDisclaimer()
+	}
+
 }
 catch (e) {console.error(e)}

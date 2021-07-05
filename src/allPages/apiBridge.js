@@ -34,6 +34,13 @@ function syncToNative() {
 }
 window.addEventListener("storage", syncToNative)
 
+//Storage event doesn't fire for the current page.
+let _setItem = localStorage.setItem
+localStorage.setItem = function(...args) {
+	_setItem.call(localStorage, ...args)
+	syncToNative()
+}
+
 async function syncStorage() {
 	let res = await new Promise((resolve, reject) => {
 		let randomKey = Math.random()

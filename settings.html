@@ -34,7 +34,7 @@
 		<h1>Settings</h1>
 
         <h3>Theme (Color Scheme)</h3>
-        <select id="theme">
+        <select id="userTheme">
             <option value="null">Default</option>
             <option value="false">Light</option>
             <option value="true">Dark</option>
@@ -87,67 +87,28 @@
     </p>
 
         <script>
-            document.getElementById("theme").addEventListener("change", function(event) {
-				//We can't just set the value to null - locaStorage would stringify it
-				if (event.target.value === "null") {
-					localStorage.removeItem("prefersDarkMode")
-				}
-				else {
-                	localStorage.setItem("prefersDarkMode", event.target.value)
-				}
 
-                //If the browser is IE 11, reload the page to apply changes.
-                if (!!window.MSInputMethodContext && !!document.documentMode) {window.location.reload()}
-                //End of IE 11 code
-				window.dispatchEvent(new Event("storage")) //Allow this page to pick up the color scheme change. May not be needed.
+            let ids = ["userTheme", "colorBlindMode", "usMapResolution", "worldMapResolution", "homePageDefaultSearch"]
+            ids.forEach((id) => {
+                let elem = document.getElementById(id)
+                elem.value = localStorage.getItem(id)
+
+                elem.addEventListener("change", function(event) {
+                    //We can't just set the value to null - locaStorage would stringify it
+                    if (elem.value === "null") {
+                        localStorage.removeItem("userTheme")
+                    }
+                    else {
+                        localStorage.setItem("userTheme", elem.value)
+                    }
+
+                    if (window.isIos) {
+                        elem.blur() //iOS doesn't deselect these without doing some weird things. 
+                    }
+
+                    window.dispatchEvent(new Event("storage")) //Allow this page to pick up the color scheme change. May not be needed.
+                })
             })
-
-            document.getElementById("colorBlindMode").addEventListener("change", function(event) {
-				//We can't just set the value to null - locaStorage would stringify it
-				if (event.target.value === "null") {
-					localStorage.removeItem("colorBlindMode")
-				}
-				else {
-                	localStorage.setItem("colorBlindMode", event.target.value)
-				}
-            })
-
-            document.getElementById("usMapResolution").addEventListener("change", function(event) {
-				//We can't just set the value to null - locaStorage would stringify it
-				if (event.target.value === "null") {
-					localStorage.removeItem("usMapResolution")
-				}
-				else {
-                	localStorage.setItem("usMapResolution", event.target.value)
-				}
-            })
-
-            document.getElementById("worldMapResolution").addEventListener("change", function(event) {
-                //We can't just set the value to null - localStorage would stringify it
-                if (event.target.value === "null") {
-                    localStorage.removeItem("worldMapResolution")
-                }
-                else {
-                    localStorage.setItem("worldMapResolution", event.target.value)
-                }
-            })
-
-            document.getElementById("homePageDefaultSearch").addEventListener("change", function(event) {
-                //We can't just set the value to null - locaStorage would stringify it
-                if (event.target.value === "null") {
-                    localStorage.removeItem("homePageDefaultSearch")
-                }
-                else {
-                    localStorage.setItem("homePageDefaultSearch", event.target.value)
-                }
-            })
-
-
-            document.getElementById("theme").value = localStorage.getItem("prefersDarkMode")
-            document.getElementById("colorBlindMode").value = localStorage.getItem("colorBlindMode")
-            document.getElementById("usMapResolution").value = localStorage.getItem("usMapResolution")
-            document.getElementById("worldMapResolution").value = localStorage.getItem("worldMapResolution")
-            document.getElementById("homePageDefaultSearch").value = localStorage.getItem("homePageDefaultSearch")
 
             let explanation = document.getElementById("darkModeDefaultExplanation")
             let browserSupportsDarkMode = window.matchMedia('(prefers-color-scheme: dark)').media !== "not all"
@@ -163,9 +124,6 @@
             else {
                 explanation.innerHTML = "Selecting Default causes rivers.run to use the light theme - your device does not provide rivers.run the theme to use"
             }
-
-
-
         </script>
     </body>
 </html>
