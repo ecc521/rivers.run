@@ -39,7 +39,7 @@
             <option value="false">Light</option>
             <option value="true">Dark</option>
         </select>
-        <p id="darkModeDefaultExplanation">Default: Use browser/os theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your browser provides a color scheme to use)</p>
+        <p id="darkModeDefaultExplanation">Default: Use device theme if provided, otherwise light theme (it looks like there was an error. JavaScript on this page should have updated this text to tell you if your device provides a color scheme to use)</p>
 
         <h3>Home Page Default Search</h3>
         <select id="homePageDefaultSearch">
@@ -50,7 +50,7 @@
 
         <h3>Offline Map Resolution (US and World)</h3>
         <p>Increasing resolution will require a relatively small (under 20MB) download, unless the images are already stored on your device. </p>
-        <p>Higher resolution maps may take (substantially) longer to load on some browsers and devices. </p>
+        <p>Higher resolution maps may take (substantially) longer to load on some devices. </p>
         US Map Resolution: <select id="usMapResolution">
             <option value="null">Standard - Zoom 6</option>
             <option value="7">Enhanced (4x) - Zoom 7</option>
@@ -93,6 +93,14 @@
                 let elem = document.getElementById(id)
                 elem.value = localStorage.getItem(id)
 
+                //On iOS (Ionic and Safari), changing the setting and clicking the page works, but any successive changes to the setting will be ignored
+                //until the selector is deselected and reselected.
+                document.addEventListener("click", function(event) {
+                    if (event.target !== elem) {
+                        elem.blur()
+                    }
+                })
+
                 elem.addEventListener("change", function(event) {
                     //We can't just set the value to null - locaStorage would stringify it
                     if (elem.value === "null") {
@@ -103,7 +111,7 @@
                     }
 
                     if (window.isIos) {
-                        elem.blur() //iOS doesn't deselect these without doing some weird things. 
+                        elem.blur() //iOS doesn't deselect these without doing some weird things.
                     }
 
                     window.dispatchEvent(new Event("storage")) //Allow this page to pick up the color scheme change. May not be needed.
