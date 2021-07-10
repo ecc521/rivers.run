@@ -1,13 +1,12 @@
 const {createGraph} = require("./graph.js")
 
-function getFlowGraph(data, doNotInclude) {
-    //doNotInclude - pass either "cfs" or "feet" to not include specified graph.
+function getFlowGraph(data) {
     if (data.units === "m") {
         //User wants Meters, not Feet.
         data.readings = data.readings.map((reading) => {
                 if (reading.cfs) {
                     reading.cms = reading.cfs / cubicMeterInFeet
-                    reading.cms = Math.round(reading.cms * 100) / 100 //Reduce precision to sane levels. 
+                    reading.cms = Math.round(reading.cms * 100) / 100 //Reduce precision to sane levels.
                 }
                 if (reading.feet) {
                     reading.meters = reading.feet / meterInFeet
@@ -17,13 +16,23 @@ function getFlowGraph(data, doNotInclude) {
         })
     }
 
+    let volumeColor = "#00CCFF" //Turquoise
+    let stageColor = window.darkMode?"#7175ff":"blue"
+
+    if (window.colorBlindMode) {
+        stageColor = "#ff8800" //Orange
+        volumeColor = window.darkMode?"#00CCFF":"#7175ff"
+    }
+
+
+
     let volumeConfig = {
         name: (data.units === "m")?"Flow (Cubic Meters/Second)":"Flow (Cubic Feet/Second)",
-        textColor: "#00CCFF",
-        legendTextColor: "#00CCFF",
+        textColor: volumeColor,
+        legendTextColor: volumeColor,
         lines: [
             {
-                color: "#00CCFF",
+                color: volumeColor,
                 xAlias: "dateTime",
                 yAlias: (data.units === "m")?"cms":"cfs",
                 scrubUnits: (data.units === "m")?"cms":"cfs",
@@ -35,11 +44,11 @@ function getFlowGraph(data, doNotInclude) {
     let stageConfig = {
         name: (data.units === "m")?"Gauge Height (Meters)":"Gauge Height (Feet)",
         //In dark mode, blue doesn't show up well enough, so different colors are used.
-        textColor: window.darkMode?"#7175ff":"blue",
-        legendTextColor: window.darkMode?"#7175ff":"blue",
+        textColor: stageColor,
+        legendTextColor: stageColor,
         lines: [
             {
-                color: window.darkMode?"#7175ff":"blue",
+                color: stageColor,
                 xAlias: "dateTime",
                 yAlias:(data.units === "m")?"meters":"feet",
                 scrubUnits:(data.units === "m")?"meters":"feet",
@@ -58,8 +67,8 @@ function getFlowGraph(data, doNotInclude) {
         x1: {
             textColor: window.darkMode?"white":"black",
         },
-        y1: (doNotInclude !== "volume")?volumeConfig:undefined,
-        y2: (doNotInclude !== "stage")?stageConfig:undefined
+        y1: volumeConfig,
+        y2: stageConfig
     })
     graph.canvas.className = "graph"
     graph.container.className = "graphContainer"
@@ -184,44 +193,13 @@ function addGraphs(data) {
 	//TODO: We only need to synchronusly render the first graph, as only one will be displayed at once.
 	//This will lead to speed increases when .riverbuttons are clicked.
     try {
-        if (!localStorage.getItem("colorBlindMode")) {
-            let flowGraph = getFlowGraph(data)
-			if (flowGraph) {
-				graphs.push({
-					text: "Flow Info",
-					className: "flowButton",
-					elem: flowGraph
-				})
-			}
-        }
-        else {
-			try {
-				//Use one graph for cfs and one for feet if the user is in color blind mode.
-				let cfsGraph = getFlowGraph(data, "stage") //Pass "stage" as doNotInclude
-				if (cfsGraph) {
-					graphs.push({
-						text: "Flow In CFS",
-						className: "flowButton",
-						elem: cfsGraph
-					})
-				}
-			}
-			catch (e) {
-				console.warn(e)
-			}
-			try {
-				let feetGraph = getFlowGraph(data, "volume") //Pass "volume" as doNotInclude
-				if (feetGraph) {
-					graphs.push({
-						text: "Flow In Feet",
-						className: "flowButton",
-						elem: feetGraph
-					})
-				}
-			}
-			catch (e) {
-				console.warn(e)
-			}
+        let flowGraph = getFlowGraph(data)
+        if (flowGraph) {
+            graphs.push({
+                text: "Flow Info",
+                className: "flowButton",
+                elem: flowGraph
+            })
         }
     }
     catch(e){console.warn("Error creating flow graph: " + e)}

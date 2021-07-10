@@ -48,6 +48,14 @@
         </select>
         <p>Default: None. You can choose to display your favorites by default on the home page. </p>
 
+        <h3>Color Blind Mode</h3>
+        <select id="colorBlindMode">
+            <option value="null">Default (No)</option>
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+        </select>
+        <p>Color blind mode will adjust the relative flow coloring scheme, as well as graph colors. </p>
+
         <h3>Offline Map Resolution (US and World)</h3>
         <p>Increasing resolution will require a relatively small (under 20MB) download, unless the images are already stored on your device. </p>
         <p>Higher resolution maps may take (substantially) longer to load on some devices. </p>
@@ -64,18 +72,6 @@
         </select>
         <p>Default: Standard Resolution. Specified zoom levels correspond to those on most mapping applciations, including OpenStreetMap and Google Maps. </p>
 
-
-        <h3>Color Blind Mode</h3>
-        <select id="colorBlindMode">
-            <option value="null">Default (No)</option>
-            <option value="false">No</option>
-            <option value="true">Yes</option>
-        </select>
-        <p>
-        Color blind mode will put cfs and feet on seperate graphs and adjust the relative flow coloring scheme.<br><br>
-        Changes to this setting may not take affect until the app is restarted. 
-
-        If you are color blind, please email <a href="mailto:admin@rivers.run">admin@rivers.run</a> with your opinion on this feature and how it can be improved.
     </p>
 
         <script>
