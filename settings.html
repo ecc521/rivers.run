@@ -104,10 +104,10 @@
                 elem.addEventListener("change", function(event) {
                     //We can't just set the value to null - locaStorage would stringify it
                     if (elem.value === "null") {
-                        localStorage.removeItem("userTheme")
+                        localStorage.removeItem(id)
                     }
                     else {
-                        localStorage.setItem("userTheme", elem.value)
+                        localStorage.setItem(id, elem.value)
                     }
 
                     if (window.isIos) {
