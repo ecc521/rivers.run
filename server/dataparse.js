@@ -236,7 +236,7 @@ async function prepareRiverData({
 			obj.gauge = obj.gauge.toUpperCase()
 		}
 
-		//Handle related USGS. TODO: Change to relatedGauge
+		//Convert relatedusgs to relatedgauges
 		if (obj.relatedusgs) {
 			try {
 				obj.relatedgauges = JSON.stringify(JSON.parse(obj.relatedusgs).map((gaugeID) => {
