@@ -304,6 +304,10 @@ button {
 	background-image: linear-gradient(to right, hsl(0,100%,74%) , hsl(60,100%,70%), hsl(120,100%,70%), hsl(180,100%,70%), hsl(240,100%,80%));
 }
 
+body.colorBlindMode #legend {
+    /*Orange to Blue*/
+    background-image: linear-gradient(to right, hsl(30,100%,74%), hsl(240,100%,80%));
+}
 
 #lowflow {
 	width: 18.5%;
@@ -688,6 +692,11 @@ Those include name,section,skill,quality, and flow info*/
 	#legend:after {
 		background-image: repeating-linear-gradient(150deg,transparent, transparent, rgba(255,255,255,.2),transparent, transparent, transparent 16%);
 	}
+
+    body.colorBlindMode #legend {
+        /*Orange to Blue*/
+        background-image: linear-gradient(to right, hsl(30,100%,22%), hsl(240,100%,30%));
+    }
 
 	.gaugesBelow {
 		background-color: darkmagenta !important;

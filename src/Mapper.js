@@ -506,7 +506,21 @@ async function addMap({
 		else if (isNaN(running = item.running)) {
 			color = "white"
 		}
-		else {color = "hsl(" + running * 60 + ", 100%, 70%)"}
+		else if (window.colorBlindMode) {
+			//Orange Blue scale
+			let orange = [255, 189, 122]
+			let blue = [153, 153, 255]
+
+			let res = orange.map((o, index) => {
+				let b = blue[index]
+				return (o * (4 - running) + b * running) / 4
+			})
+
+			color = `rgb(${res.join(",")})`
+		}
+		else {
+			color = "hsl(" + running * 60 + ", 100%, 70%)"
+		}
 
 
 		let scale = .8

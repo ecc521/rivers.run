@@ -178,15 +178,6 @@ function addFlowData(river) {
 	})
 }
 
-
-function updateSettings() {
-	window.colorBlindMode = (localStorage.getItem("colorBlindMode") === "true")
-	window.classOrSkill = localStorage.getItem("classOrSkill")
-}
-
-window.addEventListener("storage", updateSettings)
-updateSettings()
-
 function addFlowSpan(river, button) {
 			//If there is already a flowspan, get rid of it.
 			let current = button.querySelector(".flowspan")
@@ -194,11 +185,6 @@ function addFlowSpan(river, button) {
 
             if (river.flow) {
 				let value = river.flow + (calculateDirection(river.gauge) || "")
-				//If the user has color blind mode enabled, add river.running to one digit onto the flow data.
-				//TODO: Add a faster way to check values, other than localStorage.
-				if (window.colorBlindMode && river.running !== undefined) {
-					value += "(" + Math.round(river.running*10)/10 + ")"
-				}
 				//TODO: Show the text "Dam" if there is plenty of space to do so. Consider using a smaller icon instead.
 				//value += this.dam ? "Dam" : ""
                 AddSpan(value, button, "flowspan")
@@ -260,17 +246,9 @@ function River(locate, event) {
             AddSpan(this.name, button)
             AddSpan(this.section, button)
 
-
-			if (window.classOrSkill === "class") {
-				//Put class first so that it will show up if screen small.
-				addClassSpan(this, button)
-				addSkillSpan(this, button)
-			}
-			else {
-				//Put skill first so that it will show up if screen small.
-				addSkillSpan(this, button)
-				addClassSpan(this, button)
-			}
+			//Put skill first so that it will show up if screen small.
+			addSkillSpan(this, button)
+			addClassSpan(this, button)
 
             //Star images for rating
             addRatingSpan(this, button)

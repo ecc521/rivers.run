@@ -297,24 +297,47 @@ function calculateColor(river) {
 		return ""
 	}
 
-	//Normal Flow lightness values
-    let lightness = window.darkMode? 22 : 70
-    if (window.darkMode) {
-        //In dark mode, dark blue is 30.
-        if (river.running > 3) {
-            lightness += 8 * (river.running - 3)
+    if (window.colorBlindMode) {
+        //Orange Blue scale
+        //Uses HSLs from legend, converted to RGB.
+        let orange, blue;
+
+        if (window.darkMode) {
+            orange = [112, 56, 0]
+            blue = [0, 0, 153]
         }
+        else {
+            orange = [255, 189, 122]
+            blue = [153, 153, 255]
+        }
+
+        let res = orange.map((o, index) => {
+            let b = blue[index]
+            return (o * (4 - river.running) + b * river.running) / 4
+        })
+
+        return `rgb(${res.join(",")})`
     }
     else {
-        //In light mode, dark blue is 80, dark red 74.
-        if (river.running > 3) {
-            lightness += 10 * (river.running - 3)
+        //Normal Flow lightness values
+        let lightness = window.darkMode? 22 : 70
+        if (window.darkMode) {
+            //In dark mode, dark blue is 30.
+            if (river.running > 3) {
+                lightness += 8 * (river.running - 3)
+            }
         }
-        else if (river.running < 1) {
-            lightness += 4 * (1 - river.running)
+        else {
+            //In light mode, dark blue is 80, dark red 74.
+            if (river.running > 3) {
+                lightness += 10 * (river.running - 3)
+            }
+            else if (river.running < 1) {
+                lightness += 4 * (1 - river.running)
+            }
         }
+        return "hsl(" + (0 + 60 * river.running) + ",100%," + lightness + "%)"
     }
-	return "hsl(" + (0 + 60 * river.running) + ",100%," + lightness + "%)"
 }
 
 module.exports = {

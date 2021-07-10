@@ -84,6 +84,12 @@ catch (e) {
 	console.error(e)
 }
 
+try {
+	require("./addColorBlindMode.js")
+}
+catch (e) {
+	console.error(e)
+}
 
 try {
 	//Make sure I don't hate the font
