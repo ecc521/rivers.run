@@ -182,6 +182,7 @@ function obtainDataFromSources(gauges, batchCallback) {
 				datasource.add(code)
 				break;
 			}
+			//TODO: We need a good way to track down bad gauge codes to source rivers. 
 			if (i === datasources.length - 1) {console.warn("No match for " + gaugeID)}
 		}
 	})

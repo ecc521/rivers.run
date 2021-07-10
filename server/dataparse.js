@@ -263,7 +263,7 @@ async function prepareRiverData({
 				})
 				if (obj.relatedgauges.length === 0) {delete obj.relatedgauges} //If there are no gauges, don't bother with the property.
 			}
-			catch(e) {console.error(e);console.log(obj.relatedgauges)}
+			catch(e) {console.error(e);console.log(obj)}
 		}
 
 
