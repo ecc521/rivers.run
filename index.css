@@ -680,10 +680,11 @@ Those include name,section,skill,quality, and flow info*/
 	}
 
 	#legend {
-		background-image: linear-gradient(to right, hsl(0,100%,22%) , hsl(60,100%,22%), hsl(120,100%,22%), hsl(180,100%,22%), hsl(240,100%,22%));
+		background-image: linear-gradient(to right, hsl(0,100%,22%) , hsl(60,100%,22%), hsl(120,100%,22%), hsl(180,100%,22%), hsl(240,100%,30%));
 		color:white;
 	}
 
+    /*Stripes*/
 	#legend:after {
 		background-image: repeating-linear-gradient(150deg,transparent, transparent, rgba(255,255,255,.2),transparent, transparent, transparent 16%);
 	}

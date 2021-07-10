@@ -298,14 +298,20 @@ function calculateColor(river) {
 	}
 
 	//Normal Flow lightness values
-    let lightness = window.darkMode? "22": "70"
-    if (!window.darkMode) {
+    let lightness = window.darkMode? 22 : 70
+    if (window.darkMode) {
+        //In dark mode, dark blue is 30.
+        if (river.running > 3) {
+            lightness += 8 * (river.running - 3)
+        }
+    }
+    else {
         //In light mode, dark blue is 80, dark red 74.
         if (river.running > 3) {
-            lightness = 70 + ((river.running - 3) * 10)
+            lightness += 10 * (river.running - 3)
         }
         else if (river.running < 1) {
-            lightness = 70 + ((1 - river.running) * 4)
+            lightness += 4 * (1 - river.running)
         }
     }
 	return "hsl(" + (0 + 60 * river.running) + ",100%," + lightness + "%)"
