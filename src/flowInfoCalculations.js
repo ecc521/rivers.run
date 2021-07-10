@@ -290,10 +290,9 @@ function calculateRelativeFlow(river) {
 }
 
 
-function calculateColor(river) {
-    calculateRelativeFlow(river)
-
-	if (river.running == null) {
+function calculateColor(running) {
+    //Returns color given decimal between 0 and 4, inclusive.
+	if (running == null) {
 		return ""
 	}
 
@@ -313,7 +312,7 @@ function calculateColor(river) {
 
         let res = orange.map((o, index) => {
             let b = blue[index]
-            return (o * (4 - river.running) + b * river.running) / 4
+            return (o * (4 - running) + b * running) / 4
         })
 
         return `rgb(${res.join(",")})`
@@ -327,14 +326,14 @@ function calculateColor(river) {
             lightness = 70
 
             //Dark blue is 80, dark red 74.
-            if (river.running > 3) {
-                lightness += 10 * (river.running - 3)
+            if (running > 3) {
+                lightness += 10 * (running - 3)
             }
-            else if (river.running < 1) {
-                lightness += 4 * (1 - river.running)
+            else if (running < 1) {
+                lightness += 4 * (1 - running)
             }
         }
-        return "hsl(" + (0 + 60 * river.running) + ",100%," + lightness + "%)"
+        return "hsl(" + (0 + 60 * running) + ",100%," + lightness + "%)"
     }
 }
 

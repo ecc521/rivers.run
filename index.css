@@ -301,12 +301,6 @@ button {
 	font-size: calc(var(--defaultFontSize) * 1.15);
 	line-height: calc(var(--defaultFontSize) * 1.55);
 	font-weight: bold;
-	background-image: linear-gradient(to right, hsl(0,100%,74%) , hsl(60,100%,70%), hsl(120,100%,70%), hsl(180,100%,70%), hsl(240,100%,80%));
-}
-
-body.colorBlindMode #legend {
-    /*Orange to Blue*/
-    background-image: linear-gradient(to right, hsl(30,100%,74%), hsl(240,100%,80%));
 }
 
 #lowflow {
@@ -684,19 +678,13 @@ Those include name,section,skill,quality, and flow info*/
 	}
 
 	#legend {
-		background-image: linear-gradient(to right, hsl(0,100%,22%) , hsl(60,100%,22%), hsl(120,100%,22%), hsl(180,100%,22%), hsl(240,100%,22%));
-		color:white;
+		color: white;
 	}
 
     /*Stripes*/
 	#legend:after {
 		background-image: repeating-linear-gradient(150deg,transparent, transparent, rgba(255,255,255,.2),transparent, transparent, transparent 16%);
 	}
-
-    body.colorBlindMode #legend {
-        /*Orange to Blue*/
-        background-image: linear-gradient(to right, hsl(30,100%,22%), hsl(240,100%,22%));
-    }
 
 	.gaugesBelow {
 		background-color: darkmagenta !important;

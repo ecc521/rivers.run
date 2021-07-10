@@ -197,8 +197,8 @@ function addFlowStyling(river, button) {
 	if (river.dam) {
 		button.classList.add("riverbuttonDam")
 	}
-	if (calculateColor(river)) {
-		button.style.backgroundColor = calculateColor(river)
+	if (calculateColor(river.running)) {
+		button.style.backgroundColor = calculateColor(river.running)
 	}
 }
 
@@ -264,7 +264,7 @@ function River(locate, event) {
 
 			window.addEventListener("colorSchemeChanged", function() {
 				river.updateExpansion()
-				river.finished.style.backgroundColor = calculateColor(river)
+				river.finished.style.backgroundColor = calculateColor(river.running)
 			})
 
             //Store button for reuse later
@@ -290,7 +290,7 @@ function River(locate, event) {
     }
 
 	addFlowData(this) //Defines river.cfs, river.feet, and river.flow
-	calculateRelativeFlow(this)
+	calculateRelativeFlow(this) //Defines river.running
 
 	this.updateFlowData = function(noExpansion) {
 		if (this.finished) {

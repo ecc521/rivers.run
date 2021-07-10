@@ -112,6 +112,21 @@ function setSearchForLink() {
 	//ItemHolder is a list of all the river objects. New objects should be pushed into the list.
 	window.ItemHolder = []
 
+	let legend = document.getElementById("legend")
+	;(async function() {
+		const {calculateColor} = require("./flowInfoCalculations.js")
+
+		function setLegendBackground() {
+			let colors = []
+			for (let i=0; i<=4; i+=1) {
+				colors.push(calculateColor(i))
+			}
+			legend.style.backgroundImage = `linear-gradient(to right, ${colors.join(",")})`
+		}
+		setLegendBackground()
+		window.addEventListener("colorSchemeChanged", setLegendBackground)
+	}())
+
 	//Load flow information. This is async, and will finish whenever.
 	require("./loadUSGS.js").loadUSGS(false)
 
@@ -165,7 +180,6 @@ function setSearchForLink() {
 					searchNotFinished.id = "topOldDataWarning" //Reuse styling
 					searchNotFinished.innerHTML = "Portions of your search link use flow data, which is still loading. "
 					//loadUSGS.js will delete searchNotFinished when it is not needed due to the id overlap.
-					let legend = document.getElementById("legend")
 					legend.parentNode.insertBefore(searchNotFinished, legend)
 			}
 			NewList(query)
