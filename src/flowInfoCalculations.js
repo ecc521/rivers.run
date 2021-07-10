@@ -304,7 +304,7 @@ function calculateColor(river) {
 
         if (window.darkMode) {
             orange = [112, 56, 0]
-            blue = [0, 0, 153]
+            blue = [0, 0, 112]
         }
         else {
             orange = [255, 189, 122]
@@ -319,16 +319,14 @@ function calculateColor(river) {
         return `rgb(${res.join(",")})`
     }
     else {
-        //Normal Flow lightness values
-        let lightness = window.darkMode? 22 : 70
+        let lightness;
         if (window.darkMode) {
-            //In dark mode, dark blue is 30.
-            if (river.running > 3) {
-                lightness += 8 * (river.running - 3)
-            }
+            lightness = 22
         }
         else {
-            //In light mode, dark blue is 80, dark red 74.
+            lightness = 70
+
+            //Dark blue is 80, dark red 74.
             if (river.running > 3) {
                 lightness += 10 * (river.running - 3)
             }
