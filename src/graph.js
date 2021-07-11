@@ -106,18 +106,11 @@ function createGraph(options) {
 	console.log(options)
 
 	let lineCanvas = document.createElement("canvas")
-	//We could draw the lineCanvas then stretch it to fit, but it's substantially faster to not scale, and simply start at the correct size. 
+	//We could draw the lineCanvas then stretch it to fit, but it's substantially faster to not scale, and simply start at the correct size.
 	lineCanvas.width = options.width * (1 - padding.left - padding.right)
 	lineCanvas.height = options.height * (1 - padding.top - padding.bottom)
 
 	let ctx = lineCanvas.getContext("2d")
-
-	if (options.backgroundColor) {
-		let initial = ctx.fillStyle
-		setLineColor(options.backgroundColor, undefined, "fillStyle")
-		ctx.fillRect(0, 0, lineCanvas.width, lineCanvas.height)
-		ctx.fillStyle = initial
-	}
 
 	ctx.lineWidth = options.lineWidth || Math.ceil(lineCanvas.width/75)
 	ctx.lineJoin = options.lineJoin || "round" //Round will make sure that lines don't spike way through the point they stop at, unlike miter, a bad default.
@@ -223,7 +216,7 @@ function createGraph(options) {
 	if (options.backgroundColor) {
 		let initial = ctx.fillStyle
 		setLineColor(options.backgroundColor, undefined, "fillStyle")
-		ctx.fillRect(0, 0, lineCanvas.width, lineCanvas.height)
+		ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height)
 		ctx.fillStyle = initial
 	}
 
