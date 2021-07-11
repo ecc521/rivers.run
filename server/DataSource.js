@@ -118,7 +118,7 @@ class DataSource {
 
 	removePrefix(code) {
 		if (code.startsWith(this.prefix)) {
-			return code.slice(this.prefix.length).trim()
+			return code.slice(this.prefix.length) //Codes already trimmed in dataparse. 
 		}
 	}
 

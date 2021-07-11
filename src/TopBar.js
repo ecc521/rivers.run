@@ -51,8 +51,9 @@ function TopBar() {
         addSorting(span, "skill", false)
         button.appendChild(span)
 
-        span = NewSpan("Class")
+        span = NewSpan("Class⇅")
         span.classList.add("classspan")
+        addSorting(span, "class", false)
         button.appendChild(span)
 
 	    span = NewSpan("Quality⇅")

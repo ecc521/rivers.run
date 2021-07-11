@@ -266,6 +266,16 @@ async function prepareRiverData({
 			catch(e) {console.error(e);console.log(obj)}
 		}
 
+		if (obj.class) {
+			obj.class = obj.class
+				.replaceAll("1", "I")
+				.replaceAll("2", "II")
+				.replaceAll("3", "III")
+				.replaceAll("4", "IV")
+				.replaceAll("5", "V")
+				.replaceAll("6", "VI")
+		}
+
 
 		for (let prop in obj) {
 			if (!allowed.includes(prop)) {

@@ -81,6 +81,61 @@ function skillsort(list, reverse) {
 }
 
 
+function classSort(list, reverse) {
+    //This sort isn't supposed to work very well - it's designed so that people stop complaining
+    //The hope is that they will quickly realize why a class based sort doesn't work.
+
+    let classes = ["A", "I", "II", "III", "IV", "V", "VI"]
+
+    //Add -/+
+    classes = classes.map((val) => {
+        return [
+            val + "-",
+            val,
+            val + "+"
+        ]
+    }).flat()
+
+    classes = classes.map((val) => {
+        return [val, `(${val})`]
+    }).flat()
+
+    console.log(classes)
+
+    list.sort(function(a,b) {
+
+       function ToNum(value) {
+           for (let i=classes.length-1;i>=0;i--) {
+               let classStr = classes[i]
+               let index = value.class.lastIndexOf(classStr) //Use lastIndex - the last instance should be the highest (we don't want to match the first V in IV-V - we want the second)
+
+               if (index !== -1) {
+                   if (classStr.includes("(")) {
+                       //If a value is in parens, it comes below that same value not in parens.
+                       return i - 1.5
+                   }
+                   else if (value.class[index - 1] !== "I") {
+                       //V is a subset of IV - verify that we aren't dealing with a subset
+                       return i
+                   }
+               }
+           }
+
+            return reverse?-Infinity:Infinity
+        }
+
+        return ToNum(a)-ToNum(b)
+    })
+
+
+    if (reverse) {
+        list.reverse()
+    }
+
+    return list
+}
+
+
 function runningSort(list, reverse) {
 
     let noData = []
@@ -121,8 +176,6 @@ function runningSort(list, reverse) {
 
 
 
-
-
 function sort(method, list, reverse) {
     if (method === "none") {}
     else if (method === "alphabetical") {
@@ -133,6 +186,9 @@ function sort(method, list, reverse) {
     }
     else if (method === "skill") {
         list = skillsort(list, reverse)
+    }
+    else if (method === "class") {
+        list = classSort(list, reverse)
     }
     else if (method === "running") {
         list = runningSort(list, reverse)
