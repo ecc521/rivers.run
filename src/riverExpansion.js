@@ -135,10 +135,10 @@ function createExpansion(button, river) {
     let addedUSGSDisclaimer = false
     let addedVirtualGaugeDisclaimer = false
 
-    function addUSGSGraphs(usgsID, relatedGauge) {
+    function addUSGSGraphs(usgsID, relatedGauge = false, graphContainer = document.createElement("div"), recurse = true) {
+        while (graphContainer.lastChild) {graphContainer.lastChild.remove()}
 
         let data = self.usgsarray[usgsID]
-        let graphContainer = document.createElement("div");
 
         if (data) {
             //Alert the user if the data is (at least 2 hours) old
@@ -181,7 +181,7 @@ function createExpansion(button, river) {
             }
 
             console.time("Add Graphs")
-            console.log(usgsarray[usgsID])
+            console.log(usgsID, usgsarray[usgsID])
             console.log(graphs)
             let graphs = addGraphs(data)
             if (graphs) {
@@ -202,7 +202,7 @@ function createExpansion(button, river) {
 
         //Fetch comprehensive flow data, then update the graphs.
         //TODO: Add XMLHttpRequest fallback.
-        if (!usgsarray[usgsID] || !usgsarray[usgsID].full) {
+        if (recurse && !usgsarray[usgsID] || !usgsarray[usgsID].full) {
             fetch(window.root + "gaugeReadings/" + usgsID).catch((error) => {
                 console.log("Failed to load " + usgsID + " from network. Error below. ")
                 console.log(error)
@@ -215,13 +215,15 @@ function createExpansion(button, river) {
                 response.json().then((newData) => {
                     usgsarray[usgsID] = newData
                     usgsarray[usgsID].full = true
-                    river.updateFlowData()
+                    river.updateFlowData(true) //Update flow styling and data.
+                    addUSGSGraphs(usgsID, relatedGauge, graphContainer, false) //Update the graph pertaining to this data. 
                 })
             })
         }
         else {
             river.updateFlowData(true) //Update only flow styling and flow data column.
-            //We do this because, otherwise, if two rivers have the gauge, the second and successive ones opened will not have their flow styling or column updated. .
+            //This river may share this gauge with another river - if that other river loaded full data, it might be newer than
+            //the preview we are showing - we should try to update.
         }
     }
 
