@@ -1,6 +1,12 @@
 function fillParameters(options) {
 	//Process options, filling in parameters with defaults.
 
+	//0.01 padding to add space on right of scrubber (so that the user can scrub to the end!)
+	options.padding = options.padding || {top: 0, bottom:0.16, left: 0.1, right: options.y2?0.1:0.01} //Percentage of width and height on either side to be used for legend, etc.
+
+	options.width = options.width || 600
+	options.height = options.height || 400
+
 	function prepareYAxis(y) {
 		//If lines is a line, instead of an array of lines, put it in an array.
 		if (typeof y !== "object") {
@@ -95,11 +101,14 @@ function createGraph(options) {
 
 	options = fillParameters(options)
 
+	let padding = options.padding
+
 	console.log(options)
 
 	let lineCanvas = document.createElement("canvas")
-	lineCanvas.width = options.width || 600
-	lineCanvas.height = options.height || 400
+	//We could draw the lineCanvas then stretch it to fit, but it's substantially faster to not scale, and simply start at the correct size. 
+	lineCanvas.width = options.width * (1 - padding.left - padding.right)
+	lineCanvas.height = options.height * (1 - padding.top - padding.bottom)
 
 	let ctx = lineCanvas.getContext("2d")
 
@@ -206,8 +215,8 @@ function createGraph(options) {
 	}
 
 	let finalCanvas = document.createElement("canvas")
-	finalCanvas.width = lineCanvas.width
-	finalCanvas.height = lineCanvas.height
+	finalCanvas.width = options.width
+	finalCanvas.height = options.height
 
 	ctx = finalCanvas.getContext("2d")
 
@@ -218,11 +227,8 @@ function createGraph(options) {
 		ctx.fillStyle = initial
 	}
 
-	//0.01 padding to add space on right of scrubber (so that the user can scrub to the end!)
-	let padding = options.padding || {top: 0, bottom:0.16, left: 0.1, right: options.y2?0.1:0.01} //Percentage of width and height on either side to be used for legend, etc.
-
 	//TODO: Padding should be increased if needed to fit legend. Use ctx.measureText to do this.
-	ctx.drawImage(lineCanvas, finalCanvas.width * padding.left, finalCanvas.height * padding.top, finalCanvas.width * (1 - padding.left - padding.right), finalCanvas.height * (1 - padding.top - padding.bottom))
+	ctx.drawImage(lineCanvas, finalCanvas.width * padding.left, finalCanvas.height * padding.top, lineCanvas.width, lineCanvas.height)
 
 	let textSize = Math.ceil(finalCanvas.height * padding.bottom / 4)
 	if (options.graphNameColor) {
@@ -348,7 +354,7 @@ function createGraph(options) {
 	ctx.stroke()
 
 
-	//Create the container and tooltip. 
+	//Create the container and tooltip.
 	let graphContainerDiv = document.createElement("div")
 	graphContainerDiv.appendChild(finalCanvas)
 
