@@ -1,6 +1,19 @@
 function loadFavorites() {
-	if (localStorage.getItem("favorites") === null) {localStorage.setItem("favorites", "{}")}
-	return JSON.parse(localStorage.getItem("favorites"))
+	let favorites = localStorage.getItem("favorites")
+
+	try {
+		favorites = JSON.parse(favorites)
+	}
+	catch (e) {
+		//Favorites isn't valid JSON.
+		favorites = null
+	}
+
+	if (favorites === null) {
+		localStorage.setItem("favorites", "{}")
+		return {}
+	}
+	return favorites
 }
 
 function writeFavorites(temp) {
