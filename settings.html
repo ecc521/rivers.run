@@ -75,51 +75,62 @@
     </p>
 
         <script>
-
-            let ids = ["userTheme", "colorBlindMode", "usMapResolution", "worldMapResolution", "homePageDefaultSearch"]
-            ids.forEach((id) => {
-                let elem = document.getElementById(id)
-                elem.value = localStorage.getItem(id)
-
-                //On iOS (Ionic and Safari), changing the setting and clicking the page works, but any successive changes to the setting will be ignored
-                //until the selector is deselected and reselected.
-                document.addEventListener("click", function(event) {
-                    if (event.target !== elem) {
-                        elem.blur()
-                    }
-                })
-
-                elem.addEventListener("change", function(event) {
-                    //We can't just set the value to null - locaStorage would stringify it
-                    if (elem.value === "null") {
-                        localStorage.removeItem(id)
-                    }
-                    else {
-                        localStorage.setItem(id, elem.value)
-                    }
-
-                    if (window.isIos) {
-                        elem.blur() //iOS doesn't deselect these without doing some weird things.
-                    }
-
-                    window.dispatchEvent(new Event("storage")) //Allow this page to pick up the color scheme change. May not be needed.
-                })
-            })
-
-            let explanation = document.getElementById("darkModeDefaultExplanation")
-            let browserSupportsDarkMode = window.matchMedia('(prefers-color-scheme: dark)').media !== "not all"
-            if (browserSupportsDarkMode) {
-				window.mediaWatch = window.matchMedia('(prefers-color-scheme: dark)')
-				function setText() {
-                	let currentTheme = mediaWatch.matches ? "dark": "light"
-                	explanation.innerHTML = "Selecting Default causes rivers.run to use the theme provided by your device (" + currentTheme + ")"
-				}
-				mediaWatch.onchange = setText
-				setText()
+            let setup = []
+            //Wait for storage sync,
+            if (window.syncStoragePromise) {
+                setup.push(window.syncStoragePromise)
+                setup.push(new Promise(function(r) {setTimeout(r, 1000)})) //Timeout
             }
             else {
-                explanation.innerHTML = "Selecting Default causes rivers.run to use the light theme - your device does not provide rivers.run the theme to use"
+                setup.push(new Promise(function(r) {r()}))
             }
+            
+            Promise.race(setup).then(() => {
+                let ids = ["userTheme", "colorBlindMode", "usMapResolution", "worldMapResolution", "homePageDefaultSearch"]
+                ids.forEach((id) => {
+                    let elem = document.getElementById(id)
+                    elem.value = localStorage.getItem(id)
+
+                    //On iOS (Ionic and Safari), changing the setting and clicking the page works, but any successive changes to the setting will be ignored
+                    //until the selector is deselected and reselected.
+                    document.addEventListener("click", function(event) {
+                        if (event.target !== elem) {
+                            elem.blur()
+                        }
+                    })
+
+                    elem.addEventListener("change", function(event) {
+                        //We can't just set the value to null - locaStorage would stringify it
+                        if (elem.value === "null") {
+                            localStorage.removeItem(id)
+                        }
+                        else {
+                            localStorage.setItem(id, elem.value)
+                        }
+
+                        if (window.isIos) {
+                            elem.blur() //iOS doesn't deselect these without doing some weird things.
+                        }
+
+                        window.dispatchEvent(new Event("storage")) //Allow this page to pick up the color scheme change. May not be needed.
+                    })
+                })
+
+                let explanation = document.getElementById("darkModeDefaultExplanation")
+                let browserSupportsDarkMode = window.matchMedia('(prefers-color-scheme: dark)').media !== "not all"
+                if (browserSupportsDarkMode) {
+    				window.mediaWatch = window.matchMedia('(prefers-color-scheme: dark)')
+    				function setText() {
+                    	let currentTheme = mediaWatch.matches ? "dark": "light"
+                    	explanation.innerHTML = "Selecting Default causes rivers.run to use the theme provided by your device (" + currentTheme + ")"
+    				}
+    				mediaWatch.onchange = setText
+    				setText()
+                }
+                else {
+                    explanation.innerHTML = "Selecting Default causes rivers.run to use the light theme - your device does not provide rivers.run the theme to use"
+                }
+            })
         </script>
     </body>
 </html>

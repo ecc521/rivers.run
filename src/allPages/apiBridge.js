@@ -79,12 +79,8 @@ async function syncStorage() {
 }
 
 //We only want to sync once every time localStorage is cleared.
-//Max 500ms wait.
 if (!localStorage.getItem("hasSynced")) {
-	window.syncStoragePromise = Promise.race([
-		syncStorage(),
-		new Promise((resolve) => {setTimeout(resolve, 500)})
-	])
+	window.syncStoragePromise = syncStorage()
 }
 else {
 	syncToNative() //Storage event isn't fired when the tab changes. So if we've already synced, sync now.

@@ -78,10 +78,13 @@ function setSearchForLink() {
 
 
 ;(async function() {
-	//TODO: Do this on other pages.
+	//Wait for storage sync
 	if (window.syncStoragePromise) {
-		console.log("Awaiting Storage Sync")
-		await window.syncStoragePromise
+		let setup = []
+		setup.push(window.syncStoragePromise)
+		setup.push(new Promise(function(r) {setTimeout(r, 500)})) //Timeout
+
+		await Promise.race(setup)
 	}
 
 	//Handle search links.
