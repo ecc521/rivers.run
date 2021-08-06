@@ -83,7 +83,7 @@ async function loadSiteFromNWS(siteCode) {
 
 	let output = {
 		readings,
-		name: jsonObj.site.attributes.name,
+		name: jsonObj.site.attributes.name, //These names are REALLY weird. May need to revert back to using nwsToName if we can get it working. 
 		source: {
 			link: "https://water.weather.gov/ahps2/hydrograph.php?gage=" + siteCode + "&wfo=rlx",
 			text: "View this gauge on NWS"
