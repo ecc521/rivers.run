@@ -184,58 +184,60 @@ async function downloadConversionsFile() {
     console.log("NWS conversions list downloaded")
 }
 
-async function getConversionsForNWS() {
-    //TODO: If this function is called multiple times before download finishes, download might be done repeatedly.
-    //Make sure we have the sites file.
-    if (!fs.existsSync(conversionsFilePath)) {
-        console.log("NWS conversions file is not available. Running download script...")
-        await downloadConversionsFile()
-    }
-
-    //If the sites file is over 7 days old, download it again.
-    let age = Date.now() - (await fs.promises.stat(conversionsFilePath)).mtime
-
-    if (age > 1000*60*60*24*7) {
-        console.log("NWS conversions file is over " + Math.floor(age/1000/60/60) + " hours old. Running download script...")
-        try {
-            await downloadConversionsFile()
-        }
-        catch(e) {
-            console.error(e)
-        }
-    }
-
-    let lines = (await fs.promises.readFile(conversionsFilePath, {encoding:"utf-8"})).trim().split("\n")
-    lines = lines.slice(4)
-    console.log(lines.length + " NWS sites found also on USGS")
-    for (let i=0;i<lines.length;i++) {
-        lines[i] = lines[i].split("|")
-    }
-
-    let nwsToUSGS = {}
-    let usgsToNWS = {}
-    let nwsToName = {}
-
-    for (let i=0;i<lines.length;i++) {
-        let line = lines[i]
-        let nwsCode = line[0]
-        let usgsCode = line[1].trim()
-        nwsToUSGS[nwsCode] = usgsCode
-        usgsToNWS[usgsCode] = nwsCode
-        nwsToName[nwsCode] = line[6]
-    }
-
-    //NWS codes are case insensitive. Because of this, we will use a proxy to convert all requests to upperCase.
-    nwsToUSGS = new Proxy(nwsToUSGS,{get(target,name) {
-        return target[name.toUpperCase()]
-    }})
-
-    nwsToName = new Proxy(nwsToName,{get(target,name) {
-        return target[name.toUpperCase()]
-    }})
-
-    return {nwsToUSGS, usgsToNWS, nwsToName}
-}
+//getConversionsForNWS() is no longer needed
+//The code currently remains commented out in case any sort of automated NWS/USGS conversion is added, etc.
+// async function getConversionsForNWS() {
+//     //TODO: If this function is called multiple times before download finishes, download might be done repeatedly.
+//     //Make sure we have the sites file.
+//     if (!fs.existsSync(conversionsFilePath)) {
+//         console.log("NWS conversions file is not available. Running download script...")
+//         await downloadConversionsFile()
+//     }
+//
+//     //If the sites file is over 7 days old, download it again.
+//     let age = Date.now() - (await fs.promises.stat(conversionsFilePath)).mtime
+//
+//     if (age > 1000*60*60*24*7) {
+//         console.log("NWS conversions file is over " + Math.floor(age/1000/60/60) + " hours old. Running download script...")
+//         try {
+//             await downloadConversionsFile()
+//         }
+//         catch(e) {
+//             console.error(e)
+//         }
+//     }
+//
+//     let lines = (await fs.promises.readFile(conversionsFilePath, {encoding:"utf-8"})).trim().split("\n")
+//     lines = lines.slice(4)
+//     console.log(lines.length + " NWS sites found also on USGS")
+//     for (let i=0;i<lines.length;i++) {
+//         lines[i] = lines[i].split("|")
+//     }
+//
+//     let nwsToUSGS = {}
+//     let usgsToNWS = {}
+//     let nwsToName = {}
+//
+//     for (let i=0;i<lines.length;i++) {
+//         let line = lines[i]
+//         let nwsCode = line[0]
+//         let usgsCode = line[1].trim()
+//         nwsToUSGS[nwsCode] = usgsCode
+//         usgsToNWS[usgsCode] = nwsCode
+//         nwsToName[nwsCode] = line[6]
+//     }
+//
+//     //NWS codes are case insensitive. Because of this, we will use a proxy to convert all requests to upperCase.
+//     nwsToUSGS = new Proxy(nwsToUSGS,{get(target,name) {
+//         return target[name.toUpperCase()]
+//     }})
+//
+//     nwsToName = new Proxy(nwsToName,{get(target,name) {
+//         return target[name.toUpperCase()]
+//     }})
+//
+//     return {nwsToUSGS, usgsToNWS, nwsToName}
+// }
 
 //Canadaian Flow Data Gauges List
 //https://dd.weather.gc.ca/hydrometric/doc/hydrometric_StationList.csv
@@ -342,7 +344,7 @@ module.exports = {
     fixSiteName,
 	fixCasing,
     replaceStateNamesWithCodes,
-    getConversionsForNWS,
+    //getConversionsForNWS,
     getCanadianGauges,
     getCanadianGaugesInRiverFormat,
     getIrishGaugesInRiverFormat

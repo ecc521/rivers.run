@@ -6,9 +6,6 @@ const bent = require("bent")
 const xmlParser = require("fast-xml-parser");
 let getXML = bent("https://water.weather.gov/ahps2/", "string")
 
-const siteDataParser = require(path.join(__dirname, "../", "siteDataParser.js"))
-
-let nwsToNamePromise;
 async function loadSiteFromNWS(siteCode) {
 	//NWS enabled GZIP after I repeatedly informed them of the issue, so we might be able to take advantage of their predictions a bit more.
 	//That said, they still run ~5KB per gauge, and parsing ~100KB of XML is painfully slow.
@@ -22,14 +19,7 @@ async function loadSiteFromNWS(siteCode) {
 		textNodeName : "value",
 	});
 
-	//Grab the name conversions table so that we can get the name of this gauge.
-	if (!nwsToNamePromise) {
-		nwsToNamePromise = siteDataParser.getConversionsForNWS()
-	}
-	let nwsToName = (await nwsToNamePromise).nwsToName
-
 	let readings = []
-
 
 	function processValues(values, forecast = false) {
 		values.forEach((value) => {
@@ -91,10 +81,9 @@ async function loadSiteFromNWS(siteCode) {
 
 	readings.sort((a,b) => {return a.dateTime - b.dateTime})
 
-
 	let output = {
 		readings,
-		name: nwsToName[siteCode],
+		name: jsonObj.site.attributes.name,
 		source: {
 			link: "https://water.weather.gov/ahps2/hydrograph.php?gage=" + siteCode + "&wfo=rlx",
 			text: "View this gauge on NWS"
