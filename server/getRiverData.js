@@ -217,7 +217,8 @@ async function getAssistantReply(query, options) {
 			}
 		}
 
-		if (river.running === null) {
+		if (river.running == null) {
+			//Either null or undefined.
 			str += "according to the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". "
 			str += "<break time=\"0.4s\"/>Relative flows are currently unknown. To learn how to add them, go to rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser. <break time=\"0.3s\"/>Happy Paddling!"
 		}
@@ -228,10 +229,10 @@ async function getAssistantReply(query, options) {
 			str += "which is above the recommended maximum of " + round(river.maxrun) + " for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Stop rain dancing!"
 		}
 		else if (river.running > 3.5) {
-			str += "which is a very high level, bordering on too high. The maximum is " + round(river.maxrun) + ", but levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to stop rain dancing!"
+			str += "which is a very high level, bordering on too high. The maximum is " + round(river.maxrun) + ", but levels above " + round(river.highflow) + " are considered high for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Stop rain dancing!"
 		}
 		else if (river.running < 0.5) {
-			str += "which is a very low level, bordering on too low. The minimum level is " + round(river.minrun) + ", however levels above " + round(river.lowflow) + " are preferred for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Time to start rain dancing!"
+			str += "which is a very low level, bordering on too low. The minimum level is " + round(river.minrun) + ", however levels above " + round(river.lowflow) + " are preferred for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Start rain dancing!"
 		}
 		else if (river.running < 1) {
 			str += "which is above the minimum of " + round(river.minrun) + ", although levels above " + round(river.lowflow) + " are recommended for the gauge " + siteDataParser.fixSiteName(gauge.name, {convertStateCodeToName: true}) + ". <break time=\"0.3s\"/>Happy Paddling!"
