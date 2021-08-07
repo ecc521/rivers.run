@@ -98,6 +98,15 @@ async function getAssistantReply(query, options) {
 
 	//No rivers matched the search.
 	if (topRanked.length === 0) {
+		//Consider removing letters from end until it matches
+		//Would be a bit complicated to implement. 
+
+		// Lower Yakageny => Lower Y
+		// Lower Hall => Lower Ha
+		// Cheap Narrows => Chea Narrows
+
+		// Fails with Upper Galley => Upper Ga
+
 		queryResult.ssml = starter + " does not exist on rivers.run. Open rivers.run<say-as interpret-as=\"characters\">/FAQ</say-as> in your browser to learn how to add it. " + ender
 		queryResult.text = queryResult.ssml.replace(/<.+?>/g, "")
 		return queryResult

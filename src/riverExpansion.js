@@ -44,12 +44,16 @@ function createExpansion(button, river) {
     if (river.averagegradient) {textInfo.innerHTML += "Average gradient: " + river.averagegradient + " feet per mile.<br>"}
     if (river.maxgradient) {textInfo.innerHTML += "Maximum gradient: " + river.maxgradient + " feet per mile.<br>"}
 
+    function createGoogleMapsLink(lat, lon) {
+        return `<a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">${lat}, ${lon}</a>`
+    }
+
     if (river.plat && river.plon) {
-        textInfo.innerHTML += "Put-In GPS Coordinates: " + river.plat + ", " + river.plon + "<br>"
+        textInfo.innerHTML += `Put-In GPS Coordinates: ${createGoogleMapsLink(river.plat, river.plon)}<br>`
     }
 
     if (river.tlat && river.tlon) {
-        textInfo.innerHTML += "Take-Out GPS Coordinates: " + river.tlat + ", " + river.tlon + "<br>"
+        textInfo.innerHTML += `Take-Out GPS Coordinates: ${createGoogleMapsLink(river.tlat, river.tlon)}<br>`
     }
 
     div.appendChild(textInfo)
@@ -216,7 +220,7 @@ function createExpansion(button, river) {
                     usgsarray[usgsID] = newData
                     usgsarray[usgsID].full = true
                     river.updateFlowData(true) //Update flow styling and data.
-                    addUSGSGraphs(usgsID, relatedGauge, graphContainer, false) //Update the graph pertaining to this data. 
+                    addUSGSGraphs(usgsID, relatedGauge, graphContainer, false) //Update the graph pertaining to this data.
                 })
             })
         }
