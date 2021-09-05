@@ -115,6 +115,8 @@ function getMessage(data, user) {
 	]
 
 	function createListItem(river) {
+		//TODO: Should we send both units (river.flowInfo), or river.current + river.units when we have units?
+		//The first gives more info, the second is easier to read. 
 		let str = "<li>" + `<a href="${getSearchLink([river.id])}">${river.name + (river.section?` (${river.section})`:"")}<a>`
 		str += `: ${river.flowInfo} `
 		//Inform user of flow range, or why the river isn't classified
