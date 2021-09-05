@@ -63,28 +63,28 @@ function sendNotifications(gauges) {
                         flow.meters = flow?.feet / meterInFeet
                         flow.cms = flow?.cfs / cubicMeterInFeet
 
-                        if (river?.meters !== undefined) {
-                            river.flowInfo += `${river.meters} meters`
+                        if (flow?.meters !== undefined) {
+                            river.flowInfo += `${flow.meters} meters`
                         }
-                        if (river?.cms !== undefined) {
-                            if (river?.meters) {
+                        if (flow?.cms !== undefined) {
+                            if (flow?.meters) {
                                 river.flowInfo += ", "
                             }
-                            river.flowInfo += `${river.cms} cms`
+                            river.flowInfo += `${flow.cms} cms`
                         }
-                        if (river?.cms === undefined && river?.meters === undefined) {river.flowInfo += "No Flow Data"}
+                        if (flow?.cms === undefined && flow?.meters === undefined) {river.flowInfo += "No Flow Data"}
                     }
                     else {
-                        if (river?.feet !== undefined) {
-                            river.flowInfo += `${river.feet} feet`
+                        if (flow?.feet !== undefined) {
+                            river.flowInfo += `${flow.feet} feet`
                         }
-                        if (river?.cfs !== undefined) {
-                            if (river?.feet) {
+                        if (flow?.cfs !== undefined) {
+                            if (flow?.feet) {
                                 river.flowInfo += ", "
                             }
-                            river.flowInfo += `${river.cfs} cfs`
+                            river.flowInfo += `${flow.cfs} cfs`
                         }
-                        if (river?.feet === undefined && river?.cfs === undefined) {river.flowInfo += "No Flow Data"}
+                        if (flow?.feet === undefined && flow?.cfs === undefined) {river.flowInfo += "No Flow Data"}
                     }
 
                     river.current = flow?.[units]
