@@ -119,10 +119,10 @@ function getMessage(data, user) {
 		str += `: ${river.flowInfo} `
 		//Inform user of flow range, or why the river isn't classified
 		if (!river.units) {
-			str += "Configure units for relative flow"
+			str += " - Configure units for relative flow"
 		}
 		else if (river.minimum === undefined || river.maximum === undefined) {
-			str += "Configure a minimum and maximum for relative flow"
+			str += " - Configure a minimum and maximum for relative flow"
 		}
 		else {
 			str += `(${river.minimum} ${river.units} - ${river.maximum} ${river.units})`
