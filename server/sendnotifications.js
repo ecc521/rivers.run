@@ -63,28 +63,28 @@ function sendNotifications(gauges) {
                         flow.meters = flow?.feet / meterInFeet
                         flow.cms = flow?.cfs / cubicMeterInFeet
 
-                        if (river?.meters) {
+                        if (river?.meters !== undefined) {
                             river.flowInfo += `${river.meters} meters`
                         }
-                        if (river?.cms) {
+                        if (river?.cms !== undefined) {
                             if (river?.meters) {
                                 river.flowInfo += ", "
                             }
                             river.flowInfo += `${river.cms} cms`
                         }
-                        if (!river?.cms && !river?.meters) {river.flowInfo += "No Flow Data"}
+                        if (river?.cms === undefined && river?.meters === undefined) {river.flowInfo += "No Flow Data"}
                     }
                     else {
-                        if (river?.feet) {
+                        if (river?.feet !== undefined) {
                             river.flowInfo += `${river.feet} feet`
                         }
-                        if (river?.cfs) {
+                        if (river?.cfs !== undefined) {
                             if (river?.feet) {
                                 river.flowInfo += ", "
                             }
                             river.flowInfo += `${river.cfs} cfs`
                         }
-                        if (!river?.feet && !river?.cfs) {river.flowInfo += "No Flow Data"}
+                        if (river?.feet === undefined && river?.cfs === undefined) {river.flowInfo += "No Flow Data"}
                     }
 
                     river.current = flow?.[units]
