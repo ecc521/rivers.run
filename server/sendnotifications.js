@@ -58,9 +58,36 @@ function sendNotifications(gauges) {
                     let meterInFeet = 3.2808399
                     let cubicMeterInFeet = meterInFeet**3
 
-                    if (river.units === "cms") {river.current = flow?.cfs / cubicMeterInFeet}
-                    if (river.units === "meters") {river.current = flow?.feet / meterInFeet}
-                    else {river.current = flow?.[units]}
+                    river.flowInfo = ""
+                    if (river.units === "cms" || river.units === "meters") {
+                        flow.meters = flow?.feet / meterInFeet
+                        flow.cms = flow?.cfs / cubicMeterInFeet
+
+                        if (river?.meters) {
+                            river.flowInfo += `${river.meters} meters`
+                        }
+                        if (river?.cms) {
+                            if (river?.meters) {
+                                river.flowInfo += ", "
+                            }
+                            river.flowInfo += `${river.cms} cms`
+                        }
+                        if (!river?.cms && !river?.meters) {river.flowInfo += "No Flow Data"}
+                    }
+                    else {
+                        if (river?.feet) {
+                            river.flowInfo += `${river.feet} feet`
+                        }
+                        if (river?.cfs) {
+                            if (river?.feet) {
+                                river.flowInfo += ", "
+                            }
+                            river.flowInfo += `${river.cfs} cfs`
+                        }
+                        if (!river?.feet && !river?.cfs) {river.flowInfo += "No Flow Data"}
+                    }
+
+                    river.current = flow?.[units]
 
                     if (river.minimum <= river.current && river.current <= river.maximum) {
                         data[prop] = rivers[prop] //Add the river if it is running

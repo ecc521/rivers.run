@@ -115,7 +115,20 @@ function getMessage(data, user) {
 	]
 
 	function createListItem(river) {
-		return "<li>" + `<a href="${getSearchLink([river.id])}">${river.name + (river.section?` (${river.section})`:"")}<a>` + `: ${river.current} ${river.units} (${river.minimum} ${river.units} - ${river.maximum} ${river.units})` + "</li>"
+		let str = "<li>" + `<a href="${getSearchLink([river.id])}">${river.name + (river.section?` (${river.section})`:"")}<a>`
+		str += `: ${river.flowInfo} `
+		//Inform user of flow range, or why the river isn't classified
+		if (!river.units) {
+			str += "Configure units for relative flow"
+		}
+		else if (river.minimum === undefined || river.maximum === undefined) {
+			str += "Configure a minimum and maximum for relative flow"
+		}
+		else {
+			str += `(${river.minimum} ${river.units} - ${river.maximum} ${river.units})`
+		}
+		str += "</li>"
+		return str
 	}
 
 	function createHeader(text) {
