@@ -15,9 +15,5 @@ select yn in "Yes" "No"; do
     esac
 done
 
-#These two directories are mounted as volumes.
-sudo mkdir server/logs
-sudo mkdir -p server/data/logs
-
 sudo docker build -t rivers.run .
 sudo docker-compose up -d
