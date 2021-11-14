@@ -15,7 +15,7 @@ select yn in "Yes" "No"; do
     esac
 done
 
-echo "You should create gmailpassword.txt in server/data/notifications"
-
 sudo docker build -t rivers.run .
 sudo docker-compose up -d
+
+echo "You should create gmailpassword.txt in server/data/notifications"
