@@ -1,4 +1,3 @@
-const webpush = require("web-push")
 const path = require("path")
 const fs = require("fs")
 
