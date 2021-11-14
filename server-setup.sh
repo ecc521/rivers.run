@@ -32,7 +32,7 @@ sudo mkdir vhost.d
 sudo mkdir html
 sudo mkdir certs
 
-sudo tee -a docker-compose.yml > /dev/null << EOF
+sudo tee docker-compose.yml > /dev/null << EOF
 version: '3.6'
 services:
   nginx:
