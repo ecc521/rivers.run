@@ -9,6 +9,6 @@ COPY . .
 #Install npm modules
 RUN npm install --only=prod
 
-CMD node server/usgscache.js
+CMD node server.js
 
 EXPOSE 8080

@@ -23,7 +23,6 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 
 #Setup websites directory:
-sudo mkdir /srv/www
 sudo mkdir /srv/www/nginx-proxy
 
 pushd /srv/www/nginx-proxy
