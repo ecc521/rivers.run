@@ -2,7 +2,7 @@ const path = require("path")
 const fs = require("fs")
 const utils = require(path.join(__dirname, "utils.js"))
 
-let notificationsDir = path.join(utils.getDataDirectory(), "notifications", "subscriptions.json")
+let notificationsDir = path.join(utils.getDataDirectory(), "notifications")
 if (!fs.existsSync(notificationsDir)) {fs.mkdirSync(notificationsDir, {recursive: true})}
 
 let storagePath = path.join(notificationsDir, "subscriptions.json")
