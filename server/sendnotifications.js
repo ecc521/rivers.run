@@ -7,16 +7,6 @@ const subscriptionManager = require(path.join(__dirname, "subscriptionManager.js
 
 const sendEmails = require(path.join(__dirname, "sendEmails.js"))
 
-const vapidKeys = require(path.join(__dirname, "vapidKeys.js"))
-
-//We no longer offer browser notifications. We may want to add them back at some point.
-//We'd need native ones as well.
-webpush.setVapidDetails(
-  'mailto:admin@rivers.run',
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-)
-
 function sendNotifications(gauges) {
 	if (!fs.existsSync(subscriptionManager.storagePath)) {
 		//There are no subscriptions
@@ -128,29 +118,6 @@ function sendNotifications(gauges) {
 				}
 			})
 		}
-        else {
-            //We have now deleted every river that is not runnable. Send a push notification with the object of rivers.
-            webpush.sendNotification(user.subscription, JSON.stringify(data), {
-                //Not sure if vapidDetails is needed, because webpush.setVapidDetails was used above.
-                vapidDetails: {
-                    subject: 'mailto:admin@rivers.run',
-                    publicKey: vapidKeys.publicKey,
-                    privateKey: vapidKeys.privateKey
-                },
-                TTL: 60*60*36 //Store notification for up to 36 hours.
-            }).catch((e) => {
-                console.error(e)
-                //The users subscription is either now invalid, or never was valid.
-                if ([401,403,404,410].includes(e.statusCode)) {
-                    subscriptionManager.deleteUserSubscription(user)
-                }
-            }).then(() => {
-                user.previousMessage = data
-                subscriptionManager.saveUserSubscription(user)
-                fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(user) + "\n");
-                fs.appendFileSync(path.join(utils.getLogDirectory(), 'browsernotifications.log'), JSON.stringify(data) + "\n");
-            })
-        }
 	}
 }
 

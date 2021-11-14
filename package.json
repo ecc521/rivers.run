@@ -60,7 +60,6 @@
     "ip2location-nodejs": "^8.3.0",
     "json-shrinker": "^1.0.4",
     "nodemailer": "^6.4.11",
-    "web-push": "^3.4.4",
     "bent": "^7.3.12",
     "csv-parser": "^2.3.3",
     "fast-xml-parser": "^3.17.4",
