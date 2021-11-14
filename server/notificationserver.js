@@ -4,7 +4,6 @@ const http = require("http")
 const assistantRequest = require(path.join(__dirname, "assistantRequest.js"))
 const utils = require(path.join(__dirname, "utils.js"))
 const subscriptionManager = require(path.join(__dirname, "subscriptionManager.js"))
-require(path.join(__dirname, "vapidKeys.js")) //Generate vapid keys if they don't already exist.
 
 
 let lookupIP;
@@ -86,7 +85,7 @@ async function httprequest(req,res) {
 				//data.subscription contains the details needed to send push notifications.
 				//data.parameters contains the conditions under which to send notifications.
 				//TODO: Consider preserving noneUntil if it is not present in the POST request.
-				//data.sendTime : the time every day to send notificcations at.We will send on first cycle after. Email only.
+				//data.sendTime : the time every day to send notifications at. We will send on first cycle after. Email only.
 				subscriptionManager.saveUserSubscription(data)
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'text/plain');
