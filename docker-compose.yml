@@ -5,9 +5,9 @@ services:
     image: rivers.run
     restart: always
     environment:
-      - VIRTUAL_HOST=rivers.run
+      - VIRTUAL_HOST=beta.rivers.run
       - VIRTUAL_PORT=8080
-      - LETSENCRYPT_HOST=rivers.run
+      - LETSENCRYPT_HOST=beta.rivers.run
       - LETSENCRYPT_EMAIL=support@rivers.run
     volumes:
         - ./server/data/notifications:/rivers.run/server/data/notifications
