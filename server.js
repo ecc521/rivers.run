@@ -82,9 +82,12 @@ app.use("*", (req, res, next) => {
 const httpport = 8080
 const httpserver = app.listen(httpport)
 
-//Run usgscache.js - manages gauges and riverdata.
-require(path.join(__dirname, "server", "usgscache.js"))
+//If serveOnly is passed, only serve existing files, don't generate any.
+if (!process.argv.includes("--serveOnly")) {
+	//Run usgscache.js - manages gauges and riverdata.
+	require(path.join(__dirname, "server", "usgscache.js"))
 
-//Start notificationserver.js - powers APIs (IP lookups & notification subscriptions)
-let notificationServerInitialize = require(path.join(__dirname, "server/notificationserver.js"))
-notificationServerInitialize(app) //Attaches handlers.
+	//Start notificationserver.js - powers APIs (IP lookups & notification subscriptions)
+	let notificationServerInitialize = require(path.join(__dirname, "server/notificationserver.js"))
+	notificationServerInitialize(app) //Attaches handlers.
+}
