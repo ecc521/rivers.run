@@ -240,6 +240,12 @@ function calculateRelativeFlow(river) {
 			else if (river.relativeFlowType === "feet" || river.relativeFlowType === "ft") {
 				flowLevel = river.feet
 			}
+            else if (river.relativeFlowType === "meter" || river.relativeFlowType === "m"){
+                flowLevel = river.meters
+            }
+            else if (river.relativeFlowType === "cms") {
+                flowLevel = river.cms
+            }
 
 			if (oldFlow === flowLevel) {
 				return oldRunning
