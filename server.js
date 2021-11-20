@@ -43,7 +43,7 @@ function getData(request) {
 app.use('*', (req, res, next) => {
 	res.set("Access-Control-Allow-Origin", "*");
 
-	let relativeSrc = req.originalUrl
+	let relativeSrc = decodeURIComponent(req.originalUrl)
 
 	//TODO: Handle precompression.
 	let extensions = ["", ".html", "index.html"]
