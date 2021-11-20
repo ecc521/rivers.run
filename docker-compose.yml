@@ -10,7 +10,7 @@ services:
       - LETSENCRYPT_HOST=rivers.run
       - LETSENCRYPT_EMAIL=support@rivers.run
     volumes:
-        - ./server/data/notifications:/rivers.run/server/data/notifications
+        - ./server/data:/rivers.run/server/data
         - ./server/logs:/rivers.run/server/logs
     expose:
       - 8080
