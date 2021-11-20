@@ -1,0 +1,10 @@
+.git
+node_modules
+capacitorDir
+android
+ios
+resources/ios
+
+overviews
+gaugeReadings
+flowdata3.json
