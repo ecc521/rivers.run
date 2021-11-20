@@ -1,3 +1,4 @@
+#Run in bash!
 sudo mkdir /srv/www
 pushd /srv/www
 
