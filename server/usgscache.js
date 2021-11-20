@@ -84,17 +84,15 @@ async function updateCachedData() {
 
 	console.log("Flow data prepared.\n")
 
-	//TODO: We should probably precompress riverdata.json, index.html, allPages.js, index.js, and other very common files at brotli L11.  
+	//TODO: We should probably precompress riverdata.json, index.html, allPages.js, index.js, and other very common files at brotli L11.
 
-	// if (!process.argv.includes("--install")) {
-	// 	console.time("Initial compression run on flowdata3.json")
-	// 	await compressor.compressFile(flowDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: true})
-	// 	console.timeEnd("Initial compression run on flowdata3.json")
-	// 	//Level 11 could take a while... Get level 9 done first.
-	// 	console.time("Max compression on flowdata3.json")
-	// 	await compressor.compressFile(flowDataPath, 11, {ignoreSizeLimit: true, alwaysCompress: true})
-	// 	console.timeEnd("Max compression on flowdata3.json")
-	// }
+	//L11 could take a while - do L9 first.
+	console.time("Initial compression run on flowdata3.json")
+	await compressor.compressFile(flowDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: true})
+	console.timeEnd("Initial compression run on flowdata3.json")
+
+	//TODO: Ignore sourcemaps. Maybe bumb to L11 then. 
+	compressor.compressFiles(path.join(utils.getSiteRoot(), "packages"))
 
 
 	//Run whenever the minutes on the hour is a multiple of 15.
@@ -102,22 +100,13 @@ async function updateCachedData() {
 	if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
 	else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes()/15)*15)}
 
-	//End install script
-	if (process.argv.includes("--install")) {
-		console.log("To update river and flow data in the future, run node usgscache.js --install (if you are running the server, data automatically updates).")
-		process.exit()
-	}
-
 	try {
 		sendNotifications(gauges)
 	}
 	catch (e) {
 		console.log("ERROR: sendNotifications errored")
-		console.log(error)
+		console.log(e)
 	}
-
-	// console.log("Precompressing files...")
-	// compressor.compressFiles(utils.getSiteRoot())
 
 	let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
 }

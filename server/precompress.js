@@ -34,7 +34,7 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 	return await utils.getData(compressor.stdout)
 }
 
-async function compressFile(filePath, level = 11, options = {}) {
+async function compressFile(filePath, level = 9, options = {}) {
 
 	//ignoreSizeLimit: Compress even if over 5MiB
 	//alwaysCompress: Overwrite existing file regardless (don't check if existing file is same as current one).
@@ -92,7 +92,7 @@ async function compressFile(filePath, level = 11, options = {}) {
 	}
 }
 
-async function compressFiles(directoryToCompress) {
+async function compressFiles(directoryToCompress, level = 9) {
 	if (!fs.existsSync(directoryToCompress)) {throw "Directory " + directoryToCompress + " does not exist!"}
 
 	let files = utils.getFilesInDirectory(directoryToCompress)
@@ -115,7 +115,7 @@ async function compressFiles(directoryToCompress) {
 		let filePath = files[i]
         process.stdout.write("\r\033[2K") //Clear current line
 		process.stdout.write("Compressing " + i + " of " + (files.length - 1))
-		await compressFile(filePath)
+		await compressFile(filePath, level)
 	}
 }
 

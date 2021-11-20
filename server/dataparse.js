@@ -2,6 +2,8 @@ const fs = require("fs")
 const path = require("path")
 const bent = require("bent")
 
+const compressor = require(path.join(__dirname, "precompress.js"))
+
 const getGaugeSites = require(path.join(__dirname, "siteDataParser.js"))
 
 const utils = require(path.join(__dirname, "utils.js"))
@@ -326,7 +328,13 @@ async function prepareRiverData({
 		console.log("Not including Irish gauges since --includeIrishGauges was not passed. ")
 	}
 
-    await fs.promises.writeFile(path.join(utils.getSiteRoot(), "riverdata.json"), JSON.stringify(result.complete))
+	let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
+    await fs.promises.writeFile(riverDataPath, JSON.stringify(result.complete))
+
+	console.time("Initial compression run on riverdata.json")
+	await compressor.compressFile(riverDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: false})
+	console.timeEnd("Initial compression run on riverdata.json")
+
 	console.log("riverdata.json generated")
 }
 

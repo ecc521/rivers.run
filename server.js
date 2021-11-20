@@ -56,9 +56,24 @@ app.use('*', (req, res, next) => {
 	})
 
 	if (fs.existsSync(src)) {
-		res.type(path.extname(src))
+        res.type(path.extname(src))
+
+        //Use a precompressed brotli file if available and supported by client.
+        let accepted = req.get("Accept-Encoding")
+        if (accepted.includes("br")) {
+            let withBrotliPath = src + ".br"
+            if (fs.existsSync(withBrotliPath)) {
+                let readStream = fs.createReadStream(withBrotliPath)
+                res.set("Content-Encoding", "br")
+                readStream.pipe(res)
+                return;
+            }
+        }
+
+
 		let readStream = fs.createReadStream(src)
 		readStream.pipe(res)
+        return;
 	}
 	else {
 		next()
