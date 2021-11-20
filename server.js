@@ -88,12 +88,6 @@ app.use("*", (req, res, next) => {
 	})(req, res, next)
 })
 
-app.use("*", (req, res, next) => {
-	res.status(404)
-	res.type("text/plain")
-	res.end("File Not Found")
-})
-
 const httpport = 8080
 const httpserver = app.listen(httpport)
 
@@ -101,8 +95,15 @@ const httpserver = app.listen(httpport)
 if (!process.argv.includes("--serveOnly")) {
 	//Run usgscache.js - manages gauges and riverdata.
 	require(path.join(__dirname, "server", "usgscache.js"))
-
-	//Start notificationserver.js - powers APIs (IP lookups & notification subscriptions)
-	let notificationServerInitialize = require(path.join(__dirname, "server/notificationserver.js"))
-	notificationServerInitialize(app) //Attaches handlers.
 }
+
+//Start notificationserver.js - powers APIs (IP lookups & notification subscriptions)
+let notificationServerInitialize = require(path.join(__dirname, "server/notificationserver.js"))
+notificationServerInitialize(app) //Attaches handlers.
+
+
+app.use("*", (req, res, next) => {
+	res.status(404)
+	res.type("text/plain")
+	res.end("File Not Found")
+})
