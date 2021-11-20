@@ -94,4 +94,4 @@ sudo docker network create nginx-proxy
 sudo docker-compose up -d
 
 #Setup crontab to start server on reboot.
-(crontab -l ; echo "@reboot pushd /srv/www/nginx-proxy && sudo docker-compose up -d") | sort - | uniq - | crontab -
+(crontab -l ; echo "@reboot cd /srv/www/nginx-proxy && sudo docker-compose up -d") | sort - | uniq - | crontab -
