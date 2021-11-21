@@ -10,6 +10,7 @@ process
 const fs = require("fs")
 const path = require("path")
 const http = require("http")
+const url = require("url")
 
 const compression = require('compression')
 const express = require('express')
@@ -43,7 +44,7 @@ function getData(request) {
 app.use('*', (req, res, next) => {
 	res.set("Access-Control-Allow-Origin", "*");
 
-	let relativeSrc = decodeURIComponent(req.originalUrl)
+    let relativeSrc = url.parse(decodeURIComponent(req.originalUrl)).pathname
 
 	//TODO: Handle precompression.
 	let extensions = ["", ".html", "index.html"]
