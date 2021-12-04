@@ -4,6 +4,8 @@ capacitorDir
 android
 ios
 resources/ios
+server/data
+server/logs
 
 overviews
 gaugeReadings
