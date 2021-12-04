@@ -39,11 +39,14 @@ function getData(request) {
 	})
 }
 
+app.use('*', function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  next();
+});
+
 
 //Serve remaining files.
 app.use('*', (req, res, next) => {
-	res.set("Access-Control-Allow-Origin", "*");
-
     let relativeSrc = decodeURIComponent(url.parse(decodeURIComponent(req.originalUrl)).pathname)
 
 	//TODO: Handle precompression.
@@ -81,14 +84,6 @@ app.use('*', (req, res, next) => {
 	}
 })
 
-//serveIndex - can be removed.
-app.use("*", (req, res, next) => {
-	serveIndex(path.join(__dirname, req.originalUrl), {
-		'icons': true,
-		'view': "details" //Gives more info than tiles.
-	})(req, res, next)
-})
-
 const httpport = 8080
 const httpserver = app.listen(httpport)
 
@@ -102,6 +97,14 @@ if (!process.argv.includes("--serveOnly")) {
 let notificationServerInitialize = require(path.join(__dirname, "server/notificationserver.js"))
 notificationServerInitialize(app) //Attaches handlers.
 
+
+//serveIndex - can be removed.
+app.use("*", (req, res, next) => {
+	serveIndex(path.join(__dirname, req.originalUrl), {
+		'icons': true,
+		'view': "details" //Gives more info than tiles.
+	})(req, res, next)
+})
 
 app.use("*", (req, res, next) => {
 	res.status(404)
