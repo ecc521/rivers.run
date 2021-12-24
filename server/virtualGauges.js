@@ -5,11 +5,14 @@ const {VM} = require("vm2")
 
 const utils = require(path.join(__dirname, "utils.js"))
 
-const virtualGaugesPath = path.join(utils.getSiteRoot(), "../", "rivers.run-virtual-gauges")
+const {virtualGaugeDirectory} = require(path.join(__dirname, "syncVirtualGaugeFiles.js"))
 
-let gaugeFiles = fs.readdirSync(virtualGaugesPath)
-gaugeFiles = gaugeFiles.map((fileName) => {return path.join(virtualGaugesPath, fileName)})
-gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js"})
+function getGaugeFiles() {
+	let gaugeFiles = fs.readdirSync(virtualGaugeDirectory)
+	gaugeFiles = gaugeFiles.map((fileName) => {return path.join(virtualGaugeDirectory, fileName)})
+	gaugeFiles = gaugeFiles.filter((src) => {return path.extname(src) === ".js"})
+	return gaugeFiles
+}
 
 async function computeVirtualGauge(src) {
 	var code = await fs.promises.readFile(src, {encoding: "utf8"});
@@ -60,6 +63,7 @@ async function computeRequiredGauges(src) {
 
 async function getRequiredGauges() {
 	//TODO: Consider going through riverarray and finding the ones that we actually use.
+	let gaugeFiles = getGaugeFiles()
 	let required = []
 	for (let i=0;i<gaugeFiles.length;i++) {
 		let src = gaugeFiles[i]
@@ -73,6 +77,7 @@ async function getRequiredGauges() {
 }
 
 async function getVirtualGauges() {
+	let gaugeFiles = getGaugeFiles()
 	let gauges = {}
 	for (let i=0;i<gaugeFiles.length;i++) {
 		let src = gaugeFiles[i]
@@ -108,5 +113,5 @@ module.exports = {
 	getVirtualGauges, //Updates usgsarray with all gauges
 	computeRequiredGauges, //Needed gauges for one river.
 	computeVirtualGauge, //Returns computed data for one river.
-	virtualGaugesPath
+	virtualGaugeDirectory
 }

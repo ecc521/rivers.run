@@ -18,14 +18,14 @@ const gaugeUtils = require(path.join(__dirname, "gauges.js"))
 
 let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
 
-
-
-
-
-
-
+const {syncVirtualGaugeFiles} = require(path.join(__dirname, "syncVirtualGaugeFiles.js"))
 
 async function updateRiverData() {
+	try {
+		await syncVirtualGaugeFiles()
+	}
+	catch (e) {console.error(e)}
+
 	//Use undefined so defaults still work.
 	//TODO: This code could be a bit more consise and extensible. Very repetitive. Should also warn if a includeGauge also has noGauge.
 	let obj = {
@@ -91,7 +91,7 @@ async function updateCachedData() {
 	await compressor.compressFile(flowDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: true})
 	console.timeEnd("Initial compression run on flowdata3.json")
 
-	//TODO: Ignore sourcemaps. Maybe bumb to L11 then. 
+	//TODO: Ignore sourcemaps. Maybe bump to compression level 11 then.
 	compressor.compressFiles(path.join(utils.getSiteRoot(), "packages"))
 
 
