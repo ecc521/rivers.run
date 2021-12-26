@@ -2,6 +2,9 @@ html, body {
     margin:0;
     border:0;
     background-color:#dffaff;
+}
+
+button, select {
     color: black; /*iOS seems to use some darkish-blue color as the default now*/
 }
 
