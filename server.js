@@ -55,7 +55,7 @@ app.use('*', function(req, res, next) {
 
 //Serve remaining files.
 app.all('*', (req, res, next) => {
-    let relativeSrc = req.path
+    let relativeSrc = decodeURIComponent(req.path)
 
 	//TODO: Handle precompression.
 	let extensions = ["", ".html", "index.html"]
