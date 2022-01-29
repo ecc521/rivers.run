@@ -39,7 +39,7 @@ services:
     image: nginx
     logging:
       options:
-        max-size: "50M'
+        max-size: "50M"
         max-file: "5"
     labels:
       com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
