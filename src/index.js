@@ -214,8 +214,8 @@ addAllToFavorites.addEventListener("click", function() {
 	if (riverAmount === 0 && gaugeAmount === 0) {return alert("Your search returned 0 results, so nothing can be added. ")}
 
 	if (confirm(message + " to favorites?")) {
-		addRiversToFavorites(riversToAdd)
-
-		window.location = "favorites.html"
+		if (addRiversToFavorites(riversToAdd)) {
+			window.location = "favorites.html"
+		}
 	}
 })

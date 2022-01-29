@@ -26,12 +26,8 @@ async function sendEmail(user, data) {
 		}
 	});
 
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(data) + "\n");
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");
 	let mailInfo = getMessage(data, user)
 	if (mailInfo === false) {return false}; //All rivers are too low.
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(user) + "\n");
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(mailInfo) + "\n");
 
 	const mailOptions = {
 	  from: 'rivergauges@rivers.run', //In order to have the profile image, this should be an alternative email for the gmail account.
@@ -116,7 +112,7 @@ function getMessage(data, user) {
 
 	function createListItem(river) {
 		//TODO: Should we send both units (river.flowInfo), or river.current + river.units when we have units?
-		//The first gives more info, the second is easier to read. 
+		//The first gives more info, the second is easier to read.
 		let str = "<li>" + `<a href="${getSearchLink([river.id])}">${river.name + (river.section?` (${river.section})`:"")}<a>`
 		str += `: ${river.flowInfo} `
 		//Inform user of flow range, or why the river isn't classified

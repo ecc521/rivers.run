@@ -17,7 +17,18 @@ function loadFavorites() {
 }
 
 function writeFavorites(temp) {
+	let maxSections = 200
+
+	let currentGauges = Object.keys(temp)
+	let currentSections = currentGauges.reduce((total, gaugeID) => {return total + Object.keys(temp[gaugeID]).length}, 0)
+
+	if (currentSections > maxSections) {
+		alert(`Failed to save ${currentSections} sections to favorites (exceeds limit of ${maxSections})`)
+		return false
+	}
+
 	localStorage.setItem("favorites", JSON.stringify(temp))
+	return true
 }
 
 function addToFavorites(temp, river, usgsID) {
@@ -46,11 +57,11 @@ function addRiversToFavorites(rivers) {
 		addToFavorites(temp, river, river.gauge)
 	})
 
-	writeFavorites(temp)
+	return writeFavorites(temp)
 }
 
 function addRiverToFavorites(river, usgsID) {
-	writeFavorites(
+	return writeFavorites(
 		addToFavorites(loadFavorites(), river, usgsID)
 	)
 }
