@@ -17,6 +17,7 @@ const express = require('express')
 const serveIndex = require('serve-index') //Dev stuff - just viewing directories. Should probably be removed or replaced.
 
 let app = express()
+app.disable('x-powered-by')
 
 //Compress all responses
 app.use(compression({
