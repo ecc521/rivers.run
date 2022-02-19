@@ -95,20 +95,22 @@ async function updateCachedData() {
 	compressor.compressFiles(path.join(utils.getSiteRoot(), "packages"))
 
 
-	//Run whenever the minutes on the hour is a multiple of 15.
-	let currentTime = new Date()
-	if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
-	else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes()/15)*15)}
+	if (!process.argv.includes("--runOnce")) {
+		//Run whenever the minutes on the hour is a multiple of 15.
+		let currentTime = new Date()
+		if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
+		else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes()/15)*15)}
 
-	try {
-		sendNotifications(gauges)
-	}
-	catch (e) {
-		console.log("ERROR: sendNotifications errored")
-		console.log(e)
-	}
+		try {
+			sendNotifications(gauges)
+		}
+		catch (e) {
+			console.log("ERROR: sendNotifications errored")
+			console.log(e)
+		}
 
-	let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
+		let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
+	}
 }
 
 updateCachedData()

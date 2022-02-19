@@ -10,7 +10,7 @@ COPY . .
 
 #Install npm modules
 RUN npm install --only=prod
-RUN node server/usgscache.js --install #Generate initial data so view is not empty when this container is started. 
+RUN node server/usgscache.js --runOnce #Generate initial data so view is not empty when this container is started. 
 
 CMD node server.js
 
