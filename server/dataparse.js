@@ -23,13 +23,20 @@ function wait(ms) {
     });
 };
 
+const referenceWaitTime = 1000 / googlecloudrequestrate;
+let currentWaitTime = referenceWaitTime;
+
 async function load(url, attempts = 0) {
 	//TODO: Handle requests that take unreasonably long to reply (as of 15+ seconds)
 	try {
-		return await bent("string", url)()
+		let res = await bent("string", url)()
+		//Eliminate 10% of difference between currentWaitTime and referenceWaitTime
+		currentWaitTime -= (currentWaitTime - referenceWaitTime) / 10;
+		return res
 	}
 	catch (e) {
 		if (attempts++ > 10) {
+			console.error(e)
 			console.error("Repeatedly Failed on " + url)
 			throw "Repeatedly Failed on " + url
 		}
@@ -46,7 +53,11 @@ async function load(url, attempts = 0) {
 			//e.statusCode == 500
 			//ECONNRESET
 			//ETIMEDOUT
-			await wait(1000/googlecloudrequestrate * 1.5 ** attempts) //Mild exponential backoff.
+			if (referenceWaitTime * 50 > currentWaitTime) {
+				//Increase currentWaitTime by 10%, up to 50x referenceWaitTime
+				currentWaitTime *= 1.1
+			}
+			await wait(currentWaitTime)
 			return await load(url, attempts) //We hit the quota. Time to retry.
 		}
 	}
@@ -106,10 +117,21 @@ async function writeToDisk(data, id, mime="text/plain") {
 
 
 
-function loadFiles(files, mime) {
+async function loadFiles(files, mime) {
 
 	let complete = []
 	let failed = []
+
+	//Google Cloud takes more than 100ms usually to fulfill a request, so to utilize quota fully,
+	//we need to send out more than 10 at once.
+
+	//We'll send them all out staggered and handle backoff in the load() function.
+
+	let promises = []
+	for (let i=0;i<files.length;i++) {
+		await wait(currentWaitTime)
+        promises.push(loadText(files[i], mime))
+    }
 
     async function loadText(file, mime="text/plain") {
         try {
@@ -130,12 +152,7 @@ function loadFiles(files, mime) {
         }
     }
 
-	let promises = []
-    for (let i=0;i<files.length;i++) {
-        promises.push(loadText(files[i], mime))
-    }
-
-	return {promises, complete, failed}
+	return {complete, failed}
 }
 
 
@@ -148,8 +165,7 @@ async function loadOverviews() {
     let directory = path.join(utils.getSiteRoot(), "overviews")
     if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
 
-	let result = loadFiles(files, "text/html")
-	await Promise.allSettled(result.promises)
+	let result = await loadFiles(files, "text/html")
 
 	console.log("")
 
@@ -192,13 +208,9 @@ async function prepareRiverData({
     console.log("Getting List of Rivers...")
     let files = await getFilesInFolder(writeupFolder)
 
-    await wait(1000) //Let quota refresh
-
     console.log("Loading Rivers...")
 
-    let result = loadFiles(files, "text/plain")
-
-    await Promise.allSettled(result.promises)
+    let result = await loadFiles(files, "text/plain")
 
     console.log("") //Make sure the next statement starts on a new line.
 
