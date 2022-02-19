@@ -176,7 +176,7 @@ function stringQuery(parameters) {
 
     //Ignore case by default
     if (!parameters.matchCase) {
-        content = content.toLowerCase()
+        content = content?.toLowerCase() || ""
         query = query.toLowerCase()
     }
 
