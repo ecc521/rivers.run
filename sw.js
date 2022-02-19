@@ -72,7 +72,7 @@ self.addEventListener("install", function() {
 
 //Milliseconds to wait for network response before using cache
 //When set to 0, cached data will be returned immediately, and cache will be updated in background.
-const defaultWaitPeriod = 0
+const defaultWaitPeriod = 1000
 
 //TODO: Default to network, fallback to cache with Google Maps. Google Maps is throwing errors sometimes for unknown reasons.
 function fetchHandler(event) {
@@ -85,8 +85,7 @@ function fetchHandler(event) {
 
         let fromcache = await caches.match(url)
 
-        //If it is less than 5 minutes old, return the cached data.
-        //Note that the date header isn't always set.
+        //Use Date header to determine how long to wait - Note that the date header isn't always set.
         let age;
         if (fromcache) {
             age = Date.now() - new Date(fromcache.headers.get("date")).getTime()
@@ -130,7 +129,7 @@ function fetchHandler(event) {
             waitperiod = false //Wait for network to error before using cache.
         }
         else if (age > 60*1000*60*24*1) {
-            waitperiod = 1000 //If the data is very old, wait a bit to try and get a new copy.
+            waitperiod = 2500 //If the data is very old, wait a bit longer try and get a new copy.
         }
 
         if (!fromcache) {
