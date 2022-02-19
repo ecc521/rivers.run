@@ -95,8 +95,8 @@ async function updateCachedData() {
 	compressor.compressFiles(path.join(utils.getSiteRoot(), "packages"))
 
 
-	if (!process.argv.includes("--runOnce")) {
-		process.exit() //Otherwise timers will cause this to remain open. 
+	if (process.argv.includes("--runOnce")) {
+		process.exit() //Otherwise timers will cause this to remain open.
 	}
 
 	//Run whenever the minutes on the hour is a multiple of 15.
