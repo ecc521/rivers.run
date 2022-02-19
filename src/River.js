@@ -210,8 +210,10 @@ function River(locate, event) {
 	//Copies name, section, skill, rating, writeup, tags, gauge, plat,plon, tlat,tlon, aw, dam
 	Object.assign(this, event)
 	//These need to be a string. They can't be undefined
-	this.tags = this.tags || ""
+	this.name = this.name || ""
+	this.section = this.section || ""
 	this.writeup = this.writeup || ""
+	this.tags = this.tags || ""
 	this.class = this.class || ""
 	//Convert the numeric value to the filename
 

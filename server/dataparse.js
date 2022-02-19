@@ -303,13 +303,6 @@ async function prepareRiverData({
 			}
 		}
 
-        //Some properties need to be defined in file, even if blank.
-        ["name", "section"].forEach((prop) => {
-            if (!obj[prop]) {
-                obj[prop] = ""
-            }
-        })
-
 		obj.id = result.complete[i].id
 
         result.complete[i] = obj
