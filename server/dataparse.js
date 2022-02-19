@@ -24,7 +24,6 @@ function wait(ms) {
 };
 
 async function load(url, attempts = 0) {
-    //TODO: Handle 500, internal server errors too. Google sends them somewhat commonly.
 	//TODO: Handle requests that take unreasonably long to reply (as of 15+ seconds)
 	try {
 		return await bent("string", url)()
@@ -44,6 +43,7 @@ async function load(url, attempts = 0) {
 		}
 		else {
 			//e.statusCode == 403
+			//e.statusCode == 500
 			//ECONNRESET
 			//ETIMEDOUT
 			await wait(1000/googlecloudrequestrate * 1.5 ** attempts) //Mild exponential backoff.
