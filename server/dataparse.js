@@ -30,18 +30,24 @@ async function load(url, attempts = 0) {
 		return await bent("string", url)()
 	}
 	catch (e) {
-		if (attempts > 10) {
-			console.error("Repeatedly 403'ed on " + url)
-			throw "Repeatedly 403'ed on " + url
+		if (attempts++ > 10) {
+			console.error("Repeatedly Failed on " + url)
+			throw "Repeatedly Failed on " + url
 		}
-		else if (e.statusCode == 403) {
-			await wait(1000/googlecloudrequestrate) //A queue should be used instead, but oh well.
-			return await load(url, attempts++) //We hit the quota. Time to retry.
+		else if (e.statusCode == 404) {
+			console.log("URL does not exist " + url)
+			throw "URL does not exist " + url
+		}
+		else if (e.statusCode == 400) {
+			console.log("400 Bad Request for " + url)
+			throw "400 Bad Request for " + url
 		}
 		else {
-			console.log("Failed to load " + url)
-			console.error(e)
-			throw "Failed to request " + url
+			//e.statusCode == 403
+			//ECONNRESET
+			//ETIMEDOUT
+			await wait(1000/googlecloudrequestrate * 1.5 ** attempts) //Mild exponential backoff.
+			return await load(url, attempts) //We hit the quota. Time to retry.
 		}
 	}
 }
@@ -175,7 +181,7 @@ async function loadOverviews() {
 
 async function prepareRiverData({
 	includeUSGSGauges = true,
-	includeCanadianGauges = false, //Testing impacts of removal on server resource consumption. 
+	includeCanadianGauges = false,
 	includeIrishGauges = false,
 }) {
 
