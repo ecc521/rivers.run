@@ -124,7 +124,7 @@ class MSC extends DataSource {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: 1,
-			concurrency: 4, //This can easily handle more (15+), but we're going to spread the CPU load a bit.
+			concurrency: 6, //This can easily handle more (15+), but we're going to spread the CPU load a bit.
 		}, obj)
 		super(config)
 	}
@@ -182,7 +182,7 @@ function obtainDataFromSources(gauges, batchCallback) {
 				datasource.add(code)
 				break;
 			}
-			//TODO: We need a good way to track down bad gauge codes to source rivers. 
+			//TODO: We need a good way to track down bad gauge codes to source rivers.
 			if (i === datasources.length - 1) {console.warn("No match for " + gaugeID)}
 		}
 	})
