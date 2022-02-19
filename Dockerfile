@@ -10,6 +10,7 @@ COPY . .
 
 #Install npm modules
 RUN npm install --only=prod
+RUN node server/usgscache.js --install
 
 CMD node server.js
 
