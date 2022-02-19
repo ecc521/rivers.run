@@ -175,7 +175,7 @@ async function loadOverviews() {
 
 async function prepareRiverData({
 	includeUSGSGauges = true,
-	includeCanadianGauges = true,
+	includeCanadianGauges = false, //Testing impacts of removal on server resource consumption. 
 	includeIrishGauges = false,
 }) {
 
