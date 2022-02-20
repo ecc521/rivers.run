@@ -33,7 +33,6 @@ async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24) {
 
 
 module.exports = {
-	parseUSGS,
-	reformatUSGS,
+	processUSGSResponse,
     loadSitesFromUSGS
 }
