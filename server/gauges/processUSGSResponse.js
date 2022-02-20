@@ -1,3 +1,6 @@
+//Processes flow information from USGS (United States Geological Survey)
+
+//Returns an object containing siteCodes and associated sites.
 function processUSGSResponse(obj) {
 	//Some of obj.value.queryInfo may be useful for request management (requestDT if using modifiedSince, etc)
 
@@ -82,6 +85,11 @@ function processUSGSResponse(obj) {
 		})
 
 		site.readings = newReadings
+
+		site.source = {
+			link: "https://waterdata.usgs.gov/nwis/uv?site_no=" + gaugeID,
+			text: "View this gauge on USGS"
+		}
 	}
 
 	return usgsSites

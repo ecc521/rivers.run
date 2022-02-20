@@ -1,5 +1,3 @@
-//Load flow information from USGS (United States Geological Survey)
-
 const fs = require("fs")
 const path = require("path")
 
@@ -17,13 +15,6 @@ async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24) {
 	let usgsData = await getJSON("?format=json&sites=" + siteCodes.join(",") + period + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all")
 
 	let sites = processUSGSResponse(usgsData)
-
-    for (let siteCode in sites) {
-        sites[siteCode].source = {
-            link: "https://waterdata.usgs.gov/nwis/uv?site_no=" + siteCode,
-            text: "View this gauge on USGS"
-        }
-    }
 
     return sites
 }
