@@ -1,4 +1,5 @@
 window.River = require("../src/River.js").River
+window.Gauge = require("../src/Gauge.js")
 //Expanding the river being written up in the map will be broken. It's not worth debugging.
 
 var rating = document.getElementById("rating")
@@ -392,11 +393,10 @@ function renderPreview() {
 		window.ItemHolder = []
 		//We need to cache the data, to avoid double rendering.
 		window.gauges =  window.gauges || {}
-		window.gauges[info.gauge] = window.gauges[info.gauge] || {
-			full: false,
+		window.gauges[info.gauge] = window.gauges[info.gauge] || new Gauge(info.gauge, {
 			readings: [],
 			name: "Real graph should load..."
-		}
+		})
 		while (container.firstChild) {container.firstChild.remove()}
 		window.ItemHolder[0] = new River(0, info)
 		container.appendChild(window.ItemHolder[0].create())
