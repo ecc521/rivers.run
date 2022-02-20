@@ -82,10 +82,6 @@ async function loadCanadianGauge(gaugeID) {
 		readings: results,
 		name: gaugeInfo.name,
 		units: "m",
-		source: {
-			text: "View this data on the Meteorological Service of Canada",
-			link: `https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=` + gaugeID
-		}
 	}
 
 	return output

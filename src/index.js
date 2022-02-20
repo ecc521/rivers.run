@@ -42,13 +42,11 @@ catch(e) {console.error(e)}
 Object.assign(window, require("./TopBar.js"))
 
 window.River = require("./River.js").River
-
+window.Gauge = require("./Gauge.js")
 window.sort = require("./sort.js").sort
 
 //Defines window.normalSearch, window.advanedSearch, and window.toDecimalDegrees
 Object.assign(window, require("./search.js"))
-
-window.usgsarray = {}
 
 //Defines recursiveAssign, deleteMatchingPortions, and objectsEqual
 Object.assign(window, require("./objectUtils.js"))

@@ -110,7 +110,7 @@ async function getVirtualGauges() {
 
 module.exports = {
 	getRequiredGauges, //Get all gauges for directory
-	getVirtualGauges, //Updates usgsarray with all gauges
+	getVirtualGauges, //Finds information for and and calculates all gauges
 	computeRequiredGauges, //Needed gauges for one river.
 	computeVirtualGauge, //Returns computed data for one river.
 	virtualGaugeDirectory

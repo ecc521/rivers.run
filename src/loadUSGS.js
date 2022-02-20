@@ -1,4 +1,4 @@
-self.usgsarray = {}
+self.gauges = {} //Used for Google Assistant???? And to initialize main page.
 
 window.updateOldDataWarning = function() {
 
@@ -73,14 +73,15 @@ let loadUSGS = async function(useCache) {
 
 	let fileName = "flowdata3.json"
 
+	let gaugesObj;
 	if (useCache) {
 		let cache = await caches.open("rivers.run")
-		let response = await caches.match(fileName)
-		window.usgsarray = await response.json()
+		response = await caches.match(fileName)
+		gaugesObj = await response.json()
 	}
 	else if (window.fetch) {
 		let response = await fetch(fileName)
-		window.usgsarray = await response.json()
+		gaugesObj = await response.json()
 	}
 	else {
 		//For browsers that don't support fetch
@@ -90,10 +91,14 @@ let loadUSGS = async function(useCache) {
 			request.open("GET", fileName);
 			request.send()
 		})
-		window.usgsarray = JSON.parse(response)
+		gaugesObj = JSON.parse(response)
 	}
 
-	window.requestTime = usgsarray.generatedAt
+	for (let gaugeID in gaugesObj) {
+		gauges[gaugeID] = new Gauge(gaugeID, gaugesObj[gaugeID])
+	}
+
+	window.requestTime = gaugesObj.generatedAt
 	updateUSGSDataInfo()
 
 	window.dispatchEvent(new Event("usgsDataUpdated"))

@@ -29,10 +29,6 @@ async function loadStreamBeamGauge(gaugeID) {
 		readings: results,
 		name: "StreamBeam " + gaugeID, //TODO: We need to HTML scrape to get names and gauge list. That should be relatively easy (https://www.streambeam.net/Gauge/GaugeList)
 		units: "feet",
-		source: {
-			text: "View this data on StreamBeam",
-			link: `https://www.streambeam.net/Home/Gauge?siteID=${gaugeID}`
-		}
 	}
 
 	return output

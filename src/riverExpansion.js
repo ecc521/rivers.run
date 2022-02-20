@@ -1,6 +1,5 @@
 const {skillTranslations} = require("./skillTranslations.js")
 const addGraphs = require("./addGraphs.js").addGraphs
-const {calculateAge} = require("./flowInfoCalculations.js")
 const {createFavoritesWidget} = require("./favoritesWidget.js")
 const {addMap} = require("./Mapper.js")
 
@@ -142,13 +141,13 @@ function createExpansion(button, river) {
     function addUSGSGraphs(usgsID, relatedGauge = false, graphContainer = document.createElement("div"), recurse = true) {
         while (graphContainer.lastChild) {graphContainer.lastChild.remove()}
 
-        let data = self.usgsarray[usgsID]
+        let data = self.gauges[usgsID]
 
         if (data) {
             //Alert the user if the data is (at least 2 hours) old
             let dataAge
             try {
-                dataAge = calculateAge(usgsID)
+                dataAge = data.msSinceLatestReading()
             }
             catch(e) {
                 console.error(e)
@@ -185,7 +184,7 @@ function createExpansion(button, river) {
             }
 
             console.time("Add Graphs")
-            console.log(usgsID, usgsarray[usgsID])
+            console.log(usgsID, gauges[usgsID])
             console.log(graphs)
             let graphs = addGraphs(data)
             if (graphs) {
@@ -206,7 +205,7 @@ function createExpansion(button, river) {
 
         //Fetch comprehensive flow data, then update the graphs.
         //TODO: Add XMLHttpRequest fallback.
-        if (recurse && !usgsarray[usgsID] || !usgsarray[usgsID].full) {
+        if (recurse && !gauges[usgsID] || !gauges[usgsID].full) {
             fetch(window.root + "gaugeReadings/" + usgsID).catch((error) => {
                 console.log("Failed to load " + usgsID + " from network. Error below. ")
                 console.log(error)
@@ -217,8 +216,8 @@ function createExpansion(button, river) {
                     return;
                 }
                 response.json().then((newData) => {
-                    usgsarray[usgsID] = newData
-                    usgsarray[usgsID].full = true
+                    gauges[usgsID] = new Gauge(usgsID, newData)
+                    gauges[usgsID].full = true
                     river.updateFlowData(true) //Update flow styling and data.
                     addUSGSGraphs(usgsID, relatedGauge, graphContainer, false) //Update the graph pertaining to this data.
                 })
@@ -231,16 +230,13 @@ function createExpansion(button, river) {
         }
     }
 
-    //USGS data may not have loaded yet
-    if (self.usgsarray) {
-        river.gauge && addUSGSGraphs(river.gauge)
+        addUSGSGraphs(river.gauge)
         if (river.relatedgauges) {
             for (let i=0;i<river.relatedgauges.length;i++) {
                 if (river.relatedgauges[i] === "") {continue;}
                 addUSGSGraphs(river.relatedgauges[i], true)
             }
         }
-    }
 
     div.style.padding = "6px"
     div.id = river.base + 2

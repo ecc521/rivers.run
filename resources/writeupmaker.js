@@ -391,8 +391,8 @@ function renderPreview() {
 		let info = generate()
 		window.ItemHolder = []
 		//We need to cache the data, to avoid double rendering.
-		window.usgsarray =  window.usgsarray || {}
-		window.usgsarray[info.gauge] = window.usgsarray[info.gauge] || {
+		window.gauges =  window.gauges || {}
+		window.gauges[info.gauge] = window.gauges[info.gauge] || {
 			full: false,
 			readings: [],
 			name: "Real graph should load..."

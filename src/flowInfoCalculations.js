@@ -1,71 +1,25 @@
 //These functions are used by River.js to calculate things based on a rivers flow.
 
-
 function calculateDirection(siteCode, prop = "cfs") {
-    let data = (usgsarray[siteCode] && usgsarray[siteCode].readings)
-    if (data) {
-        let current;
-        let previous;
-        //We will go back 2 datapoints (usually 30 minutes) if possible.
-        let stop = Math.max(data.length-3, 0)
-        for (let i=data.length - 1;i>=Math.max(stop, 0);i--) {
-            let item = data[i]
-            if (!item) {stop--; continue;}
-			if (item.forecast) {stop--; continue;}
+    if (gauges[siteCode]) {
+        let trend = gauges[siteCode].calculateTrendDirection()
 
-            let value = item[prop]
-            if (current == undefined) {
-                current = value
-            }
-            else {
-                previous = value
-            }
-        }
-
-        //TODO: Ignore insignificant changes.
-        //Insignificant changes should be changes that are not part of a trend (flow changing directions),
-        //and involve only a small portion of the rivers flow.
-        if (current > previous) {
-            //Water level rising
+        if (trend > 0) {
             return "⬆"
         }
-        else if (previous > current) {
-            //Water level falling
+        else if (trend < 0) {
             return "⬇"
         }
-        else if (current === previous && current != undefined) {
-            //Water level stable
+        else {
             return " –" //En dash preceeded by a thin space.
         }
     }
-    if (prop === "cfs") {return calculateDirection(siteCode, "feet")}
 }
 
 
-
-
-function calculateAge(usgsNumber) {
-	//Returns millseconds old that USGS data is
-    let usgsData = window.usgsarray[usgsNumber]
-    if (usgsData) {
-        let data = usgsData.readings
-        if (data) {
-            for (let i=data.length;i>=0;i--) {
-                let item = data[i]
-                if (!item) {continue}
-                if (item.forecast) {continue}
-                return Date.now() - Number(new Date(item.dateTime))
-            }
-        }
-    }
-    return null; //If we got here, there is not enough USGS data.
-}
-
-    //If we don't have some values, fill them in using logarithms
-    //Although these calculations are not needed when flow is below minrun or above maxrun. they can be useful in
-    //alerting people what values are being used, so that they can edit them if neccessary.
-
-
+//If we don't have some values, fill them in using logarithms
+//Although these calculations are not needed when flow is below minrun or above maxrun. they can be useful in
+//alerting people what values are being used, so that they can edit them if neccessary.
 
 function logDist(low, high, ratio = 0.5) {
     //ratio is how a decimal between 0 and 1. 0.5 means to factor lowLog and highLog evenly. Values greater than 0.5 factor in highLog more, vice versa.
@@ -345,7 +299,6 @@ function calculateColor(running) {
 
 module.exports = {
 	calculateColor,
-	calculateAge,
 	calculateDirection,
     calculateRelativeFlow
 }

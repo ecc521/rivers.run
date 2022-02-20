@@ -85,11 +85,6 @@ function processUSGSResponse(obj) {
 		})
 
 		site.readings = newReadings
-
-		site.source = {
-			link: "https://waterdata.usgs.gov/nwis/uv?site_no=" + gaugeID,
-			text: "View this gauge on USGS"
-		}
 	}
 
 	return usgsSites

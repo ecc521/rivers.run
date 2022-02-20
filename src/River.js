@@ -88,25 +88,9 @@ function addRatingSpan(river, button) {
 function addFlowData(river) {
 
 	function getLatest(river, prop) {
-		let data = usgsarray[river.gauge]
+		let data = gauges[river.gauge]
 		if (data) {
-			let readings = data.readings
-			try {
-				let latestReading;
-
-				for (let i=readings.length - 1;i>=0;i--) {
-					//Find the latest non-forecast flow value.
-					if (readings[i].forecast !== true) {
-						latestReading = readings[i];
-						break;
-					}
-				}
-
-				if (latestReading) {
-					return latestReading[prop]
-				}
-			}
-			catch(e) {console.error(e);console.log(river.gauge)}
+			return data.getLatestReading(prop)?.[prop]
 		}
 	}
 
@@ -138,7 +122,7 @@ function addFlowData(river) {
 
 	Object.defineProperty(river, "mainGaugeUnits", {
 		get: function getMainGaugeUnits() {
-			let data = usgsarray[this.gauge]
+			let data = gauges[this.gauge]
 			if (data) {
 				return data.units || "feet"
 			}
