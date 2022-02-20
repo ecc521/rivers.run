@@ -5,7 +5,6 @@ const fs = require("fs")
 const path = require("path")
 const child_process = require("child_process")
 
-const jsonShrinker = require("json-shrinker")
 const prepareRiverData = require(path.join(__dirname, "dataparse.js"))
 
 const sendNotifications = require(path.join(__dirname, "sendnotifications.js"));
@@ -80,7 +79,7 @@ async function updateCachedData() {
 	let gauges = await gaugeUtils.loadData(sites)
 	let flowDataPath = path.join(utils.getSiteRoot(), "flowdata3.json")
 
-	await fs.promises.writeFile(flowDataPath, jsonShrinker.stringify(gauges))
+	await fs.promises.writeFile(flowDataPath, JSON.stringify(gauges))
 
 	console.log("Flow data prepared.\n")
 
