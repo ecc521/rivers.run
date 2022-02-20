@@ -45,7 +45,7 @@
     "gulp-postcss": "^8.0.0",
     "gulp-sourcemaps": "^2.6.5",
     "ionic-plugin-deeplinks": "^1.0.22",
-    "postcss": "^7.0.32",
+    "postcss": "^8.2.13",
     "postcss-css-variables": "^0.13.0",
     "postcss-custom-properties": "^9.1.1",
     "postcss-preset-env": "^6.7.0",
