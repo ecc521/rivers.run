@@ -2,39 +2,39 @@ self.usgsarray = {}
 
 window.updateOldDataWarning = function() {
 
-		let toDelete = document.getElementById("topOldDataWarning")
-		if (toDelete) {toDelete.remove()}
+	let toDelete = document.getElementById("topOldDataWarning")
+	if (toDelete) {toDelete.remove()}
 
-		if (!window.usgsDataAge) {return}
-		//No reason to make an old data warning when data is new (within 1 hour)
-		//Make sure to change the warning text so that if the data becomes old while the page is open, they are not confused.
-		if (window.usgsDataAge < 1000*60*60) {
-			window.loadNewUSGS = "Flow Data has become old while this page was open. Click try again to update."
-			return
-		}
+	if (!window.usgsDataAge) {return}
+	//No reason to make an old data warning when data is new (within 1 hour)
+	//Make sure to change the warning text so that if the data becomes old while the page is open, they are not confused.
+	if (window.usgsDataAge < 1000*60*60) {
+		window.loadNewUSGS = "Flow Data has become old while this page was open. Click try again to update."
+		return
+	}
 
-		let oldDataWarning = document.createElement("p")
-		oldDataWarning.id = "topOldDataWarning"
+	let oldDataWarning = document.createElement("p")
+	oldDataWarning.id = "topOldDataWarning"
 
-		oldDataWarning.innerHTML = "Flow previews are more than " + Math.floor(window.usgsDataAge/1000/60/60) + " hours old! "
-		oldDataWarning.innerHTML += "(" + window.loadNewUSGS + ") "
+	oldDataWarning.innerHTML = "Flow previews are more than " + Math.floor(window.usgsDataAge/1000/60/60) + " hours old! "
+	oldDataWarning.innerHTML += "(" + window.loadNewUSGS + ") "
 
-					let reloadButton = document.createElement("button")
+	let reloadButton = document.createElement("button")
 
-						reloadButton.addEventListener("click", function() {
-							window.loadNewUSGS = "Trying to Load Data"
-							require("./loadUSGS.js").loadUSGS()
-						})
-						reloadButton.innerHTML = "Try Again"
-
-
-					oldDataWarning.appendChild(reloadButton)
+	reloadButton.addEventListener("click", function() {
+		window.loadNewUSGS = "Trying to Load Data"
+		require("./loadUSGS.js").loadUSGS()
+	})
+	reloadButton.innerHTML = "Try Again"
 
 
-		let legend = document.getElementById("legend")
-		if (legend) {
-			legend.parentNode.insertBefore(oldDataWarning, legend)
-		}
+	oldDataWarning.appendChild(reloadButton)
+
+
+	let legend = document.getElementById("legend")
+	if (legend) {
+		legend.parentNode.insertBefore(oldDataWarning, legend)
+	}
 }
 
 
