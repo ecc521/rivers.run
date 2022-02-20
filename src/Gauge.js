@@ -13,6 +13,7 @@ class Gauge {
 
 	async updateReadingsFromNetwork() {
 		//We will go directly to USGS for data. All others we'll go to the server for now.
+		//Firefox has some weird CSP bug that may complicate this. 
 		let jsonObj;
 		switch (this.prefix) {
 			case "USGS":
