@@ -277,8 +277,8 @@ function createGraph(options) {
 	for (let i=0;i<xAxisMarkers;i++) {
 		let value = formatDate(new Date(options.x1.min + options.x1.range * (i/(xAxisMarkers-1))))
 		ctx.textAlign = "center"
-		let rightPadding = padding.right
-		if (rightPadding === 0) {rightPadding = (ctx.measureText("23:59 12/31").width * 0.51) / finalCanvas.width} //Make sure that we don't overflow on the right side when there is only one axis.
+		let minRightPadding = ctx.measureText("23:59 12/31").width * 0.51 / finalCanvas.width //Make sure that we don't overflow on the right side when there is only one axis.
+		let rightPadding = Math.max(minRightPadding, padding.right)
 		ctx.fillText(value, (finalCanvas.width * padding.left) + (finalCanvas.width * (1 - padding.left - rightPadding)) * (i/(xAxisMarkers-1)), finalCanvas.height * (1-padding.bottom) + textSize)
 	}
 

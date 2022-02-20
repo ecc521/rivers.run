@@ -173,13 +173,13 @@ function createExpansion(button, river) {
 
             graphContainer.appendChild(createFavoritesWidget(river, usgsID))
 
-            if (data.source) {
+            if (data.getSource()) {
                 let sourceInfo = document.createElement("p")
                 sourceInfo.style.textAlign = "center"
-                if (data.source.link) {
-                    sourceInfo.innerHTML = `<a href="${data.source.link}" target="_blank">${data.source.text}</a>`
+                if (data.getSource().link) {
+                    sourceInfo.innerHTML = `<a href="${data.getSource().link}" target="_blank">${data.getSource().text}</a>`
                 }
-                else {sourceInfo.innerHTML = data.source.text}
+                else {sourceInfo.innerHTML = data.getSource().text}
                 graphContainer.appendChild(sourceInfo)
             }
 
@@ -205,22 +205,13 @@ function createExpansion(button, river) {
 
         //Fetch comprehensive flow data, then update the graphs.
         //TODO: Add XMLHttpRequest fallback.
+        //TODO: Use the Gauge method once created.
         if (recurse && !gauges[usgsID] || !gauges[usgsID].full) {
-            fetch(window.root + "gaugeReadings/" + usgsID).catch((error) => {
-                console.log("Failed to load " + usgsID + " from network. Error below. ")
-                console.log(error)
-            }).then((response) => {
-                if (response.status > 399) {
-                    console.log("Loading " + usgsID + " from network returned status code " + response.status + ". Response below. ")
-                    console.log(response)
-                    return;
-                }
-                response.json().then((newData) => {
-                    gauges[usgsID] = new Gauge(usgsID, newData)
-                    gauges[usgsID].full = true
-                    river.updateFlowData(true) //Update flow styling and data.
-                    addUSGSGraphs(usgsID, relatedGauge, graphContainer, false) //Update the graph pertaining to this data.
-                })
+            let newGauge = new Gauge(usgsID)
+            newGauge.updateReadingsFromNetwork().then(() => {
+                gauges[usgsID] = newGauge
+                river.updateFlowData(true) //Update flow styling and data.
+                addUSGSGraphs(usgsID, relatedGauge, graphContainer, false) //Update the graph pertaining to this data.
             })
         }
         else {

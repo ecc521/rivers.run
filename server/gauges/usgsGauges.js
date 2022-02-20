@@ -1,6 +1,3 @@
-const fs = require("fs")
-const path = require("path")
-
 const bent = require("bent")
 
 const processUSGSResponse = require("./processUSGSResponse.js")

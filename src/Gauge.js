@@ -1,41 +1,72 @@
-class Gauge {
-	constructor(combinedCode, gaugeInfo) {
-		this.units = gaugeInfo.units
-		this.setReadings(gaugeInfo.readings)
-		this.name = gaugeInfo.name
+// const {loadSitesFromUSGS} = require("../server/gauges/usgsGauges.js")
 
+class Gauge {
+	constructor(combinedCode, gaugeInfo = {}) {
 		let splitCode = combinedCode.split(":")
 		this.combinedCode = combinedCode
 		this.prefix = splitCode[0]
 		this.gaugeID = splitCode[1]
 
+		this.updateGaugeInfo(gaugeInfo)
+	}
+
+
+	async updateReadingsFromNetwork() {
+		//We will go directly to USGS for data. All others we'll go to the server for now.
+		let jsonObj;
 		switch (this.prefix) {
 			case "USGS":
-				this.source = {
+				// jsonObj = (await loadSitesFromUSGS([this.combinedCode], 1000 * 60 * 60 * 72))[this.gaugeID] //3 days
+				// break;
+			case "NWS":
+			case "canada":
+			case "streambeam":
+			case "ireland":
+			case "virtual":
+			default:
+				let resp = await fetch(window.root + "gaugeReadings/" + this.combinedCode)
+				jsonObj = await resp.json()
+				break;
+		}
+
+		this.updateGaugeInfo(jsonObj)
+		this.full = true
+	}
+
+	updateGaugeInfo(newGaugeInfo) {
+		this.readings = newGaugeInfo.readings
+		this.units = newGaugeInfo.units
+		this.name = newGaugeInfo.name
+	}
+
+	getSource() {
+		switch (this.prefix) {
+			case "USGS":
+				return {
 					link: "https://waterdata.usgs.gov/nwis/uv?site_no=" + this.gaugeID,
 					text: "View this gauge on USGS"
 				}
 				break;
 			case "NWS":
-				this.source = {
+				return {
 					link: "https://water.weather.gov/ahps2/hydrograph.php?gage=" + this.gaugeID,
 					text: "View this gauge on NWS"
 				}
 				break;
 			case "canada":
-				this.source = {
+				return {
 					text: "View this data on the Meteorological Service of Canada",
 					link: `https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=` + this.gaugeID
 				}
 				break;
 			case "streambeam":
-				this.source = {
+				return {
 					text: "View this data on StreamBeam",
 					link: `https://www.streambeam.net/Home/Gauge?siteID=${this.gaugeID}`
 				}
 				break;
 			case "ireland":
-				this.source = {
+				return {
 					text: "View this data from Ireland's Office of Public Works",
 					link: "https://waterlevel.ie/00000" + this.gaugeID + "/"
 				}
@@ -46,10 +77,6 @@ class Gauge {
 				console.warn("Unknown Prefix " + this.prefix)
 				break;
 		}
-	}
-
-	setReadings(readings) {
-		this.readings = readings
 	}
 
 	getLatestReading(prop) {
