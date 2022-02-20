@@ -1,8 +1,6 @@
 const path = require("path")
 const fs = require("fs")
 
-const jsonShrinker = require("json-shrinker");
-
 const utils = require(path.join(__dirname, "utils.js"))
 
 const gaugeTrimmer = require(path.join(__dirname, "gaugeTrimmer.js"))
@@ -106,7 +104,7 @@ async function loadData(siteCodes) {
 		startedLoading++
 		writes.push((async function() {
 			let filePath = path.join(readingsFile, gaugeID)
-			await fs.promises.writeFile(filePath, jsonShrinker.stringify(data))
+			await fs.promises.writeFile(filePath, JSON.stringify(data))
 			let shrunkenData = gaugeTrimmer.shrinkGauge(data)
 			gauges[gaugeID] = data
 			totalLoaded++
@@ -126,7 +124,7 @@ async function loadData(siteCodes) {
 			for (let gaugeID in newGauges) {
 				let gauge = newGauges[gaugeID]
 				let filePath = path.join(readingsFile, gaugeID)
-				await fs.promises.writeFile(filePath, jsonShrinker.stringify(gauge))
+				await fs.promises.writeFile(filePath, JSON.stringify(gauge))
 				newGauges[gaugeID] = gaugeTrimmer.shrinkGauge(gauge)
 				gauges[gaugeID] = gauge
 			}
