@@ -9,11 +9,7 @@ const gaugeTrimmer = require(path.join(__dirname, "gaugeTrimmer.js"))
 
 const compressor = require(path.join(__dirname, "precompress.js"))
 
-const {loadSiteFromNWS} = require(path.join(__dirname, "gauges", "nwsGauges.js"))
-const {loadSitesFromUSGS} = require(path.join(__dirname, "gauges", "usgsGauges.js"))
-const {loadStreamBeamGauge} = require(path.join(__dirname, "gauges", "streambeamGauges.js"))
-const {loadCanadianGauge} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
-const {loadIrelandOPWGauge, isValidOPWCode} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
+const {USGS, NWS, StreamBeam, MSC, OPW} = require(path.join(__dirname, "datasources.js"))
 
 let virtualGauges;
 
@@ -52,113 +48,6 @@ else if (os.platform() === "linux") {
 	//TODO: Symlink to /dev/shm. Or mount a tempfs/ramfs.
 }
 
-const DataSource = require(path.join(__dirname, "DataSource.js"))
-
-class USGS extends DataSource {
-	constructor(obj = {}) {
-		let config = Object.assign({
-			batchSize: 120, //USGS gets seemingly quadratically slower above ~200
-			concurrency: 2 //Can do more, but let's not do too much.
-		}, obj)
-		super(config)
-	}
-
-	prefix = "USGS:"
-
-	getValidCode(code) {
-		code = this.removePrefix(code)
-		if (!code) {return} //Correct prefix did not exist
-		if (code.length > 7 && code.length < 16 && !isNaN(Number(code))) {return code}
-	}
-
-	_processBatch(batch) {
-		return loadSitesFromUSGS(batch)
-	}
-}
-
-class NWS extends DataSource {
-	constructor(obj = {}) {
-		let config = Object.assign({
-			batchSize: 1,
-			concurrency: 4, //Don't really know how much this can take. Don't have many gauges for it.
-		}, obj)
-		super(config)
-	}
-
-	prefix = "NWS:"
-
-	getValidCode(code) {
-		code = this.removePrefix(code)
-		if (!code) {return} //Correct prefix did not exist
-		//Appears to be 3-4 characters then number. Always 5 characters.
-		//Although NWS codes are case insensitive, JavaScript is not, so we should standardize NWS on upperCase.
-		if (code.length === 5 && (!isNaN(code[4])) && isNaN(code)) {return code.toUpperCase()}
-	}
-
-	_processBatch(batch) {
-		console.log("Loading NWS Batch")
-		return loadSiteFromNWS(batch[0])
-	}
-}
-
-//StreamBeam
-class StreamBeam extends DataSource {
-	constructor(obj = {}) {
-		let config = Object.assign({
-			batchSize: 1,
-			concurrency: 1, //There aren't many of these at all. No problems here.
-		}, obj)
-		super(config)
-	}
-
-	prefix = "streambeam:"
-
-	_processBatch(batch) {
-		console.log("Loading StreamBeam Batch")
-		return loadStreamBeamGauge(batch[0])
-	}
-}
-
-//Meterological Service of Canada
-class MSC extends DataSource {
-	constructor(obj = {}) {
-		let config = Object.assign({
-			batchSize: 1,
-			concurrency: 6, //This can easily handle more (15+), but we're going to spread the CPU load a bit.
-		}, obj)
-		super(config)
-	}
-
-	prefix = "canada:"
-
-	_processBatch(batch) {
-		return loadCanadianGauge(batch[0])
-	}
-}
-
-//Ireland Office of Public Works
-class OPW extends DataSource {
-	constructor(obj = {}) {
-		let config = Object.assign({
-			batchSize: 1,
-			concurrency: 4, //We'll go light here, although this should be similar to MSC/Canada.
-		}, obj)
-		super(config)
-	}
-
-	prefix = "ireland:"
-
-	getValidCode(code) {
-		code = this.removePrefix(code)
-		if (!code) {return} //Correct prefix did not exist
-		if (isValidOPWCode(code)) {return code}
-	}
-
-	_processBatch(batch) {
-		return loadIrelandOPWGauge(batch[0])
-	}
-}
-
 function obtainDataFromSources(gauges, batchCallback) {
 	//batchCallback is called with every gauge that is computed.
 	//There, they can be compressed, stored, etc.
@@ -169,7 +58,7 @@ function obtainDataFromSources(gauges, batchCallback) {
 	let datasources = [
 		new USGS({batchCallback}),
 		new NWS({batchCallback}),
-		new MSC({batchCallback, timeout: 15000}),
+		new MSC({batchCallback}),
 		new OPW({batchCallback}),
 		new StreamBeam({batchCallback})
 	]
