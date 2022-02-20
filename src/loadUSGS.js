@@ -94,11 +94,15 @@ let loadUSGS = async function(useCache) {
 		gaugesObj = JSON.parse(response)
 	}
 
+	let generatedAt = gaugesObj.generatedAt
+	delete gaugesObj.generatedAt
+	console.time("Create Gauge Objects")
 	for (let gaugeID in gaugesObj) {
 		gauges[gaugeID] = new Gauge(gaugeID, gaugesObj[gaugeID])
 	}
+	console.timeEnd("Create Gauge Objects")
 
-	window.requestTime = gaugesObj.generatedAt
+	window.requestTime = generatedAt
 	updateUSGSDataInfo()
 
 	window.dispatchEvent(new Event("usgsDataUpdated"))
