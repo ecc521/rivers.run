@@ -16,7 +16,6 @@ async function loadSitesFromUSGS(siteCodes, timeInPast = 1000*60*60*24) {
 
 	let usgsData = await getJSON("?format=json&sites=" + siteCodes.join(",") + period + "&parameterCd=00060,00065,00010,00011,00045&siteStatus=all")
 
-    //TODO: We should be able to consolidate these functions.
 	let sites = processUSGSResponse(usgsData)
 
     for (let siteCode in sites) {
