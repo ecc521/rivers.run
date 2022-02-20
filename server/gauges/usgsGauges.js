@@ -5,8 +5,6 @@ const path = require("path")
 
 const bent = require("bent")
 
-const utils = require(path.join(__dirname, "../", "utils.js"))
-
 const processUSGSResponse = require("./processUSGSResponse.js")
 
 //TODO: Begin using modifiedSince. See https://waterservices.usgs.gov/rest/IV-Service.html
