@@ -1,4 +1,5 @@
 self.gauges = {} //Used for Google Assistant???? And to initialize main page.
+self.Gauge = require("./Gauge.js")
 
 window.updateOldDataWarning = function() {
 

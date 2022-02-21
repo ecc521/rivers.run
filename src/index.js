@@ -42,7 +42,6 @@ catch(e) {console.error(e)}
 Object.assign(window, require("./TopBar.js"))
 
 window.River = require("./River.js").River
-window.Gauge = require("./Gauge.js")
 window.sort = require("./sort.js").sort
 
 //Defines window.normalSearch, window.advanedSearch, and window.toDecimalDegrees
