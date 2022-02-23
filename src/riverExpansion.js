@@ -205,8 +205,7 @@ function createExpansion(button, river) {
 
         //Fetch comprehensive flow data, then update the graphs.
         //TODO: Add XMLHttpRequest fallback.
-        //TODO: Use the Gauge method once created.
-        if (recurse && !gauges[usgsID] || !gauges[usgsID].full) {
+        if (usgsID && ((recurse && !gauges[usgsID]) || !gauges[usgsID].full)) {
             let newGauge = new Gauge(usgsID)
             newGauge.updateReadingsFromNetwork().then(() => {
                 gauges[usgsID] = newGauge
