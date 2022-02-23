@@ -497,13 +497,17 @@ async function addMap({
 	let tooHighIcon;
 	let tooLowIcon;
 
+	//TODO: Start using calcuilateColor.js for this - we don't need the same code multiple places.
+	//It's OK if these colors are different and need a little bit of extra logic -
+	//the main logic for detecting and assigning based off flow levels is nearly the same. 
 	let updatableItems = []
 	function drawItem(item) {
-		let color, running;
+		let color, running = item.running;
 		if (item.isGauge) {
 			color = "#df6af1" //Purplish.
 		}
-		else if (isNaN(running = item.running)) {
+		else if ((running = item.running) == null) {
+			//Could be undefined (no flow), or null (flow ranges don't include value)
 			color = "white"
 		}
 		else if (window.colorBlindMode) {
