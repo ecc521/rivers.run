@@ -71,13 +71,13 @@ function prepForScale(options = {}) {
 
 
 function createMarkerImage(config = {}) {
-		var markerImage = prepForScale({
-			fillColor: config.fillColor || "blue",
-			strokeColor: config.strokeColor || "#333333",
-			scale: config.scale || 2
-		})
+	var markerImage = prepForScale({
+		fillColor: config.fillColor || "blue",
+		strokeColor: config.strokeColor || "#333333",
+		scale: config.scale || 2
+	})
 
-		return markerImage
+	return markerImage
 }
 
 async function addMap({
@@ -186,20 +186,20 @@ async function addMap({
 
 	var weather = new google.maps.ImageMapType({
 		getTileUrl: function (coord, zoom) {
-		  const normalizedCoord = getNormalizedCoord(coord, zoom);
+			const normalizedCoord = getNormalizedCoord(coord, zoom);
 
-		  if (!normalizedCoord) {
-			return "";
-		  }
+			if (!normalizedCoord) {
+				return "";
+			}
 
-		  return `https://mesonet1.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/${zoom}/${normalizedCoord.x}/${normalizedCoord.y}.png`
+			return `https://mesonet1.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/${zoom}/${normalizedCoord.x}/${normalizedCoord.y}.png`
 		},
 		tileSize: new google.maps.Size(256, 256),
 		maxZoom: 20, //I believe this goes to about 8.
 		minZoom: 0,
 		name: "Weather",
 		opacity: 0.5
-	  });
+	});
 
 
 	weatherControl.controlDiv.addEventListener("click", function() {
@@ -366,32 +366,32 @@ async function addMap({
 
 
 		class CoordMapType {
-		  constructor(tileSize) {
-		    this.maxZoom = 20;
-		    this.alt = this.name = "Offline Map Tiles";
-		    this.tileSize = tileSize;
-		  }
-		  getTile(coord, zoom, ownerDocument) {
-			  //Totally excessive setAttribution calls, but Google resets it far too often.
-			  ;[400, 1000, 2000, 4000].forEach((delay) => {
-				  setTimeout(setAttribution, delay)
-			  })
+			constructor(tileSize) {
+				this.maxZoom = 20;
+				this.alt = this.name = "Offline Map Tiles";
+				this.tileSize = tileSize;
+			}
+			getTile(coord, zoom, ownerDocument) {
+				//Totally excessive setAttribution calls, but Google resets it far too often.
+				;[400, 1000, 2000, 4000].forEach((delay) => {
+					setTimeout(setAttribution, delay)
+				})
 
-			  coord = getNormalizedCoord(coord, zoom)
+				coord = getNormalizedCoord(coord, zoom)
 
-			  if (!coord) {
-		        return "";
-		      }
+				if (!coord) {
+					return "";
+				}
 
-			  const img = ownerDocument.createElement("img");
-			  obtainCanvasForZoom(zoom, coord.x, coord.y).then((canvas) => {
-				  img.src = canvas.toDataURL("image/png")
-			  })
-			  img.style.width = this.tileSize.width + "px";
-			  img.style.height = this.tileSize.height + "px";
-			  return img
-		  }
-		  releaseTile(tile) {}
+				const img = ownerDocument.createElement("img");
+				obtainCanvasForZoom(zoom, coord.x, coord.y).then((canvas) => {
+					img.src = canvas.toDataURL("image/png")
+				})
+				img.style.width = this.tileSize.width + "px";
+				img.style.height = this.tileSize.height + "px";
+				return img
+			}
+			releaseTile(tile) {}
 		}
 
 		var layer = new CoordMapType(new google.maps.Size(256, 256))
