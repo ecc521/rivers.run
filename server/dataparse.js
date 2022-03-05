@@ -79,10 +79,15 @@ async function writeToDisk(data, id, mime="text/plain") {
     let directory = path.join(utils.getDataDirectory(), "drivecache", mime)
     if (!fs.existsSync(directory)) {fs.mkdirSync(directory, {recursive: true})}
     let filename = path.join(directory, id)
-    //Avoid unneeded writes to the disk - although this may be done already.
-    if (!fs.existsSync(filename) || data !== await fs.promises.readFile(filename, "utf8")) {
-        await fs.promises.writeFile(filename, data)
-    }
+
+	//Write to disk if modified, else update utimes.
+	if (!fs.existsSync(filename) || data !== await fs.promises.readFile(filename, "utf8")) {
+		await fs.promises.writeFile(filename, data)
+	}
+	else {
+		let newTime = new Date()
+		await fs.promises.utimes(filename, newTime, newTime)
+	}
 }
 
 
