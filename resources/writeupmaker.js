@@ -364,7 +364,7 @@ const pages = [basicInfoPage, flowInfoPage, extraPage, previewPage]
 //Default the filename to name + section
 function setDefaultFilename() {
 	if (survey.data.name && survey.data.section) {
-		survey.getQuestionByName("suggestionName").value = `${survey.data.name} ${survey.data.section}`		
+		survey.getQuestionByName("suggestionName").value = `${survey.data.name} ${survey.data.section}`
 	}
 }
 
@@ -382,6 +382,7 @@ let json = {
 			runExpression: "setDefaultFilename()"
 		}
 	],
+	focusFirstQuestionAutomatic: false, 
 	checkErrorsMode: "onComplete",
 	progressBarType: "buttons",
 	showProgressBar: "top",
