@@ -129,8 +129,15 @@ async function loadFiles(files, mime) {
 
 	let promises = []
 	for (let i=0;i<files.length;i++) {
-		await wait(currentWaitTime)
-        promises.push(loadText(files[i], mime))
+		//Wait for currentWaitTime, or until file loads - it could be cached, allowing for speeds limited only to disk.
+		let loader = loadText(files[i], mime)
+		promises.push(loader)
+
+		//Use Promise.any rather than Promise.race to avoid errors inside this loop.
+		await Promise.any([
+			loader,
+			wait(currentWaitTime)
+		])
     }
 
     async function loadText(file, mime="text/plain") {
@@ -220,7 +227,7 @@ async function prepareRiverData({
 
     console.log("Finished Loading Rivers...")
 
-    let allowed = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","hidlat","hidlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgauges","averagegradient","maxgradient","class"] //Property values to be included in output file
+    let allowed = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgauges","class","relativeFlowType"] //Property values to be included in output file
 
 
     for (let i=0;i<result.complete.length;i++) {
