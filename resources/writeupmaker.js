@@ -363,7 +363,9 @@ const pages = [basicInfoPage, flowInfoPage, extraPage, previewPage]
 
 //Default the filename to name + section
 function setDefaultFilename() {
-	survey.getQuestionByName("suggestionName").value = `${survey.data.name} ${survey.data.section}`
+	if (survey.data.name && survey.data.section) {
+		survey.getQuestionByName("suggestionName").value = `${survey.data.name} ${survey.data.section}`		
+	}
 }
 
 Survey
