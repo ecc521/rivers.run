@@ -1,174 +1,25 @@
-<h1 style="text-align: center">Rivers.run River Creator</h1>
+<!DOCTYPE html>
+<html>
+	<head></head>
+	<body>
+        <script src="../packages/allPages.js"></script>
 
-<p>Your progress in creating this river is automatically saved. Your changes may be lost if you have multiple tabs with this page open at once, or if you clear browsing data. </p>
-<button onclick="clearAllFields()">Clear All Fields</button>
+		<div id="surveyElement" style="display:inline-block;width:100%;"></div>
+		<div id="surveyResult"></div>
 
-<p>Basic River Information</p>
-<input id="name" type="text" placeholder="River Name (Required)"  style="width:100%">
-<br>
-<input id="section" placeholder="Section Name (Required)" type="text"  style="width:100%">
-<br>
-<select id="skill" onchange="UpdateWriteup()">
-  <option value="" selected>Skill (Required)</option>
-  <option value="FW">Flat Water</option>
-  <option value="B">Beginner</option>
-  <option value="N">Novice</option>
-  <option value="N+">Novice Plus</option>
-  <option value="LI-">Low-Intermediate Minus</option>
-  <option value="LI">Low-Intermediate</option>
-  <option value="LI+">Low-Intermediate Plus</option>
-  <option value="I-">Intermediate Minus</option>
-  <option value="I">Intermediate</option>
-  <option value="I+">Intermediate Plus</option>
-  <option value="HI-">High-Intermediate Minus</option>
-  <option value="HI">High-Intermediate</option>
-  <option value="HI+">High-Intermediate Plus</option>
-  <option value="A-">Advanced Minus</option>
-  <option value="A">Advanced</option>
-  <option value="A+">Advanced Plus</option>
-  <option value="E-">Expert Minus</option>
-  <option value="E">Expert</option>
-  <option value="E+">Expert Plus</option>
-</select>
-<br>
-<input id="class" placeholder="Class (II+, IV-V, I-II, etc)" type="text"  style="width:100%">
-<br>
-<input id="state" placeholder="State" type="text"  style="width:100%" list="stateOptions">
-<datalist id="stateOptions"></datalist>
-<br>
-<select id="rating" onchange="UpdateWriteup()">
-  <option selected value="">Quality (Optional)</option>
-</select>
+		<script src="https://unpkg.com/jquery"></script>
 
-<p>More Section Statistics (Optional)</p>
-This river has dam releases <input id="dam" type="checkbox">
-<br>
-<input id="length" placeholder="Length of Section (Currently not used)" type="text"  style="width:100%">
-<br>
-<input id="averagegradient" type="text" placeholder="Average gradient (feet per mile)"  style="width:100%">
-<br>
-<input id="maxgradient" type="text" placeholder="Maximum gradient (feet per mile)"  style="width:100%">
-<br>
+		<script src="https://unpkg.com/react@17.0.1/umd/react.production.min.js"></script>
+		<script src="https://unpkg.com/react-dom@17.0.1/umd/react-dom.production.min.js"></script>
+		<script src="https://unpkg.com/@babel/standalone@7.2.5/babel.min.js"></script>
+		<script src="https://unpkg.com/survey-core@1.9.18/survey.core.min.js"></script>
+		<script src="https://unpkg.com/survey-core@1.9.18/survey.i18n.min.js"></script>
+		<script src="https://unpkg.com/survey-react-ui@1.9.18/survey-react-ui.min.js"></script>
+		<link href="https://unpkg.com/survey-core@1.9.18/modern.min.css" type="text/css" rel="stylesheet"/>
 
-<p>Gauge Information (Strongly Recommended)</p>
-<p>The Gauge ID should be prefixed with the agency code followed by a colon. For example, type USGS: 03192000 for <a href="https://waterdata.usgs.gov/nwis/uv?site_no=03192000" target="_blank">this</a> USGS gauge.</p>
-<p>Available agency codes:</p>
-<ul>
-    <li>USGS (United States Geological Survey)</li>
-    <li>NWS (National Weather Service)</li>
-    <li>canada (Meterological Service of Canada)</li>
-    <li>streambeam (StreamBeam - Gauge Names not Supported)</li>
-    <li>ireland (Ireland Office of Public Works - Gauge Names not Supported)</li>
-</ul>
-<input id="gauge" type="text" placeholder="Gauge ID"  style="width:100%">
-<br>
-<input id="relatedgauges" type="text" placeholder="Other Related Gauges (comma seperated list)"  style="width:100%">
-<br>
-<p>Relative Water Levels (Recommended)</p>
-<p>Units are required (ft, feet, or cfs). Examples: 1.67ft, 1992cfs, 3.91 ft, 391 cfs, 2.42 feet</p>
-<input id="minrun" type="text" placeholder="Minimum runnable water level"  style="width:100%">
-<br>
-<input id="maxrun" type="text" placeholder="Maximum runnable water level"  style="width:100%">
-<br>
-<input id="lowflow" type="text" placeholder="Low Water"  style="width:100%">
-<br>
-<input id="midflow" type="text" placeholder="Ideal Level"  style="width:100%">
-<br>
-<input id="highflow" type="text" placeholder="High Water"  style="width:100%">
-<br>
-<p>GPS Coordinates (Recommended):</p>
-<p>Note: Rivers.run should work with most coordinate formats. If you encounter an issue with one of them, please email <a href="support@rivers.run">support@rivers.run</a></p>
-<input id="plat" type="text" placeholder="Put-in GPS Latitude"  style="width:100%">
-<br>
-<input id="plon" type="text" placeholder="Put-in GPS Longitude"  style="width:100%">
-<br>
-<input id="tlat" type="text" placeholder="Take-out GPS Latitude"  style="width:100%">
-<br>
-<input id="tlon" type="text" placeholder="Take-out GPS Longitude"  style="width:100%">
-<br>
-<p>Approxtimate Coordinates (Optional, Will NOT be shown to user)</p>
-<p>If you did not specify put-in or take-out coordinates, these coordinates will be used for geolocation searching</p>
-<input id="hidlat" type="text" placeholder="Approxtimate GPS Longitude"  style="width:100%">
-<input id="hidlon" type="text" placeholder="Approxtimate GPS Longitude"  style="width:100%">
-<br>
-<p>American Whitewater River Number (Optional)</p>
-<input id="aw" type="text" placeholder="AW River Number"  style="width:100%">
-<br>
-<p>Tags (Optional, used by search tools)</p>
-<input id="tags" type="text" placeholder="Input Tags Here, seperated by commas"  style="width:100%">
-<br>
-<p>Tag Examples: CCCWOR, Ice-Cream, Monacacy, NC, PA, TN, CA, MI, WV, ext.
-<br>
-Put C1 after the tag if you can get to the river within an hour from that area (ex. CCCWORC1), put C if you can get to the river in 1-2 hours from that area (ex. CCCWORC), and put nothing if it takes 2+ hours (ex. CCCWOR). Do not put the tag if it is unreasonable to paddle the river from the area.</p>
-<br>
+		<script src="https://cdn.ckeditor.com/4.14.1/standard/ckeditor.js"></script>
+		<script src="https://unpkg.com/surveyjs-widgets@1.9.18/surveyjs-widgets.min.js"></script>
 
-<p>Comments (Optional. Not shown on site, but visible to all editors. )</p>
-<input id="comments" type="text" placeholder="Comments about this writeup"  style="width:100%">
-<br>
-
-<br><br>
-
-<link rel="stylesheet" type="text/css" href="../packages/index.css">
-<style>
-
-	input {
-		padding-left: 5px;
-	}
-
-    input, select, button {
-        font-size: 16px;
-    }
-
-	@media (prefers-color-scheme: dark) {
-		html, body {
-			background-color: black;
-			color: white;
-		}
-
-		input {
-			background-color:black;
-			color: white;
-			border: 1px solid #777;
-		}
-
-		input::placeholder {
-			color: #cccccc;
-		}
-
-		#Output {
-			filter: invert(1);
-		}
-
-		.ql-toolbar {
-			background-color: white;
-			filter: invert(1);
-		}
-	}
-
-</style>
-
-<script src="../packages/allPages.js"></script>
-
-<!-- Quill can misbehave. Add a button to reset it.-->
-<button onclick="if (confirm('Are you sure you want to clear the writeup?')) {quill.root.innerHTML = '';UpdateWriteup()}">Clear Writeup</button>
-<div id="editor-container" style="height: fit-content; min-height:150px;"></div>
-<br><br><br>
-
-<button onclick="submitAsNewRiver()">Submit As New River Suggestion</button> <a href="https://drive.google.com/drive/u/0/folders/1yq4C_4aG_7E18nAxYofLbKHmnZFI-0R_" target="_blank"> Open Review Queue</a>
-<p>Preview of your submission: </p>
-<div id="previewContainer">
-</div>
-
-
-<br><br>
-<button onclick="copyStringToClipboard()">Copy Output To Clipboard</button>
-<textarea id="Output" readonly="" placeholder="Output Will Appear Here."rows = "50" style="width:100%"></textarea>
-
-
-<script src="quill.min.js"></script>
-<link rel="stylesheet" type="text/css" href="quill.snow.css">
-<script src="../packages/writeupmaker.js"></script>
-<script>
-
-
-</script>
+        <script src="../packages/writeupmaker.js"></script>
+	</body>
+</html>
