@@ -6,7 +6,9 @@ const {loadSiteFromNWS} = require(path.join(__dirname, "gauges", "nwsGauges.js")
 const {loadSitesFromUSGS} = require(path.join(__dirname, "gauges", "usgsGauges.js"))
 const {loadStreamBeamGauge} = require(path.join(__dirname, "gauges", "streambeamGauges.js"))
 const {loadCanadianGauge} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
-const {loadIrelandOPWGauge, isValidOPWCode} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
+const {loadIrelandOPWGauge} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
+
+const {isValidNWSCode, isValidUSGSCode, isValidOPWCode} = require(path.join(__dirname, "gauges", "codeValidators.js"))
 
 class USGS extends DataSource {
 	constructor(obj = {}) {
@@ -22,7 +24,7 @@ class USGS extends DataSource {
 	getValidCode(code) {
 		code = this.removePrefix(code)
 		if (!code) {return} //Correct prefix did not exist
-		if (code.length > 7 && code.length < 16 && !isNaN(Number(code))) {return code}
+		if (isValidUSGSCode(code)) {return code}
 	}
 
 	_processBatch(batch) {
@@ -44,9 +46,8 @@ class NWS extends DataSource {
 	getValidCode(code) {
 		code = this.removePrefix(code)
 		if (!code) {return} //Correct prefix did not exist
-		//Appears to be 3-4 characters then number. Always 5 characters.
 		//Although NWS codes are case insensitive, JavaScript is not, so we should standardize NWS on upperCase.
-		if (code.length === 5 && (!isNaN(code[4])) && isNaN(code)) {return code.toUpperCase()}
+		if (isValidNWSCode(code)) {return code.toUpperCase()}
 	}
 
 	_processBatch(batch) {

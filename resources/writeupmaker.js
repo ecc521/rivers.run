@@ -26,6 +26,49 @@ function calculateEditRiverHTML(id, recent = false) {
 	return str
 }
 
+const {validateCode} = require("../server/gauges/codeValidators.js")
+
+
+//Validate gauge IDs.
+function surveyValidateQuestion(s, options) {
+    if (options.name == "gaugeID") {
+		let agency;
+		let code;
+		if (options.question.parentQuestion) {
+			//This is a relatedGauge.
+			//Find the parent - ie, the pair of questions for a single relatedgauge, not the entire relatedgauges question.
+			let parent = options.question.parent
+			let questions = parent.questions
+			agency = questions[0].value
+			code = questions[1].value
+		}
+		else {
+			agency = survey.data.gaugeProvider;
+			code = survey.data.gaugeID
+		}
+
+		let res = validateCode(agency, code)
+		if (res !== true) {
+			options.error = res;
+		}
+    }
+}
+
+
+//TODO"
+//Changing gaugeProvider might make a previously invalid code valid.
+//Re-run validators.
+//
+// survey.getAllQuestions().filter((question) => {
+// 	if (question.name === "gaugeID") {
+// 		question.hasErrors()
+// 	}
+// 	else if (question.name === "relatedgauges") {
+// 		question.hasErrors()
+// 	}
+// })
+
+
 const basicInfoPage = {
 	navigationTitle: "Basic Info",
 	navigationDescription: "Name, Skill, GPS",
@@ -136,10 +179,9 @@ const flowInfoPage = {
 			title: "Primary Gauge ID: ",
 			placeHolder: "Enter Gauge ID... ",
 			isRequired: true,
+			// startWithNewLine: false,
 			enableIf: "{gaugeProvider} != {default}"
 		},
-
-
 		{
 			type: "text",
 			name: "minrun",
@@ -213,6 +255,7 @@ const flowInfoPage = {
 					name: "gaugeID",
 					title: "Gauge ID: ",
 					isRequired: true,
+					// startWithNewLine: false,
 					placeHolder: "Enter Gauge ID... ",
 				},
 			],
@@ -341,7 +384,10 @@ survey.onComplete.add(function (sender) {
 
 
 ReactDOM.render(
-	React.createElement(SurveyReact.Survey, {model: survey})
+	React.createElement(SurveyReact.Survey, {
+		model: survey,
+		onValidateQuestion: surveyValidateQuestion
+	})
 	, document.getElementById("surveyElement"));
 
 

@@ -1,3 +1,4 @@
+//Site names, etc, probably need to be scraped from https://waterlevel.ie/hydro-data/search.html
 const path = require("path")
 const fs = require("fs")
 
@@ -124,17 +125,4 @@ async function loadIrelandOPWGauge(gaugeID, sensorCode = 1) {
 module.exports = {
 	loadIrelandOPWGauge,
 	getMetadata,
-	isValidOPWCode: function(gaugeID) {
-		//gaugeID must be a five character string. Usually all digits.
-
-		//Only gaugeIDs between 00001 and 41000 are reccomended for re-publication, and it appears to be exclusive. (https://waterlevel.ie/faq/)
-		if (isNaN(gaugeID)) {
-			return false
-		}
-		gaugeID = String(gaugeID)
-		gaugeID = ("0".repeat(5 - gaugeID.length)) + gaugeID
-
-		if (Number(gaugeID) >= 41000 || Number(gaugeID) <= 1) {return false}
-		return true
-	}
 }
