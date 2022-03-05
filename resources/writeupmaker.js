@@ -369,7 +369,7 @@ function getSurveyInOldFormat() {
 	obj.skill = reverseSkillTranslations[obj.skill]
 
 	if (obj.gaugeProvider && obj.gaugeID) {
-		obj.gauge = obj.gaugeProvider + ": " + obj.gaugeID
+		obj.gauge = obj.gaugeProvider + ":" + obj.gaugeID
 	}
 	delete obj.gaugeProvider
 	delete obj.gaugeID
@@ -386,7 +386,7 @@ function getSurveyInOldFormat() {
 	for (let prop in obj) {
 		let val = obj[prop]
 		if (val) {
-			result += `${prop}:${obj[prop]}` + "\n"
+			result += `${prop}: ${obj[prop]}` + "\n"
 		}
 	}
 	return result.trim()
