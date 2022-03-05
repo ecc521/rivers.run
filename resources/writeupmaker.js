@@ -1,10 +1,5 @@
 //TODO: Add validation for gaugeIDs, etc.
 
-//TODO: Preview final river.
-//Not sure it's anywhere near as necessary, given how hard it is to mess up now.
-//Still, add it back.
-
-
 const states = {"AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware","DC":"District of Columbia","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming","AS":"American Samoa","GU":"Guam","MP":"Northern Mariana Islands","PR":"Puerto Rico","UM":"U.S. Minor Outlying Islands","VI":"U.S. Virgin Islands"}
 
 const {skillLevels} = require("../src/skillTranslations.js")
@@ -262,8 +257,23 @@ const extraPage = {
 			name: "writeup",
 			title: "River Writeup: "
 		},
+	],
+}
 
-
+const previewPage = {
+	navigationTitle: "Preview",
+	navigationDescription: "Review & Export",
+	elements: [
+		{
+			type: "html",
+			name: "previewLabel",
+			html: "Preview Should Appear Below: ",
+		},
+		{
+			type: "html",
+			name: "riverPreview",
+			html: "River Preview Should Appear Here",
+		},
 		{
 			type: "radiogroup",
 			name: "submissionType",
@@ -280,14 +290,12 @@ const extraPage = {
 			html: calculateEditRiverHTML(),
 			visibleIf: "{submissionType}='edit'"
 		},
-
 		{
 			type: "html",
 			name: "newRiverInfo",
 			html: `Filling out the below fields is <strong><i>strongly</i></strong> recommended. Once finished, click "Submit River Suggestion" below. If receipt of your submission cannot be confirmed, please check the <a href="https://drive.google.com/drive/u/0/folders/1yq4C_4aG_7E18nAxYofLbKHmnZFI-0R_" target="_blank"> Review Queue</a> to confirm your river is pending review, and if not, submit again. `,
 			visibleIf: "{submissionType}='new'"
 		},
-
 		{
 			type: "text",
 			name: "suggestionName",
@@ -306,7 +314,7 @@ const extraPage = {
 	],
 }
 
-const pages = [basicInfoPage, flowInfoPage, extraPage]
+const pages = [basicInfoPage, flowInfoPage, extraPage, previewPage]
 
 let json = {
 	checkErrorsMode: "onComplete",
@@ -392,13 +400,12 @@ function saveSurveyToDisk() {
 window.addEventListener("beforeunload", saveSurveyToDisk)
 
 function surveyChanged() {
-	const dispatchInterval = 3000
+	const dispatchInterval = 5000
 	if (Date.now() - lastDispatched > dispatchInterval) {
-		//If we last dispatched more than dispatchInterval ago, dispatch again.
 		lastDispatched = Date.now()
 		setTimeout(function() {
 			saveSurveyToDisk()
-		}, dispatchInterval * 1.05) //Add a bit to dispatchInterval to ensure changes can't sneak in-between saves.
+		}, dispatchInterval)
 	}
 }
 
@@ -421,7 +428,8 @@ catch (e) {console.error(e)}
 setCompleteButtonText() //May change based on the data that is loaded.
 survey.getQuestionByName("editRiverInfo").html = calculateEditRiverHTML(survey.data.id) //If there is an old id, display it.
 
-function getSurveyInOldFormat() {
+
+function getSurveyInRiverFormat() {
 	let obj = Object.assign({}, survey.data)
 
 	delete obj.submissionType
@@ -435,12 +443,20 @@ function getSurveyInOldFormat() {
 	delete obj.gaugeID
 
 	if (obj.relatedgauges) {
-		obj.relatedgauges = JSON.stringify(obj.relatedgauges.map((gauge) => {return gauge.gaugeProvider + ":" + gauge.gaugeID}))
+		obj.relatedgauges = obj.relatedgauges.map((gauge) => {return gauge.gaugeProvider + ":" + gauge.gaugeID})
 	}
 
 	if (obj.tags) {
 		obj.tags = obj.tags.map((tag) => {return tag.tag}).join(",")
 	}
+
+	return obj
+}
+
+
+function getSurveyInOldFormat() {
+	let obj = getSurveyInRiverFormat()
+	obj.relatedgauges = JSON.stringify(obj.relatedgauges)
 
 	let result = ""
 	for (let prop in obj) {
@@ -514,6 +530,9 @@ function copyStringToClipboard(str) {
 const River = require("../src/River.js").River
 const Gauge = require("../src/Gauge.js")
 
+window.Gauge = Gauge
+window.River = River
+
 function setSurveyFromRiverFormat(riverItem) {
 	//TODO: This function also copies over fields like "base" and "id".
 	survey.clear()
@@ -577,3 +596,34 @@ if (window.location.hash !== "") {
 		}
 	})()
 }
+
+
+function renderPreview() {
+	survey.getQuestionByName("riverPreview").html = `<div id="previewContainer"></div>`
+
+	let container = document.getElementById("previewContainer")
+
+	let info = getSurveyInRiverFormat()
+	info.id = "123" //Anything random.
+	window.ItemHolder = []
+
+	//We need to cache the data, to avoid double rendering.
+	window.gauges =  window.gauges || {}
+	if (info.gauge) {
+		window.gauges[info.gauge] = window.gauges[info.gauge] || new Gauge(info.gauge, {
+			readings: [],
+			name: "Real graph should load..."
+		})
+	}
+
+	while (container.firstChild) {container.firstChild.remove()}
+	window.ItemHolder[0] = new River(0, info)
+	container.appendChild(window.ItemHolder[0].create())
+	window.ItemHolder[0].finished.click()
+}
+
+survey.onCurrentPageChanged.add(function() {
+	if (survey.currentPageNo === 3) {
+		setTimeout(renderPreview, 0)
+	}
+})
