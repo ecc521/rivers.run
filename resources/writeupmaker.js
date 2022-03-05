@@ -1,31 +1,15 @@
-const skillLevels = [
-	["?", "Skill Unknown"],
-	["FW", "Flat Water"],
-	["B", "Beginner"],
-	["N", "Novice"],
-	["N+", "Novice Plus"],
-	["LI-", "Low-Intermediate Minus"],
-	["LI", "Low-Intermediate"],
-	["LI+", "Low-Intermediate Plus"],
-	["I-", "Intermediate Minus"],
-	["I", "Intermediate"],
-	["I+", "Intermediate Plus"],
-	["HI-", "High-Intermediate Minus"],
-	["HI", "High-Intermediate"],
-	["HI+", "High-Intermediate Plus"],
-	["A-", "Advanced Minus"],
-	["A", "Advanced"],
-	["A+", "Advanced Plus"],
-	["E-", "Expert Minus"],
-	["E", "Expert"],
-	["E+", "Expert Plus"],
-]
+const states = {"AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware","DC":"District of Columbia","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming","AS":"American Samoa","GU":"Guam","MP":"Northern Mariana Islands","PR":"Puerto Rico","UM":"U.S. Minor Outlying Islands","VI":"U.S. Virgin Islands"}
+
+const {skillLevels, reverseSkillTranslations} = require("../src/skillTranslations.js")
+
+const gaugeProviders = ["USGS", "NWS", "canada", "streambeam", "ireland", "virtual"]
 
 //TODO: Add validation.
 let json = {
 	checkErrorsMode: "onComplete",
 	progressBarType: "buttons",
 	showProgressBar: "top",
+	completeText: "Submit River Suggestion",
 	showCompletedPage: false,
 	showQuestionNumbers: "off",
 	pages: [
@@ -56,7 +40,7 @@ let json = {
 				},
 				{
 					type: "text",
-					name: "section",
+					name: "class",
 					title: "Class (Ex: II+, IV-V, I-II, etc): ",
 					placeHolder: "Enter Class...",
 				},
@@ -75,6 +59,12 @@ let json = {
 					name: "dam",
 					title: "Is This River Dam Controlled? ",
 					isRequired: true
+				},
+				{
+					type: "text",
+					name: "state",
+					title: "State/Province Abbriviation (NC, VA, TX, etc): ",
+					placeHolder: "Enter State/Province..."
 				},
 				{
 					type: "text",
@@ -116,7 +106,7 @@ let json = {
 					type: "dropdown",
 					name: "gaugeProvider",
 					title: "Primary Gauge Provider: ",
-					choices: ["USGS", "NWS", "canada", "streambeam", "ireland"],
+					choices: gaugeProviders,
 				},
 				{
 					type: "text",
@@ -195,7 +185,7 @@ let json = {
 							name: "gaugeProvider",
 							title: "Gauge Provider: ",
 							isRequired: true,
-							choices: ["USGS", "NWS", "canada", "streambeam", "ireland"],
+							choices: gaugeProviders,
 						},
 						{
 							type: "text",
@@ -234,6 +224,7 @@ let json = {
 							name: "tag",
 							title: "Tag: ",
 							placeHolder: "Enter Tag... ",
+							isRequired: true,
 						},
 					],
 					minPanelCount: 0,
@@ -246,6 +237,24 @@ let json = {
 		            name: "writeup",
 		            title: "River Writeup: "
 		        },
+
+
+
+
+
+				{
+					type: "text",
+					name: "suggestionName",
+					title: "File Name for this Suggestion: ",
+					placeHolder: "Enter File Name... ",
+				},
+				{
+					type: "text",
+					name: "suggestionEmail",
+					inputType: "email",
+					title: "Contact Email for this Suggestion: ",
+					placeHolder: "Enter Contact Email... ",
+				},
 			],
 		},
 	]
@@ -255,34 +264,190 @@ Survey.StylesManager.applyTheme("modern");
 
 window.survey = new Survey.Model(json);
 
-// if (survey.hasErrors()) {
-// 	//Focus the first question with errors.
-// 	let questionsWithErrors = survey.getAllQuestions().filter((question) => question.hasErrors())
-// 	if (questionsWithErrors.length > 0) {
-// 		questionsWithErrors[0].focus()
-// 		// return
-// 	}
-// }
-
-
-survey
-.onComplete
-.add(function (sender) {
-	document
-	.querySelector('#surveyResult')
-	.textContent = "Result JSON:\n" + JSON.stringify(sender.data, null, 3);
-
+survey.onComplete.add(function (sender) {
+	//Restore the survey - don't hide it.
 	setTimeout(function() {
 		survey.isCompleted = false
+		survey.currentPageNo = 0
+		setButtons()
+		survey.currentPageNo = survey.pageCount - 1
 	}, 0)
 });
 
-// survey.data = {
-//     name: 'John Doe',
-//     email: 'johndoe@nobody.com',
-//     car: ['Ford']
-// };
 
 ReactDOM.render(
 	React.createElement(SurveyReact.Survey, {model: survey})
 	, document.getElementById("surveyElement"));
+
+
+
+
+
+function setButtons() {
+	//Next button available on all but last page.
+
+	let buttonToClone = document.getElementsByClassName(survey.cssValue.navigation.next)[0]
+
+	let clearFormButton = buttonToClone.cloneNode()
+	clearFormButton.value = "Clear Form"
+	clearFormButton.addEventListener("click", function() {
+		if (confirm("Clear this form?")) {
+			survey.clear()
+			surveyChanged()
+		}
+	})
+	buttonToClone.parentElement.insertBefore(clearFormButton, buttonToClone)
+
+
+	let copyButton = buttonToClone.cloneNode()
+	copyButton.value = "Copy Output"
+	copyButton.addEventListener("click", function() {
+		copyStringToClipboard(getSurveyInOldFormat())
+	})
+	buttonToClone.parentElement.insertBefore(copyButton, buttonToClone)
+}
+setButtons()
+
+
+survey.onComplete.add(function (sender) {
+	submitAsNewRiver()
+});
+
+
+let lastDispatched = -Infinity;
+
+function saveSurveyToDisk() {
+	localStorage.setItem(surveySaveKey, JSON.stringify(survey.data))
+}
+
+//This is the biggie - auto-save before unload.
+//We adopt a tick-mechanism as backup.
+window.addEventListener("beforeunload", saveSurveyToDisk)
+
+function surveyChanged() {
+	const dispatchInterval = 3000
+	if (Date.now() - lastDispatched > dispatchInterval) {
+		//If we last dispatched more than dispatchInterval ago, dispatch again.
+		lastDispatched = Date.now()
+		setTimeout(function() {
+			saveSurveyToDisk()
+		}, dispatchInterval * 1.05) //Add a bit to dispatchInterval to ensure changes can't sneak in-between saves.
+	}
+}
+
+
+const surveySaveKey = "surveyData"
+survey.onValueChanged = {
+	fire: surveyChanged
+}
+
+
+try {
+	//Not sure when this would error, but wrap just in case.
+	let data = localStorage.getItem(surveySaveKey)
+	if (data) {
+		survey.data = JSON.parse(data)
+	}
+}
+catch (e) {console.error(e)}
+
+
+//TODO: Links from home page.
+
+//TODO: Import from river.
+
+//TODO: Preview final river.
+
+
+
+function getSurveyInOldFormat() {
+	let obj = Object.assign({}, survey.data)
+
+	delete obj.suggestionName
+	delete obj.suggestionEmail
+
+	obj.skill = reverseSkillTranslations[obj.skill]
+
+	if (obj.gaugeProvider && obj.gaugeID) {
+		obj.gauge = obj.gaugeProvider + ": " + obj.gaugeID
+	}
+	delete obj.gaugeProvider
+	delete obj.gaugeID
+
+	if (obj.relatedGauges) {
+		obj.relatedGauges = JSON.stringify(obj.relatedGauges.map((gauge) => {return gauge.gaugeProvider + ":" + gauge.gaugeID}))
+	}
+
+	if (obj.tags) {
+		obj.tags = obj.tags.map((tag) => {return tag.tag}).join(",")
+	}
+
+	let result = ""
+	for (let prop in obj) {
+		let val = obj[prop]
+		if (val) {
+			result += `${prop}:${obj[prop]}` + "\n"
+		}
+	}
+	return result.trim()
+}
+
+
+
+
+function submitAsNewRiver() {
+	let url = "https://script.google.com/macros/s/AKfycbxhxpImVHh-UBAlVOGppV4wYRVtO4ldLHn_q128vckXshCl6B8/exec"
+	let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+
+	let type = "river"
+
+	let name = survey.data.suggestionName
+	let editors = survey.data.suggestionEmail
+
+	let nonce = String(Math.round(Math.random() * (2**30)))
+
+	let requestURL = url + "?type=" + type + "&name=" + name + "&nonce=" + nonce + (editors?("&editors=" + editors):"")
+	console.log(requestURL)
+
+	let request = fetch(requestURL, {
+		method: "POST",
+		body: getSurveyInOldFormat(),
+		mode: "no-cors"
+	})
+
+	alert("We are attempting to submit your river. You should receive an alert in about 10 seconds if it succeeds. ")
+
+	;(async function() {
+		let response = await request
+		let result = await response.text()
+		console.log(result)
+		let checkReq = await fetch("https://www.googleapis.com/drive/v3/files/16sAPFOmyzg5Ds-oHdt9Ra5LKmhjXNC6Q0_2WMBXaCtU/export?mimeType=text/plain&key=" + API_KEY, {cache: "no-store"})
+		let checkResp = (await checkReq.text()).split("\n")[0]
+		console.log(checkResp)
+		console.log(name + nonce)
+		if (checkResp.trim() === (name + nonce).trim()) {
+			alert("Your river has been successfully submitted. ")
+		}
+		else {
+			alert("Submission appears to have failed. Please try again. (you can confirm that it failed or succeeded by clicking on 'Open Review Queue')")
+		}
+	}())
+}
+
+
+function copyStringToClipboard(str) {
+	// Create new element
+	var el = document.createElement('textarea');
+	// Set value (string to be copied)
+	el.value = str;
+	// Set non-editable to avoid focus and move outside of view
+	el.setAttribute('readonly', '');
+	el.style = {position: 'absolute', left: '-9999px'};
+	document.body.appendChild(el);
+	// Select text inside element
+	el.select();
+	// Copy text to clipboard
+	document.execCommand('copy');
+	// Remove temporary element
+	document.body.removeChild(el);
+}
