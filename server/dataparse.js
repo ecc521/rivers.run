@@ -2,6 +2,8 @@ const fs = require("fs")
 const path = require("path")
 const bent = require("bent")
 
+const allowed = require("./allowedFields.js")
+
 const compressor = require(path.join(__dirname, "precompress.js"))
 
 const getGaugeSites = require(path.join(__dirname, "siteDataParser.js"))
@@ -231,9 +233,6 @@ async function prepareRiverData({
     }
 
     console.log("Finished Loading Rivers...")
-
-    let allowed = ["name","section","skill","rating","writeup","tags","state","gauge","aw","plat","plon","tlat","tlon","maxrun","minrun","lowflow","midflow","highflow","dam","relatedgauges","class","relativeflowtype"] //Property values to be included in output file
-
 
     for (let i=0;i<result.complete.length;i++) {
         let item = result.complete[i].request.split("\n")

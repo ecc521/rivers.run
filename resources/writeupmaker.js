@@ -1,4 +1,5 @@
 //TODO: Add validation for gaugeIDs, etc.
+const allowed = require("../server/allowedFields.js")
 
 const states = {"AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware","DC":"District of Columbia","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming","AS":"American Samoa","GU":"Guam","MP":"Northern Mariana Islands","PR":"Puerto Rico","UM":"U.S. Minor Outlying Islands","VI":"U.S. Virgin Islands"}
 
@@ -496,6 +497,11 @@ function getSurveyInRiverFormat() {
 		obj.tags = obj.tags.map((tag) => {return tag.tag}).join(",")
 	}
 
+	for (let prop in obj) {
+		//This deletes id, isGauge, and other properties that we don't want in the previews and final output. 
+		if (!allowed.includes(prop)) {delete obj[prop]}
+	}
+
 	return obj
 }
 
@@ -580,7 +586,9 @@ window.Gauge = Gauge
 window.River = River
 
 function setSurveyFromRiverFormat(riverItem) {
-	//TODO: This function also copies over fields like "base" and "id".
+	//Note: This function also copies over fields like "base", "id", and "isGauge".
+	//While id is used here, it and other properties like isGauge should not be included in the actual output.
+	//They are filtered out when output is generated.
 	survey.clear()
 
 	window.ItemHolder = []
