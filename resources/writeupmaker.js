@@ -248,7 +248,7 @@ const extraPage = {
 			title: "This is a: ",
 			choices: [
 				{value: "new", text: "New River Suggestion"},
-				{value: "edit", text: "Edit to Existing River"},
+				{value: "edit", text: "Edit to an Existing River"},
 			],
 			isRequired: true,
 		},
@@ -291,7 +291,6 @@ let json = {
 	checkErrorsMode: "onComplete",
 	progressBarType: "buttons",
 	showProgressBar: "top",
-	completeText: "Submit River Suggestion",
 	showCompletedPage: false,
 	showQuestionNumbers: "off",
 	pages: pages
@@ -318,8 +317,6 @@ ReactDOM.render(
 
 
 
-
-
 function setButtons() {
 	//Next button available on all but last page.
 
@@ -334,20 +331,31 @@ function setButtons() {
 		}
 	})
 	buttonToClone.parentElement.insertBefore(clearFormButton, buttonToClone)
-
-
-	let copyButton = buttonToClone.cloneNode()
-	copyButton.value = "Copy Output"
-	copyButton.addEventListener("click", function() {
-		copyStringToClipboard(getSurveyInOldFormat())
-	})
-	buttonToClone.parentElement.insertBefore(copyButton, buttonToClone)
 }
 setButtons()
 
+function setCompleteButtonText() {
+	if (survey.data.submissionType === "new") {
+		survey.completeText = "Submit River Suggestion"
+	}
+	else if (survey.data.submissionType === "edit") {
+		survey.completeText = "Copy Output"
+	}
+	survey.render()
+}
 
-survey.onComplete.add(function (sender) {
-	submitAsNewRiver()
+survey.getQuestionByName("submissionType").onValueChanged = function() {
+	setCompleteButtonText()
+}
+
+survey.onComplete.add(function(sender) {
+	if (survey.data.submissionType === "new") {
+		submitAsNewRiver()
+	}
+	else if (survey.data.submissionType === "edit") {
+		copyStringToClipboard(getSurveyInOldFormat())
+		alert("Output Copied!")
+	}
 });
 
 
@@ -388,11 +396,12 @@ try {
 }
 catch (e) {console.error(e)}
 
-
+setCompleteButtonText() //May change based on the data that is loaded.
 
 function getSurveyInOldFormat() {
 	let obj = Object.assign({}, survey.data)
 
+	delete obj.submissionType
 	delete obj.suggestionName
 	delete obj.suggestionEmail
 
