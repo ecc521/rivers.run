@@ -19,22 +19,19 @@ try {
 	function calculateDarkMode() {
 		let startingMode = window.darkMode
 
-		//TODO: Remove this at some point. 
-		//Migrate to new property name.
-		let oldPropTheme = localStorage.getItem("theme")
-		if (oldPropTheme) {
-			localStorage.setItem("userTheme", oldPropTheme)
-			localStorage.removeItem("theme")
+		if (window.noDarkMode === true) {
+			window.darkMode = false
 		}
+		else {
+			let darkMode = localStorage.getItem("userTheme")
 
-        let darkMode = localStorage.getItem("userTheme")
+			if (darkMode === null) {
+				darkMode = mediaMatch.matches
+			}
 
-        if (darkMode === null) {
-            darkMode = mediaMatch.matches
-        }
-
-		if (darkMode === true || darkMode === "true") {window.darkMode = true}
-		else {window.darkMode = false}
+			if (darkMode === true || darkMode === "true") {window.darkMode = true}
+			else {window.darkMode = false}	
+		}
 
 		if (window.darkMode !== startingMode) {
 			window.dispatchEvent(new Event("colorSchemeChanged"))
