@@ -45,7 +45,7 @@ function addToFavorites(temp, river, usgsID) {
 		//We'll include the default ranges initially.
 		minimum: river.minrun,
 		maximum: river.maxrun,
-		units: river.relativeflowtype?.replace("ft", "feet")?.replace("m", "meters")
+		units: river.relativeflowtype
 	}
 	return temp
 }
