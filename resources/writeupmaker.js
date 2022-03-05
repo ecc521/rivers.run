@@ -360,7 +360,26 @@ const previewPage = {
 
 const pages = [basicInfoPage, flowInfoPage, extraPage, previewPage]
 
+
+//Default the filename to name + section
+function setDefaultFilename() {
+	survey.getQuestionByName("suggestionName").value = `${survey.data.name} ${survey.data.section}`
+}
+
+Survey
+    .FunctionFactory
+    .Instance
+    .register("setDefaultFilename", setDefaultFilename);
+
+
 let json = {
+	triggers: [
+		{
+			type: "runexpression",
+			expression: "{name} notempty and {section} notempty",
+			runExpression: "setDefaultFilename()"
+		}
+	],
 	checkErrorsMode: "onComplete",
 	progressBarType: "buttons",
 	showProgressBar: "top",
@@ -474,20 +493,14 @@ catch (e) {console.error(e)}
 
 setCompleteButtonText() //May change based on the data that is loaded.
 survey.getQuestionByName("editRiverInfo").html = calculateEditRiverHTML(survey.data.id) //If there is an old id, display it.
-
+setDefaultFilename()
 
 function getSurveyInRiverFormat() {
 	let obj = Object.assign({}, survey.data)
 
-	delete obj.submissionType
-	delete obj.suggestionName
-	delete obj.suggestionEmail
-
 	if (obj.gaugeProvider && obj.gaugeID) {
 		obj.gauge = obj.gaugeProvider + ":" + obj.gaugeID
 	}
-	delete obj.gaugeProvider
-	delete obj.gaugeID
 
 	if (obj.relatedgauges) {
 		obj.relatedgauges = obj.relatedgauges.map((gauge) => {return gauge.gaugeProvider + ":" + gauge.gaugeID})
@@ -498,7 +511,8 @@ function getSurveyInRiverFormat() {
 	}
 
 	for (let prop in obj) {
-		//This deletes id, isGauge, and other properties that we don't want in the previews and final output. 
+		//This deletes id, isGauge, and other properties that we don't want in the previews and final output.
+		//This also deletes suggestionEmail, gaugeProvider, and properties specific to the river creator.
 		if (!allowed.includes(prop)) {delete obj[prop]}
 	}
 
