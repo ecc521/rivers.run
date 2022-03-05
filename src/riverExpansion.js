@@ -81,7 +81,7 @@ function createExpansion(button, river) {
     }
 
     function round(level) {
-        if (river.relativeFlowType === "cfs") {
+        if (river.relativeflowtype === "cfs") {
             return Math.round(level)
         }
         else {
@@ -96,7 +96,7 @@ function createExpansion(button, river) {
     for (let i=0;i<values.length;i++) {
         let name = values[i]
         if (river[name] && !isNaN(parseFloat(river[name]))) {
-            flowRange.innerHTML += name + ":" + round(river[name]) + river.relativeFlowType + " "
+            flowRange.innerHTML += name + ":" + round(river[name]) + river.relativeflowtype + " "
         }
     }
     if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}

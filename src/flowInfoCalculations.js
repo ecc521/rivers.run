@@ -86,54 +86,65 @@ function calculateRelativeFlow(river) {
     //0-4
     //0 is too low, 4 is too high, other values in between
 
-	if (river.relativeFlowType || river.relativeFlowType === null) {
-		return;
-	}
+    if (river.relativeflowtype === null) {
+        return;
+    }
+
 
     let values = ["minrun", "lowflow", "midflow", "highflow", "maxrun"]
 
-    let type; //Currently, we skip a value if one datapoint is cfs and another feet
+    //If the river does not have a relative flow type, calculate one.
+    if (!river.relativeflowtype) {
+        //THIS CODE CAN NOT MODIFY THE "values" ARRAY!
+        let type; //Currently, we skip a value if one datapoint is cfs and another feet
 
-	let currentMax;
+        for (let i=0;i<values.length;i++) {
+            let str = river[values[i]]
+            if (!str) {continue;}
 
-    for (let i=0;i<values.length;i++) {
+            str = str.trim()
+            let value = parseFloat(str)
+            let currentType = str.match(/[^\d|.]+/) //Match a series of non-digits
 
-        let str = river[values[i]]
-        if (!str) {
-            values[i] = undefined
-            continue;
+            if (currentType) {
+                currentType = currentType[0].trim().toLowerCase() //Use the first match
+            }
+            if (!type && currentType) {
+                type = currentType
+            }
+            else if (type !== currentType && !isNaN(value)) {
+                console.warn(values[i] + " on " + river.name + " " + river.section + " has a different extension and has been skipped")
+                continue;
+            }
+
+            river[values[i]] = value
         }
-        str = str.trim()
-        let value = parseFloat(str)
-        let currentType = str.match(/[^\d|.]+/) //Match a series of non-digits
 
-        if (currentType) {
-            currentType = currentType[0].trim().toLowerCase() //Use the first match
-        }
-        if (!type && currentType) {
-            type = currentType
-        }
-        else if (type !== currentType && !isNaN(value)) {
-            console.warn(values[i] + " on " + river.name + " " + river.section + " has a different extension and has been skipped")
-            values[i] = undefined
-            continue;
-        }
-
-		if (value < currentMax) {
-            console.warn(values[i] + " is smaller than a value that comes before it on " + river.name + " " + river.section + " and has been skipped")
-            values[i] = undefined
-            continue;
-		}
-
-		currentMax = value
-        values[i] = value
+        river.relativeflowtype = type || null
     }
 
-	river.relativeFlowType = type || null
 
-	if (!type) {
+    if (!river.relativeflowtype) {
 		return null //If no relative flow values exist, return. This should help improve performance with gauges (lots of gauges, none have relative flows)
 	}
+
+
+    let currentMax; //Used to confirm values are not decreasing.
+
+    //Every item has the same units.
+    for (let i=0;i<values.length;i++) {
+        let prop = values[i]
+        values[i] = undefined
+
+        let value = parseFloat(river[prop])
+        if (!isNaN(value)) {
+            if (value < currentMax) {
+                console.warn(prop + " is smaller than a value that comes before it on " + river.name + " " + river.section + " and has been skipped")
+                continue;
+            }
+            values[i] = currentMax = value
+        }
+    }
 
 
     river.minrun = calculateArrayPosition(values, 0)
@@ -188,16 +199,16 @@ function calculateRelativeFlow(river) {
 
 			let flowLevel;
 
-			if (river.relativeFlowType === "cfs") {
+			if (river.relativeflowtype === "cfs") {
 				flowLevel = river.cfs
 			}
-			else if (river.relativeFlowType === "feet" || river.relativeFlowType === "ft") {
+			else if (river.relativeflowtype === "feet" || river.relativeflowtype === "ft") {
 				flowLevel = river.feet
 			}
-            else if (river.relativeFlowType === "meter" || river.relativeFlowType === "m"){
+            else if (river.relativeflowtype === "meter" || river.relativeflowtype === "m"){
                 flowLevel = river.meters
             }
-            else if (river.relativeFlowType === "cms") {
+            else if (river.relativeflowtype === "cms") {
                 flowLevel = river.cms
             }
 

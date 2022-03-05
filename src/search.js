@@ -298,8 +298,8 @@ function locationFilter(list, parameters) {
 		let lat2;
 		let lon2;
 		try {
-			lat2 = toDecimalDegrees(river.plat) || toDecimalDegrees(river.tlat) || toDecimalDegrees(river.hidlat)
-    		lon2 = toDecimalDegrees(river.plon) || toDecimalDegrees(river.tlon) || toDecimalDegrees(river.hidlon)
+			lat2 = toDecimalDegrees(river.plat) || toDecimalDegrees(river.tlat)
+    		lon2 = toDecimalDegrees(river.plon) || toDecimalDegrees(river.tlon)
 		}
 		catch(e) {
 			console.error("Error parsing coordinates...")

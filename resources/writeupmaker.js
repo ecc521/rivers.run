@@ -164,7 +164,7 @@ let json = {
 				},
 				{
 					type: "dropdown",
-					name: "relativeFlowUnits",
+					name: "relativeflowtype",
 					title: "Relative Flow Units: ",
 					choices: ["cfs", "feet", "cms", "meters"],
 					isRequired: true,

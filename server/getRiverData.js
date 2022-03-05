@@ -99,7 +99,7 @@ async function getAssistantReply(query, options) {
 	//No rivers matched the search.
 	if (topRanked.length === 0) {
 		//Consider removing letters from end until it matches
-		//Would be a bit complicated to implement. 
+		//Would be a bit complicated to implement.
 
 		// Lower Yakageny => Lower Y
 		// Lower Hall => Lower Ha
@@ -218,11 +218,11 @@ async function getAssistantReply(query, options) {
 		let relativeFlow = calculateRelativeFlow(river)
 
 		function round(level) {
-			if (river.relativeFlowType === "cfs") {
-				return Math.round(level) + river.relativeFlowType
+			if (river.relativeflowtype === "cfs") {
+				return Math.round(level) + river.relativeflowtype
 			}
 			else {
-				return Math.round(level*100)/100 + river.relativeFlowType
+				return Math.round(level*100)/100 + river.relativeflowtype
 			}
 		}
 
