@@ -101,8 +101,6 @@ function createExpansion(button, river) {
     }
     if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
 
-    div.appendChild(document.createElement("br"))
-
 
     let containerForEditLinks = document.createElement("p")
     div.appendChild(containerForEditLinks)
@@ -114,9 +112,9 @@ function createExpansion(button, river) {
     containerForEditLinks.appendChild(riverCreatorLink)
 
     if (!river.isGauge) {
-        riverCreatorLink.innerHTML = "Open River in River Creator"
+        riverCreatorLink.innerHTML = "Open in River Creator"
 
-        containerForEditLinks.innerHTML += ". "
+        containerForEditLinks.innerHTML += " - "
 
         let editRiverLink = document.createElement("a")
         editRiverLink.target = "_blank"
@@ -124,7 +122,7 @@ function createExpansion(button, river) {
         //Link to edit river data
 
         editRiverLink.href = "https://docs.google.com/document/d/" + river.id
-        editRiverLink.innerHTML = "Edit this river"
+        editRiverLink.innerHTML = "Edit this River"
         containerForEditLinks.appendChild(editRiverLink)
     }
 
