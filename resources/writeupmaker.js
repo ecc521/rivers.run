@@ -124,7 +124,7 @@ let json = {
 					title: "Primary Gauge ID: ",
 					placeHolder: "Enter Gauge ID... ",
 					isRequired: true,
-					visibleIf: "{gaugeProvider} != {default}"
+					enableIf: "{gaugeProvider} != {default}"
 				},
 
 
@@ -134,7 +134,7 @@ let json = {
 					title: "Minimum Level: ",
 					placeHolder: "Enter Number... ",
 					inputType: "number",
-					visibleIf: "{gaugeID} != {default}"
+					enableIf: "{gaugeID} != {default}"
 				},
 				{
 					type: "text",
@@ -143,7 +143,7 @@ let json = {
 					placeHolder: "Enter Number... ",
 					inputType: "number",
 					startWithNewLine: false,
-					visibleIf: "{gaugeID} != {default}"
+					enableIf: "{gaugeID} != {default}"
 				},
 				{
 					type: "text",
@@ -152,7 +152,7 @@ let json = {
 					placeHolder: "Enter Number... ",
 					inputType: "number",
 					startWithNewLine: false,
-					visibleIf: "{gaugeID} != {default}"
+					enableIf: "{gaugeID} != {default}"
 				},
 				{
 					type: "text",
@@ -161,7 +161,7 @@ let json = {
 					placeHolder: "Enter Number... ",
 					inputType: "number",
 					startWithNewLine: false,
-					visibleIf: "{gaugeID} != {default}"
+					enableIf: "{gaugeID} != {default}"
 				},
 				{
 					type: "text",
@@ -170,7 +170,7 @@ let json = {
 					placeHolder: "Enter Number... ",
 					inputType: "number",
 					startWithNewLine: false,
-					visibleIf: "{gaugeID} != {default}"
+					enableIf: "{gaugeID} != {default}"
 				},
 				{
 					type: "dropdown",
@@ -179,14 +179,13 @@ let json = {
 					choices: ["cfs", "feet", "cms", "meters"],
 					isRequired: true,
 					startWithNewLine: false,
-					visibleIf: "{gaugeID} != {default}",
 					enableIf: "{minrun} != {default} or {lowflow} != {default} or {midflow} != {default} or {highflow} != {default} or {maxrun} != {default}"
 				},
 
 				{
 					type: "paneldynamic",
 					name: "relatedGauges",
-					visibleIf: "{gaugeID} != {default}",
+					enableIf: "{gaugeID} != {default}",
 					title: "Related Gauges: ",
 					keyName: "name", //TODO: What is this???
 					showQuestionNumbers: "off",
