@@ -102,22 +102,31 @@ function createExpansion(button, river) {
     if (flowRange.innerHTML !== "") {div.appendChild(flowRange)}
 
     div.appendChild(document.createElement("br"))
-    let link = document.createElement("a")
-    link.target = "_blank"
-    if (!river.isGauge) {
-        //Link to edit river data
-        link.href = "https://docs.google.com/document/d/" + river.id
-        link.innerHTML = "Edit this river"
-    }
-    else {
-        //Link to create a river using this gauge.
-        link.innerHTML = "Create River using Gauge"
-        //link.href = "resources/writeupmaker.html" + "#" + "name=" + river.name + "&section=" + river.section + "&gauge=" + river.gauge
 
-        //Too many people didn't edit the river or section name when those were prefilled.
-        link.href = window.root + "resources/writeupmaker.html" + "#" + "gauge=" + river.gauge
+
+    let containerForEditLinks = document.createElement("p")
+    div.appendChild(containerForEditLinks)
+
+    let riverCreatorLink = document.createElement("a")
+    riverCreatorLink.target = "_blank"
+    riverCreatorLink.href = window.root + "resources/writeupmaker.html" + "#" + "id=" + river.id
+    riverCreatorLink.innerHTML = "Create River using Gauge"
+    containerForEditLinks.appendChild(riverCreatorLink)
+
+    if (!river.isGauge) {
+        riverCreatorLink.innerHTML = "Open River in River Creator"
+
+        containerForEditLinks.innerHTML += ". "
+
+        let editRiverLink = document.createElement("a")
+        editRiverLink.target = "_blank"
+
+        //Link to edit river data
+
+        editRiverLink.href = "https://docs.google.com/document/d/" + river.id
+        editRiverLink.innerHTML = "Edit this river"
+        containerForEditLinks.appendChild(editRiverLink)
     }
-    div.appendChild(link)
 
     if (river.aw) {
         div.appendChild(document.createElement("br"))

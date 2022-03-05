@@ -1,11 +1,35 @@
+//TODO: Add validation for gaugeIDs, etc.
+
+//TODO: Preview final river.
+//Not sure it's anywhere near as necessary, given how hard it is to mess up now.
+//Still, add it back.
+
+
 const states = {"AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware","DC":"District of Columbia","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming","AS":"American Samoa","GU":"Guam","MP":"Northern Mariana Islands","PR":"Puerto Rico","UM":"U.S. Minor Outlying Islands","VI":"U.S. Virgin Islands"}
 
 const {skillLevels} = require("../src/skillTranslations.js")
 
 const gaugeProviders = ["USGS", "NWS", "canada", "streambeam", "ireland", "virtual"]
 
-//TODO: Add validation for gaugeIDs, etc.
+function getDataFileLink(id) {
+	return `https://docs.google.com/document/d/${id}`
+}
 
+function calculateWelcomeHTML(id) {
+	let str = `Welcome to the Rivers.run River Creator! If you aren't sure where to begin, check the <a target="_blank" href="${window.root + "FAQ.html"}">FAQ</a>!`
+	if (id) {
+		str += `<br>If you only wish to make minor edits to the river you imported, the data file is <a href="${getDataFileLink(id)}" target="_blank">here</a>. `
+	}
+	return str
+}
+
+function calculateEditRiverHTML(id, recent = false) {
+	let str = `You are finished! Click the "Copy Output" button, and paste your output into the ${recent ? `<a href="${getDataFileLink(id)}">river data file</a>` : "river data file"}.`
+	if (id && !recent) {
+		str += `<br>The data file for the river you last imported is <a href="${getDataFileLink(id)}" target="_blank">here</a> - this may or may not be the file you are looking for. `
+	}
+	return str
+}
 
 const basicInfoPage = {
 	navigationTitle: "Basic Info",
@@ -13,8 +37,8 @@ const basicInfoPage = {
 	elements: [
 		{
 			type: "html",
-			name: "info",
-			html: `Welcome to the Rivers.run River Creator! If you aren't sure where to begin, check the <a target="_blank" href="${window.root + "FAQ.html"}">FAQ</a>!`
+			name: "welcomeText",
+			html: calculateWelcomeHTML(),
 		},
 		{
 			type: "text",
@@ -180,7 +204,6 @@ const flowInfoPage = {
 			name: "relatedgauges",
 			enableIf: "{gaugeID} != {default}",
 			title: "Related Gauges: ",
-			keyName: "name", //TODO: What is this???
 			showQuestionNumbers: "off",
 			templateElements: [
 				{
@@ -220,7 +243,6 @@ const extraPage = {
 			type: "paneldynamic",
 			name: "tags",
 			title: "Tags: ",
-			keyName: "name", //TODO: What is this???
 			showQuestionNumbers: "off",
 			templateElements: [
 				{
@@ -252,17 +274,16 @@ const extraPage = {
 			],
 			isRequired: true,
 		},
-		//TODO: Do nothing if Edit to Existing River is selected and Submit New River Suggestion clicked.
 		{
 			type: "html",
-			name: "info",
-			html: `You are finished! Click the "Copy Output" button, and paste your output into the river's data file. `,
+			name: "editRiverInfo",
+			html: calculateEditRiverHTML(),
 			visibleIf: "{submissionType}='edit'"
 		},
 
 		{
 			type: "html",
-			name: "info",
+			name: "newRiverInfo",
 			html: `Filling out the below fields is <strong><i>strongly</i></strong> recommended. Once finished, click "Submit River Suggestion" below. If receipt of your submission cannot be confirmed, please check the <a href="https://drive.google.com/drive/u/0/folders/1yq4C_4aG_7E18nAxYofLbKHmnZFI-0R_" target="_blank"> Review Queue</a> to confirm your river is pending review, and if not, submit again. `,
 			visibleIf: "{submissionType}='new'"
 		},
@@ -328,6 +349,7 @@ function setButtons() {
 		if (confirm("Clear this form?")) {
 			survey.clear()
 			surveyChanged()
+			window.location.reload()
 		}
 	})
 	buttonToClone.parentElement.insertBefore(clearFormButton, buttonToClone)
@@ -397,6 +419,7 @@ try {
 catch (e) {console.error(e)}
 
 setCompleteButtonText() //May change based on the data that is loaded.
+survey.getQuestionByName("editRiverInfo").html = calculateEditRiverHTML(survey.data.id) //If there is an old id, display it.
 
 function getSurveyInOldFormat() {
 	let obj = Object.assign({}, survey.data)
@@ -488,40 +511,11 @@ function copyStringToClipboard(str) {
 }
 
 
-
-
-
-//TODO: Links from home page.
-
-//TODO: Import from river.
-
-
-if (window.location.hash !== "") {
-	if (confirm(`You were working on a previous writeup for the ${localStorage.getItem("name")}. Would you like to clear that writeup?`)) {
-		List.forEach((value) => {
-			localStorage.removeItem(value)
-		})
-	}
-	else {
-		window.location.hash = "#"
-	}
-}
-
-let urlParams = new URLSearchParams(window.location.hash.slice(1))
-
-//TODO: Preview final river.
-//Not sure it's anywhere near as necessary, given how hard it is to mess up now.
-//Still, add it back.
-
-
-
-
-
 const River = require("../src/River.js").River
 const Gauge = require("../src/Gauge.js")
 
-
 function setSurveyFromRiverFormat(riverItem) {
+	//TODO: This function also copies over fields like "base" and "id".
 	survey.clear()
 
 	window.ItemHolder = []
@@ -549,7 +543,37 @@ function setSurveyFromRiverFormat(riverItem) {
 }
 
 
-//
-// let riverItem = {"tags":"wv, wvcabin, tucker, wvwor","aw":"2427","name":"Potomac - North Fork of South Branch","section":"Seneca Rocks to Hopeville","skill":"LI","rating":"4","writeup":"North Fork, South Branch- From Circleville to Mouth of Seneca is a beautiful 16 mile Cl 2 run that is not suitable for novices because the water is fast. Judge water level from numerous access points along US 33. Above Cherry Grove requires at least 1200 CFS @ Cabins.","maxrun":"7.5ft","minrun":"5.2ft","plat":"38.833889007568","plon":"-79.371940612793","tlat":"38.9272007","tlon":"-79.3099905","class":"I-III","state":"WV","gauge":"USGS:01606000","id":"1Xxy2ZROkxVEPfcubRbyxm4C8B68NsSWTDCAayLfL3b4"}
-//
-// setSurveyFromRiverFormat(riverItem)
+if (window.location.hash !== "") {
+	;(async function() {
+		let fileName = window.root + "riverdata.json"
+		let response = await fetch(fileName)
+		window.riverarray = await response.json()
+
+		let urlParams = new URLSearchParams(window.location.hash.slice(1))
+		let id = urlParams.get("id")
+
+		if (id) {
+			let riverItem = riverarray.find((item) => {
+				return new River(99999, item).id === id
+			})
+
+			console.log(riverItem)
+
+			if (riverItem) {
+				if (Object.keys(survey.data).length > 0) {
+					if (!confirm(`Are you sure you want to import ${riverItem.name}? This may overwrite saved data for the ${survey.data.name}`)) {
+						return
+					}
+				}
+				setSurveyFromRiverFormat(riverItem)
+				survey.getQuestionByName("editRiverInfo").html = calculateEditRiverHTML(id, true)
+				survey.getQuestionByName("welcomeText").html = calculateWelcomeHTML(id)
+			}
+			else {
+				alert("Link import failed. Please contact support@rivers.run")
+			}
+
+			window.location.hash = "#"
+		}
+	})()
+}
