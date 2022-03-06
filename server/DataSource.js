@@ -142,13 +142,13 @@ class DataSource {
 		await this.dispatchCallbacks(result, batch, callback)
 	}
 
-removePrefix(code) {
-	if (code.startsWith(this.prefix)) {
-		return code.slice(this.prefix.length) //Codes already trimmed in dataparse.
+	removePrefix(code) {
+		if (code.startsWith(this.prefix)) {
+			return code.slice(this.prefix.length) //Codes already trimmed in dataparse.
+		}
 	}
-}
 
-getValidCode(code) {return this.removePrefix(code)}
+	getValidCode(code) {return this.removePrefix(code)}
 }
 
 module.exports = DataSource

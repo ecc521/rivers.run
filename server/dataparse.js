@@ -16,13 +16,13 @@ const API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
 
 function urlcreate(File_ID, mime="text/plain") {
 	mime = encodeURIComponent(mime)
-    return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=' + mime + '&key=' + API_KEY
+	return 'https://www.googleapis.com/drive/v3/files/' + File_ID + '/export?mimeType=' + mime + '&key=' + API_KEY
 }
 
 function wait(ms) {
-    return new Promise(resolve => {
-        setTimeout(resolve, ms);
-    });
+	return new Promise(resolve => {
+		setTimeout(resolve, ms);
+	});
 };
 
 const referenceWaitTime = 1000 / googlecloudrequestrate;
@@ -67,20 +67,20 @@ async function load(url, attempts = 0) {
 
 async function loadFromDisk(id, lastModified = 0, mime="text/plain") {
 	mime = mime.split("/").join("_")
-    let filename = path.join(utils.getDataDirectory(), "drivecache", mime, id)
-    //Add 5 minutes because it takes some time to download - so a file may be written to disk a minute or so after it is downloaded.
-    //This is overly cautious - a freak scenario is required, and it should only be a few seconds for this to happen.
-    if (fs.existsSync(filename) && fs.statSync(filename).mtime.getTime() > new Date(lastModified).getTime()+1000*60*5) {
-        return await fs.promises.readFile(filename, "utf8")
-    }
-    else {return false} //The cache is old.
+	let filename = path.join(utils.getDataDirectory(), "drivecache", mime, id)
+	//Add 5 minutes because it takes some time to download - so a file may be written to disk a minute or so after it is downloaded.
+	//This is overly cautious - a freak scenario is required, and it should only be a few seconds for this to happen.
+	if (fs.existsSync(filename) && fs.statSync(filename).mtime.getTime() > new Date(lastModified).getTime()+1000*60*5) {
+		return await fs.promises.readFile(filename, "utf8")
+	}
+	else {return false} //The cache is old.
 }
 
 async function writeToDisk(data, id, mime="text/plain") {
 	mime = mime.split("/").join("_")
-    let directory = path.join(utils.getDataDirectory(), "drivecache", mime)
-    if (!fs.existsSync(directory)) {fs.mkdirSync(directory, {recursive: true})}
-    let filename = path.join(directory, id)
+	let directory = path.join(utils.getDataDirectory(), "drivecache", mime)
+	if (!fs.existsSync(directory)) {fs.mkdirSync(directory, {recursive: true})}
+	let filename = path.join(directory, id)
 
 	//Write to disk if modified, else update utimes.
 	if (!fs.existsSync(filename) || data !== await fs.promises.readFile(filename, "utf8")) {
@@ -94,33 +94,33 @@ async function writeToDisk(data, id, mime="text/plain") {
 
 
 
-    async function getFilesInFolder(id, output = [], promises=[], wasFirst = true) {
-        //Use fields=* to get all fields.
-        //Do not cache directory requests - last modified dates of files inside will be wrong (folder last modified is when files last added/removed).
-		//wasFirst is used so the Promise.all call only happens on the first invocation, which was not added to the promises list. Otherwise they all lock up waiting on each other.
-		let text = await load("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id,name)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
-		let obj = JSON.parse(text)
-        if (obj.incompleteSearch) {console.warn("Search may have been incomplete")}
+async function getFilesInFolder(id, output = [], promises=[], wasFirst = true) {
+	//Use fields=* to get all fields.
+	//Do not cache directory requests - last modified dates of files inside will be wrong (folder last modified is when files last added/removed).
+	//wasFirst is used so the Promise.all call only happens on the first invocation, which was not added to the promises list. Otherwise they all lock up waiting on each other.
+	let text = await load("https://www.googleapis.com/drive/v3/files?fields=incompleteSearch,files(mimeType,modifiedTime,id,name)&pageSize=1000&q='" + id + "'+in+parents&key=" + API_KEY)
+	let obj = JSON.parse(text)
+	if (obj.incompleteSearch) {console.warn("Search may have been incomplete")}
 
-        let files = obj.files
+	let files = obj.files
 
-        for (let i=0;i<files.length;i++) {
-            let file = files[i]
+	for (let i=0;i<files.length;i++) {
+		let file = files[i]
 
-            if (file.mimeType === "application/vnd.google-apps.folder") {
-                promises.push(getFilesInFolder(file.id, output, promises, false))
-            }
-			//Exports only support Google Docs
-            else if (file.mimeType === "application/vnd.google-apps.document") {
-                output.push(file)
-            }
-            else {
-            	console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
-            }
-        }
-        if (wasFirst) {await Promise.all(promises)}
-        return output
-    }
+		if (file.mimeType === "application/vnd.google-apps.folder") {
+			promises.push(getFilesInFolder(file.id, output, promises, false))
+		}
+		//Exports only support Google Docs
+		else if (file.mimeType === "application/vnd.google-apps.document") {
+			output.push(file)
+		}
+		else {
+			console.warn("Non Google Doc found in folder with name " + file.name + " and id " + file.id + ". MIME type was " + file.mimeType)
+		}
+	}
+	if (wasFirst) {await Promise.all(promises)}
+	return output
+}
 
 
 
@@ -145,26 +145,26 @@ async function loadFiles(files, mime) {
 			loader,
 			wait(currentWaitTime)
 		])
-    }
+	}
 
-    async function loadText(file, mime="text/plain") {
-        try {
-            let request = await loadFromDisk(file.id, file.modifiedTime, mime) //Load file from disk if it is cached, and hasn't been modified
-            if (!request) {
-                request = await load(urlcreate(file.id, mime))
-                await writeToDisk(request, file.id, mime)
-            }
-            complete.push({id: file.id, request, name:file.name})
-            process.stdout.write("\r\033[2K") //Clear current line
-            process.stdout.write(complete.length + " of " + files.length + " items have now been loaded successfully!")
-        }
-        catch(e) {
-            console.error(e)
-            failed.push({id: file.id, request, name:file.name})
-            console.warn("Requesting the file with a fild id of " + file.id + " failed. The response is below")
-            console.warn(request)
-        }
-    }
+	async function loadText(file, mime="text/plain") {
+		try {
+			let request = await loadFromDisk(file.id, file.modifiedTime, mime) //Load file from disk if it is cached, and hasn't been modified
+			if (!request) {
+				request = await load(urlcreate(file.id, mime))
+				await writeToDisk(request, file.id, mime)
+			}
+			complete.push({id: file.id, request, name:file.name})
+			process.stdout.write("\r\033[2K") //Clear current line
+			process.stdout.write(complete.length + " of " + files.length + " items have now been loaded successfully!")
+		}
+		catch(e) {
+			console.error(e)
+			failed.push({id: file.id, request, name:file.name})
+			console.warn("Requesting the file with a fild id of " + file.id + " failed. The response is below")
+			console.warn(request)
+		}
+	}
 
 	return {complete, failed}
 }
@@ -176,16 +176,16 @@ async function loadOverviews() {
 	let overviewsFolder = "1U3S5oxwqtnKJrIy7iDChmak2hvjekBBr"
 	let files = await getFilesInFolder(overviewsFolder)
 
-    let directory = path.join(utils.getSiteRoot(), "overviews")
-    if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
+	let directory = path.join(utils.getSiteRoot(), "overviews")
+	if (!fs.existsSync(directory)) {fs.mkdirSync(directory)}
 
 	let result = await loadFiles(files, "text/html")
 
 	console.log("")
 
-    for (let i=0;i<result.failed.length;i++) {
-        console.error("Loading of file with file id of " + result.failed[i] + " failed.")
-    }
+	for (let i=0;i<result.failed.length;i++) {
+		console.error("Loading of file with file id of " + result.failed[i] + " failed.")
+	}
 
 	for (let i=0;i<result.complete.length;i++) {
 		let item = result.complete[i]
@@ -218,35 +218,35 @@ async function prepareRiverData({
 	await loadOverviews()
 
 	console.log("Generating riverdata.json - this may take a while (should be no more than 200 milliseconds per river)\n")
-    let writeupFolder = "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof"
-    console.log("Getting List of Rivers...")
-    let files = await getFilesInFolder(writeupFolder)
+	let writeupFolder = "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof"
+	console.log("Getting List of Rivers...")
+	let files = await getFilesInFolder(writeupFolder)
 
-    console.log("Loading Rivers...")
+	console.log("Loading Rivers...")
 
-    let result = await loadFiles(files, "text/plain")
+	let result = await loadFiles(files, "text/plain")
 
-    console.log("") //Make sure the next statement starts on a new line.
+	console.log("") //Make sure the next statement starts on a new line.
 
-    for (let i=0;i<result.failed.length;i++) {
-        console.error("Loading of file with file id of " + result.failed[i] + " failed.")
-    }
+	for (let i=0;i<result.failed.length;i++) {
+		console.error("Loading of file with file id of " + result.failed[i] + " failed.")
+	}
 
-    console.log("Finished Loading Rivers...")
+	console.log("Finished Loading Rivers...")
 
-    for (let i=0;i<result.complete.length;i++) {
-        let item = result.complete[i].request.split("\n")
-        let obj = {}
+	for (let i=0;i<result.complete.length;i++) {
+		let item = result.complete[i].request.split("\n")
+		let obj = {}
 
-        for (let i=0;i<item.length;i++) {
-            let prop = item[i]
-            let name = prop.slice(0,prop.indexOf(":")).trim().toLowerCase()
-            let value = prop.slice(prop.indexOf(":") + 1).trim()
+		for (let i=0;i<item.length;i++) {
+			let prop = item[i]
+			let name = prop.slice(0,prop.indexOf(":")).trim().toLowerCase()
+			let value = prop.slice(prop.indexOf(":") + 1).trim()
 
 			value = value.replaceAll(`“`, `"`).replaceAll(`”`, `"`).replaceAll(`‘`, `'`).replaceAll(`’`, `'`) //Replace so called "smart-quotes"
 
-            obj[name] = value
-        }
+			obj[name] = value
+		}
 
 		//Convert .usgs parameter to .gauge
 		if (!obj.gauge && obj.usgs) {
@@ -299,12 +299,12 @@ async function prepareRiverData({
 
 		if (obj.class) {
 			obj.class = obj.class
-				.replaceAll("1", "I")
-				.replaceAll("2", "II")
-				.replaceAll("3", "III")
-				.replaceAll("4", "IV")
-				.replaceAll("5", "V")
-				.replaceAll("6", "VI")
+			.replaceAll("1", "I")
+			.replaceAll("2", "II")
+			.replaceAll("3", "III")
+			.replaceAll("4", "IV")
+			.replaceAll("5", "V")
+			.replaceAll("6", "VI")
 		}
 
 
@@ -316,12 +316,12 @@ async function prepareRiverData({
 
 		obj.id = result.complete[i].id
 
-        result.complete[i] = obj
-    }
+		result.complete[i] = obj
+	}
 
-    allowed.forEach((name) => {
-        console.log("There are " + result.complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
-    })
+	allowed.forEach((name) => {
+		console.log("There are " + result.complete.reduce((total,river) => {return total + Number(!!river[name])},0) + " rivers with the property " + name)
+	})
 
 	if (includeUSGSGauges) {
 		console.log("Adding USGS gauge sites. Pass --noUSGSGauges to prevent this. ")
@@ -351,7 +351,7 @@ async function prepareRiverData({
 	}
 
 	let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
-    await fs.promises.writeFile(riverDataPath, JSON.stringify(result.complete))
+	await fs.promises.writeFile(riverDataPath, JSON.stringify(result.complete))
 
 	console.time("Initial compression run on riverdata.json")
 	await compressor.compressFile(riverDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: false})

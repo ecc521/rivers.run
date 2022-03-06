@@ -106,13 +106,13 @@ class MSCProvince extends DataSource {
 	prefix = "canada:"
 
 	async dispatchCallbacks(result, batch, callback) {
-			//This must be an object of gauges, as at least one gaugeID existed in the object.
-			for (let gaugeID in result) {
-				try {
-					await callback(result[gaugeID], this.prefix + gaugeID)
-				}
-				catch (e) {console.error(e)}
+		//This must be an object of gauges, as at least one gaugeID existed in the object.
+		for (let gaugeID in result) {
+			try {
+				await callback(result[gaugeID], this.prefix + gaugeID)
 			}
+			catch (e) {console.error(e)}
+		}
 	}
 
 	async getBatches(onlyFull) {
