@@ -1,7 +1,7 @@
 //TODO: Add validation for gaugeIDs, etc.
 const allowed = require("../server/allowedFields.js")
 
-const states = {"AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware","DC":"District of Columbia","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming","AS":"American Samoa","GU":"Guam","MP":"Northern Mariana Islands","PR":"Puerto Rico","UM":"U.S. Minor Outlying Islands","VI":"U.S. Virgin Islands"}
+const {statesProvincesTerritorys} = require("../src/statesProvincesTerritorys.js")
 
 const {skillLevels} = require("../src/skillTranslations.js")
 
@@ -125,10 +125,24 @@ const basicInfoPage = {
 			isRequired: true
 		},
 		{
-			type: "text",
+			type: "paneldynamic",
 			name: "state",
-			title: "State/Province Abbriviation (NC, VA, TX, etc)",
-			placeHolder: "Enter State/Province..."
+			title: "State/Province",
+			showQuestionNumbers: "off",
+			templateElements: [
+				{
+					type: "dropdown",
+					name: "state",
+					titleLocation: "hidden",
+					choices: Object.keys(statesProvincesTerritorys).map((prop) => {
+						return {text: statesProvincesTerritorys[prop], value: prop}
+					}),
+				},
+			],
+			isRequired: true,
+			minPanelCount: 1,
+			panelAddText: "Add Another State/Province",
+			panelRemoveText: "Remove State/Province"
 		},
 		{
 			type: "text",
@@ -277,24 +291,12 @@ const extraPage = {
 			title: "AW River Number",
 			placeHolder: "Enter AW River Number... ",
 		},
-
 		{
-			type: "paneldynamic",
+			type: "text",
 			name: "tags",
 			title: "Tags",
-			showQuestionNumbers: "off",
-			templateElements: [
-				{
-					type: "text",
-					name: "tag",
-					title: "Tag",
-					placeHolder: "Enter Tag... ",
-					isRequired: true,
-				},
-			],
-			minPanelCount: 0,
-			panelAddText: "Add Another Tag",
-			panelRemoveText: "Remove Tag"
+			placeHolder: "Enter Tags... ",
+			tooltip: "Comma Seperated, Spaces Optional. "
 		},
 		{
 			type: "editor",
@@ -561,8 +563,8 @@ function getSurveyInRiverFormat() {
 		obj.relatedgauges = obj.relatedgauges.map((gauge) => {return gauge.gaugeProvider + ":" + gauge.gaugeID})
 	}
 
-	if (obj.tags) {
-		obj.tags = obj.tags.map((tag) => {return tag.tag}).join(",")
+	if (obj.state) {
+		obj.state = obj.state.map((state) => {return state.state}).join(",")
 	}
 
 	for (let prop in obj) {
@@ -672,7 +674,7 @@ function setSurveyFromRiverFormat(riverItem) {
 		river.gaugeID = gauge.gaugeID
 	}
 
-	river.tags = river.tags.split(",").map((tag) => {return {tag}})
+	river.state = river.state.split(",").map((state) => {return {state}})
 
 	if (river.relatedgauges) {
 		river.relatedgauges = river.relatedgauges.map((gaugeID) => {
