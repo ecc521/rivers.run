@@ -35,8 +35,7 @@ function logDist(low, high, ratio = 0.5) {
 
 
 	//Estmate all values, even if we do not have values on each side of them. This is actually quite accurate, although sometimes maxrun is far too high to
-	//calculate the other values correctly. (the calculated maxruns are reasonable, but the provided maxruns are too high)
-//TODO: Consider if we should blacklist the provided maxrun
+	//calculate the other values correctly. (the calculated maxruns given midrun, etc, are reasonable, but the provided maxruns are too high to calculate other values)
 
 	function calculateArrayPosition(arr, pos) {
 		if (arr[pos]) {return arr[pos]} //The value is already in the array!
@@ -152,35 +151,23 @@ function calculateRelativeFlow(river) {
     }
 
 
-    river.minrun = calculateArrayPosition(values, 0)
-    river.maxrun = calculateArrayPosition(values, 4)
-
-	//Use getters so that we only compute a property when neccessary.
-	    Object.defineProperty(river, "midflow", {
-			configurable: true,
-			get: function getMidflow() {
-				delete river.midflow
-				return river.midflow = calculateArrayPosition(values, 2)
-			}
-		})
-
-
-		Object.defineProperty(river, "lowflow", {
-			configurable: true,
-			get: function getLowflow() {
-				delete river.lowflow
-				return river.lowflow = calculateArrayPosition(values, 1)
-			}
-		})
-
-		Object.defineProperty(river, "highflow", {
-			configurable: true,
-			get: function getHighflow() {
-				delete river.highflow
-				return river.highflow = calculateArrayPosition(values, 3)
-			}
-		})
-
+    ;["minrun", "lowflow", "midflow", "highflow", "maxrun"].forEach((prop, index) => {
+        if (values[index]) {
+            //We already have the value - no need to calculate, etc.
+            river[prop] = values[index]
+        }
+        else {
+            //Use getters so that we only compute a property when neccessary.
+            Object.defineProperty(river, prop, {
+                configurable: true,
+                enumerable: false,
+                get: function getValue() {
+                    delete river[prop]
+                    return river[prop] = calculateArrayPosition(values, index)
+                }
+            })
+        }
+    })
 
 	function calculateRatio(low, high, current) {
 		low = Math.log(low)

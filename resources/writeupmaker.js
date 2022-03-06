@@ -686,6 +686,10 @@ window.Gauge = Gauge
 window.River = River
 
 function setSurveyFromRiverFormat(riverItem) {
+	//Importing calculated relative flow values is not a concern as the getters are not enumerable
+	//Once the getters run once, however, the property is enumerable. Therefore, if we every allow resetting to
+	//the imported river, we probably need to just clear the form and link to the prefilled writeupmaker. 
+
 	//Note: This function also copies over fields like "base", "id", and "isGauge".
 	//While id is used here, it and other properties like isGauge should not be included in the actual output.
 	//They are filtered out when output is generated.
@@ -735,14 +739,11 @@ if (window.location.hash !== "") {
 			if (riverItem) {
 				//We will assume that if no name has been entered, there is not a river being worked on.
 				//That assumption is probably reasonable, and means we don't need to worry about things getting set during initialization.
-				if (survey.data.name) {
-					if (!confirm(`Are you sure you want to import ${riverItem.name}? This may overwrite saved data for the ${survey.data.name}`)) {
-						return
-					}
+				if (!survey.data.name || confirm(`Are you sure you want to import ${riverItem.name}? This may overwrite saved data for the ${survey.data.name}`)) {
+					setSurveyFromRiverFormat(riverItem)
+					survey.getQuestionByName("editRiverInfo").html = calculateEditRiverHTML(id, true)
+					survey.getQuestionByName("welcomeText").html = calculateWelcomeHTML(id)
 				}
-				setSurveyFromRiverFormat(riverItem)
-				survey.getQuestionByName("editRiverInfo").html = calculateEditRiverHTML(id, true)
-				survey.getQuestionByName("welcomeText").html = calculateWelcomeHTML(id)
 			}
 			else {
 				alert("Link import failed. Please contact support@rivers.run")
