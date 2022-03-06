@@ -211,7 +211,7 @@ async function loadOverviews() {
 
 async function prepareRiverData({
 	includeUSGSGauges = true,
-	includeCanadianGauges = false,
+	includeCanadianGauges = true,
 	includeIrishGauges = false,
 }) {
 
