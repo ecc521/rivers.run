@@ -58,7 +58,6 @@ async function loadCanadianFile(code) {
 		province = (await getGaugeDetails(code)).province
 	}
 	let url = `https://dd.weather.gc.ca/hydrometric/csv/${province}/hourly/${province}_${code.length > 2 ? `${code}_` : ""}hourly_hydrometric.csv`
-	console.log(code, url) //TODO: Delete this line.
 
 	let stream;
 	try {
@@ -110,11 +109,11 @@ async function loadCanadianFile(code) {
 
 		gauges[gaugeID] = output
 	}
-
 	return gauges
 }
 
 
 module.exports = {
 	loadCanadianFile,
+	getGaugeDetails,
 }
