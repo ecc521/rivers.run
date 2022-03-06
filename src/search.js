@@ -1,4 +1,4 @@
-require("./toDecimalDegrees.js")
+const toDecimalDegrees = require("./toDecimalDegrees.js")
 let sortUtils = require("./sort.js")
 
 
@@ -295,23 +295,19 @@ function locationFilter(list, parameters) {
     for (let item in list) {
         let river = list[item]
 
-		let lat2;
-		let lon2;
-		try {
-			lat2 = toDecimalDegrees(river.plat) || toDecimalDegrees(river.tlat)
-    		lon2 = toDecimalDegrees(river.plon) || toDecimalDegrees(river.tlon)
-		}
-		catch(e) {
-			console.error("Error parsing coordinates...")
-			console.error(river)
-		}
+        let firstAccess = river.access?.[0]
 
+		let lat2 = firstAccess?.lat
+		let lon2 = firstAccess?.lon
+
+        //calculateDistance returns NaN if calculations can't be performed. 
 		let distance = calculateDistance(lat1, lon1, lat2, lon2)
 
-        let passes = (distance < maxDistance) || parameters.includeUnknown //Follow parameters.includeUnknown unless the river has been eliminated on distance.
-
-        if (!passes) {
-            //Remove the item if it does not pass the test.
+        if (
+            (distance > maxDistance)
+            || (isNaN(distance) && !parameters.includeUnknown)
+        ) {
+            //Remove the item - too far.
             delete list[item]
         }
     }

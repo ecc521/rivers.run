@@ -47,13 +47,9 @@ function createExpansion(button, river) {
         return `<a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">${lat}, ${lon}</a>`
     }
 
-    if (river.plat && river.plon) {
-        textInfo.innerHTML += `Put-In GPS Coordinates: ${createGoogleMapsLink(river.plat, river.plon)}<br>`
-    }
-
-    if (river.tlat && river.tlon) {
-        textInfo.innerHTML += `Take-Out GPS Coordinates: ${createGoogleMapsLink(river.tlat, river.tlon)}<br>`
-    }
+    river.access.forEach((accessPoint) => {
+        textInfo.innerHTML += `${accessPoint.name} GPS Coordinates: ${createGoogleMapsLink(accessPoint.lat, accessPoint.lon)}<br>`
+    })
 
     div.appendChild(textInfo)
 
@@ -61,7 +57,7 @@ function createExpansion(button, river) {
         div.appendChild(river.map)
         river.map.updateMarkers() //Update markers for new flow info.
     }
-    else if (!river.blockMaps && ((river.plat && river.plon) || (river.tlat && river.tlon))) {
+    else if (!river.blockMaps && river.access.length > 0) {
         //Offer a map.
         let mapButton = document.createElement("button")
         mapButton.innerHTML = "Click to Load Map"

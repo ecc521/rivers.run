@@ -8,6 +8,7 @@ const utils = require(path.join(__dirname, "utils.js"))
 const zlib = require("zlib")
 
 const csvParser = require("csv-parser")
+const toDecimalDegrees = require("../src/toDecimalDegrees.js")
 
 const stateLookupTable = require(path.join(__dirname, "stateCodeLookupTable.js"))
 
@@ -159,8 +160,11 @@ async function getSites() {
 			reducedObj.state = stateLookupTable[obj.state_cd][0]
 		}
         reducedObj.gauge = "USGS:" + obj.site_no
-		reducedObj.plat = obj.dec_lat_va
-		reducedObj.plon = obj.dec_long_va
+        reducedObj.access = [{
+            name: "Gauge",
+            lat: toDecimalDegrees(obj.dec_lat_va),
+            lon: toDecimalDegrees(obj.dec_long_va)
+        }]
 		//reducedObj.drainageArea = obj.drain_area_va //We don't use this, and it makes the file bigger.
 
 		newArr[index] = reducedObj
@@ -281,8 +285,8 @@ async function getCanadianGauges(returnArray = false) {
             mapHeaders: function({header, index}) {
                 if (header === '﻿ ID') {return "id"}
                 else if (header === 'Name / Nom') {return "name"}
-                else if (header === "Latitude") {return "plat"}
-                else if (header === "Longitude") {return "plon"}
+                else if (header === "Latitude") {return "lat"}
+                else if (header === "Longitude") {return "lon"}
                 else if (header === 'Prov/Terr') {return "province"}
                 return null //Delete the header.
             }
@@ -318,6 +322,15 @@ async function getCanadianGaugesInRiverFormat() {
             site.section = site.name.slice(splitIndex).trim()
             site.name = site.name.slice(0, splitIndex).trim()
         }
+
+        site.access = [{
+            name: "Gauge",
+            lat: toDecimalDegrees(site.lat),
+            lon: toDecimalDegrees(site.lon),
+        }]
+
+        delete site.lat
+        delete site.lon
 
         site.gauge = "canada:" + site.id
         delete site.id

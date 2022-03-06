@@ -44,7 +44,7 @@ Object.assign(window, require("./TopBar.js"))
 window.River = require("./River.js").River
 window.sort = require("./sort.js").sort
 
-//Defines window.normalSearch, window.advanedSearch, and window.toDecimalDegrees
+//Defines window.normalSearch, window.advanedSearch
 Object.assign(window, require("./search.js"))
 
 //Defines recursiveAssign, deleteMatchingPortions, and objectsEqual

@@ -8,6 +8,7 @@ const csvParser = require("csv-parser")
 let getCSV = bent("https://waterlevel.ie/data/day/")
 
 const utils = require(path.join(__dirname, "../", "utils.js"))
+const toDecimalDegrees = require("../../src/toDecimalDegrees.js")
 
 //Site names and coordinates in file at http://waterlevel.ie/geojson/
 let gaugeMetadataPath = path.join(utils.getDataDirectory(), "ireland-geojson.json")
@@ -46,8 +47,11 @@ async function getMetadata() {
 		try {
 			let gauge = {}
 			gauge.name = value.properties.name
-			gauge.plat = value.geometry.coordinates[1]
-			gauge.plon = value.geometry.coordinates[0]
+			gauge.access = [{
+				name: "Gauge",
+				lat: toDecimalDegrees(value.geometry.coordinates[1]),
+				lon: toDecimalDegrees(value.geometry.coordinates[0])
+			}]
 			let gaugeID = value.properties.ref.slice(5)
 			if (Number(gaugeID) < 41000 && Number(gaugeID) > 1) {
 				obj[gaugeID] = gauge //Other gauge IDs are stated to be unsuitable for re-publication.

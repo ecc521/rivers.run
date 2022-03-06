@@ -10,6 +10,8 @@ const getGaugeSites = require(path.join(__dirname, "siteDataParser.js"))
 
 const utils = require(path.join(__dirname, "utils.js"))
 
+const toDecimalDegrees = require("../src/toDecimalDegrees.js")
+
 const googlecloudrequestrate = 10;
 const API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
 
@@ -307,6 +309,30 @@ async function prepareRiverData({
 			.replaceAll("6", "VI")
 		}
 
+
+
+		obj.access = obj.access || []
+
+		if (obj.tlat && obj.tlon) {
+			obj.access.push({name: "Take-Out", lat: obj.tlat, lon: obj.tlon})
+		}
+		if (obj.plat && obj.plon) {
+			obj.access.push({name: "Put-In", lat: obj.plat, lon: obj.plon})
+		}
+
+		obj.access.filter((accessPoint) => {
+			try {
+				accessPoint.lat = toDecimalDegrees(accessPoint.lat)
+				accessPoint.lon = toDecimalDegrees(accessPoint.lon)
+				return true
+			}
+			catch (e) {
+				console.error("Error on Coordinates for ", obj.name, e)
+				return false
+			}
+		})
+
+		if (Object.keys(obj.access).length === 0) {delete obj.access} //Not needed if 0 datapoints. River.js autofills.
 
 		for (let prop in obj) {
 			if (!allowed.includes(prop)) {

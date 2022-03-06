@@ -201,6 +201,7 @@ function River(locate, event) {
 	this.class = this.class || ""
 	//Convert the numeric value to the filename
 
+	this.access = this.access || []
 
 	this.rating = parseFloat(this.rating)
 	//Consider allowing ratings less than 1.

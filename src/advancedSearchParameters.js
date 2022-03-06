@@ -1,3 +1,5 @@
+const toDecimalDegrees = require("./toDecimalDegrees.js")
+
 function highlightFailingFields(parameters) {
 	//Input checking. Highlight fields that fail in red.
 	if (!toDecimalDegrees(parameters.location.lat) && (toDecimalDegrees(parameters.location.lon) || Number(parameters.location.distance) > 0)) {
@@ -6,14 +8,14 @@ function highlightFailingFields(parameters) {
 	else {
 		document.getElementById("latitudeQuery").style.border = ""
 	}
-	
+
 	if (!toDecimalDegrees(parameters.location.lon) && (toDecimalDegrees(parameters.location.lat) || Number(parameters.location.distance) > 0)) {
 		document.getElementById("longitudeQuery").style.border = "3px solid red"
 	}
 	else {
 		document.getElementById("longitudeQuery").style.border = ""
 	}
-	
+
 	if (!(Number(parameters.location.distance) > 0) && (toDecimalDegrees(parameters.location.lat) || toDecimalDegrees(parameters.location.lon))) {
 		document.getElementById("distanceQuery").style.border = "3px solid red"
 	}
@@ -68,7 +70,7 @@ window.getAdvancedSearchParameters = function(filter) {
 	}
 
 	parameters.normalSearch = document.getElementById("searchbox").value
-	
+
 	parameters.state = {
 		query: document.getElementById("stateQuery").value,
 	}
@@ -82,7 +84,7 @@ window.getAdvancedSearchParameters = function(filter) {
 		includeDams: document.getElementById("includeDams").checked,
 		includeUnknown: document.getElementById("includeUnknownFlow").checked
 	}
-	
+
 	parameters.rating = {
 		type: "from",
 		query: [
@@ -91,12 +93,12 @@ window.getAdvancedSearchParameters = function(filter) {
 		],
 		includeUnknown: document.getElementById("includeUnknownRating").checked
 	}
-	
+
 	parameters.sort = {
 		query: document.getElementById("sortQuery").value,
 		reverse: document.getElementById("sortQueryReverse").checked
 	}
-	
+
 	highlightFailingFields(parameters)
 
 	return parameters
@@ -119,13 +121,13 @@ window.setMenuFromSearch = function(query) {
 	document.getElementById("longitudeQuery").value = query.location.lon
 
 	document.getElementById("tagsQuery").value = query.tags.query
-	
+
 	document.getElementById("stateQuery").value = query.state.query
 
 	document.getElementById("skillQuery1").value = query.skill.query[0]
 	document.getElementById("skillQuery2").value = query.skill.query[1]
 	document.getElementById("includeUnknownSkill").checked = query.skill.includeUnknown
-	
+
 	document.getElementById("ratingQuery1").value = query.rating.query[0]
 	document.getElementById("ratingQuery2").value = query.rating.query[1]
 	document.getElementById("includeUnknownRating").checked = query.rating.includeUnknown
@@ -142,12 +144,12 @@ window.setMenuFromSearch = function(query) {
 	document.getElementById("sortQueryReverse").checked = query.sort.reverse
 	//ID search is currently hidden from the user.
 	window.IDSearchParameters = query.id
-	
+
 	highlightFailingFields(query)
 }
 
 
-//Previously I just used the initial state of the HTML fields to calculate defaultAdvancedSearchParameters (call getAdvancedSearchParameters at page load) - 
+//Previously I just used the initial state of the HTML fields to calculate defaultAdvancedSearchParameters (call getAdvancedSearchParameters at page load) -
 //However Chrome will remember the state of input fields if the hits the back button to go back to the page (sometimes with the app to), causing issues.
 //This is probably a feature intended to stop users from losing form inputs if they navigate accidentally - meaning that filing a bug report would be useless.
 window.defaultAdvancedSearchParameters = {

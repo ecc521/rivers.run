@@ -1,5 +1,4 @@
 //Note: We use lon internally, Google Maps uses lng internally. Be careful...
-require("./toDecimalDegrees.js")
 let MapPopup, MapTooltip;
 
 let API_KEY = "AIzaSyBLmohXw1xsgeBDs1cqVN_UuRtmAHmc-WI"
@@ -24,22 +23,10 @@ async function loadMapsAPI() {
 }
 
 
-
-function getCoords(item, putIn = false) {
-	let latId = "tlat"
-	let lonId = "tlon"
-	if (putIn) {
-		latId = "plat"
-		lonId = "plon"
-	}
-
-	if (item[latId] && item[lonId]) {
-		return {
-			lat:  window.toDecimalDegrees(item[latId]),
-			lng: window.toDecimalDegrees(item[lonId]) //lng for Google Maps
-		}
-	}
-	return false
+function getAccess(river, accessIndex) {
+	let item = river.access.at(accessIndex)
+	if (item) {item.lng = item.lon} //We use lon, Google Maps uses lng.
+	return item
 }
 
 let renderCanvas = document.createElement("canvas")
@@ -98,9 +85,10 @@ async function addMap({
 
 	let PI, TO;
 	if (river) {
-		//Center in between PI and TO if possible.
-		PI = getCoords(river, true)
-		TO = getCoords(river)
+		//Center between first and last access if possible
+		PI = getAccess(river, 0)
+		TO = getAccess(river, -1)
+
 		if (PI && TO) {
 			CTR.lat = PI.lat + TO.lat
 			CTR.lng = PI.lng + TO.lng
@@ -499,7 +487,7 @@ async function addMap({
 
 	//TODO: Start using calcuilateColor.js for this - we don't need the same code multiple places.
 	//It's OK if these colors are different and need a little bit of extra logic -
-	//the main logic for detecting and assigning based off flow levels is nearly the same. 
+	//the main logic for detecting and assigning based off flow levels is nearly the same.
 	let updatableItems = []
 	function drawItem(item) {
 		let color, running = item.running;
@@ -566,15 +554,14 @@ async function addMap({
 
 		//Now, either an icon will be defined, or the color for the icon will be defined. We will cache all generic icons, and the icons for the specific river.
 
-		function addMarker(lat, lon, putIn = false) {
-			if (lat && lon) {
+		function addMarker(accessPoint) {
 				icon = icon || createMarkerImage({
 					fillColor: color,
 					scale
 				})
 
 				var marker = new google.maps.Marker({
-					position: getCoords(item, putIn),
+					position: accessPoint,
 					icon,
 					zoom: item.isGauge?5:undefined,
 					map
@@ -586,11 +573,16 @@ async function addMap({
 					//Labels introduce far too much lag. Only add a label for the river that was opened.
 					//TODO: Consider writing labels into images, to allow everywhere.
 					//Also, consider labelling the other rivers by skill.
+
 					if (!item.isGauge) {
+						let text = accessPoint.name
+						if (text === "Put-In") {text = "PI"}
+						else if (text === "Take-Out") {text = "TO"}
+						else {text = "AP"}
 						marker.setLabel({
 							color: "black",
 							fontSize: "20px",
-							text: (putIn?"PI":"TO")
+							text,
 						})
 					}
 					marker.setZIndex(1)
@@ -603,6 +595,9 @@ async function addMap({
 					//TODO: Remove the inline HTML
 					let riverLink = `<a href="${window.root}#${item.name + " " + item.section}" target="_blank">Open in Rivers.run</a>, `
 					div.innerHTML += riverLink
+
+					let lat = accessPoint.lat
+					let lon = accessPoint.lon
 					let googleMapsLink = `<a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a>, or view below: `
 					div.innerHTML += googleMapsLink
 
@@ -649,11 +644,12 @@ async function addMap({
 					}
 					tooltip.setMap(map)
 				});
-			}
 		}
 
-		addMarker(item.plat, item.plon, true)
-		addMarker(item.tlat, item.tlon)
+		for (let i=0;i<item.access.length;i++) {
+			//Use getAccess, as it copies lon (which we use) to lng (for Google Maps)
+			addMarker(getAccess(item, i))
+		}
 	}
 
 	function updateMarkers() {
@@ -686,10 +682,12 @@ async function addMap({
 			//If we don't have a river to compare distance against, pick randomly from the gauges.
 			if (river) {
 				//Add a bit based on distance. Speed > accuracy here.
-				let lat1 = window.toDecimalDegrees(item.plat || item.tlat)
-				let lon1 = window.toDecimalDegrees(item.plon || item.tlon)
-				let lat2 = window.toDecimalDegrees(river.plat || river.tlat)
-				let lon2 = window.toDecimalDegrees(river.plon || river.tlon)
+				let itemCoords = getAccess(item, 0)
+				let riverCoords = getAccess(river, 0)
+				let lat1 = itemCoords?.lat
+				let lon1 = itemCoords?.lon
+				let lat2 = riverCoords.lat
+				let lon2 = riverCoords.lon
 
 				//Calculate VERY approximate distance.
 				let distance = ((Math.abs(lat1 - lat2)**2) + (Math.abs(lon1 - lon2)**2))**0.5
