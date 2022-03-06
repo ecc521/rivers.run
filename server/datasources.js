@@ -11,12 +11,14 @@ const {loadIrelandOPWGauge} = require(path.join(__dirname, "gauges", "irelandGau
 const {isValidNWSCode, isValidUSGSCode, isValidOPWCode} = require(path.join(__dirname, "gauges", "codeValidators.js"))
 
 class USGS extends DataSource {
-	constructor(obj = {}) {
+	constructor(obj = {}, timeToRequest) {
 		let config = Object.assign({
 			batchSize: 120, //USGS gets seemingly quadratically slower above ~200
 			concurrency: 2 //Can do more, but let's not do too much.
 		}, obj)
 		super(config)
+
+		this.timeToRequest = timeToRequest //Optional parameter to specify time duration.
 	}
 
 	prefix = "USGS:"
@@ -28,7 +30,7 @@ class USGS extends DataSource {
 	}
 
 	_processBatch(batch) {
-		return loadSitesFromUSGS(batch)
+		return loadSitesFromUSGS(batch, this.timeToRequest)
 	}
 }
 
@@ -93,7 +95,7 @@ class MSC extends DataSource {
 
 //This MSC will download province files instead of gauge files.
 //Therefore, it overrides the batching code to avoid repeatedly requesting provinces.
-class MSCProvince extends DataSource {
+class MSCProvince extends MSC {
 	constructor(obj = {}) {
 		let config = Object.assign({
 			batchSize: Infinity,
@@ -102,8 +104,6 @@ class MSCProvince extends DataSource {
 		}, obj)
 		super(config)
 	}
-
-	prefix = "canada:"
 
 	async dispatchCallbacks(result, batch, callback) {
 		//This must be an object of gauges, as at least one gaugeID existed in the object.
@@ -133,10 +133,6 @@ class MSCProvince extends DataSource {
 			provinces.get(province).push(gaugeID)
 		}
 		return Array.from(provinces.keys()).map((province) => {return [province]}) //Create batches of a single province.
-	}
-
-	_processBatch(batch) {
-		return loadCanadianFile(batch[0])
 	}
 }
 

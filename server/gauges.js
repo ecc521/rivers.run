@@ -46,12 +46,24 @@ else if (os.platform() === "linux") {
 	//TODO: Symlink to /dev/shm. Or mount a tempfs/ramfs.
 }
 
-function obtainDataFromSources(gauges, batchCallback) {
+function obtainDataFromSources(gauges, highPriorityGauges, batchCallback) {
 	//batchCallback is called with every gauge that is computed.
 	//There, they can be compressed, stored, etc.
 
+	//High priority gauges: Intended for virtual gauges.
+	//These gauges may have an additional amount of data requested.
+
 	//Filter out duplicate site names.
-	gauges = [...new Set(gauges)];
+	highPriorityGauges = new Set(highPriorityGauges)
+	gauges = new Set(gauges);
+
+	highPriorityGauges.forEach(function(code) {
+		gauges.delete(code)
+	})
+
+	let highPriorityDatasources = [
+		new USGS({batchCallback, batchSize: 20}, 1000 * 60 * 60 * 24 * 3), //3 days of USGS data for high priority gauges.
+	]
 
 	let datasources = [
 		new USGS({batchCallback}),
@@ -61,26 +73,46 @@ function obtainDataFromSources(gauges, batchCallback) {
 		new StreamBeam({batchCallback})
 	]
 
-	gauges.forEach((gaugeID) => {
-		for (let i=0;i<datasources.length;i++) {
-			let datasource = datasources[i]
-			let code = datasource.getValidCode(gaugeID)
-			if (code) {
-				datasource.add(code)
-				break;
+	function addGaugesToDatasources(gaugeIDs) {
+		gaugeIDs.forEach((gaugeID) => {
+			for (let i=0;i<datasources.length;i++) {
+				let datasource = datasources[i]
+				let code = datasource.getValidCode(gaugeID)
+				if (code) {
+					datasource.add(code)
+					return;
+				}
 			}
 			//TODO: We need a good way to track down bad gauge codes to source rivers.
-			if (i === datasources.length - 1) {console.warn("No match for " + gaugeID)}
-		}
-	})
+			console.warn("No match for " + gaugeID)
+		})
+	}
+
+	addGaugesToDatasources(gauges)
+	datasources.unshift(...highPriorityDatasources)
+	addGaugesToDatasources(highPriorityGauges)
 
 	let promises = []
-	datasources.forEach((datasource) => {promises.push(datasource.flush(false, true))})
-	promises[0].finally(() => {console.log("USGS Done!")})
-	promises[1].finally(() => {console.log("NWS Done!")})
-	promises[2].finally(() => {console.log("MSC Done!")})
-	promises[3].finally(() => {console.log("OPW Done!")})
-	promises[4].finally(() => {console.log("StreamBeam Done!")})
+	datasources.forEach((datasource) => {
+		let promise = datasource.flush(false, true)
+		promises.push(promise)
+
+		if (datasource instanceof USGS) {
+			promise.finally(() => {console.log("USGS Done!")})
+		}
+		else if (datasource instanceof NWS) {
+			promise.finally(() => {console.log("USGS Done!")})
+		}
+		else if (datasource instanceof OPW) {
+			promise.finally(() => {console.log("OPW Done!")})
+		}
+		else if (datasource instanceof StreamBeam) {
+			promise.finally(() => {console.log("StreamBeam Done!")})
+		}
+		else if (datasource instanceof MSC) {
+			promise.finally(() => {console.log("MSC Done!")})
+		}
+	})
 
 	return Promise.allSettled(promises)
 }
@@ -88,10 +120,10 @@ function obtainDataFromSources(gauges, batchCallback) {
 async function loadData(siteCodes) {
 	let gauges = {}
 
+	let virtualGaugeRequirements = [];
 	if (virtualGauges) {
 		try {
-			let requiredGauges = await virtualGauges.getRequiredGauges()
-			siteCodes = siteCodes.concat(requiredGauges)
+			virtualGaugeRequirements = await virtualGauges.getRequiredGauges()
 		}
 		catch (e) {console.error(e)}
 	}
@@ -105,7 +137,7 @@ async function loadData(siteCodes) {
 		await fs.promises.writeFile(filePath, JSON.stringify(data))
 	}
 
-	await obtainDataFromSources(siteCodes, function(data, gaugeID) {
+	await obtainDataFromSources(siteCodes, virtualGaugeRequirements, function(data, gaugeID) {
 		startedLoading++
 		writes.push((async function() {
 			await writeFile(data, gaugeID)
@@ -120,7 +152,6 @@ async function loadData(siteCodes) {
 	await Promise.allSettled(writes)
 	console.log("Loaded " + totalLoaded + " gauges. ")
 
-	//TODO: Get 7 days of USGS data for virtual gauge gauges.
 	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
 	if (virtualGauges) {
 		console.log("Computing virtual gauges...")
@@ -129,8 +160,8 @@ async function loadData(siteCodes) {
 			for (let gaugeID in newGauges) {
 				let data = newGauges[gaugeID]
 				await writeFile(data, gaugeID)
-				gaugeTrimmer.shrinkGauge(gauge)
-				gauges[gaugeID] = gauge
+				gaugeTrimmer.shrinkGauge(data)
+				gauges[gaugeID] = data
 			}
 		}
 		catch (e) {console.log(e)}

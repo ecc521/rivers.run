@@ -1,4 +1,4 @@
-// const {loadSitesFromUSGS} = require("../server/gauges/usgsGauges.js")
+const {loadSitesFromUSGS} = require("../server/gauges/usgsGauges.js")
 
 class Gauge {
 	constructor(combinedCode, gaugeInfo = {}) {
@@ -13,12 +13,12 @@ class Gauge {
 
 	async updateReadingsFromNetwork() {
 		//We will go directly to USGS for data. All others we'll go to the server for now.
-		//Complications: CSP blocks USGS, (some CSP bug with Firefox forced its current design or something). So the native app might be left behind. 
 		let jsonObj;
 		switch (this.prefix) {
 			case "USGS":
-				// jsonObj = (await loadSitesFromUSGS([this.combinedCode], 1000 * 60 * 60 * 72))[this.gaugeID] //3 days
-				// break;
+				let timeToRequest = 1000 * 60 * 60 * 24 * 3 //3 days
+				jsonObj = (await loadSitesFromUSGS([this.combinedCode], timeToRequest))[this.gaugeID]
+				break;
 			case "NWS":
 			case "canada":
 			case "streambeam":

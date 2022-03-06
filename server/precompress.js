@@ -35,7 +35,6 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 }
 
 async function compressFile(filePath, level = 9, options = {}) {
-
 	//ignoreSizeLimit: Compress even if over 5MiB
 	//alwaysCompress: Overwrite existing file regardless (don't check if existing file is same as current one).
 	//keepLastModified: Copy lastModified from the uncompressed file onto the compressed one. (Should this happen by default?)
