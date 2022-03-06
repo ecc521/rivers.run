@@ -7,7 +7,7 @@ const gaugeTrimmer = require(path.join(__dirname, "gaugeTrimmer.js"))
 
 const compressor = require(path.join(__dirname, "precompress.js"))
 
-const {USGS, NWS, StreamBeam, MSC, OPW} = require(path.join(__dirname, "datasources.js"))
+const {USGS, NWS, StreamBeam, MSC, MSCProvince, OPW} = require(path.join(__dirname, "datasources.js"))
 
 let virtualGauges;
 
@@ -56,7 +56,7 @@ function obtainDataFromSources(gauges, batchCallback) {
 	let datasources = [
 		new USGS({batchCallback}),
 		new NWS({batchCallback}),
-		new MSC({batchCallback}),
+		new MSCProvince({batchCallback}),
 		new OPW({batchCallback}),
 		new StreamBeam({batchCallback})
 	]

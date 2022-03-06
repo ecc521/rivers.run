@@ -5,7 +5,7 @@ const DataSource = require("./DataSource.js")
 const {loadSiteFromNWS} = require(path.join(__dirname, "gauges", "nwsGauges.js"))
 const {loadSitesFromUSGS} = require(path.join(__dirname, "gauges", "usgsGauges.js"))
 const {loadStreamBeamGauge} = require(path.join(__dirname, "gauges", "streambeamGauges.js"))
-const {loadCanadianFile} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
+const {loadCanadianFile, getGaugeDetails} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
 const {loadIrelandOPWGauge} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
 
 const {isValidNWSCode, isValidUSGSCode, isValidOPWCode} = require(path.join(__dirname, "gauges", "codeValidators.js"))
@@ -91,6 +91,55 @@ class MSC extends DataSource {
 	}
 }
 
+//This MSC will download province files instead of gauge files.
+//Therefore, it overrides the batching code to avoid repeatedly requesting provinces.
+class MSCProvince extends DataSource {
+	constructor(obj = {}) {
+		let config = Object.assign({
+			batchSize: Infinity,
+			concurrency: 1,
+			timeout: 120000 //120 seconds
+		}, obj)
+		super(config)
+	}
+
+	prefix = "canada:"
+
+	async dispatchCallbacks(result, batch, callback) {
+			//This must be an object of gauges, as at least one gaugeID existed in the object.
+			for (let gaugeID in result) {
+				try {
+					await callback(result[gaugeID], this.prefix + gaugeID)
+				}
+				catch (e) {console.error(e)}
+			}
+	}
+
+	async getBatches(onlyFull) {
+		if (onlyFull) {return []}
+
+		let provinces = new Map()
+
+		while (this.gaugeIDCache.length > 0) {
+			let gaugeID = this.gaugeIDCache.pop()
+			//Batch every gauge into it's respective province, then run.
+			let gaugeInfo = await getGaugeDetails(gaugeID)
+			let province = gaugeInfo.province
+
+			if (!provinces.get(province)) {
+				provinces.set(province, [])
+			}
+
+			provinces.get(province).push(gaugeID)
+		}
+		return Array.from(provinces.keys()).map((province) => {return [province]}) //Create batches of a single province.
+	}
+
+	_processBatch(batch) {
+		return loadCanadianFile(batch[0])
+	}
+}
+
 //Ireland Office of Public Works
 class OPW extends DataSource {
 	constructor(obj = {}) {
@@ -114,4 +163,4 @@ class OPW extends DataSource {
 	}
 }
 
-module.exports = {USGS, NWS, StreamBeam, MSC, OPW}
+module.exports = {USGS, NWS, StreamBeam, MSC, MSCProvince, OPW}
