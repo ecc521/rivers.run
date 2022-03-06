@@ -5,7 +5,7 @@ const DataSource = require("./DataSource.js")
 const {loadSiteFromNWS} = require(path.join(__dirname, "gauges", "nwsGauges.js"))
 const {loadSitesFromUSGS} = require(path.join(__dirname, "gauges", "usgsGauges.js"))
 const {loadStreamBeamGauge} = require(path.join(__dirname, "gauges", "streambeamGauges.js"))
-const {loadCanadianGauge} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
+const {loadCanadianFile} = require(path.join(__dirname, "gauges", "canadaGauges.js"))
 const {loadIrelandOPWGauge} = require(path.join(__dirname, "gauges", "irelandGauges.js"))
 
 const {isValidNWSCode, isValidUSGSCode, isValidOPWCode} = require(path.join(__dirname, "gauges", "codeValidators.js"))
@@ -87,7 +87,7 @@ class MSC extends DataSource {
 	prefix = "canada:"
 
 	_processBatch(batch) {
-		return loadCanadianGauge(batch[0])
+		return loadCanadianFile(batch[0])
 	}
 }
 

@@ -82,9 +82,7 @@ class DataSource {
 					break;
 				}
 				catch (e) {
-					//We are going to suppress logging somewhat, as errors (timeout, connection reset) are very common on the Canadian gauges,
-					//however it usually works just fine on retry.
-
+					console.error(e)
 					console.error("Tried " + i + " times. ")
 
 					await new Promise((resolve, reject) => {
@@ -118,7 +116,7 @@ class DataSource {
 
 	removePrefix(code) {
 		if (code.startsWith(this.prefix)) {
-			return code.slice(this.prefix.length) //Codes already trimmed in dataparse. 
+			return code.slice(this.prefix.length) //Codes already trimmed in dataparse.
 		}
 	}
 

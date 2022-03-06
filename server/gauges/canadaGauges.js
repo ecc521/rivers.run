@@ -4,65 +4,35 @@ const path = require("path")
 const bent = require("bent")
 const csvParser = require("csv-parser")
 
-const siteDataParser = require(path.join(__dirname, "../", "siteDataParser.js"))
+const siteDataParser = require("../siteDataParser.js")
+
+const meterInFeet = 3.2808399
+const cubicMeterInFeet = meterInFeet**3
+
 
 let canadianGaugesPromise;
 
-let blacklist = {} //Will be cleared on reboots, so shouldn't be too problematic.
-
-//TODO: Instead of loading all gauges individually, load the file containing data for each region.
-async function loadCanadianGauge(gaugeID) {
-	//https://dd.weather.gc.ca/hydrometric/csv/
-
-	if (blacklist[gaugeID]) {return false}
-
+async function getGaugeDetails(gaugeID) {
 	if (!canadianGaugesPromise) {
 		canadianGaugesPromise = siteDataParser.getCanadianGauges()
 	}
 	canadianGauges = await canadianGaugesPromise
 
 	let gaugeInfo = canadianGauges[gaugeID]
-	let province = gaugeInfo.province
-	//Using daily instead of hourly gives a longer duration of data.
-	let url = `https://dd.weather.gc.ca/hydrometric/csv/${province}/hourly/${province}_${gaugeID}_hourly_hydrometric.csv`
-	let stream;
-	try {
-		stream = await (bent(url)())
-	}
-	catch (e) {
-		if (e.statusCode === 404) {
-			blacklist[gaugeID] = true
-			//Gauge must be seasonal, and down at the moment.
-			return false
-		}
-		throw e
-	}
+	return gaugeInfo
+}
 
-	let results = [];
-    await new Promise((resolve, reject) => {
-        stream.pipe(csvParser({
-            mapHeaders: function({header, index}) {
-                if (header === "Water Level / Niveau d'eau (m)") {return "meters"}
-				else if (header === "Discharge / Débit (cms)") {return "cms"} //cubic meters per second.
-				else if (header === "Date") {return "dateTime"}
-				else {return null}
-            }
-        }))
-        .on('data', (data) => results.push(data))
-        .on('end', resolve);
-    })
 
-	let meterInFeet = 3.2808399
-	let cubicMeterInFeet = meterInFeet**3
-
-	for (let prop in results) {
+function reformatReadings(readingsArr) {
+	//All edits in-place.
+	for (let i=0;i<readingsArr.length;i++) {
 		//When converting, we will round the measurements slightly.
-		let reading = results[prop]
+		let reading = readingsArr[i]
 		//Reformat timestamps.
 		reading.dateTime = new Date(reading.dateTime).getTime()
 
 		//The properties might exist, but just be empty.
-	    //parseFloat handles strings that are numbers, but returns NaN on things like "" instead of 0.
+		//parseFloat handles strings that are numbers, but returns NaN on things like "" instead of 0.
 		if (!isNaN(parseFloat(reading.cms))) {
 			reading.cfs = Number(reading.cms) * cubicMeterInFeet
 			reading.cfs = Math.round(reading.cfs * 10)/10
@@ -76,18 +46,77 @@ async function loadCanadianGauge(gaugeID) {
 	}
 
 	//Sort so that newest values are last.
-	results.sort((a,b) => {return a.dateTime - b.dateTime})
+	readingsArr.sort((a,b) => {return a.dateTime - b.dateTime})
+}
 
-	let output = {
-		readings: results,
-		name: gaugeInfo.name,
-		units: "m",
+
+async function loadCanadianFile(code) {
+	//Returns an object with every gauge in the file.
+	//Supports provinces and gaugeIDs.
+	let province = code
+	if (code.length > 2) {
+		console.log(code)
+		console.log(await getGaugeDetails(code))
+		province = (await getGaugeDetails(code)).province
+	}
+	let url = `https://dd.weather.gc.ca/hydrometric/csv/${province}/hourly/${province}_${code.length > 2 ? `${code}_` : ""}hourly_hydrometric.csv`
+	console.log(code, url)
+
+	let stream;
+	try {
+		stream = await (bent(url)())
+	}
+	catch (e) {
+		//If 404, return false to indicate no value - the gauge is probably seasonal and currently down. 
+		if (e.statusCode === 404) {
+			return false
+		}
+		throw e
 	}
 
-	return output
+	let gaugeReadings = {};
+
+    await new Promise((resolve, reject) => {
+        stream.pipe(csvParser({
+            mapHeaders: function({header, index}) {
+                if (header === "Water Level / Niveau d'eau (m)") {return "meters"}
+				else if (header === "Discharge / Débit (cms)") {return "cms"} //cubic meters per second.
+				else if (header === "Date") {return "dateTime"}
+				else if (header === "﻿ ID") {return "ID"}
+				else {return null}
+            }
+        }))
+        .on('data', (data) => {
+			gaugeReadings[data.ID] = gaugeReadings[data.ID] || []
+			gaugeReadings[data.ID].push(data)
+			delete data.ID
+		})
+        .on('end', resolve);
+    })
+
+
+	let gauges = {}
+
+	for (let gaugeID in gaugeReadings) {
+		let results = gaugeReadings[gaugeID]
+
+		reformatReadings(results)
+
+		let gaugeInfo = await getGaugeDetails(gaugeID)
+
+		let output = {
+			readings: results,
+			name: gaugeInfo.name,
+			units: "m",
+		}
+
+		gauges[gaugeID] = output
+	}
+
+	return gauges
 }
 
 
 module.exports = {
-	loadCanadianGauge,
+	loadCanadianFile,
 }
