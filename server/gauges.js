@@ -100,12 +100,16 @@ async function loadData(siteCodes) {
 	let startedLoading = 0
 	let totalLoaded = 0
 
+	async function writeFile(data, gaugeID) {
+		let filePath = path.join(readingsFile, gaugeID)
+		await fs.promises.writeFile(filePath, JSON.stringify(data))
+	}
+
 	await obtainDataFromSources(siteCodes, function(data, gaugeID) {
 		startedLoading++
 		writes.push((async function() {
-			let filePath = path.join(readingsFile, gaugeID)
-			await fs.promises.writeFile(filePath, JSON.stringify(data))
-			let shrunkenData = gaugeTrimmer.shrinkGauge(data)
+			await writeFile(data, gaugeID)
+			gaugeTrimmer.shrinkGauge(data)
 			gauges[gaugeID] = data
 			totalLoaded++
 			if (totalLoaded % 512 === 0) {console.log("Finished writing " + totalLoaded + " gauges. (" + (startedLoading - totalLoaded) + " more in progress)")}
@@ -116,16 +120,16 @@ async function loadData(siteCodes) {
 	await Promise.allSettled(writes)
 	console.log("Loaded " + totalLoaded + " gauges. ")
 
+	//TODO: Get 7 days of USGS data for virtual gauge gauges.
 	//Question: Should virtualGauges be added as gauges to rivers.run? They would need to be added to riverarray if so.
 	if (virtualGauges) {
 		console.log("Computing virtual gauges...")
 		try {
 			let newGauges = await virtualGauges.getVirtualGauges(gauges)
 			for (let gaugeID in newGauges) {
-				let gauge = newGauges[gaugeID]
-				let filePath = path.join(readingsFile, gaugeID)
-				await fs.promises.writeFile(filePath, JSON.stringify(gauge))
-				newGauges[gaugeID] = gaugeTrimmer.shrinkGauge(gauge)
+				let data = newGauges[gaugeID]
+				await writeFile(data, gaugeID)
+				gaugeTrimmer.shrinkGauge(gauge)
 				gauges[gaugeID] = gauge
 			}
 		}
