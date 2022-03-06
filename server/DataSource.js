@@ -7,131 +7,141 @@ class DataSource {
 		retryDelay = 4000, //Delay between retries in milliseconds.
 		timeout = 30000, //Timeout in milliseconds.
 	}) {
+		this.batchSize = batchSize
+		this.concurrency = concurrency
+		this.batchCallback = batchCallback
+		this.retries = retries
+		this.retryDelay = retryDelay
+		this.timeout = timeout
+	}
 
-		let gaugeIDCache = [] //Used to store gaugeIDs until a full batch can be made, or flush is called.
+	gaugeIDCache = [] //Used to store gaugeIDs until a full batch can be made, or flush is called.
 
-		//Determine when the current flush finishes - all requests open at the time of the flush are done.
-		let outstandingRequests = new Map()
-		let insertIndex = 0
+	//Determine when the current flush finishes - all requests open at the time of the flush are done.
+	outstandingRequests = new Map()
+	insertIndex = 0
 
-		this.add = function(newGaugeIDs) {
-			if (!(newGaugeIDs instanceof Array)) {newGaugeIDs = [newGaugeIDs]} //Allow passing a single gaugeID.
-			gaugeIDCache = gaugeIDCache.concat(newGaugeIDs)
-			this.flush(true) //Only flush full blocks.
-		}
+	outstanding = 0; //For limiting concurrency.
+	queue = [] //FILO - shouldn't be a problem within an individual data source.
 
-		this.getBatches = function(onlyFull) {
-			let offset = 0
-			let slice = []
+	add(newGaugeIDs) {
+		if (!(newGaugeIDs instanceof Array)) {newGaugeIDs = [newGaugeIDs]} //Allow passing a single gaugeID.
+		this.gaugeIDCache = this.gaugeIDCache.concat(newGaugeIDs)
+		this.flush(true) //Only flush full blocks.
+	}
 
-			let batches = []
+	getBatches(onlyFull) {
+		let offset = 0
+		let slice = []
 
-			while (offset < gaugeIDCache.length) {
-				slice = gaugeIDCache.slice(offset, offset+batchSize)
-				if (onlyFull && slice.length !== batchSize) {
-					break;
-				}
+		let batches = []
 
-				batches.push(slice)
-
-				slice = [] //Clear slice - don't want these going back into gaugeIDCache
-				offset += batchSize
+		while (offset < this.gaugeIDCache.length) {
+			slice = this.gaugeIDCache.slice(offset, offset + this.batchSize)
+			if (onlyFull && slice.length !== this.batchSize) {
+				break;
 			}
-			gaugeIDCache = slice
-			return batches
+
+			batches.push(slice)
+
+			slice = [] //Clear slice - don't want these going back into this.gaugeIDCache
+			offset += this.batchSize
 		}
+		this.gaugeIDCache = slice
+		return batches
+	}
 
-		//Place gauges in gaugeIDCache into batches. Resolve when all existing calls finish.
-		this.flush = function(onlyFull, getPromise = false) {
-			let batches = this.getBatches(onlyFull)
+	//Place gauges in this.gaugeIDCache into batches. Resolve when all existing calls finish.
+	flush(onlyFull, getPromise = false) {
+		let batches = this.getBatches(onlyFull)
 
-			batches.forEach((slice) => {
-				//Process slice.
-				outstandingRequests.set(insertIndex++, this.processBatch(slice, insertIndex, batchCallback))
+		let batchCallback = this.batchCallback
+		batches.forEach((slice) => {
+			//Process slice.
+			this.outstandingRequests.set(this.insertIndex++, this.processBatch(slice, this.insertIndex, batchCallback))
+		})
+
+		if (getPromise) {
+			let promises = []
+			let iterator = this.outstandingRequests.values()
+			let last = iterator.next()
+			while (last.done === false) {
+				promises.push(last.value)
+				last = iterator.next()
+			}
+			//TODO: It might be better to check this.outstandingRequests.size on every batch completed, instead of using Promise.all.
+			//Not noticing a problem here though.
+			return Promise.allSettled(promises) //Don't bother creating a Promise.allSettled unless asked.
+		}
+	}
+
+
+	async processBatch(batch, insertIndex, callback) {
+		if (this.outstanding >= this.concurrency) {
+			//We need to wait.
+			let queue = this.queue
+			await new Promise((resolve, reject) => {
+				queue.push(resolve)
 			})
-
-			if (getPromise) {
-				let promises = []
-				let iterator = outstandingRequests.values()
-				let last = iterator.next()
-				while (last.done === false) {
-					promises.push(last.value)
-					last = iterator.next()
-				}
-				//TODO: It might be better to check outstandingRequests.size on every batch completed, instead of using Promise.all.
-				//Not noticing a problem here though.
-				return Promise.allSettled(promises) //Don't bother creating a Promise.allSettled unless asked.
-			}
 		}
 
+		this.outstanding++
 
-		let outstanding = 0; //For limiting concurrency.
-		let queue = [] //FILO - shouldn't be a problem within an individual data source.
+		let result;
+		let i = 0
+		//Add one to retries since it is RE-tries
+		while (i < this.retries + 1) {
+			try {
+				i++
+				let timeout = this.timeout
+				result = await new Promise((resolve, reject) => {
+					this._processBatch(batch).then(resolve, reject)
+					setTimeout(function() {
+						reject("Timeout Exceeded")
+					}, timeout)
+				})
+				break;
+			}
+			catch (e) {
+				console.error(e)
+				console.error("Tried " + i + " times. ")
 
-		this.processBatch = async function(batch, insertIndex, callback) {
-			if (outstanding >= concurrency) {
-				//We need to wait.
+				let retryDelay = this.retryDelay
 				await new Promise((resolve, reject) => {
-					queue.push(resolve)
+					setTimeout(resolve, retryDelay*(i+1))
 				})
 			}
+		}
+		this.outstanding--
+		this.outstandingRequests.delete(this.insertIndex)
+		if (this.queue.length > 0) {
+			this.queue.pop()()
+		}
 
-			outstanding++
-
-			let result;
-			let i = 0
-			//Add one to retries since it is RE-tries
-			while (i < retries + 1) {
+		if (batch.some((gaugeID) => {
+			return result?.[gaugeID]
+		})) {
+			//This must be an object of gauges, as at least one gaugeID existed in the object.
+			for (let gaugeID in result) {
 				try {
-					i++
-					result = await new Promise((resolve, reject) => {
-						this._processBatch(batch).then(resolve, reject)
-						setTimeout(function() {
-							reject("Timeout Exceeded")
-						}, timeout)
-					})
-					break;
+					await callback(result[gaugeID], this.prefix + gaugeID)
 				}
-				catch (e) {
-					console.error(e)
-					console.error("Tried " + i + " times. ")
-
-					await new Promise((resolve, reject) => {
-						setTimeout(resolve, retryDelay*(i+1))
-					})
-				}
+				catch (e) {console.error(e)}
 			}
-			outstanding--
-			outstandingRequests.delete(insertIndex)
-			if (queue.length > 0) {
-				queue.pop()()
-			}
-
-			if (batch.some((gaugeID) => {
-				return result?.[gaugeID]
-			})) {
-				//This must be an object of gauges, as at least one gaugeID existed in the object.
-				for (let gaugeID in result) {
-					try {
-						await callback(result[gaugeID], this.prefix + gaugeID)
-					}
-					catch (e) {console.error(e)}
-				}
-			}
-			else if (result) {
-				//Assume this is an individual gauge.
-				await callback(result, this.prefix + batch[0])
-			}
+		}
+		else if (result) {
+			//Assume this is an individual gauge.
+			await callback(result, this.prefix + batch[0])
 		}
 	}
 
-	removePrefix(code) {
-		if (code.startsWith(this.prefix)) {
-			return code.slice(this.prefix.length) //Codes already trimmed in dataparse.
-		}
+removePrefix(code) {
+	if (code.startsWith(this.prefix)) {
+		return code.slice(this.prefix.length) //Codes already trimmed in dataparse.
 	}
+}
 
-	getValidCode(code) {return this.removePrefix(code)}
+getValidCode(code) {return this.removePrefix(code)}
 }
 
 module.exports = DataSource
