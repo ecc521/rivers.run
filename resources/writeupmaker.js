@@ -82,21 +82,21 @@ const basicInfoPage = {
 		{
 			type: "text",
 			name: "name",
-			title: "River Name: ",
+			title: "River Name",
 			placeHolder: "Enter River Name...",
 			isRequired: true,
 		},
 		{
 			type: "text",
 			name: "section",
-			title: "Section Name: ",
+			title: "Section Name",
 			placeHolder: "Enter Section Name...",
 			isRequired: true,
 		},
 		{
 			type: "dropdown",
 			name: "skill",
-			title: "Skill Level: ",
+			title: "Skill Level",
 			isRequired: true,
 			choices: skillLevels.map((item) => {
 				return {value: item[0], text: item[1]}
@@ -105,7 +105,7 @@ const basicInfoPage = {
 		{
 			type: "text",
 			name: "class",
-			title: "Class (Ex: II+, IV-V, I-II, etc): ",
+			title: "Class (Ex: II+, IV-V, I-II, etc)",
 			placeHolder: "Enter Class...",
 		},
 		{
@@ -113,7 +113,7 @@ const basicInfoPage = {
 			//We can allow values like 0.25 or 0.4 if users want to use them.
 			type: "rating",
 			name: "rating",
-			title: "River Quality: ",
+			title: "River Quality",
 			minRateDescription: "Poor",
 			maxRateDescription: "Exceptional",
 			rateValues: new Array(9).fill(0).map((value, index) => 1 + index*0.5),
@@ -127,19 +127,19 @@ const basicInfoPage = {
 		{
 			type: "text",
 			name: "state",
-			title: "State/Province Abbriviation (NC, VA, TX, etc): ",
+			title: "State/Province Abbriviation (NC, VA, TX, etc)",
 			placeHolder: "Enter State/Province..."
 		},
 		{
 			type: "text",
 			name: "plat",
-			title: "Put-In GPS Latitude: ",
+			title: "Put-In GPS Latitude",
 			placeHolder: "Enter Coordinate... ",
 		},
 		{
 			type: "text",
 			name: "plon",
-			title: "Put-In GPS Longitude: ",
+			title: "Put-In GPS Longitude",
 			placeHolder: "Enter Coordinate... ",
 			startWithNewLine: false,
 			enableIf: "{plat} != {default}",
@@ -148,13 +148,13 @@ const basicInfoPage = {
 		{
 			type: "text",
 			name: "tlat",
-			title: "Take-Out GPS Latitude: ",
+			title: "Take-Out GPS Latitude",
 			placeHolder: "Enter Coordinate... ",
 		},
 		{
 			type: "text",
 			name: "tlon",
-			title: "Take-Out GPS Longitude: ",
+			title: "Take-Out GPS Longitude",
 			placeHolder: "Enter Coordinate... ",
 			startWithNewLine: false,
 			enableIf: "{tlat} != {default}",
@@ -171,13 +171,13 @@ const flowInfoPage = {
 		{
 			type: "dropdown",
 			name: "gaugeProvider",
-			title: "Primary Gauge Provider: ",
+			title: "Primary Gauge Provider",
 			choices: gaugeProviders,
 		},
 		{
 			type: "text",
 			name: "gaugeID",
-			title: "Primary Gauge ID: ",
+			title: "Primary Gauge ID",
 			placeHolder: "Enter Gauge ID... ",
 			isRequired: true,
 			// startWithNewLine: false,
@@ -186,7 +186,7 @@ const flowInfoPage = {
 		{
 			type: "text",
 			name: "minrun",
-			title: "Minimum Level: ",
+			title: "Minimum Level",
 			placeHolder: "Enter Number... ",
 			inputType: "number",
 			enableIf: "{gaugeID} != {default}"
@@ -194,7 +194,7 @@ const flowInfoPage = {
 		{
 			type: "text",
 			name: "lowflow",
-			title: "Low-Flow Level: ",
+			title: "Low-Flow Level",
 			placeHolder: "Enter Number... ",
 			inputType: "number",
 			startWithNewLine: false,
@@ -203,7 +203,7 @@ const flowInfoPage = {
 		{
 			type: "text",
 			name: "midflow",
-			title: "Mid-Flow Level: ",
+			title: "Mid-Flow Level",
 			placeHolder: "Enter Number... ",
 			inputType: "number",
 			startWithNewLine: false,
@@ -212,7 +212,7 @@ const flowInfoPage = {
 		{
 			type: "text",
 			name: "highflow",
-			title: "High-Flow Level: ",
+			title: "High-Flow Level",
 			placeHolder: "Enter Number... ",
 			inputType: "number",
 			startWithNewLine: false,
@@ -221,7 +221,7 @@ const flowInfoPage = {
 		{
 			type: "text",
 			name: "maxrun",
-			title: "Maximum Level: ",
+			title: "Maximum Level",
 			placeHolder: "Enter Number... ",
 			inputType: "number",
 			startWithNewLine: false,
@@ -230,7 +230,7 @@ const flowInfoPage = {
 		{
 			type: "dropdown",
 			name: "relativeflowtype",
-			title: "Relative Flow Units: ",
+			title: "Relative Flow Units",
 			choices: ["cfs", "feet", "cms", "meters"],
 			isRequired: true,
 			startWithNewLine: false,
@@ -241,20 +241,20 @@ const flowInfoPage = {
 			type: "paneldynamic",
 			name: "relatedgauges",
 			enableIf: "{gaugeID} != {default}",
-			title: "Related Gauges: ",
+			title: "Related Gauges",
 			showQuestionNumbers: "off",
 			templateElements: [
 				{
 					type: "dropdown",
 					name: "gaugeProvider",
-					title: "Gauge Provider: ",
+					title: "Gauge Provider",
 					isRequired: true,
 					choices: gaugeProviders,
 				},
 				{
 					type: "text",
 					name: "gaugeID",
-					title: "Gauge ID: ",
+					title: "Gauge ID",
 					isRequired: true,
 					// startWithNewLine: false,
 					placeHolder: "Enter Gauge ID... ",
@@ -274,20 +274,20 @@ const extraPage = {
 		{
 			type: "text",
 			name: "aw",
-			title: "AW River Number: ",
+			title: "AW River Number",
 			placeHolder: "Enter AW River Number... ",
 		},
 
 		{
 			type: "paneldynamic",
 			name: "tags",
-			title: "Tags: ",
+			title: "Tags",
 			showQuestionNumbers: "off",
 			templateElements: [
 				{
 					type: "text",
 					name: "tag",
-					title: "Tag: ",
+					title: "Tag",
 					placeHolder: "Enter Tag... ",
 					isRequired: true,
 				},
@@ -311,7 +311,7 @@ const previewPage = {
 		{
 			type: "html",
 			name: "previewLabel",
-			html: "Preview Should Appear Below: ",
+			html: "Preview Should Appear Below",
 		},
 		{
 			type: "html",
@@ -321,7 +321,7 @@ const previewPage = {
 		{
 			type: "radiogroup",
 			name: "submissionType",
-			title: "This is a: ",
+			title: "This is a",
 			choices: [
 				{value: "new", text: "New River Suggestion"},
 				{value: "edit", text: "Edit to an Existing River"},
@@ -343,7 +343,7 @@ const previewPage = {
 		{
 			type: "text",
 			name: "suggestionName",
-			title: "File Name for this Suggestion: ",
+			title: "File Name for this Suggestion",
 			placeHolder: "Enter File Name... ",
 			visibleIf: "{submissionType}='new'"
 		},
@@ -351,7 +351,7 @@ const previewPage = {
 			type: "text",
 			name: "suggestionEmail",
 			inputType: "email",
-			title: "Contact Email for this Suggestion: ",
+			title: "Contact Email for this Suggestion",
 			placeHolder: "Enter Contact Email... ",
 			visibleIf: "{submissionType}='new'"
 		},
@@ -374,6 +374,21 @@ Survey
     .register("setDefaultFilename", setDefaultFilename);
 
 
+
+Survey
+	.Serializer
+	.addProperty("question", "tooltip:text");
+
+function showTooltip(element) {
+	let dialog = document.createElement("dialog")
+	document.body.appendChild(dialog)
+	dialog.innerHTML = element.tooltip
+	dialog.showModal()
+	dialog.addEventListener("click", function() {
+		dialog.remove()
+	})
+}
+
 let json = {
 	triggers: [
 		{
@@ -382,7 +397,7 @@ let json = {
 			runExpression: "setDefaultFilename()"
 		}
 	],
-	focusFirstQuestionAutomatic: false, 
+	focusFirstQuestionAutomatic: false,
 	checkErrorsMode: "onComplete",
 	progressBarType: "buttons",
 	showProgressBar: "top",
@@ -404,6 +419,43 @@ survey.onComplete.add(function (sender) {
 		survey.currentPageNo = survey.pageCount - 1
 	}, 0)
 });
+
+
+survey
+    .onAfterRenderQuestion
+    .add(function (survey, options) {
+        if (!options.question.tooltip) {return}
+		if (!window.HTMLDialogElement) {return} //We use the HTMLDialogElement for the dialogs - just disable these dialogs if it isn't supported.
+
+        let btn = document.createElement("button");
+        btn.type = "button";
+		btn.innerHTML = "?";
+        btn.style.position = "absolute";
+        btn.style.marginLeft = "6px"
+		btn.style.padding = "0 4px"
+		btn.style.background = "#00000022"
+		btn.style.borderRadius = "100px"
+		btn.style.border = "1px dashed"
+		btn.style.cursor = "pointer"
+
+        let question = options.question;
+        btn.onclick = function () {
+            showTooltip(question);
+        }
+
+        let header = options
+            .htmlElement
+            .querySelector("h5");
+
+        if (!header) {
+			header = options.htmlElement;
+		}
+
+        let span = document.createElement("span");
+        span.innerHTML = "  ";
+        header.appendChild(span);
+        header.appendChild(btn);
+    });
 
 
 ReactDOM.render(

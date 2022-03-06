@@ -103,6 +103,7 @@ function createExpansion(button, river) {
 
 
     let containerForEditLinks = document.createElement("p")
+    containerForEditLinks.style.margin = "2px 0"
     div.appendChild(containerForEditLinks)
 
     let riverCreatorLink = document.createElement("a")
@@ -127,19 +128,16 @@ function createExpansion(button, river) {
     }
 
     if (river.aw) {
-        div.appendChild(document.createElement("br"))
         let link = document.createElement("a")
         link.target = "_blank"
         link.href = "https://www.americanwhitewater.org/content/River/detail/id/" + river.aw
-        link.innerHTML = "View this river on American Whitewater"
+        link.innerHTML = "View on American Whitewater"
         div.appendChild(link)
     }
 
-    div.appendChild(document.createElement("br"))
-    let disclaimer = document.createElement("a")
-    disclaimer.href = "legal/DISCLAIMER.html"
-    disclaimer.target = "_blank"
-    disclaimer.innerHTML = "Rivers.run Content and Flow Disclaimer"
+    let disclaimer = document.createElement("p")
+    disclaimer.innerHTML = `<a href="legal/DISCLAIMER.html" target="_blank">Rivers.run Content and Flow Disclaimer</a>`
+    disclaimer.style.margin = "2px 0";
     div.appendChild(disclaimer)
 
     let addedUSGSDisclaimer = false
