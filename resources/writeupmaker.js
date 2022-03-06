@@ -16,15 +16,15 @@ function getDataFileLink(id) {
 function calculateWelcomeHTML(id) {
 	let str = `Welcome to the Rivers.run River Creator! If you aren't sure where to begin, check the <a target="_blank" href="${window.root + "FAQ.html"}">FAQ</a>!`
 	if (id) {
-		str += `<br>If you only wish to make minor edits to the river you imported, the data file is <a href="${getDataFileLink(id)}" target="_blank">here</a>. `
+		str += `<br>If you only wish to make minor edits to the river you imported, the data file is <a target="_blank" href="${getDataFileLink(id)}">here</a>. `
 	}
 	return str
 }
 
 function calculateEditRiverHTML(id, recent = false) {
-	let str = `You are finished! Click the "Copy Output" button, and paste your output into the ${recent ? `<a href="${getDataFileLink(id)}">river data file</a>` : "river data file"}.`
+	let str = `You are finished! Click the "Copy Output" button, and paste your output into the ${recent ? `<a target="_blank" href="${getDataFileLink(id)}">river data file</a>` : "river data file"}.`
 	if (id && !recent) {
-		str += `<br>The data file for the river you last imported is <a href="${getDataFileLink(id)}" target="_blank">here</a> - this may or may not be the file you are looking for. `
+		str += `<br>The data file for the river you last imported is <a target="_blank" href="${getDataFileLink(id)}">here</a> - this may or may not be the file you are looking for. `
 	}
 	return str
 }
