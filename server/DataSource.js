@@ -26,7 +26,7 @@ class DataSource {
 
 	add(newGaugeIDs) {
 		if (!(newGaugeIDs instanceof Array)) {newGaugeIDs = [newGaugeIDs]} //Allow passing a single gaugeID.
-		this.gaugeIDCache = this.gaugeIDCache.concat(newGaugeIDs)
+		this.gaugeIDCache.push(...newGaugeIDs)
 		this.flush(true) //Only flush full blocks.
 	}
 
@@ -52,8 +52,8 @@ class DataSource {
 	}
 
 	//Place gauges in this.gaugeIDCache into batches. Resolve when all existing calls finish.
-	flush(onlyFull, getPromise = false) {
-		let batches = this.getBatches(onlyFull)
+	async flush(onlyFull, getPromise = false) {
+		let batches = await this.getBatches(onlyFull)
 
 		let batchCallback = this.batchCallback
 		batches.forEach((slice) => {
@@ -71,10 +71,30 @@ class DataSource {
 			}
 			//TODO: It might be better to check this.outstandingRequests.size on every batch completed, instead of using Promise.all.
 			//Not noticing a problem here though.
-			return Promise.allSettled(promises) //Don't bother creating a Promise.allSettled unless asked.
+			await Promise.allSettled(promises) //Don't bother creating a Promise.allSettled unless asked.
 		}
 	}
 
+
+	//dispatchCallbacks needs to be overridden for Canadian provinces, where the gaugeID is not actually returned as a property,
+	//and other gauges are returned instead.
+	async dispatchCallbacks(result, batch, callback) {
+		if (batch.some((gaugeID) => {
+			return result?.[gaugeID]
+		})) {
+			//This must be an object of gauges, as at least one gaugeID existed in the object.
+			for (let gaugeID in result) {
+				try {
+					await callback(result[gaugeID], this.prefix + gaugeID)
+				}
+				catch (e) {console.error(e)}
+			}
+		}
+		else if (result) {
+			//Assume this is an individual gauge.
+			await callback(result, this.prefix + batch[0])
+		}
+	}
 
 	async processBatch(batch, insertIndex, callback) {
 		if (this.outstanding >= this.concurrency) {
@@ -95,6 +115,7 @@ class DataSource {
 				i++
 				let timeout = this.timeout
 				result = await new Promise((resolve, reject) => {
+					//Call the processBatch defined on the subclass.
 					this._processBatch(batch).then(resolve, reject)
 					setTimeout(function() {
 						reject("Timeout Exceeded")
@@ -118,21 +139,7 @@ class DataSource {
 			this.queue.pop()()
 		}
 
-		if (batch.some((gaugeID) => {
-			return result?.[gaugeID]
-		})) {
-			//This must be an object of gauges, as at least one gaugeID existed in the object.
-			for (let gaugeID in result) {
-				try {
-					await callback(result[gaugeID], this.prefix + gaugeID)
-				}
-				catch (e) {console.error(e)}
-			}
-		}
-		else if (result) {
-			//Assume this is an individual gauge.
-			await callback(result, this.prefix + batch[0])
-		}
+		await this.dispatchCallbacks(result, batch, callback)
 	}
 
 removePrefix(code) {
