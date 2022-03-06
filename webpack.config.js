@@ -1,10 +1,10 @@
 const path = require("path")
 
 //Development build:
-//npm run webpack -- --env dev
+//npx webpack -- --env dev
 
 //Production build:
-//webpack
+//npx webpack
 
 	let prodConfig = {
 		mode: "production", //Build for production
@@ -61,32 +61,10 @@ const path = require("path")
 		}
 	}
 
-
-	let devConfig = {
-		mode: "production",
-		entry: {
-			"packages/index.js": "./src/index.js",
-			"packages/allPages.js": "./src/allPages/allPages.js",
-		},
-  		watch: true,
-		target: "web",
-		devtool: "source-map",
-		output: {
-			path: __dirname,
-			filename: "[name]",
-		},
-		optimization: {
-			minimize: false
-		},
-		stats: {
-			colors: true
-		}
-	}
-
-
-
 module.exports = function(env) {
-	if (env === "dev") {
+	if (env.dev) {
+		let devConfig = Object.assign({}, prodConfig)
+		devConfig.optimization.minimize = false
 		return devConfig
 	}
 	else {
