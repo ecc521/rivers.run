@@ -311,7 +311,7 @@ const previewPage = {
 		{
 			type: "html",
 			name: "previewLabel",
-			html: "Preview Should Appear Below",
+			html: "Preview Should Appear Below:",
 		},
 		{
 			type: "html",
@@ -321,7 +321,7 @@ const previewPage = {
 		{
 			type: "radiogroup",
 			name: "submissionType",
-			title: "This is a",
+			title: "Submission Type",
 			choices: [
 				{value: "new", text: "New River Suggestion"},
 				{value: "edit", text: "Edit to an Existing River"},
@@ -432,7 +432,7 @@ survey
 		btn.innerHTML = "?";
         btn.style.position = "absolute";
         btn.style.marginLeft = "6px"
-		btn.style.padding = "0 4px"
+		btn.style.padding = "1px 5px"
 		btn.style.background = "#00000022"
 		btn.style.borderRadius = "100px"
 		btn.style.border = "1px dashed"

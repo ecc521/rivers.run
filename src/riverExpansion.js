@@ -121,7 +121,6 @@ function createExpansion(button, river) {
         editRiverLink.target = "_blank"
 
         //Link to edit river data
-
         editRiverLink.href = "https://docs.google.com/document/d/" + river.id
         editRiverLink.innerHTML = "Edit this River"
         containerForEditLinks.appendChild(editRiverLink)
