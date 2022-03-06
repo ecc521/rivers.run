@@ -38,6 +38,7 @@ class DataSource {
 				offset += batchSize
 			}
 			gaugeIDCache = slice
+			return batches
 		}
 
 		//Place gauges in gaugeIDCache into batches. Resolve when all existing calls finish.
