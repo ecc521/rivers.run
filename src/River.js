@@ -191,7 +191,7 @@ function River(locate, event) {
 
 	let river = this //Allow for incapsulation if this changes.
 
-	//Copies name, section, skill, rating, writeup, tags, gauge, plat,plon, tlat,tlon, aw, dam
+	//Copies name, section, skill, rating, writeup, tags, gauge, etc. 
 	Object.assign(this, event)
 	//These need to be a string. They can't be undefined
 	this.name = this.name || ""

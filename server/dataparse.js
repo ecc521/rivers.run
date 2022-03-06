@@ -309,7 +309,12 @@ async function prepareRiverData({
 			.replaceAll("6", "VI")
 		}
 
-
+		if (obj.access) {
+			try {
+				obj.access = JSON.parse(obj.access)
+			}
+			catch(e) {console.error(e);console.log(obj)}
+		}
 
 		obj.access = obj.access || []
 

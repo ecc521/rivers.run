@@ -1,3 +1,5 @@
+const toDecimalDegrees = require("../src/toDecimalDegrees.js")
+
 //TODO: Add validation for gaugeIDs, etc.
 const allowed = require("../server/allowedFields.js")
 
@@ -53,6 +55,14 @@ function surveyValidateQuestion(s, options) {
 			options.error = res;
 		}
     }
+	if (options.name === "lat" || options.name === "lon") {
+		try {
+			toDecimalDegrees(options.value)
+		}
+		catch (e) {
+			options.error = "Unable to Parse Coordinate"
+		}
+	}
 }
 
 
@@ -145,34 +155,38 @@ const basicInfoPage = {
 			panelRemoveText: "Remove State/Province"
 		},
 		{
-			type: "text",
-			name: "plat",
-			title: "Put-In GPS Latitude",
-			placeHolder: "Enter Coordinate... ",
-		},
-		{
-			type: "text",
-			name: "plon",
-			title: "Put-In GPS Longitude",
-			placeHolder: "Enter Coordinate... ",
-			startWithNewLine: false,
-			enableIf: "{plat} != {default}",
-			isRequired: true,
-		},
-		{
-			type: "text",
-			name: "tlat",
-			title: "Take-Out GPS Latitude",
-			placeHolder: "Enter Coordinate... ",
-		},
-		{
-			type: "text",
-			name: "tlon",
-			title: "Take-Out GPS Longitude",
-			placeHolder: "Enter Coordinate... ",
-			startWithNewLine: false,
-			enableIf: "{tlat} != {default}",
-			isRequired: true,
+			type: "paneldynamic",
+			name: "access",
+			title: "Access Points",
+			defaultValue: [{name:"Put-In"},{name:"Take-Out"}],
+			showQuestionNumbers: "off",
+			templateElements: [
+				{
+					type: "text",
+					name: "name",
+					title: "Name",
+					placeHolder: "Enter Name... ",
+					defaultValue: "Access Point",
+				},
+				{
+					type: "text",
+					name: "lat",
+					title: "GPS Latitude",
+					startWithNewLine: false,
+					placeHolder: "Enter Latitude... ",
+					tooltip: "GPS formats may be converted when you deselect the input field"
+				},
+				{
+					type: "text",
+					name: "lon",
+					title: "GPS Longitude",
+					placeHolder: "Enter Longitude... ",
+					startWithNewLine: false,
+					tooltip: "GPS formats may be converted when you deselect the input field"
+				},
+			],
+			panelAddText: "Add Another Access Point",
+			panelRemoveText: "Remove Access Point"
 		},
 	],
 }
@@ -434,7 +448,7 @@ survey
 		btn.innerHTML = "?";
         btn.style.position = "absolute";
         btn.style.marginLeft = "6px"
-		btn.style.padding = "1px 5px"
+		btn.style.padding = "0px 5px"
 		btn.style.background = "#00000022"
 		btn.style.borderRadius = "100px"
 		btn.style.border = "1px dashed"
@@ -552,6 +566,20 @@ setCompleteButtonText() //May change based on the data that is loaded.
 survey.getQuestionByName("editRiverInfo").html = calculateEditRiverHTML(survey.data.id) //If there is an old id, display it.
 setDefaultFilename()
 
+survey.getQuestionByName("access").onValueChanged = function() {
+	let oldJSONValue = JSON.stringify(survey.data.access)
+	let newValue = survey.data.access.map((accessPoint) => {
+		accessPoint.lat = toDecimalDegrees(accessPoint.lat)
+		accessPoint.lon = toDecimalDegrees(accessPoint.lon)
+		return accessPoint
+	})
+
+	//Avoid looping.
+	if (oldJSONValue !== JSON.stringify(newValue)) {
+		survey.getQuestionByName("access").value = newValue
+	}
+}
+
 function getSurveyInRiverFormat() {
 	let obj = Object.assign({}, survey.data)
 
@@ -580,6 +608,7 @@ function getSurveyInRiverFormat() {
 function getSurveyInOldFormat() {
 	let obj = getSurveyInRiverFormat()
 	obj.relatedgauges = JSON.stringify(obj.relatedgauges)
+	obj.access = JSON.stringify(obj.access)
 
 	let result = ""
 	for (let prop in obj) {
@@ -704,7 +733,9 @@ if (window.location.hash !== "") {
 			console.log(riverItem)
 
 			if (riverItem) {
-				if (Object.keys(survey.data).length > 0) {
+				//We will assume that if no name has been entered, there is not a river being worked on.
+				//That assumption is probably reasonable, and means we don't need to worry about things getting set during initialization.
+				if (survey.data.name) {
 					if (!confirm(`Are you sure you want to import ${riverItem.name}? This may overwrite saved data for the ${survey.data.name}`)) {
 						return
 					}
