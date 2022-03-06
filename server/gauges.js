@@ -62,7 +62,7 @@ function obtainDataFromSources(gauges, highPriorityGauges, batchCallback) {
 	})
 
 	let highPriorityDatasources = [
-		new USGS({batchCallback, batchSize: 20}, 1000 * 60 * 60 * 24 * 3), //3 days of USGS data for high priority gauges.
+		new USGS({batchCallback, batchSize: 20}, 1000 * 60 * 60 * 24 * 7), //7 days of USGS data for high priority gauges.
 	]
 
 	let datasources = [

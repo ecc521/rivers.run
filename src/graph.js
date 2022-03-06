@@ -177,15 +177,22 @@ function createGraph(options) {
 
 		let forecastDashing = line.forecastDashing || defaultForecastDashing
 
+		let lastIsForecast;
 		line.points.forEach((point, index) => {
-			if (point[line.forecastAlias]) {
+			let isForecast = point[line.forecastAlias]
+			if (lastIsForecast !== isForecast && index !== 0) {
+				ctx.stroke()
+			}
+			lastIsForecast = isForecast
+
+			if (isForecast) {
 				ctx.setLineDash(forecastDashing)
 			}
 			else {ctx.setLineDash([])}
 
 			goToPoint(point[line.xAlias], point[line.yAlias], options.y1.min, options.y1.range, (index === 0)?true:false)
-			ctx.stroke()
 		})
+		ctx.stroke()
 	})
 
 	if (options.y2) {
@@ -195,15 +202,22 @@ function createGraph(options) {
 
 			let forecastDashing = line.forecastDashing || defaultForecastDashing
 
+			let lastIsForecast;
 			line.points.forEach((point, index) => {
-				if (point[line.forecastAlias]) {
+				let isForecast = point[line.forecastAlias]
+				if (lastIsForecast !== isForecast && index !== 0) {
+					ctx.stroke()
+				}
+				lastIsForecast = isForecast
+
+				if (isForecast) {
 					ctx.setLineDash(forecastDashing)
 				}
 				else {ctx.setLineDash([])}
 
 				goToPoint(point[line.xAlias], point[line.yAlias], options.y2.min, options.y2.range, (index === 0)?true:false)
-				ctx.stroke()
 			})
+			ctx.stroke()
 		})
 	}
 

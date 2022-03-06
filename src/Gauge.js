@@ -16,7 +16,7 @@ class Gauge {
 		let jsonObj;
 		switch (this.prefix) {
 			case "USGS":
-				let timeToRequest = 1000 * 60 * 60 * 24 * 3 //3 days
+				let timeToRequest = 1000 * 60 * 60 * 24 * 7 //7 days
 				jsonObj = (await loadSitesFromUSGS([this.combinedCode], timeToRequest))[this.gaugeID]
 				break;
 			case "NWS":
