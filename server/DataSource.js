@@ -20,10 +20,11 @@ class DataSource {
 			this.flush(true) //Only flush full blocks.
 		}
 
-		//Place gauges in gaugeIDCache into batches. Resolve when all existing calls finish.
-		this.flush = function(onlyFull = false, getPromise = false) {
+		this.getBatches = function(onlyFull) {
 			let offset = 0
 			let slice = []
+
+			let batches = []
 
 			while (offset < gaugeIDCache.length) {
 				slice = gaugeIDCache.slice(offset, offset+batchSize)
@@ -31,14 +32,23 @@ class DataSource {
 					break;
 				}
 
-				//Process slice.
-				outstandingRequests.set(insertIndex++, this.processBatch(slice, insertIndex, batchCallback))
+				batches.push(slice)
 
-				slice = []
+				slice = [] //Clear slice - don't want these going back into gaugeIDCache
 				offset += batchSize
 			}
-
 			gaugeIDCache = slice
+		}
+
+		//Place gauges in gaugeIDCache into batches. Resolve when all existing calls finish.
+		this.flush = function(onlyFull, getPromise = false) {
+			let batches = this.getBatches(onlyFull)
+
+			batches.forEach((slice) => {
+				//Process slice.
+				outstandingRequests.set(insertIndex++, this.processBatch(slice, insertIndex, batchCallback))
+			})
+
 			if (getPromise) {
 				let promises = []
 				let iterator = outstandingRequests.values()

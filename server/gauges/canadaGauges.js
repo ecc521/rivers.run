@@ -55,19 +55,17 @@ async function loadCanadianFile(code) {
 	//Supports provinces and gaugeIDs.
 	let province = code
 	if (code.length > 2) {
-		console.log(code)
-		console.log(await getGaugeDetails(code))
 		province = (await getGaugeDetails(code)).province
 	}
 	let url = `https://dd.weather.gc.ca/hydrometric/csv/${province}/hourly/${province}_${code.length > 2 ? `${code}_` : ""}hourly_hydrometric.csv`
-	console.log(code, url)
+	console.log(code, url) //TODO: Delete this line.
 
 	let stream;
 	try {
 		stream = await (bent(url)())
 	}
 	catch (e) {
-		//If 404, return false to indicate no value - the gauge is probably seasonal and currently down. 
+		//If 404, return false to indicate no value - the gauge is probably seasonal and currently down.
 		if (e.statusCode === 404) {
 			return false
 		}
