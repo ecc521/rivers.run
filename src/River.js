@@ -205,7 +205,11 @@ function River(locate, event) {
 	for (let i=0;i<this.access.length;i++) {
 		let accessPoint = this.access[i]
 		if (!accessPoint.label) {
-			accessPoint.label = "A" + (i+1)
+			//Define label as non-emunerable so that it is not copied by writeupmaker. 
+			Object.defineProperty(accessPoint, "label", {
+				enumerable: false,
+				value: "A" + (i+1)
+			})
 		}
 	}
 

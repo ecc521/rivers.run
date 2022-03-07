@@ -38,8 +38,6 @@ function logDist(low, high, ratio = 0.5) {
 	//calculate the other values correctly. (the calculated maxruns given midrun, etc, are reasonable, but the provided maxruns are too high to calculate other values)
 
 	function calculateArrayPosition(arr, pos) {
-		if (arr[pos]) {return arr[pos]} //The value is already in the array!
-
 		//Find closest values on either side.
 		let negativeOptions = []
 		let positiveOptions = []
@@ -73,8 +71,9 @@ function logDist(low, high, ratio = 0.5) {
 		}
 
 		//Note: topPos is not neccessarily greater than bottomPos
+        //This can occur when all values are either above or below.
 		let denominator = Math.abs(topPos - bottomPos)
-		let numerator = pos-bottomPos
+		let numerator = pos - Math.min(bottomPos, topPos)
 
 		return logDist(arr[topPos], arr[bottomPos], numerator/denominator)
 	}
@@ -157,14 +156,10 @@ function calculateRelativeFlow(river) {
             river[prop] = values[index]
         }
         else {
-            //Use getters so that we only compute a property when neccessary.
+            //Estimate value - leave as non-enumerable so that it is not indexed by writeupmaker, etc.
             Object.defineProperty(river, prop, {
-                configurable: true,
                 enumerable: false,
-                get: function getValue() {
-                    delete river[prop]
-                    return river[prop] = calculateArrayPosition(values, index)
-                }
+                value: calculateArrayPosition(values, index)
             })
         }
     })
