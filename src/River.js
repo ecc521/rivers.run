@@ -191,7 +191,7 @@ function River(locate, event) {
 
 	let river = this //Allow for incapsulation if this changes.
 
-	//Copies name, section, skill, rating, writeup, tags, gauge, etc. 
+	//Copies name, section, skill, rating, writeup, tags, gauge, etc.
 	Object.assign(this, event)
 	//These need to be a string. They can't be undefined
 	this.name = this.name || ""
@@ -202,6 +202,15 @@ function River(locate, event) {
 	//Convert the numeric value to the filename
 
 	this.access = this.access || []
+	for (let i=0;i<this.access.length;i++) {
+		this.access[i].label = "A" + i
+	}
+	//TODO: If there are 2+ access points, set the first to "PI" and the last to "TO".
+	//This assumes that the user does not enter a Put-In and alternate Put-In only, however this should be extremely uncommon. 
+	if (this.access.length > 1) {
+		this.access.at(0).label = "PI"
+		this.access.at(-1).label = "TO"
+	}
 
 	this.rating = parseFloat(this.rating)
 	//Consider allowing ratings less than 1.

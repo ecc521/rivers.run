@@ -575,14 +575,10 @@ async function addMap({
 					//Also, consider labelling the other rivers by skill.
 
 					if (!item.isGauge) {
-						let text = accessPoint.name
-						if (text === "Put-In") {text = "PI"}
-						else if (text === "Take-Out") {text = "TO"}
-						else {text = "AP"}
 						marker.setLabel({
 							color: "black",
 							fontSize: "20px",
-							text,
+							text: accessPoint.label,
 						})
 					}
 					marker.setZIndex(1)

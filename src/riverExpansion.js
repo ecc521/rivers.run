@@ -48,7 +48,7 @@ function createExpansion(button, river) {
     }
 
     river.access.forEach((accessPoint) => {
-        textInfo.innerHTML += `${accessPoint.name} GPS Coordinates: ${createGoogleMapsLink(accessPoint.lat, accessPoint.lon)}<br>`
+        textInfo.innerHTML += `${accessPoint.name} (${accessPoint.label}) GPS Coordinates: ${createGoogleMapsLink(accessPoint.lat, accessPoint.lon)}<br>`
     })
 
     div.appendChild(textInfo)

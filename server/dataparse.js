@@ -1,3 +1,5 @@
+//TODO: Plaintext exports include comments! We need to figure out how to remove them, else suggestions/comments might break rivers!
+
 const fs = require("fs")
 const path = require("path")
 const bent = require("bent")
