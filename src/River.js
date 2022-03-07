@@ -203,13 +203,10 @@ function River(locate, event) {
 
 	this.access = this.access || []
 	for (let i=0;i<this.access.length;i++) {
-		this.access[i].label = "A" + i
-	}
-	//TODO: If there are 2+ access points, set the first to "PI" and the last to "TO".
-	//This assumes that the user does not enter a Put-In and alternate Put-In only, however this should be extremely uncommon. 
-	if (this.access.length > 1) {
-		this.access.at(0).label = "PI"
-		this.access.at(-1).label = "TO"
+		let accessPoint = this.access[i]
+		if (!accessPoint.label) {
+			accessPoint.label = "A" + (i+1)
+		}
 	}
 
 	this.rating = parseFloat(this.rating)

@@ -320,11 +320,11 @@ async function prepareRiverData({
 
 		obj.access = obj.access || []
 
-		if (obj.tlat && obj.tlon) {
-			obj.access.push({name: "Take-Out", lat: obj.tlat, lon: obj.tlon})
-		}
 		if (obj.plat && obj.plon) {
-			obj.access.push({name: "Put-In", lat: obj.plat, lon: obj.plon})
+			obj.access.push({name: "Put-In", lat: obj.plat, lon: obj.plon, label: "PI"})
+		}
+		if (obj.tlat && obj.tlon) {
+			obj.access.push({name: "Take-Out", lat: obj.tlat, lon: obj.tlon, label: "TO"})
 		}
 
 		obj.access.filter((accessPoint) => {
