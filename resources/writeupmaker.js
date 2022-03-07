@@ -135,59 +135,81 @@ const basicInfoPage = {
 			isRequired: true
 		},
 		{
-			type: "paneldynamic",
-			name: "state",
+            type: "matrixdynamic",
+            name: "state",
+            rowCount: 1,
+            minRowCount: 1,
 			title: "State/Province",
-			showQuestionNumbers: "off",
-			templateElements: [
-				{
-					type: "dropdown",
-					name: "state",
-					titleLocation: "hidden",
-					choices: Object.keys(statesProvincesTerritorys).map((prop) => {
-						return {text: statesProvincesTerritorys[prop], value: prop}
-					}),
-				},
-			],
+            addRowText: "Add State/Province",
+			removeRowText: "Remove State/Province",
+			showHeader: false,
 			isRequired: true,
-			minPanelCount: 1,
-			panelAddText: "Add Another State/Province",
-			panelRemoveText: "Remove State/Province"
+            columns: [
+				{
+                    name: "state",
+					isRequired: true,
+                    choices: Object.keys(statesProvincesTerritorys).map((prop) => {
+						return {text: statesProvincesTerritorys[prop], value: prop}
+					})
+                }
+			]
 		},
 		{
-			type: "paneldynamic",
+            type: "matrixdynamic",
 			name: "access",
+            rowCount: 2,
+            minRowCount: 0,
 			title: "Access Points",
-			defaultValue: [{name:"Put-In"},{name:"Take-Out"}],
-			showQuestionNumbers: "off",
-			templateElements: [
+			defaultValue: [{name: "Put-In", label: "PI"}, {name: "Take-Out", label: "TO"}],
+			addRowText: "Add Another Access Point",
+			removeRowText: "Remove Access Point",
+            columns: [
+				//TODO: Ensure put-in before take-out (if both), and only one of each.
 				{
-					type: "text",
+					name: "label",
+					title: "Type",
+					choices: [
+						{
+							text: "Primary Put-In",
+							value: "PI"
+						},
+						{
+							text: "Primary Take-Out",
+							value: "TO"
+						},
+						{
+							text: "Access Point",
+							value: "A"
+						},
+					],
+					defaultValue: "A",
+					tooltip: "When selecting primary Put-Ins and Take-Outs, please select the longer section unless a shorter section is significantly more popular. ",
+				},
+				{
+					cellType: "text",
 					name: "name",
 					title: "Name",
 					placeHolder: "Enter Name... ",
 					defaultValue: "Access Point",
 				},
 				{
-					type: "text",
+					cellType: "text",
 					name: "lat",
 					title: "GPS Latitude",
-					startWithNewLine: false,
 					placeHolder: "Enter Latitude... ",
 					tooltip: "GPS formats may be converted when you deselect the input field"
 				},
 				{
-					type: "text",
+					cellType: "text",
 					name: "lon",
 					title: "GPS Longitude",
 					placeHolder: "Enter Longitude... ",
-					startWithNewLine: false,
 					tooltip: "GPS formats may be converted when you deselect the input field"
 				},
-			],
-			panelAddText: "Add Another Access Point",
-			panelRemoveText: "Remove Access Point"
+			]
 		},
+
+		//TODO: Rank access points.
 	],
 }
 
@@ -264,33 +286,31 @@ const flowInfoPage = {
 			startWithNewLine: false,
 			enableIf: "{minrun} != {default} or {lowflow} != {default} or {midflow} != {default} or {highflow} != {default} or {maxrun} != {default}"
 		},
-
 		{
-			type: "paneldynamic",
+            type: "matrixdynamic",
 			name: "relatedgauges",
+            rowCount: 0,
+            minRowCount: 0,
 			enableIf: "{gaugeID} != {default}",
 			title: "Related Gauges",
-			showQuestionNumbers: "off",
-			templateElements: [
+			addRowText: "Add Another Gauge",
+			removeRowText: "Remove Gauge",
+            columns: [
 				{
-					type: "dropdown",
 					name: "gaugeProvider",
 					title: "Gauge Provider",
 					isRequired: true,
 					choices: gaugeProviders,
+
 				},
 				{
-					type: "text",
+					cellType: "text",
 					name: "gaugeID",
 					title: "Gauge ID",
 					isRequired: true,
-					// startWithNewLine: false,
 					placeHolder: "Enter Gauge ID... ",
 				},
-			],
-			minPanelCount: 0,
-			panelAddText: "Add Another Gauge",
-			panelRemoveText: "Remove Gauge"
+			]
 		},
 	],
 }
@@ -688,7 +708,7 @@ window.River = River
 function setSurveyFromRiverFormat(riverItem) {
 	//Importing calculated relative flow values is not a concern as the getters are not enumerable
 	//Once the getters run once, however, the property is enumerable. Therefore, if we every allow resetting to
-	//the imported river, we probably need to just clear the form and link to the prefilled writeupmaker. 
+	//the imported river, we probably need to just clear the form and link to the prefilled writeupmaker.
 
 	//Note: This function also copies over fields like "base", "id", and "isGauge".
 	//While id is used here, it and other properties like isGauge should not be included in the actual output.
