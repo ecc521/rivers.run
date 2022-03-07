@@ -63,6 +63,29 @@ function surveyValidateQuestion(s, options) {
 			options.error = "Unable to Parse Coordinate"
 		}
 	}
+	if (options.name === "access") {
+		let names = options.value.map((ap) => {return ap.name})
+		let labels = options.value.map((ap) => {return ap.label})
+
+		if (new Set(names).size !== names.length) {
+			options.error = "Duplicate Access Point Names Not Permitted"
+		}
+
+		if (labels.reduce((amt, label) => (amt + Number(label == "TO")), 0) > 1) {
+			options.error = "Only 1 Primary Take-Out Permitted"
+		}
+
+		if (labels.reduce((amt, label) => (amt + Number(label == "PI")), 0) > 1) {
+			options.error = "Only 1 Primary Put-In Permitted"
+		}
+	}
+	if (options.name === "accessOrder") {
+		let labels = survey.data.access.map((ap) => {return ap.label})
+
+		if (labels.indexOf("TO") < labels.indexOf("PI")) {
+			options.error = "Take-Out must be after Put-In"
+		}
+	}
 }
 
 
@@ -160,11 +183,11 @@ const basicInfoPage = {
             rowCount: 2,
             minRowCount: 0,
 			title: "Access Points",
+			tooltip: "When selecting primary Put-Ins and Take-Outs, please select the longer section unless a shorter section is significantly more popular. ",
 			defaultValue: [{name: "Put-In", label: "PI"}, {name: "Take-Out", label: "TO"}],
 			addRowText: "Add Another Access Point",
 			removeRowText: "Remove Access Point",
             columns: [
-				//TODO: Ensure put-in before take-out (if both), and only one of each.
 				{
 					name: "label",
 					title: "Type",
@@ -179,11 +202,10 @@ const basicInfoPage = {
 						},
 						{
 							text: "Access Point",
-							value: "A"
+							value: "A" //TODO: This doesn't import correctly. A1, A2, etc, are imported.
 						},
 					],
 					defaultValue: "A",
-					tooltip: "When selecting primary Put-Ins and Take-Outs, please select the longer section unless a shorter section is significantly more popular. ",
 				},
 				{
 					cellType: "text",
@@ -208,8 +230,15 @@ const basicInfoPage = {
 				},
 			]
 		},
-
-		//TODO: Rank access points.
+		{
+			//TODO: Is there a way to pull these in without custom JS?
+			 type: "ranking",
+			 name: "accessOrder",
+			 title: "Please Order Access Points: ",
+			 tooltip: "Order starting upstream and heading downstream. The Primary Put-In (if present) must be above the Primary Take-Out. ",
+			 isRequired: true,
+			 choices: []
+		 }
 	],
 }
 
@@ -586,9 +615,10 @@ setCompleteButtonText() //May change based on the data that is loaded.
 survey.getQuestionByName("editRiverInfo").html = calculateEditRiverHTML(survey.data.id) //If there is an old id, display it.
 setDefaultFilename()
 
-survey.getQuestionByName("access").onValueChanged = function() {
+let accessQuestion = survey.getQuestionByName("access")
+accessQuestion.onValueChanged = function() {
 	let oldJSONValue = JSON.stringify(survey.data.access)
-	let newValue = survey.data.access.map((accessPoint) => {
+	let newValue = survey.data.access?.map((accessPoint) => {
 		accessPoint.lat = toDecimalDegrees(accessPoint.lat)
 		accessPoint.lon = toDecimalDegrees(accessPoint.lon)
 		return accessPoint
@@ -596,9 +626,42 @@ survey.getQuestionByName("access").onValueChanged = function() {
 
 	//Avoid looping.
 	if (oldJSONValue !== JSON.stringify(newValue)) {
-		survey.getQuestionByName("access").value = newValue
+		accessQuestion.value = newValue
 	}
+
+	syncAccessOrder()
 }
+
+let accessOrderQuestion = survey.getQuestionByName("accessOrder")
+function syncAccessOrder() {
+	if (accessQuestion.hasErrors()) {
+		//Ranking elements appears to glitch when there are duplicate elements.
+		//We'll just require no duplicate elements.
+		return;
+	}
+	accessOrderQuestion.hasErrors() //We can't return on this - these errors are associated with data in access, which must be modified to resolve these errors. 
+
+	let accessPoints = accessQuestion.value
+	let namesInAccess = accessPoints.map((item) => {return item.name})
+	accessOrderQuestion.choices = namesInAccess
+
+	let namesOrder = accessOrderQuestion.value
+
+	if (accessQuestion.value.every((row, index) => {
+		return namesOrder.indexOf(row.name) === index
+	})) {
+		//Ordered correctly. No need to reassign (for doing so would trigger infinite loop)
+		return;
+	}
+
+	accessQuestion.value = accessQuestion.value.sort((row1, row2) => {
+		let r1Index = namesOrder.indexOf(row1.name)
+		let r2Index = namesOrder.indexOf(row2.name)
+		return r1Index - r2Index
+	})
+}
+accessOrderQuestion.onValueChanged = syncAccessOrder
+syncAccessOrder()
 
 function getSurveyInRiverFormat() {
 	let obj = Object.assign({}, survey.data)
