@@ -1,6 +1,5 @@
 const toDecimalDegrees = require("../src/toDecimalDegrees.js")
 
-//TODO: Add validation for gaugeIDs, etc.
 const allowed = require("../server/allowedFields.js")
 
 const {statesProvincesTerritorys} = require("../src/statesProvincesTerritorys.js")
@@ -55,7 +54,7 @@ function surveyValidateQuestion(s, options) {
 			options.error = res;
 		}
     }
-	if (options.name === "lat" || options.name === "lon") {
+	else if (options.name === "lat" || options.name === "lon") {
 		try {
 			toDecimalDegrees(options.value)
 		}
@@ -63,7 +62,7 @@ function surveyValidateQuestion(s, options) {
 			options.error = "Unable to Parse Coordinate"
 		}
 	}
-	if (options.name === "access") {
+	else if (options.name === "access") {
 		let names = options.value.map((ap) => {return ap.name})
 		let labels = options.value.map((ap) => {return ap.label})
 
@@ -79,19 +78,23 @@ function surveyValidateQuestion(s, options) {
 			options.error = "Only 1 Primary Put-In Permitted"
 		}
 	}
-	if (options.name === "accessOrder") {
-		let labels = survey.data.access.map((ap) => {return ap.label})
+	else if (options.name === "accessOrder") {
+		let labels = survey.data.access?.map((ap) => {return ap.label})
 
-		if (labels.indexOf("TO") < labels.indexOf("PI")) {
+		if (!labels) {return} //There are no access points.
+
+		if (labels.indexOf("TO") !== -1 && (labels.indexOf("TO") < labels.indexOf("PI"))) {
+			//We don't need to check for indexOf("PI") !== -1, as -1 is never less than another indexOf call.
 			options.error = "Take-Out must be after Put-In"
 		}
 	}
 }
 
 
-//TODO"
+//TODO
 //Changing gaugeProvider might make a previously invalid code valid.
 //Re-run validators.
+//Complicated by relatedgauges being in a matrix.
 //
 // survey.getAllQuestions().filter((question) => {
 // 	if (question.name === "gaugeID") {
@@ -102,6 +105,7 @@ function surveyValidateQuestion(s, options) {
 // 	}
 // })
 
+const gpsCoordinateTooltipMessage = "GPS formats will be converted on export. Please check the preview to ensure your coordinates are parsed correctly. "
 
 const basicInfoPage = {
 	navigationTitle: "Basic Info",
@@ -202,7 +206,7 @@ const basicInfoPage = {
 						},
 						{
 							text: "Access Point",
-							value: "A" //TODO: This doesn't import correctly. A1, A2, etc, are imported.
+							value: "A"
 						},
 					],
 					defaultValue: "A",
@@ -219,25 +223,23 @@ const basicInfoPage = {
 					name: "lat",
 					title: "GPS Latitude",
 					placeHolder: "Enter Latitude... ",
-					tooltip: "GPS formats may be converted when you deselect the input field"
+					tooltip: gpsCoordinateTooltipMessage
 				},
 				{
 					cellType: "text",
 					name: "lon",
 					title: "GPS Longitude",
 					placeHolder: "Enter Longitude... ",
-					tooltip: "GPS formats may be converted when you deselect the input field"
+					tooltip: gpsCoordinateTooltipMessage
 				},
 			]
 		},
 		{
-			//TODO: Is there a way to pull these in without custom JS?
 			 type: "ranking",
 			 name: "accessOrder",
 			 title: "Please Order Access Points: ",
 			 tooltip: "Order starting upstream and heading downstream. The Primary Put-In (if present) must be above the Primary Take-Out. ",
-			 isRequired: true,
-			 choices: []
+			 choices: [],
 		 }
 	],
 }
@@ -615,53 +617,32 @@ setCompleteButtonText() //May change based on the data that is loaded.
 survey.getQuestionByName("editRiverInfo").html = calculateEditRiverHTML(survey.data.id) //If there is an old id, display it.
 setDefaultFilename()
 
+//Repeated attempts to set accessQuestion's order to the order in accessOrderQuestion just resulted in a multitude of
+//infinite loop problems due to assigning values triggering the other event listener, etc.
+//While there were some successes, surprise infinite loops were always found.
+//Therefore, the two are not synced. If you attempt to sync them, you have been warned: Proceed at the risk of wasting your time.
 let accessQuestion = survey.getQuestionByName("access")
-accessQuestion.onValueChanged = function() {
-	let oldJSONValue = JSON.stringify(survey.data.access)
-	let newValue = survey.data.access?.map((accessPoint) => {
-		accessPoint.lat = toDecimalDegrees(accessPoint.lat)
-		accessPoint.lon = toDecimalDegrees(accessPoint.lon)
-		return accessPoint
-	})
-
-	//Avoid looping.
-	if (oldJSONValue !== JSON.stringify(newValue)) {
-		accessQuestion.value = newValue
-	}
-
-	syncAccessOrder()
-}
-
 let accessOrderQuestion = survey.getQuestionByName("accessOrder")
-function syncAccessOrder() {
+function syncChoices() {
 	if (accessQuestion.hasErrors()) {
 		//Ranking elements appears to glitch when there are duplicate elements.
 		//We'll just require no duplicate elements.
 		return;
 	}
-	accessOrderQuestion.hasErrors() //We can't return on this - these errors are associated with data in access, which must be modified to resolve these errors. 
+
+	accessOrderQuestion.hasErrors()
 
 	let accessPoints = accessQuestion.value
 	let namesInAccess = accessPoints.map((item) => {return item.name})
+
 	accessOrderQuestion.choices = namesInAccess
-
-	let namesOrder = accessOrderQuestion.value
-
-	if (accessQuestion.value.every((row, index) => {
-		return namesOrder.indexOf(row.name) === index
-	})) {
-		//Ordered correctly. No need to reassign (for doing so would trigger infinite loop)
-		return;
-	}
-
-	accessQuestion.value = accessQuestion.value.sort((row1, row2) => {
-		let r1Index = namesOrder.indexOf(row1.name)
-		let r2Index = namesOrder.indexOf(row2.name)
-		return r1Index - r2Index
-	})
 }
-accessOrderQuestion.onValueChanged = syncAccessOrder
-syncAccessOrder()
+
+accessOrderQuestion.onValueChanged = function() {
+	accessOrderQuestion.hasErrors()
+}
+accessQuestion.onValueChanged = syncChoices
+syncChoices()
 
 function getSurveyInRiverFormat() {
 	let obj = Object.assign({}, survey.data)
@@ -676,6 +657,25 @@ function getSurveyInRiverFormat() {
 
 	if (obj.state) {
 		obj.state = obj.state.map((state) => {return state.state}).join(",")
+	}
+
+	if (obj.access) {
+		obj.access = obj.access.slice(0).map((itemInSurvey) => {
+			let item = Object.assign({}, itemInSurvey) //Copy the item to avoid modifying in survey.
+			if (item.label === "A") {delete item.label}
+			item.lat = toDecimalDegrees(item.lat)
+			item.lon = toDecimalDegrees(item.lon)
+			return item
+		})
+
+		if (obj.accessOrder) {
+			//The default order must have been correct - the user never touched the question.
+			obj.sort((row1, row2) => {
+				let r1Index = obj.accessOrder.indexOf(row1.name)
+				let r2Index = obj.accessOrder.indexOf(row2.name)
+				return r1Index - r2Index
+			})
+		}
 	}
 
 	for (let prop in obj) {
@@ -769,10 +769,6 @@ window.Gauge = Gauge
 window.River = River
 
 function setSurveyFromRiverFormat(riverItem) {
-	//Importing calculated relative flow values is not a concern as the getters are not enumerable
-	//Once the getters run once, however, the property is enumerable. Therefore, if we every allow resetting to
-	//the imported river, we probably need to just clear the form and link to the prefilled writeupmaker.
-
 	//Note: This function also copies over fields like "base", "id", and "isGauge".
 	//While id is used here, it and other properties like isGauge should not be included in the actual output.
 	//They are filtered out when output is generated.
@@ -796,6 +792,14 @@ function setSurveyFromRiverFormat(riverItem) {
 		river.relatedgauges = river.relatedgauges.map((gaugeID) => {
 			let gauge = new Gauge(gaugeID)
 			return {gaugeProvider: gauge.prefix, gaugeID: gauge.gaugeID}
+		})
+	}
+
+	if (river.access) {
+		river.access.forEach((ap) => {
+			if (!ap.propertyIsEnumerable("label")) {
+				ap.label = "A"
+			}
 		})
 	}
 
