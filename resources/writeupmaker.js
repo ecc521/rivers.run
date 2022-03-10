@@ -647,7 +647,7 @@ syncChoices()
 function getSurveyInRiverFormat() {
 	let obj = Object.assign({}, survey.data)
 
-	obj.writeup = obj.writeup.split("\n").join("") //CKEditor pretty prints HTML. Undo the pretty printing so it is one line.
+	obj.writeup = obj.writeup?.split("\n")?.join("") //CKEditor pretty prints HTML. Undo the pretty printing so it is one line.
 
 	if (obj.gaugeProvider && obj.gaugeID) {
 		obj.gauge = obj.gaugeProvider + ":" + obj.gaugeID
