@@ -647,6 +647,8 @@ syncChoices()
 function getSurveyInRiverFormat() {
 	let obj = Object.assign({}, survey.data)
 
+	obj.writeup = obj.writeup.split("\n").join("") //CKEditor pretty prints HTML. Undo the pretty printing so it is one line.
+
 	if (obj.gaugeProvider && obj.gaugeID) {
 		obj.gauge = obj.gaugeProvider + ":" + obj.gaugeID
 	}
@@ -801,6 +803,17 @@ function setSurveyFromRiverFormat(riverItem) {
 				ap.label = "A"
 			}
 		})
+		river.access = river.access.filter((item) => {
+			if (item.name === "Gauge" && river.isGauge) {
+				//Do not import access points named "Gauge" from gauges.
+				return false
+			}
+			return true
+		})
+
+		if (river.access.length === 0) {
+			river.access = survey.getQuestionByName("access").defaultValue
+		}
 	}
 
 	survey.data = river
