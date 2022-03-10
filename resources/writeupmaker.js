@@ -788,7 +788,7 @@ function setSurveyFromRiverFormat(riverItem) {
 		river.gaugeID = gauge.gaugeID
 	}
 
-	river.state = river.state.split(",").map((state) => {return {state}})
+	river.state = river?.state?.split(",").map((state) => {return {state}})
 
 	if (river.relatedgauges) {
 		river.relatedgauges = river.relatedgauges.map((gaugeID) => {
