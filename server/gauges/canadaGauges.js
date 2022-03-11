@@ -103,7 +103,7 @@ async function loadCanadianFile(code) {
 
 		let output = {
 			readings: results,
-			name: gaugeInfo.name,
+			name: gaugeInfo?.name,
 			units: "m",
 		}
 
