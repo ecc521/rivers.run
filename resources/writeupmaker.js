@@ -671,8 +671,7 @@ function getSurveyInRiverFormat() {
 		})
 
 		if (obj.accessOrder) {
-			//The default order must have been correct - the user never touched the question.
-			obj.sort((row1, row2) => {
+			obj.access.sort((row1, row2) => {
 				let r1Index = obj.accessOrder.indexOf(row1.name)
 				let r2Index = obj.accessOrder.indexOf(row2.name)
 				return r1Index - r2Index
