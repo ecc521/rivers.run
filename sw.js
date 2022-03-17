@@ -98,7 +98,6 @@ function fetchHandler(event) {
         if (
             url.includes("docs.google.com") //Avoid filling up cache with opaque responses from docs.google.com
             || url.includes("googleapis.com") //May want to temporarily cache some images, but we mostly
-            || url.includes("ip2location")
             || url.includes("node")
             || url.includes("gaugeReadings")
             || url.includes("script.googleusercontent.com") //Don't store the unused results from writeupmaker uploads and submissions.

@@ -54,7 +54,6 @@ function restartWebserver(callback) {
 
 			if (
 				!headers['Content-Type']
-				|| data.path.includes("ip2location")
 				|| data.path.includes("node")
 				|| data.path.includes("gaugeReadings")
 			) {
@@ -161,5 +160,5 @@ restartWebserver(function() {
 appUpdateWarning()
 
 //Capacitor hides the accessory bar (the up/down, and done button) to make it less obvious apps use web tech.
-//We'll show it again - rivers.run is pretty obviously web based anyways. 
+//We'll show it again - rivers.run is pretty obviously web based anyways.
 Capacitor.Plugins.Keyboard.setAccessoryBarVisible({isVisible: true})

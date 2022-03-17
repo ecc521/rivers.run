@@ -169,15 +169,6 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 	padding: 4px;
 }
 
-#ipLocation {
-	display:none;
-	transition: all 3s ease-in;
-}
-
-#ipLocation > button {
-	font-size: inherit;
-}
-
 .riverWriteup img {
 	max-width: 98vw; /*Prevent images from overflowing the screen. */
 }

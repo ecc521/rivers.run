@@ -5,48 +5,7 @@ const utils = require(path.join(__dirname, "utils.js"))
 const subscriptionManager = require(path.join(__dirname, "subscriptionManager.js"))
 
 
-let lookupIP;
-try {
-	lookupIP = require(path.join(__dirname, "lookupIP.js"))
-}
-catch(e) {
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'lookupIP.log'), e.toString() + "\n");
-	console.error(e)
-}
-
 function initialize(app) {
-	//TODO: Find a new API provider for this. Probably Google Maps, for simplicity.
-	app.get("/node/ip2location", function(req, res, next) {
-		res.setHeader('Access-Control-Allow-Origin', '*')
-
-		if (lookupIP) {
-			let ipData = {};
-			let ip;
-			if (req.url === "/node/ip2location") {
-				ip = (req.headers['x-forwarded-for'] || '').split(',').pop() ||
-					 req.connection.remoteAddress ||
-					 req.socket.remoteAddress ||
-					 req.connection.socket.remoteAddress
-			}
-			else {
-				//ip = req.url.slice("/node/ip2location/".length) //Uncomment to allow custom IPs. May be wanted in future.
-			}
-			ipData = lookupIP(ip)
-			res.setHeader("Cache-Control", "max-age=480, private")
-
-			fs.appendFileSync(path.join(utils.getLogDirectory(), 'lookupIP.log'), req.url + " " + ip + "\n");
-
-			res.statusCode = 200;
-			res.setHeader('Content-Type', 'text/json');
-			res.end(JSON.stringify(ipData));
-		}
-		else {
-			res.statusCode = 500;
-			res.setHeader('Content-Type', 'text/plain');
-			res.end("Internal Server Error - lookupIP.js did not load. Contact the server administrator.");
-		}
-	})
-
 	app.post("/node/googleassistant/rivers.run", function(req, res, next) {
 		assistantRequest.handleRequest(req, res)
 	})
