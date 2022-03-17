@@ -1,3 +1,5 @@
+const {getUserLocation, getLocationErrorMessage} = require("./getLocation.js")
+
 //Note: We use lon internally, Google Maps uses lng internally. Be careful...
 let MapPopup, MapTooltip;
 
@@ -20,6 +22,10 @@ async function loadMapsAPI() {
 
 	document.head.appendChild(script);
 	return promise
+}
+
+function getGoogleMapsLink(lat, lon) {
+	return `<a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a>, or view below: `
 }
 
 
@@ -112,6 +118,48 @@ async function addMap({
 	});
 
 	window.lastAddedMap = map //For development only. This global variable is NOT TO BE USED by site code.
+
+	try {
+		//Add user location marker.
+		//TODO: Possibly add circles on map (like a 50 mile circle, 100 mile circle, etc. )
+		getUserLocation().then(function(position) {
+			let coords = position.coords
+
+			let lat = coords.latitude
+			let lon = coords.longitude
+
+			var marker = new google.maps.Marker({
+				position: {lat, lng: lon},
+				map,
+			});
+
+			marker.setZIndex(100) //Place user coordinates on top of everything.
+
+			//Force text to be black (infowindow is white, even in dark mode).
+			let popupContent = `<p style="color: black;">Your Coordinates are ${lat}, ${lon}. ${getGoogleMapsLink(lat, lon)}</p>`
+
+			const infowindow = new google.maps.InfoWindow({
+			  content: popupContent,
+			});
+
+			marker.addListener("click", () => {
+			  infowindow.open({
+				anchor: marker,
+				map,
+				shouldFocus: true,
+			  });
+			});
+
+			let listener = map.addListener("click", closePopup)
+			function closePopup() {
+				infowindow.close()
+			}
+		})
+	}
+	catch (e) {
+		console.error(e)
+	}
+
 
 	// Normalizes the coords that tiles repeat across the x axis (horizontally)
 	// like the standard Google map tiles.
@@ -524,7 +572,7 @@ async function addMap({
 
 		let special = false
 		let icon;
-		if (item.index === river?.index) {
+		if (item.index === river?.index && river?.index !== undefined) {
 			scale = 2.5
 			special = true
 		}
@@ -564,7 +612,8 @@ async function addMap({
 					position: accessPoint,
 					icon,
 					zoom: item.isGauge?5:undefined,
-					map
+					map,
+					zIndex: item.isGauge ? 2 : 5,
 				});
 
 				regenerateInfo.push(marker)
@@ -581,7 +630,7 @@ async function addMap({
 							text: accessPoint.label,
 						})
 					}
-					marker.setZIndex(1)
+					marker.setZIndex(10) //Place special items on top of gauges and rivers.
 				}
 
 
@@ -594,7 +643,7 @@ async function addMap({
 
 					let lat = accessPoint.lat
 					let lon = accessPoint.lon
-					let googleMapsLink = `<a href="https://www.google.com/maps/dir//${lat},${lon}/@${lat},${lon},14z" target="_blank">Open in Google Maps</a>, or view below: `
+					let googleMapsLink = getGoogleMapsLink(lat, lon)
 					div.innerHTML += googleMapsLink
 
 					let closeButton = document.createElement("button")
