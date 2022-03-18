@@ -372,10 +372,11 @@ function createGraph(options) {
 	verticalLine.style.position = "relative"
 	verticalLine.style.backgroundColor = options.graphNameColor
 	verticalLine.style.pointerEvents = "none"
+	verticalLine.style.display = "none"
 	graphContainerDiv.appendChild(verticalLine)
 
 	let tooltip = document.createElement("div")
-	tooltip.style.position = "relative"
+	tooltip.style.position = "absolute"
 	tooltip.style.display = "inline-block"
 	tooltip.style.color = options.graphNameColor
 	tooltip.style.backgroundColor = options.backgroundColor
@@ -388,6 +389,8 @@ function createGraph(options) {
 			event.preventDefault() //I believe some old Android browsers need this for touch events.
 			event = event.touches[0] //Use the first touch (should usually be the only touch as well)
 		}
+
+		verticalLine.style.display = ""
 
 		let bounds = finalCanvas.getBoundingClientRect()
 

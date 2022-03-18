@@ -108,7 +108,6 @@ button, select {
 
 /*Chart CSS*/
 .graph {
-    display: block;
     margin: auto;
     border: 1px solid black;
     width: auto;
