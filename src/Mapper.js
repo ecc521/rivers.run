@@ -30,7 +30,9 @@ function getGoogleMapsLink(lat, lon) {
 
 
 function getAccess(river, accessIndex) {
-	let item = river.access.at(accessIndex)
+	//let item = river.access.at(accessIndex) //.at has poor browser support. 
+	if (accessIndex < 0) {accessIndex = river.access.length + accessIndex}
+	let item = river.access[accessIndex]
 	if (item) {item.lng = item.lon} //We use lon, Google Maps uses lng.
 	return item
 }
