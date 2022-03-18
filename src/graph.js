@@ -403,9 +403,10 @@ function createGraph(options) {
 		percent = Math.min(1 - padding.right, percent)
 
 		let percentInElem = percent //Percentage of the way in the element to place.
-		verticalLine.style.transform = "translateY(-" + bounds.height + "px)"
+		verticalLine.style.top = -bounds.height + "px"
 		verticalLine.style.height = bounds.height * (1 - padding.bottom) + "px"
 		verticalLine.style.left = percentInElem * 100 + "%"
+		verticalLine.style.marginBottom = "-999999px" //Prevent verticalLine from creating extra blank space below.
 
 		tooltip.style.margin = "0 2px"
 		tooltip.style.padding = "0 5px"
@@ -413,11 +414,12 @@ function createGraph(options) {
 
 		if (percent > 0.7) {
 			//Move tooltip to left side.
-			verticalLine.style.transform += " scaleX(-1.0)" //Flip tooltip to other side.
+			verticalLine.style.transform = "scaleX(-1.0)" //Flip tooltip to other side.
 			tooltip.style.transform = "scaleX(-1.0)" //Undo text flipping.
 		}
 		else {
 			tooltip.style.transform = ""
+			verticalLine.style.transform = ""
 		}
 
 		//Scale within range.
