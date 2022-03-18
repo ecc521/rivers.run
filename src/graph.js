@@ -364,21 +364,24 @@ function createGraph(options) {
 	//Create the container and tooltip.
 	let graphContainerDiv = document.createElement("div")
 	graphContainerDiv.appendChild(finalCanvas)
+	graphContainerDiv.style.display = "inline-block"
+	graphContainerDiv.className = "graphContainer"
 
 	let verticalLine = document.createElement("div")
 	verticalLine.style.width = "2px"
-	verticalLine.style.position = "absolute"
+	verticalLine.style.position = "relative"
 	verticalLine.style.backgroundColor = options.graphNameColor
 	verticalLine.style.pointerEvents = "none"
 	graphContainerDiv.appendChild(verticalLine)
 
 	let tooltip = document.createElement("div")
-	tooltip.style.position = "absolute"
+	tooltip.style.position = "relative"
+	tooltip.style.display = "inline-block"
 	tooltip.style.color = options.graphNameColor
 	tooltip.style.backgroundColor = options.backgroundColor
 	tooltip.style.border = "1px solid " + options.graphNameColor
 	tooltip.style.pointerEvents = "none"
-	graphContainerDiv.appendChild(tooltip)
+	verticalLine.appendChild(tooltip)
 
 	function handleMoveEvent(event) {
 		if (event.touches) {
@@ -402,18 +405,19 @@ function createGraph(options) {
 		let percentInElem = percent //Percentage of the way in the element to place.
 		verticalLine.style.transform = "translateY(-" + bounds.height + "px)"
 		verticalLine.style.height = bounds.height * (1 - padding.bottom) + "px"
-		verticalLine.style.left = bounds.left + (bounds.width * percentInElem) + "px"
+		verticalLine.style.left = percentInElem * 100 + "%"
 
-		//Tooltip always goes to left right now, as there must always be a legend there (and therefore it won't overflow)
-		tooltip.style.transform = "translateY(-" + (bounds.height - yPos) + "px)"
+		tooltip.style.margin = "0 2px"
+		tooltip.style.padding = "0 5px"
+		tooltip.style.top = yPos + "px"
 
-		if (percent < 0.3) {
-			tooltip.style.right = ""
-			tooltip.style.left = bounds.left + (bounds.width * percentInElem) + 10 + "px" //Add a tiny bit to get it away from mouse pointer.
+		if (percent > 0.7) {
+			//Move tooltip to left side.
+			verticalLine.style.transform += " scaleX(-1.0)" //Flip tooltip to other side.
+			tooltip.style.transform = "scaleX(-1.0)" //Undo text flipping.
 		}
 		else {
-			tooltip.style.left = ""
-			tooltip.style.right = bounds.right - (bounds.width * percentInElem) + 5 + "px" //Add a bit for visuals.
+			tooltip.style.transform = ""
 		}
 
 		//Scale within range.
@@ -421,7 +425,7 @@ function createGraph(options) {
 
 		let xVal = options.x1.min + (options.x1.range * percent)
 
-		tooltip.innerHTML = formatDate(new Date(xVal))
+		tooltip.innerHTML = formatDate(new Date(xVal)).replace(" ", "&nbsp;")
 
 		let isForecast;
 		function addLines(lines) {
@@ -440,7 +444,7 @@ function createGraph(options) {
 				let point = line.points[lastIndex]
 
 				if (point?.[line.yAlias] === undefined) {return} //Avoid erroring.
-				tooltip.innerHTML += `<br>${point[line.yAlias]} ${line.scrubUnits}`
+				tooltip.innerHTML += `<br>${point[line.yAlias]}&nbsp;${line.scrubUnits}`
 
 				if (point[line.forecastAlias]) {isForecast = true}
 			})
@@ -457,6 +461,7 @@ function createGraph(options) {
 
 	finalCanvas.addEventListener("mousemove", handleMoveEvent)
 	finalCanvas.addEventListener("touchmove", handleMoveEvent)
+	finalCanvas.className = "graph"
 
 	return {container: graphContainerDiv, canvas: finalCanvas}
 }

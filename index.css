@@ -579,7 +579,7 @@ Those include name,section,skill,quality, and flow info*/
   position: absolute;
   top: 0;
   left: 0;
-  transform: translate(-50%, -100%) scaleX(0.8); /*Scale for margin. */
+  transform: translate(-50%, -100%); /*Scale for margin. */
   /* Style the bubble. */
   background-color: white;
   color: black;
@@ -636,7 +636,6 @@ Those include name,section,skill,quality, and flow info*/
 
 .popup-bubble .graph {
     height: 45vh;
-    transform: scaleX(1.25); /*Reverse 0.8 scaleX of parent*/
     max-width: 60vw; /*80vw of elem, 0.8 transform, and margin in bubble. */
 }
 

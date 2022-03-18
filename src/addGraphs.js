@@ -70,8 +70,6 @@ function getFlowGraph(data) {
         y1: volumeConfig,
         y2: stageConfig
     })
-    graph.canvas.className = "graph"
-    graph.container.className = "graphContainer"
     return graph
 }
 
@@ -102,8 +100,6 @@ function getTempGraph(data) {
     		]
         }
     })
-    graph.canvas.className = "graph"
-    graph.container.className = "graphContainer"
     return graph
 }
 
@@ -166,8 +162,6 @@ function getPrecipGraph(data) {
             color: "#0099FF"
         }
     })
-    graph.canvas.className = "graph"
-    graph.container.className = "graphContainer"
     return graph
 }
 
