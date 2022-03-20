@@ -23,28 +23,6 @@ try {
 catch(e) {console.error(e)}
 
 try {
-	//IE doesn't define console unless devtools is open.
-	if(!window.console) {window.console={}}
-
-	['assert', 'clear', 'count', 'debug', 'dir', 'dirxml', 'error', 'exception', 'group', 'groupCollapsed', 'groupEnd', 'info', 'log', 'markTimeline', 'profile', 'profileEnd', 'table', 'time',
-	'timeEnd', 'timeline', 'timelineEnd', 'timeStamp', 'trace', 'warn'].forEach((method) => {
-		if (!window.console[method]) {
-			//When the console is opened, all of the old messages should be dumped within 5 seconds.
-			window.console[method] = function(...data) {
-				let interval = setInterval(function() {
-					if(window.console[method].toString().indexOf('[native code]') > -1 || window.console[method].toString().indexOf("__BROWSERTOOLS_CONSOLE_SAFEFUNC") > -1) {
-						console.log(...data)
-						window.console[method](...data)
-						clearInterval(interval)
-					}
-				}, 5000)
-			}
-		}
-	})
-}
-catch(e) {console.error(e)}
-
-try {
 	//Polyfill window.scrollY
 	(window.scrollY !== undefined) || Object.defineProperty(window, "scrollY", {get: function() {return window.pageYOffset}})
 }
@@ -101,7 +79,7 @@ try {
 		Element.prototype.replaceWith = ReplaceWithPolyfill;
 	if (!CharacterData.prototype.replaceWith)
 		CharacterData.prototype.replaceWith = ReplaceWithPolyfill;
-	if (!DocumentType.prototype.replaceWith) 
+	if (!DocumentType.prototype.replaceWith)
 		DocumentType.prototype.replaceWith = ReplaceWithPolyfill;
 	}
 catch(e) {console.error(e)}
