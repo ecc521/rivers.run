@@ -1,68 +1,70 @@
 {
-  "name": "rivers.run",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "build": "webpack & gulp cssbuild",
-    "devbuild": "webpack --env dev & gulp cssbuild",
-    "bubblewrap": "bubblewrap"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ecc521/rivers.run.git"
-  },
-  "author": "Tucker Willenborg",
-  "license": "UNLICENSED",
-  "bugs": {
-    "url": "https://github.com/ecc521/rivers.run/issues"
-  },
-  "homepage": "https://rivers.run",
-  "browserslist": [
-    "last 2 versions",
-    "not dead",
-    "Firefox >= 60",
-    "Chrome >=49",
-    "Safari >= 9"
-  ],
-  "devDependencies": {
-    "@babel/core": "^7.11.6",
-    "@babel/plugin-transform-runtime": "^7.11.5",
-    "@babel/preset-env": "^7.11.5",
-    "@babel/runtime": "^7.11.2",
-    "@bubblewrap/cli": "^1.5.0",
-    "@capacitor/cli": "^2.4.6",
-    "@capacitor/core": "^2.4.6",
-    "@capacitor/ios": "^2.4.6",
-    "@ionic-native/web-server": "^5.33.1",
-    "@webcomponents/custom-elements": "^1.4.2",
-    "babel-loader": "^8.1.0",
-    "cordova-plugin-webserver": "github:bykof/cordova-plugin-webserver",
-    "cordova-res": "^0.15.3",
-    "core-js": "^3.6.5",
-    "cssnano": "^4.1.10",
-    "gulp": "^4.0.2",
-    "gulp-postcss": "^8.0.0",
-    "gulp-sourcemaps": "^2.6.5",
-    "ionic-plugin-deeplinks": "^1.0.22",
-    "postcss": "^7.0.32",
-    "postcss-css-variables": "^0.13.0",
-    "postcss-custom-properties": "^9.1.1",
-    "postcss-preset-env": "^6.7.0",
-    "webpack": "^4.44.1",
-    "webpack-cli": "^4.9.2"
-  },
-  "dependencies": {
-    "ask-sdk-core": "^2.9.0",
-    "ask-sdk-express-adapter": "^2.10.0",
-    "ask-sdk-model": "^1.31.0",
-    "bent": "^7.3.12",
-    "compression": "^1.7.4",
-    "csv-parser": "^2.3.3",
-    "express": "^4.17.1",
-    "fast-xml-parser": "^3.17.4",
-    "nodemailer": "^6.4.11",
-    "serve-index": "^1.9.1",
-    "vm2": "^3.9.2"
-  }
+    "name": "rivers.run",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "build": "node build.js -- prod",
+        "postinstall": "node build.js -- prod",
+        "watch": "node build.js -- watch",
+        "bubblewrap": "bubblewrap"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ecc521/rivers.run.git"
+    },
+    "author": "Tucker Willenborg",
+    "license": "UNLICENSED",
+    "bugs": {
+        "url": "https://github.com/ecc521/rivers.run/issues"
+    },
+    "homepage": "https://rivers.run",
+    "browserslist": [
+        "last 2 versions",
+        "not dead",
+        "Firefox >= 60",
+        "Chrome >=49",
+        "Safari >= 9"
+    ],
+    "devDependencies": {
+        "@bubblewrap/cli": "^1.5.0",
+        "@capacitor/cli": "^2.4.6",
+        "@capacitor/core": "^2.4.6",
+        "@capacitor/ios": "^2.4.6",
+        "@ionic-native/web-server": "^5.33.1",
+        "cordova-plugin-webserver": "github:bykof/cordova-plugin-webserver",
+        "cordova-res": "^0.15.3",
+        "ionic-plugin-deeplinks": "^1.0.22"
+    },
+    "dependencies": {
+        "@babel/core": "^7.11.6",
+        "@babel/plugin-transform-runtime": "^7.11.5",
+        "@babel/preset-env": "^7.11.5",
+        "@babel/runtime": "^7.11.2",
+        "@webcomponents/custom-elements": "^1.4.2",
+        "ask-sdk-core": "^2.9.0",
+        "ask-sdk-express-adapter": "^2.10.0",
+        "ask-sdk-model": "^1.31.0",
+        "babel-loader": "^8.1.0",
+        "bent": "^7.3.12",
+        "compression": "^1.7.4",
+        "core-js": "^3.6.5",
+        "cssnano": "^4.1.10",
+        "csv-parser": "^2.3.3",
+        "express": "^4.17.1",
+        "fast-xml-parser": "^3.17.4",
+        "firebase": "^9.6.9",
+        "firebaseui": "^6.0.1",
+        "gulp": "^4.0.2",
+        "gulp-postcss": "^8.0.0",
+        "gulp-sourcemaps": "^2.6.5",
+        "nodemailer": "^6.4.11",
+        "postcss": "^7.0.32",
+        "postcss-css-variables": "^0.13.0",
+        "postcss-custom-properties": "^9.1.1",
+        "postcss-preset-env": "^6.7.0",
+        "serve-index": "^1.9.1",
+        "vm2": "^3.9.2",
+        "webpack": "^5.70.0"
+    }
 }

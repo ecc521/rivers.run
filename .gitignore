@@ -16,3 +16,6 @@ capacitorDir
 resources/ios/icon
 resources/ios/splash
 rivers.run-virtual-gauges
+packages
+packagedsw.js
+packagedsw.js.map
