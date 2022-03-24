@@ -6,8 +6,6 @@ const {loadFavorites, getFavoritesLastModified, writeFavorites, mergeFavoritesOb
 const accounts = require("./src/firebase/accounts.js")
 const getSearchLink = require("./src/getSearchLink.js")
 
-
-
 window.accounts = accounts
 let firebase = accounts.firebase
 
@@ -24,7 +22,6 @@ let firebaseUIAuthContainer = document.getElementById("firebaseUIAuthContainer")
 
 
 function updateSignInStatus() {
-	console.warn("Triggered")
 	let email = accounts.getUserEmail()
 	let text;
 	if (email) {
@@ -46,25 +43,21 @@ firebase.auth().onAuthStateChanged(updateSignInStatus)
 var ui = new firebaseui.auth.AuthUI(firebase.auth());
 
 var uiConfig = {
-  callbacks: {
-	signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-		console.log(authResult, redirectUrl)
-		updateSignInStatus()
-	  return false; //Do not redirect.
+	callbacks: {
+		signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+			console.log(authResult, redirectUrl)
+			updateSignInStatus()
+			return false; //Do not redirect.
+		},
 	},
-	uiShown: function() {
-	  console.log("Rendered")
-	}
-  },
-  signInFlow: 'popup',
-  signInOptions: [
-	firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-	// firebase.auth.GithubAuthProvider.PROVIDER_ID,
-	{
-		provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-		requireDisplayName: false,
-	},
-  ],
+	signInFlow: 'popup',
+	signInOptions: [
+		firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+		{
+			provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+			requireDisplayName: false,
+		},
+	],
 };
 
 signInButton.addEventListener("click", function() {
