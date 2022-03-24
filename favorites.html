@@ -179,6 +179,10 @@
             margin-left: 4em;
         }
 
+        #signedInManager {
+            padding: 8px;
+        }
+
         @media (prefers-color-scheme: dark) {
             html, body {
                 background-color: black;
@@ -280,34 +284,22 @@
         }
 
         </style>
+        <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.css" />
 
         <script src="packages/allPages.js"></script>
-
-<!-- Need to move back onto the client, add browser and email support (don't load from server).
-Add link on main page to add all rivers to favorites -->
                 <h1>Favorites Editor</h1>
 
                 <p id="favoritesLinks"></p>
-                <p style="text-align: center">If you wish, you can change your <a href="settings.html">settings</a> to display favorites on the home page by default. </p>
+                <p style="text-align: center">If you wish, you can change your <a href="settings.html">settings</a> to display favorites on the home page by default. Favorites will only be synced with your account from this page. </p>
 
-                <div id="topButtonContainer">
-                    <button id="deleteAllFavorites">Delete All Favorites</button>
-                    <button id="scrollToBottom">Go to End</button>
+                <div style="text-align: center;" id="signedInManager">
+                    <span id="signedInStatusText"></span>
+                    <button id="signOutButton">Sign Out</button>
+                    <button id="deleteAccountButton">Delete Account</button>
+                    <button id="signInButton">Sign In</button>
+
+                    <div id="firebaseUIAuthContainer"></div>
                 </div>
-
-                <div id="currentSelections"></div>
-
-                <div id="syncSpinner">Syncing to Server...<div class="loader"></div></div>
-
-                <p style="text-align: center">Add rivers to favorites using the "Add To Favorites" button in the description for any river or gauge, on either the River Info or Map views. </p>
-
-                <br>
-
-                <h2 style="text-align: center">Email Notifications: </h2>
-
-        		<div id="emailEntry" style="text-align: center;">
-        			<input id="email" type="text" placeholder="Your Email"><input id="saveEmail" type="button" value="Select">
-        		</div>
 
                 <div id="notificationsState">
                     <p id="notificationsStatus"></p>
@@ -320,6 +312,17 @@ Add link on main page to add all rivers to favorites -->
                 <h3>How do I get emails or notifications?</h3>
                 <p>You need to specify units, minimum, <strong>AND</strong> maximum levels in order to receive notifications. If you don't want a maximum, simply type something like 999999</p>
                 <p>Tap on min, max, or units in order to set or change your configuration. </p>
+
+                <div id="topButtonContainer">
+                    <button id="deleteAllFavorites">Delete All Favorites</button>
+                    <button id="scrollToBottom">Go to End</button>
+                </div>
+
+                <div id="currentSelections"></div>
+
+                <div id="syncSpinner">Syncing to Server...<div class="loader"></div></div>
+
+                <p style="text-align: center">Add rivers to favorites using the "Add To Favorites" button in the description for any river or gauge, on either the River Info or Map views. </p>
 
 		<script src="packages/favorites.js"></script>
     </body>

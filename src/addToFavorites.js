@@ -1,5 +1,21 @@
+const favoritesLastModifiedKey = "favoritesLastModified"
+const favoritesKey = "favorites"
+
+function writeToDisk(favorites, updateLastModifiedTime = true) {
+	localStorage.setItem(favoritesKey, JSON.stringify(favorites))
+	if (updateLastModifiedTime) {
+		localStorage.setItem(favoritesLastModifiedKey, Date.now()) //Used to handle merging with accounts.
+	}
+}
+
+function getFavoritesLastModified() {
+	let lastModified = localStorage.getItem(favoritesLastModifiedKey)
+	if (!lastModified) {return null}
+	return Number(lastModified)
+}
+
 function loadFavorites() {
-	let favorites = localStorage.getItem("favorites")
+	let favorites = localStorage.getItem(favoritesKey)
 
 	try {
 		favorites = JSON.parse(favorites)
@@ -10,35 +26,56 @@ function loadFavorites() {
 	}
 
 	if (favorites === null) {
-		localStorage.setItem("favorites", "{}")
-		return {}
+		favorites = {}
+		writeToDisk(favorites, false) //Pass false so we don't update favoritesLastModified when initializing.
 	}
+
+	if (favorites[""]) {
+		//Firebase doesn't accept empty strings. Relocate them.
+		if (!favorites[undefined]) {favorites[undefined] = {}}
+		Object.assign(favorites[undefined] = favorites[""])
+		delete favorites[""]
+	}
+
+	for (let usgsID in favorites) {
+		let gaugeRivers = favorites[usgsID]
+		for (let riverID in gaugeRivers) {
+			let river = gaugeRivers[riverID]
+			for (let prop in river) {
+				//Firebase does not like undefined values.
+				if (river[prop] === undefined) {delete river[prop]}
+			}
+		}
+	}
+
+
 	return favorites
 }
 
-function writeFavorites(temp) {
+function writeFavorites(favorites) {
 	let maxSections = 200
 
-	let currentGauges = Object.keys(temp)
-	let currentSections = currentGauges.reduce((total, gaugeID) => {return total + Object.keys(temp[gaugeID]).length}, 0)
+	let currentGauges = Object.keys(favorites)
+	let currentSections = currentGauges.reduce((total, gaugeID) => {return total + Object.keys(favorites[gaugeID]).length}, 0)
 
 	if (currentSections > maxSections) {
 		alert(`Failed to save ${currentSections} sections to favorites (exceeds limit of ${maxSections})`)
 		return false
 	}
 
-	localStorage.setItem("favorites", JSON.stringify(temp))
+	writeToDisk(favorites)
 	return true
 }
 
-function addToFavorites(temp, river, usgsID) {
-	if (!temp[usgsID]) {temp[usgsID] = {}}
+function addToFavorites(favorites, river, usgsID) {
+	if (usgsID === "") {usgsID = undefined} //Firebase won't accept a blank string, but will convert undefined to a string.
+	if (!favorites[usgsID]) {favorites[usgsID] = {}}
 
-	let currentDetails = temp?.[usgsID]?.[river.id] //Current data in favorites
+	let currentDetails = favorites?.[usgsID]?.[river.id] //Current data in favorites
 	if (currentDetails) {return} //Don't overwrite existing favorites.
 
-	temp[usgsID][river.id] = {
-		id: river.id,
+	favorites[usgsID][river.id] = {
+		id: river.id, //TODO: We don't need to store these IDs twice.
 		name: river.name,
 		section: river.section, //Used to help people identify at is what.
 
@@ -47,17 +84,31 @@ function addToFavorites(temp, river, usgsID) {
 		maximum: river.maxrun,
 		units: river.relativeflowtype
 	}
-	return temp
+	return favorites
 }
 
 function addRiversToFavorites(rivers) {
-	let temp = loadFavorites()
+	let favorites = loadFavorites()
 
 	rivers.forEach((river) => {
-		addToFavorites(temp, river, river.gauge)
+		addToFavorites(favorites, river, river.gauge)
 	})
 
-	return writeFavorites(temp)
+	return writeFavorites(favorites)
+}
+
+function mergeFavoritesObjects(favorites = {}, objToMerge = {}) {
+	for (let usgsID in objToMerge) {
+		let gaugeRivers = objToMerge[usgsID]
+		for (let riverID in gaugeRivers) {
+			let river = gaugeRivers[riverID]
+
+			if (!favorites[usgsID]) {favorites[usgsID] = {}}
+			favorites[usgsID][riverID] = river
+		}
+	}
+
+	return favorites
 }
 
 function addRiverToFavorites(river, usgsID) {
@@ -69,5 +120,8 @@ function addRiverToFavorites(river, usgsID) {
 module.exports = {
 	loadFavorites,
 	addRiverToFavorites,
-	addRiversToFavorites
+	addRiversToFavorites,
+	writeFavorites,
+	getFavoritesLastModified,
+	mergeFavoritesObjects,
 }
