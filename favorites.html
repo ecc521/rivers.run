@@ -62,20 +62,15 @@
             text-align: center;
         }
 
-        #subscribe, #disable, #unsubscribe {
+        #enable, #disable {
             font-size: 16px;
             border-radius: 10px;
             padding:8px;
             margin-bottom: 13px;
         }
 
-        #subscribe {
+        #enable {
             background: linear-gradient(45deg, yellow, #00FF00 ,#00FFFF);
-        }
-
-        #unsubscribe {
-            background: linear-gradient(45deg, #FF9999, #9999FF)
-            /*linear-gradient(45deg, #FF6666, #FFaaaa, lightblue, #6666FF);   Text shows up better, but I don't like it as much.*/
         }
 
 			#disable {
@@ -303,9 +298,17 @@
 
                 <div id="notificationsState">
                     <p id="notificationsStatus"></p>
-                    <button id="subscribe">Enable Emails</button>
-                    <button id="disable">Temporarily Disable</button>
-                    <button id="unsubscribe">Unsubscribe from Emails</button>
+
+                    <button id="enable">Enable Notifications</button>
+                    <!-- <button id="disable">Disable Notifications</button> -->
+
+                    <br>
+
+                    <label for="timeOfDay">Preferred time for notifications: </label><input type="time" id="timeOfDay" min="00:00" max="24:00" value="06:00">
+
+                    <br>
+
+                    <label for="disabledDate">Disable Notifications Until: </label><input type="date" id="disabledDate">
                 </div>
 
                 <br>

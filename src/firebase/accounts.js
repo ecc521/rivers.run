@@ -76,9 +76,9 @@ async function getFavorites(data) {
 	return data?.favorites || {}
 }
 
-async function getNoneUntil(data) {
+async function getNotificationsConfig(data) {
     data = data || await getData()
-    return data?.noneUntil
+    return data?.notifications || {}
 }
 
 async function setFavorites(favorites, merge) {
@@ -88,8 +88,8 @@ async function setFavorites(favorites, merge) {
     }, merge)
 }
 
-async function setNoneUntil(noneUntil) {
-    return await setData({noneUntil}, true)
+async function setNotificationsConfig(notifications) {
+    return await setData({notifications}, true)
 }
 
 export {
@@ -107,6 +107,6 @@ export {
 	getFavorites,
     setFavorites,
     getFavoritesLastModified,
-    getNoneUntil,
-    setNoneUntil,
+    getNotificationsConfig,
+    setNotificationsConfig,
 }

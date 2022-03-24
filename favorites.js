@@ -103,7 +103,108 @@ window.firebase = accounts.firebase
 
 
 
+//
+// function setDisabledView(options) {
+// 	document.getElementById("subscribe").style.display = "inline-block"
+//
+// 	if (options && options.temporaryDisable) {
+// 		//Show notification disabler
+// 		document.getElementById("disable").style.display = "inline-block"
+// 		document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#333300":"#ffffaa"
+// 		document.getElementById("unsubscribe").style.display = "inline-block"
+// 	}
+// 	else {
+// 		document.getElementById("disable").style.display = "none"
+// 		document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
+// 		document.getElementById("unsubscribe").style.display = "none"
+// 	}
+//
+// 	if (options && options.noEnableButton) {
+// 		document.getElementById("subscribe").style.display = "none"
+// 	}
+// }
+//
+// function setEnabledView() {
+// 	document.getElementById("subscribe").style.display = "none"
+// 	document.getElementById("unsubscribe").style.display = "inline-block"
+// 	document.getElementById("notificationsState").style.backgroundColor = ""
+// 	document.getElementById("disable").style.display = "inline-block"
+// }
 
+
+
+function getDisabledUntilPhrase(DateObj) {
+	if (!(DateObj instanceof Date)) {DateObj = new Date(DateObj)} //Allow time strings or milliseconds since epoch.
+	return "Notifications disabled until " + DateObj.toLocaleDateString() + " at " + DateObj.toLocaleTimeString()
+}
+
+// let ranOnce;
+// function updateSubscriptionStatus() {
+// 	if (navigator.onLine === false) {
+// 		document.getElementById("notificationsStatus").innerHTML = "This Page Requires Internet Access"
+// 		setDisabledView({temporaryDisable: true})
+// 	}
+// 	else if (subscription === undefined) {
+// 		document.getElementById("notificationsStatus").innerHTML = "Something went horribly wrong. Please try again later."
+// 		setDisabledView({temporaryDisable: true})
+// 	}
+// 	else if (subscription === null) {
+// 		document.getElementById("notificationsStatus").innerHTML = "Not signed up for emails."
+// 		setDisabledView()
+// 	}
+// 	else if (subscription.noneUntil > Date.now()) {
+// 		document.getElementById("notificationsStatus").innerHTML = getDisabledUntilPhrase(subscription.noneUntil)
+// 		setDisabledView({temporaryDisable: true})
+// 	}
+// 	else {
+// 		document.getElementById("notificationsStatus").innerHTML = "Emails enabled. "
+// 		setEnabledView()
+// 		if (!ranOnce) {ranOnce = true; dataChanged()} //Make sure to sync.
+// 	}
+// }
+
+
+
+let enableButton = document.getElementById("enable")
+// let disableButton = document.getElementById("disable")
+let timeInput = document.getElementById("timeOfDay")
+let disabledDate = document.getElementById("disabledDate")
+
+
+async function updateNotificationsUI(data) {
+	let notifications = await accounts.getNotificationsConfig(data)
+	console.log(notifications)
+
+	//true || for testing
+	if (true || notifications.enabled) {
+		enableButton.style.display = "none"
+		// disableButton.style.display = ""
+		timeInput.style.display = ""
+		disabledDate.style.display = ""
+	}
+	else {
+		enableButton.style.display = ""
+		// disableButton.style.display = "none"
+		timeInput.style.display = "none"
+		disabledDate.style.display = "none"
+	}
+
+	let timeZoneOffset = new Date().getTimezoneOffset();
+
+	let todaysDate = new Date(Date.now() - timeZoneOffset).toJSON().slice(0,10);
+
+	console.log(todaysDate)
+	disabledDate.min = todaysDate
+
+	if (notifications.noneUntil > Date.now()) {
+		//Currently disabled.
+	}
+	else {
+		delete notifications.noneUntil
+	}
+
+
+}
 
 
 //Manage favorites.
@@ -123,6 +224,8 @@ async function syncFavorites(alwaysOverwrite = false) {
 	let data = await accounts.getData()
 	let netFavorites = await accounts.getFavorites(data)
 	let netLastModified = await accounts.getFavoritesLastModified(data)
+
+	await updateNotificationsUI(data)
 
 	//If net modified more recently than local, overwrite local with net.
 	//If local modified more recently than net:
@@ -351,88 +454,6 @@ async function dataChanged() {
 }
 
 redrawRows()
-
-
-
-
-
-
-function setDisabledView(options) {
-	document.getElementById("subscribe").style.display = "inline-block"
-
-	if (options && options.temporaryDisable) {
-		//Show notification disabler
-		document.getElementById("disable").style.display = "inline-block"
-		document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#333300":"#ffffaa"
-		document.getElementById("unsubscribe").style.display = "inline-block"
-	}
-	else {
-		document.getElementById("disable").style.display = "none"
-		document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
-		document.getElementById("unsubscribe").style.display = "none"
-	}
-
-	if (options && options.noEnableButton) {
-		document.getElementById("subscribe").style.display = "none"
-	}
-}
-
-function setEnabledView() {
-	document.getElementById("subscribe").style.display = "none"
-	document.getElementById("unsubscribe").style.display = "inline-block"
-	document.getElementById("notificationsState").style.backgroundColor = ""
-	document.getElementById("disable").style.display = "inline-block"
-}
-
-
-
-function getDisabledUntilPhrase(DateObj) {
-	if (!(DateObj instanceof Date)) {DateObj = new Date(DateObj)} //Allow time strings or milliseconds since epoch.
-	return "Notifications disabled until " + DateObj.toLocaleDateString() + " at " + DateObj.toLocaleTimeString()
-}
-
-let ranOnce;
-function updateSubscriptionStatus() {
-	if (navigator.onLine === false) {
-		document.getElementById("notificationsStatus").innerHTML = "This Page Requires Internet Access"
-		setDisabledView({temporaryDisable: true})
-	}
-	else if (subscription === undefined) {
-		document.getElementById("notificationsStatus").innerHTML = "Something went horribly wrong. Please try again later."
-		setDisabledView({temporaryDisable: true})
-	}
-	else if (subscription === null) {
-		document.getElementById("notificationsStatus").innerHTML = "Not signed up for emails."
-		setDisabledView()
-	}
-	else if (subscription.noneUntil > Date.now()) {
-		document.getElementById("notificationsStatus").innerHTML = getDisabledUntilPhrase(subscription.noneUntil)
-		setDisabledView({temporaryDisable: true})
-	}
-	else {
-		document.getElementById("notificationsStatus").innerHTML = "Emails enabled. "
-		setEnabledView()
-		if (!ranOnce) {ranOnce = true; dataChanged()} //Make sure to sync.
-	}
-}
-
-
-
-
-;(async function() {
-	//TODO: We should probably have a custom window to configure notifications.
-	document.getElementById("unsubscribe").addEventListener("click", async function() {
-		//TODO: Disable notifications.
-	})
-
-	document.getElementById("subscribe").addEventListener("click", async function() {
-		//TODO: Enable notifications.
-	})
-
-	document.getElementById("disable").addEventListener("click", async function() {
-		//TODO: Enable for some time frame.
-	})
-}());
 
 
 
