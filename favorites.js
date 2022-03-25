@@ -102,109 +102,103 @@ window.firebase = accounts.firebase
 //But when things are updated individually on the client, we either need to overwrite or figure out how to delete specific map keys.
 
 
-
-//
-// function setDisabledView(options) {
-// 	document.getElementById("subscribe").style.display = "inline-block"
-//
-// 	if (options && options.temporaryDisable) {
-// 		//Show notification disabler
-// 		document.getElementById("disable").style.display = "inline-block"
-// 		document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#333300":"#ffffaa"
-// 		document.getElementById("unsubscribe").style.display = "inline-block"
-// 	}
-// 	else {
-// 		document.getElementById("disable").style.display = "none"
-// 		document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
-// 		document.getElementById("unsubscribe").style.display = "none"
-// 	}
-//
-// 	if (options && options.noEnableButton) {
-// 		document.getElementById("subscribe").style.display = "none"
-// 	}
-// }
-//
-// function setEnabledView() {
-// 	document.getElementById("subscribe").style.display = "none"
-// 	document.getElementById("unsubscribe").style.display = "inline-block"
-// 	document.getElementById("notificationsState").style.backgroundColor = ""
-// 	document.getElementById("disable").style.display = "inline-block"
-// }
-
-
-
-function getDisabledUntilPhrase(DateObj) {
-	if (!(DateObj instanceof Date)) {DateObj = new Date(DateObj)} //Allow time strings or milliseconds since epoch.
-	return "Notifications disabled until " + DateObj.toLocaleDateString() + " at " + DateObj.toLocaleTimeString()
-}
-
-// let ranOnce;
-// function updateSubscriptionStatus() {
-// 	if (navigator.onLine === false) {
-// 		document.getElementById("notificationsStatus").innerHTML = "This Page Requires Internet Access"
-// 		setDisabledView({temporaryDisable: true})
-// 	}
-// 	else if (subscription === undefined) {
-// 		document.getElementById("notificationsStatus").innerHTML = "Something went horribly wrong. Please try again later."
-// 		setDisabledView({temporaryDisable: true})
-// 	}
-// 	else if (subscription === null) {
-// 		document.getElementById("notificationsStatus").innerHTML = "Not signed up for emails."
-// 		setDisabledView()
-// 	}
-// 	else if (subscription.noneUntil > Date.now()) {
-// 		document.getElementById("notificationsStatus").innerHTML = getDisabledUntilPhrase(subscription.noneUntil)
-// 		setDisabledView({temporaryDisable: true})
-// 	}
-// 	else {
-// 		document.getElementById("notificationsStatus").innerHTML = "Emails enabled. "
-// 		setEnabledView()
-// 		if (!ranOnce) {ranOnce = true; dataChanged()} //Make sure to sync.
-// 	}
-// }
-
-
+let notificationStatus = document.getElementById("notificationStatus")
 
 let enableButton = document.getElementById("enable")
-// let disableButton = document.getElementById("disable")
+let disableButton = document.getElementById("disable")
 let timeInput = document.getElementById("timeOfDay")
 let disabledDate = document.getElementById("disabledDate")
 
+let timeInputLabel = document.querySelector("label[for='timeOfDay']")
+let disabledDateLabel = document.querySelector("label[for='disabledDate']")
+
+let notificationsState = document.getElementById("notificationsState")
+
+enableButton.addEventListener("click", async function() {
+	await accounts.setNotificationsConfig({
+		enabled: true
+	})
+	updateNotificationsUI() //TODO: We don't actually need to issue a read here - we know the config, and what we changed.
+})
+
+disableButton.addEventListener("click", async function() {
+	await accounts.setNotificationsConfig({
+		enabled: false
+	})
+	updateNotificationsUI() //TODO: We don't actually need to issue a read here - we know the config, and what we changed.
+})
+
+timeInput.addEventListener("change", async function() {
+	if (timeInput.value === "") {
+		return
+	}
+
+	let [hours, minutes] = timeInput.value.split(":")
+	let simDate = new Date().setHours(hours, minutes, 0, 0)
+	simDate = new Date(simDate)
+
+	let utcHours = String(simDate.getUTCHours()).padStart(2, 0)
+	let utcMinutes = String(simDate.getUTCMinutes()).padStart(2, 0)
+
+	await accounts.setNotificationsConfig({
+		timeOfDay: utcHours + ":" + utcMinutes
+	})
+})
+
+disabledDate.addEventListener("change", async function() {
+	let noneUntil;
+	if (disabledDate.value === "") {
+		noneUntil = null
+	}
+	else {
+		noneUntil = new Date(timeInput.value + " " + disabledDate.value).getTime()
+	}
+	await accounts.setNotificationsConfig({noneUntil})
+	updateNotificationsUI()
+})
+
+function getDisabledUntilPhrase(DateObj) {
+	if (!(DateObj instanceof Date)) {DateObj = new Date(DateObj)} //Allow time strings or milliseconds since epoch.
+	return "Email Notifications disabled until " + DateObj.toLocaleTimeString() + " on " + DateObj.toLocaleDateString()
+}
 
 async function updateNotificationsUI(data) {
 	let notifications = await accounts.getNotificationsConfig(data)
+	notificationsState.style.display = ""
 	console.log(notifications)
 
-	//true || for testing
-	if (true || notifications.enabled) {
+	if (notifications.enabled) {
 		enableButton.style.display = "none"
-		// disableButton.style.display = ""
-		timeInput.style.display = ""
-		disabledDate.style.display = ""
+		disableButton.style.display = ""
+		timeInputLabel.style.display = timeInput.style.display = ""
+		disabledDateLabel.style.display = disabledDate.style.display = ""
 	}
 	else {
+		notificationStatus.innerHTML = "Email Notifications Disabled"
 		enableButton.style.display = ""
-		// disableButton.style.display = "none"
-		timeInput.style.display = "none"
-		disabledDate.style.display = "none"
+		disableButton.style.display = "none"
+		timeInputLabel.style.display = timeInput.style.display = "none"
+		disabledDateLabel.style.display = disabledDate.style.display = "none"
+		return
 	}
 
 	let timeZoneOffset = new Date().getTimezoneOffset();
 
-	let todaysDate = new Date(Date.now() - timeZoneOffset).toJSON().slice(0,10);
+	let todaysDate = new Date(Date.now() - timeZoneOffset).toJSON().split("T")[0];
 
-	console.log(todaysDate)
 	disabledDate.min = todaysDate
 
 	if (notifications.noneUntil > Date.now()) {
-		//Currently disabled.
+		notificationStatus.innerHTML = getDisabledUntilPhrase(notifications.noneUntil)
+		disabledDate.value = new Date(notifications.noneUntil).toISOString().split("T")[0]
 	}
 	else {
+		notificationStatus.innerHTML = "Email Notifications Enabled"
 		delete notifications.noneUntil
 	}
-
-
 }
+
+
 
 
 //Manage favorites.
@@ -251,8 +245,6 @@ async function syncFavorites(alwaysOverwrite = false) {
 firebase.auth().onAuthStateChanged(function() {
 	syncFavorites()
 })
-
-
 
 
 //Format: [{id, name, minimum, maximum, units}]

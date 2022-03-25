@@ -62,7 +62,7 @@
             text-align: center;
         }
 
-        #enable, #disable {
+        #enable {
             font-size: 16px;
             border-radius: 10px;
             padding:8px;
@@ -72,10 +72,6 @@
         #enable {
             background: linear-gradient(45deg, yellow, #00FF00 ,#00FFFF);
         }
-
-			#disable {
-				background: linear-gradient(45deg, orange, yellow, lightgreen)
-			}
 
         #notificationsState {
             text-align: center;
@@ -285,7 +281,7 @@
                 <h1>Favorites Editor</h1>
 
                 <p id="favoritesLinks"></p>
-                <p style="text-align: center">If you wish, you can change your <a href="settings.html">settings</a> to display favorites on the home page by default. Favorites will only be synced with your account from this page. </p>
+                <p style="text-align: center">Want to see your favorites on the home page? Visit <a href="settings.html">Settings</a>! </p>
 
                 <div style="text-align: center;" id="signedInManager">
                     <span id="signedInStatusText"></span>
@@ -296,25 +292,17 @@
                     <div id="firebaseUIAuthContainer"></div>
                 </div>
 
-                <div id="notificationsState">
-                    <p id="notificationsStatus"></p>
+                <div id="notificationsState" style="display: none">
+                    <p id="notificationStatus"></p>
 
                     <button id="enable">Enable Notifications</button>
-                    <!-- <button id="disable">Disable Notifications</button> -->
-
-                    <br>
 
                     <label for="timeOfDay">Preferred time for notifications: </label><input type="time" id="timeOfDay" min="00:00" max="24:00" value="06:00">
 
                     <br>
 
-                    <label for="disabledDate">Disable Notifications Until: </label><input type="date" id="disabledDate">
+                    <label for="disabledDate">Disable Notifications Until: </label><input type="date" id="disabledDate"><button id="disable">Disable Indefinitely</button>
                 </div>
-
-                <br>
-                <h3>How do I get emails or notifications?</h3>
-                <p>You need to specify units, minimum, <strong>AND</strong> maximum levels in order to receive notifications. If you don't want a maximum, simply type something like 999999</p>
-                <p>Tap on min, max, or units in order to set or change your configuration. </p>
 
                 <div id="topButtonContainer">
                     <button id="deleteAllFavorites">Delete All Favorites</button>
@@ -322,8 +310,6 @@
                 </div>
 
                 <div id="currentSelections"></div>
-
-                <div id="syncSpinner">Syncing to Server...<div class="loader"></div></div>
 
                 <p style="text-align: center">Add rivers to favorites using the "Add To Favorites" button in the description for any river or gauge, on either the River Info or Map views. </p>
 

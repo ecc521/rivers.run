@@ -88,8 +88,8 @@ async function setFavorites(favorites, merge) {
     }, merge)
 }
 
-async function setNotificationsConfig(notifications) {
-    return await setData({notifications}, true)
+async function setNotificationsConfig(notifications, merge) {
+    return await setData({notifications}, merge)
 }
 
 export {
