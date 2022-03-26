@@ -97,8 +97,6 @@ async function updateUserNoneUntil(user) {
 		newNoneUntil += 1000 * 60 * 60 * 24
 	}
 
-	console.log(newNoneUntil)
-
 	//Write the value to firebase.
 	await user.document.ref.set({
 		notifications: {
