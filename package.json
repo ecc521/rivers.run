@@ -31,7 +31,6 @@
         "@capacitor/cli": "^2.4.6",
         "@capacitor/core": "^2.4.6",
         "@capacitor/ios": "^2.4.6",
-        "@ionic-native/web-server": "^5.33.1",
         "cordova-plugin-webserver": "github:bykof/cordova-plugin-webserver",
         "cordova-res": "^0.15.3",
         "ionic-plugin-deeplinks": "^1.0.22"
@@ -65,6 +64,7 @@
         "postcss-preset-env": "^7.4.3",
         "serve-index": "^1.9.1",
         "vm2": "^3.9.2",
-        "webpack": "^5.70.0"
+        "webpack": "^5.70.0",
+        "@ionic-native/web-server": "^5.33.1"
     }
 }
