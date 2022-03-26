@@ -33,11 +33,11 @@ function addFlowDataToFavorites(favorites, gauges = {}) {
 			latestReading.cms = latestReading?.cfs / cubicMeterInFeet
 
 			if (river.units === "cms" || river.units === "meters") {
-				if (flow?.meters !== undefined) {
+				if (latestReading?.meters !== undefined) {
 					river.flowInfo = `${latestReading.meters} meters`
 				}
-				if (flow?.cms !== undefined) {
-					if (flow?.meters) {
+				if (latestReading?.cms !== undefined) {
+					if (latestReading?.meters) {
 						river.flowInfo += ", "
 					}
 					else {
@@ -47,11 +47,11 @@ function addFlowDataToFavorites(favorites, gauges = {}) {
 				}
 			}
 			else {
-				if (flow?.feet !== undefined) {
+				if (latestReading?.feet !== undefined) {
 					river.flowInfo = `${latestReading.feet} feet`
 				}
-				if (flow?.cfs !== undefined) {
-					if (flow?.feet) {
+				if (latestReading?.cfs !== undefined) {
+					if (latestReading?.feet) {
 						river.flowInfo += ", "
 					}
 					else {
