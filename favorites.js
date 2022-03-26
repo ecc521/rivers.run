@@ -86,13 +86,66 @@ signInButton.addEventListener("click", function() {
 	ui.start(firebaseUIAuthContainer, uiConfig);
 })
 
-
 signOutButton.addEventListener("click", async function() {
 	await accounts.signOut()
 })
 
+let passwordInfo = document.getElementById("passwordInfo")
+let setPassword = document.getElementById("setPassword")
+function setPasswordInfo() {
+	let hasPassword = accounts.getCurrentUser()?.providerData?.some((provider) => {return provider.providerId === "password"})
 
-async function deleteAccount() {
+	if (hasPassword) {
+		passwordInfo.innerHTML = ""
+		setPassword.innerHTML = "Update Password"
+	}
+	else {
+		passwordInfo.innerHTML = "Set Password to log in on iOS: "
+		setPassword.innerHTML = "Set Password"
+	}
+}
+setPasswordInfo()
+firebase.auth().onAuthStateChanged(setPasswordInfo)
+
+let passwordEntryField = document.getElementById("passwordEntryField")
+let togglePasswordVisibility = document.getElementById("togglePasswordVisibility")
+
+setPassword.addEventListener("click", async function() {
+	await updatePassword(passwordEntryField.value)
+})
+
+togglePasswordVisibility.addEventListener("click", function() {
+	if (passwordEntryField.type === "password") {
+		togglePasswordVisibility.innerHTML = "Hide"
+		passwordEntryField.type = "text"
+	}
+	else {
+		togglePasswordVisibility.innerHTML = "Show"
+		passwordEntryField.type = "password"
+	}
+})
+
+async function updatePassword(newPassword) {
+	try {
+		await accounts.getCurrentUser().updatePassword(newPassword)
+		alert("Password Updated!")
+	}
+	catch (e) {
+		if (e.code === "auth/requires-recent-login") {
+			alert("You must sign in again before you can set your password. ")
+			ui.start(firebaseUIAuthContainer, uiConfig);
+			firebaseUIAuthContainer.style.display = ""
+		}
+		else {
+			alert(e.message)
+			throw e
+		}
+	}
+}
+
+
+async function deleteAccount(allowRecurse = false) {
+	//allowRecurse is used to prevent infinite loop glitches.
 	try {
 		await accounts.getCurrentUser().delete()
 	}
@@ -100,10 +153,13 @@ async function deleteAccount() {
 		if (e.code === "auth/requires-recent-login") {
 			alert("You must sign in again before you can delete your account. ")
 			ui.start(firebaseUIAuthContainer, uiConfig);
-			firebase.auth().onAuthStateChanged(deleteAccount)
+			firebaseUIAuthContainer.style.display = ""
+			if (allowRecurse) {
+				firebase.auth().onAuthStateChanged(deleteAccount)
+			}
 		}
 		else {
-			alert(e)
+			alert(e.message)
 			throw e
 		}
 	}
@@ -111,7 +167,7 @@ async function deleteAccount() {
 
 deleteAccountButton.addEventListener("click", function() {
 	if (confirm("Are you sure you would like to delete your account? ")) {
-		deleteAccount()
+		deleteAccount(true)
 	}
 })
 
