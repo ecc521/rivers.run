@@ -7,7 +7,7 @@ const child_process = require("child_process")
 
 const prepareRiverData = require(path.join(__dirname, "dataparse.js"))
 
-const {sendNotifications} = require(path.join(__dirname, "sendNotifications.js"));
+const sendNotifications = require(path.join(__dirname, "sendnotifications.js"));
 
 const compressor = require(path.join(__dirname, "precompress.js"))
 

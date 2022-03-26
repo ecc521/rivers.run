@@ -4,12 +4,6 @@
 module.exports = function({iframeUrl}) {
 	window.addEventListener("message", async function(event) {
 		//Security measure, although this should never end up running.
-
-		//TODO: Ensure that frameBridge does not allow any non-rivers.run or local origins.
-		//So in the event that an OAuth provider or other site in the iframe gets compromised,
-		//they could not perform a data extraction attack against rivers.run users.
-
-		//This attack is not possible as long as the CSP is restricted in child-src or default-src. 
 		if (new URL(event.origin).href !== new URL(iframeUrl).href) {
 			return console.error("Origin Not Allowed: ", event.origin)
 		}

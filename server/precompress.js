@@ -13,15 +13,7 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 
 	if (input instanceof Buffer) {args.push(input.byteLength)}
 
-	let compressor = child_process.fork(path.join(__dirname, "brotliCompress.js"), args, {
-		stdio: "pipe",
-		//Pass an empty array for execArgv: When the main process is run with node --inspect,
-		//we want to ensure that the compressor does not run with --inspect as well,
-		//as that would result in a port conflict and crash.
-
-		//Alternatively, if we wanted to inspect the compressor as well, we could assign ports for each compressor, 
-		execArgv: []
-	})
+	let compressor = child_process.fork(path.join(__dirname, "brotliCompress.js"), args, {stdio: "pipe"})
 
 	os.setPriority(compressor.pid, priority)
 
