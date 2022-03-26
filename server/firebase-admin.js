@@ -1,3 +1,6 @@
+//This code uses the .auth and .document fields of firebase documents to store generated data.
+//Those property names should not be used in the firebase users collection, as they will not always be accessible. 
+
 const path = require("path")
 const utils = require("./utils.js")
 
@@ -27,7 +30,7 @@ async function loadUserData() {
 	usersToExamine.forEach((queryDocumentSnapshot) => {
 		let data = queryDocumentSnapshot.data()
 		let uid = queryDocumentSnapshot.id
-
+		data.document = queryDocumentSnapshot //Provide a reference to the original document so this record can be amended.
 		usersMap.set(uid, data)
 	})
 

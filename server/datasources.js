@@ -95,6 +95,8 @@ class MSC extends DataSource {
 
 //This MSC will download province files instead of gauge files.
 //Therefore, it overrides the batching code to avoid repeatedly requesting provinces.
+
+//TODO: If we only want a few gauges for a province, switch to regular MSC for that province. 
 class MSCProvince extends MSC {
 	constructor(obj = {}) {
 		let config = Object.assign({

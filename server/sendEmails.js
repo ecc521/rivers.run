@@ -12,7 +12,7 @@ try {
 	password = fs.readFileSync(path.join(utils.getDataDirectory(), "notifications", "gmailpassword.txt"), {encoding:"utf8"}) //gmailpassword should be an application key. 2 factor auth needed.
 }
 catch (e) {
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailpassword.log'), e.toString() + "\n");
+	console.error(e)
 }
 
 async function sendEmail(user) {
@@ -54,7 +54,7 @@ async function sendEmail(user) {
 
 
 const statuses = ["high", "running", "low", "unknown"]
-const statusHeaders = ["Unclassified Rivers:", "Rivers that are Too Low:", "Rivers that are Running:", "Rivers that are Too High:"]
+const statusHeaders = ["Rivers that are Too High:", "Rivers that are Running:", "Rivers that are Too Low:", "Unclassified Rivers:"]
 
 function getMessage(user) {
     let title = "River(s) are running!";
@@ -65,10 +65,13 @@ function getMessage(user) {
 		statusMap.set(prop, [])
 	});
 
+	let IDs = []
+	let favorites = user.favorites
 	for (let gaugeID in favorites) {
 		let rivers = favorites[gaugeID]
 		for (let riverID in rivers) {
 			let river = rivers[riverID]
+			IDs.push(riverID)
 			statusMap.get(river.status).push(river)
 		}
 	}

@@ -12,9 +12,9 @@ const cubicMeterInFeet = meterInFeet**3
 function addFlowDataToFavorites(favorites, gauges = {}) {
 	for (let gaugeID in favorites) {
 		let rivers = favorites[gaugeID]
-		let readings = gauges[gaugeID]?.readings
+		let readings = gauges[gaugeID]?.readings || []
 
-		let latestReading;
+		let latestReading = {};
 		for (let i=readings.length - 1;i>=0;i--) {
 			//Find the latest non-forecast flow value.
 			if (readings[i].forecast !== true) {
@@ -70,7 +70,7 @@ function addFlowDataToFavorites(favorites, gauges = {}) {
 			else if (river.latestReading < river.minimum) {
 				status = "low"
 			}
-			else if (river.minimum === undefined && river.maximum === undefined || river.latestReading === undefined) {
+			else if ((river.minimum === undefined && river.maximum === undefined) || river.latestReading === undefined) {
 				status = "unknown"
 			}
 			else {
@@ -86,7 +86,7 @@ async function updateUserNoneUntil(user) {
 	let newNoneUntil = new Date()
 
 	//Set the time of day first.
-	let timeOfDay = user.notifications?.timeOfDay || "06:00"
+	let timeOfDay = user.notifications?.timeOfDay || "10:00" //Default timeOfDay (in UTC - this is 6am Eastern)
 	if (timeOfDay) {
 		let [hours, minutes] = timeOfDay.split(":")
 		newNoneUntil = newNoneUntil.setHours(hours, minutes, 0, 0)
@@ -97,9 +97,13 @@ async function updateUserNoneUntil(user) {
 		newNoneUntil += 1000 * 60 * 60 * 24
 	}
 
+	console.log(newNoneUntil)
+
 	//Write the value to firebase.
-	user.set({
-		noneUntil: newNoneUntil,
+	await user.document.ref.set({
+		notifications: {
+			noneUntil: newNoneUntil
+		},
 	}, {merge: true})
 }
 
@@ -118,7 +122,7 @@ async function sendNotifications(gauges) {
 		sendEmail(user)
 
 		//Right now we only offer email notifications - therefore, we can assume noneUntil can always be updated, as an email is always sent for users.
-		updateUserNoneUntil()
+		updateUserNoneUntil(user)
 	}
 }
 
