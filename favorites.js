@@ -42,19 +42,9 @@ function updateSignInStatus() {
 firebase.auth().onAuthStateChanged(updateSignInStatus)
 
 // Initialize the FirebaseUI Widget using Firebase.
-let ui = new firebaseui.auth.AuthUI(firebase.auth());
+var ui = new firebaseui.auth.AuthUI(firebase.auth());
 
-let signInOptions = []
-
-if (!window.isIos) {
-	signInOptions.push(firebase.auth.GoogleAuthProvider.PROVIDER_ID)
-}
-signInOptions.push({
-	provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-	requireDisplayName: false,
-})
-
-let uiConfig = {
+var uiConfig = {
 	callbacks: {
 		signInSuccessWithAuthResult: function(authResult, redirectUrl) {
 			console.log(authResult, redirectUrl)
@@ -63,7 +53,13 @@ let uiConfig = {
 		},
 	},
 	signInFlow: 'popup',
-	signInOptions,
+	signInOptions: [
+		firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+		{
+			provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+			requireDisplayName: false,
+		},
+	],
 };
 
 signInButton.addEventListener("click", function() {
