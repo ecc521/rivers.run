@@ -100,9 +100,6 @@ function setPasswordInfo() {
 		setPassword.innerHTML = "Update Password"
 	}
 	else {
-		//We will set a bogus password so that users are prompted to reset their password, rather than
-		//to sign in with Google/Apple, if they can't sign in on iOS.
-		accounts?.getCurrentUser()?.updatePassword(Math.random() + Math.random())
 		passwordInfo.innerHTML = "Set Password to log in on iOS: "
 		setPassword.innerHTML = "Set Password"
 	}
