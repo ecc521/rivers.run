@@ -29,12 +29,12 @@ function addFlowDataToFavorites(favorites, gauges = {}) {
 			let units = river.units
 			river.flowInfo = "No Flow Data"
 
-			latestReading.meters = flow?.feet / meterInFeet
+			latestReading.meters = latestReading?.feet / meterInFeet
 			latestReading.cms = latestReading?.cfs / cubicMeterInFeet
 
 			if (river.units === "cms" || river.units === "meters") {
 				if (flow?.meters !== undefined) {
-					river.flowInfo = `${flow.meters} meters`
+					river.flowInfo = `${latestReading.meters} meters`
 				}
 				if (flow?.cms !== undefined) {
 					if (flow?.meters) {
@@ -43,12 +43,12 @@ function addFlowDataToFavorites(favorites, gauges = {}) {
 					else {
 						river.flowInfo = ""
 					}
-					river.flowInfo += `${flow.cms} cms`
+					river.flowInfo += `${latestReading.cms} cms`
 				}
 			}
 			else {
 				if (flow?.feet !== undefined) {
-					river.flowInfo = `${flow.feet} feet`
+					river.flowInfo = `${latestReading.feet} feet`
 				}
 				if (flow?.cfs !== undefined) {
 					if (flow?.feet) {
@@ -57,7 +57,7 @@ function addFlowDataToFavorites(favorites, gauges = {}) {
 					else {
 						river.flowInfo = ""
 					}
-					river.flowInfo += `${flow.cfs} cfs`
+					river.flowInfo += `${latestReading.cfs} cfs`
 				}
 			}
 
