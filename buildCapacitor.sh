@@ -5,7 +5,14 @@ cp -r native capacitorDir
 
 mkdir capacitorDir/www
 
-cp -r packages capacitorDir/www/packages
+npm run build #Create build version.
+
+mkdir capacitorDir/www/packages/
+cp packages/*.js capacitorDir/www/packages/
+cp packages/*.css capacitorDir/www/packages/
+
+# cp packages/*.js.map capacitorDir/www/packages/ #Uncomment to include sourcemaps.
+
 cp -r *.html capacitorDir/www/
 
 cp -r legal capacitorDir/www/legal
