@@ -37,6 +37,11 @@ async function sendEmail(user) {
 	  html: mailInfo.body
 	};
 
+	if (user.auth.email.endsWith("@privaterelay.appleid.com")) {
+		//SPF checks are failing for custom emails. Use the default address. 
+		mailOptions.from = "email.rivers.run@gmail.com"
+	}
+
 	//Send the email
 	await new Promise((resolve, reject) => {
 		transporter.sendMail(mailOptions, function (err, info) {
