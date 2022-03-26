@@ -52,7 +52,7 @@ let uiConfig = {
 			return false; //Do not redirect.
 		},
 	},
-	signInFlow: 'popup',
+	signInFlow: 'redirect',
 	signInOptions: [
 		firebase.auth.GoogleAuthProvider.PROVIDER_ID,
 		{
@@ -62,8 +62,11 @@ let uiConfig = {
 	],
 };
 
+firebaseUIAuthContainer.style.display = "none"
+ui.start(firebaseUIAuthContainer, uiConfig);
+
 signInButton.addEventListener("click", function() {
-	ui.start(firebaseUIAuthContainer, uiConfig);
+	firebaseUIAuthContainer.style.display = ""
 })
 
 
