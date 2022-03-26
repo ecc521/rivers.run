@@ -52,12 +52,16 @@ let uiConfig = {
 			return false; //Do not redirect.
 		},
 	},
-	signInFlow: 'redirect',
+	signInFlow: 'redirect', //"redirect" or "popup". Popup seems better on desktop, redirect on mobile. 
 	signInOptions: [
 		firebase.auth.GoogleAuthProvider.PROVIDER_ID,
 		{
 			provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
 			requireDisplayName: false,
+		},
+		{
+			provider: "apple.com",
+			scopes: ["email"],
 		},
 	],
 };
@@ -66,6 +70,7 @@ firebaseUIAuthContainer.style.display = "none"
 ui.start(firebaseUIAuthContainer, uiConfig);
 
 signInButton.addEventListener("click", function() {
+	ui.start(firebaseUIAuthContainer, uiConfig);
 	firebaseUIAuthContainer.style.display = ""
 })
 
