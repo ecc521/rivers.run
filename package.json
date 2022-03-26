@@ -23,8 +23,8 @@
         "last 2 versions",
         "not dead",
         "Firefox >= 60",
-        "Chrome >=49",
-        "Safari >= 9"
+        "Chrome >= 57",
+        "Safari >= 10"
     ],
     "devDependencies": {
         "@bubblewrap/cli": "^1.5.0",
@@ -64,7 +64,6 @@
         "postcss-preset-env": "^7.4.3",
         "serve-index": "^1.9.1",
         "vm2": "^3.9.2",
-        "webpack": "^5.70.0",
-        "@ionic-native/web-server": "^5.33.1"
+        "webpack": "^5.70.0"
     }
 }
