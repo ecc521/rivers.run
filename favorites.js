@@ -42,9 +42,9 @@ function updateSignInStatus() {
 firebase.auth().onAuthStateChanged(updateSignInStatus)
 
 // Initialize the FirebaseUI Widget using Firebase.
-var ui = new firebaseui.auth.AuthUI(firebase.auth());
+let ui = new firebaseui.auth.AuthUI(firebase.auth());
 
-var uiConfig = {
+let uiConfig = {
 	callbacks: {
 		signInSuccessWithAuthResult: function(authResult, redirectUrl) {
 			console.log(authResult, redirectUrl)
