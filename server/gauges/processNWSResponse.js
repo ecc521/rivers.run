@@ -1,15 +1,16 @@
 //Processes flow data from NWS (National Weather Service)
 
-const xmlParser = require("fast-xml-parser");
+const fastXMLParser = require("fast-xml-parser");
+const xmlParser = new fastXMLParser.XMLParser({
+	attributesGroupName: "attributes",
+	ignoreAttributes: false,
+	attributeNamePrefix: "",
+	textNodeName : "value",
+})
 
 //Returns object for this specific site.
 function processNWSResponse(siteData) {
-	let jsonObj = xmlParser.parse(siteData, {
-		attrNodeName: "attributes",
-		ignoreAttributes : false,
-		attributeNamePrefix : "",
-		textNodeName : "value",
-	});
+	let jsonObj = xmlParser.parse(siteData);
 
 	let siteCode = jsonObj.site.attributes.id
 
