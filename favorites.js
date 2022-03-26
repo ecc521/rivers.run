@@ -20,6 +20,7 @@ let deleteAccountButton = document.getElementById("deleteAccountButton")
 let signInButton = document.getElementById("signInButton")
 let firebaseUIAuthContainer = document.getElementById("firebaseUIAuthContainer")
 
+let notificationsState = document.getElementById("notificationsState")
 
 function updateSignInStatus() {
 	let email = accounts.getUserEmail()
@@ -33,6 +34,7 @@ function updateSignInStatus() {
 		deleteAccountButton.style.display = signOutButton.style.display = "none"
 		signInButton.style.display = ""
 		text = `Sign in to Sync Favorites and Receive Notifications! `
+		notificationsState.style.display = "none"
 	}
 	signedInStatusText.innerHTML = text
 }
@@ -112,8 +114,6 @@ let disabledDate = document.getElementById("disabledDate")
 let timeInputLabel = document.querySelector("label[for='timeOfDay']")
 let disabledDateLabel = document.querySelector("label[for='disabledDate']")
 
-let notificationsState = document.getElementById("notificationsState")
-
 enableButton.addEventListener("click", async function() {
 	await accounts.setNotificationsConfig({
 		enabled: true,
@@ -166,7 +166,6 @@ function getDisabledUntilPhrase(DateObj) {
 async function updateNotificationsUI(data) {
 	let notifications = await accounts.getNotificationsConfig(data)
 	notificationsState.style.display = ""
-	console.log(notifications)
 
 	if (notifications.enabled) {
 		enableButton.style.display = "none"
@@ -226,10 +225,6 @@ async function syncFavorites(alwaysOverwrite = false) {
 	// - It is possible that this should be the new favorites entirely.
 	// - It is possible that we just added a favorite, but are otherwise out of date and need to remove everything not in the sync.
 	// - Without a change history, this is hard to determine. Therefore, we will take the non-destructive approach and merge.
-
-	console.log(localFavorites, localLastModified)
-	console.log(netFavorites, netLastModified)
-
 	if (netLastModified >= localLastModified || localLastModified === null) {
 		writeFavorites(netFavorites)
 	}
@@ -269,8 +264,6 @@ async function redrawRows() {
 	}
 
 	let selections = loadFavorites()
-
-	console.log(selections)
 
 	//We'll sort favorites by name.
 	let ids = []
@@ -442,7 +435,6 @@ async function redrawRows() {
 
 async function dataChanged() {
 	redrawRows()
-	console.log("Ran")
 }
 
 redrawRows()
