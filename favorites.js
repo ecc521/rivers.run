@@ -23,12 +23,12 @@ let firebaseUIAuthContainer = document.getElementById("firebaseUIAuthContainer")
 let notificationsState = document.getElementById("notificationsState")
 
 function updateSignInStatus() {
-	let email = accounts.getUserEmail()
+	let user = accounts.getCurrentUser()
 	let text;
-	if (email) {
+	if (user) {
 		signInButton.style.display = "none"
 		deleteAccountButton.style.display = signOutButton.style.display = ""
-		text = `Signed in as ${email}. `
+		text = `Signed in as ${accounts.getUserEmail()}. `
 	}
 	else {
 		deleteAccountButton.style.display = signOutButton.style.display = "none"
@@ -44,6 +44,28 @@ firebase.auth().onAuthStateChanged(updateSignInStatus)
 // Initialize the FirebaseUI Widget using Firebase.
 let ui = new firebaseui.auth.AuthUI(firebase.auth());
 
+const signInOptions = [
+	{
+		provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+		requireDisplayName: false,
+	},
+]
+
+if (!window.isIos) {
+	//Between Capacitor, iframes, etc, these don't work in the iOS app.
+	//It would likely take a tremendous amount of work to make them work.
+	signInOptions.push(...[
+		{
+			provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+			scopes: ["email"],
+		},
+		{
+			provider: "apple.com",
+			scopes: ["email"],
+		},
+	])
+}
+
 let uiConfig = {
 	callbacks: {
 		signInSuccessWithAuthResult: function(authResult, redirectUrl) {
@@ -52,26 +74,16 @@ let uiConfig = {
 			return false; //Do not redirect.
 		},
 	},
-	signInFlow: 'redirect', //"redirect" or "popup". Popup seems better on desktop, redirect on mobile. 
-	signInOptions: [
-		firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-		{
-			provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-			requireDisplayName: false,
-		},
-		{
-			provider: "apple.com",
-			scopes: ["email"],
-		},
-	],
+	signInFlow: 'redirect', //"redirect" or "popup". Popup seems better on desktop, redirect on mobile.
+	signInOptions,
 };
 
 firebaseUIAuthContainer.style.display = "none"
 ui.start(firebaseUIAuthContainer, uiConfig);
 
 signInButton.addEventListener("click", function() {
-	ui.start(firebaseUIAuthContainer, uiConfig);
 	firebaseUIAuthContainer.style.display = ""
+	ui.start(firebaseUIAuthContainer, uiConfig);
 })
 
 
