@@ -116,7 +116,8 @@ let notificationsState = document.getElementById("notificationsState")
 
 enableButton.addEventListener("click", async function() {
 	await accounts.setNotificationsConfig({
-		enabled: true
+		enabled: true,
+		noneUntil: 0,
 	})
 	updateNotificationsUI() //TODO: We don't actually need to issue a read here - we know the config, and what we changed.
 })
@@ -148,7 +149,7 @@ timeInput.addEventListener("change", async function() {
 disabledDate.addEventListener("change", async function() {
 	let noneUntil;
 	if (disabledDate.value === "") {
-		noneUntil = null
+		noneUntil = 0
 	}
 	else {
 		noneUntil = new Date(timeInput.value + " " + disabledDate.value).getTime()
@@ -194,7 +195,6 @@ async function updateNotificationsUI(data) {
 	}
 	else {
 		notificationStatus.innerHTML = "Email Notifications Enabled"
-		delete notifications.noneUntil
 	}
 }
 
