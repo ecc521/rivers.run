@@ -21,6 +21,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig)
 
 
+
+
 //Accounts
 let auth = firebase.auth()
 auth.setPersistence("local")

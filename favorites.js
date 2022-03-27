@@ -29,6 +29,7 @@ function updateSignInStatus() {
 		signInButton.style.display = "none"
 		deleteAccountButton.style.display = signOutButton.style.display = ""
 		text = `Signed in as ${accounts.getUserEmail()}. `
+		firebaseUIAuthContainer.style.display = "none"
 	}
 	else {
 		deleteAccountButton.style.display = signOutButton.style.display = "none"
@@ -44,27 +45,49 @@ firebase.auth().onAuthStateChanged(updateSignInStatus)
 // Initialize the FirebaseUI Widget using Firebase.
 let ui = new firebaseui.auth.AuthUI(firebase.auth());
 
-const signInOptions = [
-	{
-		provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-		requireDisplayName: false,
-	},
-]
-
-if (!window.isIos) {
-	//Between Capacitor, iframes, etc, these don't work in the iOS app.
-	//It would likely take a tremendous amount of work to make them work.
-	signInOptions.push(...[
-		{
-			provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-			scopes: ["email"],
-		},
-		{
-			provider: "apple.com",
-			scopes: ["email"],
-		},
-	])
+async function googleSignIn(authenticationObj) {
+	console.log(authenticationObj)
+	let credential = firebase.auth.GoogleAuthProvider.credential(authenticationObj.idToken);
+	await firebase.auth().signInAndRetrieveDataWithCredential(credential);
 }
+
+async function attemptTokenRefresh() {
+	let authenticationObj = await window.googleRefreshRequest()
+	googleSignIn(authenticationObj)
+}
+
+if (window.googleRefreshRequest) {
+	attemptTokenRefresh()
+}
+
+
+function hijackLoginButtons() {
+	let googleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='google.com']")
+	let appleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='apple.com']")
+
+	if (!googleButton) {
+		return
+	}
+
+	if (window.isIos) {
+		//We have to handle these natively.
+		let clonedGoogle = googleButton.cloneNode(true)
+		googleButton.replaceWith(clonedGoogle)
+		clonedGoogle.addEventListener("click", async function() {
+			attemptTokenRefresh()
+			let user = await window.googleSignInRequest()
+			googleSignIn(user.authentication)
+		})
+
+		let clonedApple = appleButton.cloneNode(true)
+		appleButton.replaceWith(clonedApple)
+		clonedApple.addEventListener("click", function() {
+			console.log("Apple Clicked!")
+		})
+	}
+}
+
+
 
 let uiConfig = {
 	callbacks: {
@@ -73,9 +96,28 @@ let uiConfig = {
 			updateSignInStatus()
 			return false; //Do not redirect.
 		},
+		uiShown: function() {
+			hijackLoginButtons()
+		},
+		uiChanged: function() {
+			hijackLoginButtons()
+		}
 	},
 	signInFlow: 'redirect', //"redirect" or "popup". Popup seems better on desktop, redirect on mobile.
-	signInOptions,
+	signInOptions: [
+		{
+			provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+			scopes: ["email"],
+		},
+		{
+			provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+			requireDisplayName: false,
+		},
+		{
+			provider: "apple.com",
+			scopes: ["email"],
+		},
+	],
 };
 
 firebaseUIAuthContainer.style.display = "none"
@@ -88,6 +130,9 @@ signInButton.addEventListener("click", function() {
 
 signOutButton.addEventListener("click", async function() {
 	await accounts.signOut()
+	if (window.googleSignOutRequest) {
+		window.googleSignOutRequest()
+	}
 })
 
 let passwordInfo = document.getElementById("passwordInfo")
@@ -100,10 +145,7 @@ function setPasswordInfo() {
 		setPassword.innerHTML = "Update Password"
 	}
 	else {
-		//We will set a bogus password so that users are prompted to reset their password, rather than
-		//to sign in with Google/Apple, if they can't sign in on iOS.
-		accounts?.getCurrentUser()?.updatePassword(Math.random() + Math.random())
-		passwordInfo.innerHTML = "Set Password to log in on iOS: "
+		passwordInfo.innerHTML = ""
 		setPassword.innerHTML = "Set Password"
 	}
 }

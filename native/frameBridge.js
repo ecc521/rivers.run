@@ -1,6 +1,11 @@
 //The iframe's localStorage is cleared repeatedly.
 //To fix this, we will store data here instead, and use postMessage to communicate.
 
+Capacitor.Plugins.GoogleAuth.initialize({
+  client_id: "701662732373-hsifuihar5t4dqbddm54pj15f04f96gb.apps.googleusercontent.com",
+  scopes: ["email"],
+});
+
 module.exports = function({iframeUrl}) {
 	window.addEventListener("message", async function(event) {
 		//Security measure, although this should never end up running.
@@ -9,7 +14,7 @@ module.exports = function({iframeUrl}) {
 		//So in the event that an OAuth provider or other site in the iframe gets compromised,
 		//they could not perform a data extraction attack against rivers.run users.
 
-		//This attack is not possible as long as the CSP is restricted in child-src or default-src. 
+		//This attack is not possible as long as the CSP is restricted in child-src or default-src.
 		if (new URL(event.origin).href !== new URL(iframeUrl).href) {
 			return console.error("Origin Not Allowed: ", event.origin)
 		}
@@ -22,6 +27,15 @@ module.exports = function({iframeUrl}) {
 		try {
 			if (data.type === "getStorage") {
 				response.message = JSON.stringify(localStorage)
+			}
+			else if (data.type === "googleSignInRequest") {
+				response.message = await Capacitor.Plugins.GoogleAuth.signIn()
+			}
+			else if (data.type === "googleRefreshRequest") {
+				response.message = await Capacitor.Plugins.GoogleAuth.refresh()
+			}
+			else if (data.type === "googleSignOutRequest") {
+				response.message = await Capacitor.Plugins.GoogleAuth.signOut()
 			}
 			else if (data.type === "setStorage") {
 				//Set new props, update existing props, and delete nonexistent props.

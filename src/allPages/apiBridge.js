@@ -116,3 +116,95 @@ window.nativeLocationRequest = function nativeLocationRequest() {
 		}, "*")
 	})
 }
+
+
+window.googleSignInRequest = function googleSignInRequest() {
+	return new Promise((resolve, reject) => {
+		let randomKey = Math.random()
+
+		function listener(event) {
+			if (event.data.randomKey === randomKey) {
+				window.removeEventListener("message", listener)
+
+				if (event.data.throw === true) {
+					reject(new Error(event.data.message))
+				}
+				else {
+					resolve(event.data.message)
+				}
+			}
+			else {
+				console.log(event.data.randomKey, randomKey)
+			}
+		}
+
+		window.addEventListener("message", listener)
+
+		window.parent.postMessage({
+			type: "googleSignInRequest",
+			args: [],
+			randomKey
+		}, "*")
+	})
+}
+
+window.googleRefreshRequest = function googleRefreshRequest() {
+	return new Promise((resolve, reject) => {
+		let randomKey = Math.random()
+
+		function listener(event) {
+			if (event.data.randomKey === randomKey) {
+				window.removeEventListener("message", listener)
+
+				if (event.data.throw === true) {
+					reject(new Error(event.data.message))
+				}
+				else {
+					resolve(event.data.message)
+				}
+			}
+			else {
+				console.log(event.data.randomKey, randomKey)
+			}
+		}
+
+		window.addEventListener("message", listener)
+
+		window.parent.postMessage({
+			type: "googleRefreshRequest",
+			args: [],
+			randomKey
+		}, "*")
+	})
+}
+
+
+window.googleSignOutRequest = function googleSignOutRequest() {
+	return new Promise((resolve, reject) => {
+		let randomKey = Math.random()
+
+		function listener(event) {
+			if (event.data.randomKey === randomKey) {
+				window.removeEventListener("message", listener)
+
+				if (event.data.throw === true) {
+					reject(new Error(event.data.message))
+				}
+				else {
+					resolve(event.data.message)
+				}
+			}
+			else {
+				console.log(event.data.randomKey, randomKey)
+			}
+		}
+
+		window.addEventListener("message", listener)
+
+		window.parent.postMessage({
+			type: "googleSignOutRequest",
+			args: [],
+			randomKey
+		}, "*")
+	})
+}

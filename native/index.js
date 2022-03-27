@@ -4,6 +4,7 @@ if (window.Capacitor) {
 	require("@capacitor/geolocation")
 	require("@capacitor/device")
 	require("@capacitor/keyboard")
+	import("@codetrix-studio/capacitor-google-auth")
 }
 
 //Load the entire site into an iframe based on a local server.
