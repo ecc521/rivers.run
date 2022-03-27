@@ -1,10 +1,10 @@
-//No need for conditional imports - this code runs native only. 
+//No need for conditional imports - this code runs native only.
 require("@capacitor/app")
 require("@capacitor/filesystem")
 require("@capacitor/geolocation")
 require("@capacitor/device")
 require("@capacitor/keyboard")
-import("@codetrix-studio/capacitor-google-auth")
+import "@codetrix-studio/capacitor-google-auth"
 
 
 //Load the entire site into an iframe based on a local server.
