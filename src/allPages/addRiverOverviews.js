@@ -3,7 +3,9 @@ try {
 	//Add the modal styles
 	styleSheet.insertRule(`
 	.modal {
-	display: none;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 	position:fixed;
 	z-index:100;
 	left:0;
@@ -18,11 +20,9 @@ try {
 	.modal-content {
 	color:black;
 	background-color: #fefefe;
-	margin: auto;
 	padding: 12px;
 	border: 1px solid #888;
 	width: calc(92% - 24px);
-	margin-top: 60px;
 	}`,styleSheet.cssRules.length)
 
 	styleSheet.insertRule(`
@@ -48,37 +48,37 @@ try {
 	`)
 
 
-	//Create the modal element
-	let overview_modal = document.createElement("div")
-	overview_modal.className = "modal"
+	function createModal(content) {
+		//Create the modal element
+		let overview_modal = document.createElement("div")
+		overview_modal.className = "modal"
 
-	let modal_content = document.createElement("div")
-	modal_content.className = "modal-content"
+		let modal_content = document.createElement("div")
+		modal_content.className = "modal-content"
 
-	let overview_modal_close = document.createElement("span")
-	overview_modal_close.className = "modal-close"
-	overview_modal_close.innerHTML = "×"
+		let overview_modal_close = document.createElement("span")
+		overview_modal_close.className = "modal-close"
+		overview_modal_close.innerHTML = "×"
 
-	let overview_modal_text = document.createElement("p")
+		overview_modal.appendChild(modal_content)
+		modal_content.appendChild(overview_modal_close)
+		modal_content.appendChild(content)
 
-	overview_modal.appendChild(modal_content)
-	modal_content.appendChild(overview_modal_close)
-	modal_content.appendChild(overview_modal_text)
+		document.body.appendChild(overview_modal)
 
-	document.body.appendChild(overview_modal)
+		//Make the modal disappear when the close button is clicked, or when area outside content is clicked
+		overview_modal_close.onclick = function() {
+			overview_modal.remove()
+		}
 
-
-
-	//Make the modal disappear when the close button is clicked, or when area outside content is clicked
-	overview_modal_close.onclick = function() {
-	    overview_modal.style.display = "none"
+		window.addEventListener("click", function(event) {
+			if (event.target === overview_modal) {
+				overview_modal.remove()
+			}
+		})
 	}
+	window.createModal = createModal
 
-	window.addEventListener("click", function(event) {
-	    if (event.target === overview_modal) {
-	        overview_modal.style.display = "none"
-	    }
-	})
 
 
 	//Create the river-overview element
@@ -87,13 +87,13 @@ try {
 	        super();
 
 	        async function openOverview() {
-	            overview_modal.style.display = "block"
 				let overviewName = this.innerText.trim().split("/").join("_")
-
-				overview_modal_text.innerHTML = ""
+				let request = await fetch(window.root + "overviews/" + overviewName)
+				let response = await request.text()
 
 				let iframe = document.createElement("iframe")
-				iframe.src = window.root + "overviews/" + overviewName
+				// iframe.src = window.root + "overviews/" + overviewName
+				iframe.srcdoc = response
 				iframe.style.width = "100%"
 				iframe.style.height = "82vh"
 				iframe.style.border = "none"
@@ -135,8 +135,7 @@ try {
 					window.addEventListener("colorSchemeChanged", setDarkMode)
 				})
 
-
-				overview_modal_text.appendChild(iframe)
+				createModal(iframe)
 	        }
 
 			let element = this

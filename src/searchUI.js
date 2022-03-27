@@ -2,6 +2,7 @@ const {getUserLocation, getLocationErrorMessage} = require("./getLocation.js")
 
 //Prepare the Advanced Search button
 let advanced_search_modal = document.getElementById('advanced-search-modal');
+advanced_search_modal.style.display = "none"
 
 let span = document.getElementById("advanced-search-modal-close").onclick = function() {
     advanced_search_modal.style.display = "none"
@@ -14,7 +15,7 @@ document.addEventListener("click", function(event) {
 })
 
 document.getElementById("advancedsearch").addEventListener("click", function() {
-    advanced_search_modal.style.display = "block"
+    advanced_search_modal.style.display = ""
 })
 
 
