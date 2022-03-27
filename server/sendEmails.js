@@ -3,6 +3,7 @@ const path = require("path")
 const nodemailer = require("nodemailer")
 
 const utils = require(path.join(__dirname, "utils.js"))
+const {loadEmailsForUsers} = require("./firebase-admin.js")
 
 const getSearchLink = require("../src/getSearchLink.js")
 
@@ -11,10 +12,10 @@ try {
 	password = fs.readFileSync(path.join(utils.getDataDirectory(), "notifications", "gmailpassword.txt"), {encoding:"utf8"}) //gmailpassword should be an application key. 2 factor auth needed.
 }
 catch (e) {
-	fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailpassword.log'), e.toString() + "\n");
+	console.error(e)
 }
 
-async function sendEmail(user, data) {
+async function sendEmail(user) {
 	//Create the email
 	//We can give them lots of info we couldn't before.
 	var transporter = nodemailer.createTransport({
@@ -26,15 +27,20 @@ async function sendEmail(user, data) {
 		}
 	});
 
-	let mailInfo = getMessage(data, user)
-	if (mailInfo === false) {return false}; //All rivers are too low.
+	//TODO: Should we simply not send if all rivers are too low, etc?
+	let mailInfo = getMessage(user)
 
 	const mailOptions = {
 	  from: 'rivergauges@rivers.run', //In order to have the profile image, this should be an alternative email for the gmail account.
-	  to: user.address, // list of receivers, or just a single one.
-	  subject: mailInfo.subject, // Subject line
-	  html: mailInfo.body// Body
+	  to: user.auth.email,
+	  subject: mailInfo.subject,
+	  html: mailInfo.body
 	};
+
+	if (user.auth.email.endsWith("@privaterelay.appleid.com")) {
+		//SPF checks are failing for custom emails. Use the default address. 
+		mailOptions.from = "email.rivers.run@gmail.com"
+	}
 
 	//Send the email
 	await new Promise((resolve, reject) => {
@@ -52,32 +58,28 @@ async function sendEmail(user, data) {
 }
 
 
-function getMessage(data, user) {
+const statuses = ["high", "running", "low", "unknown"]
+const statusHeaders = ["Rivers that are Too High:", "Rivers that are Running:", "Rivers that are Too Low:", "Unclassified Rivers:"]
+
+function getMessage(user) {
     let title = "River(s) are running!";
     let body = "";
 
-    let IDs = []
+	let statusMap = new Map()
+	statuses.forEach((prop, i) => {
+		statusMap.set(prop, [])
+	});
 
-	let running = []
-	let tooHigh = []
-	let tooLow = []
-	let invalid = []
-
-	for (let id in data) {
-		if (data[id].running !== false) {
-	        running.push(data[id])
+	let IDs = []
+	let favorites = user.favorites
+	for (let gaugeID in favorites) {
+		let rivers = favorites[gaugeID]
+		for (let riverID in rivers) {
+			let river = rivers[riverID]
+			IDs.push(riverID)
+			statusMap.get(river.status).push(river)
 		}
-		else if (data[id].current < data[id].minimum) {
-			tooLow.push(data[id])
-		}
-		else if (data[id].current > data[id].maximum){
-			tooHigh.push(data[id])
-		}
-		else {
-			invalid.push(data[id])
-		}
-        IDs.push(id)
-    }
+	}
 
 	function getIDs(rivers) {
 		return rivers.map((river) => {
@@ -85,12 +87,11 @@ function getMessage(data, user) {
 		})
 	}
 
-	if ((running.length + tooHigh.length) === 0 && JSON.stringify(user.previousMessage) === "{}") {return false;}
-	user.previousMessage = Object.assign({}, running, tooHigh)
+
+	let running = statusMap.get("running")
 
     if (running.length === 0) {
-       	title = "Rivers are no longer running"
-
+       	title = "Rivers are not running"
     }
     //If a rivers name ends with Creek, don't use the work "The"
     else if (running.length === 1) {
@@ -117,10 +118,10 @@ function getMessage(data, user) {
 		str += `: ${river.flowInfo} `
 		//Inform user of flow range, or why the river isn't classified
 		if (!river.units) {
-			str += " - Configure units for relative flow"
+			str += " - No Units Selected"
 		}
-		else if (river.minimum === undefined || river.maximum === undefined) {
-			str += " - Configure a minimum and maximum for relative flow"
+		else if (river.minimum === undefined && river.maximum === undefined) {
+			str += " - No Min/Max Selected"
 		}
 		else {
 			str += `(${river.minimum} ${river.units} - ${river.maximum} ${river.units})`
@@ -133,45 +134,20 @@ function getMessage(data, user) {
 		return `<h2 style="margin-bottom: 0">${text}</h2>`
 	}
 
-	if (tooHigh.length > 0) {
-		body.push(createHeader("Rivers that are Too High:"))
-		body.push("<ul>")
-		tooHigh.forEach((river) => {
-			body.push(createListItem(river))
-		})
-		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(tooHigh))}">View all these on rivers.run</a></li>`)
-		body.push("</ul>")
-	}
 
-	if (running.length > 0) {
-		body.push(createHeader("Rivers that are Running:"))
-		body.push("<ul>")
-		running.forEach((river) => {
-			body.push(createListItem(river))
-		})
-		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(running))}">View all these on rivers.run</a></li>`)
-		body.push("</ul>")
-	}
+	statuses.forEach((status, i) => {
+		let rivers = statusMap.get(status)
 
-	if (tooLow.length > 0) {
-		body.push(createHeader("Rivers that are Too Low:"))
-		body.push("<ul>")
-		tooLow.forEach((river) => {
-			body.push(createListItem(river))
-		})
-		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(tooLow))}">View all these on rivers.run</a></li>`)
-		body.push("</ul>")
-	}
+		if (rivers.length === 0) {return}
 
-	if (invalid.length > 0) {
-		body.push(createHeader("Unclassified Rivers:"))
+		body.push(createHeader(statusHeaders[i]))
 		body.push("<ul>")
-		invalid.forEach((river) => {
+		rivers.forEach((river) => {
 			body.push(createListItem(river))
 		})
-		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(invalid))}">View all these on rivers.run</a></li>`)
+		body.push(`<li style="font-size:0.9em;"><a href="${getSearchLink(getIDs(rivers))}">View all these on rivers.run</a></li>`)
 		body.push("</ul>")
-	}
+	});
 
 	body.push(`<p><a href="${getSearchLink(IDs)}">View All Favorites on rivers.run</a></p>`)
     body.push(`<h1 style="margin-bottom:0.5em"><img src="https://rivers.run/resources/icons/64x64-Water-Drop.png" style="vertical-align: text-top; height:1em; width: 1em;"><a href="https://rivers.run" style="color:black">rivers.run</a></h1>`)

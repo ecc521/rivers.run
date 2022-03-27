@@ -101,7 +101,7 @@ function hijackLoginButtons() {
 
 	//If the user is attempting to sign in with email, and they previously signed in with an OAuth provider,
 	//a button to "Sign in with (Google/Apple/etc)" is provided.
-	//We need to hijack that button as well on iOS. We'll reset the auth container so all options are visible again. 
+	//We need to hijack that button as well on iOS. We'll reset the auth container so all options are visible again.
 	let signInWithButton = document.querySelector("button.firebaseui-id-submit")
 	if (signInWithButton?.innerHTML?.includes("Sign in with")) {
 		let clonedSignInWithButton = signInWithButton.cloneNode(true)
@@ -238,6 +238,11 @@ async function updatePassword(newPassword) {
 		}
 	}
 }
+setPasswordInfo()
+firebase.auth().onAuthStateChanged(setPasswordInfo)
+
+let passwordEntryField = document.getElementById("passwordEntryField")
+let togglePasswordVisibility = document.getElementById("togglePasswordVisibility")
 
 
 async function deleteAccount(allowRecurse = false) {
@@ -627,51 +632,3 @@ let scrollToBottom = document.getElementById("scrollToBottom")
 scrollToBottom.addEventListener("click", function() {
 	window.scrollTo(0, 1e10)
 })
-
-
-
-
-// let url = "https://rivers.run/node/notifications"
-//
-// async function sendToServer(body) {
-// 	let response = await fetch(url, {
-// 		method: "POST",
-// 		cache: "no-store",
-// 		body:JSON.stringify(body)
-// 	})
-// 	return await response.text()
-// }
-//
-// async function getSubscription(key) {
-// 	let result = await sendToServer({
-// 		getSubscriptionFromURL: key
-// 	})
-// 	if (result === "No Subscription") {return null}
-// 	else {return JSON.parse(result)}
-// }
-//
-// async function deleteEmailSubscription(key) {
-// 	let result = await sendToServer({
-// 		delete: true,
-// 		address: key,
-// 	})
-// 	if (result === "Deleted Subscription") {return true}
-// 	else {return result}
-// }
-//
-// async function updateSubscription(subscription) {
-// 	let result = await sendToServer(subscription)
-// 	if (result === "Saved Subscription") {return true}
-// 	return result
-// }
-//
-// async function updateNoneUntil(key, noneUntil) {
-// 	//Server supports updating only noneUntil.
-// 	let sub = {
-// 		getSubscriptionFromURL: key,
-// 		noneUntil
-// 	}
-// 	return updateSubscription(sub)
-// }
-//
-// let subscription; //Last subscription from server. Note that favorites are stored client-side now.

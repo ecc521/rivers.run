@@ -5,9 +5,12 @@ cp -r native capacitorDir
 
 mkdir capacitorDir/www
 
-npm run build #Build minimized version. 
+npm run build #Create build version.
 
-cp -r packages capacitorDir/www/packages
+mkdir capacitorDir/www/packages/
+cp packages/*.js capacitorDir/www/packages/
+cp packages/*.css capacitorDir/www/packages/
+
 cp -r *.html capacitorDir/www/
 
 cp -r legal capacitorDir/www/legal
