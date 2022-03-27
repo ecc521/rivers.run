@@ -208,3 +208,37 @@ window.googleSignOutRequest = function googleSignOutRequest() {
 		}, "*")
 	})
 }
+
+
+
+
+
+window.appleSignInRequest = function appleSignInRequest() {
+	return new Promise((resolve, reject) => {
+		let randomKey = Math.random()
+
+		function listener(event) {
+			if (event.data.randomKey === randomKey) {
+				window.removeEventListener("message", listener)
+
+				if (event.data.throw === true) {
+					reject(new Error(event.data.message))
+				}
+				else {
+					resolve(event.data.message)
+				}
+			}
+			else {
+				console.log(event.data.randomKey, randomKey)
+			}
+		}
+
+		window.addEventListener("message", listener)
+
+		window.parent.postMessage({
+			type: "appleSignInRequest",
+			args: [],
+			randomKey
+		}, "*")
+	})
+}

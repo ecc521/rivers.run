@@ -61,6 +61,18 @@ if (window.googleRefreshRequest) {
 }
 
 
+async function appleSignIn(authenticationObj) {
+	let appleProvider = new firebase.auth.OAuthProvider("apple.com")
+
+	let credential = appleProvider.credential({
+		idToken: authenticationObj.response.identityToken,
+	})
+
+	await firebase.auth().signInAndRetrieveDataWithCredential(credential)
+}
+
+
+
 function hijackLoginButtons() {
 	let googleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='google.com']")
 	let appleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='apple.com']")
@@ -81,11 +93,13 @@ function hijackLoginButtons() {
 
 		let clonedApple = appleButton.cloneNode(true)
 		appleButton.replaceWith(clonedApple)
-		clonedApple.addEventListener("click", function() {
-			console.log("Apple Clicked!")
+		clonedApple.addEventListener("click", async function() {
+			let obj = await window.appleSignInRequest()
+			appleSignIn(obj)
 		})
 	}
 }
+
 
 
 

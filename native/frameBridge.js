@@ -6,6 +6,12 @@ Capacitor.Plugins.GoogleAuth.initialize({
   scopes: ["email"],
 });
 
+let appleSignInConfig = {
+	clientId: 'run.rivers.twa',
+	redirectURI: 'https://rivers-run.firebaseapp.com/__/auth/handler',
+	scopes: 'email',
+}
+
 module.exports = function({iframeUrl}) {
 	window.addEventListener("message", async function(event) {
 		//Security measure, although this should never end up running.
@@ -36,6 +42,9 @@ module.exports = function({iframeUrl}) {
 			}
 			else if (data.type === "googleSignOutRequest") {
 				response.message = await Capacitor.Plugins.GoogleAuth.signOut()
+			}
+			else if (data.type === "appleSignInRequest") {
+				response.message = await Capacitor.Plugins.SignInWithApple.authorize(appleSignInConfig)
 			}
 			else if (data.type === "setStorage") {
 				//Set new props, update existing props, and delete nonexistent props.

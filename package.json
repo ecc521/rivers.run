@@ -34,6 +34,7 @@
         "cordova-plugin-webserver": "github:bykof/cordova-plugin-webserver",
         "cordova-res": "^0.15.4",
         "ionic-plugin-deeplinks": "^1.0.24",
+        "@capacitor-community/apple-sign-in": "^1.0.1",
         "@capacitor/app": "^1.1.1",
         "@capacitor/device": "^1.1.2",
         "@capacitor/filesystem": "^1.1.0",
