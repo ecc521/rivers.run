@@ -75,15 +75,11 @@ async function appleSignIn(authenticationObj) {
 
 
 function hijackLoginButtons() {
+	if (!window.isIos) {return}
+
+	//Hijack login buttons - we need to run native log in code rather than the web code.
 	let googleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='google.com']")
-	let appleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='apple.com']")
-
-	if (!googleButton) {
-		return
-	}
-
-	if (window.isIos) {
-		//We have to handle these natively.
+	if (googleButton) {
 		let clonedGoogle = googleButton.cloneNode(true)
 		googleButton.replaceWith(clonedGoogle)
 		clonedGoogle.addEventListener("click", async function() {
@@ -91,12 +87,27 @@ function hijackLoginButtons() {
 			let user = await window.googleSignInRequest()
 			googleSignIn(user.authentication)
 		})
+	}
 
+	let appleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='apple.com']")
+	if (appleButton) {
 		let clonedApple = appleButton.cloneNode(true)
 		appleButton.replaceWith(clonedApple)
 		clonedApple.addEventListener("click", async function() {
 			let obj = await window.appleSignInRequest()
 			appleSignIn(obj)
+		})
+	}
+
+	//If the user is attempting to sign in with email, and they previously signed in with an OAuth provider,
+	//a button to "Sign in with (Google/Apple/etc)" is provided.
+	//We need to hijack that button as well on iOS. We'll reset the auth container so all options are visible again. 
+	let signInWithButton = document.querySelector("button.firebaseui-id-submit")
+	if (signInWithButton?.innerHTML?.includes("Sign in with")) {
+		let clonedSignInWithButton = signInWithButton.cloneNode(true)
+		signInWithButton.replaceWith(clonedSignInWithButton)
+		clonedSignInWithButton.addEventListener("click", function() {
+			ui.start(firebaseUIAuthContainer, uiConfig);
 		})
 	}
 }
@@ -181,7 +192,7 @@ manageAccountButton.addEventListener("click", function() {
 })
 
 setPassword.addEventListener("click", async function() {
-	if (passwordEntryField.value.length === 0) {return} //Firebase accepts a blank string as a password - though it then throws internal auth errors, so it may be equivalent to disabling passwords. 
+	if (passwordEntryField.value.length === 0) {return} //Firebase accepts a blank string as a password - though it then throws internal auth errors, so it may be equivalent to disabling passwords.
 	await updatePassword(passwordEntryField.value)
 })
 
