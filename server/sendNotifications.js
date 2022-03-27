@@ -82,29 +82,6 @@ function addFlowDataToFavorites(favorites, gauges = {}) {
 	}
 }
 
-async function updateUserNoneUntil(user) {
-	let newNoneUntil = new Date()
-
-	//Set the time of day first.
-	let timeOfDay = user.notifications?.timeOfDay || "10:00" //Default timeOfDay (in UTC - this is 6am Eastern)
-	if (timeOfDay) {
-		let [hours, minutes] = timeOfDay.split(":")
-		newNoneUntil = newNoneUntil.setHours(hours, minutes, 0, 0)
-	}
-
-	//If the time is now in the past, add a day. Otherwise, don't.
-	if (newNoneUntil < Date.now()) {
-		newNoneUntil += 1000 * 60 * 60 * 24
-	}
-
-	//Write the value to firebase.
-	await user.document.ref.set({
-		notifications: {
-			noneUntil: newNoneUntil
-		},
-	}, {merge: true})
-}
-
 async function sendNotifications(gauges) {
 	let userData = await loadUserData()
 
@@ -117,10 +94,8 @@ async function sendNotifications(gauges) {
 
 		addFlowDataToFavorites(user.favorites, gauges)
 
+		//noneUntil will be updated by sendEmail.
 		sendEmail(user)
-
-		//Right now we only offer email notifications - therefore, we can assume noneUntil can always be updated, as an email is always sent for users.
-		updateUserNoneUntil(user)
 	}
 }
 

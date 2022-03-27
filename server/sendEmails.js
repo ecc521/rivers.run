@@ -7,6 +7,8 @@ const {loadEmailsForUsers} = require("./firebase-admin.js")
 
 const getSearchLink = require("../src/getSearchLink.js")
 
+const getNewNoneUntil = require("./getNewNoneUntil.js")
+
 let password;
 try {
 	password = fs.readFileSync(path.join(utils.getDataDirectory(), "notifications", "gmailpassword.txt"), {encoding:"utf8"}) //gmailpassword should be an application key. 2 factor auth needed.
@@ -16,8 +18,6 @@ catch (e) {
 }
 
 async function sendEmail(user) {
-	//Create the email
-	//We can give them lots of info we couldn't before.
 	var transporter = nodemailer.createTransport({
 		service: 'gmail',
 		secure: true,
@@ -27,8 +27,22 @@ async function sendEmail(user) {
 		}
 	});
 
-	//TODO: Should we simply not send if all rivers are too low, etc?
 	let mailInfo = getMessage(user)
+
+	let notifications = {
+		noneUntil: getNewNoneUntil(user)
+	}
+
+	if (mailInfo?.lastMessageData !== undefined) {
+		//Don't overwrite lastMessageData if it wasn't changed.
+		//Not sure if this is necessary, or if Firebase would ignore the undefined, but being cautious.
+		notifications.lastMessageData = mailInfo.lastMessageData
+	}
+
+	//Write the value to firebase.
+	await user.document.ref.set({notifications}, {merge: true})
+
+	if (mailInfo === false) {return} //Don't send an email.
 
 	const mailOptions = {
 	  from: 'rivergauges@rivers.run', //In order to have the profile image, this should be an alternative email for the gmail account.
@@ -81,12 +95,13 @@ function getMessage(user) {
 		}
 	}
 
+	if (IDs.length === 0) {return false} //User has no favorites. No reason to send an email.
+
 	function getIDs(rivers) {
 		return rivers.map((river) => {
 			return river.id
 		})
 	}
-
 
 	let running = statusMap.get("running")
 
@@ -110,6 +125,18 @@ function getMessage(user) {
 	body = [
 		`<html><head></head><body>`,
 	]
+
+	//We'll store this to avoid sending two messages in a row about rivers being too low.
+	let riversAboveTooLow = statusMap.get("high").length + statusMap.get("running").length
+
+	if (riversAboveTooLow === 0) {
+		body.push(`<p>Notifications are now suspended until at least one river is above minimum. </p>`)
+
+		if (user?.lastMessageData === 0) {
+			//Don't message again.
+			return false;
+		}
+	}
 
 	function createListItem(river) {
 		//TODO: Should we send both units (river.flowInfo), or river.current + river.units when we have units?
@@ -160,6 +187,7 @@ function getMessage(user) {
 	return {
 		subject: title,
 		body: body.join(""),
+		lastMessageData: riversAboveTooLow
 	}
 }
 
