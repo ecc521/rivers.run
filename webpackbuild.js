@@ -1,16 +1,26 @@
+const process = require("process")
+let noNative = process.argv.includes("noNative")
+
 const webpack = require('webpack');
+
+
+let entry = {
+	"packages/index.js": "./src/index.js",
+	"packages/allPages.js": "./src/allPages/allPages.js",
+	"packages/writeupmaker.js": "./resources/writeupmaker.js",
+	"packages/map.js": "./map.js",
+	"packages/favorites.js": "./favorites.js",
+	"packagedsw.js": "./sw.js",
+}
+
+if (!noNative) {
+	entry["native/packages/index.js"] = "./native/index.js"
+}
+
 
 let config = {
 	mode: "production", //Build for production
-	entry: {
-		"packages/index.js": "./src/index.js",
-		"packages/allPages.js": "./src/allPages/allPages.js",
-		"packages/writeupmaker.js": "./resources/writeupmaker.js",
-		"packages/map.js": "./map.js",
-		"packages/favorites.js": "./favorites.js",
-		"packagedsw.js": "./sw.js",
-		"native/packages/index.js": "./native/index.js",
-	},
+	entry,
 	watch: true,
 	target: "web",
 	devtool: "source-map",

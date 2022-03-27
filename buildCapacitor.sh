@@ -5,6 +5,8 @@ cp -r native capacitorDir
 
 mkdir capacitorDir/www
 
+npm run build #Build minimized version. 
+
 cp -r packages capacitorDir/www/packages
 cp -r *.html capacitorDir/www/
 

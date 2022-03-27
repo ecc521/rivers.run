@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "build": "node build.js -- prod",
-        "postinstall": "node build.js -- prod",
+        "postinstall": "node build.js -- prod noNative",
         "watch": "node build.js -- watch",
         "bubblewrap": "bubblewrap"
     },
