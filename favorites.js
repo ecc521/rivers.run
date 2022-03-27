@@ -238,8 +238,6 @@ async function updatePassword(newPassword) {
 		}
 	}
 }
-setPasswordInfo()
-firebase.auth().onAuthStateChanged(setPasswordInfo)
 
 
 async function deleteAccount(allowRecurse = false) {
