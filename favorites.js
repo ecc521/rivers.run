@@ -16,9 +16,10 @@ let signedInManager = document.getElementById("signedInManager")
 let signedInStatusText = document.getElementById("signedInStatusText")
 
 let signOutButton = document.getElementById("signOutButton")
-let deleteAccountButton = document.getElementById("deleteAccountButton")
 let signInButton = document.getElementById("signInButton")
 let firebaseUIAuthContainer = document.getElementById("firebaseUIAuthContainer")
+
+let manageAccountButton = document.getElementById("manageAccountButton")
 
 let notificationsState = document.getElementById("notificationsState")
 
@@ -27,12 +28,12 @@ function updateSignInStatus() {
 	let text;
 	if (user) {
 		signInButton.style.display = "none"
-		deleteAccountButton.style.display = signOutButton.style.display = ""
+		manageAccountButton.style.display = signOutButton.style.display = ""
 		text = `Signed in as ${accounts.getUserEmail()}. `
 		firebaseUIAuthContainer.style.display = "none"
 	}
 	else {
-		deleteAccountButton.style.display = signOutButton.style.display = "none"
+		manageAccountButton.style.display = signOutButton.style.display = "none"
 		signInButton.style.display = ""
 		text = `Sign in to Sync Favorites and Receive Notifications! `
 		notificationsState.style.display = "none"
@@ -149,27 +150,38 @@ signOutButton.addEventListener("click", async function() {
 	}
 })
 
-let passwordInfo = document.getElementById("passwordInfo")
-let setPassword = document.getElementById("setPassword")
-function setPasswordInfo() {
-	let hasPassword = accounts.getCurrentUser()?.providerData?.some((provider) => {return provider.providerId === "password"})
+let deleteAccountButton = document.createElement("button")
+deleteAccountButton.innerHTML = "Delete Account"
 
-	if (hasPassword) {
-		passwordInfo.innerHTML = ""
-		setPassword.innerHTML = "Update Password"
-	}
-	else {
-		passwordInfo.innerHTML = ""
-		setPassword.innerHTML = "Set Password"
-	}
-}
-setPasswordInfo()
-firebase.auth().onAuthStateChanged(setPasswordInfo)
+let passwordEntryField = document.createElement("input")
+passwordEntryField.placeholder = "Enter New Password..."
+passwordEntryField.type = "password"
 
-let passwordEntryField = document.getElementById("passwordEntryField")
-let togglePasswordVisibility = document.getElementById("togglePasswordVisibility")
+let setPassword = document.createElement("button")
+
+let togglePasswordVisibility = document.createElement("button")
+togglePasswordVisibility.innerHTML = "Show"
+
+let manageAccountWindow = document.createElement("div")
+manageAccountWindow.style.textAlign = "center"
+manageAccountWindow.innerHTML = "<h2>Manage Account</h2><p>Passwords are optional if you sign in with Google, Apple, or another service. Setting a password allows you to log in with your email and password as well. </p>"
+manageAccountWindow.appendChild(passwordEntryField)
+manageAccountWindow.appendChild(togglePasswordVisibility)
+manageAccountWindow.appendChild(document.createElement("br"))
+manageAccountWindow.appendChild(setPassword)
+
+let deleteAccountWarning = document.createElement("p")
+deleteAccountWarning.innerHTML = "Deleting your account will prevent syncing of your favorites data between devices. You can always create a new account later. "
+
+manageAccountWindow.appendChild(deleteAccountWarning)
+manageAccountWindow.appendChild(deleteAccountButton)
+
+manageAccountButton.addEventListener("click", function() {
+	createModal(manageAccountWindow)
+})
 
 setPassword.addEventListener("click", async function() {
+	if (passwordEntryField.value.length === 0) {return} //Firebase accepts a blank string as a password - though it then throws internal auth errors, so it may be equivalent to disabling passwords. 
 	await updatePassword(passwordEntryField.value)
 })
 
@@ -183,6 +195,20 @@ togglePasswordVisibility.addEventListener("click", function() {
 		passwordEntryField.type = "password"
 	}
 })
+
+
+function setPasswordInfo() {
+	let hasPassword = accounts.getCurrentUser()?.providerData?.some((provider) => {return provider.providerId === "password"})
+
+	if (hasPassword) {
+		setPassword.innerHTML = "Update Password"
+	}
+	else {
+		setPassword.innerHTML = "Set Password"
+	}
+}
+setPasswordInfo()
+firebase.auth().onAuthStateChanged(setPasswordInfo)
 
 async function updatePassword(newPassword) {
 	try {
