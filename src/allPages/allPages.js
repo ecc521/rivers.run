@@ -19,17 +19,6 @@ else if (window.Capacitor) {
 	window.isIos = true
 }
 
-try {
-	//IE11 polyfills
-	//Note that there are more places that IE11 specific code is used.
-	//Rivers.run no longer supports IE11. These should be removed at some point once we can certify that they don't impact
-	//any supported browsers as well.
-	require("./IE11.js")
-}
-catch(e) {
-	console.error(e)
-}
-
 //Define window.root (the site root)
 try {
 	require("./getSiteRoot.js")

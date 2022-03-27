@@ -1,58 +1,406 @@
+//We also want a notifications option for no earlier than.
+//Once send, noneUntil will be set to that time following day.
+//Make sure to handle time zones!
+
+const {loadFavorites, getFavoritesLastModified, writeFavorites, mergeFavoritesObjects} = require("./src/addToFavorites.js")
+const accounts = require("./src/firebase/accounts.js")
 const getSearchLink = require("./src/getSearchLink.js")
 
-let url = "https://rivers.run/node/notifications"
+window.accounts = accounts
+let firebase = accounts.firebase
 
-async function sendToServer(body) {
-	let response = await fetch(url, {
-		method: "POST",
-		cache: "no-store",
-		body:JSON.stringify(body)
-	})
-	return await response.text()
-}
+import * as firebaseui from 'firebaseui'
 
-async function getSubscription(key) {
-	let result = await sendToServer({
-		getSubscriptionFromURL: key
-	})
-	if (result === "No Subscription") {return null}
-	else {return JSON.parse(result)}
-}
 
-async function deleteEmailSubscription(key) {
-	let result = await sendToServer({
-		delete: true,
-		address: key,
-	})
-	if (result === "Deleted Subscription") {return true}
-	else {return result}
-}
+let signedInManager = document.getElementById("signedInManager")
+let signedInStatusText = document.getElementById("signedInStatusText")
 
-async function deleteBrowserSubscription(key) {
-	let result = await sendToServer({
-		delete: true,
-		subscription: await (await navigator.serviceWorker.ready).pushManager.getSubscription()
-	})
-	if (result === "Deleted Subscription") {return true}
-	else {return result}
-}
+let signOutButton = document.getElementById("signOutButton")
+let signInButton = document.getElementById("signInButton")
+let firebaseUIAuthContainer = document.getElementById("firebaseUIAuthContainer")
 
-async function updateSubscription(subscription) {
-	let result = await sendToServer(subscription)
-	if (result === "Saved Subscription") {return true}
-	return result
-}
+let manageAccountButton = document.getElementById("manageAccountButton")
 
-async function updateNoneUntil(key, noneUntil) {
-	//Server supports updating only noneUntil.
-	let sub = {
-		getSubscriptionFromURL: key,
-		noneUntil
+let notificationsState = document.getElementById("notificationsState")
+
+function updateSignInStatus() {
+	let user = accounts.getCurrentUser()
+	let text;
+	if (user) {
+		signInButton.style.display = "none"
+		manageAccountButton.style.display = signOutButton.style.display = ""
+		text = `Signed in as ${accounts.getUserEmail()}. `
+		firebaseUIAuthContainer.style.display = "none"
 	}
-	return updateSubscription(sub)
+	else {
+		manageAccountButton.style.display = signOutButton.style.display = "none"
+		signInButton.style.display = ""
+		text = `Sign in to Sync Favorites and Receive Notifications! `
+		notificationsState.style.display = "none"
+	}
+	signedInStatusText.innerHTML = text
 }
 
-let subscription; //Last subscription from server. Note that favorites are stored client-side now.
+firebase.auth().onAuthStateChanged(updateSignInStatus)
+
+// Initialize the FirebaseUI Widget using Firebase.
+let ui = new firebaseui.auth.AuthUI(firebase.auth());
+
+async function googleSignIn(authenticationObj) {
+	console.log(authenticationObj)
+	let credential = firebase.auth.GoogleAuthProvider.credential(authenticationObj.idToken);
+	await firebase.auth().signInAndRetrieveDataWithCredential(credential);
+}
+
+async function attemptTokenRefresh() {
+	let authenticationObj = await window.googleRefreshRequest()
+	googleSignIn(authenticationObj)
+}
+
+if (window.googleRefreshRequest) {
+	attemptTokenRefresh()
+}
+
+
+async function appleSignIn(authenticationObj) {
+	let appleProvider = new firebase.auth.OAuthProvider("apple.com")
+
+	let credential = appleProvider.credential({
+		idToken: authenticationObj.response.identityToken,
+	})
+
+	await firebase.auth().signInAndRetrieveDataWithCredential(credential)
+}
+
+
+
+function hijackLoginButtons() {
+	let googleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='google.com']")
+	let appleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='apple.com']")
+
+	if (!googleButton) {
+		return
+	}
+
+	if (window.isIos) {
+		//We have to handle these natively.
+		let clonedGoogle = googleButton.cloneNode(true)
+		googleButton.replaceWith(clonedGoogle)
+		clonedGoogle.addEventListener("click", async function() {
+			attemptTokenRefresh()
+			let user = await window.googleSignInRequest()
+			googleSignIn(user.authentication)
+		})
+
+		let clonedApple = appleButton.cloneNode(true)
+		appleButton.replaceWith(clonedApple)
+		clonedApple.addEventListener("click", async function() {
+			let obj = await window.appleSignInRequest()
+			appleSignIn(obj)
+		})
+	}
+}
+
+
+
+
+let uiConfig = {
+	callbacks: {
+		signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+			console.log(authResult, redirectUrl)
+			updateSignInStatus()
+			return false; //Do not redirect.
+		},
+		uiShown: function() {
+			hijackLoginButtons()
+		},
+		uiChanged: function() {
+			hijackLoginButtons()
+		}
+	},
+	signInFlow: 'redirect', //"redirect" or "popup". Popup seems better on desktop, redirect on mobile.
+	signInOptions: [
+		{
+			provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+			scopes: ["email"],
+		},
+		{
+			provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+			requireDisplayName: false,
+		},
+		{
+			provider: "apple.com",
+			scopes: ["email"],
+		},
+	],
+};
+
+firebaseUIAuthContainer.style.display = "none"
+ui.start(firebaseUIAuthContainer, uiConfig);
+
+signInButton.addEventListener("click", function() {
+	firebaseUIAuthContainer.style.display = ""
+	ui.start(firebaseUIAuthContainer, uiConfig);
+})
+
+signOutButton.addEventListener("click", async function() {
+	await accounts.signOut()
+	if (window.googleSignOutRequest) {
+		window.googleSignOutRequest()
+	}
+})
+
+let deleteAccountButton = document.createElement("button")
+deleteAccountButton.innerHTML = "Delete Account"
+
+let passwordEntryField = document.createElement("input")
+passwordEntryField.placeholder = "Enter New Password..."
+passwordEntryField.type = "password"
+
+let setPassword = document.createElement("button")
+
+let togglePasswordVisibility = document.createElement("button")
+togglePasswordVisibility.innerHTML = "Show"
+
+let manageAccountWindow = document.createElement("div")
+manageAccountWindow.style.textAlign = "center"
+manageAccountWindow.innerHTML = "<h2>Manage Account</h2><p>Passwords are optional if you sign in with Google, Apple, or another service. Setting a password allows you to log in with your email and password as well. </p>"
+manageAccountWindow.appendChild(passwordEntryField)
+manageAccountWindow.appendChild(togglePasswordVisibility)
+manageAccountWindow.appendChild(document.createElement("br"))
+manageAccountWindow.appendChild(setPassword)
+
+let deleteAccountWarning = document.createElement("p")
+deleteAccountWarning.innerHTML = "Deleting your account will prevent syncing of your favorites data between devices. You can always create a new account later. "
+
+manageAccountWindow.appendChild(deleteAccountWarning)
+manageAccountWindow.appendChild(deleteAccountButton)
+
+manageAccountButton.addEventListener("click", function() {
+	createModal(manageAccountWindow)
+})
+
+setPassword.addEventListener("click", async function() {
+	if (passwordEntryField.value.length === 0) {return} //Firebase accepts a blank string as a password - though it then throws internal auth errors, so it may be equivalent to disabling passwords. 
+	await updatePassword(passwordEntryField.value)
+})
+
+togglePasswordVisibility.addEventListener("click", function() {
+	if (passwordEntryField.type === "password") {
+		togglePasswordVisibility.innerHTML = "Hide"
+		passwordEntryField.type = "text"
+	}
+	else {
+		togglePasswordVisibility.innerHTML = "Show"
+		passwordEntryField.type = "password"
+	}
+})
+
+
+function setPasswordInfo() {
+	let hasPassword = accounts.getCurrentUser()?.providerData?.some((provider) => {return provider.providerId === "password"})
+
+	if (hasPassword) {
+		setPassword.innerHTML = "Update Password"
+	}
+	else {
+		setPassword.innerHTML = "Set Password"
+	}
+}
+setPasswordInfo()
+firebase.auth().onAuthStateChanged(setPasswordInfo)
+
+async function updatePassword(newPassword) {
+	try {
+		await accounts.getCurrentUser().updatePassword(newPassword)
+		alert("Password Updated!")
+	}
+	catch (e) {
+		if (e.code === "auth/requires-recent-login") {
+			alert("You must sign in again before you can set your password. ")
+			ui.start(firebaseUIAuthContainer, uiConfig);
+			firebaseUIAuthContainer.style.display = ""
+		}
+		else {
+			alert(e.message)
+			throw e
+		}
+	}
+}
+
+
+async function deleteAccount(allowRecurse = false) {
+	//allowRecurse is used to prevent infinite loop glitches.
+	try {
+		await accounts.getCurrentUser().delete()
+	}
+	catch (e) {
+		if (e.code === "auth/requires-recent-login") {
+			alert("You must sign in again before you can delete your account. ")
+			ui.start(firebaseUIAuthContainer, uiConfig);
+			firebaseUIAuthContainer.style.display = ""
+			if (allowRecurse) {
+				firebase.auth().onAuthStateChanged(deleteAccount)
+			}
+		}
+		else {
+			alert(e.message)
+			throw e
+		}
+	}
+}
+
+deleteAccountButton.addEventListener("click", function() {
+	if (confirm("Are you sure you would like to delete your account? ")) {
+		deleteAccount(true)
+	}
+})
+
+window.firebase = accounts.firebase
+
+
+
+//accounts.setData merges unless false is passed as a second argument.
+//Therefore, we can indescriminately setData with our new favorites - it won't destroy anything already up there.
+//But when things are updated individually on the client, we either need to overwrite or figure out how to delete specific map keys.
+
+
+let notificationStatus = document.getElementById("notificationStatus")
+
+let enableButton = document.getElementById("enable")
+let disableButton = document.getElementById("disable")
+let timeInput = document.getElementById("timeOfDay")
+let disabledDate = document.getElementById("disabledDate")
+
+let timeInputLabel = document.querySelector("label[for='timeOfDay']")
+let disabledDateLabel = document.querySelector("label[for='disabledDate']")
+
+enableButton.addEventListener("click", async function() {
+	await accounts.setNotificationsConfig({
+		enabled: true,
+		noneUntil: 0,
+	})
+	updateNotificationsUI() //TODO: We don't actually need to issue a read here - we know the config, and what we changed.
+})
+
+disableButton.addEventListener("click", async function() {
+	await accounts.setNotificationsConfig({
+		enabled: false
+	})
+	updateNotificationsUI() //TODO: We don't actually need to issue a read here - we know the config, and what we changed.
+})
+
+timeInput.addEventListener("change", async function() {
+	if (timeInput.value === "") {
+		return
+	}
+
+	let [hours, minutes] = timeInput.value.split(":")
+	let simDate = new Date().setHours(hours, minutes, 0, 0)
+	simDate = new Date(simDate)
+
+	let utcHours = String(simDate.getUTCHours()).padStart(2, 0)
+	let utcMinutes = String(simDate.getUTCMinutes()).padStart(2, 0)
+
+	await accounts.setNotificationsConfig({
+		timeOfDay: utcHours + ":" + utcMinutes
+	})
+})
+
+disabledDate.addEventListener("change", async function() {
+	let noneUntil;
+	if (disabledDate.value === "") {
+		noneUntil = 0
+	}
+	else {
+		noneUntil = new Date(timeInput.value + " " + disabledDate.value).getTime()
+	}
+	await accounts.setNotificationsConfig({noneUntil})
+	updateNotificationsUI()
+})
+
+function getDisabledUntilPhrase(DateObj) {
+	if (!(DateObj instanceof Date)) {DateObj = new Date(DateObj)} //Allow time strings or milliseconds since epoch.
+	return "Email Notifications disabled until " + DateObj.toLocaleTimeString() + " on " + DateObj.toLocaleDateString()
+}
+
+async function updateNotificationsUI(data) {
+	let notifications = await accounts.getNotificationsConfig(data)
+	notificationsState.style.display = ""
+
+	if (notifications.enabled) {
+		enableButton.style.display = "none"
+		disableButton.style.display = ""
+		timeInputLabel.style.display = timeInput.style.display = ""
+		disabledDateLabel.style.display = disabledDate.style.display = ""
+	}
+	else {
+		notificationStatus.innerHTML = "Email Notifications Disabled"
+		enableButton.style.display = ""
+		disableButton.style.display = "none"
+		timeInputLabel.style.display = timeInput.style.display = "none"
+		disabledDateLabel.style.display = disabledDate.style.display = "none"
+		return
+	}
+
+	let timeZoneOffset = new Date().getTimezoneOffset();
+
+	let todaysDate = new Date(Date.now() - timeZoneOffset).toJSON().split("T")[0];
+
+	disabledDate.min = todaysDate
+
+	if (notifications.noneUntil > Date.now()) {
+		notificationStatus.innerHTML = getDisabledUntilPhrase(notifications.noneUntil)
+		disabledDate.value = new Date(notifications.noneUntil).toISOString().split("T")[0]
+	}
+	else {
+		notificationStatus.innerHTML = "Email Notifications Enabled"
+	}
+}
+
+
+
+
+//Manage favorites.
+//alwaysOverwrite will be used for edits performed on this page.
+async function syncFavorites(alwaysOverwrite = false) {
+	if (!accounts.getCurrentUser()) {return}
+
+	let localFavorites = loadFavorites()
+
+	if (alwaysOverwrite) {
+		accounts.setFavorites(localFavorites, false)
+		return
+	}
+
+	let localLastModified = getFavoritesLastModified()
+
+	let data = await accounts.getData()
+	let netFavorites = await accounts.getFavorites(data)
+	let netLastModified = await accounts.getFavoritesLastModified(data)
+
+	await updateNotificationsUI(data)
+
+	//If net modified more recently than local, overwrite local with net.
+	//If local modified more recently than net:
+	// - It is possible that this should be the new favorites entirely.
+	// - It is possible that we just added a favorite, but are otherwise out of date and need to remove everything not in the sync.
+	// - Without a change history, this is hard to determine. Therefore, we will take the non-destructive approach and merge.
+	if (netLastModified >= localLastModified || localLastModified === null) {
+		writeFavorites(netFavorites)
+	}
+	else {
+		let newFavorites = mergeFavoritesObjects(localFavorites, netFavorites)
+		console.log(localFavorites, netFavorites, newFavorites)
+		writeFavorites(newFavorites)
+		accounts.setFavorites(newFavorites)
+	}
+	dataChanged()
+}
+
+firebase.auth().onAuthStateChanged(function() {
+	syncFavorites()
+})
 
 
 //Format: [{id, name, minimum, maximum, units}]
@@ -66,8 +414,8 @@ currentSelections.firstChild.innerHTML += '<span class="nameColumn">Name</span>'
 currentSelections.firstChild.innerHTML += '<span class="minColumn">Min</span>'
 currentSelections.firstChild.innerHTML += '<span class="maxColumn">Max</span>'
 currentSelections.firstChild.innerHTML += '<span class="unitsColumn">Unit</span>'
-//currentSelections.firstChild.innerHTML += '<span class="deleteButton">Delete</span>'
 
+//Rendering code.
 async function redrawRows() {
 	//Clear the current list.
 	let rows = currentSelections.children
@@ -76,13 +424,11 @@ async function redrawRows() {
 		currentSelections.firstChild.nextSibling.remove()
 	}
 
-	let selections = JSON.parse(localStorage.getItem("favorites"))
-
-	console.log(selections)
+	let selections = loadFavorites()
 
 	//We'll sort favorites by name.
 	let ids = []
-	let rowElems = [] //Objects. {name, row}. Stored here to sort. 
+	let rowElems = [] //Objects. {name, row}. Stored here to sort.
 
 	for (let gauge in selections) {
 		for (let id in selections[gauge]) {
@@ -170,8 +516,8 @@ async function redrawRows() {
 						return alert("Please enter a number with no units. Ex, 425 or 8000")
 					}
 					selections[gauge][id].minimum = val
-					localStorage.setItem("favorites", JSON.stringify(selections))
-					console.log(JSON.stringify(selections))
+					writeFavorites(selections)
+					accounts.setFavorites(selections, false)
 					dataChanged()
 				})
 
@@ -182,8 +528,8 @@ async function redrawRows() {
 						return alert("Please enter a number with no units. Ex, 425 or 8000")
 					}
 					selections[gauge][id].maximum = val
-					localStorage.setItem("favorites", JSON.stringify(selections))
-					console.log(JSON.stringify(selections))
+					writeFavorites(selections)
+					accounts.setFavorites(selections, false)
 					dataChanged()
 				})
 
@@ -194,7 +540,8 @@ async function redrawRows() {
 
 				selector.addEventListener("input", function() {
 					selections[gauge][id].units = selector.value
-					localStorage.setItem("favorites", JSON.stringify(selections))
+					writeFavorites(selections)
+					accounts.setFavorites(selections, false)
 					dataChanged()
 				})
 			}
@@ -212,8 +559,8 @@ async function redrawRows() {
 					if (Object.keys(selections[gauge]).length === 0) {
 						delete selections[gauge]
 					}
-					localStorage.setItem("favorites", JSON.stringify(selections))
-					console.log(JSON.stringify(selections))
+					writeFavorites(selections)
+					accounts.setFavorites(selections, false)
 					dataChanged()
 				}
 			})
@@ -246,173 +593,22 @@ async function redrawRows() {
 	favoritesLinks.appendChild(a)
 }
 
-if (localStorage.getItem("favorites") === null) {localStorage.setItem("favorites", "{}")}
 
 async function dataChanged() {
 	redrawRows()
-	console.log("Ran")
-
-	console.time("Start")
-	document.getElementById("syncSpinner").style.display = "block"
-	await updateSubscription({
-		type: "email",
-		address: getEmail(),
-		parameters: JSON.parse(localStorage.getItem("favorites")),
-		noneUntil: subscription?.noneUntil
-	})
-	document.getElementById("syncSpinner").style.display = ""
-	emailUpdated()
-	console.timeEnd("Start")
 }
 
 redrawRows()
 
 
 
-
-
-
-function setDisabledView(options) {
-	document.getElementById("subscribe").style.display = "inline-block"
-
-	if (options && options.temporaryDisable) {
-		//Show notification disabler
-		document.getElementById("disable").style.display = "inline-block"
-		document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#333300":"#ffffaa"
-		document.getElementById("unsubscribe").style.display = "inline-block"
-	}
-	else {
-		document.getElementById("disable").style.display = "none"
-		document.getElementById("notificationsState").style.backgroundColor = window.darkMode?"#555500":"#ffff55"
-		document.getElementById("unsubscribe").style.display = "none"
-	}
-
-	if (options && options.noEnableButton) {
-		document.getElementById("subscribe").style.display = "none"
-	}
-}
-
-function setEnabledView() {
-	document.getElementById("subscribe").style.display = "none"
-	document.getElementById("unsubscribe").style.display = "inline-block"
-	document.getElementById("notificationsState").style.backgroundColor = ""
-	document.getElementById("disable").style.display = "inline-block"
-}
-
-
-
-//Figure out what the email will initially be.
-document.getElementById("email").value = localStorage.getItem("notificationsemail")
-if (window.location.hash) {
-	let data = window.location.hash.slice(1)
-	if (data.includes("@")) {
-		//Probably an email link. Use this email link to autofill.
-		document.getElementById("email").value = data
-		getEmail()
-	}
-}
-
-//Get the email. Also saves the updated version.
-function getEmail() {
-	let email = document.getElementById("email").value
-	localStorage.setItem("notificationsemail", email)
-	return email
-}
-
-document.getElementById("saveEmail").addEventListener("click", emailUpdated)
-
-
-function getDisabledUntilPhrase(DateObj) {
-	if (!(DateObj instanceof Date)) {DateObj = new Date(DateObj)} //Allow time strings or milliseconds since epoch.
-	return "Notifications disabled until " + DateObj.toLocaleDateString() + " at " + DateObj.toLocaleTimeString()
-}
-
-let ranOnce;
-function updateSubscriptionStatus() {
-	if (navigator.onLine === false) {
-		document.getElementById("notificationsStatus").innerHTML = "This Page Requires Internet Access"
-		setDisabledView({temporaryDisable: true})
-	}
-	else if (subscription === undefined) {
-		document.getElementById("notificationsStatus").innerHTML = "Something went horribly wrong. Please try again later."
-		setDisabledView({temporaryDisable: true})
-	}
-	else if (!getEmail().includes("@")) {
-		document.getElementById("notificationsStatus").innerHTML = "Please select a valid email."
-		setDisabledView({noEnableButton: true})
-	}
-	else if (subscription === null) {
-		document.getElementById("notificationsStatus").innerHTML = getEmail() + " is not signed up for emails."
-		setDisabledView()
-	}
-	else if (subscription.noneUntil > Date.now()) {
-		document.getElementById("notificationsStatus").innerHTML = getDisabledUntilPhrase(subscription.noneUntil)
-		setDisabledView({temporaryDisable: true})
-	}
-	else {
-		document.getElementById("notificationsStatus").innerHTML = "Emails enabled for " + getEmail()
-		setEnabledView()
-		if (!ranOnce) {ranOnce = true; dataChanged()} //Make sure to sync.
-	}
-}
-
-async function emailUpdated() {
-	if (!getEmail().includes("@")) {
-		subscription = null
-	}
-	else {
-		try {
-			subscription = await getSubscription(getEmail())
-		}
-		catch (e) {console.error(e)}
-	}
-
-	updateSubscriptionStatus()
-}
-
-;(async function() {
-
-	//TODO: Add an option to turn off for a certain amount of time using noneUntil.
-
-	document.getElementById("unsubscribe").addEventListener("click", async function() {
-		if (confirm("Remove this email from notifications?")) {
-			await deleteEmailSubscription(getEmail())
-			emailUpdated()
-		}
-	})
-
-	document.getElementById("subscribe").addEventListener("click", async function() {
-		if (subscription === null) {
-			if (!getEmail().includes("@")) {
-				alert("Invalid email")
-				return
-			}
-			dataChanged()
-		}
-		else {
-			//Clear noneUntil
-			await updateNoneUntil(getEmail(), 0)
-		}
-		await emailUpdated()
-	})
-
-
-	document.getElementById("disable").addEventListener("click", async function() {
-		let hours = prompt("How many hours (from now) would you like to disable notifications for?")
-		let disableUntil = new Date(Date.now() + hours*1000*60*60)
-		await updateNoneUntil(getEmail(), disableUntil.getTime())
-		alert(getDisabledUntilPhrase(disableUntil))
-		emailUpdated()
-	})
-
-	emailUpdated()
-}());
-
+//Utility buttons at top - delete all favorites and scroll to bottom.
 let deleteAllFavorites = document.getElementById("deleteAllFavorites")
 deleteAllFavorites.addEventListener("click", function() {
 	if (confirm("Delete all favorites?")) {
-		localStorage.setItem("favorites", "{}")
-		redrawRows()
+		writeFavorites({})
+		accounts.setFavorites({}, false)
+		dataChanged()
 	}
 })
 
@@ -420,3 +616,51 @@ let scrollToBottom = document.getElementById("scrollToBottom")
 scrollToBottom.addEventListener("click", function() {
 	window.scrollTo(0, 1e10)
 })
+
+
+
+
+// let url = "https://rivers.run/node/notifications"
+//
+// async function sendToServer(body) {
+// 	let response = await fetch(url, {
+// 		method: "POST",
+// 		cache: "no-store",
+// 		body:JSON.stringify(body)
+// 	})
+// 	return await response.text()
+// }
+//
+// async function getSubscription(key) {
+// 	let result = await sendToServer({
+// 		getSubscriptionFromURL: key
+// 	})
+// 	if (result === "No Subscription") {return null}
+// 	else {return JSON.parse(result)}
+// }
+//
+// async function deleteEmailSubscription(key) {
+// 	let result = await sendToServer({
+// 		delete: true,
+// 		address: key,
+// 	})
+// 	if (result === "Deleted Subscription") {return true}
+// 	else {return result}
+// }
+//
+// async function updateSubscription(subscription) {
+// 	let result = await sendToServer(subscription)
+// 	if (result === "Saved Subscription") {return true}
+// 	return result
+// }
+//
+// async function updateNoneUntil(key, noneUntil) {
+// 	//Server supports updating only noneUntil.
+// 	let sub = {
+// 		getSubscriptionFromURL: key,
+// 		noneUntil
+// 	}
+// 	return updateSubscription(sub)
+// }
+//
+// let subscription; //Last subscription from server. Note that favorites are stored client-side now.
