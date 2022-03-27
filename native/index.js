@@ -1,3 +1,11 @@
+if (window.Capacitor) {
+	require("@capacitor/app")
+	require("@capacitor/filesystem")
+	require("@capacitor/geolocation")
+	require("@capacitor/device")
+	require("@capacitor/keyboard")
+}
+
 //Load the entire site into an iframe based on a local server.
 //Make sure to update the native/index.html csp if needed.
 
