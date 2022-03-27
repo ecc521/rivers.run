@@ -132,7 +132,7 @@ function getMessage(user) {
 	if (riversAboveTooLow === 0) {
 		body.push(`<p>Notifications are now suspended until at least one river is above minimum. </p>`)
 
-		if (user?.lastMessageData === 0) {
+		if (user?.notifications?.lastMessageData === 0) {
 			//Don't message again.
 			return false;
 		}
