@@ -241,9 +241,6 @@ async function updatePassword(newPassword) {
 setPasswordInfo()
 firebase.auth().onAuthStateChanged(setPasswordInfo)
 
-let passwordEntryField = document.getElementById("passwordEntryField")
-let togglePasswordVisibility = document.getElementById("togglePasswordVisibility")
-
 
 async function deleteAccount(allowRecurse = false) {
 	//allowRecurse is used to prevent infinite loop glitches.
