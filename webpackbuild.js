@@ -25,6 +25,10 @@ let config = {
 	stats: {
 		colors: true
 	},
+	cache: {
+	  type: 'memory',
+	  cacheUnaffected: true,
+	},
 	module: {
 		rules: [
 			{
