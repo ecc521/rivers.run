@@ -397,6 +397,10 @@ async function syncFavorites(alwaysOverwrite = false) {
 	// - It is possible that this should be the new favorites entirely.
 	// - It is possible that we just added a favorite, but are otherwise out of date and need to remove everything not in the sync.
 	// - Without a change history, this is hard to determine. Therefore, we will take the non-destructive approach and merge.
+
+	//The !== null check can be removed eventually.
+	//favoritesLastModified is a recent addition, and therefore genuine favorites lists might not have it set.
+	//Once favoritesLastModified has been out for long enough, it can be assumed that all users have it set.
 	if (netLastModified > localLastModified && localLastModified !== null) {
 		writeFavorites(netFavorites)
 	}
