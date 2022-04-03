@@ -24,14 +24,19 @@ let config = {
 	watch: true,
 	target: "web",
 	devtool: "source-map",
-	output: {
-		path: __dirname,
-		filename: "[name]",
-	},
 	optimization: {
 		minimize: false //Consider using Uglify.js for minification.
 		//https://github.com/mishoo/UglifyJS2/blob/ae67a4985073dcdaa2788c86e576202923514e0d/README.md#uglify-fast-minify-mode
 	},
+	output: {
+		path: __dirname,
+		filename: "[name]",
+	},
+	plugins: [
+	  new webpack.optimize.LimitChunkCountPlugin({
+		maxChunks: 1 //Prevent chunking.
+	  })
+	],
 	stats: {
 		colors: true
 	},
