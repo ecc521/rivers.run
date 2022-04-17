@@ -47,11 +47,26 @@ async function loadEmailsForUsers(usersMap) {
 		return {uid: userID}
 	})
 
-	let users = await auth.getUsers(userIDs)
-	users = users.users //There is also a .notFound
-	users.forEach((user) => {
-		usersMap.get(user.uid).auth = user
-	})
+
+    let users = []
+    let increment = 100 //Max of 100 users at once (Google imposed limit)
+
+    for (let i=0;i<userIDs.length;i+=increment) {
+        let userIDChunk = userIDs.slice(i, i+increment)
+        let result = await auth.getUsers(userIDChunk)
+
+        //Delete users that no longer have accounts.
+        result.notFound.forEach((user) => {
+            let userData = usersMap.get(user.uid)
+            userData.document.ref.delete()
+            usersMap.delete(user.uid)
+        })
+
+        //Add authentication data (including email) to user records corresponding to accounts
+    	result.users.forEach((user) => {
+    		usersMap.get(user.uid).auth = user
+    	})
+    }
 }
 
 module.exports = {loadUserData, loadEmailsForUsers}
