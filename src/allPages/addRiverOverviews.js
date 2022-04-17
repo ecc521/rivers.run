@@ -19,6 +19,8 @@ try {
 	styleSheet.insertRule(`
 	.modal-content {
 	color:black;
+	max-height: 90vh;
+	overflow: scroll;
 	background-color: #fefefe;
 	padding: 12px;
 	border: 1px solid #888;
