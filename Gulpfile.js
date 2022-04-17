@@ -39,13 +39,11 @@ function processCSS() {
 
 
 function enableWatcher() {
-	gulp.task("cssbuild", function() {
-		gulp.watch([
-			path.join(__dirname, "/index.css")
-		]).on("change", processCSS)
+	gulp.watch([
+		path.join(__dirname, "index.css")
+	]).on("change", processCSS)
 
-		processCSS()
-	})	
+	processCSS()
 }
 
 module.exports = {processCSS, enableWatcher}
