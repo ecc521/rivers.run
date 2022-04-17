@@ -24,7 +24,7 @@ module.exports = function() {
 					let popup = document.createElement("div")
 					popup.innerHTML = `
 					<h2>App Update</h2>
-					<h3>There is a Rivers.run <a href='https://apps.apple.com/us/app/rivers-run/id1552809249' target='_blank'>app update</a>. Downloading it is recommended. You may experience if you do not update.</h3>`
+					<h3>There is a Rivers.run <a href='https://apps.apple.com/us/app/rivers-run/id1552809249' target='_blank'>app update</a>. Downloading it is recommended. You may experience issues if you do not update.</h3>`
 					popup.style.left = popup.style.top = popup.style.bottom = popup.style.right = "0"
 					popup.style.position = "absolute"
 					popup.style.textAlign = "center"
