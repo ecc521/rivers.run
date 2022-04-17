@@ -116,8 +116,8 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	let rrunLink = new URL("https://rivers.run/")
 	rrunLink.hash = new URL(link).hash
 
-	window.location.hash = new URL(link).hash //Update current hash to match searchlink. 
-	span.href = link //Does nothing - we're already at this. It ensures styling works though.
+	window.location.hash = new URL(link).hash //Update current hash to match searchlink.
+	span.href = rrunLink //So user can "copy link address" or similar.
 	span.innerHTML += rrunLink
 
 	function copyStringToClipboard(str) {
@@ -140,6 +140,7 @@ window.NewList = function(query = recursiveAssign({}, defaultAdvancedSearchParam
 	span.addEventListener("click", function(e) {
 		copyStringToClipboard(rrunLink)
 		alert("Link Copied!")
+		e.preventDefault() //Prevent navigation. 
 	})
 	searchLink.appendChild(span)
 
