@@ -396,7 +396,8 @@ function createGraph(options) {
 
 		//offsetX and offetY don't exist for touch events, so compute those.
 		let xPos = event.clientX - bounds.left
-		let yPos = event.clientY - bounds.top
+		//Set yPos to 0 to ensure the slider is always at the very top. This prevents users' fingers from covering up the tooltip. 
+		let yPos = 0 //event.clientY - bounds.top
 		let width = bounds.width
 
 		let percent = xPos/width
