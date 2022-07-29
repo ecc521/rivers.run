@@ -327,7 +327,7 @@ async function prepareRiverData({
 			obj.access.push({name: "Take-Out", lat: obj.tlat, lon: obj.tlon, label: "TO"})
 		}
 
-		obj.access.filter((accessPoint) => {
+		obj.access = obj.access.filter((accessPoint) => {
 			try {
 				accessPoint.lat = toDecimalDegrees(accessPoint.lat)
 				accessPoint.lon = toDecimalDegrees(accessPoint.lon)
