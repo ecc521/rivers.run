@@ -5,6 +5,7 @@ const getRiverData = require(path.join(__dirname, "getRiverData.js"))
 
 const fixCasing = require(path.join(__dirname, "siteDataParser.js")).fixCasing
 
+//Google Assistant Actions will be sunsetted shortly, at which point the Google Assistant (but not the Alexa portion) should be removed. 
 async function handleRequest(req, res) {
 
 				let query = (await utils.getData(req)).toString()
