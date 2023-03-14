@@ -72,6 +72,6 @@
         "postcss-preset-env": "^7.4.3",
         "serve-index": "^1.9.1",
         "vm2": "^3.9.9",
-        "webpack": "^5.70.0"
+        "webpack": "^5.76.0"
     }
 }
