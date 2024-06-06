@@ -126,7 +126,12 @@ class MSCProvince extends MSC {
 			let gaugeID = this.gaugeIDCache.pop()
 			//Batch every gauge into it's respective province, then run.
 			let gaugeInfo = await getGaugeDetails(gaugeID)
-			let province = gaugeInfo.province
+			let province = gaugeInfo?.province
+
+			if (!province) {
+				console.warn("Unable to determining province for gauge. Skipping. ", gaugeID)
+				continue;
+			}
 
 			if (!provinces.get(province)) {
 				provinces.set(province, [])
