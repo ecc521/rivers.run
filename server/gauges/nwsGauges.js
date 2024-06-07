@@ -12,7 +12,6 @@ async function loadSiteFromNWS(siteCode) {
 
 	let output = processNWSResponse(siteData, siteCode)
 	output.name = await getSiteName(siteCode)
-	console.log("NAME", output.name)
 
 	return output
 }
