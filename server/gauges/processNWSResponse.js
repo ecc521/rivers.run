@@ -1,68 +1,51 @@
 //Processes flow data from NWS (National Weather Service)
 
-const fastXMLParser = require("fast-xml-parser");
-const xmlParser = new fastXMLParser.XMLParser({
-	attributesGroupName: "attributes",
-	ignoreAttributes: false,
-	attributeNamePrefix: "",
-	textNodeName : "value",
-})
-
-//Returns object for this specific site.
-function processNWSResponse(siteData) {
-	let jsonObj = xmlParser.parse(siteData);
-
-	let siteCode = jsonObj.site.attributes.id
-
+function processNWSResponse(siteData, siteCode) {
 	let readings = []
 
-	//TODO: If conversion tables are supplied, but not used, should we exterpolate CFS from feet?
-	//Example with SUMW2 (Gauley River AT Summersville Lake)
-
-	function processValues(values, forecast = false) {
-		values.forEach((value) => {
+	function processStageflowSeries(series, forecast = false) {
+		//Processes either the observed series or the forecast series.
+		series.data.forEach((value) => {
 			let reading = {}
-			reading.dateTime = new Date(value.valid.value).getTime()
+			reading.dateTime = new Date(value.validTime).getTime()
 
-			function processMeasurement(measurement, pedts = value.pedts) {
-				if (measurement.attributes.units === "kcfs") {
+			function processMeasurement(value, units) {
+				if (units === "kcfs") {
 					//Round in case of floating point error (ex, .0000000001)
-					reading.cfs = Math.round(measurement.value * 1000000) / 1000
+					reading.cfs = Math.round(value * 1000000) / 1000
 				}
-				else if (measurement.attributes.units === "cfs") {
-					reading.cfs = measurement.value
+				else if (units === "cfs") {
+					reading.cfs = value
 				}
-				else if (measurement.attributes.units === "ft") {
-					reading.feet = measurement.value
+				else if (units === "ft") {
+					reading.feet = value
 				}
-				else {console.log("Unknown units " + measurement.attributes.units + ". Gauge is " + siteCode)}
+				else {console.log(`Unknown units ${units} for gauge ${siteCode}`)}
 
-				if (reading.cfs === -999000) {delete reading.cfs}
+				if (reading.cfs === -999000) {delete reading.cfs} //TODO: Does this happen still with the new API?
 			}
 
-			processMeasurement(value.primary)
-			if (value.secondary) {processMeasurement(value.secondary)}
+			processMeasurement(value.primary, series.primaryUnits)
+			if (value.secondary) {processMeasurement(value.secondary, series.secondaryUnits)}
 			if (forecast === true) {reading.forecast = true} //Label forecasted values.
 			readings.push(reading)
 		})
 	}
 
-	if (!jsonObj.site.observed) {
-		console.log(siteCode + " has no observed data. ")
+	if (!siteData.observed) {
+		console.log("Gauge has no observed data. ", siteCode)
 		return;
 	}
 
-	processValues(jsonObj.site.observed.datum)
-	if (jsonObj.site.forecast.datum) {processValues(jsonObj.site.forecast.datum, true)}
+	processStageflowSeries(siteData.observed)
+	if (siteData.forecast) {processStageflowSeries(siteData.forecast, true)}
 
 	readings.sort((a,b) => {return a.dateTime - b.dateTime})
 
-	let output = {
+	//name properly added separately will be added later.
+	return {
 		readings,
-		name: jsonObj.site.attributes.name, //These names are REALLY weird. May need to revert back to using nwsToName if we can get it working.
 	}
-
-	return output
 }
 
 module.exports = processNWSResponse
