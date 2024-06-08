@@ -138,10 +138,17 @@ function createExpansion(button, river) {
     let addedUSGSDisclaimer = false
     let addedVirtualGaugeDisclaimer = false
 
-    function addUSGSGraphs(usgsID, relatedGauge = false, graphContainer = document.createElement("div"), recurse = true) {
+    function addUSGSGraphs(gaugeID, relatedGauge = false, graphContainer = document.createElement("div"), recurse = true) {
         while (graphContainer.lastChild) {graphContainer.lastChild.remove()}
 
-        let data = self.gauges[usgsID]
+        let data = self.gauges[gaugeID]
+
+        if (graphContainer.parentElement !== div) {
+            console.warn("Appending", gaugeID)
+            //Append once, but we don't want to append again and change ordering upon network reload,
+            //so if we are already appended don't append again. 
+            div.appendChild(graphContainer)
+        }
 
         if (data) {
             //Alert the user if the data is (at least 2 hours) old
@@ -171,7 +178,7 @@ function createExpansion(button, river) {
                 graphContainer.appendChild(document.createElement("br"))
             }
 
-            graphContainer.appendChild(createFavoritesWidget(river, usgsID))
+            graphContainer.appendChild(createFavoritesWidget(river, gaugeID))
 
             if (data.getSource()) {
                 let sourceInfo = document.createElement("p")
@@ -184,7 +191,7 @@ function createExpansion(button, river) {
             }
 
             console.time("Add Graphs")
-            console.log(usgsID, gauges[usgsID])
+            console.log(gaugeID, gauges[gaugeID])
             console.log(graphs)
             let graphs = addGraphs(data)
             if (graphs) {
@@ -197,20 +204,18 @@ function createExpansion(button, river) {
                 graphContainer.appendChild(elem)
             }
             console.timeEnd("Add Graphs")
-            div.appendChild(graphContainer)
         }
         else {
-            console.log("No flow data for " + usgsID + ". Trying to load from network (may not exist though). ");
+            console.log("No flow data for " + gaugeID + ". Trying to load from network (may not exist though). ");
         }
 
         //Fetch comprehensive flow data, then update the graphs.
-        //TODO: Add XMLHttpRequest fallback.
-        if (usgsID && ((recurse && !gauges[usgsID]) || !gauges[usgsID].full)) {
-            let newGauge = new Gauge(usgsID)
+        if (gaugeID && ((recurse && !gauges[gaugeID]) || !gauges[gaugeID].full)) {
+            let newGauge = new Gauge(gaugeID)
             newGauge.updateReadingsFromNetwork().then(() => {
-                gauges[usgsID] = newGauge
+                gauges[gaugeID] = newGauge
                 river.updateFlowData(true) //Update flow styling and data.
-                addUSGSGraphs(usgsID, relatedGauge, graphContainer, false) //Update the graph pertaining to this data.
+                addUSGSGraphs(gaugeID, relatedGauge, graphContainer, false) //Update the graph pertaining to this data.
             })
         }
         else {
