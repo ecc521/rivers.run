@@ -22,7 +22,9 @@ function processNWSResponse(siteData, siteCode) {
 				}
 				else {console.log(`Unknown units ${units} for gauge ${siteCode}`)}
 
-				if (reading.cfs === -999000) {delete reading.cfs} //TODO: Does this happen still with the new API?
+				//Handle codes for missing data by removing the data (so they don't terribly mess with the graph)
+				if (reading.feet === -9999) {delete reading.feet}
+				if (reading.cfs === -999000) {delete reading.cfs}
 			}
 
 			processMeasurement(value.primary, series.primaryUnits)

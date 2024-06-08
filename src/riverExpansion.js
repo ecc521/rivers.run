@@ -146,7 +146,7 @@ function createExpansion(button, river) {
         if (graphContainer.parentElement !== div) {
             console.warn("Appending", gaugeID)
             //Append once, but we don't want to append again and change ordering upon network reload,
-            //so if we are already appended don't append again. 
+            //so if we are already appended don't append again.
             div.appendChild(graphContainer)
         }
 
