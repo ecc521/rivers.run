@@ -129,7 +129,7 @@ let uiConfig = {
 			hijackLoginButtons()
 		}
 	},
-	signInFlow: 'redirect', //"redirect" or "popup". Popup seems better on desktop, redirect on mobile.
+	signInFlow: 'popup', //"redirect" or "popup". Popup seems better on desktop, redirect on mobile.
 	signInOptions: [
 		{
 			provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
