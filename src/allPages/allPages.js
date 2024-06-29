@@ -169,11 +169,3 @@ try {
 catch (e) {
 	console.error(e)
 }
-
-
-try {
-	require("./analytics.js")
-}
-catch (e) {
-	console.error(e)
-}
