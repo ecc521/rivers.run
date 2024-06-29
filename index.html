@@ -5,8 +5,8 @@
 		<!-- With style-src, 'unsafe-eval' allows for things like CSSStyleSheet.insertRule(), and other JavaScript methods. -->
 		<!-- TODO: Consider allowing image requests over all https connections-->
         <meta http-equiv="Content-Security-Policy" content="
-                                                            default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://maps.googleapis.com https://maps.gstatic.com;
-                                                            connect-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://waterservices.usgs.gov https://docs.google.com https://*.googleapis.com https://maps.gstatic.com https://tile.openstreetmap.org https://mt1.google.com https://itunes.apple.com;
+                                                            default-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://maps.googleapis.com https://maps.gstatic.com https://www.googletagmanager.com;
+                                                            connect-src 'self' https: http:;
                                                             img-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* https://*.googleapis.com https://maps.gstatic.com data: blob: https://mesonet1.agron.iastate.edu;
                                                             font-src 'self' https://rivers.run https://*.rivers.run http://127.0.0.1:* data: https://fonts.googleapis.com https://fonts.gstatic.com;
 															style-src 'self' 'unsafe-inline'"
