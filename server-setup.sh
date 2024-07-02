@@ -17,10 +17,8 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
 
-#Install docker-compose
-sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
+#Install docker compose
+sudo apt-get install docker-compose-plugin
 
 #Setup websites directory:
 sudo mkdir /srv/www/nginx-proxy
@@ -95,7 +93,7 @@ curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl | s
 
 #Setup proxy
 sudo docker network create nginx-proxy
-sudo docker-compose up -d
+sudo docker compose up -d
 
 #Setup crontab to start server on reboot.
-(crontab -l ; echo "@reboot cd /srv/www/nginx-proxy && sudo docker-compose up -d") | sort - | uniq - | crontab -
+(crontab -l ; echo "@reboot cd /srv/www/nginx-proxy && sudo docker compose up -d") | sort - | uniq - | crontab -

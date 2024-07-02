@@ -16,7 +16,7 @@ select yn in "Yes" "No"; do
 done
 
 sudo docker build -t rivers.run .
-sudo docker-compose up -d
+sudo docker compose up -d
 
 echo "You should create gmailpassword.txt in server/data/notifications - simply fill in the password in the below command: "
 echo "echo -n \"password\" | sudo tee $PWD/server/data/notifications/gmailpassword.txt > /dev/null"
