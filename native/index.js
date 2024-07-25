@@ -132,7 +132,6 @@ function restartWebserver(callback) {
 					res.status = 500
 				}
 				finally {
-					console.log(res)
 					WebServer.sendResponse(data.requestId, res)
 					.catch((error) => console.error(error));
 				}

@@ -1,7 +1,6 @@
 {
   "appId": "run.rivers.twa",
   "appName": "rivers.run",
-  "bundledWebRuntime": false,
   "npmClient": "npm",
   "webDir": "capacitorDir",
   "plugins": {},

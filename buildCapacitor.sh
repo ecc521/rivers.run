@@ -23,4 +23,3 @@ cp riverdata.json capacitorDir/www/riverdata.json #Make basic data available aft
 cp ed.jpg capacitorDir/www/ed.jpg
 
 npx cap copy
-npx cap open ios #Open in XCode

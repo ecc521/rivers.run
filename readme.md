@@ -23,3 +23,11 @@ node server.js
 ```
 
 The Docker image can also be built and run. 
+
+
+
+For making Android + iOS apps:
+Uses Capacitor. 
+
+Android specific: 
+Must set android:usesCleartextTraffic="true"
