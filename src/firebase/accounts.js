@@ -1,13 +1,8 @@
-import firebase from 'firebase/compat/app';
-
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import "firebase/compat/firestore";
+import { getAnalytics } from "firebase/analytics";
+import { getAuth, setPersistence } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
-// import { deleteField } from "firebase/firestore";
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyA8hvftc7idpGNcj5I9gvOqk-DQrTrkQco",
   authDomain: "rivers-run.firebaseapp.com",
@@ -18,14 +13,16 @@ const firebaseConfig = {
   measurementId: "G-ZP92G9QBYB"
 };
 
-firebase.initializeApp(firebaseConfig)
+const app = initializeApp(firebaseConfig);
 
-
-
+if (!window.isNative) {
+  //When native we use native firebase analytics (web analytics doesn't work due to lack of cookies in iOS webviews. 
+  const analytics = getAnalytics(app);
+}
 
 //Accounts
-let auth = firebase.auth()
-auth.setPersistence("local")
+let auth = getAuth(app)
+setPersistence(auth, "local")
 
 function getCurrentUser() {
     return auth?.currentUser
@@ -51,7 +48,7 @@ function deleteAccount() {
 
 //Database
 const usersCollectionName = "users"
-let db = firebase.firestore();
+let db = getFirestore()
 let users = db.collection("users")
 
 function getUserDoc() {
@@ -95,8 +92,6 @@ async function setNotificationsConfig(notifications, merge) {
 }
 
 export {
-    firebase, //FirebaseUI requires this.
-
     //Accounts
     getCurrentUser,
     getUserEmail,
@@ -104,9 +99,9 @@ export {
     signOut,
 
     //Database
-	getData,
+    getData,
     setData,
-	getFavorites,
+    getFavorites,
     setFavorites,
     getFavoritesLastModified,
     getNotificationsConfig,
