@@ -1,12 +1,15 @@
 //No need for conditional imports - this code runs native only.
-require("@capacitor/app")
-require("@capacitor/filesystem")
-require("@capacitor/geolocation")
-require("@capacitor/device")
-require("@capacitor/keyboard")
+import {Keyboard} from "@capacitor/keyboard";
+import {Filesystem} from "@capacitor/filesystem";
 
-import "@codetrix-studio/capacitor-google-auth"
-import "@capacitor-community/apple-sign-in"
+//Enable Google Analytics. TODO: Add plain web analytics as well.
+import {enableAnalytics} from "./nativeAnalytics";
+enableAnalytics()
+
+//Alert user if app updates available.
+import {createPopupIfUpdate} from "./appUpdates";
+createPopupIfUpdate()
+
 
 //Load the entire site into an iframe based on a local server.
 //Make sure to update the native/index.html csp if needed.
@@ -16,19 +19,20 @@ import "@capacitor-community/apple-sign-in"
 //We'd currently need to base64 encode them here (from binary), then decode on the other side,
 //as the server doesn't support text. Probably use FileReader or something for performance.
 
-const WebServer = require("@ionic-native/web-server").WebServer
+// const WebServer = require("@ionic-native/web-server").WebServer
+import { WebServer } from "@ionic-native/web-server";
 
-const enableUniversalLinks = require("./universalLinks.js")
-const enableFrameBridge = require("./frameBridge.js")
-const appUpdateWarning = require("./appUpdates.js")
+import {enableUniversalLinks} from "./universalLinks";
+import {enableFrameBridge} from "./frameBridge";
 
 const port = 15376
 
-let sourceServer = "https://rivers.run"
+let sourceServer = "https://rivers.run/"
 
 let preinstalledAssetsPath = "www" //We host preinstalled assets in a www dir.
 let localCacheAssetsPath = "filecache"
 
+window.root = ""
 require("../src/allPages/addTags.js") //Add meta tags, etc.
 
 function restartWebserver(callback) {
@@ -92,7 +96,7 @@ function restartWebserver(callback) {
 						await new Promise((resolve, reject) => {
 							fetch(sourceServer + data.path).then((response) => {
 								response.text().then((text) => {
-									Capacitor.Plugins.Filesystem.writeFile({
+									Filesystem.writeFile({
 										path: localCacheAssetsPath + data.path,
 										directory: "DATA",
 										data: text,
@@ -113,7 +117,7 @@ function restartWebserver(callback) {
 						//Try filesystem next.
 						console.error(e)
 						try {
-							res.body = (await Capacitor.Plugins.Filesystem.readFile({
+							res.body = (await Filesystem.readFile({
 								path: localCacheAssetsPath + data.path,
 								directory: "DATA",
 								encoding: "utf8"
@@ -166,8 +170,7 @@ restartWebserver(function() {
 	enableUniversalLinks({iframe, baseUrl: iframeUrl})
 })
 
-appUpdateWarning()
-
-//Capacitor hides the accessory bar (the up/down, and done button) to make it less obvious apps use web tech.
+//Capacitor hides the accessory bar (the up/down, and done button on text entry elements) to make it less obvious apps use web tech.
 //We'll show it again - rivers.run is pretty obviously web based anyways.
-Capacitor.Plugins.Keyboard.setAccessoryBarVisible({isVisible: true})
+Keyboard.setAccessoryBarVisible({isVisible: true})
+

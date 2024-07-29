@@ -16,7 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 if (!window.isNative) {
-  //When native we use native firebase analytics (web analytics doesn't work due to lack of cookies in iOS webviews. 
+  //When native we use native firebase analytics (web analytics doesn't work due to lack of cookies in iOS webviews.
   const analytics = getAnalytics(app);
 }
 
