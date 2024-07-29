@@ -1,3 +1,6 @@
+import {Geolocation} from "@capacitor/geolocation";
+import "@codetrix-studio/capacitor-google-auth"
+import "@capacitor-community/apple-sign-in"
 //The iframe's localStorage is cleared repeatedly.
 //To fix this, we will store data here instead, and use postMessage to communicate.
 
@@ -12,7 +15,7 @@ let appleSignInConfig = {
 	scopes: 'email',
 }
 
-module.exports = function({iframeUrl}) {
+function enableFrameBridge({iframeUrl}) {
 	window.addEventListener("message", async function(event) {
 		//Security measure, although this should never end up running.
 
@@ -63,7 +66,7 @@ module.exports = function({iframeUrl}) {
 				})
 			}
 			else if (data.type === "getCurrentPosition") {
-				response.message = await Capacitor.Plugins.Geolocation.getCurrentPosition()
+				response.message = await Geolocation.getCurrentPosition()
 			}
 			else {
 				throw "Unknown frameBridge Call"
@@ -77,3 +80,5 @@ module.exports = function({iframeUrl}) {
 		event.source.postMessage(response, iframeUrl)
 	}, false);
 }
+
+export {enableFrameBridge}
