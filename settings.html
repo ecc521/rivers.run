@@ -108,7 +108,7 @@
                             localStorage.setItem(id, elem.value)
                         }
 
-                        if (window.isIos) {
+                        if (window.isNative) {
                             elem.blur() //iOS doesn't deselect these without doing some weird things.
                         }
 

@@ -1,4 +1,4 @@
-if (!window.isIos && !window.isAndroid) {
+if (!window.isNative) {
   let externalAppStoresDiv = document.createElement("div")
   externalAppStoresDiv.id = "externalAppStoresDiv"
   document.documentElement.appendChild(externalAppStoresDiv)

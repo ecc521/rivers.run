@@ -23,7 +23,7 @@ try {
 
 	addItem("Voice", root + "voice.html")
 
-	if (!window.isIos) {
+	if (!window.isNative) {
 		addItem("About", root + "about.html")
 	}
 

@@ -75,7 +75,7 @@ async function appleSignIn(authenticationObj) {
 
 
 function hijackLoginButtons() {
-	if (!window.isIos) {return}
+	if (!window.isNative) {return}
 
 	//Hijack login buttons - we need to run native log in code rather than the web code.
 	let googleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='google.com']")

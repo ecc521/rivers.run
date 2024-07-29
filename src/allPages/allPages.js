@@ -3,20 +3,20 @@
 //defines the river-overview DOM element, and makes sure a viewport meta tag exists.
 
 try {
-	window.isAndroid = false
+	//Inside old Android app.
 	if (document.referrer && document.referrer.includes("android-app://run.rivers.twa")) {
-	  window.isAndroid = true
+	  window.isNative = true
 	}
 }
 catch (e) {console.error(e)}
 
-//If we are in an iframe, or if Capacitor is defined, assume iOS.
+//Inside iOS app or new Android app.
 if (window.parent.location !== window.location) {
-	window.isIos = true
+	window.isNative = true
 	require("./apiBridge.js")
 }
 else if (window.Capacitor) {
-	window.isIos = true
+	window.isNative = true
 }
 
 //Define window.root (the site root)
@@ -95,8 +95,7 @@ catch (e) {
 	console.error(e)
 }
 
-if (window.isIos) {
-	//This code may not need to be iOS specific.
+if (window.isNative) {
 	try {
 		//setOverlaysWebView doesn't work on iOS.
 		//Therefore, we must use CSS to work around the notch.
