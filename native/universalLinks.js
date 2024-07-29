@@ -1,6 +1,7 @@
 //Handle universal links into the app.
+import { App } from '@capacitor/app';
 
-module.exports = function({iframe, baseUrl}) {
+function enableUniversalLinks({iframe, baseUrl}) {
 	//Navigate to target.
 	function processRedirect(target) {
 		baseUrl = new URL(baseUrl)
@@ -16,15 +17,17 @@ module.exports = function({iframe, baseUrl}) {
 		iframe.src = ""
 	}
 
-	Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
+	App.addListener('appUrlOpen', (data) => {
 		console.log('App opened with URL: ' +  data.url);
 		processRedirect(data.url)
 	});
 
-	Capacitor.Plugins.App.getLaunchUrl().then((ret) => {
+	App.getLaunchUrl().then((ret) => {
 		if (ret && ret.url) {
 			console.log('Launch url: ', ret.url);
 			processRedirect(ret.url)
 		}
 	});
 }
+
+export {enableUniversalLinks}
