@@ -3,7 +3,12 @@
   "appName": "rivers.run",
   "npmClient": "npm",
   "webDir": "capacitorDir",
-  "plugins": {},
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": false,
+      "providers": ["apple.com", "google.com"]
+    }
+  },
   "cordova": {},
   "server": {}
 }
