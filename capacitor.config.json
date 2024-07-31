@@ -2,6 +2,7 @@
   "appId": "run.rivers.twa",
   "appName": "rivers.run",
   "npmClient": "npm",
+  "zoomEnabled": true,
   "webDir": "capacitorDir",
   "plugins": {
     "FirebaseAuthentication": {
