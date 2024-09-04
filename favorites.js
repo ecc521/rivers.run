@@ -1,10 +1,8 @@
+import {PasswordConfirmingUnit, PasswordEntryBox} from "./passwordUIClasses";
+
 let signedInManager = document.getElementById("signedInManager")
 
-//fetchSignInMethodsForEmail can return nothing (if user no account), 'password' for email password,
-//"google.com" for google sign in, "apple.com" for Apple sign in
-
 let EMAIL_PROVIDER = "email";
-
 function createButtonForProvider(providerDetails) {
 	//Creates a stylized UI button given the provided parameters. Will NOT add event listeners to the button.
 	//All buttons should be the same size (this is sometimes a branding requirement)
@@ -108,20 +106,20 @@ class EmailLoginInterface {
 		emailInput.type = "email"
 		emailInput.placeholder = "Enter Email..."
 		emailInput.autocomplete = "email"
-		emailInput.addEventListener("keyup", (function(keyEvent) {
-			if (keyEvent.key === "Enter") {
-				this.emailEntryForm.requestSubmit()
-			}
-		}).bind(this))
+		// emailInput.addEventListener("keyup", (function(keyEvent) {
+		// 	if (keyEvent.key === "Enter") {
+		// 		this.emailEntryForm.requestSubmit()
+		// 	}
+		// }).bind(this))
 
 		this.emailEntryForm.appendChild(emailInput)
 
 
 		let continueButton = document.createElement("button")
 		continueButton.innerHTML = "Continue"
-		continueButton.addEventListener("click", (function() {
-			this.emailEntryForm.requestSubmit()
-		}).bind(this))
+		// continueButton.addEventListener("click", (function() {
+		// 	this.emailEntryForm.requestSubmit()
+		// }).bind(this))
 		this.emailEntryForm.appendChild(continueButton)
 
 		let cancelButton = document.createElement("button")
@@ -173,29 +171,36 @@ class EmailLoginInterface {
 		emailDisplayInput.type = "email"
 		emailDisplayInput.autocomplete = "email"
 		emailDisplayInput.value = emailAddress
-		emailDisplayInput.readonly = "readonly"
+		emailDisplayInput.setAttribute("readonly", true)
 		loginSubmissionForm.appendChild(emailDisplayInput)
 
 		let submitButton = document.createElement("button")
-		submitButton.addEventListener("click", function() {
-			loginSubmissionForm.requestSubmit()
-		})
 
+		let passwordUnit;
 		if (loginProviders.includes("password")) {
 			//Bring up the email password form.
 			submitButton.innerText = "Log In"
-			let passwordUnit = new PasswordEntryBox({
+			passwordUnit = new PasswordEntryBox({
 				hidden: true,
 				minLength: 6,
 				autoComplete: "current-password",
 				placeholder: "Enter Password..."
 			})
 			loginSubmissionForm.appendChild(passwordUnit.container)
+
+			//Forgot Password Button
+			let forgotPasswordButton = document.createElement("button")
+			forgotPasswordButton.innerHTML = "Forgot Password"
+			forgotPasswordButton.addEventListener("click", function() {
+				sendPasswordResetEmail(auth, emailAddress)
+				alert("Password Reset Email Sent")
+			})
+			loginSubmissionForm.appendChild(forgotPasswordButton)
 		}
 		else if (loginProviders.length === 0) {
 			//Bring up the create password form
 			submitButton.innerText = "Sign Up"
-			let passwordUnit = new PasswordConfirmingUnit({
+			passwordUnit = new PasswordConfirmingUnit({
 				hidden: true,
 				minLength: 6,
 				autoComplete: "new-password"
@@ -203,8 +208,28 @@ class EmailLoginInterface {
 			loginSubmissionForm.appendChild(passwordUnit.container)
 		}
 
+		loginSubmissionForm.addEventListener("submit", (function(e) {
+			console.warn("Submitted")
+			e.preventDefault()
+			history.replaceState(null, "") //Emulate a navigation.
+			if (loginProviders.includes("password")) {
+				handleFirebasePromise(signInWithEmailAndPassword(auth, emailAddress, passwordUnit.getValue()))
+			}
+			else {
+				handleFirebasePromise(createUserWithEmailAndPassword(auth, emailAddress, passwordUnit.getValue()))
+			}
+		}))
+
 
 		loginSubmissionForm.appendChild(submitButton)
+
+		//Button to back out and change email
+		let backButton = document.createElement("button")
+		backButton.innerText = "Back"
+		backButton.addEventListener("click", (function() {
+			this.requestEmail()
+		}).bind(this))
+		loginSubmissionForm.appendChild(backButton)
 
 	}
 }
@@ -220,72 +245,12 @@ for (let providerDetails of providers) {
 		}
 		else {
 			signedInManager.appendChild(new EmailLoginInterface().container)
-			//Email login
-			//The email login interface will consume the entire area typically allocated to the sign in manager.
-
-			//Email enumeration is not a serious threat here. Therefore we will put email and password entry on separate pages.
-			//
-			// let formElem = document.createElement("form")
-			//
-			// let emailInput = document.createElement("input")
-			// emailInput.type = "email"
-			// emailInput.placeholder = "Enter Email..."
-			// emailInput.autocomplete = "email"
-			// formElem.appendChild(emailInput)
-			//
-			// formElem.addEventListener("submit", function(e) {
-			// 	e.preventDefault()
-			// 	history.replaceState(null, "")
-			// 	continueWithEmail()
-			// })
-			//
-			// // emailInput.addEventListener("keyup", function(keyEvent) {
-			// // 	if (keyEvent.key === "Enter") {
-			// // 		continueWithEmail()
-			// // 	}
-			// // })
-			//
-			// // continueButton.addEventListener("click", continueWithEmail)
-			//
-			// let continueButton = document.createElement("button")
-			// continueButton.innerHTML = "Continue"
-			// formElem.appendChild(continueButton)
-			// continueButton.action = "submit"
-			//
-			//
-			//
-			// async function continueWithEmail() {
-			// 	let emailAddress = emailInput.value
-			//
-			// 	let loginProviders = await fetchSignInMethodsForEmail(auth, emailAddress)
-			// 	if (loginProviders.includes("password")) {
-			// 		alert("Sign in email password")
-			// 		//Bring up the email password form.
-			// 	}
-			// 	else if (loginProviders.length === 0) {
-			// 		//Bring up the create password form
-			// 		alert("Create account")
-			// 	}
-			// 	else {
-			// 		let message = `This account has no password. You must use a social login (previously used ${loginProviders.join(", ")}`
-			// 		alert(message)
-			// 	}
-			// }
-			//
-			// let cancelButton = document.createElement("button")
-			// cancelButton.innerHTML = "Cancel"
-			// formElem.appendChild(cancelButton)
-			//
-			// cancelButton.addEventListener("click", function() {
-			// 	formElem.remove()
-			// })
-			//
-			// signedInManager.appendChild(formElem)
-
-			//There should always be an email input field even for password resets to assist password managers.
 		}
 	})
 }
+
+
+
 
 
 window.auth = auth
@@ -309,184 +274,6 @@ auth.onAuthStateChanged(function(newAuth) {
 
 
 throw "Bye"
-
-class PasswordConstants {
-	static CURRENT_PASSWORD = "current-password"
-	static NEW_PASSWORD = "new-password"
-	static MIN_PASSWORD_LENGTH = 6
-}
-
-//Form for the user to enter a new password.
-//Current password will not be requested.
-class NewPasswordRequestForm {
-	constructor() {
-
-	}
-}
-
-
-
-
-
-
-
-
-//Forgot password and sign up instead
-
-import {PasswordEntryBox, PasswordConfirmingUnit} from "./passwordUIClasses";
-
-
-class EmailPasswordForm {
-	//A form for handling entry of email/password (including validation)
-
-
-
-	constructor({requireEmail, confirmPassword}) {
-		let form = document.createElement("form")
-		form.addEventListener("click", (e) => {
-			e.preventDefault() //Prevent form submission.
-		})
-		this.container = form
-
-		if (requireEmail) {
-			let emailInput = document.createElement("input")
-			emailInput.type = "email"
-			emailInput.placeholder = "Enter Email..."
-			emailInput.autocomplete = "email"
-
-			form.appendChild(emailInput)
-			this.emailInput = emailInput
-		}
-
-		if (confirmPassword) {
-			this.passwordUnit = new PasswordConfirmingUnit({
-				hidden: true,
-				minLength: 6,
-				autoComplete: PasswordConfirmingUnit.AUTOCOMPLETE_NEW_PASSWORD
-			})
-		}
-		else {
-
-		}
-	}
-}
-
-
-class SignInManager {
-	//Manages UI for allowing the user to sign into their account (including login, create account, and password reset)
-	//This UI will assume that the user is already signed out.
-
-	createSignInContainer() {
-		//Creates a sign in container using the given providerOptions.
-	}
-
-	createEmailPasswordForm(needEmail, confirmPassword) {
-		//Creates a form for submitting an email and/or password
-
-		let form = document.createElement("form")
-		form.addEventListener("submit", (e) => {
-			console.log("Attempted submit")
-			e.preventDefault() //Prevent form submission.
-		})
-
-		let emailEntry = document.createElement("input")
-		emailEntry.type = "email"
-		emailEntry.placeholder = "Enter Email..."
-		emailEntry.autocomplete = "email"
-		emailEntry.addEventListener("keyup", function(keyEvent) {
-			if (keyEvent.key === "Enter") {
-				form.submit()
-			}
-		})
-
-		form.appendChild(emailEntry)
-
-	}
-
-	//Each provider in providerOptions is structured
-	constructor(providerOptions) {
-		this.container = document.createElement("div")
-
-		this.emailPasswordForm = document.createElement("form")
-
-		this.emailInput = document.createElement("input")
-		this.emailInput.placeholder = "Email Address"
-		this.emailInput.autocomplete = "email"
-		this.container.appendChild(this.emailInput)
-
-		this.providerOptions = providerOptions
-
-		this.signInOptionsContainer = document.createElement("div")
-		this.container.appendChild(this.signInOptionsContainer)
-
-		this.emailPasswordEntryContainer = document.createElement("div")
-		this.container.appendChild(this.emailPasswordEntryContainer)
-
-		this.emailPasswordEntryContainer.style.display = "none"
-
-		this.emailInput = document.createElement("input")
-		this.emailInput.placeholder = "Email Address"
-		this.emailPasswordEntryContainer.appendChild(this.emailInput)
-
-		this.passwordInput = document.createElement("input")
-		this.passwordInput.placeholder = "Password"
-		this.passwordInput.type = "password"
-		this.emailPasswordEntryContainer.appendChild(this.passwordInput)
-
-		this.signInEmailPasswordButton = document.createElement("button")
-		this.signInEmailPasswordButton.innerHTML = "Sign In"
-		this.emailPasswordEntryContainer.appendChild(this.signInEmailPasswordButton)
-
-		this.createEmailPasswordAccount = document.createElement("button")
-		this.createEmailPasswordAccount.innerHTML = "Sign Up"
-		this.emailPasswordEntryContainer.appendChild(this.createEmailPasswordAccount)
-
-		this.resetPasswordbutton = document.createElement("button")
-		this.resetPasswordbutton.innerHTML = "Forgot Password"
-		this.emailPasswordEntryContainer.appendChild(this.resetPasswordbutton)
-	}
-}
-
-
-let signInOptionsContainer = document.getElementById("signInOptionsContainer")
-
-for (let providerInfo of providers) {
-
-	//TODO: Add stylized buttons.
-	let button = document.createElement("button")
-	button.innerHTML = `Sign in with ${providerInfo.name}`
-
-	if (providerInfo.isEmailPassword) {
-		button.addEventListener("click", async function() {
-			emailPasswordEntryContainer.style.display = ""
-		})
-	}
-	else {
-		button.addEventListener("click", async function() {
-			//TODO: On native we need to use the native tool!
-			handleFirebasePromise(signInWithPopup(auth, providerInfo.provider))
-		})
-	}
-
-	signInOptionsContainer.appendChild(button)
-}
-
-
-
-
-
-
-
-
-
-
-
-// getCurrentUser().delete()
-// await getCurrentUser().updatePassword(newPassword)
-
-// let signInOptionsContainer = document.getElementById("signInOptionsContainer")
-let emailPasswordEntryContainer = document.getElementById("emailPasswordEntryContainer")
-emailPasswordEntryContainer.style.display = "none"
 
 async function handleFirebasePromise(prom) {
 	//Handle common Firebase error codes.
@@ -521,28 +308,7 @@ async function handleFirebasePromise(prom) {
 	}
 }
 
-let emailInput = document.getElementById("emailInput")
-let passwordInput = document.getElementById("passwordInput")
-let signInEmailPasswordButton = document.getElementById("signInEmailPasswordNow")
-signInEmailPasswordButton.addEventListener("click", async function() {
-	handleFirebasePromise(signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value))
-})
-
-let createEmailPasswordAccount = document.getElementById("createEmailPasswordAccount")
-createEmailPasswordAccount.addEventListener("click", function() {
-	handleFirebasePromise(createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value))
-})
-
-let resetPasswordbutton = document.getElementById("resetPassword")
-resetPasswordbutton.addEventListener("click", function() {
-	if (emailInput.value) {
-		sendPasswordResetEmail(auth, emailInput.value)
-		alert("Password reset email sent")
-	}
-	else {
-		alert("Please enter your email address to receive a password reset email. ")
-	}
-})
+//
 
 
 
