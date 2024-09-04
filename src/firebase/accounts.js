@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, setPersistence } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -22,88 +22,71 @@ if (!window.isNative) {
 
 //Accounts
 let auth = getAuth(app)
-setPersistence(auth, "local")
-
-function getCurrentUser() {
-    return auth?.currentUser
-}
-
-function getUserEmail() {
-    return getCurrentUser()?.email
-}
-
-function getUID() {
-    return getCurrentUser()?.uid
-}
-
-function signOut() {
-    return auth.signOut()
-}
-
-function deleteAccount() {
-    return getCurrentUser().delete()
-}
+setPersistence(auth, browserLocalPersistence)
 
 
 
-//Database
-const usersCollectionName = "users"
-let db = getFirestore()
-let users = db.collection("users")
-
-function getUserDoc() {
-    return users.doc(getUID())
-}
-
-async function getData() {
-	let data = (await getUserDoc().get()).data()
-	return data
-}
-
-async function setData(data, merge = true) {
-    console.log(data)
-    return await getUserDoc().set(data, {merge})
-}
-
-async function getFavoritesLastModified(data) {
-    data = data || await getData()
-	return data?.favoritesLastModified
-}
-
-async function getFavorites(data) {
-    data = data || await getData()
-	return data?.favorites || {}
-}
-
-async function getNotificationsConfig(data) {
-    data = data || await getData()
-    return data?.notifications || {}
-}
-
-async function setFavorites(favorites, merge) {
-    return await setData({
-        favorites,
-        favoritesLastModified: Date.now(),
-    }, merge)
-}
-
-async function setNotificationsConfig(notifications, merge) {
-    return await setData({notifications}, merge)
-}
+//
+// //Database
+// const usersCollectionName = "users"
+// let db = getFirestore()
+// let users = db.collection("users")
+//
+// function getUserDoc() {
+//     return users.doc(getUID())
+// }
+//
+// async function getData() {
+// 	let data = (await getUserDoc().get()).data()
+// 	return data
+// }
+//
+// async function setData(data, merge = true) {
+//     console.log(data)
+//     return await getUserDoc().set(data, {merge})
+// }
+//
+// async function getFavoritesLastModified(data) {
+//     data = data || await getData()
+// 	return data?.favoritesLastModified
+// }
+//
+// async function getFavorites(data) {
+//     data = data || await getData()
+// 	return data?.favorites || {}
+// }
+//
+// async function getNotificationsConfig(data) {
+//     data = data || await getData()
+//     return data?.notifications || {}
+// }
+//
+// async function setFavorites(favorites, merge) {
+//     return await setData({
+//         favorites,
+//         favoritesLastModified: Date.now(),
+//     }, merge)
+// }
+//
+// async function setNotificationsConfig(notifications, merge) {
+//     return await setData({notifications}, merge)
+// }
 
 export {
+    auth,
+
     //Accounts
-    getCurrentUser,
-    getUserEmail,
-    getUID,
-    signOut,
+    // getCurrentUser,
+    // getUserEmail,
+    // getUID,
+    // signOut,
 
     //Database
-    getData,
-    setData,
-    getFavorites,
-    setFavorites,
-    getFavoritesLastModified,
-    getNotificationsConfig,
-    setNotificationsConfig,
+    // getData,
+    // setData,
+    // getFavorites,
+    // setFavorites,
+    // getFavoritesLastModified,
+    // getNotificationsConfig,
+    // setNotificationsConfig,
 }

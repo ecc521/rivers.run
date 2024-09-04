@@ -268,8 +268,33 @@
           }
         }
 
+        .loginProviderButton {
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          max-width: 250px;
+          border: 2px solid grey;
+          padding: 8px;
+          border-radius: 4px;
+        }
+
+        .loginProviderButton:not(:first-child) {
+          margin-top: 8px;
+        }
+
+        .loginProviderButton img {
+          max-width: 1.5em;
+          max-height: 1.5em;
+        }
+
+        .loginProviderButton span {
+          font-weight: bold;
+          width: 100%;
+        }
+
         </style>
-        <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.css" />
 
         <script src="packages/allPages.js"></script>
                 <h1>Favorites Editor</h1>
@@ -278,12 +303,19 @@
                 <p style="text-align: center">Want to see your favorites on the home page? Visit <a href="settings.html">Settings</a>! </p>
 
                 <div style="text-align: center;" id="signedInManager">
-                    <span id="signedInStatusText"></span>
-                    <button id="signOutButton">Sign Out</button>
-                    <button id="manageAccountButton">Manage</button>
-                    <button id="signInButton">Sign In</button>
+<!--                    <span id="signedInStatusText"></span>-->
+<!--                    <button id="signOutButton">Sign Out</button>-->
+<!--                    <button id="manageAccountButton">Manage</button>-->
 
-                    <div id="firebaseUIAuthContainer"></div>
+<!--                    <div id="signInOptionsContainer"></div>-->
+
+<!--                    <div id="emailPasswordEntryContainer">-->
+<!--                      <label for="emailInput">Email: </label><input id="emailInput" type="email" placeholder="Enter Email...">-->
+<!--                      <label for="passwordInput">Password: </label><input id="passwordInput" type="password" placeholder="Enter Password...">-->
+<!--                      <button id="signInEmailPasswordNow">Sign In</button>-->
+<!--                      <button id="createEmailPasswordAccount">Create Account</button>-->
+<!--                      <button id="resetPassword">Reset Password</button>-->
+<!--                    </div>-->
                 </div>
 
                 <div id="notificationsState" style="display: none">

@@ -1,273 +1,698 @@
-//We also want a notifications option for no earlier than.
-//Once send, noneUntil will be set to that time following day.
-//Make sure to handle time zones!
-
-const {loadFavorites, getFavoritesLastModified, writeFavorites, mergeFavoritesObjects} = require("./src/addToFavorites.js")
-const accounts = require("./src/firebase/accounts.js")
-const getSearchLink = require("./src/getSearchLink.js")
-
-window.accounts = accounts
-let firebase = accounts.firebase
-
-import * as firebaseui from 'firebaseui'
-
-
 let signedInManager = document.getElementById("signedInManager")
-let signedInStatusText = document.getElementById("signedInStatusText")
 
-let signOutButton = document.getElementById("signOutButton")
-let signInButton = document.getElementById("signInButton")
-let firebaseUIAuthContainer = document.getElementById("firebaseUIAuthContainer")
+//fetchSignInMethodsForEmail can return nothing (if user no account), 'password' for email password,
+//"google.com" for google sign in, "apple.com" for Apple sign in
 
-let manageAccountButton = document.getElementById("manageAccountButton")
+let EMAIL_PROVIDER = "email";
 
-let notificationsState = document.getElementById("notificationsState")
+function createButtonForProvider(providerDetails) {
+	//Creates a stylized UI button given the provided parameters. Will NOT add event listeners to the button.
+	//All buttons should be the same size (this is sometimes a branding requirement)
 
-function updateSignInStatus() {
-	let user = accounts.getCurrentUser()
-	let text;
-	if (user) {
-		signInButton.style.display = "none"
-		manageAccountButton.style.display = signOutButton.style.display = ""
-		text = `Signed in as ${accounts.getUserEmail()}. `
-		firebaseUIAuthContainer.style.display = "none"
-	}
-	else {
-		manageAccountButton.style.display = signOutButton.style.display = "none"
-		signInButton.style.display = ""
-		text = `Sign in to Sync Favorites and Receive Notifications! `
-		notificationsState.style.display = "none"
-	}
-	signedInStatusText.innerHTML = text
-}
+	let button = document.createElement("button")
+	button.classList.add("loginProviderButton")
 
-firebase.auth().onAuthStateChanged(updateSignInStatus)
+	if (providerDetails.icon) {
+		//Add an icon, left justified, and centered vertically within the button.
+		let imageComponent = document.createElement("img")
+		imageComponent.src = providerDetails.icon
 
-// Initialize the FirebaseUI Widget using Firebase.
-let ui = new firebaseui.auth.AuthUI(firebase.auth());
+		imageComponent.style.filter = providerDetails.iconFilter //We will allow for filters to be applied to the icon (like inverting).
 
-async function googleSignIn(authenticationObj) {
-	console.log(authenticationObj)
-	let credential = firebase.auth.GoogleAuthProvider.credential(authenticationObj.idToken);
-	await firebase.auth().signInAndRetrieveDataWithCredential(credential);
-}
-
-async function attemptTokenRefresh() {
-	let authenticationObj = await window.googleRefreshRequest()
-	googleSignIn(authenticationObj)
-}
-
-if (window.googleRefreshRequest) {
-	attemptTokenRefresh()
-}
-
-
-async function appleSignIn(authenticationObj) {
-	let appleProvider = new firebase.auth.OAuthProvider("apple.com")
-
-	let credential = appleProvider.credential({
-		idToken: authenticationObj.response.identityToken,
-	})
-
-	await firebase.auth().signInAndRetrieveDataWithCredential(credential)
-}
-
-
-
-function hijackLoginButtons() {
-	if (!window.isNative) {return}
-
-	//Hijack login buttons - we need to run native log in code rather than the web code.
-	let googleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='google.com']")
-	if (googleButton) {
-		let clonedGoogle = googleButton.cloneNode(true)
-		googleButton.replaceWith(clonedGoogle)
-		clonedGoogle.addEventListener("click", async function() {
-			attemptTokenRefresh()
-			let user = await window.googleSignInRequest()
-			googleSignIn(user.authentication)
-		})
+		button.append(imageComponent)
 	}
 
-	let appleButton = firebaseUIAuthContainer.querySelector("button[data-provider-id='apple.com']")
-	if (appleButton) {
-		let clonedApple = appleButton.cloneNode(true)
-		appleButton.replaceWith(clonedApple)
-		clonedApple.addEventListener("click", async function() {
-			let obj = await window.appleSignInRequest()
-			appleSignIn(obj)
-		})
-	}
+	let textComponent = document.createElement("span")
+	textComponent.innerHTML = `Sign in with ${providerDetails.name}`
+	button.appendChild(textComponent)
 
-	//If the user is attempting to sign in with email, and they previously signed in with an OAuth provider,
-	//a button to "Sign in with (Google/Apple/etc)" is provided.
-	//We need to hijack that button as well on iOS. We'll reset the auth container so all options are visible again.
-	let signInWithButton = document.querySelector("button.firebaseui-id-submit")
-	if (signInWithButton?.innerHTML?.includes("Sign in with")) {
-		let clonedSignInWithButton = signInWithButton.cloneNode(true)
-		signInWithButton.replaceWith(clonedSignInWithButton)
-		clonedSignInWithButton.addEventListener("click", function() {
-			ui.start(firebaseUIAuthContainer, uiConfig);
-		})
-	}
+
+	button.style.backgroundColor = providerDetails.backgroundColor
+	button.style.color = providerDetails.color
+
+	return button
 }
 
+//Everything related to account management must be stored in signedInManager
 
+import { GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, fetchSignInMethodsForEmail } from "firebase/auth";
+const {auth} = require("./src/firebase/accounts.js")
 
+window.fetchSignInMethodsForEmail = fetchSignInMethodsForEmail
+window.signInWithPopup = signInWithPopup
 
-let uiConfig = {
-	callbacks: {
-		signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-			console.log(authResult, redirectUrl)
-			updateSignInStatus()
-			return false; //Do not redirect.
-		},
-		uiShown: function() {
-			hijackLoginButtons()
-		},
-		uiChanged: function() {
-			hijackLoginButtons()
-		}
+let googleProvider = new GoogleAuthProvider()
+let appleProvider = new OAuthProvider()
+let facebookProvider = new FacebookAuthProvider()
+
+//Add email scope.
+googleProvider.addScope("https://www.googleapis.com/auth/userinfo.email")
+appleProvider.addScope("email")
+facebookProvider.addScope("email")
+
+let providers = [
+	{
+		provider: googleProvider,
+		name: "Google",
+		icon: "resources/loginProviders/google.svg",
+		backgroundColor: "#fff",
+		color: "black"
 	},
-	signInFlow: 'popup', //"redirect" or "popup". Popup seems better on desktop, redirect on mobile.
-	signInOptions: [
-		{
-			provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-			scopes: ["email"],
-		},
-		{
-			provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-			requireDisplayName: false,
-		},
-		{
-			provider: "apple.com",
-			scopes: ["email"],
-		},
-	],
-};
+	{
+		provider: appleProvider,
+		name: "Apple",
+		icon: "resources/loginProviders/apple.svg",
+		backgroundColor: "black",
+		color: "white",
+		iconFilter: "invert(1)" //Invert logo for dark background
+	},
+	// {
+	// 	provider: facebookProvider,
+	// 	name: "Facebook",
+	// 	icon: "resources/loginProviders/facebook.svg",
+	// 	backgroundColor: "#1a77f2",
+	// 	color: "white",
+	// },
+	{
+		provider: EMAIL_PROVIDER,
+		name: "Email",
+		icon: "resources/loginProviders/email.svg",
+		backgroundColor: "firebrick",
+		color: "white",
+		iconFilter: "invert(1)" //Invert logo for dark background
+	},
+]
 
-firebaseUIAuthContainer.style.display = "none"
-ui.start(firebaseUIAuthContainer, uiConfig);
-
-signInButton.addEventListener("click", function() {
-	firebaseUIAuthContainer.style.display = ""
-	ui.start(firebaseUIAuthContainer, uiConfig);
-})
-
-signOutButton.addEventListener("click", async function() {
-	await accounts.signOut()
-	if (window.googleSignOutRequest) {
-		window.googleSignOutRequest()
-	}
-})
-
-let deleteAccountButton = document.createElement("button")
-deleteAccountButton.innerHTML = "Delete Account"
-
-let passwordEntryField = document.createElement("input")
-passwordEntryField.placeholder = "Enter New Password..."
-passwordEntryField.type = "password"
-
-let setPassword = document.createElement("button")
-
-let togglePasswordVisibility = document.createElement("button")
-togglePasswordVisibility.innerHTML = "Show"
-
-let manageAccountWindow = document.createElement("div")
-manageAccountWindow.style.textAlign = "center"
-manageAccountWindow.innerHTML = "<h2>Manage Account</h2><p>Passwords are optional if you sign in with Google, Apple, or another service. Setting a password allows you to log in with your email and password as well. </p>"
-manageAccountWindow.appendChild(passwordEntryField)
-manageAccountWindow.appendChild(togglePasswordVisibility)
-manageAccountWindow.appendChild(document.createElement("br"))
-manageAccountWindow.appendChild(setPassword)
-
-let deleteAccountWarning = document.createElement("p")
-deleteAccountWarning.innerHTML = "Deleting your account will prevent syncing of your favorites data between devices. You can always create a new account later. "
-
-manageAccountWindow.appendChild(deleteAccountWarning)
-manageAccountWindow.appendChild(deleteAccountButton)
-
-manageAccountButton.addEventListener("click", function() {
-	createModal(manageAccountWindow)
-})
-
-setPassword.addEventListener("click", async function() {
-	if (passwordEntryField.value.length === 0) {return} //Firebase accepts a blank string as a password - though it then throws internal auth errors, so it may be equivalent to disabling passwords.
-	await updatePassword(passwordEntryField.value)
-})
-
-togglePasswordVisibility.addEventListener("click", function() {
-	if (passwordEntryField.type === "password") {
-		togglePasswordVisibility.innerHTML = "Hide"
-		passwordEntryField.type = "text"
-	}
-	else {
-		togglePasswordVisibility.innerHTML = "Show"
-		passwordEntryField.type = "password"
-	}
-})
+window.providers = providers
 
 
-function setPasswordInfo() {
-	let hasPassword = accounts.getCurrentUser()?.providerData?.some((provider) => {return provider.providerId === "password"})
 
-	if (hasPassword) {
-		setPassword.innerHTML = "Update Password"
-	}
-	else {
-		setPassword.innerHTML = "Set Password"
-	}
-}
-setPasswordInfo()
-firebase.auth().onAuthStateChanged(setPasswordInfo)
+//We JUST need a password form for changing passwords.
+//We need the full flow for other stuff.
 
-async function updatePassword(newPassword) {
-	try {
-		await accounts.getCurrentUser().updatePassword(newPassword)
-		alert("Password Updated!")
-	}
-	catch (e) {
-		if (e.code === "auth/requires-recent-login") {
-			alert("You must sign in again before you can set your password. ")
-			ui.start(firebaseUIAuthContainer, uiConfig);
-			firebaseUIAuthContainer.style.display = ""
-		}
-		else {
-			alert(e.message)
-			throw e
-		}
-	}
-}
+class EmailLoginInterface {
+	container = document.createElement("div") //Container for the login interface
 
+	emailEntryForm = document.createElement("form") //Form used to choose the email being used.
 
-async function deleteAccount(allowRecurse = false) {
-	//allowRecurse is used to prevent infinite loop glitches.
-	try {
-		await accounts.getCurrentUser().delete()
-	}
-	catch (e) {
-		if (e.code === "auth/requires-recent-login") {
-			alert("You must sign in again before you can delete your account. ")
-			ui.start(firebaseUIAuthContainer, uiConfig);
-			firebaseUIAuthContainer.style.display = ""
-			if (allowRecurse) {
-				firebase.auth().onAuthStateChanged(deleteAccount)
+	constructor() {
+		this.container.classList.add("emailLoginInterface")
+
+		this.emailEntryForm.addEventListener("submit", (function(e) {
+			e.preventDefault()
+			history.replaceState(null, "") //Emulate a navigation.
+			this.continueWithEmail(emailInput.value)
+		}).bind(this))
+
+		let emailInput = document.createElement("input")
+		emailInput.type = "email"
+		emailInput.placeholder = "Enter Email..."
+		emailInput.autocomplete = "email"
+		emailInput.addEventListener("keyup", (function(keyEvent) {
+			if (keyEvent.key === "Enter") {
+				this.emailEntryForm.requestSubmit()
 			}
+		}).bind(this))
+
+		this.emailEntryForm.appendChild(emailInput)
+
+
+		let continueButton = document.createElement("button")
+		continueButton.innerHTML = "Continue"
+		continueButton.addEventListener("click", (function() {
+			this.emailEntryForm.requestSubmit()
+		}).bind(this))
+		this.emailEntryForm.appendChild(continueButton)
+
+		let cancelButton = document.createElement("button")
+		cancelButton.innerHTML = "Cancel"
+		cancelButton.addEventListener("click", (function() {
+			this.container.remove()
+		}).bind(this))
+		this.emailEntryForm.appendChild(cancelButton)
+
+		this.requestEmail()
+	}
+
+	clearContainer() {
+		while (this.container.lastChild) {
+			this.container.lastChild.remove()
+		}
+	}
+
+	requestEmail() {
+		this.clearContainer()
+		this.container.appendChild(this.emailEntryForm)
+	}
+
+	async continueWithEmail(emailAddress) {
+		let loginProviders;
+		try {
+			loginProviders = await fetchSignInMethodsForEmail(auth, emailAddress)
+		}
+		catch (e) {
+			console.error(e)
+			alert("Error with Firebase: " + e.message)
+			return;
+		}
+
+		if (loginProviders.length > 0 && !loginProviders.includes("password")) {
+			//The user cannot log in with email password.
+			let message = `This account has no password. You must use a social login (previously used ${loginProviders.join(", ")})`
+			alert(message)
+			return
+		}
+
+		this.clearContainer()
+
+		let loginSubmissionForm = document.createElement("form")
+
+		this.container.appendChild(loginSubmissionForm)
+
+		let emailDisplayInput = document.createElement("input")
+		emailDisplayInput.type = "email"
+		emailDisplayInput.autocomplete = "email"
+		emailDisplayInput.value = emailAddress
+		emailDisplayInput.readonly = "readonly"
+		loginSubmissionForm.appendChild(emailDisplayInput)
+
+		let submitButton = document.createElement("button")
+		submitButton.addEventListener("click", function() {
+			loginSubmissionForm.requestSubmit()
+		})
+
+		if (loginProviders.includes("password")) {
+			//Bring up the email password form.
+			submitButton.innerText = "Log In"
+			let passwordUnit = new PasswordEntryBox({
+				hidden: true,
+				minLength: 6,
+				autoComplete: "current-password",
+				placeholder: "Enter Password..."
+			})
+			loginSubmissionForm.appendChild(passwordUnit.container)
+		}
+		else if (loginProviders.length === 0) {
+			//Bring up the create password form
+			submitButton.innerText = "Sign Up"
+			let passwordUnit = new PasswordConfirmingUnit({
+				hidden: true,
+				minLength: 6,
+				autoComplete: "new-password"
+			})
+			loginSubmissionForm.appendChild(passwordUnit.container)
+		}
+
+
+		loginSubmissionForm.appendChild(submitButton)
+
+	}
+}
+
+
+for (let providerDetails of providers) {
+	let button = createButtonForProvider(providerDetails)
+	signedInManager.appendChild(button)
+
+	button.addEventListener("click", function() {
+		if (providerDetails.provider !== EMAIL_PROVIDER) {
+			signInWithPopup(auth, providerDetails.provider)
 		}
 		else {
-			alert(e.message)
-			throw e
+			signedInManager.appendChild(new EmailLoginInterface().container)
+			//Email login
+			//The email login interface will consume the entire area typically allocated to the sign in manager.
+
+			//Email enumeration is not a serious threat here. Therefore we will put email and password entry on separate pages.
+			//
+			// let formElem = document.createElement("form")
+			//
+			// let emailInput = document.createElement("input")
+			// emailInput.type = "email"
+			// emailInput.placeholder = "Enter Email..."
+			// emailInput.autocomplete = "email"
+			// formElem.appendChild(emailInput)
+			//
+			// formElem.addEventListener("submit", function(e) {
+			// 	e.preventDefault()
+			// 	history.replaceState(null, "")
+			// 	continueWithEmail()
+			// })
+			//
+			// // emailInput.addEventListener("keyup", function(keyEvent) {
+			// // 	if (keyEvent.key === "Enter") {
+			// // 		continueWithEmail()
+			// // 	}
+			// // })
+			//
+			// // continueButton.addEventListener("click", continueWithEmail)
+			//
+			// let continueButton = document.createElement("button")
+			// continueButton.innerHTML = "Continue"
+			// formElem.appendChild(continueButton)
+			// continueButton.action = "submit"
+			//
+			//
+			//
+			// async function continueWithEmail() {
+			// 	let emailAddress = emailInput.value
+			//
+			// 	let loginProviders = await fetchSignInMethodsForEmail(auth, emailAddress)
+			// 	if (loginProviders.includes("password")) {
+			// 		alert("Sign in email password")
+			// 		//Bring up the email password form.
+			// 	}
+			// 	else if (loginProviders.length === 0) {
+			// 		//Bring up the create password form
+			// 		alert("Create account")
+			// 	}
+			// 	else {
+			// 		let message = `This account has no password. You must use a social login (previously used ${loginProviders.join(", ")}`
+			// 		alert(message)
+			// 	}
+			// }
+			//
+			// let cancelButton = document.createElement("button")
+			// cancelButton.innerHTML = "Cancel"
+			// formElem.appendChild(cancelButton)
+			//
+			// cancelButton.addEventListener("click", function() {
+			// 	formElem.remove()
+			// })
+			//
+			// signedInManager.appendChild(formElem)
+
+			//There should always be an email input field even for password resets to assist password managers.
+		}
+	})
+}
+
+
+window.auth = auth
+
+
+
+
+
+
+
+
+
+
+auth.onAuthStateChanged(function(newAuth) {
+	console.log(newAuth)
+})
+
+
+
+
+
+
+throw "Bye"
+
+class PasswordConstants {
+	static CURRENT_PASSWORD = "current-password"
+	static NEW_PASSWORD = "new-password"
+	static MIN_PASSWORD_LENGTH = 6
+}
+
+//Form for the user to enter a new password.
+//Current password will not be requested.
+class NewPasswordRequestForm {
+	constructor() {
+
+	}
+}
+
+
+
+
+
+
+
+
+//Forgot password and sign up instead
+
+import {PasswordEntryBox, PasswordConfirmingUnit} from "./passwordUIClasses";
+
+
+class EmailPasswordForm {
+	//A form for handling entry of email/password (including validation)
+
+
+
+	constructor({requireEmail, confirmPassword}) {
+		let form = document.createElement("form")
+		form.addEventListener("click", (e) => {
+			e.preventDefault() //Prevent form submission.
+		})
+		this.container = form
+
+		if (requireEmail) {
+			let emailInput = document.createElement("input")
+			emailInput.type = "email"
+			emailInput.placeholder = "Enter Email..."
+			emailInput.autocomplete = "email"
+
+			form.appendChild(emailInput)
+			this.emailInput = emailInput
+		}
+
+		if (confirmPassword) {
+			this.passwordUnit = new PasswordConfirmingUnit({
+				hidden: true,
+				minLength: 6,
+				autoComplete: PasswordConfirmingUnit.AUTOCOMPLETE_NEW_PASSWORD
+			})
+		}
+		else {
+
 		}
 	}
 }
 
-deleteAccountButton.addEventListener("click", function() {
-	if (confirm("Are you sure you would like to delete your account? ")) {
-		deleteAccount(true)
+
+class SignInManager {
+	//Manages UI for allowing the user to sign into their account (including login, create account, and password reset)
+	//This UI will assume that the user is already signed out.
+
+	createSignInContainer() {
+		//Creates a sign in container using the given providerOptions.
+	}
+
+	createEmailPasswordForm(needEmail, confirmPassword) {
+		//Creates a form for submitting an email and/or password
+
+		let form = document.createElement("form")
+		form.addEventListener("submit", (e) => {
+			console.log("Attempted submit")
+			e.preventDefault() //Prevent form submission.
+		})
+
+		let emailEntry = document.createElement("input")
+		emailEntry.type = "email"
+		emailEntry.placeholder = "Enter Email..."
+		emailEntry.autocomplete = "email"
+		emailEntry.addEventListener("keyup", function(keyEvent) {
+			if (keyEvent.key === "Enter") {
+				form.submit()
+			}
+		})
+
+		form.appendChild(emailEntry)
+
+	}
+
+	//Each provider in providerOptions is structured
+	constructor(providerOptions) {
+		this.container = document.createElement("div")
+
+		this.emailPasswordForm = document.createElement("form")
+
+		this.emailInput = document.createElement("input")
+		this.emailInput.placeholder = "Email Address"
+		this.emailInput.autocomplete = "email"
+		this.container.appendChild(this.emailInput)
+
+		this.providerOptions = providerOptions
+
+		this.signInOptionsContainer = document.createElement("div")
+		this.container.appendChild(this.signInOptionsContainer)
+
+		this.emailPasswordEntryContainer = document.createElement("div")
+		this.container.appendChild(this.emailPasswordEntryContainer)
+
+		this.emailPasswordEntryContainer.style.display = "none"
+
+		this.emailInput = document.createElement("input")
+		this.emailInput.placeholder = "Email Address"
+		this.emailPasswordEntryContainer.appendChild(this.emailInput)
+
+		this.passwordInput = document.createElement("input")
+		this.passwordInput.placeholder = "Password"
+		this.passwordInput.type = "password"
+		this.emailPasswordEntryContainer.appendChild(this.passwordInput)
+
+		this.signInEmailPasswordButton = document.createElement("button")
+		this.signInEmailPasswordButton.innerHTML = "Sign In"
+		this.emailPasswordEntryContainer.appendChild(this.signInEmailPasswordButton)
+
+		this.createEmailPasswordAccount = document.createElement("button")
+		this.createEmailPasswordAccount.innerHTML = "Sign Up"
+		this.emailPasswordEntryContainer.appendChild(this.createEmailPasswordAccount)
+
+		this.resetPasswordbutton = document.createElement("button")
+		this.resetPasswordbutton.innerHTML = "Forgot Password"
+		this.emailPasswordEntryContainer.appendChild(this.resetPasswordbutton)
+	}
+}
+
+
+let signInOptionsContainer = document.getElementById("signInOptionsContainer")
+
+for (let providerInfo of providers) {
+
+	//TODO: Add stylized buttons.
+	let button = document.createElement("button")
+	button.innerHTML = `Sign in with ${providerInfo.name}`
+
+	if (providerInfo.isEmailPassword) {
+		button.addEventListener("click", async function() {
+			emailPasswordEntryContainer.style.display = ""
+		})
+	}
+	else {
+		button.addEventListener("click", async function() {
+			//TODO: On native we need to use the native tool!
+			handleFirebasePromise(signInWithPopup(auth, providerInfo.provider))
+		})
+	}
+
+	signInOptionsContainer.appendChild(button)
+}
+
+
+
+
+
+
+
+
+
+
+
+// getCurrentUser().delete()
+// await getCurrentUser().updatePassword(newPassword)
+
+// let signInOptionsContainer = document.getElementById("signInOptionsContainer")
+let emailPasswordEntryContainer = document.getElementById("emailPasswordEntryContainer")
+emailPasswordEntryContainer.style.display = "none"
+
+async function handleFirebasePromise(prom) {
+	//Handle common Firebase error codes.
+	try {
+		let res = await prom
+		console.log(res)
+	}
+	catch (e) {
+		if (e.code === "auth/user-not-found") {
+			alert("No user found with selected email. ")
+		}
+		else if (e.code === "auth/unauthorized-domain") {
+			alert("Error from Auth Provider: Unauthorized Domain")
+		}
+		else if (e.code === "auth/weak-password") {
+			alert("Password too weak - must be at least 6 characters. ")
+		}
+		else if (e.code === "auth/wrong-password") {
+			alert("Incorrect Password. ")
+		}
+		else if (e.code === "auth/too-many-requests") {
+			alert("Too many requests. You can reset your password or try again later. ")
+		}
+		else if (e.code === "auth/requires-recent-login") {
+			//Use reauthenticateWithCredential??
+			alert("You must sign in again before you can perform this action. ")
+		}
+		else {
+			console.error(e)
+			alert("Unknown Error from Auth Provider: " + e.message)
+		}
+	}
+}
+
+let emailInput = document.getElementById("emailInput")
+let passwordInput = document.getElementById("passwordInput")
+let signInEmailPasswordButton = document.getElementById("signInEmailPasswordNow")
+signInEmailPasswordButton.addEventListener("click", async function() {
+	handleFirebasePromise(signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value))
+})
+
+let createEmailPasswordAccount = document.getElementById("createEmailPasswordAccount")
+createEmailPasswordAccount.addEventListener("click", function() {
+	handleFirebasePromise(createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value))
+})
+
+let resetPasswordbutton = document.getElementById("resetPassword")
+resetPasswordbutton.addEventListener("click", function() {
+	if (emailInput.value) {
+		sendPasswordResetEmail(auth, emailInput.value)
+		alert("Password reset email sent")
+	}
+	else {
+		alert("Please enter your email address to receive a password reset email. ")
 	}
 })
 
-window.firebase = accounts.firebase
+
+
+
+
+
+
+
+
+
+
+
+//
+// function getCurrentUser() {
+// 	return auth.currentUser
+// }
+//
+// function getCurrentUserDetails() {
+// 	//If we are not currently signed in, the fields will be undefined.
+// 	//{email: string, displayName: string}
+// 	let user = getCurrentUser()
+// 	let userDetails = {}
+// 	user?.providerData.forEach((profile) => {
+// 		userDetails.displayName = userDetails.displayName ?? profile.displayName
+// 		userDetails.email = userDetails.email ?? profile.email
+// 	});
+// 	return userDetails
+// }
+//
+// function signOutCurrentUser() {
+// 	return auth.signOut()
+// }
+//
+// function deleteCurrentUserAccount() {
+// 	return auth.currentUser.delete()
+// }
+//
+//
+// // const accounts = require("./src/firebase/accounts.js")
+//
+// let signedInManager = document.getElementById("signedInManager")
+// let signedInStatusText = document.getElementById("signedInStatusText")
+//
+// let signOutButton = document.getElementById("signOutButton")
+// let signInButton = document.getElementById("signInButton")
+//
+// let manageAccountButton = document.getElementById("manageAccountButton")
+//
+//
+//
+//
+// const {loadFavorites, getFavoritesLastModified, writeFavorites, mergeFavoritesObjects} = require("./src/addToFavorites.js")
+// const getSearchLink = require("./src/getSearchLink.js")
+// let notificationsState = document.getElementById("notificationsState")
+//
+// function updateSignInStatus() {
+// 	let user = getCurrentUser()
+// 	console.warn(user)
+// 	let text;
+// 	if (user) {
+// 		signInButton.style.display = "none"
+// 		manageAccountButton.style.display = signOutButton.style.display = ""
+// 		text = `Signed in as ${getCurrentUserDetails().email}. `
+// 		signInOptionsContainer.style.display = "none"
+// 	}
+// 	else {
+// 		manageAccountButton.style.display = signOutButton.style.display = "none"
+// 		signInButton.style.display = ""
+// 		text = `Sign in to Sync Favorites and Receive Notifications! `
+// 		notificationsState.style.display = "none"
+// 	}
+// 	signedInStatusText.innerHTML = text
+// }
+//
+// auth.onAuthStateChanged(updateSignInStatus)
+//
+//
+//
+//
+//
+// signOutButton.addEventListener("click", async function() {
+// 	await signOutCurrentUser()
+// })
+//
+// let deleteAccountButton = document.createElement("button")
+// deleteAccountButton.innerHTML = "Delete Account"
+//
+// let passwordEntryField = document.createElement("input")
+// passwordEntryField.placeholder = "Enter New Password..."
+// passwordEntryField.type = "password"
+//
+// let setPassword = document.createElement("button")
+//
+// let togglePasswordVisibility = document.createElement("button")
+// togglePasswordVisibility.innerHTML = "Show"
+//
+// let manageAccountWindow = document.createElement("div")
+// manageAccountWindow.style.textAlign = "center"
+// manageAccountWindow.innerHTML = "<h2>Manage Account</h2><p>Passwords are optional if you sign in with Google, Apple, or another service. Setting a password allows you to log in with your email and password as well. </p>"
+// manageAccountWindow.appendChild(passwordEntryField)
+// manageAccountWindow.appendChild(togglePasswordVisibility)
+// manageAccountWindow.appendChild(document.createElement("br"))
+// manageAccountWindow.appendChild(setPassword)
+//
+// let deleteAccountWarning = document.createElement("p")
+// deleteAccountWarning.innerHTML = "Deleting your account will prevent syncing of your favorites data between devices. You can always create a new account later. "
+//
+// manageAccountWindow.appendChild(deleteAccountWarning)
+// manageAccountWindow.appendChild(deleteAccountButton)
+//
+// manageAccountButton.addEventListener("click", function() {
+// 	createModal(manageAccountWindow)
+// })
+//
+// setPassword.addEventListener("click", async function() {
+// 	if (passwordEntryField.value.length === 0) {return} //Firebase accepts a blank string as a password - though it then throws internal auth errors, so it may be equivalent to disabling passwords.
+// 	await updatePassword(passwordEntryField.value)
+// })
+//
+// togglePasswordVisibility.addEventListener("click", function() {
+// 	if (passwordEntryField.type === "password") {
+// 		togglePasswordVisibility.innerHTML = "Hide"
+// 		passwordEntryField.type = "text"
+// 	}
+// 	else {
+// 		togglePasswordVisibility.innerHTML = "Show"
+// 		passwordEntryField.type = "password"
+// 	}
+// })
+//
+//
+// function setPasswordInfo() {
+// 	let hasPassword = getCurrentUser()?.providerData?.some((provider) => {return provider.providerId === "password"})
+//
+// 	if (hasPassword) {
+// 		setPassword.innerHTML = "Update Password"
+// 	}
+// 	else {
+// 		setPassword.innerHTML = "Set Password"
+// 	}
+// }
+// setPasswordInfo()
+// auth.onAuthStateChanged(setPasswordInfo)
+//
+//
+//
+//
+//
+
+
 
 
 
@@ -413,7 +838,7 @@ async function syncFavorites(alwaysOverwrite = false) {
 	dataChanged()
 }
 
-firebase.auth().onAuthStateChanged(function() {
+auth.onAuthStateChanged(function() {
 	syncFavorites()
 })
 

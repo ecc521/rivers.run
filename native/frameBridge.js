@@ -1,19 +1,9 @@
 import {Geolocation} from "@capacitor/geolocation";
-import "@codetrix-studio/capacitor-google-auth"
-import "@capacitor-community/apple-sign-in"
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
+window.FirebaseAuthentication = FirebaseAuthentication //TESTING ONLY!!! Can be removed safely.
+
 //The iframe's localStorage is cleared repeatedly.
 //To fix this, we will store data here instead, and use postMessage to communicate.
-
-Capacitor.Plugins.GoogleAuth.initialize({
-  client_id: "701662732373-hsifuihar5t4dqbddm54pj15f04f96gb.apps.googleusercontent.com",
-  scopes: ["email"],
-});
-
-let appleSignInConfig = {
-	clientId: 'run.rivers.twa',
-	redirectURI: 'https://rivers-run.firebaseapp.com/__/auth/handler',
-	scopes: 'email',
-}
 
 function enableFrameBridge({iframeUrl}) {
 	window.addEventListener("message", async function(event) {
@@ -38,16 +28,17 @@ function enableFrameBridge({iframeUrl}) {
 				response.message = JSON.stringify(localStorage)
 			}
 			else if (data.type === "googleSignInRequest") {
-				response.message = await Capacitor.Plugins.GoogleAuth.signIn()
+				//FirebaseAuthentication.signInWithGoogle()
 			}
 			else if (data.type === "googleRefreshRequest") {
-				response.message = await Capacitor.Plugins.GoogleAuth.refresh()
+				//TODO: Not needed.
+				// FirebaseAuthentication.getIdToken()
 			}
 			else if (data.type === "googleSignOutRequest") {
-				response.message = await Capacitor.Plugins.GoogleAuth.signOut()
+				// response.message = await FirebaseAuthentication.signOut()
 			}
 			else if (data.type === "appleSignInRequest") {
-				response.message = await Capacitor.Plugins.SignInWithApple.authorize(appleSignInConfig)
+				//FirebaseAuthentication.signInWithApple()
 			}
 			else if (data.type === "setStorage") {
 				//Set new props, update existing props, and delete nonexistent props.
