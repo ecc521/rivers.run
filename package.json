@@ -60,7 +60,7 @@
         "csv-parser": "^3.0.0",
         "express": "^4.19.2",
         "fast-xml-parser": "^4.4.0",
-        "firebase": "^10.12.4",
+        "firebase": "^10.13.1",
         "firebase-admin": "^12.3.0",
         "gulp": "^5.0.0",
         "gulp-postcss": "^10.0.0",
@@ -70,6 +70,7 @@
         "postcss-css-variables": "^0.19.0",
         "postcss-preset-env": "^9.6.0",
         "serve-index": "^1.9.1",
+        "ui-for-firebase-authentication": "^1.0.1",
         "vm2": "^3.9.9",
         "webpack": "^5.93.0"
     }

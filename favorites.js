@@ -1,9 +1,4 @@
-
-let signedInManager = document.getElementById("signedInManager")
-
-//Everything related to account management must be stored in signedInManager
-
-import { GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, updatePassword } from "firebase/auth";
 const {auth} = require("./src/firebase/accounts.js")
 
 import { Initialize_UI, Display_Templates, injectDefaultStyles } from "ui-for-firebase-authentication"
@@ -34,11 +29,8 @@ let providers = [
 	},
 ]
 
-Initialize_UI(auth, providers, signedInManager)
-
-window.gp = googleProvider
-window.signInWithPopup2 = signInWithPopup
-window.auth2 = auth
+let signInOptionsContainer = document.getElementById("signInOptionsContainer")
+Initialize_UI(auth, providers, signInOptionsContainer)
 
 auth.onAuthStateChanged(function(newAuth) {
 	console.log(newAuth)
@@ -46,151 +38,130 @@ auth.onAuthStateChanged(function(newAuth) {
 
 
 
-throw "Bye"
 
 
 
 
 
+const accounts = require("./src/firebase/accounts.js")
 
 
 
-//
-// function getCurrentUser() {
-// 	return auth.currentUser
-// }
-//
-// function getCurrentUserDetails() {
-// 	//If we are not currently signed in, the fields will be undefined.
-// 	//{email: string, displayName: string}
-// 	let user = getCurrentUser()
-// 	let userDetails = {}
-// 	user?.providerData.forEach((profile) => {
-// 		userDetails.displayName = userDetails.displayName ?? profile.displayName
-// 		userDetails.email = userDetails.email ?? profile.email
-// 	});
-// 	return userDetails
-// }
-//
-// function signOutCurrentUser() {
-// 	return auth.signOut()
-// }
-//
-// function deleteCurrentUserAccount() {
-// 	return auth.currentUser.delete()
-// }
-//
-//
-// // const accounts = require("./src/firebase/accounts.js")
-//
-// let signedInManager = document.getElementById("signedInManager")
-// let signedInStatusText = document.getElementById("signedInStatusText")
-//
-// let signOutButton = document.getElementById("signOutButton")
-// let signInButton = document.getElementById("signInButton")
-//
-// let manageAccountButton = document.getElementById("manageAccountButton")
-//
-//
-//
-//
-// const {loadFavorites, getFavoritesLastModified, writeFavorites, mergeFavoritesObjects} = require("./src/addToFavorites.js")
-// const getSearchLink = require("./src/getSearchLink.js")
-// let notificationsState = document.getElementById("notificationsState")
-//
-// function updateSignInStatus() {
-// 	let user = getCurrentUser()
-// 	console.warn(user)
-// 	let text;
-// 	if (user) {
-// 		signInButton.style.display = "none"
-// 		manageAccountButton.style.display = signOutButton.style.display = ""
-// 		text = `Signed in as ${getCurrentUserDetails().email}. `
-// 		signInOptionsContainer.style.display = "none"
-// 	}
-// 	else {
-// 		manageAccountButton.style.display = signOutButton.style.display = "none"
-// 		signInButton.style.display = ""
-// 		text = `Sign in to Sync Favorites and Receive Notifications! `
-// 		notificationsState.style.display = "none"
-// 	}
-// 	signedInStatusText.innerHTML = text
-// }
-//
-// auth.onAuthStateChanged(updateSignInStatus)
-//
-//
-//
-//
-//
-// signOutButton.addEventListener("click", async function() {
-// 	await signOutCurrentUser()
-// })
-//
-// let deleteAccountButton = document.createElement("button")
-// deleteAccountButton.innerHTML = "Delete Account"
-//
-// let passwordEntryField = document.createElement("input")
-// passwordEntryField.placeholder = "Enter New Password..."
-// passwordEntryField.type = "password"
-//
-// let setPassword = document.createElement("button")
-//
-// let togglePasswordVisibility = document.createElement("button")
-// togglePasswordVisibility.innerHTML = "Show"
-//
-// let manageAccountWindow = document.createElement("div")
-// manageAccountWindow.style.textAlign = "center"
-// manageAccountWindow.innerHTML = "<h2>Manage Account</h2><p>Passwords are optional if you sign in with Google, Apple, or another service. Setting a password allows you to log in with your email and password as well. </p>"
-// manageAccountWindow.appendChild(passwordEntryField)
-// manageAccountWindow.appendChild(togglePasswordVisibility)
-// manageAccountWindow.appendChild(document.createElement("br"))
-// manageAccountWindow.appendChild(setPassword)
-//
-// let deleteAccountWarning = document.createElement("p")
-// deleteAccountWarning.innerHTML = "Deleting your account will prevent syncing of your favorites data between devices. You can always create a new account later. "
-//
-// manageAccountWindow.appendChild(deleteAccountWarning)
-// manageAccountWindow.appendChild(deleteAccountButton)
-//
-// manageAccountButton.addEventListener("click", function() {
-// 	createModal(manageAccountWindow)
-// })
-//
-// setPassword.addEventListener("click", async function() {
-// 	if (passwordEntryField.value.length === 0) {return} //Firebase accepts a blank string as a password - though it then throws internal auth errors, so it may be equivalent to disabling passwords.
-// 	await updatePassword(passwordEntryField.value)
-// })
-//
-// togglePasswordVisibility.addEventListener("click", function() {
-// 	if (passwordEntryField.type === "password") {
-// 		togglePasswordVisibility.innerHTML = "Hide"
-// 		passwordEntryField.type = "text"
-// 	}
-// 	else {
-// 		togglePasswordVisibility.innerHTML = "Show"
-// 		passwordEntryField.type = "password"
-// 	}
-// })
-//
-//
-// function setPasswordInfo() {
-// 	let hasPassword = getCurrentUser()?.providerData?.some((provider) => {return provider.providerId === "password"})
-//
-// 	if (hasPassword) {
-// 		setPassword.innerHTML = "Update Password"
-// 	}
-// 	else {
-// 		setPassword.innerHTML = "Set Password"
-// 	}
-// }
-// setPasswordInfo()
-// auth.onAuthStateChanged(setPasswordInfo)
-//
-//
-//
-//
-//
+
+let signedInStatusText = document.getElementById("signedInStatusText")
+
+let signOutButton = document.getElementById("signOutButton")
+
+let manageAccountButton = document.getElementById("manageAccountButton")
+
+
+
+
+const {loadFavorites, getFavoritesLastModified, writeFavorites, mergeFavoritesObjects} = require("./src/addToFavorites.js")
+const getSearchLink = require("./src/getSearchLink.js")
+let notificationsState = document.getElementById("notificationsState")
+
+function updateSignInStatus() {
+	let user = accounts.getCurrentUser()
+	console.warn(user)
+	let text;
+	if (user) {
+		//Remove the sign in options
+		while (signInOptionsContainer.lastChild) {signInOptionsContainer.lastChild.remove()}
+		//Show account management.
+		manageAccountButton.style.display = signOutButton.style.display = ""
+		text = `Signed in as ${accounts.getCurrentUserDetails().email}. `
+	}
+	else {
+		//Display the sign in options
+		Initialize_UI(auth, providers, signInOptionsContainer)
+		//Hide account management
+		manageAccountButton.style.display = signOutButton.style.display = "none"
+		text = `Sign in to Sync Favorites and Receive Notifications! `
+		notificationsState.style.display = "none"
+	}
+	signedInStatusText.innerHTML = text
+}
+
+auth.onAuthStateChanged(updateSignInStatus)
+
+
+
+
+
+signOutButton.addEventListener("click", async function() {
+	await auth.signOut()
+})
+
+let deleteAccountButton = document.createElement("button")
+deleteAccountButton.innerHTML = "Delete Account"
+deleteAccountButton.addEventListener("click", async function() {
+	if (confirm("Delete your account?")) {
+		await auth.currentUser.delete()
+	}
+})
+
+let passwordEntryField = document.createElement("input")
+passwordEntryField.placeholder = "Enter New Password..."
+passwordEntryField.type = "password"
+
+let setPassword = document.createElement("button")
+
+let togglePasswordVisibility = document.createElement("button")
+togglePasswordVisibility.innerHTML = "Show"
+
+let manageAccountWindow = document.createElement("div")
+manageAccountWindow.style.textAlign = "center"
+manageAccountWindow.innerHTML = "<h2>Manage Account</h2><p>Passwords are optional if you sign in with Google, Apple, or another service. Setting a password allows you to log in with your email and password as well. </p>"
+manageAccountWindow.appendChild(passwordEntryField)
+manageAccountWindow.appendChild(togglePasswordVisibility)
+manageAccountWindow.appendChild(document.createElement("br"))
+manageAccountWindow.appendChild(setPassword)
+
+let deleteAccountWarning = document.createElement("p")
+deleteAccountWarning.innerHTML = "Deleting your account will prevent syncing of your favorites data between devices. You can always create a new account later. "
+
+manageAccountWindow.appendChild(deleteAccountWarning)
+manageAccountWindow.appendChild(deleteAccountButton)
+
+manageAccountButton.addEventListener("click", function() {
+	createModal(manageAccountWindow)
+})
+
+setPassword.addEventListener("click", async function() {
+	if (passwordEntryField.value.length === 0) {return} //Firebase accepts a blank string as a password - though it then throws internal auth errors, so it may be equivalent to disabling passwords.
+	await updatePassword(auth.currentUser, passwordEntryField.value)
+})
+
+togglePasswordVisibility.addEventListener("click", function() {
+	if (passwordEntryField.type === "password") {
+		togglePasswordVisibility.innerHTML = "Hide"
+		passwordEntryField.type = "text"
+	}
+	else {
+		togglePasswordVisibility.innerHTML = "Show"
+		passwordEntryField.type = "password"
+	}
+})
+
+
+function setPasswordInfo() {
+	let hasPassword = accounts.getCurrentUser()?.providerData?.some((provider) => {return provider.providerId === "password"})
+
+	if (hasPassword) {
+		setPassword.innerHTML = "Update Password"
+	}
+	else {
+		setPassword.innerHTML = "Set Password"
+	}
+}
+setPasswordInfo()
+auth.onAuthStateChanged(setPasswordInfo)
+
+
+
+
+
 
 
 
