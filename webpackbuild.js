@@ -21,7 +21,6 @@ if (!noNative) {
 let config = {
 	mode: "production", //Build for production
 	entry,
-	watch: true,
 	target: "web",
 	devtool: "source-map",
 	optimization: {
