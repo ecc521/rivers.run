@@ -1,7 +1,7 @@
 import { GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, updatePassword } from "firebase/auth";
 const {auth} = require("./src/firebase/accounts.js")
 
-import { Initialize_UI, Display_Templates, injectDefaultStyles } from "ui-for-firebase-authentication"
+import { Initialize_UI, Display_Templates, injectDefaultStyles, createFirebaseBindings } from "ui-for-firebase-authentication"
 
 injectDefaultStyles()
 
@@ -30,7 +30,7 @@ let providers = [
 ]
 
 let signInOptionsContainer = document.getElementById("signInOptionsContainer")
-Initialize_UI(auth, providers, signInOptionsContainer)
+Initialize_UI(createFirebaseBindings(auth), providers, signInOptionsContainer)
 
 auth.onAuthStateChanged(function(newAuth) {
 	console.log(newAuth)
