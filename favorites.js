@@ -30,7 +30,10 @@ let providers = [
 ]
 
 let signInOptionsContainer = document.getElementById("signInOptionsContainer")
-Initialize_UI(createFirebaseBindings(auth), providers, signInOptionsContainer)
+function ui_reinit() {
+	Initialize_UI(createFirebaseBindings(auth), providers, signInOptionsContainer)
+}
+ui_reinit()
 
 auth.onAuthStateChanged(function(newAuth) {
 	console.log(newAuth)
@@ -74,7 +77,7 @@ function updateSignInStatus() {
 	}
 	else {
 		//Display the sign in options
-		Initialize_UI(auth, providers, signInOptionsContainer)
+		ui_reinit()
 		//Hide account management
 		manageAccountButton.style.display = signOutButton.style.display = "none"
 		text = `Sign in to Sync Favorites and Receive Notifications! `
