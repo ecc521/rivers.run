@@ -8,7 +8,8 @@ function callNativeCommand(commandType, ...args) {
 				window.removeEventListener("message", listener)
 
 				if (event.data.throw === true) {
-					reject(new Error(event.data.message))
+					//The response is an error object that should be thrown.
+					reject(event.data.message)
 				}
 				else {
 					resolve(event.data.message)

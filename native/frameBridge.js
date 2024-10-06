@@ -18,52 +18,72 @@ function enableFrameBridge({iframeUrl}) {
 		};
 
 		try {
-			if (data.type === "getStorage") {
-				response.message = JSON.stringify(localStorage)
-			}
-			else if (data.type === "googleSignInRequest") {
-				//FirebaseAuthentication.signInWithGoogle()
-			}
-			else if (data.type === "googleRefreshRequest") {
-				//TODO: Not needed.
-				// FirebaseAuthentication.getIdToken()
-			}
-			else if (data.type === "googleSignOutRequest") {
-				// response.message = await FirebaseAuthentication.signOut()
-			}
-			else if (data.type === "appleSignInRequest") {
-				//FirebaseAuthentication.signInWithApple()
-			}
-			else if (data.type === "setStorage") {
-				//Set new props, update existing props, and delete nonexistent props.
-				let unusedProps = Object.keys(localStorage)
-
-				let stor = JSON.parse(data.args[0])
-				for (let prop in stor) {
-					let index = unusedProps.indexOf(prop)
-					if (index !== -1) {unusedProps.splice(index, 1)}
-
-					localStorage.setItem(prop, stor[prop])
-				}
-
-				unusedProps.forEach((unusedProp) => {
-					localStorage.removeItem(unusedProp)
-				})
-			}
-			else if (data.type === "getCurrentPosition") {
-				response.message = await Geolocation.getCurrentPosition()
-			}
-			else {
-				throw "Unknown frameBridge Call"
-			}
+			//Respond with the requested output.
+			response.message = await handleNativeCall(data.type, data.args)
 		}
 		catch (e) {
-			response.message = e.message
+			//Pass the error back
+			response.message = e
 			response.throw = true
 		}
 
 		event.source.postMessage(response, iframeUrl)
 	}, false);
 }
+
+
+function handleNativeCall(callType, args) {
+	//Storage syncing
+	if (callType === "getStorage") {
+		return JSON.stringify(localStorage)
+	}
+	else if (callType === "setStorage") {
+		//Set new props, update existing props, and delete nonexistent props.
+		let unusedProps = Object.keys(localStorage)
+
+		let stor = JSON.parse(args[0])
+		for (let prop in stor) {
+			let index = unusedProps.indexOf(prop)
+			if (index !== -1) {unusedProps.splice(index, 1)}
+
+			localStorage.setItem(prop, stor[prop])
+		}
+
+		unusedProps.forEach((unusedProp) => {
+			localStorage.removeItem(unusedProp)
+		})
+	}
+	//Geolocation
+	else if (callType === "getCurrentPosition") {
+		return Geolocation.getCurrentPosition()
+	}
+	//Authentication
+	else if (callType=== "firebaseSignOut") {
+		return FirebaseAuthentication.signOut()
+	}
+	else if (callType === "firebaseGetIdToken") {
+		return FirebaseAuthentication.getIdToken()
+	}
+	else if (callType === "logInWithProvider") {
+		let provider = args[0]
+		if (provider === "google") {
+			return FirebaseAuthentication.signInWithGoogle()
+		}
+		else if (provider === "apple") {
+			return FirebaseAuthentication.signInWithApple()
+		}
+		else if (provider === "facebook") {
+			return FirebaseAuthentication.signInWithFacebook()
+		}
+		else {
+			throw "Unknown Provider: " + provider
+		}
+	}
+	else {
+		throw "Unknown frameBridge Call"
+	}
+}
+
+
 
 export {enableFrameBridge}
