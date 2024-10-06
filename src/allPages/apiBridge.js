@@ -1,14 +1,7 @@
 //Link up the iframe to needed APIs.
-
-//We'll provide localStorage so far.
-//Current design is overwrite existing localstorage async.
-//Upload changes async.
-
-//We'll wait for localStorage to load on main page. This means direct links into other pages might cause issues,
-//where localStorage doesn't match the UI, but everything else should be fine.
-function syncToNative() {
+function callNativeCommand(commandType, ...args) {
 	return new Promise((resolve, reject) => {
-		let randomKey = Math.random()
+		let randomKey = Math.random() //Identifier so we can determine which response is for this request.
 
 		function listener(event) {
 			if (event.data.randomKey === randomKey) {
@@ -26,11 +19,22 @@ function syncToNative() {
 		window.addEventListener("message", listener)
 
 		window.parent.postMessage({
-			type: "setStorage",
-			args: [JSON.stringify(localStorage)],
+			type: commandType,
+			args: args,
 			randomKey
 		}, "*")
 	})
+}
+
+
+//Current design is overwrite existing localstorage async.
+//Upload changes async.
+
+//We'll wait for localStorage to load on main page. This means direct links into other pages might cause issues,
+//where localStorage doesn't match the UI, but everything else should be fine.
+
+function syncToNative() {
+	return callNativeCommand("setStorage", [JSON.stringify(localStorage)])
 }
 window.addEventListener("storage", syncToNative)
 
@@ -42,33 +46,7 @@ localStorage.setItem = function(...args) {
 }
 
 async function syncStorage() {
-	let res = await new Promise((resolve, reject) => {
-		let randomKey = Math.random()
-
-		function listener(event) {
-			if (event.data.randomKey === randomKey) {
-				window.removeEventListener("message", listener)
-
-				if (event.data.throw === true) {
-					reject(new Error(event.data.message))
-				}
-				else {
-					resolve(event.data.message)
-				}
-			}
-			else {
-				console.log(event.data.randomKey, randomKey)
-			}
-		}
-
-		window.addEventListener("message", listener)
-
-		window.parent.postMessage({
-			type: "getStorage",
-			args: [],
-			randomKey
-		}, "*")
-	})
+	let res = await callNativeCommand("getStorage")
 
 	res = JSON.parse(res)
 	for (let prop in res) {
@@ -88,157 +66,5 @@ else {
 
 
 window.nativeLocationRequest = function nativeLocationRequest() {
-	return new Promise((resolve, reject) => {
-		let randomKey = Math.random()
-
-		function listener(event) {
-			if (event.data.randomKey === randomKey) {
-				window.removeEventListener("message", listener)
-
-				if (event.data.throw === true) {
-					reject(new Error(event.data.message))
-				}
-				else {
-					resolve(event.data.message)
-				}
-			}
-			else {
-				console.log(event.data.randomKey, randomKey)
-			}
-		}
-
-		window.addEventListener("message", listener)
-
-		window.parent.postMessage({
-			type: "getCurrentPosition",
-			args: [],
-			randomKey
-		}, "*")
-	})
-}
-
-
-window.googleSignInRequest = function googleSignInRequest() {
-	return new Promise((resolve, reject) => {
-		let randomKey = Math.random()
-
-		function listener(event) {
-			if (event.data.randomKey === randomKey) {
-				window.removeEventListener("message", listener)
-
-				if (event.data.throw === true) {
-					reject(new Error(event.data.message))
-				}
-				else {
-					resolve(event.data.message)
-				}
-			}
-			else {
-				console.log(event.data.randomKey, randomKey)
-			}
-		}
-
-		window.addEventListener("message", listener)
-
-		window.parent.postMessage({
-			type: "googleSignInRequest",
-			args: [],
-			randomKey
-		}, "*")
-	})
-}
-
-window.googleRefreshRequest = function googleRefreshRequest() {
-	return new Promise((resolve, reject) => {
-		let randomKey = Math.random()
-
-		function listener(event) {
-			if (event.data.randomKey === randomKey) {
-				window.removeEventListener("message", listener)
-
-				if (event.data.throw === true) {
-					reject(new Error(event.data.message))
-				}
-				else {
-					resolve(event.data.message)
-				}
-			}
-			else {
-				console.log(event.data.randomKey, randomKey)
-			}
-		}
-
-		window.addEventListener("message", listener)
-
-		window.parent.postMessage({
-			type: "googleRefreshRequest",
-			args: [],
-			randomKey
-		}, "*")
-	})
-}
-
-
-window.googleSignOutRequest = function googleSignOutRequest() {
-	return new Promise((resolve, reject) => {
-		let randomKey = Math.random()
-
-		function listener(event) {
-			if (event.data.randomKey === randomKey) {
-				window.removeEventListener("message", listener)
-
-				if (event.data.throw === true) {
-					reject(new Error(event.data.message))
-				}
-				else {
-					resolve(event.data.message)
-				}
-			}
-			else {
-				console.log(event.data.randomKey, randomKey)
-			}
-		}
-
-		window.addEventListener("message", listener)
-
-		window.parent.postMessage({
-			type: "googleSignOutRequest",
-			args: [],
-			randomKey
-		}, "*")
-	})
-}
-
-
-
-
-
-window.appleSignInRequest = function appleSignInRequest() {
-	return new Promise((resolve, reject) => {
-		let randomKey = Math.random()
-
-		function listener(event) {
-			if (event.data.randomKey === randomKey) {
-				window.removeEventListener("message", listener)
-
-				if (event.data.throw === true) {
-					reject(new Error(event.data.message))
-				}
-				else {
-					resolve(event.data.message)
-				}
-			}
-			else {
-				console.log(event.data.randomKey, randomKey)
-			}
-		}
-
-		window.addEventListener("message", listener)
-
-		window.parent.postMessage({
-			type: "appleSignInRequest",
-			args: [],
-			randomKey
-		}, "*")
-	})
+	return callNativeCommand("getCurrentPosition")
 }
