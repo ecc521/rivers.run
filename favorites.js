@@ -36,29 +36,31 @@ let signInOptionsContainer = document.getElementById("signInOptionsContainer")
 
 let authenticationBindings = createFirebaseBindings(auth)
 
-//We will sign in on the web API, but will get credentials using the native flow when on native.
-authenticationBindings.signInWithProvider = function(provider) {
-	let str = ""
-	if (provider === googleProvider) {
-		str = "google"
-	}
-	else if (provider === appleProvider) {
-		str = "apple"
-	}
-	return window.signInWithProvider(str, {skipNativeAuth: true}).then((signInResult) => {
-		let cred;
-		if (provider instanceof GoogleAuthProvider) {
-			cred = provider.constructor.credential(signInResult.credential.idToken)
+if (window.isNative) {
+	//We will sign in on the web API, but will get credentials using the native flow when on native.
+	authenticationBindings.signInWithProvider = function(provider) {
+		let str = ""
+		if (provider === googleProvider) {
+			str = "google"
 		}
-		else {
-			cred = provider.credential({
-				idToken: signInResult.credential.idToken,
-				rawNonce: signInResult.credential.nonce
-			})
+		else if (provider === appleProvider) {
+			str = "apple"
 		}
+		return window.signInWithProvider(str, {skipNativeAuth: true}).then((signInResult) => {
+			let cred;
+			if (provider instanceof GoogleAuthProvider) {
+				cred = provider.constructor.credential(signInResult.credential.idToken)
+			}
+			else {
+				cred = provider.credential({
+					idToken: signInResult.credential.idToken,
+					rawNonce: signInResult.credential.nonce
+				})
+			}
 
-		return signInWithCredential(auth, cred)
-	})
+			return signInWithCredential(auth, cred)
+		})
+	}
 }
 
 function ui_reinit() {
