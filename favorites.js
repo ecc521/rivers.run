@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, updatePassword } from "firebase/auth";
+import { GoogleAuthProvider, OAuthProvider, updatePassword, signInWithCredential } from "firebase/auth";
 const {auth} = require("./src/firebase/accounts.js")
 
 import { Initialize_UI, Display_Templates, injectDefaultStyles, createFirebaseBindings } from "ui-for-firebase-authentication"
@@ -7,12 +7,10 @@ injectDefaultStyles()
 
 let googleProvider = new GoogleAuthProvider()
 let appleProvider = new OAuthProvider("apple.com")
-let facebookProvider = new FacebookAuthProvider()
 
 //Add email scope.
 googleProvider.addScope("https://www.googleapis.com/auth/userinfo.email")
 appleProvider.addScope("email")
-facebookProvider.addScope("email")
 
 let providers = [
 	{
@@ -29,9 +27,42 @@ let providers = [
 	},
 ]
 
+
+
+
+
+
 let signInOptionsContainer = document.getElementById("signInOptionsContainer")
+
+let authenticationBindings = createFirebaseBindings(auth)
+
+authenticationBindings.signInWithProvider = function(provider) {
+	//Override signInWithProvider on native where we will want to use the native sign in APIs.
+	let str = ""
+	if (provider === googleProvider) {
+		str = "google"
+	}
+	else if (provider === appleProvider) {
+		str = "apple"
+	}
+	return window.signInWithProvider(str, {skipNativeAuth: true}).then((signInResult) => {
+		let cred;
+		if (provider instanceof GoogleAuthProvider) {
+			cred = provider.constructor.credential(signInResult.credential.idToken)
+		}
+		else {
+			cred = provider.credential({
+				idToken: signInResult.credential.idToken,
+				rawNonce: signInResult.credential.nonce
+			})
+		}
+
+		return signInWithCredential(auth, cred)
+	})
+}
+
 function ui_reinit() {
-	Initialize_UI(createFirebaseBindings(auth), providers, signInOptionsContainer)
+	Initialize_UI(authenticationBindings, providers, signInOptionsContainer)
 }
 ui_reinit()
 
@@ -40,16 +71,7 @@ auth.onAuthStateChanged(function(newAuth) {
 })
 
 
-
-
-
-
-
-
 const accounts = require("./src/firebase/accounts.js")
-
-
-
 
 let signedInStatusText = document.getElementById("signedInStatusText")
 

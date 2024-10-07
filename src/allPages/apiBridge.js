@@ -69,3 +69,11 @@ else {
 window.nativeLocationRequest = function nativeLocationRequest() {
 	return callNativeCommand("getCurrentPosition")
 }
+
+window.signOut = function signOut() {
+	return callNativeCommand("firebaseSignOut")
+}
+
+window.signInWithProvider = function signInWithProvider(provider, config) {
+	return callNativeCommand("firebaseSignInWithProvider", provider, config)
+}

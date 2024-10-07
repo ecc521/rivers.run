@@ -1,6 +1,5 @@
 import {Geolocation} from "@capacitor/geolocation";
 import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
-window.FirebaseAuthentication = FirebaseAuthentication //TESTING ONLY!!! Can be removed safely.
 
 //The iframe's localStorage is cleared repeatedly.
 //To fix this, we will store data here instead, and use postMessage to communicate.
@@ -61,26 +60,24 @@ function handleNativeCall(callType, args) {
 	else if (callType=== "firebaseSignOut") {
 		return FirebaseAuthentication.signOut()
 	}
-	else if (callType === "firebaseGetIdToken") {
-		return FirebaseAuthentication.getIdToken()
-	}
-	else if (callType === "logInWithProvider") {
+	else if (callType === "firebaseSignInWithProvider") {
 		let provider = args[0]
+		let config = args[1]
 		if (provider === "google") {
-			return FirebaseAuthentication.signInWithGoogle()
+			return FirebaseAuthentication.signInWithGoogle(config)
 		}
 		else if (provider === "apple") {
-			return FirebaseAuthentication.signInWithApple()
+			return FirebaseAuthentication.signInWithApple(config)
 		}
 		else if (provider === "facebook") {
-			return FirebaseAuthentication.signInWithFacebook()
+			return FirebaseAuthentication.signInWithFacebook(config)
 		}
 		else {
 			throw "Unknown Provider: " + provider
 		}
 	}
 	else {
-		throw "Unknown frameBridge Call"
+		throw "Unknown frameBridge Call: " + callType
 	}
 }
 
