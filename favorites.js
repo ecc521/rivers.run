@@ -36,8 +36,8 @@ let signInOptionsContainer = document.getElementById("signInOptionsContainer")
 
 let authenticationBindings = createFirebaseBindings(auth)
 
+//We will sign in on the web API, but will get credentials using the native flow when on native.
 authenticationBindings.signInWithProvider = function(provider) {
-	//Override signInWithProvider on native where we will want to use the native sign in APIs.
 	let str = ""
 	if (provider === googleProvider) {
 		str = "google"
