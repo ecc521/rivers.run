@@ -19,7 +19,6 @@ createPopupIfUpdate()
 //We'd currently need to base64 encode them here (from binary), then decode on the other side,
 //as the server doesn't support text. Probably use FileReader or something for performance.
 
-// const WebServer = require("@ionic-native/web-server").WebServer
 import { WebServer } from "@ionic-native/web-server";
 
 import {enableUniversalLinks} from "./universalLinks";
