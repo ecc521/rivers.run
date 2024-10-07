@@ -6,7 +6,7 @@ import { Initialize_UI, Display_Templates, injectDefaultStyles, createFirebaseBi
 injectDefaultStyles()
 
 let googleProvider = new GoogleAuthProvider()
-let appleProvider = new OAuthProvider()
+let appleProvider = new OAuthProvider("apple.com")
 let facebookProvider = new FacebookAuthProvider()
 
 //Add email scope.
