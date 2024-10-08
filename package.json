@@ -28,6 +28,7 @@
     ],
     "devDependencies": {
         "@capacitor/android": "^6.1.2",
+        "@capacitor/assets": "^3.0.5",
         "@capacitor/cli": "^6.1.2",
         "@capacitor/core": "^6.1.2",
         "@capacitor/filesystem": "^6.0.1",
@@ -35,7 +36,6 @@
         "@capacitor/ios": "^6.1.2",
         "@capacitor/keyboard": "^6.0.2",
         "@ionic-native/web-server": "^5.36.0",
-        "cordova-res": "^0.15.4",
         "ionic-plugin-deeplinks": "^1.0.24"
     },
     "dependencies": {
@@ -46,6 +46,7 @@
         "@capacitor-firebase/analytics": "^6.1.0",
         "@capacitor-firebase/authentication": "^6.1.0",
         "@capacitor/app": "^6.0.1",
+        "@capacitor/splash-screen": "^6.0.2",
         "@capawesome/capacitor-app-update": "^6.0.0",
         "@webcomponents/custom-elements": "^1.6.0",
         "ask-sdk-core": "^2.14.0",

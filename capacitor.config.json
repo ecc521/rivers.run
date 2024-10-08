@@ -8,6 +8,9 @@
     "FirebaseAuthentication": {
       "skipNativeAuth": false,
       "providers": ["apple.com", "google.com"]
+    },
+    "SplashScreen": {
+      "launchAutoHide": true
     }
   },
   "cordova": {},

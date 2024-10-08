@@ -119,7 +119,7 @@ auth.onAuthStateChanged(updateSignInStatus)
 signOutButton.addEventListener("click", async function() {
 	await auth.signOut()
 	if (window.isNative) {
-		//We need to sign out of the native app as well - otherwise we may just be automatically signed back in. 
+		//We need to sign out of the native app as well - otherwise we may just be automatically signed back in.
 		window.signOut()
 	}
 })

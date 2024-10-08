@@ -1,5 +1,7 @@
 npx cap add ios
-npx cordova-res ios --copy
+npx cap add android
+
+npx capacitor-assets generate --ios --android
 
 echo "Remember to set version codes in XCode"
 echo "Also add deep link support:"
