@@ -319,7 +319,7 @@ function standardizeRiverFormat(obj) {
 	}
 
 	if (errors.length > 0) {
-		obj.writeup = `There are ${errors.length} issue(s) in this river's data:\n` + errors.join("\n") + (obj.writeup || "")
+		obj.writeup = `There are ${errors.length} issue(s) in this river's data:<br>` + errors.join("<br>") + "<br>" + (obj.writeup || "")
 	}
 
 	return obj
