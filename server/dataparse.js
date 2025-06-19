@@ -213,6 +213,111 @@ async function loadOverviews() {
 
 
 
+function normalizeGaugeID(gaugeStr) {
+	gaugeStr = gaugeStr.split(/\s*:\s*/).join(":") //Remove the spaces next to the semicolon.
+
+	if ((
+			gaugeStr.toUpperCase().startsWith("USGS:") ||
+			gaugeStr.toUpperCase().startsWith("NWS:")
+	)) {
+		gaugeStr = gaugeStr.toUpperCase() //Convert gauge IDs to upperCase.
+	}
+	return gaugeStr
+}
+
+/*
+* Used to standardize
+* @param {Object} keyValuePairs - An object containing key-value pairs for a river (like name: "River Name", gauge: "USGS:12345678", etc.)
+* @returns {Object} - A standardized river object (converts plon/plat to access points, reformats gauge IDs, etc.)
+* */
+function standardizeRiverFormat(obj) {
+	if (obj.gauge) {
+		obj.gauge = normalizeGaugeID(obj.gauge)
+	}
+	else if (obj.usgs) {
+		obj.gauge = "USGS:" + obj.usgs
+	}
+
+	//Convert relatedusgs to relatedgauges
+	if (obj.relatedusgs) {
+		try {
+			obj.relatedgauges = JSON.stringify(JSON.parse(obj.relatedusgs).map((gaugeID) => {
+				return "USGS:" + gaugeID
+			}))
+		}
+		catch(e) {console.error(e)}
+	}
+
+	if (obj.relatedgauges) {
+		try {
+			obj.relatedgauges = JSON.parse(obj.relatedgauges).map((gaugeID) => {
+				return normalizeGaugeID(gaugeID)
+			})
+			obj.relatedgauges = obj.relatedgauges.filter((gaugeID) => {
+				//Remove all gauges that are empty (ex. "USGS:" or "NWS:")
+				if (gaugeID.trim().indexOf(":") + 1 === gaugeID.length) {return false}
+				return true
+			})
+			if (obj.relatedgauges.length === 0) {delete obj.relatedgauges} //If there are no gauges, don't bother with the property.
+		}
+		catch(e) {console.error(e);console.log(obj)}
+	}
+
+	if (obj.class) {
+		obj.class = obj.class
+		.replaceAll("1", "I")
+		.replaceAll("2", "II")
+		.replaceAll("3", "III")
+		.replaceAll("4", "IV")
+		.replaceAll("5", "V")
+		.replaceAll("6", "VI")
+	}
+
+	if (obj.access) {
+		try {
+			obj.access = JSON.parse(obj.access)
+		}
+		catch(e) {
+			console.error(e);
+			console.log(obj)
+			obj.access = []
+		}
+	}
+
+	obj.access = obj.access || []
+
+	if (obj.plat && obj.plon) {
+		obj.access.push({name: "Put-In", lat: obj.plat, lon: obj.plon, label: "PI"})
+	}
+	if (obj.tlat && obj.tlon) {
+		obj.access.push({name: "Take-Out", lat: obj.tlat, lon: obj.tlon, label: "TO"})
+	}
+
+	obj.access = obj.access.filter((accessPoint) => {
+		try {
+			accessPoint.lat = toDecimalDegrees(accessPoint.lat)
+			accessPoint.lon = toDecimalDegrees(accessPoint.lon)
+			return true
+		}
+		catch (e) {
+			console.error("Error on Coordinates for ", obj.name, e)
+			return false
+		}
+	})
+
+	if (Object.keys(obj.access).length === 0) {delete obj.access} //Not needed if 0 datapoints. River.js autofills.
+
+	for (let prop in obj) {
+		if (!allowed.includes(prop)) {
+			delete obj[prop]
+		}
+	}
+
+	return obj
+}
+
+
+
 async function prepareRiverData({
 	includeUSGSGauges = true,
 	includeCanadianGauges = true,
@@ -252,100 +357,7 @@ async function prepareRiverData({
 			obj[name] = value
 		}
 
-		//Convert .usgs parameter to .gauge
-		if (!obj.gauge && obj.usgs) {
-			obj.gauge = "USGS:" + obj.usgs
-		}
-
-		if (obj.gauge) {
-			obj.gauge = obj.gauge.split(/\s*:\s*/).join(":") //Remove the spaces next to the semicolon.
-		}
-
-		//Convert gauge IDs to upperCase.
-		if (obj.gauge &&
-			(
-				obj.gauge.toUpperCase().startsWith("USGS:") ||
-				obj.gauge.toUpperCase().startsWith("NWS:")
-			)
-		) {
-			obj.gauge = obj.gauge.toUpperCase()
-		}
-
-		//Convert relatedusgs to relatedgauges
-		if (obj.relatedusgs) {
-			try {
-				obj.relatedgauges = JSON.stringify(JSON.parse(obj.relatedusgs).map((gaugeID) => {
-					return "USGS:" + gaugeID
-				}))
-			}
-			catch(e) {console.error(e)}
-		}
-
-		if (obj.relatedgauges) {
-			try {
-				obj.relatedgauges = JSON.parse(obj.relatedgauges).map((gaugeID) => {
-					gaugeID = gaugeID.split(/\s*:\s*/).join(":")
-					if (
-						gaugeID.toUpperCase().startsWith("NWS:")
-						|| gaugeID.toUpperCase().startsWith("USGS:")
-					) {return gaugeID.toUpperCase()}
-					else {return gaugeID}
-				})
-				obj.relatedgauges = obj.relatedgauges.filter((gaugeID) => {
-					//Remove all gauges that are empty (ex. "USGS:" or "NWS:")
-					if (gaugeID.trim().indexOf(":") + 1 === gaugeID.length) {return false}
-					return true
-				})
-				if (obj.relatedgauges.length === 0) {delete obj.relatedgauges} //If there are no gauges, don't bother with the property.
-			}
-			catch(e) {console.error(e);console.log(obj)}
-		}
-
-		if (obj.class) {
-			obj.class = obj.class
-			.replaceAll("1", "I")
-			.replaceAll("2", "II")
-			.replaceAll("3", "III")
-			.replaceAll("4", "IV")
-			.replaceAll("5", "V")
-			.replaceAll("6", "VI")
-		}
-
-		if (obj.access) {
-			try {
-				obj.access = JSON.parse(obj.access)
-			}
-			catch(e) {console.error(e);console.log(obj)}
-		}
-
-		obj.access = obj.access || []
-
-		if (obj.plat && obj.plon) {
-			obj.access.push({name: "Put-In", lat: obj.plat, lon: obj.plon, label: "PI"})
-		}
-		if (obj.tlat && obj.tlon) {
-			obj.access.push({name: "Take-Out", lat: obj.tlat, lon: obj.tlon, label: "TO"})
-		}
-
-		obj.access = obj.access.filter((accessPoint) => {
-			try {
-				accessPoint.lat = toDecimalDegrees(accessPoint.lat)
-				accessPoint.lon = toDecimalDegrees(accessPoint.lon)
-				return true
-			}
-			catch (e) {
-				console.error("Error on Coordinates for ", obj.name, e)
-				return false
-			}
-		})
-
-		if (Object.keys(obj.access).length === 0) {delete obj.access} //Not needed if 0 datapoints. River.js autofills.
-
-		for (let prop in obj) {
-			if (!allowed.includes(prop)) {
-				delete obj[prop]
-			}
-		}
+		standardizeRiverFormat(obj)
 
 		obj.id = result.complete[i].id
 
