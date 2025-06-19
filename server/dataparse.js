@@ -231,6 +231,8 @@ function normalizeGaugeID(gaugeStr) {
 * @returns {Object} - A standardized river object (converts plon/plat to access points, reformats gauge IDs, etc.)
 * */
 function standardizeRiverFormat(obj) {
+	let errors = [] //We will log certain errors by appending them to the writeup.
+
 	if (obj.gauge) {
 		obj.gauge = normalizeGaugeID(obj.gauge)
 	}
@@ -245,7 +247,9 @@ function standardizeRiverFormat(obj) {
 				return "USGS:" + gaugeID
 			}))
 		}
-		catch(e) {console.error(e)}
+		catch(e) {
+			errors.push(`Error with relatedusgs property: ${e.message}`)
+		}
 	}
 
 	if (obj.relatedgauges) {
@@ -260,7 +264,9 @@ function standardizeRiverFormat(obj) {
 			})
 			if (obj.relatedgauges.length === 0) {delete obj.relatedgauges} //If there are no gauges, don't bother with the property.
 		}
-		catch(e) {console.error(e);console.log(obj)}
+		catch(e) {
+			errors.push(`Error with relatedgauges property: ${e.message}`)
+		}
 	}
 
 	if (obj.class) {
@@ -278,8 +284,7 @@ function standardizeRiverFormat(obj) {
 			obj.access = JSON.parse(obj.access)
 		}
 		catch(e) {
-			console.error(e);
-			console.log(obj)
+			errors.push(`Error with access property: ${e.message}`)
 			obj.access = []
 		}
 	}
@@ -300,7 +305,7 @@ function standardizeRiverFormat(obj) {
 			return true
 		}
 		catch (e) {
-			console.error("Error on Coordinates for ", obj.name, e)
+			errors.push(`Error with access coordinates: ${e.message}`)
 			return false
 		}
 	})
@@ -311,6 +316,10 @@ function standardizeRiverFormat(obj) {
 		if (!allowed.includes(prop)) {
 			delete obj[prop]
 		}
+	}
+
+	if (errors.length > 0) {
+		obj.writeup = `There are ${errors.length} issue(s) in this river's data:\n` + errors.join("\n") + (obj.writeup || "")
 	}
 
 	return obj
