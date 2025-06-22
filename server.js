@@ -29,23 +29,27 @@ app.use(compression({
 	windowBits: 15,
 }))
 
-app.use('*', function(req, res, next) {
+
+app.use(/.*/, function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   next();
 });
 
 
 //Serve remaining files.
-app.all('*', requestHandler)
+app.all(/.*/, requestHandler)
 
 
 const httpport = 8080
 const httpserver = app.listen(httpport)
 
+
 //If serveOnly is passed, only serve existing files, don't generate any.
 if (!process.argv.includes("--serveOnly")) {
 	//Run usgscache.js - manages gauges and riverdata.
+
 	require(path.join(__dirname, "server", "usgscache.js"))
+
 }
 
 //Start notificationserver.js - powers APIs (IP lookups & notification subscriptions)
@@ -54,14 +58,14 @@ notificationServerInitialize(app) //Attaches handlers.
 
 
 //serveIndex - can be removed.
-app.all("*", (req, res, next) => {
+app.all(/.*/, (req, res, next) => {
     serveIndex(__dirname, {
 		'icons': true,
 		'view': "details" //Gives more info than tiles.
 	})(req, res, next)
 })
 
-app.all("*", (req, res, next) => {
+app.all(/.*/, (req, res, next) => {
 	res.status(404)
 	res.type("text/plain")
 	res.end("File Not Found")
