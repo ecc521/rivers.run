@@ -45,16 +45,11 @@ async function sendEmail(user) {
 	if (mailInfo === false) {return} //Don't send an email.
 
 	const mailOptions = {
-	  from: 'rivergauges@rivers.run', //In order to have the profile image, this should be an alternative email for the gmail account.
+	  from: 'email.rivers.run@gmail.com', //In order to have the profile image, this should be an alternative email for the gmail account.
 	  to: user.auth.email,
 	  subject: mailInfo.subject,
 	  html: mailInfo.body
 	};
-
-	if (user.auth.email.endsWith("@privaterelay.appleid.com")) {
-		//SPF checks are failing for custom emails. Use the default address.
-		mailOptions.from = "email.rivers.run@gmail.com"
-	}
 
 	//Send the email
 	await new Promise((resolve, reject) => {
