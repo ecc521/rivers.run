@@ -13,16 +13,6 @@ services:
     expose:
       - 8080
 
-  www-redirect:
-    image: schmunk42/nginx-redirect
-    container_name: rivers.run-www-redirect
-    environment:
-      - VIRTUAL_HOST=www.rivers.run
-      - LETSENCRYPT_HOST=www.rivers.run
-      - LETSENCRYPT_EMAIL=support@rivers.run
-      - SERVER_REDIRECT=rivers.run
-      - SERVER_REDIRECT_SCHEME=https
-
 networks:
   default:
     name: nginx-proxy
