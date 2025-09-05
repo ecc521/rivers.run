@@ -7,7 +7,8 @@ const child_process = require("child_process")
 
 const prepareRiverData = require(path.join(__dirname, "dataparse.js"))
 
-const {sendNotifications} = require(path.join(__dirname, "sendNotifications.js"));
+const {sendNotifications} = require(
+    path.join(__dirname, "sendNotifications.js"));
 
 const compressor = require(path.join(__dirname, "precompress.js"))
 
@@ -17,101 +18,127 @@ const gaugeUtils = require(path.join(__dirname, "gauges.js"))
 
 let riverDataPath = path.join(utils.getSiteRoot(), "riverdata.json")
 
-const {syncVirtualGaugeFiles} = require(path.join(__dirname, "syncVirtualGaugeFiles.js"))
+const {syncVirtualGaugeFiles} = require(
+    path.join(__dirname, "syncVirtualGaugeFiles.js"))
 
 async function updateRiverData() {
-	try {
-		await syncVirtualGaugeFiles()
-	}
-	catch (e) {console.error(e)}
+  try {
+    await syncVirtualGaugeFiles()
+  } catch (e) {
+    console.error(e)
+  }
 
-	//Use undefined so defaults still work.
-	//TODO: This code could be a bit more consise and extensible. Very repetitive. Should also warn if a includeGauge also has noGauge.
-	let obj = {
-		includeUSGSGauges: process.argv.includes("--includeUSGSGauges")?true:undefined,
-		includeCanadianGauges: process.argv.includes("--includeCanadianGauges")?true:undefined,
-		includeIrishGauges: process.argv.includes("--includeIrishGauges")?true:undefined,
-	}
+  //Use undefined so defaults still work.
+  //TODO: This code could be a bit more consise and extensible. Very repetitive. Should also warn if a includeGauge also has noGauge.
+  let obj = {
+    includeUSGSGauges: process.argv.includes("--includeUSGSGauges") ? true
+        : undefined,
+    includeCanadianGauges: process.argv.includes("--includeCanadianGauges")
+        ? true : undefined,
+    includeIrishGauges: process.argv.includes("--includeIrishGauges") ? true
+        : undefined,
+  }
 
-	Object.assign(obj, {
-		includeUSGSGauges: process.argv.includes("--noUSGSGauges")?false:obj.includeUSGSGauges,
-		includeCanadianGauges: process.argv.includes("--noCanadianGauges")?false:obj.includeCanadianGauges,
-		includeIrishGauges: process.argv.includes("--noIrishGauges")?false:obj.includeIrishGauges,
-	})
+  Object.assign(obj, {
+    includeUSGSGauges: process.argv.includes("--noUSGSGauges") ? false
+        : obj.includeUSGSGauges,
+    includeCanadianGauges: process.argv.includes("--noCanadianGauges") ? false
+        : obj.includeCanadianGauges,
+    includeIrishGauges: process.argv.includes("--noIrishGauges") ? false
+        : obj.includeIrishGauges,
+  })
 
-	await prepareRiverData(obj)
+  await prepareRiverData(obj)
 }
 
 //On reboot, and every 6 hours, run dataparse.js to keep the data on rivers.run current.
 let riverDataPromise;
 if (!process.argv.includes("--noriverdata")) {
-	riverDataPromise = updateRiverData()
-	setInterval(updateRiverData, 1000*60*60*2)
+  riverDataPromise = updateRiverData()
+  setInterval(updateRiverData, 1000 * 60 * 60 * 2)
 }
 
 async function updateCachedData() {
-	if (!fs.existsSync(riverDataPath) || process.argv.includes("--waitforriverdata")) {
-		if (riverDataPromise) {
-			await riverDataPromise;
-			riverDataPromise = null
-		}
-		else {
-			//Even if the user told us not to load data, we are currently forced to.
-			console.warn("No river data available. Running updateRiverData once to permit usgscache.js to continue.")
-			await updateRiverData()
-		}
-	}
+  //TODO: If this function errors, the entire server goes down
 
-	console.log("Preparing flow data.\n")
-	let riverarray = JSON.parse(await fs.promises.readFile(riverDataPath, {encoding:"utf8"}))
-
-    var sites = []
-    for (let i=0;i<riverarray.length;i++) {
-		let values = [riverarray[i].gauge]
-		riverarray[i].relatedgauges && (values = values.concat(riverarray[i].relatedgauges))
-		for (let i=0;i<values.length;i++) {
-			let gaugeID = values[i]
-			if (!gaugeID) {continue}
-			sites.push(gaugeID)
-		}
+  let delayTime = 5 * 60 * 1000 //Delay after this run is complete before next run.
+  try {
+    if (!fs.existsSync(riverDataPath) || process.argv.includes(
+        "--waitforriverdata")) {
+      if (riverDataPromise) {
+        await riverDataPromise;
+        riverDataPromise = null
+      } else {
+        //Even if the user told us not to load data, we are currently forced to.
+        console.warn(
+            "No river data available. Running updateRiverData once to permit usgscache.js to continue.")
+        await updateRiverData()
+      }
     }
 
-	let gauges = await gaugeUtils.loadData(sites)
-	let flowDataPath = path.join(utils.getSiteRoot(), "flowdata3.json")
+    console.log("Preparing flow data.\n")
+    //It appears that a crash can occur if river data is updating at the same time flow data is updating (due to trying to read an incomplete file)
+    //This is an extremely rare issue.
+    let riverarray = JSON.parse(
+        await fs.promises.readFile(riverDataPath, {encoding: "utf8"}))
 
-	await fs.promises.writeFile(flowDataPath, JSON.stringify(gauges))
+    let sites = []
+    for (let i = 0; i < riverarray.length; i++) {
+      let values = [riverarray[i].gauge]
+      riverarray[i].relatedgauges && (values = values.concat(
+          riverarray[i].relatedgauges))
+      for (let i = 0; i < values.length; i++) {
+        let gaugeID = values[i]
+        if (!gaugeID) {
+          continue
+        }
+        sites.push(gaugeID)
+      }
+    }
 
-	console.log("Flow data prepared.\n")
+    let gauges = await gaugeUtils.loadData(sites)
+    let flowDataPath = path.join(utils.getSiteRoot(), "flowdata3.json")
 
-	//TODO: We should probably precompress riverdata.json, index.html, allPages.js, index.js, and other very common files at brotli L11.
+    await fs.promises.writeFile(flowDataPath, JSON.stringify(gauges))
 
-	//L11 could take a while - do L9 first.
-	console.time("Initial compression run on flowdata3.json")
-	await compressor.compressFile(flowDataPath, 9, {ignoreSizeLimit: true, alwaysCompress: true})
-	console.timeEnd("Initial compression run on flowdata3.json")
+    console.log("Flow data prepared.\n")
 
-	//TODO: Ignore sourcemaps. Maybe bump to compression level 11 then.
-	compressor.compressFiles(path.join(utils.getSiteRoot(), "packages"))
+    //TODO: We should probably precompress riverdata.json, index.html, allPages.js, index.js, and other very common files at brotli L11.
 
+    //L11 could take a while - do L9 first.
+    console.time("Initial compression run on flowdata3.json")
+    await compressor.compressFile(flowDataPath, 9,
+        {ignoreSizeLimit: true, alwaysCompress: true})
+    console.timeEnd("Initial compression run on flowdata3.json")
 
-	if (process.argv.includes("--runOnce")) {
-		process.exit() //Otherwise timers will cause this to remain open.
-	}
+    //TODO: Ignore sourcemaps. Maybe bump to compression level 11 then.
+    compressor.compressFiles(path.join(utils.getSiteRoot(), "packages"))
 
-	//Run whenever the minutes on the hour is a multiple of 15.
-	let currentTime = new Date()
-	if (currentTime.getMinutes() === 0) {currentTime.setMinutes(15)}
-	else {currentTime.setMinutes(Math.ceil(currentTime.getMinutes()/15)*15)}
+    if (process.argv.includes("--runOnce")) {
+      process.exit() //Otherwise timers will cause this to remain open.
+    }
 
-	try {
-		sendNotifications(gauges)
-	}
-	catch (e) {
-		console.log("ERROR: sendNotifications errored")
-		console.log(e)
-	}
+    try {
+      sendNotifications(gauges)
+    } catch (e) {
+      console.log("ERROR: sendNotifications errored")
+      console.log(e)
+    }
 
-	let timer = setTimeout(updateCachedData, currentTime.getTime() - Date.now() + 60*1000) //Add a 1 minute delay to try and make sure that usgs has time to update. Do not think this is needed.
+    delayTime = 1 * 60 * 1000 //Things successfully ran, so reduce delay - this 60 seconds hopefully allows USGS to update their data in time.
+  }
+  finally {
+    //Run whenever the minutes on the hour is a multiple of 15.
+    let currentTime = new Date()
+    if (currentTime.getMinutes() === 0) {
+      currentTime.setMinutes(15)
+    } else {
+      currentTime.setMinutes(Math.ceil(currentTime.getMinutes() / 15) * 15)
+    }
+
+    let timer = setTimeout(updateCachedData,
+        currentTime.getTime() - Date.now() + delayTime)
+  }
 }
 
 updateCachedData()
