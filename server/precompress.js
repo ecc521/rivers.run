@@ -124,6 +124,7 @@ async function compressFiles(directoryToCompress, level = 9) {
 		process.stdout.write("Compressing " + i + " of " + (files.length - 1))
 		await compressFile(filePath, level)
 	}
+  process.stdout.write("Compression Complete")
 }
 
 
