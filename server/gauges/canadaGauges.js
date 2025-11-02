@@ -51,14 +51,15 @@ function reformatReadings(readingsArr) {
 
 
 async function loadCanadianFile(code) {
-	//Returns an object with every gauge in the file.
+  //Returns an object with every gauge in the file.
 	//Supports provinces and gaugeIDs.
 	let province = code
 	if (code.length > 2) {
 		province = (await getGaugeDetails(code)).province
 	}
-	let url = `https://dd.weather.gc.ca/hydrometric/csv/${province}/hourly/${province}_${code.length > 2 ? `${code}_` : ""}hourly_hydrometric.csv`
 
+	let url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_${code.length > 2 ? `${code}_` : ""}hourly_hydrometric.csv`
+  
 	let stream;
 	try {
 		stream = await (bent(url)())
@@ -79,7 +80,7 @@ async function loadCanadianFile(code) {
                 if (header === "Water Level / Niveau d'eau (m)") {return "meters"}
 				else if (header === "Discharge / Débit (cms)") {return "cms"} //cubic meters per second.
 				else if (header === "Date") {return "dateTime"}
-				else if (header === "﻿ ID") {return "ID"}
+				else if (header === " ID") {return "ID"}
 				else {return null}
             }
         }))

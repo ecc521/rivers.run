@@ -178,13 +178,13 @@ async function getSites() {
 }
 
 //Canadaian Flow Data Gauges List
-//https://dd.weather.gc.ca/hydrometric/doc/hydrometric_StationList.csv
+//https://wateroffice.ec.gc.ca/services/map_data
 let canadaGaugesList = path.join(utils.getDataDirectory(), "canadaGaugesList.csv")
 
 async function downloadCanadianGaugesList() {
     console.log("Downloading Canadian Gauges List...")
     let dest = fs.createWriteStream(canadaGaugesList)
-    let stream = await bent("https://dd.weather.gc.ca/hydrometric/doc/hydrometric_StationList.csv")()
+    let stream = await bent("https://wateroffice.ec.gc.ca/services/map_data")()
     await new Promise((resolve, reject) => {
         let writeStream = stream.pipe(dest)
         writeStream.on("finish", resolve)
@@ -212,25 +212,22 @@ async function getCanadianGauges(returnArray = false) {
         }
     }
 
-    let results = [];
-    await new Promise((resolve, reject) => {
-        fs.createReadStream(canadaGaugesList)
-        .pipe(csvParser({
-            mapHeaders: function({header, index}) {
-                if (header === '﻿ ID') {return "id"}
-                else if (header === 'Name / Nom') {return "name"}
-                else if (header === "Latitude") {return "lat"}
-                else if (header === "Longitude") {return "lon"}
-                else if (header === 'Prov/Terr') {return "province"}
-                return null //Delete the header.
-            }
-        }))
-        .on('data', (data) => results.push(data))
-        .on('end', resolve);
+
+    let stationList = JSON.parse(await fs.promises.readFile(canadaGaugesList, {encoding: "utf8"}))
+    let results = stationList.map((station) => {
+      return {
+        "id": station["station_id"],
+        "name": station["station_name"],
+        "lat": station["latitude"],
+        "lon": station["longitude"],
+        "province": station["province"],
+      }
     })
 
+    //Return the array of stations if requested
     if (returnArray) {return results}
 
+    //Restructure the array into an object mapping station ID to the station details
     let obj = {}
     for (let prop in results) {
         obj[results[prop].id] = results[prop]

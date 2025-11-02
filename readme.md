@@ -22,6 +22,12 @@ To run combined:
 node server.js
 ```
 
+Modifiers:
+--noUSGSGauges (turns off USGS gauges)
+--noCanadianGauges (turns off Canadian gauges)
+
+
+
 The Docker image can also be built and run. 
 
 

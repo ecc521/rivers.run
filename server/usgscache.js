@@ -29,7 +29,7 @@ async function updateRiverData() {
   }
 
   //Use undefined so defaults still work.
-  //TODO: This code could be a bit more consise and extensible. Very repetitive. Should also warn if a includeGauge also has noGauge.
+  //TODO: This code could be a bit more concise and extensible. Very repetitive. Should also warn if a includeGauge also has noGauge.
   let obj = {
     includeUSGSGauges: process.argv.includes("--includeUSGSGauges") ? true
         : undefined,
