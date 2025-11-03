@@ -31,9 +31,11 @@ Modifiers:
 The Docker image can also be built and run. 
 
 
-
 For making Android + iOS apps:
-Uses Capacitor. 
+Uses Capacitor.
+
+
+
 
 Android specific: 
 Must set android:usesCleartextTraffic="true"

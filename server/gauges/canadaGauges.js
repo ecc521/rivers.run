@@ -59,7 +59,7 @@ async function loadCanadianFile(code) {
 	}
 
 	let url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_${code.length > 2 ? `${code}_` : ""}hourly_hydrometric.csv`
-  
+
 	let stream;
 	try {
 		stream = await (bent(url)())
