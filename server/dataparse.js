@@ -379,7 +379,12 @@ async function prepareRiverData({
 
 	if (includeUSGSGauges) {
 		console.log("Adding USGS gauge sites. Pass --noUSGSGauges to prevent this. ")
-		result.complete = result.complete.concat(await getGaugeSites.getSites())
+    try {
+      result.complete = result.complete.concat(await getGaugeSites.getSites())
+    }
+    catch (e) {
+      console.error("Error Adding USGS gauge sites", e)
+    }
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
 	else {
@@ -388,7 +393,12 @@ async function prepareRiverData({
 
 	if (includeCanadianGauges) {
 		console.log("Adding Canadian gauge sites. Pass --noCanadianGauges to prevent this. ")
-		result.complete = result.complete.concat(await getGaugeSites.getCanadianGaugesInRiverFormat())
+    try {
+      result.complete = result.complete.concat(await getGaugeSites.getCanadianGaugesInRiverFormat())
+    }
+    catch (e) {
+      console.error("Error Adding Canadian gauge sites", e)
+    }
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
 	else {
@@ -397,7 +407,12 @@ async function prepareRiverData({
 
 	if (includeIrishGauges) {
 		console.log("Adding Irish gauge sites. Pass --noIrishGauges to prevent this. ")
-		result.complete = result.complete.concat(await getGaugeSites.getIrishGaugesInRiverFormat())
+    try {
+      result.complete = result.complete.concat(await getGaugeSites.getIrishGaugesInRiverFormat())
+    }
+    catch (e) {
+      console.error("Error Adding Irish gauge sites", e)
+    }
 		console.log("There are now " + result.complete.length + " rivers.")
 	}
 	else {
