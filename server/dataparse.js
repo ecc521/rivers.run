@@ -15,7 +15,7 @@ const utils = require(path.join(__dirname, "utils.js"))
 const toDecimalDegrees = require("../src/toDecimalDegrees.js")
 
 const googlecloudrequestrate = 10;
-const API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+const API_KEY = "AIzaSyDbPAjuiEgqxDseqaZtPCE2V243szIP7Xs"
 
 
 function urlcreate(File_ID, mime="text/plain") {

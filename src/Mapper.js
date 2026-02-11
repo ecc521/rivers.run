@@ -3,7 +3,7 @@ const {getUserLocation, getLocationErrorMessage} = require("./getLocation.js")
 //Note: We use lon internally, Google Maps uses lng internally. Be careful...
 let MapPopup, MapTooltip;
 
-let API_KEY = "AIzaSyBLmohXw1xsgeBDs1cqVN_UuRtmAHmc-WI"
+let API_KEY = "AIzaSyALIHuhJjeLE4E3yDxj97vfU4JCFSa3DXM"
 
 async function loadMapsAPI() {
 	if (window?.google?.maps) {return}

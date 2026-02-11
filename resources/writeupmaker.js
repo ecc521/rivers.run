@@ -707,7 +707,7 @@ function getSurveyInOldFormat() {
 
 function submitAsNewRiver() {
 	let url = "https://script.google.com/macros/s/AKfycbxhxpImVHh-UBAlVOGppV4wYRVtO4ldLHn_q128vckXshCl6B8/exec"
-	let API_KEY = "AIzaSyD-MaLfNzz1BiUvdKKfowXbmW_v8E-9xSc"
+	let API_KEY = "AIzaSyDbPAjuiEgqxDseqaZtPCE2V243szIP7Xs"
 
 	let type = "river"
 
