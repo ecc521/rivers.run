@@ -21,8 +21,6 @@ try {
 	addItem("Settings", root + "settings.html")
 	addItem("Clubs", root + "clubs.html")
 
-	addItem("Voice", root + "voice.html")
-
 	if (!window.isNative) {
 		addItem("About", root + "about.html")
 	}
