@@ -82,8 +82,8 @@ services:
 
 networks:
   default:
-    external:
-      name: nginx-proxy
+    name: nginx-proxy
+    external: true
 
 volumes:
     acme:
