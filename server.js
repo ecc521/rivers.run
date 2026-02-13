@@ -52,9 +52,6 @@ if (!process.argv.includes("--serveOnly")) {
 
 }
 
-//Start notificationserver.js - powers APIs (IP lookups & notification subscriptions)
-let notificationServerInitialize = require(path.join(__dirname, "server/notificationserver.js"))
-notificationServerInitialize(app) //Attaches handlers.
 
 
 //serveIndex - can be removed.
