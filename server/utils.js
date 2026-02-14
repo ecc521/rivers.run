@@ -64,6 +64,27 @@ function getFilesInDirectory (dir, files_){
     return files_;
 }
 
+function appendLog(filename, data, maxSize = 5 * 1024 * 1024) {
+	let logDir = getLogDirectory()
+	let logPath = path.join(logDir, filename)
+
+	try {
+		if (fs.existsSync(logPath)) {
+			let stats = fs.statSync(logPath)
+			if (stats.size > maxSize) {
+				let oldLogPath = logPath + ".old"
+				if (fs.existsSync(oldLogPath)) {
+					fs.unlinkSync(oldLogPath)
+				}
+				fs.renameSync(logPath, oldLogPath)
+			}
+		}
+		fs.appendFileSync(logPath, data)
+	} catch (e) {
+		console.error("Error writing to log file:", e)
+	}
+}
+
 
 //Gets the body of a request.
 		function getData(request) {
@@ -83,5 +104,6 @@ module.exports = {
 	getLogDirectory,
 	getDataDirectory,
 	getFilesInDirectory,
-	getData
+	getData,
+	appendLog
 }

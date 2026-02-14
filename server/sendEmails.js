@@ -55,11 +55,11 @@ async function sendEmail(user) {
 	await new Promise((resolve, reject) => {
 		transporter.sendMail(mailOptions, function (err, info) {
 		   if(err) {
-				fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotificationserrors.log'), JSON.stringify(err) + "\n");
+				utils.appendLog('emailnotificationserrors.log', JSON.stringify(err) + "\n");
 			   resolve(false)
 		   }
 		   else {
-				fs.appendFileSync(path.join(utils.getLogDirectory(), 'emailnotifications.log'), JSON.stringify(info) + "\n");
+				utils.appendLog('emailnotifications.log', JSON.stringify(info) + "\n");
 			   resolve(info)
 		   }
 		});
