@@ -11,10 +11,10 @@ const csvParser = require("csv-parser")
 const toDecimalDegrees = require("../src/toDecimalDegrees.js")
 
 const stateLookupTable = require(
-    path.join(__dirname, "stateCodeLookupTable.js"))
+  path.join(__dirname, "stateCodeLookupTable.js"))
 
-const {getMetadata} = require(
-    path.join(__dirname, "gauges", "irelandGauges.js"))
+const { getMetadata } = require(
+  path.join(__dirname, "gauges", "irelandGauges.js"))
 
 let sitesFilePath = path.join(utils.getDataDirectory(), "usgsSites.txt")
 
@@ -22,7 +22,7 @@ function fixCasing(str) {
   var splitStr = str.toLowerCase().split(' ');
   for (var i = 0; i < splitStr.length; i++) {
     splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(
-        1);
+      1);
   }
   return splitStr.join(' ');
 }
@@ -58,14 +58,14 @@ function replaceStateNamesWithCodes(sentence, options = {}) {
 
 function fixSiteName(siteName, options = {}) {
   siteName = siteName.split(/\bnr\b/i).join("near").split(/\bbl\b/i).join(
-      "below").split(/\bdnstrm\b/i).join("downstream").split(/\babv\b/i).join(
+    "below").split(/\bdnstrm\b/i).join("downstream").split(/\babv\b/i).join(
       "above")
-  .split(/\b@\b/).join("at").split(/\bS\b/).join("South").split(/\bN\b/).join(
+    .split(/\b@\b/).join("at").split(/\bS\b/).join("South").split(/\bN\b/).join(
       "North").split(/\bE\b/).join("East").split(/\bW\b/).join("West")
-  .split(/\bCr\b/i).join("Creek").split(/\bCk\b/i).join("Creek").split(
+    .split(/\bCr\b/i).join("Creek").split(/\bCk\b/i).join("Creek").split(
       /\bR\b/i).join("River").split(/\bCYN\b/i).join("Canyon").split(
-      /\bSTA\b/i).join("Station")
-  .split(/\bRv\b/i).join("River")
+        /\bSTA\b/i).join("Station")
+    .split(/\bRv\b/i).join("River")
 
   siteName = fixCasing(siteName)
   //TODO: Add a way to convert from state name to state codes. This would help with searches where the user says the state name.
@@ -109,18 +109,11 @@ async function downloadSitesFile() {
 }
 
 async function getSites() {
-  //Make sure we have the sites file.
-  if (!fs.existsSync(sitesFilePath)) {
-    console.log("Gauge sites file is not available. Running download script...")
-    await downloadSitesFile()
-  }
-
   //If the sites file is over 7 days old, download it again.
   let age = Date.now() - (await fs.promises.stat(sitesFilePath)).mtime
 
-  if (age > 1000 * 60 * 60 * 24 * 7) {
-    console.log("Gauge sites file is over " + Math.floor(age / 1000 / 60 / 60)
-        + " hours old. Running download script...")
+  if (!fs.existsSync(sitesFilePath) || Date.now() - (await fs.promises.stat(sitesFilePath)).mtime > 1000 * 60 * 60 * 24 * 7) {
+    console.log("Gauge sites file not available or outdated. Running download script...")
     try {
       await downloadSitesFile()
     } catch (e) {
@@ -128,7 +121,7 @@ async function getSites() {
     }
   }
 
-  let data = await fs.promises.readFile(sitesFilePath, {encoding: "utf8"})
+  let data = await fs.promises.readFile(sitesFilePath, { encoding: "utf8" })
   let lines = data.split("\n")
   let legendIndex = lines.lastIndexOf(lines[0]) + 1
   let somethingWeirdIndex = legendIndex + 1 //Looks like time durations - but not sure at all.
@@ -157,7 +150,7 @@ async function getSites() {
     siteName = fixSiteName(siteName)
 
     let splitIndex = siteName.search(
-        / (?:below|above|near|at|downstream|north of|east of|south of|west of) /i)
+      / (?:below|above|near|at|downstream|north of|east of|south of|west of) /i)
 
     if (splitIndex === -1) {
       reducedObj.name = siteName
@@ -188,7 +181,7 @@ async function getSites() {
 //Canadaian Flow Data Gauges List
 //https://wateroffice.ec.gc.ca/services/map_data
 let canadaGaugesList = path.join(utils.getDataDirectory(),
-    "canadaGaugesList.csv")
+  "canadaGaugesList.csv")
 
 async function downloadCanadianGaugesList() {
   console.log("Downloading Canadian Gauges List...")
@@ -205,7 +198,7 @@ async function getCanadianGauges(returnArray = false) {
   //Make sure we have the sites file.
   if (!fs.existsSync(canadaGaugesList)) {
     console.log(
-        "Canadian Gauges List is not available. Running download script...")
+      "Canadian Gauges List is not available. Running download script...")
     await downloadCanadianGaugesList()
   }
 
@@ -214,8 +207,8 @@ async function getCanadianGauges(returnArray = false) {
 
   if (age > 1000 * 60 * 60 * 24 * 7) {
     console.log(
-        "Canadian Gauges List is over " + Math.floor(age / 1000 / 60 / 60)
-        + " hours old. Running download script...")
+      "Canadian Gauges List is over " + Math.floor(age / 1000 / 60 / 60)
+      + " hours old. Running download script...")
     try {
       await downloadCanadianGaugesList()
     } catch (e) {
@@ -224,7 +217,7 @@ async function getCanadianGauges(returnArray = false) {
   }
 
   let stationList = JSON.parse(
-      await fs.promises.readFile(canadaGaugesList, {encoding: "utf8"}))
+    await fs.promises.readFile(canadaGaugesList, { encoding: "utf8" }))
   let results = stationList.map((station) => {
     return {
       "id": station["station_id"],
@@ -258,7 +251,7 @@ async function getCanadianGaugesInRiverFormat() {
     site.name = fixCasing(site.name)
 
     let splitIndex = site.name.search(
-        / (?:below|above|near|at|downstream|north of|east of|south of|west of) /i)
+      / (?:below|above|near|at|downstream|north of|east of|south of|west of) /i)
 
     if (splitIndex === -1) {
       site.section = ""
