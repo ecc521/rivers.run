@@ -59,8 +59,6 @@ if (!process.argv.includes("--noriverdata")) {
 }
 
 async function updateCachedData() {
-  //TODO: If this function errors, the entire server goes down
-
   let delayTime = 5 * 60 * 1000 //Delay after this run is complete before next run.
   try {
     if (!fs.existsSync(riverDataPath) || process.argv.includes(
@@ -126,8 +124,9 @@ async function updateCachedData() {
     }
 
     delayTime = 1 * 60 * 1000 //Things successfully ran, so reduce delay - this 60 seconds hopefully allows USGS to update their data in time.
-  }
-  finally {
+  } catch (e) {
+    console.error("Error in updateCachedData:", e)
+  } finally {
     //Run whenever the minutes on the hour is a multiple of 15.
     let currentTime = new Date()
     if (currentTime.getMinutes() === 0) {
