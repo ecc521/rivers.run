@@ -16,7 +16,7 @@ try {
 }
 catch(e) {
 	console.error(e)
-	fs.appendFileSync(path.join(utils.getLogDirectory(), "virtualGaugeError.log"), e.toString() + "\n")
+	utils.appendLog("virtualGaugeError.log", e.toString() + "\n")
 }
 
 let readingsFile = path.join(utils.getSiteRoot(), "gaugeReadings")
