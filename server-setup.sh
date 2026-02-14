@@ -2,6 +2,9 @@
 #Prepares server to host multiple sites. Does not actually add the site.
 #Running this multiple times should be entirely safe (though would be a waste of bandwidth and time, and should be avoided)
 
+#Setup Swap - Essential for low memory servers
+bash setup-swap.sh
+
 #Install Docker
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
