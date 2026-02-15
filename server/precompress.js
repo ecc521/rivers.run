@@ -39,7 +39,7 @@ async function brotliCompressAsync(input, compressionLevel = 9, priority = os.co
 		throw data.toString()
 	})
 
-	return await utils.getData(compressor.stdout)
+	return await utils.getData(compressor.stdout, Infinity)
 }
 
 async function compressFile(filePath, level = 9, options = {}) {

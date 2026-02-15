@@ -87,10 +87,34 @@ function appendLog(filename, data, maxSize = 5 * 1024 * 1024) {
 
 
 //Gets the body of a request.
-		function getData(request) {
+		function getData(request, limit = 25 * 1024 * 1024) {
 			return new Promise((resolve, reject) => {
 				let body = []
+				let size = 0
+
+				request.on("error", function(err) {
+					reject(err)
+				})
+
 				request.on("data", function(chunk) {
+					size += chunk.length
+					if (size > limit) {
+						let err = new Error("Request body too large")
+						//Stop listening to prevent further data processing
+						//If the request is a stream, destroy it.
+						if (request.destroy) {
+							request.destroy(err)
+						}
+						else {
+							//If the request is not a stream (or a very old one), pause it and remove listeners.
+							reject(err)
+							//Stop listening to prevent further data processing
+							request.pause()
+							//Remove listeners to allow garbage collection
+							request.removeAllListeners()
+						}
+						return
+					}
 					body.push(chunk)
 				})
 				request.on("end", function() {
