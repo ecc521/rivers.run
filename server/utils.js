@@ -101,10 +101,12 @@ function appendLog(filename, data, maxSize = 5 * 1024 * 1024) {
 					if (size > limit) {
 						let err = new Error("Request body too large")
 						//Stop listening to prevent further data processing
+						//If the request is a stream, destroy it.
 						if (request.destroy) {
 							request.destroy(err)
 						}
 						else {
+							//If the request is not a stream (or a very old one), pause it and remove listeners.
 							reject(err)
 							//Stop listening to prevent further data processing
 							request.pause()
