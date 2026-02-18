@@ -35,7 +35,6 @@
     "@capacitor/geolocation": "^7.0.0",
     "@capacitor/ios": "^7.0.0",
     "@capacitor/keyboard": "^7.0.0",
-    "@ionic-native/web-server": "^5.36.0",
     "ionic-plugin-deeplinks": "^1.0.24"
   },
   "dependencies": {
@@ -52,7 +51,6 @@
     "babel-loader": "^10.0.0",
     "bent": "^7.3.12",
     "compression": "^1.8.1",
-    "cordova-plugin-webserver": "github:bykof/cordova-plugin-webserver",
     "core-js": "^3.46.0",
     "cssnano": "^7.1.2",
     "csv-parser": "^3.2.0",

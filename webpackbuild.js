@@ -13,9 +13,9 @@ let entry = {
 	"packagedsw.js": "./sw.js",
 }
 
-if (!noNative) {
-	entry["native/packages/index.js"] = "./native/index.js"
-}
+// if (!noNative) {
+// 	entry["native/packages/index.js"] = "./native/index.js"
+// }
 
 
 let config = {

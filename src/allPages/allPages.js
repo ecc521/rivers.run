@@ -10,13 +10,15 @@ try {
 }
 catch (e) {console.error(e)}
 
-//Inside iOS app or new Android app.
-if (window.parent.location !== window.location) {
-	window.isNative = true
-	require("./apiBridge.js")
-}
-else if (window.Capacitor) {
-	window.isNative = true
+try {
+    const { Capacitor } = require('@capacitor/core');
+    if (Capacitor && Capacitor.isNativePlatform()) {
+        window.isNative = true;
+        // Dynamically import native integration
+        import("./nativeIntegration.js").catch(e => console.error("Failed to load native integration", e));
+    }
+} catch (e) {
+    console.error("Capacitor detection failed", e);
 }
 
 //Define window.root (the site root)
