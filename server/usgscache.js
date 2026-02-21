@@ -61,7 +61,8 @@ if (!process.argv.includes("--noriverdata")) {
 async function updateCachedData() {
   let delayTime = 5 * 60 * 1000 //Delay after this run is complete before next run.
   try {
-    if (!fs.existsSync(riverDataPath) || process.argv.includes(
+    const riverDataExists = await fs.promises.access(riverDataPath).then(() => true).catch(() => false)
+    if (!riverDataExists || process.argv.includes(
         "--waitforriverdata")) {
       if (riverDataPromise) {
         await riverDataPromise;
