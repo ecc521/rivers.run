@@ -19,25 +19,40 @@ function fillParameters(options) {
 		let totalPoints = 0; //If there are zero total points, we will delete this y value and warn the user.
 
 		//Iterate through each point and find the minimum and maximum x and y values
-		//TODO: Delete invalid points and lines without any points (after invalid points removed).
-		y.lines.forEach((line) => {
-			if (typeof line !== "object") {console.warn("Line is not an object. "); return}
-			if (!(line.points instanceof Array)) {console.warn("line.points is not an array. "); return}
+		//Delete invalid points and lines without any points (after invalid points removed).
+		y.lines = y.lines.filter((line) => {
+			if (typeof line !== "object") {console.warn("Line is not an object. "); return false}
+			if (!(line.points instanceof Array)) {console.warn("line.points is not an array. "); return false}
 
 			line.xAlias = line.xAlias || "x"
 			line.yAlias = line.yAlias || "y"
 			line.forecastAlias = line.forecastAlias || "forecast"
 
-			line.points.forEach((point) => {
-				if (typeof point !== "object") {console.warn("Point is not an object. "); return}
+			line.points = line.points.filter((point) => {
+				if (typeof point !== "object") {console.warn("Point is not an object. "); return false}
+				let x = Number(point[line.xAlias])
+				let yVal = Number(point[line.yAlias])
+				if (isNaN(x) || isNaN(yVal)) {
+					console.warn("Point has invalid x or y value. ");
+					return false
+				}
+
 				totalPoints++
-				if (point[line.xAlias] < y.xmin || isNaN(y.xmin)) {y.xmin = Number(point[line.xAlias])}
-				if (point[line.xAlias] > y.xmax || isNaN(y.xmax)) {y.xmax = Number(point[line.xAlias])}
-				if (point[line.yAlias] < y.ymin || isNaN(y.ymin)) {y.ymin = Number(point[line.yAlias])}
-				if (point[line.yAlias] > y.ymax || isNaN(y.ymax)) {y.ymax = Number(point[line.yAlias])}
+				if (x < y.xmin || isNaN(y.xmin)) {y.xmin = x}
+				if (x > y.xmax || isNaN(y.xmax)) {y.xmax = x}
+				if (yVal < y.ymin || isNaN(y.ymin)) {y.ymin = yVal}
+				if (yVal > y.ymax || isNaN(y.ymax)) {y.ymax = yVal}
+				return true
 			})
+
+			if (line.points.length === 0) {
+				console.warn("Line has no valid points. ");
+				return false
+			}
+
 			function sortPoints(a,b) {return a[line.xAlias]-b[line.xAlias]} //Sort the points in a line, x values ascending
 			line.points = line.points.sort(sortPoints)
+			return true
 		})
 
 		if (isNaN(y.ymin) || isNaN(y.ymax) || isNaN(y.xmin) || isNaN(y.xmax)) {
