@@ -14,7 +14,6 @@ const url = require("url")
 
 const compression = require('compression')
 const express = require('express')
-const serveIndex = require('serve-index') //Dev stuff - just viewing directories. Should probably be removed or replaced.
 
 const requestHandler = require("./requestHandler.js")
 
@@ -53,14 +52,6 @@ if (!process.argv.includes("--serveOnly")) {
 }
 
 
-
-//serveIndex - can be removed.
-app.all(/.*/, (req, res, next) => {
-    serveIndex(__dirname, {
-		'icons': true,
-		'view': "details" //Gives more info than tiles.
-	})(req, res, next)
-})
 
 app.all(/.*/, (req, res, next) => {
 	res.status(404)
