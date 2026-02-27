@@ -6,6 +6,7 @@ const bent = require("bent")
 const utils = require(path.join(__dirname, "utils.js"))
 
 const zlib = require("zlib")
+const { pipeline } = require("stream/promises")
 
 const csvParser = require("csv-parser")
 const toDecimalDegrees = require("../src/toDecimalDegrees.js")
@@ -95,16 +96,11 @@ async function downloadSitesFile() {
   console.log("Downloading Gauge List from USGS (May take a while)")
   let url = "https://waterdata.usgs.gov/nwis/inventory?data_type=rt&data_type=peak&group_key=NONE&format=sitefile_output&sitefile_output_format=rdb_gz&column_name=site_no&column_name=station_nm&column_name=dec_lat_va&column_name=dec_long_va&column_name=state_cd&list_of_search_criteria=data_type"
 
-  //The file is gzipped, so we have to unzip it.
-  let unzipper = zlib.createGunzip()
-  await new Promise((resolve, reject) => {
-    bent(url)().then((stream) => {
-      //TODO: Response is Gzipped. decompress.
-      let dest = fs.createWriteStream(sitesFilePath)
-      let writeStream = stream.pipe(unzipper).pipe(dest)
-      writeStream.on("finish", resolve)
-    })
-  })
+  const response = await bent(url)()
+  const unzipper = zlib.createGunzip()
+  const dest = fs.createWriteStream(sitesFilePath)
+
+  await pipeline(response, unzipper, dest)
   console.log("Gauge List Downloaded")
 }
 
