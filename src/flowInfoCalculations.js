@@ -128,7 +128,7 @@ function calculateRelativeFlow(river) {
     else if (river.relativeflowtype === "ft") {
         river.relativeflowtype = "feet"
     }
-    else if (river.relativeflowtype === "m") {
+    else if (river.relativeflowtype === "meter") {
         river.relativeflowtype = "meters"
     }
 
@@ -181,7 +181,6 @@ function calculateRelativeFlow(river) {
 	let oldRunning;
 
 	Object.defineProperty(river, "running", {
-		//TODO: Remember old result, and return it if flow hasn't changed.
 		get: function getRunning() {
 
 			let flowLevel;
@@ -192,14 +191,14 @@ function calculateRelativeFlow(river) {
 			else if (river.relativeflowtype === "feet") {
 				flowLevel = river.feet
 			}
-            else if (river.relativeflowtype === "meter"){
-                flowLevel = river.meters
-            }
-            else if (river.relativeflowtype === "cms") {
-                flowLevel = river.cms
-            }
+			else if (river.relativeflowtype === "meters") {
+				flowLevel = river.meters
+			}
+			else if (river.relativeflowtype === "cms") {
+				flowLevel = river.cms
+			}
 
-			if (oldFlow === flowLevel) {
+			if (Object.is(oldFlow, flowLevel)) {
 				return oldRunning
 			}
 
