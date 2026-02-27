@@ -42,21 +42,16 @@ function activateHandler(event) {
         })
 
         const cache = await caches.open(cacheName)
-        let requests = []
-        for (let index in preloadList) {
-            let url = rebaseURL(preloadList[index])
-            requests.push(fetch(url))
-        }
-        for (let index in requests) {
-            let request = requests[index]
+        await Promise.all(preloadList.map(async (item) => {
             try {
-                let response = await request
+                let url = rebaseURL(item)
+                let response = await fetch(url)
                 await cache.put(response.url, response)
             }
             catch(e) {
                 console.error(e)
             }
-        }
+        }))
     })())
 }
 
