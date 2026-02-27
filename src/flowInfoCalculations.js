@@ -125,12 +125,6 @@ function calculateRelativeFlow(river) {
     if (!river.relativeflowtype) {
 		return null //If no relative flow values exist, return. This should help improve performance with gauges (lots of gauges, none have relative flows)
 	}
-    else if (river.relativeflowtype === "ft") {
-        river.relativeflowtype = "feet"
-    }
-    else if (river.relativeflowtype === "meter") {
-        river.relativeflowtype = "meters"
-    }
 
     let currentMax; //Used to confirm values are not decreasing.
 
