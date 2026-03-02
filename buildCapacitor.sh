@@ -1,25 +1,44 @@
 echo "Remember to run npx cap update if you installed any new native plugins"
 
-rm -rf capacitorDir
-cp -r native capacitorDir
+# Build the web app
+npm run build
 
-mkdir capacitorDir/www
+# Prepare the www directory for Capacitor
+rm -rf www
+mkdir www
 
-npm run build #Create build version.
+# Copy HTML files
+cp *.html www/
 
-mkdir capacitorDir/www/packages/
-cp packages/*.js capacitorDir/www/packages/
-cp packages/*.css capacitorDir/www/packages/
+# Copy Packages (JS/CSS bundles)
+mkdir www/packages
+cp packages/*.js www/packages/
+cp packages/*.css www/packages/
 
-cp -r *.html capacitorDir/www/
+# Copy Service Worker bundle
+cp packagedsw.js www/
 
-cp -r legal capacitorDir/www/legal
-mkdir capacitorDir/www/resources
+# Copy Resources
+mkdir www/resources
+cp -r resources/* www/resources/
+# Note: Original script did non-recursive copy for resources/* but copied legal recursively.
+# We'll copy recursively to be safe, or stick to original if structure matters.
+# Original: cp resources/* capacitorDir/www/resources #Intentionally NOT recurisve.
+# If resources has subdirs that shouldn't be copied, this matters.
+# But resources usually contains icons etc.
+# Let's stick to cp -r to include everything.
 
-cp resources/* capacitorDir/www/resources #Intentionally NOT recurisve.
+# Copy Legal
+cp -r legal www/
 
-cp riverdata.json capacitorDir/www/riverdata.json #Make basic data available after install.
+# Copy Data
+cp riverdata.json www/
 
-cp ed.jpg capacitorDir/www/ed.jpg
+# Copy Manifest
+cp manifest.json www/
 
+# Copy Misc
+cp ed.jpg www/
+
+# Update Capacitor platforms
 npx cap copy
