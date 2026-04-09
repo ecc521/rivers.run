@@ -2,12 +2,15 @@ import React from "react";
 import type { RiverData } from "../types/River";
 import { skillTranslations } from "../utils/skillTranslations";
 import { USGSGraphs } from "./USGSGraphs";
+import { useAuth } from "../context/AuthContext";
 
 interface RiverExpansionProps {
   river: RiverData;
 }
 
 export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
+  const { isAdmin } = useAuth();
+
   const getSkillAndClassText = () => {
     if (river.class && river.skill) {
       return `This river is class ${river.class} and is rated ${skillTranslations[river.skill] || "Unknown"}.`;
@@ -96,52 +99,24 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
 
       {getFlowRangeText() && <p>{getFlowRangeText()}</p>}
 
-      <p style={{ margin: "2px 0" }}>
-        {river.isGauge ? (
+      <p style={{ margin: "10px 0" }}>
+        {isAdmin ? (
           <a
-            href={`/resources/writeupmaker.html#id=${river.id}`}
+            href={`/edit/${river.id}`}
             target="_blank"
             rel="noreferrer"
+            style={{ fontWeight: 'bold', color: '#B33', marginRight: '10px' }}
           >
-            Create River using Gauge
+            [Admin] Edit River Data
           </a>
         ) : (
-          <>
-            <a
-              href={`/resources/writeupmaker.html#id=${river.id}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Open in River Creator
-            </a>
-            {" - "}
-            <a
-              href={`https://docs.google.com/document/d/${river.id}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Edit this River
-            </a>
-          </>
-        )}
-      </p>
-
-      {river.aw && (
-        <p>
-          <a
-            href={`https://www.americanwhitewater.org/content/River/detail/id/${river.aw}`}
-            target="_blank"
-            rel="noreferrer"
+           <a
+            href={`/suggest/${river.id}`}
+            style={{ fontWeight: 'bold' }}
           >
-            View on American Whitewater
+            Suggest an Edit
           </a>
-        </p>
-      )}
-
-      <p style={{ margin: "2px 0" }}>
-        <a href="/legal/DISCLAIMER.html" target="_blank" rel="noreferrer">
-          Rivers.run Content and Flow Disclaimer
-        </a>
+        )}
       </p>
 
       <USGSGraphs river={river} />

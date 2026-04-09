@@ -1,16 +1,19 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  isAdmin: false,
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -18,11 +21,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     try {
-      const unsubscribe = onAuthStateChanged(auth, (u) => {
+      const unsubscribe = onAuthStateChanged(auth, async (u) => {
         setUser(u);
+        if (u) {
+            try {
+                const roleDoc = await getDoc(doc(db, "user_roles", u.uid));
+                if (roleDoc.exists() && roleDoc.data().isAdmin === true) {
+                    setIsAdmin(true);
+                } else {
+                    setIsAdmin(false);
+                }
+            } catch (err) {
+                console.error("Failed to fetch user roles", err);
+                setIsAdmin(false);
+            }
+        } else {
+            setIsAdmin(false);
+        }
         setLoading(false);
       });
       return () => {
@@ -35,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
