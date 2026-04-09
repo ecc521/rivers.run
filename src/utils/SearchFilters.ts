@@ -1,0 +1,159 @@
+import type { RiverData } from "../types/River";
+
+export interface AdvancedSearchQuery {
+  normalSearch?: string;
+  name?: string;
+  section?: string;
+  skillMin?: number;
+  skillMax?: number;
+  flowMin?: number;
+  flowMax?: number;
+  ratingMin?: number;
+  ratingMax?: number;
+  includeUnknownSkill?: boolean;
+  includeUnknownFlow?: boolean;
+  includeUnknownRating?: boolean;
+  includeDams?: boolean;
+  favoritesOnly?: boolean;
+  sortBy?: "none" | "alphabetical" | "rating" | "skill" | "class" | "running";
+  sortReverse?: boolean;
+}
+
+export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
+  normalSearch: "",
+  skillMin: 1,
+  skillMax: 8,
+  flowMin: 0,
+  flowMax: 4,
+  ratingMin: 1,
+  ratingMax: 5,
+  includeUnknownSkill: true,
+  includeUnknownFlow: true,
+  includeUnknownRating: true,
+  includeDams: true,
+  sortBy: "none",
+  sortReverse: false,
+};
+
+function skillToNumber(skill: string): number {
+  const map: Record<string, number> = {
+    FW: 1,
+    B: 2,
+    N: 3,
+    "LI-": 3.5,
+    LI: 4,
+    "LI+": 4.5,
+    "I-": 4.5,
+    I: 5,
+    "I+": 5.5,
+    "HI-": 5.5,
+    HI: 6,
+    "HI+": 6.5,
+    "A-": 6.5,
+    A: 7,
+    "A+": 7.5,
+    "E-": 7.5,
+    E: 8,
+    "E+": 8.5,
+  };
+  return map[skill] || Infinity;
+}
+
+export function filterRivers(
+  rivers: RiverData[],
+  query: AdvancedSearchQuery,
+): RiverData[] {
+  let list = [...rivers];
+
+  // 1. Normal Search (matches Name, Section, or Tags)
+  if (query.normalSearch) {
+    const term = query.normalSearch.toLowerCase();
+    list = list.filter(
+      (r) =>
+        (r.name || "").toLowerCase().includes(term) ||
+        (r.section || "").toLowerCase().includes(term) ||
+        (r.tags && r.tags.toLowerCase().includes(term)),
+    );
+  }
+
+  // 2. Name / Section explicit matches
+  if (query.name) {
+    list = list.filter((r) =>
+      (r.name || "").toLowerCase().includes(query.name!.toLowerCase()),
+    );
+  }
+  if (query.section) {
+    list = list.filter((r) =>
+      (r.section || "").toLowerCase().includes(query.section!.toLowerCase()),
+    );
+  }
+
+  // 3. Skill
+  if (query.skillMin !== undefined && query.skillMax !== undefined) {
+    list = list.filter((r) => {
+      const s = skillToNumber(r.skill || "");
+      if (s === Infinity) return query.includeUnknownSkill;
+      return s >= query.skillMin! && s <= query.skillMax!;
+    });
+  }
+
+  // 4. Rating
+  if (query.ratingMin !== undefined && query.ratingMax !== undefined) {
+    list = list.filter((r) => {
+      if (r.rating === "Error" || r.rating === undefined || r.rating === null)
+        return query.includeUnknownRating;
+      const rate = Number(r.rating);
+      return rate >= query.ratingMin! && rate <= query.ratingMax!;
+    });
+  }
+
+  // 5. Flow
+  if (query.flowMin !== undefined && query.flowMax !== undefined) {
+    list = list.filter((r) => {
+      if (r.dam && query.includeDams) return true;
+      if (r.running === undefined || r.running === null)
+        return query.includeUnknownFlow;
+      return r.running >= query.flowMin! && r.running <= query.flowMax!;
+    });
+  }
+
+  // Sorting
+  if (query.sortBy && query.sortBy !== "none") {
+    list.sort((a, b) => {
+      let valA: any, valB: any;
+      switch (query.sortBy) {
+        case "alphabetical":
+          valA = (a.name || "").toLowerCase();
+          valB = (b.name || "").toLowerCase();
+          break;
+        case "rating":
+          valA = a.rating === "Error" ? -1 : Number(a.rating || -1);
+          valB = b.rating === "Error" ? -1 : Number(b.rating || -1);
+          break;
+        case "skill":
+          valA = skillToNumber(a.skill || "");
+          valB = skillToNumber(b.skill || "");
+          break;
+        case "class":
+          valA = a.class || "";
+          valB = b.class || ""; // Note: simplified class sort
+          break;
+        case "running":
+          valA = a.running ?? -1;
+          valB = b.running ?? -1;
+          break;
+        default:
+          return 0;
+      }
+      if (valA > valB) return 1;
+      if (valA < valB) return -1;
+      return 0;
+    });
+
+    if (query.sortReverse) {
+      list.reverse();
+    }
+  }
+
+  return list;
+}

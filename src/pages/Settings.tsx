@@ -1,0 +1,292 @@
+import React, { useState, useEffect } from "react";
+import { useSettings } from "../context/SettingsContext";
+import { 
+  getCacheUsageString, 
+  generateTileQueue, 
+  downloadMapTiles, 
+  WORLD_BOUNDS, 
+  NORTH_AMERICA_BOUNDS 
+} from "../utils/offlineMapEngine";
+import { PromptModal } from "../components/PromptModal";
+
+const SettingsPage: React.FC = () => {
+  const { isDarkMode, isColorBlindMode, homePageDefaultSearch, updateSetting } = useSettings();
+
+  return (
+    <div
+      className="page-content"
+      style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}
+    >
+      <h1 className="center" style={{ marginBottom: "40px" }}>
+        Settings
+      </h1>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+        <div className="settings-card">
+          <h3 style={{ marginTop: 0 }}>Theme (Color Scheme)</h3>
+          <select
+            value={localStorage.getItem("userTheme") || "null"}
+            onChange={(e) => {
+              updateSetting("userTheme", e.target.value);
+            }}
+            style={{
+              padding: "8px",
+              fontSize: "16px",
+              width: "100%",
+              maxWidth: "300px",
+              marginBottom: "10px",
+            }}
+          >
+            <option value="null">System Default</option>
+            <option value="false">Light</option>
+            <option value="true">Dark</option>
+          </select>
+          <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
+            {localStorage.getItem("userTheme") === "null" ||
+            !localStorage.getItem("userTheme")
+              ? `Currently utilizing System Default theme: ${isDarkMode ? "Dark" : "Light"}`
+              : "Overriding System Default Theme."}
+          </p>
+        </div>
+
+        <div className="settings-card">
+          <h3 style={{ marginTop: 0 }}>Home Page Default Search</h3>
+          <select
+            value={homePageDefaultSearch === "favorites" ? "favorites" : "null"}
+            onChange={(e) => {
+              updateSetting("homePageDefaultSearch", e.target.value);
+            }}
+            style={{
+              padding: "8px",
+              fontSize: "16px",
+              width: "100%",
+              maxWidth: "300px",
+              marginBottom: "10px",
+            }}
+          >
+            <option value="null">None (Display All Rivers)</option>
+            <option value="favorites">Display Favorites by Default</option>
+          </select>
+          <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
+            Determines whether the main River list automatically filters to only
+            your favorites when you launch the app.
+          </p>
+        </div>
+
+        <div className="settings-card">
+          <h3 style={{ marginTop: 0 }}>Color Blind Mode</h3>
+          <select
+            value={isColorBlindMode ? "true" : "null"}
+            onChange={(e) => {
+              updateSetting("colorBlindMode", e.target.value);
+            }}
+            style={{
+              padding: "8px",
+              fontSize: "16px",
+              width: "100%",
+              maxWidth: "300px",
+              marginBottom: "10px",
+            }}
+          >
+            <option value="null">Default (No)</option>
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+          </select>
+          <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
+            Color blind mode alters the primary flow color indicators natively
+            embedded everywhere, as well as line-colors on Flow charts.
+          </p>
+        </div>
+
+      </div>
+
+      <div style={{ marginTop: '30px' }}>
+        <OfflineMapManager />
+      </div>
+
+    </div>
+  );
+};
+
+const OfflineMapManager: React.FC = () => {
+  const [storageString, setStorageString] = useState("Loading...");
+  const [downloadProgress, setDownloadProgress] = useState<{done: number, total: number} | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  const [worldZoom, setWorldZoom] = useState(3);
+  const [usZoom, setUsZoom] = useState(4);
+
+  const [promptConfig, setPromptConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  useEffect(() => {
+    refreshCacheString();
+  }, []);
+
+  const refreshCacheString = async () => {
+    const mem = await getCacheUsageString();
+    setStorageString(mem);
+  };
+
+  const handleDownload = async (type: 'world' | 'us', exactZoom: number) => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+
+    let urls: string[] = [];
+    if (type === 'world') {
+      urls = generateTileQueue(WORLD_BOUNDS, 0, exactZoom);
+    } else {
+      urls = generateTileQueue(NORTH_AMERICA_BOUNDS, 0, exactZoom);
+    }
+
+    const estimatedMb = ((urls.length * 15) / 1024).toFixed(1);
+
+    setPromptConfig({
+      title: "Download Offline Map",
+      message: `This will download ~${estimatedMb} MB to your device so you can view the map without cell service. Continue?`,
+      onConfirm: async () => {
+        setPromptConfig(null);
+        setDownloadProgress({ done: 0, total: urls.length });
+
+        await downloadMapTiles(urls, (done, total) => {
+          setDownloadProgress({ done, total });
+        });
+
+        setDownloadProgress(null);
+        setIsDownloading(false);
+        refreshCacheString();
+      }
+    });
+  };
+
+  const handleClearCache = async () => {
+    setPromptConfig({
+      title: "Delete Downloaded Maps?",
+      message: "This will delete the offline maps you manually downloaded to your device. Are you sure?",
+      onConfirm: async () => {
+        setPromptConfig(null);
+        try {
+          await caches.delete('offline-map-tiles');
+          refreshCacheString();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
+  };
+
+  return (
+    <div
+      className="settings-card"
+      style={{
+        borderTop: "4px solid #10b981"
+      }}
+    >
+      <h3 style={{ marginTop: 0, display: 'flex', justifyContent: 'space-between' }}>
+        Offline Maps
+        <span style={{ fontSize: '0.8em', color: '#64748b', fontWeight: 'normal' }}>
+          {storageString}
+        </span>
+      </h3>
+      <p style={{ color: "#475569", fontSize: "0.95em", marginBottom: "20px" }}>
+        The app automatically saves the maps you look at. To guarantee you have a map when driving to remote put-ins without cell service, you can manually download entire areas below.
+      </p>
+
+      {isDownloading && downloadProgress && (
+        <div className="settings-nested-panel" style={{ marginBottom: '20px', padding: '15px', borderRadius: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>Downloading Map...</span>
+            <span>{downloadProgress.done} / {downloadProgress.total}</span>
+          </div>
+          <div style={{ width: '100%', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', height: '8px' }}>
+            <div style={{ width: `${(downloadProgress.done / downloadProgress.total) * 100}%`, backgroundColor: '#3b82f6', height: '100%', transition: 'width 0.2s' }}></div>
+          </div>
+        </div>
+      )}
+
+      <div className="settings-nested-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', borderRadius: '8px' }}>
+        
+        {/* World Maps Configuration */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <label style={{ fontSize: '0.9em', fontWeight: 'bold' }}>
+            Global Scope (World Map)
+          </label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <select 
+              value={worldZoom} 
+              onChange={e => setWorldZoom(Number(e.target.value))}
+              disabled={isDownloading}
+              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', flex: 1, backgroundColor: '#fff' }}
+            >
+              <option value={2}>Vague (Zoom 2) - Auto Default</option>
+              <option value={3}>Basic (Zoom 3)</option>
+              <option value={4}>Detailed (Zoom 4)</option>
+              <option value={5}>Maximum (Zoom 5)</option>
+            </select>
+            <button 
+              onClick={() => handleDownload('world', worldZoom)}
+              disabled={isDownloading}
+              style={{ padding: '10px 16px', backgroundColor: isDownloading ? '#cbd5e1' : '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', minWidth: '160px' }}
+            >
+              Download
+            </button>
+          </div>
+        </div>
+
+        {/* US Maps Configuration */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <label style={{ fontSize: '0.9em', fontWeight: 'bold' }}>
+            Regional Scope (North America)
+          </label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <select 
+              value={usZoom} 
+              onChange={e => setUsZoom(Number(e.target.value))}
+              disabled={isDownloading}
+              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', flex: 1, backgroundColor: '#fff' }}
+            >
+              <option value={4}>Basic (Zoom 4) - Auto Default</option>
+              <option value={5}>Standard (Zoom 5)</option>
+              <option value={6}>Detailed (Zoom 6)</option>
+              <option value={7}>High Res (Zoom 7)</option>
+              <option value={8}>Maximum (Zoom 8)</option>
+            </select>
+            <button 
+              onClick={() => handleDownload('us', usZoom)}
+              disabled={isDownloading}
+              style={{ padding: '10px 16px', backgroundColor: isDownloading ? '#cbd5e1' : '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', minWidth: '160px' }}
+            >
+              Download
+            </button>
+          </div>
+        </div>
+        
+        <div style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '8px 0' }} />
+
+        <button 
+          onClick={handleClearCache}
+          disabled={isDownloading}
+          style={{ padding: '12px 16px', backgroundColor: 'transparent', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+        >
+          Delete All Downloaded Maps
+        </button>
+      </div>
+
+      <PromptModal
+        isOpen={promptConfig !== null}
+        title={promptConfig?.title || ""}
+        message={promptConfig?.message || ""}
+        onConfirm={() => promptConfig?.onConfirm()}
+        onCancel={() => {
+          setPromptConfig(null);
+          setIsDownloading(false);
+        }}
+      />
+    </div>
+  );
+};
+
+export default SettingsPage;

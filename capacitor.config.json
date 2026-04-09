@@ -3,7 +3,7 @@
   "appName": "rivers.run",
   "npmClient": "npm",
   "zoomEnabled": true,
-  "webDir": "capacitorDir",
+  "webDir": "dist",
   "plugins": {
     "FirebaseAuthentication": {
       "skipNativeAuth": false,
