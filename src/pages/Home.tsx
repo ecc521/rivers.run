@@ -5,6 +5,8 @@ import { TopBar } from "../components/TopBar";
 import { SearchOverlay } from "../components/SearchOverlay";
 import { useFavorites } from "../context/FavoritesContext";
 import { useSearchParams } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 import {
   calculateRelativeFlow,
   calculateColor,
@@ -30,8 +32,9 @@ const Home: React.FC = () => {
       q.normalSearch = searchParamVal;
     }
     // Check local storage for default search settings
+    const defaultSearch = localStorage.getItem("homePageDefaultSearch");
     try {
-      if (localStorage.getItem("homePageDefaultSearch") === "favorites") {
+      if (defaultSearch === "favorites") {
         q.favoritesOnly = true;
       }
     } catch {}
@@ -39,29 +42,83 @@ const Home: React.FC = () => {
   });
 
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
+  const [listTitle, setListTitle] = useState<string | null>(null);
+
+  // Fetch List Data if applicable
+  useEffect(() => {
+    const listParam = searchParams.get("list");
+    const defaultSearch = localStorage.getItem("homePageDefaultSearch");
+    
+    let targetListId = listParam;
+    if (!targetListId && defaultSearch && defaultSearch.startsWith("list:")) {
+        targetListId = defaultSearch.replace("list:", "");
+    }
+
+    if (targetListId) {
+      setLoading(true);
+      
+      // Attempt to load from cache immediately to guarantee offline UX
+      const cachedListStr = localStorage.getItem(`saved_list_${targetListId}`);
+      if (cachedListStr) {
+          try {
+              const cachedData = JSON.parse(cachedListStr);
+              setSearchQuery((prev) => ({ ...prev, listData: cachedData.rivers || [] }));
+              setListTitle(cachedData.title);
+          } catch {
+             // Silently catch json parse err
+          }
+      }
+
+      getDoc(doc(db, "community_lists", targetListId)).then((snapshot) => {
+          if (snapshot.exists()) {
+             const data = snapshot.data();
+             setSearchQuery((prev) => ({ ...prev, listData: data.rivers || [] }));
+             setListTitle(data.title);
+             // Save it for offline
+             localStorage.setItem(`saved_list_${targetListId}`, JSON.stringify(data));
+          } else if (!cachedListStr) {
+             setError("Requested list does not exist.");
+          }
+          setLoading(false);
+      }).catch(err => {
+          console.error("Failed to load list from network, trying to rely on cache", err);
+          if (!cachedListStr) {
+              setLoading(false);
+          } else {
+              setLoading(false); 
+          }
+      });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchRivers = async () => {
       try {
-        const riverDataUrl = import.meta.env.DEV
-          ? "https://rivers.run/riverdata.json"
-          : "/riverdata.json";
-        const flowDataUrl = import.meta.env.DEV
-          ? "https://rivers.run/flowdata3.json"
-          : "/flowdata3.json";
+        const riverDataUrl = "/riverdata.json";
+        const flowDataUrl = "https://storage.googleapis.com/rivers-run.appspot.com/public/flowdata3.json";
 
         const [riverRes, flowRes] = await Promise.all([
           fetch(riverDataUrl),
           fetch(flowDataUrl),
         ]);
 
-        if (!riverRes.ok) throw new Error("Failed to fetch river data");
+        if (!riverRes.ok || !riverRes.headers.get("content-type")?.includes("json")) {
+           throw new Error("Failed to fetch valid river data JSON");
+        }
         let data: RiverData[] = await riverRes.json();
 
         // If flow data is ok, enrich the rivers
-        if (flowRes.ok) {
+        if (flowRes.ok && flowRes.headers.get("content-type")?.includes("json")) {
           const flowData = await flowRes.json();
-          data = data.map((river) => {
+          const usedGauges = new Set<string>();
+
+          data = data.map((river: any, index: number) => {
+            river.index = index; // Inject index to be able to map to legacy IDs if needed
+            
+            if (river.gauge) {
+                usedGauges.add(river.gauge);
+            }
+
             const gaugeRecord = flowData[river.gauge];
             if (
               gaugeRecord &&
@@ -84,6 +141,38 @@ const Home: React.FC = () => {
             }
             return river;
           });
+
+          // Create virtual rivers for any gauge present in flowdata3 that isn't mapped to a river
+          const virtualGauges: RiverData[] = [];
+          let virtualIndex = data.length;
+
+          for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
+              if (!usedGauges.has(gaugeId)) {
+                  const gData: any = gaugeData;
+                  if (gData.readings && gData.readings.length > 0) {
+                      const latest = gData.readings[gData.readings.length - 1];
+                      let flowStr = "";
+                      if (latest.cfs && latest.feet) flowStr = `${Math.round(latest.cfs)} cfs ${Math.round(latest.feet * 100) / 100} ft`;
+                      else if (latest.cfs) flowStr = `${Math.round(latest.cfs)} cfs`;
+                      else if (latest.feet) flowStr = `${Math.round(latest.feet * 100) / 100} ft`;
+
+                      virtualGauges.push({
+                          id: gaugeId,
+                          name: gData.name || gaugeId,
+                          gauge: gaugeId,
+                          isGauge: true,
+                          index: virtualIndex++,
+                          cfs: latest.cfs,
+                          feet: latest.feet,
+                          flowData: gData.readings,
+                          flow: flowStr,
+                          access: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined
+                      } as unknown as RiverData);
+                  }
+              }
+          }
+          
+          data = [...data, ...virtualGauges];
         }
 
         setRivers(data);
@@ -147,7 +236,7 @@ const Home: React.FC = () => {
   return (
     <div className="page-content">
       {/* Search Header Area */}
-      <h1 className="center">River Information</h1>
+      <h1 className="center">{listTitle ? listTitle : "River Information"}</h1>
       <div className="searchcontain">
         <input
           id="searchbox"
@@ -169,6 +258,32 @@ const Home: React.FC = () => {
         </button>
         <button id="addAllToFavorites">Add to Favorites</button>
       </div>
+
+      {(searchQuery.favoritesOnly || searchQuery.listData || searchQuery.distanceMax !== undefined || searchQuery.sortBy !== "none") && (
+         <div style={{ textAlign: "center", marginBottom: "15px" }}>
+            <span style={{ fontSize: "0.9em", color: "#64748b", fontStyle: "italic", marginRight: "10px" }}>
+                Custom Sorting / Filters Active
+            </span>
+            <button 
+                onClick={() => {
+                   setSearchQuery({ ...defaultAdvancedSearchQuery });
+                   setListTitle(null);
+                }}
+                style={{
+                    padding: "4px 10px",
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "0.85em",
+                    fontWeight: "bold"
+                }}
+            >
+                Clear Filters (View All)
+            </button>
+         </div>
+      )}
 
       <SearchOverlay
         isOpen={isAdvancedSearchOpen}

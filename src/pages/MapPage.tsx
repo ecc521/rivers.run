@@ -19,25 +19,27 @@ const MapPage: React.FC = () => {
   useEffect(() => {
     const fetchRivers = async () => {
       try {
-        const riverDataUrl = import.meta.env.DEV
-          ? "https://rivers.run/riverdata.json"
-          : "/riverdata.json";
-        const flowDataUrl = import.meta.env.DEV
-          ? "https://rivers.run/flowdata3.json"
-          : "/flowdata3.json";
+        const riverDataUrl = "/riverdata.json";
+        const flowDataUrl = "https://storage.googleapis.com/rivers-run.appspot.com/public/flowdata3.json";
 
         const [riverRes, flowRes] = await Promise.all([
           fetch(riverDataUrl),
           fetch(flowDataUrl),
         ]);
 
-        if (!riverRes.ok) throw new Error("Failed to fetch river data");
+        if (!riverRes.ok || !riverRes.headers.get("content-type")?.includes("json")) {
+           throw new Error("Failed to fetch valid river data JSON");
+        }
         let data: RiverData[] = await riverRes.json();
 
-        if (flowRes.ok) {
+        if (flowRes.ok && flowRes.headers.get("content-type")?.includes("json")) {
           const flowData = await flowRes.json();
+          const usedGauges = new Set<string>();
+
           data = data.map((river: any, index: number) => {
             river.index = index; // Inject index to be able to map to legacy IDs if needed
+            if (river.gauge) usedGauges.add(river.gauge);
+
             const gaugeRecord = flowData[river.gauge];
             if (
               gaugeRecord &&
@@ -60,6 +62,38 @@ const MapPage: React.FC = () => {
             }
             return river;
           });
+
+          // Create virtual rivers for any gauge present in flowdata3 that isn't mapped to a river
+          const virtualGauges: RiverData[] = [];
+          let virtualIndex = data.length;
+
+          for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
+              if (!usedGauges.has(gaugeId)) {
+                  const gData: any = gaugeData;
+                  if (gData.readings && gData.readings.length > 0) {
+                      const latest = gData.readings[gData.readings.length - 1];
+                      let flowStr = "";
+                      if (latest.cfs && latest.feet) flowStr = `${Math.round(latest.cfs)} cfs ${Math.round(latest.feet * 100) / 100} ft`;
+                      else if (latest.cfs) flowStr = `${Math.round(latest.cfs)} cfs`;
+                      else if (latest.feet) flowStr = `${Math.round(latest.feet * 100) / 100} ft`;
+
+                      virtualGauges.push({
+                          id: gaugeId,
+                          name: gData.name || gaugeId,
+                          gauge: gaugeId,
+                          isGauge: true,
+                          index: virtualIndex++,
+                          cfs: latest.cfs,
+                          feet: latest.feet,
+                          flowData: gData.readings,
+                          flow: flowStr,
+                          access: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined
+                      } as unknown as RiverData);
+                  }
+              }
+          }
+          
+          data = [...data, ...virtualGauges];
         }
 
         setRivers(data);
@@ -129,14 +163,18 @@ const MapPage: React.FC = () => {
 
         {markers.map((pt, i) => {
           const color = calculateColor(pt.river.running ?? null, false, false);
+          // If it's a gauge, use a lighter purple. Otherwise use the flow color.
+          const fillColor = pt.river.isGauge ? "#df6af1" : (color || "#fff");
+          const opacity = pt.river.isGauge ? 1.0 : 0.9;
+          
           return (
             <CircleMarker
               key={i}
               center={[pt.lat, pt.lon]}
-              radius={pt.river.isGauge ? 4 : 8}
-              fillColor={color || "#fff"}
-              fillOpacity={0.9}
-              color="#333"
+              radius={pt.river.isGauge ? 3 : 8}
+              fillColor={fillColor}
+              fillOpacity={opacity}
+              color={pt.river.isGauge ? "#b53ebb" : "#333"}
               weight={1}
               eventHandlers={{
                 click: () => {

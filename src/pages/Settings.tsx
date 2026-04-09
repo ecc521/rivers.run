@@ -11,6 +11,23 @@ import { PromptModal } from "../components/PromptModal";
 
 const SettingsPage: React.FC = () => {
   const { isDarkMode, isColorBlindMode, homePageDefaultSearch, updateSetting } = useSettings();
+  const [communityLists, setCommunityLists] = useState<{id: string, title: string}[]>([]);
+
+  useEffect(() => {
+    // Optionally dynamically fetch community lists here to seed the dropdown
+    import("firebase/firestore").then(({ collection, getDocs, orderBy, query }) => {
+      import("../firebase").then(({ db }) => {
+        const q = query(collection(db, "community_lists"), orderBy("subscribes", "desc"));
+        getDocs(q).then((snapshot) => {
+          const loaded: {id: string, title: string}[] = [];
+          snapshot.forEach((doc) => {
+             loaded.push({id: doc.id, title: doc.data().title});
+          });
+          setCommunityLists(loaded);
+        }).catch(e => console.error("Could not fetch lists for settings dropdown", e));
+      });
+    });
+  }, []);
 
   return (
     <div
@@ -50,9 +67,9 @@ const SettingsPage: React.FC = () => {
         </div>
 
         <div className="settings-card">
-          <h3 style={{ marginTop: 0 }}>Home Page Default Search</h3>
+          <h3 style={{ marginTop: 0 }}>Startup View (Default Sort)</h3>
           <select
-            value={homePageDefaultSearch === "favorites" ? "favorites" : "null"}
+            value={homePageDefaultSearch || "null"}
             onChange={(e) => {
               updateSetting("homePageDefaultSearch", e.target.value);
             }}
@@ -60,16 +77,22 @@ const SettingsPage: React.FC = () => {
               padding: "8px",
               fontSize: "16px",
               width: "100%",
-              maxWidth: "300px",
+              maxWidth: "350px",
               marginBottom: "10px",
             }}
           >
             <option value="null">None (Display All Rivers)</option>
-            <option value="favorites">Display Favorites by Default</option>
+            <option value="favorites">My Favorites</option>
+            <optgroup label="Community Lists">
+              {communityLists.map(list => (
+                 <option key={list.id} value={`list:${list.id}`}>
+                    List: {list.title}
+                 </option>
+              ))}
+            </optgroup>
           </select>
           <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
-            Determines whether the main River list automatically filters to only
-            your favorites when you launch the app.
+            Determines what loads by default when you open the app. Selecting a Community List will also automatically enforce its custom curated sorting order.
           </p>
         </div>
 
@@ -122,14 +145,14 @@ const OfflineMapManager: React.FC = () => {
     onConfirm: () => void;
   } | null>(null);
 
-  useEffect(() => {
-    refreshCacheString();
-  }, []);
-
   const refreshCacheString = async () => {
     const mem = await getCacheUsageString();
     setStorageString(mem);
   };
+
+  useEffect(() => {
+    refreshCacheString();
+  }, []);
 
   const handleDownload = async (type: 'world' | 'us', exactZoom: number) => {
     if (isDownloading) return;

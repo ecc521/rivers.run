@@ -84,6 +84,14 @@ const About: React.FC = () => {
           </strong>
           .
         </p>
+        <div style={{ marginTop: "40px", borderTop: "1px solid #e2e8f0", paddingTop: "20px", fontSize: "0.9rem", color: "#64748b" }}>
+          <p style={{ marginBottom: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.05em" }}>Legal Information</p>
+          <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+             <Link to="/terms" style={{ color: "#3b82f6", textDecoration: "none" }}>Terms of Service</Link>
+             <Link to="/privacy" style={{ color: "#3b82f6", textDecoration: "none" }}>Privacy Policy</Link>
+             <Link to="/disclaimer" style={{ color: "#3b82f6", textDecoration: "none" }}>Disclaimer</Link>
+          </div>
+        </div>
       </div>
     </div>
   );

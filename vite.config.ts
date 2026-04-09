@@ -15,7 +15,7 @@ export default defineConfig({
       workbox: {
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/rivers\.run\/flowdata3\.json$/i,
+            urlPattern: /^https:\/\/storage\.googleapis\.com\/rivers-run\.appspot\.com\/public\/flowdata3\.json$/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'flow-data-cache',
@@ -65,6 +65,14 @@ export default defineConfig({
         theme_color: '#317EFB',
         background_color: '#317EFB',
         display: 'standalone',
+        prefer_related_applications: true,
+        related_applications: [
+            {
+                platform: "play",
+                url: "https://play.google.com/store/apps/details?id=run.rivers.twa",
+                id: "run.rivers.twa"
+            }
+        ],
         icons: [
           {
             src: 'resources/icons/144x144-Water-Drop.png',

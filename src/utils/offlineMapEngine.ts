@@ -114,7 +114,7 @@ export const getCacheUsageString = async (): Promise<string> => {
             const cache = await caches.open('offline-map-tiles');
             const keys = await cache.keys();
             tileCount = keys.length;
-        } catch (e) {
+        } catch {
             // ignore
         }
         

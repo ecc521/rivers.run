@@ -1,0 +1,28 @@
+import React from "react";
+import { LegalLayout } from "./LegalLayout";
+
+const PrivacyPolicy: React.FC = () => {
+  return (
+    <LegalLayout title="Privacy Policy">
+      <h2>Information we Collect or Store</h2>
+      <p>Rivers.run does not directly store any user information, although network request headers sent by your device may be temporarily stored by logging software. </p>
+
+      <h2>Third Parties</h2>
+      <p>Rivers.run uses Firebase to store login details and your favorite rivers (if you choose to create an account), as well as for analytics purposes. </p>
+      <p>Firebase typically collects information like pages viewed, time spent in the app, and device IDs to determine unique users. </p>
+      <p>Rivers.run does not sell this information or share it with any other parties. </p>
+
+      <h2>Data Deletion</h2>
+      <p>Deleting your rivers.run account will delete your saved login details & favorite rivers. For deletion of other information please contact support@rivers.run.</p>
+
+      <h2 id="changes">Changes to This Privacy Policy</h2>
+      <p>We reserve the right to modify this policy at any time. Changes become effective 30 days after posting of an updated version of this policy to the Website.
+        Continued use of the Website after any such changes become effective shall constitute your consent to such changes.</p>
+
+      <h2 id="contact">Contact Us</h2>
+      <p>If you have any questions about this privacy policy, feel free to contact us. You can send us an email at <a href="mailto:support@rivers.run" style={{ color: "#3b82f6", textDecoration: "none" }}>support@rivers.run</a></p>
+    </LegalLayout>
+  );
+};
+
+export default PrivacyPolicy;

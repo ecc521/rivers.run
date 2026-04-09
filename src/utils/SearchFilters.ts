@@ -21,6 +21,7 @@ export interface AdvancedSearchQuery {
   userLon?: number;
   sortBy?: "none" | "alphabetical" | "rating" | "skill" | "class" | "running";
   sortReverse?: boolean;
+  listData?: { id: string; order: number }[];
 }
 
 export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
@@ -68,6 +69,11 @@ export function filterRivers(
   query: AdvancedSearchQuery,
 ): RiverData[] {
   let list = [...rivers];
+
+  if (query.listData && query.listData.length > 0) {
+    const validIds = new Set(query.listData.map(l => l.id));
+    list = list.filter((r) => validIds.has(r.id));
+  }
 
   // 1. Normal Search (matches Name, Section, or Tags)
   if (query.normalSearch) {
@@ -171,6 +177,14 @@ export function filterRivers(
     if (query.sortReverse) {
       list.reverse();
     }
+  } else if (query.listData && query.listData.length > 0) {
+    // If no explicit sort is chosen but we have list constraints, sort by the implicit List Order!
+    const orderMap = new Map(query.listData.map((ld) => [ld.id, ld.order]));
+    list.sort((a, b) => {
+       const orderA = orderMap.get(a.id) ?? Infinity;
+       const orderB = orderMap.get(b.id) ?? Infinity;
+       return orderA - orderB;
+    });
   }
 
   return list;

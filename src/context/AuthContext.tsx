@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(u);
         if (u) {
             try {
-                const roleDoc = await getDoc(doc(db, "user_roles", u.uid));
+                const roleDoc = await getDoc(doc(db, "users", u.uid));
                 if (roleDoc.exists() && roleDoc.data().isAdmin === true) {
                     setIsAdmin(true);
                 } else {

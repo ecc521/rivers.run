@@ -34,3 +34,14 @@ public/flowdata*.json
 *.njsproj
 *.sln
 *.sw?
+
+# Firebase Service Accounts
+*firebase-adminsdk*.json
+
+# Temporary scripts and workspace cruft
+temp_*
+scripts/
+
+# Native Mobile Wrappers
+ios/
+android/

@@ -3,6 +3,7 @@ import type { RiverData } from "../types/River";
 import { skillTranslations } from "../utils/skillTranslations";
 import { USGSGraphs } from "./USGSGraphs";
 import { useAuth } from "../context/AuthContext";
+import DOMPurify from "dompurify";
 
 interface RiverExpansionProps {
   river: RiverData;
@@ -56,7 +57,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
       */}
 
       <div className="textInfo">
-        <div dangerouslySetInnerHTML={{ __html: river.writeup }} />
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(river.writeup || "") }} />
         <br />
         <p>{getSkillAndClassText()}</p>
 

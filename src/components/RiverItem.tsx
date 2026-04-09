@@ -94,7 +94,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
         )}
 
         {/* Flow Span */}
-        {river.flow ? (
+        {typeof river.flow === "string" ? (
           <span className="riverspan flowspan">{river.flow}</span>
         ) : river.dam ? (
           <span className="riverspan flowspan">Dam</span>

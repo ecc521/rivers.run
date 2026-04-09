@@ -9,10 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Replace with path to your service account when running
-const serviceAccountPath = path.join(__dirname, '..', '..', 'firebase-adminsdk.json');
+const serviceAccountPath = path.join(__dirname, '..', 'rivers-run-firebase-adminsdk-wzb5p-94cccdc3a2.json');
 
 if (!fs.existsSync(serviceAccountPath)) {
-  console.error("Please place your Firebase Service Account JSON at the repository root and name it 'firebase-adminsdk.json'");
+  console.error("Please place your Firebase Service Account JSON at the repository root and name it correctly.");
   process.exit(1);
 }
 
@@ -25,29 +25,54 @@ initializeApp({
 const db = getFirestore();
 const riversCol = db.collection('rivers');
 
+// Data parsing helpers
+function extractLevel(val) {
+  if (val === undefined || val === null || val === '') return null;
+  const num = parseFloat(val);
+  return isNaN(num) ? null : num;
+}
+
+function detectUnit(river) {
+  if (river.relativeflowtype) {
+    const rType = river.relativeflowtype.toLowerCase();
+    if (rType.includes("ft") || rType.includes("feet")) return "ft";
+    if (rType.includes("cms")) return "cms";
+    return "cfs";
+  }
+  
+  const allText = [river.minrun, river.maxrun, river.lowflow, river.midflow, river.highflow].join(" ").toLowerCase();
+  if (allText.includes("cms")) return "cms";
+  if (allText.includes("ft") || allText.includes("feet") || allText.includes("foot") || allText.includes("\'")) return "ft";
+  
+  return "cfs"; // Default fallback
+}
+
 // Run migration
 async function migrate() {
-  console.log("Fetching current riverdata.json from production...");
-  const devFileUrl = 'https://rivers.run/riverdata.json';
-  const response = await fetch(devFileUrl);
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch riverdata: ${response.statusText}`);
+  console.log("Loading local riverdata.json...");
+  const dataPath = path.join(__dirname, '..', 'riverdata.json');
+  if (!fs.existsSync(dataPath)) {
+    console.error("Local riverdata.json not found!");
+    process.exit(1);
   }
 
-  const rivers = await response.json();
-  console.log(`Fetched ${rivers.length} rivers. Beginning migration to Firestore...`);
+  const fileData = fs.readFileSync(dataPath, 'utf8');
+  const allData = JSON.parse(fileData);
+  
+  // Filter out auto-generated gauges. User-initiated data always has an original 'id'.
+  const rivers = allData.filter(r => !!r.id);
+  const autoGauges = allData.length - rivers.length;
+  
+  console.log(`Loaded ${allData.length} total entries from riverdata.json (Skipping ${autoGauges} auto-generated gauges)`);
+  console.log(`Beginning migration of ${rivers.length} user-initiated rivers to Firestore...`);
 
   let successCount = 0;
   let failCount = 0;
 
   for (const river of rivers) {
     try {
-      // 1. Process access points (from plat/plon, tlat/tlon legacy data)
+      // 1. Process access points
       let accessPoints = [];
-      
-      // Some legacy data might have access formatted in different ways. 
-      // If it exists in 'access' Array from standardizeRiverFormat
       if (river.access && Array.isArray(river.access)) {
          accessPoints = river.access.map((ap) => ({
            name: ap.name || ap.label || "Access",
@@ -77,7 +102,26 @@ async function migrate() {
         }
       }
 
-      // 3. Clean up strict Schema
+      // 3. Process Tags
+      let cleanTags = [];
+      if (river.tags && typeof river.tags === 'string') {
+        cleanTags = river.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+      } else if (Array.isArray(river.tags)) {
+        cleanTags = river.tags;
+      }
+
+      // 4. Extract Flows
+      const unit = detectUnit(river);
+      const flow = {
+        unit: unit,
+        min: extractLevel(river.minrun),
+        max: extractLevel(river.maxrun),
+        low: extractLevel(river.lowflow),
+        mid: extractLevel(river.midflow),
+        high: extractLevel(river.highflow),
+      };
+
+      // 5. Clean up strict Schema
       const document = {
         id: river.id || null,
         name: river.name || "Unknown River",
@@ -87,16 +131,20 @@ async function migrate() {
         gauges: gauges,
         accessPoints: accessPoints,
         overview: river.writeup || river.overview || "",
+        skill: river.skill || null,
+        rating: river.rating || null,
+        tags: cleanTags,
+        aw: river.aw || null,
+        flow: flow,
         imageUrls: [],
         updatedAt: Timestamp.now()
       };
 
       if (!document.id) {
-         // Create a synthetic ID from name if missing
          document.id = document.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       }
 
-      // 4. Save to Firestore
+      // 6. Save to Firestore
       await riversCol.doc(document.id).set(document);
       successCount++;
       process.stdout.write(`\rSuccessfully migrated ${successCount}/${rivers.length}`);

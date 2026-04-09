@@ -1,73 +1,48 @@
-# React + TypeScript + Vite
+# Rivers.run
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Rivers.run** is a highly resilient, offline-first Progressive Web App (PWA) designed specifically for whitewater kayakers, rafters, and paddlers. It natively consolidates user-curated river descriptions, rapid characteristics, and access points alongside heavily optimized live streamgage data from the USGS (United States Geological Survey) and the Meteorological Service of Canada.
 
-Currently, two official plugins are available:
+## Why it Exists
+When you're paddling deep in a river gorge or traversing a remote forested access road, cell service is historically non-existent. Rivers.run is fundamentally architected to overcome this: it aggressively caches river bounds, topographical map tiles, flow graphs, and user favorites directly to local device storage. If you load the app up before you leave internet service, the entire application remains fully functional and instantly accessible even offline in the wilderness.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Architecture
 
-## React Compiler
+The project has recently undergone a massive migration to a modern, fully serverless architecture designed for extreme cost efficiency and zero-latency CDN payload delivery.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Frontend (SPA)
+- **Vite + React (TypeScript):** Blazing fast interactive map interfaces and optimized builds.
+- **Capacitor:** Seamless cross-compilation into native Android/iOS shells.
+- **PWA Service Workers:** Robust resource caching for offline gorge accessibility.
 
-## Expanding the ESLint configuration
+### Backend (Serverless)
+- **Firebase Firestore:** Synchronizes the 464+ natively curated river descriptions seamlessly. Security rules guarantee pristine datasets protected from unauthorized overrides.
+- **Firebase Functions (Gen 2):** Pure TypeScript Edge-Cached polling structures perfectly throttle memory. Utilizing a strict 15-minute PubSub Chron scheduler mapped tightly to 128MiB containers, Rivers.run streams, chunks, and serializes massive CSV/JSON API blobs from the USGS and Canada entirely async in the background. 
+- **Google Cloud Storage (CDN):** The parsed gauge telemetry (`flowdata3.json`) is deposited to an exposed Cloud CDN edge bucket, fully divorcing the Frontend's load times from external API limits or legacy Express Node restrictions. Computation cost drops essentially to $0.00.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Development
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+To spin up a local development environment:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+```bash
+# Install frontend dependencies
+npm install
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start the Vite local development pipeline
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+To run and debug the serverless pipeline (Cloud Functions) locally:
+```bash
+# Install backend dependencies
+cd functions
+npm install
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build Typescript functions
+npm run build
 ```
+
+## Community Administration
+User submissions, edits, and gauge curation updates are directed to a `reviewQueue` in Firestore. 
+Registered Admins can authenticate and access the `Admin Tools` navigation portal securely natively within the SPA to seamlessly merge/reject incoming community topological datasets.
+
+**Note:** _All legacy Node Express `server/` cron scripts and Google Drive filesystem parsing routines have been strictly permanently completely retired._

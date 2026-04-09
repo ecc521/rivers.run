@@ -30,12 +30,21 @@ export function useLocation() {
                 maximumAge: 3000
             };
             
-            // Explicitly check/request permissions internally via the plugin
-            const permission = await Geolocation.checkPermissions();
-            if (permission.location !== 'granted') {
-                const request = await Geolocation.requestPermissions({ permissions: ['location'] });
-                if (request.location !== 'granted') {
-                    throw new Error("Location permission denied.");
+            // Explicitly check/request permissions internally via the plugin for native platforms
+            try {
+                const permission = await Geolocation.checkPermissions();
+                if (permission.location !== 'granted') {
+                    const request = await Geolocation.requestPermissions({ permissions: ['location'] });
+                    if (request.location !== 'granted') {
+                        throw new Error("Location permission denied.");
+                    }
+                }
+            } catch (permError: any) {
+                // Web browsers handle location permissions automatically via the DOM Geolocation API prompt.
+                // Capacitor throws "Not implemented on web." for the explicit permission request methods.
+                // We can safely ignore this error and fall through to getCurrentPosition.
+                if (permError.message !== 'Not implemented on web.') {
+                    throw permError;
                 }
             }
 

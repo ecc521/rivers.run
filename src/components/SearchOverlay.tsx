@@ -25,7 +25,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   if (!isOpen) return null;
 
   const handleApply = async () => {
-    let finalQuery = { ...localQuery };
+    const finalQuery = { ...localQuery };
     
     // If user wants distance filter, we MUST have their location!
     if (finalQuery.distanceMax && finalQuery.distanceMax > 0) {
@@ -191,17 +191,17 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
           <div style={sectionStyle}>
             <label style={labelStyle}>
-              Search within Radius: {localQuery.distanceMax ? `${localQuery.distanceMax} Miles` : 'Any Distance'}
+              Search within Radius: {!localQuery.distanceMax || localQuery.distanceMax > 500 ? 'Any Distance' : `${localQuery.distanceMax} Miles`}
             </label>
             <input
               type="range"
-              min={0}
-              max={500}
+              min={10}
+              max={510}
               step={10}
-              value={localQuery.distanceMax || 0}
+              value={localQuery.distanceMax || 510}
               onChange={(e) => {
                 const val = parseInt(e.target.value);
-                setLocalQuery({ ...localQuery, distanceMax: val === 0 ? undefined : val });
+                setLocalQuery({ ...localQuery, distanceMax: val > 500 ? undefined : val });
               }}
               style={{ width: "100%" }}
             />

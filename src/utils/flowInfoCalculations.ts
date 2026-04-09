@@ -52,7 +52,20 @@ export function calculateRelativeFlow(river: any): number | null {
     "maxrun",
   ] as const;
 
-  // If the river does not have a relative flow type, calculate one from the string literals.
+  // Intercept modern object-based flow property mapping perfectly
+  if (river.flow !== null && typeof river.flow === "object" && !Array.isArray(river.flow)) {
+    if (river.flow.unit) river.relativeflowtype = river.flow.unit;
+    if (river.flow.min !== undefined) river.minrun = Number(river.flow.min);
+    if (river.flow.low !== undefined) river.lowflow = Number(river.flow.low);
+    if (river.flow.mid !== undefined) river.midflow = Number(river.flow.mid);
+    if (river.flow.high !== undefined) river.highflow = Number(river.flow.high);
+    if (river.flow.max !== undefined) river.maxrun = Number(river.flow.max);
+    
+    // Wipe it so the React Node UI renderer doesn't inherently crash on the object structure
+    river.flow = undefined;
+  }
+
+  // If the river does not have a relative flow type natively, calculate one from the string literals.
   if (!river.relativeflowtype) {
     let type: string | undefined;
 

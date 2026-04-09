@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitReturns": true,
+    "outDir": "lib",
+    "rootDir": "src",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2017",
+    "lib": ["es2020"],
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "compileOnSave": true,
+  "include": [
+    "src"
+  ]
+}
