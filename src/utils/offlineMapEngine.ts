@@ -150,3 +150,41 @@ export const autoDownloadBaseMaps = async () => {
         console.error("Auto base map download failed", err);
     }
 };
+
+/**
+ * Heuristically detects the maximum zoom level currently downloaded 
+ * for a specific region by scanning cache keys.
+ */
+export const detectMaxZoom = async (type: 'world' | 'na'): Promise<number> => {
+    try {
+        const cache = await caches.open('offline-map-tiles');
+        const keys = await cache.keys();
+        const urls = keys.map(k => k.url);
+        
+        // Default baselines
+        let maxFound = type === 'world' ? 2 : 4;
+        
+        // Extract zoom levels from URLs like .../tile.openstreetmap.org/Z/X/Y.png
+        const zoomRegex = /\/(\d+)\/\d+\/\d+\.png$/;
+        
+        for (const url of urls) {
+            const match = url.match(zoomRegex);
+            if (match) {
+                const z = parseInt(match[1], 10);
+                if (z > maxFound) {
+                    // For NA, we want to ensure it's actually within NA bounds 
+                    // (Roughly Z > 4 means it was a manual regional download)
+                    if (type === 'na' && z > 4) {
+                        maxFound = z;
+                    } else if (type === 'world' && z <= 5) {
+                        maxFound = z;
+                    }
+                }
+            }
+        }
+        
+        return maxFound;
+    } catch {
+        return type === 'world' ? 2 : 4;
+    }
+};

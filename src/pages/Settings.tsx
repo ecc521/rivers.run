@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useSettings } from "../context/SettingsContext";
 import { 
-  getCacheUsageString, 
+  getCacheUsageString,
   generateTileQueue, 
   downloadMapTiles, 
+  detectMaxZoom,
   WORLD_BOUNDS, 
   NORTH_AMERICA_BOUNDS 
 } from "../utils/offlineMapEngine";
 import { PromptModal } from "../components/PromptModal";
 
 const SettingsPage: React.FC = () => {
-  const { isDarkMode, isColorBlindMode, homePageDefaultSearch, updateSetting } = useSettings();
+  const { isDarkMode, homePageDefaultSearch, updateSetting, loading, themePref, colorBlindPref } = useSettings();
   const [communityLists, setCommunityLists] = useState<{id: string, title: string}[]>([]);
 
   useEffect(() => {
@@ -41,29 +42,32 @@ const SettingsPage: React.FC = () => {
       <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
         <div className="settings-card">
           <h3 style={{ marginTop: 0 }}>Theme (Color Scheme)</h3>
-          <select
-            value={localStorage.getItem("userTheme") || "null"}
-            onChange={(e) => {
-              updateSetting("userTheme", e.target.value);
-            }}
-            style={{
-              padding: "8px",
-              fontSize: "16px",
-              width: "100%",
-              maxWidth: "300px",
-              marginBottom: "10px",
-            }}
-          >
-            <option value="null">System Default</option>
-            <option value="false">Light</option>
-            <option value="true">Dark</option>
-          </select>
-          <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
-            {localStorage.getItem("userTheme") === "null" ||
-            !localStorage.getItem("userTheme")
-              ? `Currently utilizing System Default theme: ${isDarkMode ? "Dark" : "Light"}`
-              : "Overriding System Default Theme."}
-          </p>
+          {loading ? <p>Loading...</p> : (
+            <>
+              <select
+                value={themePref || "null"}
+                onChange={(e) => {
+                  updateSetting("userTheme", e.target.value);
+                }}
+                style={{
+                  padding: "8px",
+                  fontSize: "16px",
+                  width: "100%",
+                  maxWidth: "300px",
+                  marginBottom: "10px",
+                }}
+              >
+                <option value="null">System Default</option>
+                <option value="false">Light</option>
+                <option value="true">Dark</option>
+              </select>
+              <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
+                {!themePref || themePref === "null"
+                  ? `Currently utilizing System Default theme: ${isDarkMode ? "Dark" : "Light"}`
+                  : "Overriding System Default Theme."}
+              </p>
+            </>
+          )}
         </div>
 
         <div className="settings-card">
@@ -98,23 +102,25 @@ const SettingsPage: React.FC = () => {
 
         <div className="settings-card">
           <h3 style={{ marginTop: 0 }}>Color Blind Mode</h3>
-          <select
-            value={isColorBlindMode ? "true" : "null"}
-            onChange={(e) => {
-              updateSetting("colorBlindMode", e.target.value);
-            }}
-            style={{
-              padding: "8px",
-              fontSize: "16px",
-              width: "100%",
-              maxWidth: "300px",
-              marginBottom: "10px",
-            }}
-          >
-            <option value="null">Default (No)</option>
-            <option value="false">No</option>
-            <option value="true">Yes</option>
-          </select>
+          {loading ? <p>Loading...</p> : (
+            <select
+              value={colorBlindPref || "null"}
+              onChange={(e) => {
+                updateSetting("colorBlindMode", e.target.value);
+              }}
+              style={{
+                padding: "8px",
+                fontSize: "16px",
+                width: "100%",
+                maxWidth: "300px",
+                marginBottom: "10px",
+              }}
+            >
+              <option value="null">Default (No)</option>
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          )}
           <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
             Color blind mode alters the primary flow color indicators natively
             embedded everywhere, as well as line-colors on Flow charts.
@@ -136,7 +142,7 @@ const OfflineMapManager: React.FC = () => {
   const [downloadProgress, setDownloadProgress] = useState<{done: number, total: number} | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   
-  const [worldZoom, setWorldZoom] = useState(3);
+  const [worldZoom, setWorldZoom] = useState(2);
   const [usZoom, setUsZoom] = useState(4);
 
   const [promptConfig, setPromptConfig] = useState<{
@@ -152,6 +158,9 @@ const OfflineMapManager: React.FC = () => {
 
   useEffect(() => {
     refreshCacheString();
+    // Detect what's actually on disk on mount
+    detectMaxZoom('world').then(setWorldZoom);
+    detectMaxZoom('na').then(setUsZoom);
   }, []);
 
   const handleDownload = async (type: 'world' | 'us', exactZoom: number) => {
@@ -181,6 +190,9 @@ const OfflineMapManager: React.FC = () => {
         setDownloadProgress(null);
         setIsDownloading(false);
         refreshCacheString();
+        // Force re-detect to update UI after a manual download finishes
+        detectMaxZoom('world').then(setWorldZoom);
+        detectMaxZoom('na').then(setUsZoom);
       }
     });
   };
@@ -244,7 +256,7 @@ const OfflineMapManager: React.FC = () => {
               disabled={isDownloading}
               style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', flex: 1, backgroundColor: '#fff' }}
             >
-              <option value={2}>Vague (Zoom 2) - Auto Default</option>
+              <option value={2}>Vague (Zoom 2) - Default</option>
               <option value={3}>Basic (Zoom 3)</option>
               <option value={4}>Detailed (Zoom 4)</option>
               <option value={5}>Maximum (Zoom 5)</option>
@@ -271,7 +283,7 @@ const OfflineMapManager: React.FC = () => {
               disabled={isDownloading}
               style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', flex: 1, backgroundColor: '#fff' }}
             >
-              <option value={4}>Basic (Zoom 4) - Auto Default</option>
+              <option value={4}>Basic (Zoom 4) - Default</option>
               <option value={5}>Standard (Zoom 5)</option>
               <option value={6}>Detailed (Zoom 6)</option>
               <option value={7}>High Res (Zoom 7)</option>

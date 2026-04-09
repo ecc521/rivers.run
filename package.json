@@ -18,6 +18,7 @@
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/geolocation": "^8.2.0",
     "@capacitor/keyboard": "^8.0.2",
+    "@capacitor/preferences": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
     "@types/dompurify": "^3.0.5",
     "dompurify": "^3.3.3",

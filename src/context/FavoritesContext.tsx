@@ -3,6 +3,7 @@ import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "./AuthContext";
 import type { RiverData } from "../types/River";
+import { persistentStorage } from "../utils/persistentStorage";
 
 export interface LegacyFavoriteDetails {
   id: string;
@@ -27,6 +28,7 @@ interface FavoritesContextType {
     updates: Partial<LegacyFavoriteDetails>,
   ) => Promise<void>;
   isFavorite: (riverId: string) => boolean;
+  loading: boolean;
 }
 
 const FavoritesContext = createContext<FavoritesContextType>({
@@ -34,21 +36,34 @@ const FavoritesContext = createContext<FavoritesContextType>({
   toggleFavorite: async () => {},
   updateFavoriteConfig: async () => {},
   isFavorite: () => false,
+  loading: true,
 });
 
 export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState<FavoritesMap>({});
 
-  const [favorites, setFavorites] = useState<FavoritesMap>(() => {
-    try {
-      const local = localStorage.getItem("rivers_favorites");
-      return local ? JSON.parse(local) : {};
-    } catch {
-      return {};
+  // Initialize from storage
+  useEffect(() => {
+    async function init() {
+      // Documentation: TEMPORARY_CODE.md
+      await persistentStorage.migrate();
+      
+      const local = await persistentStorage.get("rivers_favorites");
+      if (local) {
+        try {
+          setFavorites(JSON.parse(local));
+        } catch (e) {
+          console.error("Failed to parse local favorites", e);
+        }
+      }
+      setLoading(false);
     }
-  });
+    init();
+  }, []);
 
   const mergeFavoritesObjects = (
     local: FavoritesMap,
@@ -65,26 +80,24 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || loading) return;
 
     const userRef = doc(db, "users", user.uid);
-    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+    const unsubscribe = onSnapshot(userRef, async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const cloudFavorites = data.favorites || {};
         const cloudLastModified = data.favoritesLastModified || 0;
 
-        const localLastModified = parseInt(
-          localStorage.getItem("rivers_favorites_last_modified") || "0",
-          10,
-        );
+        const localLastModifiedStr = await persistentStorage.get("rivers_favorites_last_modified");
+        const localLastModified = parseInt(localLastModifiedStr || "0", 10);
 
         let newFavorites: FavoritesMap;
 
         // If cloud is explicitly newer, prefer cloud. Otherwise merge.
         if (
           cloudLastModified > localLastModified &&
-          localLastModified !== null
+          localLastModified !== 0
         ) {
           newFavorites = cloudFavorites;
         } else {
@@ -92,7 +105,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         setFavorites(newFavorites);
-        localStorage.setItem("rivers_favorites", JSON.stringify(newFavorites));
+        await persistentStorage.set("rivers_favorites", JSON.stringify(newFavorites));
 
         if (cloudLastModified <= localLastModified) {
           // We merged local stuff up. Push back to cloud seamlessly.
@@ -114,13 +127,13 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       unsubscribe();
     };
-  }, [user]);
+  }, [user, loading]);
 
   const saveFavorites = async (newFavs: FavoritesMap) => {
     const now = Date.now();
     setFavorites(newFavs);
-    localStorage.setItem("rivers_favorites", JSON.stringify(newFavs));
-    localStorage.setItem("rivers_favorites_last_modified", now.toString());
+    await persistentStorage.set("rivers_favorites", JSON.stringify(newFavs));
+    await persistentStorage.set("rivers_favorites_last_modified", now.toString());
 
     if (user) {
       const userRef = doc(db, "users", user.uid);
@@ -175,7 +188,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <FavoritesContext.Provider
-      value={{ favorites, toggleFavorite, updateFavoriteConfig, isFavorite }}
+      value={{ favorites, toggleFavorite, updateFavoriteConfig, isFavorite, loading }}
     >
       {children}
     </FavoritesContext.Provider>

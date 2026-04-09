@@ -31,64 +31,61 @@ const Home: React.FC = () => {
     if (searchParamVal) {
       q.normalSearch = searchParamVal;
     }
-    // Check local storage for default search settings
-    const defaultSearch = localStorage.getItem("homePageDefaultSearch");
-    try {
-      if (defaultSearch === "favorites") {
-        q.favoritesOnly = true;
-      }
-    } catch {}
     return q;
   });
 
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [listTitle, setListTitle] = useState<string | null>(null);
 
-  // Fetch List Data if applicable
+  // Load persistence settings and list data
   useEffect(() => {
-    const listParam = searchParams.get("list");
-    const defaultSearch = localStorage.getItem("homePageDefaultSearch");
-    
-    let targetListId = listParam;
-    if (!targetListId && defaultSearch && defaultSearch.startsWith("list:")) {
-        targetListId = defaultSearch.replace("list:", "");
-    }
-
-    if (targetListId) {
-      setLoading(true);
+    async function loadPersistence() {
+      const { persistentStorage } = await import("../utils/persistentStorage");
       
-      // Attempt to load from cache immediately to guarantee offline UX
-      const cachedListStr = localStorage.getItem(`saved_list_${targetListId}`);
-      if (cachedListStr) {
-          try {
-              const cachedData = JSON.parse(cachedListStr);
-              setSearchQuery((prev) => ({ ...prev, listData: cachedData.rivers || [] }));
-              setListTitle(cachedData.title);
-          } catch {
-             // Silently catch json parse err
-          }
+      const defaultSearch = await persistentStorage.get("homePageDefaultSearch");
+      if (defaultSearch === "favorites") {
+        setSearchQuery(prev => ({ ...prev, favoritesOnly: true }));
       }
 
-      getDoc(doc(db, "community_lists", targetListId)).then((snapshot) => {
-          if (snapshot.exists()) {
-             const data = snapshot.data();
-             setSearchQuery((prev) => ({ ...prev, listData: data.rivers || [] }));
-             setListTitle(data.title);
-             // Save it for offline
-             localStorage.setItem(`saved_list_${targetListId}`, JSON.stringify(data));
-          } else if (!cachedListStr) {
-             setError("Requested list does not exist.");
-          }
-          setLoading(false);
-      }).catch(err => {
-          console.error("Failed to load list from network, trying to rely on cache", err);
-          if (!cachedListStr) {
-              setLoading(false);
-          } else {
-              setLoading(false); 
-          }
-      });
+      const listParam = searchParams.get("list");
+      let targetListId = listParam;
+      if (!targetListId && defaultSearch && defaultSearch.startsWith("list:")) {
+          targetListId = defaultSearch.replace("list:", "");
+      }
+
+      if (targetListId) {
+        setLoading(true);
+        
+        // Attempt to load from cache immediately to guarantee offline UX
+        const cachedListStr = await persistentStorage.get(`saved_list_${targetListId}`);
+        if (cachedListStr) {
+            try {
+                const cachedData = JSON.parse(cachedListStr);
+                setSearchQuery((prev) => ({ ...prev, listData: cachedData.rivers || [] }));
+                setListTitle(cachedData.title);
+            } catch {
+               // Silently catch json parse err
+            }
+        }
+
+        getDoc(doc(db, "community_lists", targetListId)).then(async (snapshot) => {
+            if (snapshot.exists()) {
+               const data = snapshot.data();
+               setSearchQuery((prev) => ({ ...prev, listData: data.rivers || [] }));
+               setListTitle(data.title);
+               // Save it for offline
+               await persistentStorage.set(`saved_list_${targetListId}`, JSON.stringify(data));
+            } else if (!cachedListStr) {
+               setError("Requested list does not exist.");
+            }
+            setLoading(false);
+        }).catch(err => {
+            console.error("Failed to load list from network, trying to rely on cache", err);
+            setLoading(false);
+        });
+      }
     }
+    loadPersistence();
   }, [searchParams]);
 
   useEffect(() => {

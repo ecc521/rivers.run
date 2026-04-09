@@ -92,8 +92,9 @@ const FavoritesPage: React.FC = () => {
     setPromptConfig({
       title: "Delete All Favorites",
       message: "Are you sure you want to permanently delete all your favorites? This action cannot be undone.",
-      onConfirm: () => {
-        localStorage.removeItem("rivers_favorites");
+      onConfirm: async () => {
+        const { persistentStorage } = await import("../utils/persistentStorage");
+        await persistentStorage.remove("rivers_favorites");
         window.location.reload();
       }
     });

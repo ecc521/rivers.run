@@ -11,9 +11,10 @@ const GlobalNavBar: React.FC = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const handleDownloadData = () => {
+  const handleDownloadData = async () => {
     try {
-      const data = localStorage.getItem("rivers_favorites") || "{}";
+      const { persistentStorage } = await import("../utils/persistentStorage");
+      const data = await persistentStorage.get("rivers_favorites") || "{}";
       const blob = new Blob([data], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

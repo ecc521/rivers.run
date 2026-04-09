@@ -23,7 +23,7 @@ const bucket = getStorage().bucket();
 export const pullGaugeDataPeriodic = onSchedule({
     schedule: "every 15 minutes",
     timeoutSeconds: 300,
-    memory: "128MiB", // Strictly enforced 128MB bound as requested
+    memory: "256MiB", // Reverted to 256MB to fix OOM
     secrets: [gmailPassword]
 }, async () => {
     console.log("Starting gauge sync protocol...");
