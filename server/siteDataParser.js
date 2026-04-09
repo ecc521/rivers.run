@@ -89,22 +89,55 @@ function fixSiteName(siteName, options = {}) {
   return siteName
 }
 
-async function downloadSitesFile() {
-  //I believe we can get this url from https://waterdata.usgs.gov/nwis/current?submitted_form=introduction
-  //Did not confirm that is the form to download a gauge list, however.
-  console.log("Downloading Gauge List from USGS (May take a while)")
-  let url = "https://waterdata.usgs.gov/nwis/inventory?data_type=rt&data_type=peak&group_key=NONE&format=sitefile_output&sitefile_output_format=rdb_gz&column_name=site_no&column_name=station_nm&column_name=dec_lat_va&column_name=dec_long_va&column_name=state_cd&list_of_search_criteria=data_type"
+const states = [
+  "al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl", "ga",
+  "hi", "id", "il", "in", "ia", "ks", "ky", "la", "me", "md", "ma",
+  "mi", "mn", "ms", "mo", "mt", "ne", "nv", "nh", "nj", "nm", "ny",
+  "nc", "nd", "oh", "ok", "or", "pa", "ri", "sc", "sd", "tn", "tx",
+  "ut", "vt", "va", "wa", "wv", "wi", "wy", "pr", "vi"
+];
 
-  //The file is gzipped, so we have to unzip it.
-  let unzipper = zlib.createGunzip()
-  await new Promise((resolve, reject) => {
-    bent(url)().then((stream) => {
-      //TODO: Response is Gzipped. decompress.
-      let dest = fs.createWriteStream(sitesFilePath)
-      let writeStream = stream.pipe(unzipper).pipe(dest)
-      writeStream.on("finish", resolve)
-    })
-  })
+async function downloadSitesFile() {
+  console.log("Downloading Gauge List from USGS legacy API (May take a while)")
+  
+  if (fs.existsSync(sitesFilePath)) {
+    fs.unlinkSync(sitesFilePath)
+  }
+  
+  let first_file = true;
+  for (let state of states) {
+    let url = `https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=${state}&siteStatus=active&siteType=ST&hasDataTypeCd=iv&siteOutput=expanded`
+    try {
+      let request = bent('string')
+      let text = await request(url)
+      
+      let lines = text.split('\n')
+      let outputLines = []
+      
+      for (let line of lines) {
+        line = line.trimEnd()
+        if (!line) continue;
+        
+        if (line.startsWith('#')) {
+          if (first_file) outputLines.push(line)
+        } else {
+          // Skip header and formatting lines for all subsequent states to maintain single valid TSV structure
+          if (line.includes('agency_cd') && !first_file) continue;
+          if (line.includes('5s\t15s') && !first_file) continue;
+          outputLines.push(line)
+        }
+      }
+      
+      fs.appendFileSync(sitesFilePath, outputLines.join('\n') + '\n')
+      first_file = false;
+      
+      // Throttle slightly to abide by USGS polite usage guidelines
+      await new Promise(r => setTimeout(r, 600)) 
+    } catch (e) {
+      console.error(`Status retrieving ${state} USGS sites:`, e.statusCode || e.message)
+    }
+  }
+  
   console.log("Gauge List Downloaded")
 }
 
