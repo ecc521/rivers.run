@@ -18,7 +18,7 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
         if (exists) {
             const [metadata] = await file.getMetadata();
             // Google Cloud Storage updated time is ISO 8601
-            const updatedTime = new Date(metadata.updated).getTime();
+            const updatedTime = new Date(metadata.updated || 0).getTime();
             
             // If the baseline file is older than 24 hours, safely enforce a full sync to garbage-collect any deleted rivers
             if (Date.now() - updatedTime > FULL_SYNC_HEURISTIC_MS) {
@@ -38,7 +38,7 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
         needsFullSync = true;
     }
 
-    let modifiedCount = 0;
+    let modifiedCount: number;
 
     // 2. Fetch natively from database
     if (needsFullSync) {

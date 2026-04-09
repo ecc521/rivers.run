@@ -12,6 +12,7 @@ const gmailPassword = (0, params_1.defineSecret)("GMAIL_PASSWORD");
 const usgs_1 = require("./services/usgs");
 const canada_1 = require("./services/canada");
 const notifications_1 = require("./services/notifications");
+const riverdata_1 = require("./services/riverdata");
 // Initialize Firebase Admin seamlessly (uses default credentials inside the function environment)
 (0, app_1.initializeApp)({
     storageBucket: "rivers-run.appspot.com" // Needs to match your actual bucket if different!
@@ -21,23 +22,23 @@ const bucket = (0, storage_1.getStorage)().bucket();
 exports.pullGaugeDataPeriodic = (0, scheduler_1.onSchedule)({
     schedule: "every 15 minutes",
     timeoutSeconds: 300,
-    memory: "128MiB", // Strictly enforced 128MB bound as requested
+    memory: "256MiB", // Reverted to 256MB to fix OOM
     secrets: [gmailPassword]
-}, async (event) => {
+}, async () => {
     console.log("Starting gauge sync protocol...");
-    // 1. Fetch all unique gauges from the active rivers in Firestore
-    const snapshot = await db.collection("rivers").get();
+    // 1. Sync riverdata.json using the exact Delta scheme to avoid unnecesssary reads!
+    const activeRivers = await (0, riverdata_1.syncRiverDataToStorage)(db, bucket);
+    // 2. Fetch all unique gauges natively from the explicitly merged baseline memory 
     const usgsSet = new Set();
     const canadaProvincesSet = new Set();
-    snapshot.forEach(doc => {
-        const river = doc.data();
+    activeRivers.forEach(river => {
         if (river.gauges && Array.isArray(river.gauges)) {
             river.gauges.forEach((g) => {
                 const id = g.id || "";
                 if (id.startsWith("USGS:"))
                     usgsSet.add(id.replace("USGS:", ""));
                 else if (id.startsWith("canada:"))
-                    canadaProvincesSet.add(id.replace("canada:", "")); // In legacy canada handles gauge parsing dynamically from Province
+                    canadaProvincesSet.add(id.replace("canada:", ""));
             });
         }
     });
@@ -92,7 +93,7 @@ exports.pullGaugeDataPeriodic = (0, scheduler_1.onSchedule)({
     try {
         await file.makePublic();
     }
-    catch (e) {
+    catch (_a) {
         console.warn("Non-fatal: makePublic IAM assertion blipped, file is likely already publicly inheriting.");
     }
     // 7. Process legacy email notifications using the natively synthesized payload map

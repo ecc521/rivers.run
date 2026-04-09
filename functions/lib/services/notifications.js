@@ -7,10 +7,10 @@ const email_1 = require("./email");
 const meterInFeet = 3.2808399;
 const cubicMeterInFeet = Math.pow(meterInFeet, 3);
 function addFlowDataToFavorites(favorites, gauges = {}) {
-    for (let gaugeID in favorites) {
-        let rivers = favorites[gaugeID];
-        let gaugeRecord = gauges[gaugeID] || gauges["USGS:" + gaugeID] || gauges["canada:" + gaugeID];
-        let readings = (gaugeRecord === null || gaugeRecord === void 0 ? void 0 : gaugeRecord.readings) || [];
+    for (const gaugeID in favorites) {
+        const rivers = favorites[gaugeID];
+        const gaugeRecord = gauges[gaugeID] || gauges["USGS:" + gaugeID] || gauges["canada:" + gaugeID];
+        const readings = (gaugeRecord === null || gaugeRecord === void 0 ? void 0 : gaugeRecord.readings) || [];
         let latestReading = {};
         for (let i = readings.length - 1; i >= 0; i--) {
             // Find the latest non-forecast flow value.
@@ -19,9 +19,9 @@ function addFlowDataToFavorites(favorites, gauges = {}) {
                 break;
             }
         }
-        for (let riverID in rivers) {
-            let river = rivers[riverID];
-            let units = river.units;
+        for (const riverID in rivers) {
+            const river = rivers[riverID];
+            const units = river.units;
             river.flowInfo = "No Flow Data";
             latestReading.meters = (latestReading === null || latestReading === void 0 ? void 0 : latestReading.feet) / meterInFeet;
             latestReading.cms = (latestReading === null || latestReading === void 0 ? void 0 : latestReading.cfs) / cubicMeterInFeet;
@@ -75,29 +75,29 @@ async function processNotifications(flowDataGlob) {
     var _a, _b, _c;
     const db = (0, firestore_1.getFirestore)();
     const auth = (0, auth_1.getAuth)();
-    let usersToExamine = await db.collection("users")
+    const usersToExamine = await db.collection("users")
         .where("notifications.enabled", "==", true) // Only where notifications enabled.
         .where("notifications.noneUntil", "<=", Date.now()) // Only where noneUntil doesn't disable
         .get();
-    let usersMap = new Map();
+    const usersMap = new Map();
     usersToExamine.forEach((queryDocumentSnapshot) => {
-        let data = queryDocumentSnapshot.data();
-        let uid = queryDocumentSnapshot.id;
+        const data = queryDocumentSnapshot.data();
+        const uid = queryDocumentSnapshot.id;
         data.document = queryDocumentSnapshot; // Provide a reference to the original document so this record can be amended.
         usersMap.set(uid, data);
     });
-    let userIDs = Array.from(usersMap.keys()).map((userID) => ({ uid: userID }));
+    const userIDs = Array.from(usersMap.keys()).map((userID) => ({ uid: userID }));
     // Batch lookup emails natively via Auth
-    let increment = 100;
+    const increment = 100;
     for (let i = 0; i < userIDs.length; i += increment) {
-        let userIDChunk = userIDs.slice(i, i + increment);
+        const userIDChunk = userIDs.slice(i, i + increment);
         if (userIDChunk.length === 0)
             continue;
         try {
-            let result = await auth.getUsers(userIDChunk);
+            const result = await auth.getUsers(userIDChunk);
             // Delete user alerts if they no longer have auth accounts
             result.notFound.forEach((user) => {
-                let userData = usersMap.get(user.uid);
+                const userData = usersMap.get(user.uid);
                 if (userData) {
                     userData.document.ref.delete();
                     usersMap.delete(user.uid);
@@ -105,7 +105,7 @@ async function processNotifications(flowDataGlob) {
             });
             // Map auth struct to the object payload strictly
             result.users.forEach((user) => {
-                let d = usersMap.get(user.uid);
+                const d = usersMap.get(user.uid);
                 if (d)
                     d.auth = user;
             });
@@ -114,10 +114,10 @@ async function processNotifications(flowDataGlob) {
             console.error("Non-fatal: Auth batch lookup failed, skipping users chunk.", e.message);
         }
     }
-    let userData = Array.from(usersMap.values());
+    const userData = Array.from(usersMap.values());
     console.log(`Evaluating alerts for ${userData.length} active users.`);
     for (let i = 0; i < userData.length; i++) {
-        let user = userData[i];
+        const user = userData[i];
         if (((_a = user.notifications) === null || _a === void 0 ? void 0 : _a.noneUntil) > Date.now()) {
             continue;
         }

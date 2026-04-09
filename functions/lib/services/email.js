@@ -69,20 +69,20 @@ const statuses = ["high", "running", "low", "unknown"];
 const statusHeaders = ["Rivers that are Too High:", "Rivers that are Running:", "Rivers that are Too Low:", "Unclassified Rivers:"];
 function getMessage(user) {
     var _a, _b, _c, _d;
-    let title = "River(s) are running!";
+    let title;
     let body = "";
-    let statusMap = new Map();
+    const statusMap = new Map();
     statuses.forEach((prop) => {
         statusMap.set(prop, []);
     });
-    let IDs = [];
-    let favorites = user.favorites || {};
-    for (let gaugeID in favorites) {
-        let rivers = favorites[gaugeID];
-        for (let riverID in rivers) {
-            let river = rivers[riverID];
+    const IDs = [];
+    const favorites = user.favorites || {};
+    for (const gaugeID in favorites) {
+        const rivers = favorites[gaugeID];
+        for (const riverID in rivers) {
+            const river = rivers[riverID];
             IDs.push(riverID);
-            let s = river.status || "unknown";
+            const s = river.status || "unknown";
             (_a = statusMap.get(s)) === null || _a === void 0 ? void 0 : _a.push(river);
         }
     }
@@ -92,7 +92,7 @@ function getMessage(user) {
     function getIDs(rivers) {
         return rivers.map((river) => river.id);
     }
-    let running = statusMap.get("running") || [];
+    const running = statusMap.get("running") || [];
     if (running.length === 0) {
         title = "Rivers are not running";
     }
@@ -106,7 +106,7 @@ function getMessage(user) {
         title = running.length + " rivers are running!";
     }
     body = `<html><head></head><body>`;
-    let riversAboveTooLow = (((_b = statusMap.get("high")) === null || _b === void 0 ? void 0 : _b.length) || 0) + (((_c = statusMap.get("running")) === null || _c === void 0 ? void 0 : _c.length) || 0);
+    const riversAboveTooLow = (((_b = statusMap.get("high")) === null || _b === void 0 ? void 0 : _b.length) || 0) + (((_c = statusMap.get("running")) === null || _c === void 0 ? void 0 : _c.length) || 0);
     if (riversAboveTooLow === 0) {
         body += `<p>Notifications are now suspended until at least one river is above minimum. </p>`;
         if (((_d = user === null || user === void 0 ? void 0 : user.notifications) === null || _d === void 0 ? void 0 : _d.lastMessageData) === 0) {
@@ -133,7 +133,7 @@ function getMessage(user) {
         return `<h2 style="margin-bottom: 0">${text}</h2>`;
     }
     statuses.forEach((status, i) => {
-        let rivers = statusMap.get(status) || [];
+        const rivers = statusMap.get(status) || [];
         if (rivers.length === 0) {
             return;
         }
@@ -170,8 +170,8 @@ async function sendEmail(user) {
             pass: password
         }
     });
-    let mailInfo = getMessage(user);
-    let notifications = {
+    const mailInfo = getMessage(user);
+    const notifications = {
         noneUntil: getNewNoneUntil(user),
         lastMessageData: undefined
     };
