@@ -45,3 +45,6 @@ scripts/
 # Native Mobile Wrappers
 ios/
 android/
+
+# Firebase Cache
+.firebase/
