@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
+import { useLocation } from "../hooks/useLocation";
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -14,8 +15,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   query,
   setQuery,
 }) => {
-  // Use a local copy so changes aren't applied until "Apply" is pushed, or we can apply it live since performance is good.
   const [localQuery, setLocalQuery] = useState<AdvancedSearchQuery>(query);
+  const location = useLocation();
 
   useEffect(() => {
     setLocalQuery(query);
@@ -23,8 +24,27 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
   if (!isOpen) return null;
 
-  const handleApply = () => {
-    setQuery(localQuery);
+  const handleApply = async () => {
+    let finalQuery = { ...localQuery };
+    
+    // If user wants distance filter, we MUST have their location!
+    if (finalQuery.distanceMax && finalQuery.distanceMax > 0) {
+      if (!location.latitude || !location.longitude) {
+         const coords = await location.requestLocation();
+         if (coords) {
+            finalQuery.userLat = coords.latitude;
+            finalQuery.userLon = coords.longitude;
+         } else {
+            // Location denied/failed, clear the distanceMax so it doesn't break
+            finalQuery.distanceMax = undefined;
+         }
+      } else {
+         finalQuery.userLat = location.latitude;
+         finalQuery.userLon = location.longitude;
+      }
+    }
+
+    setQuery(finalQuery);
     onClose();
   };
 
@@ -41,6 +61,9 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       includeUnknownFlow: true,
       includeUnknownRating: true,
       includeDams: true,
+      distanceMax: undefined,
+      userLat: undefined,
+      userLon: undefined,
       sortBy: "none" as const,
       sortReverse: false,
     };
@@ -164,6 +187,26 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 setLocalQuery({ ...localQuery, section: e.target.value });
               }}
             />
+          </div>
+
+          <div style={sectionStyle}>
+            <label style={labelStyle}>
+              Search within Radius: {localQuery.distanceMax ? `${localQuery.distanceMax} Miles` : 'Any Distance'}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={500}
+              step={10}
+              value={localQuery.distanceMax || 0}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setLocalQuery({ ...localQuery, distanceMax: val === 0 ? undefined : val });
+              }}
+              style={{ width: "100%" }}
+            />
+            {location.loading && <span style={{fontSize: '0.8em', color: '#64748b'}}>Requesting location hardware...</span>}
+            {location.error && <span style={{fontSize: '0.8em', color: '#ef4444'}}>{location.error}</span>}
           </div>
 
           <div

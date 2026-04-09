@@ -7,8 +7,10 @@ import {
   calculateRelativeFlow,
 } from "../utils/flowInfoCalculations";
 import { RiverExpansion } from "../components/RiverExpansion";
+import { useLocation } from "../hooks/useLocation";
 
 const MapPage: React.FC = () => {
+  const location = useLocation();
   const [rivers, setRivers] = useState<RiverData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +72,9 @@ const MapPage: React.FC = () => {
     };
 
     fetchRivers();
+    
+    // Automatically query for user location to place native tracker token
+    location.requestLocation({ enableHighAccuracy: true });
   }, []);
 
   const markers = useMemo(() => {
@@ -141,6 +146,18 @@ const MapPage: React.FC = () => {
             />
           );
         })}
+
+        {/* Dedicated Local User Map Marker */}
+        {location.latitude && location.longitude && (
+            <CircleMarker
+              center={[location.latitude, location.longitude]}
+              radius={7}
+              fillColor="#3b82f6" // Distinct Blue
+              fillOpacity={1.0}
+              color="#ffffff" // White boundary
+              weight={2}
+            />
+        )}
       </MapContainer>
 
       {selectedRiver && (

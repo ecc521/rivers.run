@@ -1,4 +1,5 @@
 import type { RiverData } from "../types/River";
+import { lambert } from "./distance";
 
 export interface AdvancedSearchQuery {
   normalSearch?: string;
@@ -15,6 +16,9 @@ export interface AdvancedSearchQuery {
   includeUnknownRating?: boolean;
   includeDams?: boolean;
   favoritesOnly?: boolean;
+  distanceMax?: number;
+  userLat?: number;
+  userLon?: number;
   sortBy?: "none" | "alphabetical" | "rating" | "skill" | "class" | "running";
   sortReverse?: boolean;
 }
@@ -114,6 +118,20 @@ export function filterRivers(
       if (r.running === undefined || r.running === null)
         return query.includeUnknownFlow;
       return r.running >= query.flowMin! && r.running <= query.flowMax!;
+    });
+  }
+
+  // 6. Proximity / Distance boundaries
+  if (query.distanceMax && query.userLat && query.userLon) {
+    list = list.filter((r) => {
+      if (!r.access || r.access.length === 0) return false;
+      const start = r.access[0];
+      const rLat = start.lat || start.latitude;
+      const rLon = start.lon || start.longitude || start.lng;
+      if (!rLat || !rLon) return false;
+      
+      const distanceMiles = lambert(query.userLat!, query.userLon!, rLat, rLon);
+      return distanceMiles <= query.distanceMax!;
     });
   }
 
