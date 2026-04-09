@@ -90,5 +90,27 @@ describe("Local Security Rules Validation", () => {
         
         // Admin direct write to live production collection
         await assertSucceeds(setDoc(doc(adminDb, "rivers", "golden-river"), { name: "Approved River!" }));
+        
+        // Admin write to community_lists
+        await assertSucceeds(setDoc(doc(adminDb, "community_lists", "new-community-list"), { title: "Admin List" }));
+    });
+
+    // Test 5: Community Lists rules
+    test("Public users CAN read community_lists but CANNOT write, and pleb users CANNOT write", async () => {
+        const unauthedDb = testEnv.unauthenticatedContext().firestore();
+        
+        // Assert native read access
+        await assertSucceeds(getDoc(doc(unauthedDb, "community_lists", "public-list-1")));
+        
+        // Assert write blocking for anonymous
+        await assertFails(setDoc(doc(unauthedDb, "community_lists", "hacked-list"), { title: "Hacked!" }));
+        
+        // Assert write blocking for normal verified user
+        const verifiedContext = testEnv.authenticatedContext("good-pleb", {
+            email: "good@gmail.com",
+            email_verified: true
+        });
+        const plebDb = verifiedContext.firestore();
+        await assertFails(setDoc(doc(plebDb, "community_lists", "hacked-list-pleb"), { title: "Hacked by pleb!" }));
     });
 });

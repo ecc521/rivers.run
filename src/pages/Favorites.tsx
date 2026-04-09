@@ -14,7 +14,7 @@ const FavoritesPage: React.FC = () => {
   React.useEffect(() => {
     const fetchRivers = async () => {
       try {
-        const url = import.meta.env.DEV ? "https://rivers.run/riverdata.json" : "/riverdata.json";
+        const url = import.meta.env.DEV ? "https://rivers.run/riverdata.json" : "https://storage.googleapis.com/rivers-run.appspot.com/public/riverdata.json";
         const res = await fetch(url);
         const data = await res.json();
         const dict: Record<string, {name: string, section: string}> = {};

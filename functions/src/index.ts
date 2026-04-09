@@ -11,6 +11,7 @@ const gmailPassword = defineSecret("GMAIL_PASSWORD");
 import { loadSitesFromUSGS } from "./services/usgs";
 import { loadCanadianProvince } from "./services/canada";
 import { processNotifications } from "./services/notifications";
+import { syncRiverDataToStorage } from "./services/riverdata";
 
 // Initialize Firebase Admin seamlessly (uses default credentials inside the function environment)
 initializeApp({
@@ -28,19 +29,19 @@ export const pullGaugeDataPeriodic = onSchedule({
 }, async () => {
     console.log("Starting gauge sync protocol...");
 
-    // 1. Fetch all unique gauges from the active rivers in Firestore
-    const snapshot = await db.collection("rivers").get();
+    // 1. Sync riverdata.json using the exact Delta scheme to avoid unnecesssary reads!
+    const activeRivers = await syncRiverDataToStorage(db, bucket);
     
+    // 2. Fetch all unique gauges natively from the explicitly merged baseline memory 
     const usgsSet = new Set<string>();
     const canadaProvincesSet = new Set<string>();
 
-    snapshot.forEach(doc => {
-        const river = doc.data();
+    activeRivers.forEach(river => {
         if (river.gauges && Array.isArray(river.gauges)) {
             river.gauges.forEach((g: any) => {
                 const id = g.id || "";
                 if (id.startsWith("USGS:")) usgsSet.add(id.replace("USGS:", ""));
-                else if (id.startsWith("canada:")) canadaProvincesSet.add(id.replace("canada:", "")); // In legacy canada handles gauge parsing dynamically from Province
+                else if (id.startsWith("canada:")) canadaProvincesSet.add(id.replace("canada:", ""));
             });
         }
     });

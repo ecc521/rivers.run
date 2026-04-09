@@ -27,6 +27,11 @@ service cloud.firestore {
       allow create: if request.auth != null; // Any user can submit a river
       allow update, delete: if isAdmin(); // Only admins can delete/edit from the queue
     }
+
+    match /community_lists/{listId} {
+      allow read: if true; // Public access for viewing the lists feature
+      allow create, update, delete: if isAdmin();
+    }
     
     // Fallback for any other existing collections
     match /{document=**} {

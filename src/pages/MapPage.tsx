@@ -19,7 +19,7 @@ const MapPage: React.FC = () => {
   useEffect(() => {
     const fetchRivers = async () => {
       try {
-        const riverDataUrl = "/riverdata.json";
+        const riverDataUrl = "https://storage.googleapis.com/rivers-run.appspot.com/public/riverdata.json";
         const flowDataUrl = "https://storage.googleapis.com/rivers-run.appspot.com/public/flowdata3.json";
 
         const [riverRes, flowRes] = await Promise.all([
