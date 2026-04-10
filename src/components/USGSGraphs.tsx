@@ -20,6 +20,13 @@ const formatDate = (timestamp: number) => {
   return `${d.getHours()}:${d.getMinutes().toString().padStart(2, "0")} ${d.getMonth() + 1}/${d.getDate()}`;
 };
 
+const getUnit = (dataKey: string) => {
+  if (dataKey === "cfs") return "cfs";
+  if (dataKey === "feet" || dataKey === "meters") return "ft/m";
+  if (dataKey === "temp") return "°F";
+  return "in";
+};
+
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -40,7 +47,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             key={`item-${index}`}
             style={{ margin: 0, color: entry.color, fontWeight: "bold" }}
           >
-            {`${entry.name}: ${entry.value} ${entry.dataKey === "cfs" ? "cfs" : entry.dataKey === "feet" || entry.dataKey === "meters" ? "ft/m" : entry.dataKey === "temp" ? "°F" : "in"}`}
+            {`${entry.name}: ${entry.value} ${getUnit(entry.dataKey)}`}
           </p>
         ))}
       </div>
@@ -58,9 +65,11 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
   const hasTemp = data.some((d) => d.temp);
   const hasPrecip = data.some((d) => d.precip);
 
-  const [activeTab, setActiveTab] = useState<"flow" | "temp" | "precip">(
-    hasFlow ? "flow" : hasTemp ? "temp" : "precip",
-  );
+  let defaultTab: "flow" | "temp" | "precip" = "precip";
+  if (hasFlow) defaultTab = "flow";
+  else if (hasTemp) defaultTab = "temp";
+
+  const [activeTab, setActiveTab] = useState<"flow" | "temp" | "precip">(defaultTab);
 
   if (!data || data.length === 0 || (!hasFlow && !hasTemp && !hasPrecip)) {
     return (
@@ -72,13 +81,13 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
 
   // Theme styling
   const volumeColor = isColorBlindMode ? "#ff8800" : "#00CCFF";
-  const stageColor = isColorBlindMode
-    ? isDarkMode
-      ? "#00CCFF"
-      : "#7175ff"
-    : isDarkMode
-      ? "#7175ff"
-      : "blue";
+  let stageColor = "blue";
+  if (isColorBlindMode) {
+      stageColor = isDarkMode ? "#00CCFF" : "#7175ff";
+  } else if (isDarkMode) {
+      stageColor = "#7175ff";
+  }
+  
   const tempColor = isDarkMode ? "#00AAFF" : "red";
   const precipColor = "#0099FF";
   const axisColor = isDarkMode ? "#cbd5e1" : "#475569";

@@ -110,9 +110,9 @@ export function filterRivers(
   // 4. Rating
   if (query.ratingMin !== undefined && query.ratingMax !== undefined) {
     list = list.filter((r) => {
-      if (r.rating === "Error" || r.rating === undefined || r.rating === null)
-        return query.includeUnknownRating;
       const rate = Number(r.rating);
+      if (r.rating == null || isNaN(rate) || rate < 0)
+        return query.includeUnknownRating;
       return rate >= query.ratingMin! && rate <= query.ratingMax!;
     });
   }
@@ -151,8 +151,8 @@ export function filterRivers(
           valB = (b.name || "").toLowerCase();
           break;
         case "rating":
-          valA = a.rating === "Error" ? -1 : Number(a.rating || -1);
-          valB = b.rating === "Error" ? -1 : Number(b.rating || -1);
+          valA = (a.rating == null || Number(a.rating) < 0) ? -1 : Number(a.rating);
+          valB = (b.rating == null || Number(b.rating) < 0) ? -1 : Number(b.rating);
           break;
         case "skill":
           valA = skillToNumber(a.skill || "");

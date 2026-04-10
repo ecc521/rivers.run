@@ -165,20 +165,23 @@ export const detectMaxZoom = async (type: 'world' | 'na'): Promise<number> => {
         const tileCountsByZoom: Record<number, number> = {};
         const zoomRegex = /\/(\d+)\/(\d+)\/(\d+)\.png$/;
         
+        function isTileInBounds(x: number, y: number, z: number, bounds: BoundingBox) {
+            const minX = Math.max(0, lon2tile(bounds.minLon, z));
+            const maxX = Math.min(Math.pow(2, z) - 1, lon2tile(bounds.maxLon, z));
+            const minY = Math.max(0, lat2tile(bounds.maxLat, z));
+            const maxY = Math.min(Math.pow(2, z) - 1, lat2tile(bounds.minLat, z));
+            return (x >= minX && x <= maxX && y >= minY && y <= maxY);
+        }
+
         // Group and count strictly within geographic target bounds
         for (const url of urls) {
-            const match = url.match(zoomRegex);
+            const match = zoomRegex.exec(url);
             if (match) {
                 const z = parseInt(match[1], 10);
                 const x = parseInt(match[2], 10);
                 const y = parseInt(match[3], 10);
 
-                const minX = Math.max(0, lon2tile(bounds.minLon, z));
-                const maxX = Math.min(Math.pow(2, z) - 1, lon2tile(bounds.maxLon, z));
-                const minY = Math.max(0, lat2tile(bounds.maxLat, z));
-                const maxY = Math.min(Math.pow(2, z) - 1, lat2tile(bounds.minLat, z));
-
-                if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+                if (isTileInBounds(x, y, z, bounds)) {
                     tileCountsByZoom[z] = (tileCountsByZoom[z] || 0) + 1;
                 }
             }

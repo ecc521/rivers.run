@@ -132,8 +132,8 @@ export const pullGaugeDataPeriodic = onSchedule({
     const zippedBuffer = zlib.gzipSync(Buffer.from(jsonStr));
     
     // 6. Push buffer stream to Firebase Storage
-    console.log(`Writing payload to Firebase Storage public/flowdata3.json (Uncompressed: ${(jsonStr.length / 1024).toFixed(2)} KB, GZipped: ${(zippedBuffer.length / 1024).toFixed(2)} KB)`);
-    const file = bucket.file("public/flowdata3.json");
+    console.log(`Writing payload to Firebase Storage public/gauges.json (Uncompressed: ${(jsonStr.length / 1024).toFixed(2)} KB, GZipped: ${(zippedBuffer.length / 1024).toFixed(2)} KB)`);
+    const file = bucket.file("public/gauges.json");
 
     await file.save(zippedBuffer, {
         metadata: {

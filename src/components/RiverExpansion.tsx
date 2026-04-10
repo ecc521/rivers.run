@@ -51,10 +51,6 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
 
   return (
     <div className="riverWriteup" style={{ padding: "6px" }}>
-      {/* 
-        TODO: FavoritesWidget
-        <FavoritesWidget river={river} gauge={river.gauge} />
-      */}
 
       <div className="textInfo">
         <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(river.writeup || "") }} />

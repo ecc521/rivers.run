@@ -19,6 +19,62 @@ const notifySubscribers = () => {
     fetchSubscribers.forEach(fn => fn());
 };
 
+const enrichRiver = (river: any, index: number, flowData: any, usedGauges: Set<string>) => {
+  river.index = index; // Inject index to be able to map to legacy IDs if needed
+  river.access = river.access || river.accessPoints; // Support updated Community Lists schema
+  
+  let activeGaugeId = river.gauge;
+  if (!activeGaugeId && river.gauges && Array.isArray(river.gauges) && river.gauges.length > 0) {
+    const primary = river.gauges.find((g: any) => g.isPrimary);
+    activeGaugeId = primary ? primary.id : river.gauges[0].id;
+  }
+
+  if (activeGaugeId) {
+      usedGauges.add(activeGaugeId);
+  }
+
+  const gaugeRecord = activeGaugeId ? flowData[activeGaugeId] : null;
+  if (gaugeRecord && gaugeRecord.readings && gaugeRecord.readings.length > 0) {
+    const latest = gaugeRecord.readings[gaugeRecord.readings.length - 1];
+    river.cfs = latest.cfs;
+    river.feet = latest.feet;
+    river.flowData = gaugeRecord.readings;
+
+    river.running = calculateRelativeFlow(river) ?? undefined;
+
+    if (river.cfs && river.feet)
+      river.flow = `${Math.round(river.cfs)} cfs ${Math.round(river.feet * 100) / 100} ft`;
+    else if (river.cfs) river.flow = `${Math.round(river.cfs)} cfs`;
+    else if (river.feet)
+      river.flow = `${Math.round(river.feet * 100) / 100} ft`;
+  }
+  return river;
+};
+
+const buildVirtualGauge = (gaugeId: string, gaugeData: any, virtualIndex: number): RiverData | null => {
+   const gData: any = gaugeData;
+   if (!gData.readings || gData.readings.length === 0) return null;
+
+   const latest = gData.readings[gData.readings.length - 1];
+   let flowStr = "";
+   if (latest.cfs && latest.feet) flowStr = `${Math.round(latest.cfs)} cfs ${Math.round(latest.feet * 100) / 100} ft`;
+   else if (latest.cfs) flowStr = `${Math.round(latest.cfs)} cfs`;
+   else if (latest.feet) flowStr = `${Math.round(latest.feet * 100) / 100} ft`;
+
+   return {
+       id: gaugeId,
+       name: gData.name || gaugeId,
+       gauge: gaugeId,
+       isGauge: true,
+       index: virtualIndex,
+       cfs: latest.cfs,
+       feet: latest.feet,
+       flowData: gData.readings,
+       flow: flowStr,
+       accessPoints: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined
+   } as unknown as RiverData;
+};
+
 export const useRivers = (): UseRiversResult => {
   const [rivers, setRivers] = useState<RiverData[]>(globalRiversCache || []);
   const [loading, setLoading] = useState(globalRiversCache === null ? true : globalLoading);
@@ -43,8 +99,8 @@ export const useRivers = (): UseRiversResult => {
       notifySubscribers();
 
       try {
-        const riverDataUrl = getStorageUrl("public/riverdata.json");
-        const flowDataUrl = getStorageUrl("public/flowdata3.json");
+        const riverDataUrl = getStorageUrl("public/rivers.json");
+        const flowDataUrl = getStorageUrl("public/gauges.json");
 
         const [riverRes, flowRes] = await Promise.all([
           fetch(riverDataUrl),
@@ -61,70 +117,18 @@ export const useRivers = (): UseRiversResult => {
           const flowData = await flowRes.json();
           const usedGauges = new Set<string>();
 
-          data = data.map((river: any, index: number) => {
-            river.index = index; // Inject index to be able to map to legacy IDs if needed
-            river.access = river.access || river.accessPoints; // Support updated Community Lists schema
-            
-            let activeGaugeId = river.gauge;
-            if (!activeGaugeId && river.gauges && Array.isArray(river.gauges) && river.gauges.length > 0) {
-              const primary = river.gauges.find((g: any) => g.isPrimary);
-              activeGaugeId = primary ? primary.id : river.gauges[0].id;
-            }
+          data = data.map((river: any, index: number) => enrichRiver(river, index, flowData, usedGauges));
 
-            if (activeGaugeId) {
-                usedGauges.add(activeGaugeId);
-            }
-
-            const gaugeRecord = activeGaugeId ? flowData[activeGaugeId] : null;
-            if (
-              gaugeRecord &&
-              gaugeRecord.readings &&
-              gaugeRecord.readings.length > 0
-            ) {
-              const latest =
-                gaugeRecord.readings[gaugeRecord.readings.length - 1];
-              river.cfs = latest.cfs;
-              river.feet = latest.feet;
-              river.flowData = gaugeRecord.readings;
-
-              river.running = calculateRelativeFlow(river) ?? undefined;
-
-              if (river.cfs && river.feet)
-                river.flow = `${Math.round(river.cfs)} cfs ${Math.round(river.feet * 100) / 100} ft`;
-              else if (river.cfs) river.flow = `${Math.round(river.cfs)} cfs`;
-              else if (river.feet)
-                river.flow = `${Math.round(river.feet * 100) / 100} ft`;
-            }
-            return river;
-          });
-
-          // Create virtual rivers for any gauge present in flowdata3 that isn't mapped to a river
+          // Create virtual rivers for any gauge present in gauges.json that isn't mapped to a river
           const virtualGauges: RiverData[] = [];
           let virtualIndex = data.length;
 
           for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
-              if (!usedGauges.has(gaugeId)) {
-                  const gData: any = gaugeData;
-                  if (gData.readings && gData.readings.length > 0) {
-                      const latest = gData.readings[gData.readings.length - 1];
-                      let flowStr = "";
-                      if (latest.cfs && latest.feet) flowStr = `${Math.round(latest.cfs)} cfs ${Math.round(latest.feet * 100) / 100} ft`;
-                      else if (latest.cfs) flowStr = `${Math.round(latest.cfs)} cfs`;
-                      else if (latest.feet) flowStr = `${Math.round(latest.feet * 100) / 100} ft`;
-
-                      virtualGauges.push({
-                          id: gaugeId,
-                          name: gData.name || gaugeId,
-                          gauge: gaugeId,
-                          isGauge: true,
-                          index: virtualIndex++,
-                          cfs: latest.cfs,
-                          feet: latest.feet,
-                          flowData: gData.readings,
-                          flow: flowStr,
-                          accessPoints: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined
-                      } as unknown as RiverData);
-                  }
+              if (usedGauges.has(gaugeId)) continue;
+              const virtualGauge = buildVirtualGauge(gaugeId, gaugeData, virtualIndex);
+              if (virtualGauge) {
+                 virtualGauges.push(virtualGauge);
+                 virtualIndex++;
               }
           }
           

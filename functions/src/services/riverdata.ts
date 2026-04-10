@@ -1,7 +1,7 @@
 import { Firestore } from "firebase-admin/firestore";
 import { Bucket } from "@google-cloud/storage";
 
-const JSON_REMOTE_PATH = "public/riverdata.json";
+const JSON_REMOTE_PATH = "public/rivers.json";
 const FULL_SYNC_HEURISTIC_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Promise<any[]> {

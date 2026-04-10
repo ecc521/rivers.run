@@ -16,19 +16,27 @@ const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     // Optionally dynamically fetch community lists here to seed the dropdown
-    import("firebase/firestore").then(({ collection, getDocs, orderBy, query }) => {
-      import("../firebase").then(({ db }) => {
+    const fetchLists = async () => {
+      try {
+        const { collection, getDocs, orderBy, query } = await import("firebase/firestore");
+        const { db } = await import("../firebase");
         const q = query(collection(db, "community_lists"), orderBy("subscribes", "desc"));
-        getDocs(q).then((snapshot) => {
-          const loaded: {id: string, title: string}[] = [];
-          snapshot.forEach((doc) => {
-             loaded.push({id: doc.id, title: doc.data().title});
-          });
-          setCommunityLists(loaded);
-        }).catch(e => console.error("Could not fetch lists for settings dropdown", e));
-      });
-    });
+        const snapshot = await getDocs(q);
+        const loaded: {id: string, title: string}[] = [];
+        snapshot.forEach((doc) => {
+           loaded.push({id: doc.id, title: doc.data().title});
+        });
+        setCommunityLists(loaded);
+      } catch (e) {
+        console.error("Could not fetch lists for settings dropdown", e);
+      }
+    };
+    fetchLists();
   }, []);
+
+  const themeStatusText = (!themePref || themePref === "null") 
+    ? `Currently utilizing System Default theme: ${isDarkMode ? "Dark" : "Light"}` 
+    : "Overriding System Default Theme.";
 
   return (
     <div
@@ -62,9 +70,7 @@ const SettingsPage: React.FC = () => {
                 <option value="true">Dark</option>
               </select>
               <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
-                {!themePref || themePref === "null"
-                  ? `Currently utilizing System Default theme: ${isDarkMode ? "Dark" : "Light"}`
-                  : "Overriding System Default Theme."}
+                {themeStatusText}
               </p>
             </>
           )}

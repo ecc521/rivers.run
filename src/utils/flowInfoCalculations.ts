@@ -1,5 +1,6 @@
-// Used for converting flow values between feet and meters
+import type { RiverData } from "../types/River";
 
+// Used for converting flow values logarithmically between thresholds
 function logDist(low: number, high: number, ratio: number = 0.5): number {
   let lowLog = Math.log10(low);
   let highLog = Math.log10(high);
@@ -29,107 +30,63 @@ function calculateArrayPosition(
   positiveOptions.sort((a, b) => a - b);
   negativeOptions.sort((a, b) => b - a);
 
-  let bottomPos = negativeOptions[0];
-  let topPos = positiveOptions[0];
+  let bottomPos = negativeOptions.length > 0 ? negativeOptions[0] : undefined;
+  let topPos = positiveOptions.length > 0 ? positiveOptions[0] : undefined;
 
-  if (bottomPos === undefined) bottomPos = positiveOptions[1];
-  if (topPos === undefined) topPos = negativeOptions[1];
+  if (bottomPos === undefined) bottomPos = positiveOptions.length > 1 ? positiveOptions[1] : undefined;
+  if (topPos === undefined) topPos = negativeOptions.length > 1 ? negativeOptions[1] : undefined;
 
   if (topPos === undefined || bottomPos === undefined) return undefined;
 
   const denominator = Math.abs(topPos - bottomPos);
+  if (denominator === 0) return arr[topPos]!;
+  
   const numerator = pos - Math.min(bottomPos, topPos);
 
   return logDist(arr[topPos]!, arr[bottomPos]!, numerator / denominator);
 }
 
-export function calculateRelativeFlow(river: any): number | null {
-  const values = [
-    "minrun",
-    "lowflow",
-    "midflow",
-    "highflow",
-    "maxrun",
-  ] as const;
-
-  // Intercept modern object-based flow property mapping perfectly
-  if (river.flow !== null && typeof river.flow === "object" && !Array.isArray(river.flow)) {
-    if (river.flow.unit) river.relativeflowtype = river.flow.unit;
-    if (river.flow.min !== undefined) river.minrun = Number(river.flow.min);
-    if (river.flow.low !== undefined) river.lowflow = Number(river.flow.low);
-    if (river.flow.mid !== undefined) river.midflow = Number(river.flow.mid);
-    if (river.flow.high !== undefined) river.highflow = Number(river.flow.high);
-    if (river.flow.max !== undefined) river.maxrun = Number(river.flow.max);
-    
-    // Wipe it so the React Node UI renderer doesn't inherently crash on the object structure
-    river.flow = undefined;
-  }
-
-  // If the river does not have a relative flow type natively, calculate one from the string literals.
-  if (!river.relativeflowtype) {
-    let type: string | undefined;
-
-    for (let i = 0; i < values.length; i++) {
-      let str = river[values[i]];
-      if (!str || typeof str !== "string") continue;
-
-      str = str.trim();
-      const value = parseFloat(str);
-      const currentTypeMatch = str.match(/[^\d|.]+/);
-
-      let currentType: string | undefined;
-      if (currentTypeMatch) {
-        currentType = currentTypeMatch[0].trim().toLowerCase();
-      }
-
-      if (!type && currentType) {
-        type = currentType;
-      } else if (type !== currentType && !isNaN(value)) {
-        // Different extension, skip
-        continue;
-      }
-
-      if (!isNaN(value)) river[values[i]] = value;
-    }
-    river.relativeflowtype = type || null;
-  }
-
-  if (!river.relativeflowtype) return null;
-
-  // Extract correct flowLevel from river based on relativeflowtype
-  let flowLevel: number | undefined;
-  if (river.relativeflowtype === "cfs") flowLevel = river.cfs;
-  else if (river.relativeflowtype === "feet" || river.relativeflowtype === "ft")
-    flowLevel = river.feet;
-  else if (
-    river.relativeflowtype === "meters" ||
-    river.relativeflowtype === "m"
-  )
-    flowLevel = river.meters || river.m;
-  else if (river.relativeflowtype === "cms") flowLevel = river.cms;
-
-  if (flowLevel === undefined || isNaN(flowLevel)) return null;
-
-  // Parse values dynamically filtering out descending ones (legacy edge case logic)
-  let parsedValues: (number | undefined)[] = values.map(() => undefined);
+// Helper to dynamically calculate descending array configurations
+function calculateParsedThresholds(thresholds: (number | undefined)[]): (number | undefined)[] {
+  let parsedValues: (number | undefined)[] = thresholds.map(() => undefined);
   let currentMax: number | undefined;
 
-  for (let i = 0; i < values.length; i++) {
-    const prop = values[i];
-    const value = parseFloat(river[prop]);
-    if (!isNaN(value)) {
-      if (currentMax !== undefined && value < currentMax) {
-        continue; // Skip decreasing values
-      }
+  for (let i = 0; i < thresholds.length; i++) {
+    const value = thresholds[i] !== undefined ? Number(thresholds[i]) : undefined;
+    if (value !== undefined && !isNaN(value)) {
+      if (currentMax !== undefined && value < currentMax) continue; 
       parsedValues[i] = currentMax = value;
-      river[prop] = value;
     }
   }
 
+  // Interplate missing logarithmic zones based off surrounding metrics cleanly
   parsedValues = parsedValues.map((val, index) =>
     val !== undefined ? val : calculateArrayPosition(parsedValues, index),
   );
+  
+  return parsedValues;
+}
 
+export function calculateRelativeFlow(river: RiverData): number | null {
+  if (!river.flow || !river.flow.unit) return null;
+
+  let flowLevel: number | undefined;
+  if (river.flow.unit === "cfs") flowLevel = river.latestReading ?? river.cfs;
+  else if (river.flow.unit === "feet" || river.flow.unit === "ft") flowLevel = river.latestReading ?? river.feet;
+  else if (river.flow.unit === "meters" || river.flow.unit === "m") flowLevel = river.latestReading ?? (river.meters || river.m);
+  else if (river.flow.unit === "cms") flowLevel = river.latestReading ?? river.cms;
+
+  if (flowLevel === undefined || isNaN(flowLevel)) return null;
+
+  const thresholds = [
+    river.flow.min,
+    river.flow.low,
+    river.flow.mid,
+    river.flow.high,
+    river.flow.max
+  ];
+
+  const parsedValues = calculateParsedThresholds(thresholds);
   const [minrun, lowflow, midflow, highflow, maxrun] = parsedValues;
 
   const calculateRatio = (low: number, high: number, current: number) => {

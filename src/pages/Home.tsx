@@ -77,7 +77,8 @@ const Home: React.FC = () => {
             }
         }
 
-        getDoc(doc(db, "community_lists", targetListId)).then(async (snapshot) => {
+        try {
+            const snapshot = await getDoc(doc(db, "community_lists", targetListId));
             if (snapshot.exists()) {
                const data = snapshot.data();
                setSearchQuery((prev) => ({ ...prev, listData: data.rivers || [] }));
@@ -87,11 +88,11 @@ const Home: React.FC = () => {
             } else if (!cachedListStr) {
                setError("Requested list does not exist.");
             }
-            setLoading(false);
-        }).catch(err => {
+        } catch (err) {
             console.error("Failed to load list from network, trying to rely on cache", err);
+        } finally {
             setLoading(false);
-        });
+        }
       }
     }
     loadPersistence();

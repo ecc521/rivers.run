@@ -50,7 +50,7 @@ export function getMessage(user: any) {
 		}
 	}
 
-	if (IDs.length === 0) { return false; } // User has no favorites. No reason to send an email.
+	if (IDs.length === 0) { return null; } // User has no favorites. No reason to send an email.
 
 	function getIDs(rivers: any[]) {
 		return rivers.map((river) => river.id);
@@ -80,13 +80,14 @@ export function getMessage(user: any) {
 
 		if (user?.notifications?.lastMessageData === 0) {
 			// Don't message again.
-			return false;
+			return null;
 		}
 	}
 
 	function createListItem(river: any) {
-		let str = "<li>" + `<a href="${getSearchLink([river.id])}">${river.name + (river.section?` (${river.section})`:"")}</a>`;
-		str += `: ${river.flowInfo} `;
+        const namePart = river.section ? `${river.name} (${river.section})` : river.name;
+		let str = `<li><a href="${getSearchLink([river.id])}">${namePart}</a>: ${river.flowInfo} `;
+		
 		if (!river.units) {
 			str += " - No Units Selected";
 		}
@@ -153,14 +154,14 @@ export async function sendEmail(user: any) {
         lastMessageData: undefined as number | undefined
 	};
 
-	if (mailInfo && mailInfo.lastMessageData !== undefined) {
+	if (mailInfo && mailInfo.lastMessageData != null) {
 		notifications.lastMessageData = mailInfo.lastMessageData;
 	}
 
 	// Write the value to firebase internally to update the noneUntil constraint
 	await user.document.ref.set({notifications}, {merge: true});
 
-	if (mailInfo === false) { return; } 
+	if (!mailInfo) { return; } 
 
 	const mailOptions = {
 	  from: 'email.rivers.run@gmail.com',

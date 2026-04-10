@@ -69,7 +69,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
         <span className="riverspan classspan">{riverClass}</span>
 
         {/* Rating Span */}
-        {river.rating === "Error" || river.rating === undefined ? (
+        {(!river.rating || Number(river.rating) < 0 || isNaN(Number(river.rating))) ? (
           <span className="riverspan emptyStars" style={{ opacity: 0.2 }}>
             ☆☆☆☆☆
           </span>
@@ -94,11 +94,12 @@ export const RiverItem: React.FC<RiverItemProps> = ({
         )}
 
         {/* Flow Span */}
-        {typeof river.flow === "string" ? (
+        {typeof river.flow === "string" && (
           <span className="riverspan flowspan">{river.flow}</span>
-        ) : river.dam ? (
+        )}
+        {typeof river.flow !== "string" && river.dam && (
           <span className="riverspan flowspan">Dam</span>
-        ) : null}
+        )}
 
         {/* Favorite Span (Moved to Right) */}
         <span

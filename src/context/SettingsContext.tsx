@@ -75,8 +75,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       setDefaultSearchPref(value === "null" ? null : value);
   };
 
-  const isDarkMode =
-    themePref === "true" ? true : themePref === "false" ? false : systemDark;
+  let isDarkMode = systemDark;
+  if (themePref === "true") isDarkMode = true;
+  else if (themePref === "false") isDarkMode = false;
   const isColorBlindMode = colorBlindPref === "true";
   const homePageDefaultSearch = defaultSearchPref;
 

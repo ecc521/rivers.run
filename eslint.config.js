@@ -32,7 +32,9 @@ export default defineConfig([
       'react-hooks/rules-of-hooks': 'off',
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/purity': 'off',
-      'no-empty': 'off'
+      'no-empty': 'off',
+      'sonarjs/cognitive-complexity': 'warn',
+      'sonarjs/no-nested-conditional': 'warn'
     }
   },
 ])

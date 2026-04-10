@@ -7,76 +7,56 @@ import { syncAlertDataToStorage } from "./alertdata";
 const meterInFeet = 3.2808399;
 const cubicMeterInFeet = Math.pow(meterInFeet, 3);
 
+function formatFlowInfo(river: any, latestReading: any) {
+	river.flowInfo = "No Flow Data";
+	if (river.units === "cms" || river.units === "meters") {
+		if (latestReading?.meters !== undefined && !isNaN(latestReading.meters)) {
+			river.flowInfo = `${Math.round(latestReading.meters * 100) / 100} meters`;
+		}
+		if (latestReading?.cms !== undefined && !isNaN(latestReading.cms)) {
+			river.flowInfo = latestReading?.meters ? `${river.flowInfo}, ` : "";
+			river.flowInfo += `${Math.round(latestReading.cms * 100) / 100} cms`;
+		}
+	} else {
+		if (latestReading?.feet !== undefined && !isNaN(latestReading.feet)) {
+			river.flowInfo = `${Math.round(latestReading.feet * 100) / 100} feet`;
+		}
+		if (latestReading?.cfs !== undefined && !isNaN(latestReading.cfs)) {
+			river.flowInfo = latestReading?.feet ? `${river.flowInfo}, ` : "";
+			river.flowInfo += `${Math.round(latestReading.cfs)} cfs`;
+		}
+	}
+}
+
+function calculateRiverStatus(river: any, latestReading: any, units: string) {
+	river.latestReading = latestReading?.[units];
+	if (river.latestReading > river.maximum) return "high";
+	if (river.latestReading < river.minimum) return "low";
+	if ((river.minimum === undefined && river.maximum === undefined) || river.latestReading === undefined) return "unknown";
+	return "running";
+}
+
+function getLatestReading(readings: any[]) {
+    for (let i = readings.length - 1; i >= 0; i--) {
+        if (readings[i].forecast !== true) return readings[i];
+    }
+    return {};
+}
+
 function addFlowDataToFavorites(favorites: any, gauges: any = {}) {
 	for (const gaugeID in favorites) {
 		const rivers = favorites[gaugeID];
 		const gaugeRecord = gauges[gaugeID] || gauges["USGS:" + gaugeID] || gauges["canada:" + gaugeID];
 		const readings = gaugeRecord?.readings || [];
 
-		let latestReading: any = {};
-		for (let i = readings.length - 1; i >= 0; i--) {
-			// Find the latest non-forecast flow value.
-			if (readings[i].forecast !== true) {
-				latestReading = readings[i];
-				break;
-			}
-		}
+		const latestReading = getLatestReading(readings);
+        latestReading.meters = latestReading?.feet / meterInFeet;
+        latestReading.cms = latestReading?.cfs / cubicMeterInFeet;
 
 		for (const riverID in rivers) {
 			const river = rivers[riverID];
-
-			const units = river.units;
-			river.flowInfo = "No Flow Data";
-
-			latestReading.meters = latestReading?.feet / meterInFeet;
-			latestReading.cms = latestReading?.cfs / cubicMeterInFeet;
-
-			if (river.units === "cms" || river.units === "meters") {
-				if (latestReading?.meters !== undefined && !isNaN(latestReading.meters)) {
-					river.flowInfo = `${Math.round(latestReading.meters * 100) / 100} meters`;
-				}
-				if (latestReading?.cms !== undefined && !isNaN(latestReading.cms)) {
-					if (latestReading?.meters) {
-						river.flowInfo += ", ";
-					}
-					else {
-						river.flowInfo = "";
-					}
-					river.flowInfo += `${Math.round(latestReading.cms * 100) / 100} cms`;
-				}
-			}
-			else {
-				if (latestReading?.feet !== undefined && !isNaN(latestReading.feet)) {
-					river.flowInfo = `${Math.round(latestReading.feet * 100) / 100} feet`;
-				}
-				if (latestReading?.cfs !== undefined && !isNaN(latestReading.cfs)) {
-					if (latestReading?.feet) {
-						river.flowInfo += ", ";
-					}
-					else {
-						river.flowInfo = "";
-					}
-					river.flowInfo += `${Math.round(latestReading.cfs)} cfs`;
-				}
-			}
-
-			river.latestReading = latestReading?.[units];
-
-			let status;
-			if (river.latestReading > river.maximum) {
-				status = "high";
-			}
-			else if (river.latestReading < river.minimum) {
-				status = "low";
-			}
-			else if ((river.minimum === undefined && river.maximum === undefined) || river.latestReading === undefined) {
-				status = "unknown";
-			}
-			else {
-				status = "running";
-			}
-
-			river.status = status;
+            formatFlowInfo(river, latestReading);
+			river.status = calculateRiverStatus(river, latestReading, river.units);
 		}
 	}
 }

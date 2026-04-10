@@ -19,25 +19,40 @@ function fixCasing(str: string): string {
 }
 
 function fixSiteName(siteName: string): string {
-  let name = siteName.split(/\bnr\b/i).join("near").split(/\bbl\b/i).join("below").split(/\bdnstrm\b/i).join("downstream").split(/\babv\b/i).join("above")
+  const name = siteName.split(/\bnr\b/i).join("near").split(/\bbl\b/i).join("below").split(/\bdnstrm\b/i).join("downstream").split(/\babv\b/i).join("above")
     .split(/\b@\b/).join("at").split(/\bS\b/).join("South").split(/\bN\b/).join("North").split(/\bE\b/).join("East").split(/\bW\b/).join("West")
     .split(/\bCr\b/i).join("Creek").split(/\bCk\b/i).join("Creek").split(/\bR\b/i).join("River").split(/\bCYN\b/i).join("Canyon").split(/\bSTA\b/i).join("Station")
     .split(/\bRv\b/i).join("River");
   return fixCasing(name);
 }
 
-export async function compileVirtualGaugesToStorage(bucket: Bucket): Promise<void> {
-    console.log("Compiling Virtual Gauges Mapping Dictionary...");
-    
-    const virtualGauges: Record<string, {name: string, lat: number, lon: number}> = {};
+function parseUSGSLine(line: string, headers: string[], virtualGauges: Record<string, any>) {
+    const tokens = line.split('\t');
+    if (tokens.length >= headers.length && headers.length > 0) {
+        const idIndex = headers.indexOf('site_no');
+        const nameIndex = headers.indexOf('station_nm');
+        const latIndex = headers.indexOf('dec_lat_va');
+        const lonIndex = headers.indexOf('dec_long_va');
+        
+        if (idIndex > -1 && nameIndex > -1 && latIndex > -1 && lonIndex > -1) {
+            const id = "USGS:" + tokens[idIndex];
+            const name = fixSiteName(tokens[nameIndex]);
+            const lat = parseFloat(tokens[latIndex]);
+            const lon = parseFloat(tokens[lonIndex]);
+            if (!isNaN(lat) && !isNaN(lon)) {
+                virtualGauges[id] = { name, lat, lon };
+            }
+        }
+    }
+}
 
+async function scrapeUSGS(virtualGauges: Record<string, any>) {
     console.log("1. Pulling USGS Native Metadata...");
     for (const state of states) {
         const url = `https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=${state}&siteStatus=active&siteType=ST&hasDataTypeCd=iv&siteOutput=expanded`;
         try {
             const res = await fetch(url);
             const text = await res.text();
-            
             const lines = text.split('\n');
             let headers: string[] = [];
             
@@ -45,39 +60,21 @@ export async function compileVirtualGaugesToStorage(bucket: Bucket): Promise<voi
                 line = line.trimEnd();
                 if (!line || line.startsWith('#') || line.includes('5s') || line.includes('15s')) continue;
                 
-                const tokens = line.split('\t');
-                
                 if (line.includes('agency_cd')) {
-                    headers = tokens;
+                    headers = line.split('\t');
                     continue;
                 }
-                
-                if (tokens.length >= headers.length && headers.length > 0) {
-                    const idIndex = headers.indexOf('site_no');
-                    const nameIndex = headers.indexOf('station_nm');
-                    const latIndex = headers.indexOf('dec_lat_va');
-                    const lonIndex = headers.indexOf('dec_long_va');
-                    
-                    if (idIndex > -1 && nameIndex > -1 && latIndex > -1 && lonIndex > -1) {
-                        const id = "USGS:" + tokens[idIndex];
-                        const name = fixSiteName(tokens[nameIndex]);
-                        const lat = parseFloat(tokens[latIndex]);
-                        const lon = parseFloat(tokens[lonIndex]);
-                        
-                        if (!isNaN(lat) && !isNaN(lon)) {
-                            virtualGauges[id] = { name, lat, lon };
-                        }
-                    }
-                }
+                parseUSGSLine(line, headers, virtualGauges);
             }
-            
             console.log(`- Compiled state: ${state} (Total so far: ${Object.keys(virtualGauges).length})`);
-            await new Promise(r => setTimeout(r, 600)); // Respect USGS polite rate-limits
+            await new Promise(r => setTimeout(r, 600));
         } catch (e: any) {
             console.error(`- Failed to retrieve state ${state}:`, e.message);
         }
     }
-    
+}
+
+async function scrapeCanada(virtualGauges: Record<string, any>) {
     console.log("2. Pulling Canadian Native Metadata...");
     try {
         const canRes = await fetch("https://wateroffice.ec.gc.ca/services/map_data");
@@ -89,15 +86,22 @@ export async function compileVirtualGaugesToStorage(bucket: Bucket): Promise<voi
             const finalLat = parseFloat(s.lat || s.latitude);
             const finalLon = parseFloat(s.lon || s.longitude);
             if (!isNaN(finalLat) && !isNaN(finalLon)) {
-                virtualGauges["canada:" + id] = {
-                    name, lat: finalLat, lon: finalLon
-                };
+                virtualGauges["canada:" + id] = { name, lat: finalLat, lon: finalLon };
             }
         }
         console.log(`- Compiled Canadian stations. Total Gauges: ${Object.keys(virtualGauges).length}`);
     } catch(e: any) {
         console.error("Failed to parse Canadian gauge points.", e.message);
     }
+}
+
+export async function compileVirtualGaugesToStorage(bucket: Bucket): Promise<void> {
+    console.log("Compiling Virtual Gauges Mapping Dictionary...");
+    
+    const virtualGauges: Record<string, {name: string, lat: number, lon: number}> = {};
+
+    await scrapeUSGS(virtualGauges);
+    await scrapeCanada(virtualGauges);
 
     const payload = JSON.stringify(virtualGauges);
     const byteSize = Buffer.byteLength(payload);

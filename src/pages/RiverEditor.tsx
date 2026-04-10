@@ -116,10 +116,13 @@ export default function RiverEditor() {
             if (!url) return;
             
             let finalUrl = url;
-            const dMatch = url.match(/drive\.google\.com\/file\/d\/([-_A-Za-z0-9]+)/);
-            if (dMatch) finalUrl = `https://www.googleapis.com/drive/v3/files/${dMatch[1]}?alt=media&key=${firebaseConfig.apiKey}`;
-            else {
-              const idMatch = url.match(/drive\.google\.com\/open\?id=([-_A-Za-z0-9]+)/);
+            const driveRe = /drive\.google\.com\/file\/d\/([-_A-Za-z0-9]{1,100})/;
+            const dMatch = driveRe.exec(url);
+            if (dMatch) {
+              finalUrl = `https://www.googleapis.com/drive/v3/files/${dMatch[1]}?alt=media&key=${firebaseConfig.apiKey}`;
+            } else {
+              const openRe = /drive\.google\.com\/open\?id=([-_A-Za-z0-9]{1,100})/;
+              const idMatch = openRe.exec(url);
               if (idMatch) finalUrl = `https://www.googleapis.com/drive/v3/files/${idMatch[1]}?alt=media&key=${firebaseConfig.apiKey}`;
             }
 
@@ -148,12 +151,14 @@ export default function RiverEditor() {
       }));
 
       const newAccessPoints: any[] = [];
-      const pMatch = rawPutIn.match(/([-\d.]+)[,\s]+([-\d.]+)/);
+      const accessRegex = /^\s*([-\d.]{1,20})[,\s]+([-\d.]{1,20})\s*$/;
+      
+      const pMatch = accessRegex.exec(rawPutIn);
       if (pMatch) {
          newAccessPoints.push({ name: "Put-In", type: "put-in", lat: parseFloat(pMatch[1]), lon: parseFloat(pMatch[2]) });
       }
       
-      const tMatch = rawTakeOut.match(/([-\d.]+)[,\s]+([-\d.]+)/);
+      const tMatch = accessRegex.exec(rawTakeOut);
       if (tMatch) {
          newAccessPoints.push({ name: "Take-Out", type: "take-out", lat: parseFloat(tMatch[1]), lon: parseFloat(tMatch[2]) });
       }
@@ -161,7 +166,8 @@ export default function RiverEditor() {
       let idToSave: string;
       if (isNew) {
         const baseSlug = riverData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        idToSave = isAdmin ? baseSlug : `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
+        const secureRandom = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+        idToSave = isAdmin ? baseSlug : `${baseSlug}-${secureRandom}`;
       } else {
         idToSave = riverData.id;
       }
