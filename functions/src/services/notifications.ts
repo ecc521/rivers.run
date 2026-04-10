@@ -43,9 +43,17 @@ function getLatestReading(readings: any[]) {
     return {};
 }
 
-function addFlowDataToFavorites(favorites: any, gauges: any = {}) {
-	for (const gaugeID in favorites) {
-		const rivers = favorites[gaugeID];
+function addFlowDataToFavorites(favorites: any[], gauges: any = {}) {
+    if (!Array.isArray(favorites)) return;
+
+    for (const fav of favorites) {
+        if (!fav.gauge || fav.gauge === "none") {
+            fav.status = "unknown";
+            fav.flowInfo = "No Flow Data";
+            continue;
+        }
+
+        const gaugeID = fav.gauge;
 		const gaugeRecord = gauges[gaugeID] || gauges["USGS:" + gaugeID] || gauges["canada:" + gaugeID];
 		const readings = gaugeRecord?.readings || [];
 
@@ -53,12 +61,9 @@ function addFlowDataToFavorites(favorites: any, gauges: any = {}) {
         latestReading.meters = latestReading?.feet / meterInFeet;
         latestReading.cms = latestReading?.cfs / cubicMeterInFeet;
 
-		for (const riverID in rivers) {
-			const river = rivers[riverID];
-            formatFlowInfo(river, latestReading);
-			river.status = calculateRiverStatus(river, latestReading, river.units);
-		}
-	}
+        formatFlowInfo(fav, latestReading);
+		fav.status = calculateRiverStatus(fav, latestReading, fav.units);
+    }
 }
 
 export async function processNotifications(flowDataGlob: any) {
@@ -90,7 +95,7 @@ export async function processNotifications(flowDataGlob: any) {
             result.notFound.forEach((user: any) => {
                 const userData = usersMap.get(user.uid);
                 if (userData) {
-                    db.collection("users").doc(user.uid).delete(); // Native cleanup
+                    db.collection("user").doc(user.uid).delete(); // Native cleanup
                     usersMap.delete(user.uid);
                 }
             });

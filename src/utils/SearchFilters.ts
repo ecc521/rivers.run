@@ -80,21 +80,21 @@ export function filterRivers(
     const term = query.normalSearch.toLowerCase();
     list = list.filter(
       (r) =>
-        (r.name || "").toLowerCase().includes(term) ||
-        (r.section || "").toLowerCase().includes(term) ||
-        (r.tags && r.tags.some(t => t.toLowerCase().includes(term))),
+        String(r.name || "").toLowerCase().includes(term) ||
+        String(r.section || "").toLowerCase().includes(term) ||
+        (Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : [])).some(t => String(t).toLowerCase().includes(term)),
     );
   }
 
   // 2. Name / Section explicit matches
   if (query.name) {
     list = list.filter((r) =>
-      (r.name || "").toLowerCase().includes(query.name!.toLowerCase()),
+      String(r.name || "").toLowerCase().includes(query.name!.toLowerCase()),
     );
   }
   if (query.section) {
     list = list.filter((r) =>
-      (r.section || "").toLowerCase().includes(query.section!.toLowerCase()),
+      String(r.section || "").toLowerCase().includes(query.section!.toLowerCase()),
     );
   }
 

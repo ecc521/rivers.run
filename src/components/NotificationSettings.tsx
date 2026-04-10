@@ -23,7 +23,7 @@ export const NotificationSettings: React.FC = () => {
     const merged = { ...config, ...newProps };
     setConfig(merged);
     await setDoc(
-      doc(db, "users", user.uid),
+      doc(db, "user", user.uid),
       { notifications: merged, updatedAt: serverTimestamp() },
       { merge: true },
     );
@@ -32,7 +32,7 @@ export const NotificationSettings: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     const fetchConfig = async () => {
-      const d = await getDoc(doc(db, "users", user.uid));
+      const d = await getDoc(doc(db, "user", user.uid));
       if (d.exists() && d.data().notifications) {
         const n = d.data().notifications as NotificationConfig;
         setConfig(n);

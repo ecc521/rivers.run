@@ -5,34 +5,31 @@ import { useAuth } from "./AuthContext";
 import type { RiverData } from "../types/River";
 import { persistentStorage } from "../utils/persistentStorage";
 
-export interface FavoriteDetails {
+export interface FavoriteItem {
   id: string;
   name: string;
   section: string;
-  minimum: number | null;
-  maximum: number | null;
-  units: string;
+  gauge?: string;
+  minimum?: number | null;
+  maximum?: number | null;
+  units?: string;
 }
 
-export type FavoritesMap = Record<
-  string,
-  Record<string, FavoriteDetails>
->;
+export type FavoritesList = FavoriteItem[];
 
 interface FavoritesContextType {
-  favorites: FavoritesMap;
+  favorites: FavoritesList;
   toggleFavorite: (river: RiverData) => Promise<void>;
   updateFavoriteConfig: (
-    gaugeId: string,
     riverId: string,
-    updates: Partial<FavoriteDetails>,
+    updates: Partial<FavoriteItem>,
   ) => Promise<void>;
   isFavorite: (riverId: string) => boolean;
   loading: boolean;
 }
 
 const FavoritesContext = createContext<FavoritesContextType>({
-  favorites: {},
+  favorites: [],
   toggleFavorite: async () => {},
   updateFavoriteConfig: async () => {},
   isFavorite: () => false,
@@ -44,7 +41,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [favorites, setFavorites] = useState<FavoritesMap>({});
+  const [favorites, setFavorites] = useState<FavoritesList>([]);
 
   // Initialize from storage
   useEffect(() => {
@@ -55,7 +52,8 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
       const local = await persistentStorage.get("rivers_favorites");
       if (local) {
         try {
-          setFavorites(JSON.parse(local));
+          const parsed = JSON.parse(local);
+          setFavorites(Array.isArray(parsed) ? parsed : []);
         } catch (e) {
           console.error("Failed to parse local favorites", e);
         }
@@ -65,34 +63,33 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
     init();
   }, []);
 
-  const mergeFavoritesObjects = (
-    local: FavoritesMap,
-    cloud: FavoritesMap,
-  ): FavoritesMap => {
-    const merged: FavoritesMap = JSON.parse(JSON.stringify(local)); // Deep clone
-    for (const gauge in cloud) {
-      if (!merged[gauge]) merged[gauge] = {};
-      for (const riverId in cloud[gauge]) {
-        merged[gauge][riverId] = cloud[gauge][riverId];
-      }
-    }
+  const mergeFavoritesLists = (
+    local: FavoritesList,
+    cloud: FavoritesList,
+  ): FavoritesList => {
+    const merged = [...cloud];
+    local.forEach(lf => {
+        if (!merged.find(cf => cf.id === lf.id)) {
+            merged.push(lf);
+        }
+    });
     return merged;
   };
 
   useEffect(() => {
     if (!user || loading) return;
 
-    const userRef = doc(db, "users", user.uid);
+    const userRef = doc(db, "user", user.uid);
     const unsubscribe = onSnapshot(userRef, async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const cloudFavorites = data.favorites || {};
+        const cloudFavorites = Array.isArray(data.favorites) ? data.favorites : [];
         const cloudLastModified = data.favoritesLastModified || 0;
 
         const localLastModifiedStr = await persistentStorage.get("rivers_favorites_last_modified");
         const localLastModified = parseInt(localLastModifiedStr || "0", 10);
 
-        let newFavorites: FavoritesMap;
+        let newFavorites: FavoritesList;
 
         // If cloud is explicitly newer, prefer cloud. Otherwise merge.
         if (
@@ -101,7 +98,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
         ) {
           newFavorites = cloudFavorites;
         } else {
-          newFavorites = mergeFavoritesObjects(favorites, cloudFavorites);
+          newFavorites = mergeFavoritesLists(favorites, cloudFavorites);
         }
 
         setFavorites(newFavorites);
@@ -129,14 +126,14 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [user, loading]);
 
-  const saveFavorites = async (newFavs: FavoritesMap) => {
+  const saveFavorites = async (newFavs: FavoritesList) => {
     const now = Date.now();
     setFavorites(newFavs);
     await persistentStorage.set("rivers_favorites", JSON.stringify(newFavs));
     await persistentStorage.set("rivers_favorites_last_modified", now.toString());
 
     if (user) {
-      const userRef = doc(db, "users", user.uid);
+      const userRef = doc(db, "user", user.uid);
       await setDoc(
         userRef,
         { favorites: newFavs, favoritesLastModified: now, updatedAt: serverTimestamp() },
@@ -146,44 +143,48 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const toggleFavorite = async (river: RiverData) => {
-    const newFavs: FavoritesMap = JSON.parse(JSON.stringify(favorites));
-    const gauge = river.gauges?.[0]?.id || "none";
+    const newFavs: FavoritesList = JSON.parse(JSON.stringify(favorites));
+    const riverIdStr = String(river.id);
 
-    if (newFavs[gauge]?.[river.id]) {
-      delete newFavs[gauge][river.id];
-      if (Object.keys(newFavs[gauge]).length === 0) delete newFavs[gauge];
+    const existingIndex = newFavs.findIndex(f => f.id === riverIdStr);
+
+    if (existingIndex !== -1) {
+      newFavs.splice(existingIndex, 1);
     } else {
-      if (!newFavs[gauge]) newFavs[gauge] = {};
-      newFavs[gauge][river.id] = {
-        id: river.id.toString(),
+      const gauge = river.gauges?.[0]?.id || "none";
+      const newItem: FavoriteItem = {
+        id: riverIdStr,
         name: river.name,
-        section: river.section || "",
-        minimum: river.flow?.min ?? null,
-        maximum: river.flow?.max ?? null,
-        units: river.flow?.unit ?? "cfs",
+        section: river.section || ""
       };
+      
+      if (gauge !== "none") {
+          newItem.gauge = gauge;
+          newItem.minimum = river.flow?.min ?? null;
+          newItem.maximum = river.flow?.max ?? null;
+          newItem.units = river.flow?.unit ?? "ft";
+      }
+
+      newFavs.push(newItem);
     }
     await saveFavorites(newFavs);
   };
 
   const updateFavoriteConfig = async (
-    gaugeId: string,
     riverId: string,
-    updates: Partial<FavoriteDetails>,
+    updates: Partial<FavoriteItem>,
   ) => {
-    const newFavs: FavoritesMap = JSON.parse(JSON.stringify(favorites));
-    if (newFavs[gaugeId]?.[riverId]) {
-      newFavs[gaugeId][riverId] = { ...newFavs[gaugeId][riverId], ...updates };
+    const newFavs: FavoritesList = JSON.parse(JSON.stringify(favorites));
+    const targetIdx = newFavs.findIndex(f => f.id === riverId);
+    if (targetIdx !== -1) {
+      newFavs[targetIdx] = { ...newFavs[targetIdx], ...updates };
       await saveFavorites(newFavs);
     }
   };
 
   const isFavorite = (riverId: string) => {
     const rid = String(riverId);
-    for (const gauge in favorites) {
-      if (favorites[gauge][rid]) return true;
-    }
-    return false;
+    return favorites.some(f => f.id === rid);
   };
 
   return (

@@ -166,7 +166,7 @@ export const notifyAdminsOnReviewQueue = onDocumentCreated("reviewQueue/{docId}"
     console.log(`Intercepted natively new Review Queue submission: ${queueData.name}`);
 
     const db = getFirestore();
-    const adminQuery = await db.collection("users")
+    const adminQuery = await db.collection("user")
         .where("isAdmin", "==", true)
         .where("notifications.reviewQueueAlerts", "==", true)
         .get();

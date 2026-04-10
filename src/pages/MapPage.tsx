@@ -8,8 +8,10 @@ import {
 import { RiverExpansion } from "../components/RiverExpansion";
 import { useLocation } from "../hooks/useLocation";
 import { useRivers } from "../hooks/useRivers";
+import { useSettings } from "../context/SettingsContext";
 
 const MapPage: React.FC = () => {
+  const { isDarkMode, isColorBlindMode } = useSettings();
   const location = useLocation();
   const { rivers, loading: riversLoading, error: riversError } = useRivers();
   const [loading, setLoading] = useState(true);
@@ -83,7 +85,7 @@ const MapPage: React.FC = () => {
         />
 
         {markers.map((pt, i) => {
-          const color = calculateColor(pt.river.running ?? null, false, false);
+          const color = calculateColor(pt.river.running ?? null, isDarkMode, isColorBlindMode);
           // If it's a gauge, use a lighter purple. Otherwise use the flow color.
           const fillColor = pt.river.isGauge ? "#df6af1" : (color || "#fff");
           const opacity = pt.river.isGauge ? 1.0 : 0.9;
@@ -128,7 +130,7 @@ const MapPage: React.FC = () => {
             bottom: 0,
             width: "100%",
             maxWidth: "450px",
-            backgroundColor: "#ffffff",
+            backgroundColor: isDarkMode ? "#1e293b" : "#ffffff",
             zIndex: 2000,
             boxShadow: "-4px 0 15px rgba(0,0,0,0.2)",
             overflowY: "auto",
@@ -139,15 +141,15 @@ const MapPage: React.FC = () => {
               padding: "20px",
               position: "sticky",
               top: 0,
-              backgroundColor: "#ffffff",
-              borderBottom: "1px solid #e2e8f0",
+              backgroundColor: isDarkMode ? "#1e293b" : "#ffffff",
+              borderBottom: isDarkMode ? "1px solid #334155" : "1px solid #e2e8f0",
               zIndex: 10,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <h2 style={{ margin: 0, color: "#1e293b" }}>
+            <h2 style={{ margin: 0, color: isDarkMode ? "#f8fafc" : "#1e293b" }}>
               {selectedRiver.name}{" "}
               {selectedRiver.section ? `(${selectedRiver.section})` : ""}
             </h2>
@@ -160,14 +162,14 @@ const MapPage: React.FC = () => {
                 background: "transparent",
                 fontSize: "2em",
                 cursor: "pointer",
-                color: "#64748b",
+                color: isDarkMode ? "#cbd5e1" : "#64748b",
                 lineHeight: 1,
               }}
             >
               &times;
             </button>
           </div>
-          <div style={{ padding: "0 20px 20px 20px", color: "#334155" }}>
+          <div style={{ padding: "0 20px 20px 20px", color: isDarkMode ? "#e2e8f0" : "#334155" }}>
             <RiverExpansion river={selectedRiver} />
           </div>
         </div>

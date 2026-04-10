@@ -48,6 +48,8 @@ export interface RiverData {
   flowData?: any[];
   flowInfo?: string;
   status?: "high" | "low" | "running" | "unknown";
+  
+  /** Manual hover/scrub integer override injected by the UI Graph charts to simulate historical flow states */
   latestReading?: number;
   running?: number;
   isGauge?: boolean;

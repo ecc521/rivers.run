@@ -4,10 +4,12 @@ import { useFavorites } from "../context/FavoritesContext";
 import { NotificationSettings } from "../components/NotificationSettings";
 import { Link } from "react-router-dom";
 import { PromptModal } from "../components/PromptModal";
+import { useSettings } from "../context/SettingsContext";
 
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();
   const { favorites, updateFavoriteConfig, toggleFavorite } = useFavorites();
+  const { isDarkMode } = useSettings();
   
   const [promptConfig, setPromptConfig] = React.useState<{
     title: string;
@@ -15,33 +17,21 @@ const FavoritesPage: React.FC = () => {
     onConfirm: () => void;
   } | null>(null);
 
-  const flattenedFavorites = [];
-  for (const gauge in favorites) {
-    for (const riverId in favorites[gauge]) {
-      const dbEntry = favorites[gauge][riverId];
-      
-      flattenedFavorites.push({
-        gauge,
-        ...dbEntry,
-      });
-    }
-  }
-
   // Sort alphabetically by name
-  flattenedFavorites.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  const sortedFavorites = [...favorites].sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
 
-  const handleMinChange = (gauge: string, id: string, val: string) => {
+  const handleMinChange = (id: string, val: string) => {
     const num = val ? Number(val) : null;
-    updateFavoriteConfig(gauge, id, { minimum: num });
+    updateFavoriteConfig(id, { minimum: num });
   };
 
-  const handleMaxChange = (gauge: string, id: string, val: string) => {
+  const handleMaxChange = (id: string, val: string) => {
     const num = val ? Number(val) : null;
-    updateFavoriteConfig(gauge, id, { maximum: num });
+    updateFavoriteConfig(id, { maximum: num });
   };
 
-  const handleUnitChange = (gauge: string, id: string, val: string) => {
-    updateFavoriteConfig(gauge, id, { units: val });
+  const handleUnitChange = (id: string, val: string) => {
+    updateFavoriteConfig(id, { units: val });
   };
 
   const handleDelete = (riverObj: any) => {
@@ -111,9 +101,9 @@ const FavoritesPage: React.FC = () => {
         }}
       >
         <h2 style={{ margin: 0 }}>
-          Favorited Rivers ({flattenedFavorites.length})
+          Favorited Rivers ({sortedFavorites.length})
         </h2>
-        {flattenedFavorites.length > 0 && (
+        {sortedFavorites.length > 0 && (
           <button
             onClick={clearAll}
             style={{
@@ -133,7 +123,7 @@ const FavoritesPage: React.FC = () => {
       <div
         style={{
           overflowX: "auto",
-          backgroundColor: "white",
+          backgroundColor: isDarkMode ? "#1e293b" : "white",
           borderRadius: "8px",
           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
         }}
@@ -141,6 +131,7 @@ const FavoritesPage: React.FC = () => {
         <table
           style={{
             width: "100%",
+            tableLayout: "fixed",
             borderCollapse: "collapse",
             textAlign: "left",
           }}
@@ -148,20 +139,20 @@ const FavoritesPage: React.FC = () => {
           <thead>
             <tr
               style={{
-                backgroundColor: "#f8fafc",
-                borderBottom: "2px solid #e2e8f0",
+                backgroundColor: isDarkMode ? "#0f172a" : "#f8fafc",
+                borderBottom: isDarkMode ? "2px solid #334155" : "2px solid #e2e8f0",
               }}
             >
-              <th style={{ padding: "12px 16px", color: "#475569" }}>
+              <th style={{ padding: "12px 16px", color: isDarkMode ? "#cbd5e1" : "#475569" }}>
                 Gauge
               </th>
-              <th style={{ padding: "12px 16px", color: "#475569" }}>
+              <th style={{ padding: "12px 16px", color: isDarkMode ? "#cbd5e1" : "#475569" }}>
                 Name & Section
               </th>
               <th
                 style={{
                   padding: "12px 16px",
-                  color: "#475569",
+                  color: isDarkMode ? "#cbd5e1" : "#475569",
                   width: "100px",
                 }}
               >
@@ -170,7 +161,7 @@ const FavoritesPage: React.FC = () => {
               <th
                 style={{
                   padding: "12px 16px",
-                  color: "#475569",
+                  color: isDarkMode ? "#cbd5e1" : "#475569",
                   width: "100px",
                 }}
               >
@@ -179,7 +170,7 @@ const FavoritesPage: React.FC = () => {
               <th
                 style={{
                   padding: "12px 16px",
-                  color: "#475569",
+                  color: isDarkMode ? "#cbd5e1" : "#475569",
                   width: "120px",
                 }}
               >
@@ -188,33 +179,33 @@ const FavoritesPage: React.FC = () => {
               <th
                 style={{
                   padding: "12px 16px",
-                  color: "#475569",
+                  color: isDarkMode ? "#cbd5e1" : "#475569",
                   width: "50px",
                 }}
               ></th>
             </tr>
           </thead>
           <tbody>
-            {flattenedFavorites.length === 0 ? (
+            {sortedFavorites.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: "30px", textAlign: "center", color: "#64748b" }}>
                   click the star on a river to add it to favorites
                 </td>
               </tr>
             ) : (
-              flattenedFavorites.map((fav, i) => (
+              sortedFavorites.map((fav, i) => (
                 <tr
-                  key={`${fav.gauge}-${fav.id}`}
+                  key={`${fav.gauge || 'none'}-${fav.id}`}
                   style={{
-                    borderBottom: "1px solid #e2e8f0",
-                    backgroundColor: i % 2 === 0 ? "#ffffff" : "#f8fafc",
+                    borderBottom: isDarkMode ? "1px solid #334155" : "1px solid #e2e8f0",
+                    backgroundColor: i % 2 === 0 ? (isDarkMode ? "#1e293b" : "#ffffff") : (isDarkMode ? "#0f172a" : "#f8fafc"),
                   }}
                 >
                   <td
                     style={{
                       padding: "12px 16px",
                       fontSize: "0.9em",
-                      color: "#64748b",
+                      color: isDarkMode ? "#94a3b8" : "#64748b",
                     }}
                   >
                     {fav.gauge === "none" || String(fav.gauge) === "undefined"
@@ -225,7 +216,7 @@ const FavoritesPage: React.FC = () => {
                     style={{
                       padding: "12px 16px",
                       fontWeight: "bold",
-                      color: "#1e293b",
+                      color: isDarkMode ? "#f8fafc" : "#1e293b",
                     }}
                   >
                     <Link
@@ -247,12 +238,14 @@ const FavoritesPage: React.FC = () => {
                       type="number"
                       value={fav.minimum ?? ""}
                       onChange={(e) => {
-                        handleMinChange(fav.gauge, fav.id, e.target.value);
+                        handleMinChange(fav.id, e.target.value);
                       }}
                       style={{
                         width: "60px",
                         padding: "4px",
-                        border: "1px solid #cbd5e1",
+                        border: isDarkMode ? "1px solid #475569" : "1px solid #cbd5e1",
+                        backgroundColor: isDarkMode ? "#0f172a" : "#ffffff",
+                        color: isDarkMode ? "#e2e8f0" : "inherit",
                         borderRadius: "4px",
                       }}
                       placeholder="---"
@@ -263,12 +256,14 @@ const FavoritesPage: React.FC = () => {
                       type="number"
                       value={fav.maximum ?? ""}
                       onChange={(e) => {
-                        handleMaxChange(fav.gauge, fav.id, e.target.value);
+                        handleMaxChange(fav.id, e.target.value);
                       }}
                       style={{
                         width: "60px",
                         padding: "4px",
-                        border: "1px solid #cbd5e1",
+                        border: isDarkMode ? "1px solid #475569" : "1px solid #cbd5e1",
+                        backgroundColor: isDarkMode ? "#0f172a" : "#ffffff",
+                        color: isDarkMode ? "#e2e8f0" : "inherit",
                         borderRadius: "4px",
                       }}
                       placeholder="---"
@@ -278,11 +273,13 @@ const FavoritesPage: React.FC = () => {
                     <select
                       value={fav.units || "-"}
                       onChange={(e) => {
-                        handleUnitChange(fav.gauge, fav.id, e.target.value);
+                        handleUnitChange(fav.id, e.target.value);
                       }}
                       style={{
                         padding: "4px",
-                        border: "1px solid #cbd5e1",
+                        border: isDarkMode ? "1px solid #475569" : "1px solid #cbd5e1",
+                        backgroundColor: isDarkMode ? "#0f172a" : "#ffffff",
+                        color: isDarkMode ? "#e2e8f0" : "inherit",
                         borderRadius: "4px",
                       }}
                     >

@@ -43,7 +43,7 @@ export async function syncAlertDataToStorage(db: Firestore, bucket: Bucket): Pro
     if (needsFullSync) {
         // Fetch completely from scratch using the same rules as native read to ensure we only cache useful records!
         // Anyone without notifications.enabled is safely completely omitted from the entire architecture!
-        querySnapshot = await db.collection("users")
+        querySnapshot = await db.collection("user")
             .where("notifications.enabled", "==", true)
             .get();
 
@@ -58,7 +58,7 @@ export async function syncAlertDataToStorage(db: Firestore, bucket: Bucket): Pro
         console.log(`Executing targeted Delta Sync for precisely modified users post-dating: ${deltaBoundary.toISOString()}`);
         
         // This targets specifically natively!
-        querySnapshot = await db.collection("users")
+        querySnapshot = await db.collection("user")
             .where("updatedAt", ">", deltaBoundary)
             .get();
 

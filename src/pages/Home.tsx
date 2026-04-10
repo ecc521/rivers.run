@@ -15,8 +15,10 @@ import {
   defaultAdvancedSearchQuery,
 } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
+import { useSettings } from "../context/SettingsContext";
 
 const Home: React.FC = () => {
+  const { isDarkMode, isColorBlindMode } = useSettings();
   const { rivers, loading: riversLoading, error: riversError } = useRivers();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -213,7 +215,7 @@ const Home: React.FC = () => {
       <div
         id="legend"
         style={{
-          backgroundImage: `linear-gradient(to right, ${[0, 1, 2, 3, 4].map((i) => calculateColor(i)).join(",")})`,
+          backgroundImage: `linear-gradient(to right, ${[0, 1, 2, 3, 4].map((i) => calculateColor(i, isDarkMode, isColorBlindMode)).join(",")})`,
         }}
       >
         <span id="toolow">Too Low</span>
@@ -231,6 +233,8 @@ const Home: React.FC = () => {
             key={river.id || `${river.name}-${index}`}
             river={river}
             index={index}
+            isDarkMode={isDarkMode}
+            isColorBlindMode={isColorBlindMode}
           />
         ))}
       </div>

@@ -74,7 +74,7 @@ describe("Local Security Rules Validation", () => {
         // We use testEnv.withSecurityRulesDisabled to inject the fake admin UID doc natively
         await testEnv.withSecurityRulesDisabled(async (context) => {
             const backdoorDb = context.firestore();
-            await setDoc(doc(backdoorDb, "users", "admin-uid-123"), { isAdmin: true });
+            await setDoc(doc(backdoorDb, "user", "admin-uid-123"), { isAdmin: true });
         });
 
         // Now authenticate under that injected Admin UID context

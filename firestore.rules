@@ -6,10 +6,10 @@ service cloud.firestore {
     // Checks if logged in, AND the user document has isAdmin == true
     function isAdmin() {
       return request.auth != null && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+             get(/databases/$(database)/documents/user/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    match /users/{userId} {
+    match /user/{userId} {
       // Users can read/write their own user profile, but ONLY admins can write 'isAdmin' flags
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId && !request.resource.data.keys().hasAny(['isAdmin']);
