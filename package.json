@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:emulators": "cd functions && npm run build && cd .. && npx firebase-tools emulators:start",
     "build": "tsc -b && vite build",
-    "lint": "eslint . && npm run lint:duplication",
+    "lint": "tsc -b && eslint . && npm run lint:duplication",
     "lint:duplication": "jscpd src",
     "preview": "vite preview",
     "test": "npm run lint && npm run test:rules",

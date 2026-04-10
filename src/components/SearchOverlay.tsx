@@ -220,7 +220,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 range
                 min={1}
                 max={8}
-                value={[localQuery.skillMin, localQuery.skillMax]}
+                value={[localQuery.skillMin ?? 1, localQuery.skillMax ?? 8]}
                 onChange={(val) => {
                   if (Array.isArray(val)) {
                     setLocalQuery({
@@ -249,7 +249,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 min={0}
                 max={4}
                 step={0.1}
-                value={[localQuery.flowMin, localQuery.flowMax]}
+                value={[localQuery.flowMin ?? 0, localQuery.flowMax ?? 4]}
                 onChange={(val) => {
                   if (Array.isArray(val)) {
                     setLocalQuery({
