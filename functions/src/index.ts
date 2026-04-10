@@ -89,7 +89,12 @@ async function executeGaugeSync() {
         const [exists] = await file.exists();
         if (exists) {
             const [buffer] = await file.download();
-            virtualGauges = JSON.parse(buffer.toString('utf-8'));
+            try {
+                const decomp = zlib.brotliDecompressSync(buffer);
+                virtualGauges = JSON.parse(decomp.toString('utf-8'));
+            } catch {
+                virtualGauges = JSON.parse(buffer.toString('utf-8'));
+            }
             
             Object.keys(virtualGauges).forEach(id => {
                 if (id.startsWith("USGS:")) usgsSet.add(id.replace("USGS:", ""));
@@ -161,18 +166,18 @@ async function executeGaugeSync() {
     flowData.generatedAt = Date.now();
     console.log(`Assembly complete. Total Gauges Synchronized: ${Object.keys(flowData).length - 1}`);
 
-    // 5. Build minified JSON payload and natively GZIP compress it
+    // 5. Build minified JSON payload and natively Brotli compress it
     const jsonStr = JSON.stringify(flowData);
-    const zippedBuffer = zlib.gzipSync(Buffer.from(jsonStr));
+    const zippedBuffer = zlib.brotliCompressSync(Buffer.from(jsonStr), { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9 } });
     
     // 6. Push buffer stream to Firebase Storage
-    console.log(`Writing payload to Firebase Storage public/gauges.json (Uncompressed: ${(jsonStr.length / 1024).toFixed(2)} KB, GZipped: ${(zippedBuffer.length / 1024).toFixed(2)} KB)`);
+    console.log(`Writing payload to Firebase Storage public/gauges.json (Uncompressed: ${(jsonStr.length / 1024).toFixed(2)} KB, Brotli: ${(zippedBuffer.length / 1024).toFixed(2)} KB)`);
     const file = bucket.file("public/gauges.json");
 
     await file.save(zippedBuffer, {
         metadata: {
             contentType: "application/json",
-            contentEncoding: "gzip",
+            contentEncoding: "br",
             cacheControl: "public, max-age=900, s-maxage=900" 
         }
     });

@@ -60,7 +60,7 @@ export default function AdminQueue() {
       <h1>Admin Review Queue</h1>
       <p>Verify user submissions organically before they deploy permanently natively onto the map!</p>
 
-      <div style={{ backgroundColor: '#e2e8f0', padding: '15px', borderRadius: '8px', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ backgroundColor: "var(--border)", padding: '15px', borderRadius: '8px', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
          <input 
             type="checkbox" 
             id="adminAlertsQueue"
@@ -70,29 +70,29 @@ export default function AdminQueue() {
          />
          <div>
             <label htmlFor="adminAlertsQueue" style={{ fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', display: 'block' }}>Email me when new submissions arrive</label>
-            <span style={{ fontSize: '13px', color: '#475569' }}>Automatically dispatches an alert logically whenever a paddler hits submit.</span>
+            <span style={{ fontSize: '13px', color: "var(--text-secondary)" }}>Automatically dispatches an alert logically whenever a paddler hits submit.</span>
          </div>
       </div>
 
       {queue.length === 0 ? (
-        <div style={{ padding: "40px", backgroundColor: "#eee", textAlign: "center", borderRadius: "8px" }}>
+        <div style={{ padding: "40px", backgroundColor: "var(--surface-hover)", textAlign: "center", borderRadius: "8px" }}>
           <h3>The queue is empty.</h3>
           <p>No pending submissions to review.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {queue.map(item => (
-            <div key={item.queueId} style={{ border: "2px solid #ccc", borderRadius: "8px", padding: "15px", backgroundColor: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div key={item.queueId} style={{ border: "2px solid #ccc", borderRadius: "8px", padding: "15px", backgroundColor: "var(--surface)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <h2 style={{ margin: 0 }}>{item.name} <small style={{ fontWeight: 'normal', color: '#666' }}>({item.state || 'N/A'})</small></h2>
-                  <div style={{ fontSize: "14px", color: "#666", marginTop: "5px" }}>
+                  <h2 style={{ margin: 0 }}>{item.name} <small style={{ fontWeight: 'normal', color: "var(--text-muted)" }}>({item.state || 'N/A'})</small></h2>
+                  <div style={{ fontSize: "14px", color: "var(--text-muted)", marginTop: "5px" }}>
                     Submitted By: {item.submittedBy || 'Anonymous'}
                   </div>
                 </div>
                 <div>
                   <button 
                     onClick={() => handleReview(item.queueId)}
-                    style={{ backgroundColor: "#317EFB", color: "white", border: "none", padding: "10px 20px", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", fontSize: "16px" }}
+                    style={{ backgroundColor: "var(--primary)", color: "var(--surface)", border: "none", padding: "10px 20px", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", fontSize: "16px" }}
                   >
                     Review Edit
                   </button>

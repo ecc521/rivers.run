@@ -38,7 +38,7 @@ const FAQItem: React.FC<{ question: string; children: React.ReactNode }> = ({
         <span
           style={{
             fontSize: "1.5rem",
-            color: isOpen ? "#ef4444" : "#10b981",
+            color: isOpen ? "var(--danger)" : "#10b981",
             transition: "transform 0.2s",
             transform: isOpen ? "rotate(45deg)" : "none",
           }}
@@ -50,7 +50,7 @@ const FAQItem: React.FC<{ question: string; children: React.ReactNode }> = ({
         <div
           style={{
             padding: "20px",
-            background: "var(--background, #ffffff)",
+            background: "var(--surface, #ffffff)",
             color: "var(--text-secondary, #475569)",
             lineHeight: "1.6",
           }}
@@ -71,7 +71,7 @@ const FAQ: React.FC = () => {
       <h1 className="center" style={{ marginBottom: "10px" }}>
         Frequently Asked Questions
       </h1>
-      <p className="center" style={{ color: "#64748b", marginBottom: "30px" }}>
+      <p className="center" style={{ color: "var(--text-muted)", marginBottom: "30px" }}>
         Click on the question to see or hide the answer.
       </p>
 
@@ -79,10 +79,11 @@ const FAQ: React.FC = () => {
         className="center"
         style={{
           marginBottom: "30px",
-          backgroundColor: "#eff6ff",
+          backgroundColor: "var(--alert-bg, #eff6ff)",
           padding: "15px",
           borderRadius: "8px",
-          border: "1px solid #bfdbfe",
+          border: "1px solid var(--alert-border, #bfdbfe)",
+          color: "var(--text, #1e293b)",
         }}
       >
         New Users: Watch the{" "}

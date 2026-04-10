@@ -4,12 +4,9 @@ import { useFavorites } from "../context/FavoritesContext";
 import { NotificationSettings } from "../components/NotificationSettings";
 import { Link } from "react-router-dom";
 import { PromptModal } from "../components/PromptModal";
-import { useSettings } from "../context/SettingsContext";
-
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();
   const { favorites, updateFavoriteConfig, toggleFavorite } = useFavorites();
-  const { isDarkMode } = useSettings();
   
   const [promptConfig, setPromptConfig] = React.useState<{
     title: string;
@@ -75,8 +72,8 @@ const FavoritesPage: React.FC = () => {
       {!user && (
         <div
           style={{
-            backgroundColor: "#fffbeb",
-            color: "#b45309",
+            backgroundColor: "var(--warning-bg)",
+            color: "var(--warning-text)",
             padding: "12px",
             textAlign: "center",
             marginBottom: "20px",
@@ -109,7 +106,7 @@ const FavoritesPage: React.FC = () => {
             style={{
               backgroundColor: "transparent",
               border: "1px solid #ef4444",
-              color: "#ef4444",
+              color: "var(--danger)",
               padding: "6px 12px",
               borderRadius: "4px",
               cursor: "pointer",
@@ -123,7 +120,7 @@ const FavoritesPage: React.FC = () => {
       <div
         style={{
           overflowX: "auto",
-          backgroundColor: isDarkMode ? "#1e293b" : "white",
+          backgroundColor: "var(--surface)",
           borderRadius: "8px",
           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
         }}
@@ -139,20 +136,20 @@ const FavoritesPage: React.FC = () => {
           <thead>
             <tr
               style={{
-                backgroundColor: isDarkMode ? "#0f172a" : "#f8fafc",
-                borderBottom: isDarkMode ? "2px solid #334155" : "2px solid #e2e8f0",
+                backgroundColor: "var(--surface-hover)",
+                borderBottom: "2px solid var(--border)",
               }}
             >
-              <th style={{ padding: "12px 16px", color: isDarkMode ? "#cbd5e1" : "#475569" }}>
+              <th style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>
                 Gauge
               </th>
-              <th style={{ padding: "12px 16px", color: isDarkMode ? "#cbd5e1" : "#475569" }}>
+              <th style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>
                 Name & Section
               </th>
               <th
                 style={{
                   padding: "12px 16px",
-                  color: isDarkMode ? "#cbd5e1" : "#475569",
+                  color: "var(--text-secondary)",
                   width: "100px",
                 }}
               >
@@ -161,7 +158,7 @@ const FavoritesPage: React.FC = () => {
               <th
                 style={{
                   padding: "12px 16px",
-                  color: isDarkMode ? "#cbd5e1" : "#475569",
+                  color: "var(--text-secondary)",
                   width: "100px",
                 }}
               >
@@ -170,7 +167,7 @@ const FavoritesPage: React.FC = () => {
               <th
                 style={{
                   padding: "12px 16px",
-                  color: isDarkMode ? "#cbd5e1" : "#475569",
+                  color: "var(--text-secondary)",
                   width: "120px",
                 }}
               >
@@ -179,7 +176,7 @@ const FavoritesPage: React.FC = () => {
               <th
                 style={{
                   padding: "12px 16px",
-                  color: isDarkMode ? "#cbd5e1" : "#475569",
+                  color: "var(--text-secondary)",
                   width: "50px",
                 }}
               ></th>
@@ -188,7 +185,7 @@ const FavoritesPage: React.FC = () => {
           <tbody>
             {sortedFavorites.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: "30px", textAlign: "center", color: "#64748b" }}>
+                <td colSpan={6} style={{ padding: "30px", textAlign: "center", color: "var(--text-muted)" }}>
                   click the star on a river to add it to favorites
                 </td>
               </tr>
@@ -197,15 +194,15 @@ const FavoritesPage: React.FC = () => {
                 <tr
                   key={`${fav.gauge || 'none'}-${fav.id}`}
                   style={{
-                    borderBottom: isDarkMode ? "1px solid #334155" : "1px solid #e2e8f0",
-                    backgroundColor: i % 2 === 0 ? (isDarkMode ? "#1e293b" : "#ffffff") : (isDarkMode ? "#0f172a" : "#f8fafc"),
+                    borderBottom: "1px solid var(--border)",
+                    backgroundColor: i % 2 === 0 ? "var(--surface)" : "var(--surface-hover)",
                   }}
                 >
                   <td
                     style={{
                       padding: "12px 16px",
                       fontSize: "0.9em",
-                      color: isDarkMode ? "#94a3b8" : "#64748b",
+                      color: "var(--text-muted)",
                     }}
                   >
                     {fav.gauge === "none" || String(fav.gauge) === "undefined"
@@ -216,7 +213,7 @@ const FavoritesPage: React.FC = () => {
                     style={{
                       padding: "12px 16px",
                       fontWeight: "bold",
-                      color: isDarkMode ? "#f8fafc" : "#1e293b",
+                      color: "var(--text)",
                     }}
                   >
                     <Link
@@ -226,7 +223,7 @@ const FavoritesPage: React.FC = () => {
                       {fav.name || fav.id}{" "}
                       {fav.section && (
                         <span
-                          style={{ fontWeight: "normal", color: "#64748b" }}
+                          style={{ fontWeight: "normal", color: "var(--text-muted)" }}
                         >
                           ({fav.section})
                         </span>
@@ -243,9 +240,9 @@ const FavoritesPage: React.FC = () => {
                       style={{
                         width: "60px",
                         padding: "4px",
-                        border: isDarkMode ? "1px solid #475569" : "1px solid #cbd5e1",
-                        backgroundColor: isDarkMode ? "#0f172a" : "#ffffff",
-                        color: isDarkMode ? "#e2e8f0" : "inherit",
+                        border: "1px solid var(--border)",
+                        backgroundColor: "var(--surface)",
+                        color: "inherit",
                         borderRadius: "4px",
                       }}
                       placeholder="---"
@@ -261,9 +258,9 @@ const FavoritesPage: React.FC = () => {
                       style={{
                         width: "60px",
                         padding: "4px",
-                        border: isDarkMode ? "1px solid #475569" : "1px solid #cbd5e1",
-                        backgroundColor: isDarkMode ? "#0f172a" : "#ffffff",
-                        color: isDarkMode ? "#e2e8f0" : "inherit",
+                        border: "1px solid var(--border)",
+                        backgroundColor: "var(--surface)",
+                        color: "inherit",
                         borderRadius: "4px",
                       }}
                       placeholder="---"
@@ -277,9 +274,9 @@ const FavoritesPage: React.FC = () => {
                       }}
                       style={{
                         padding: "4px",
-                        border: isDarkMode ? "1px solid #475569" : "1px solid #cbd5e1",
-                        backgroundColor: isDarkMode ? "#0f172a" : "#ffffff",
-                        color: isDarkMode ? "#e2e8f0" : "inherit",
+                        border: "1px solid var(--border)",
+                        backgroundColor: "var(--surface)",
+                        color: "inherit",
                         borderRadius: "4px",
                       }}
                     >
@@ -299,7 +296,7 @@ const FavoritesPage: React.FC = () => {
                         background: "none",
                         border: "none",
                         cursor: "pointer",
-                        color: "#ef4444",
+                        color: "var(--danger)",
                         fontSize: "1.2em",
                       }}
                       title="Remove Favorite"

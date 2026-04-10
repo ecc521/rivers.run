@@ -40,6 +40,25 @@ export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
   sortReverse: false,
 };
 
+export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
+  if (query.favoritesOnly) return true;
+  if (query.listData && query.listData.length > 0) return true;
+  if (query.distanceMax !== undefined) return true;
+  if (query.name) return true;
+  if (query.section) return true;
+  if (query.skillMin !== defaultAdvancedSearchQuery.skillMin) return true;
+  if (query.skillMax !== defaultAdvancedSearchQuery.skillMax) return true;
+  if (query.flowMin !== defaultAdvancedSearchQuery.flowMin) return true;
+  if (query.flowMax !== defaultAdvancedSearchQuery.flowMax) return true;
+  if (query.ratingMin !== defaultAdvancedSearchQuery.ratingMin) return true;
+  if (query.ratingMax !== defaultAdvancedSearchQuery.ratingMax) return true;
+  if (query.includeUnknownSkill !== defaultAdvancedSearchQuery.includeUnknownSkill) return true;
+  if (query.includeUnknownFlow !== defaultAdvancedSearchQuery.includeUnknownFlow) return true;
+  if (query.includeUnknownRating !== defaultAdvancedSearchQuery.includeUnknownRating) return true;
+  if (query.includeDams !== defaultAdvancedSearchQuery.includeDams) return true;
+  return false;
+}
+
 function skillToNumber(skill: string): number {
   const map: Record<string, number> = {
     FW: 1,

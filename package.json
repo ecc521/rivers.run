@@ -28,6 +28,7 @@
     "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
     "leaflet": "^1.9.4",
+    "rc-slider": "^11.1.9",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-is": "^19.2.5",

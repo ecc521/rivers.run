@@ -40,7 +40,7 @@ const ClubSection: React.FC<{
         <span
           style={{
             fontSize: "1.5rem",
-            color: isOpen ? "#ef4444" : "#3b82f6",
+            color: isOpen ? "var(--danger)" : "var(--primary)",
             transition: "transform 0.2s",
             transform: isOpen ? "rotate(180deg)" : "none",
           }}

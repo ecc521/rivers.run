@@ -13,6 +13,7 @@ import {
 import {
   filterRivers,
   defaultAdvancedSearchQuery,
+  hasActiveFilters,
 } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useSettings } from "../context/SettingsContext";
@@ -155,15 +156,42 @@ const Home: React.FC = () => {
     <div className="page-content">
       {/* Search Header Area */}
       <h1 className="center">{listTitle ? listTitle : "River Information"}</h1>
-      <div className="searchcontain">
+      <div 
+        className="searchcontain"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "10px",
+          margin: "0 auto 20px auto",
+          maxWidth: "700px",
+          width: "100%",
+          padding: "0 15px",
+          boxSizing: "border-box"
+        }}
+      >
         <input
           id="searchbox"
           type="text"
           aria-label="Type in the box to search for a river"
-          placeholder="Search.."
+          placeholder="Search for a river..."
           value={searchQuery.normalSearch || ""}
           onChange={(e) => {
             setSearchQuery({ ...searchQuery, normalSearch: e.target.value });
+          }}
+          style={{
+            flex: 1,
+            padding: "10px 20px",
+            fontSize: "1rem",
+            borderRadius: "50px",
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--surface)",
+            color: "var(--text)",
+            outline: "none",
+            boxShadow: isDarkMode 
+                ? "inset 0 1px 2px rgba(0,0,0,0.5)" 
+                : "inset 0 1px 2px rgba(0,0,0,0.05)",
+            transition: "all 0.2s"
           }}
         />
         <button
@@ -171,26 +199,42 @@ const Home: React.FC = () => {
           onClick={() => {
             setIsAdvancedSearchOpen(true);
           }}
+          style={{
+            padding: "10px 20px",
+            fontSize: "0.95rem",
+            fontWeight: 600,
+            borderRadius: "50px",
+            border: "none",
+            backgroundColor: "var(--primary)",
+            color: "#ffffff",
+            cursor: "pointer",
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+            transition: "all 0.2s"
+          }}
         >
           Advanced
         </button>
-        <button id="addAllToFavorites">Add to Favorites</button>
       </div>
 
-      {(searchQuery.favoritesOnly || searchQuery.listData || searchQuery.distanceMax !== undefined || searchQuery.sortBy !== "none") && (
+      {hasActiveFilters(searchQuery) && (
          <div style={{ textAlign: "center", marginBottom: "15px" }}>
-            <span style={{ fontSize: "0.9em", color: "#64748b", fontStyle: "italic", marginRight: "10px" }}>
-                Custom Sorting / Filters Active
+            <span style={{ fontSize: "0.9em", color: "var(--text-muted)", fontStyle: "italic", marginRight: "10px" }}>
+                Custom Filters Active
             </span>
             <button 
                 onClick={() => {
-                   setSearchQuery({ ...defaultAdvancedSearchQuery });
+                   setSearchQuery({
+                     ...defaultAdvancedSearchQuery,
+                     normalSearch: searchQuery.normalSearch,
+                     sortBy: searchQuery.sortBy,
+                     sortReverse: searchQuery.sortReverse
+                   });
                    setListTitle(null);
                 }}
                 style={{
                     padding: "4px 10px",
-                    backgroundColor: "#ef4444",
-                    color: "white",
+                    backgroundColor: "var(--danger)",
+                    color: "var(--surface)",
                     border: "none",
                     borderRadius: "4px",
                     cursor: "pointer",

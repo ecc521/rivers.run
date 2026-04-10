@@ -1,4 +1,5 @@
 import { Bucket } from "@google-cloud/storage";
+import * as zlib from "zlib";
 
 const states = [
   "al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl", "ga",
@@ -104,13 +105,16 @@ export async function compileVirtualGaugesToStorage(bucket: Bucket): Promise<voi
     await scrapeCanada(virtualGauges);
 
     const payload = JSON.stringify(virtualGauges);
+    const zippedBuffer = zlib.brotliCompressSync(Buffer.from(payload), { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9 } });
+    
     const byteSize = Buffer.byteLength(payload);
-    console.log(`3. Pushing mapped payload array to Cloud Storage (${(byteSize / 1024 / 1024).toFixed(2)} MB)...`);
+    console.log(`3. Pushing mapped payload array to Cloud Storage (Uncompressed: ${(byteSize / 1024 / 1024).toFixed(2)} MB, Brotli: ${(zippedBuffer.length / 1024 / 1024).toFixed(2)} MB)...`);
     
     const file = bucket.file("public/virtualGauges.json");
-    await file.save(payload, {
+    await file.save(zippedBuffer, {
         metadata: {
             contentType: "application/json",
+            contentEncoding: "br",
             cacheControl: "public, max-age=604800" // Cache for 1 week essentially
         }
     });

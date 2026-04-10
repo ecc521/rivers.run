@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RiverData } from "../types/River";
 import {
@@ -11,7 +11,7 @@ import { useRivers } from "../hooks/useRivers";
 import { useSettings } from "../context/SettingsContext";
 
 const MapPage: React.FC = () => {
-  const { isDarkMode, isColorBlindMode } = useSettings();
+  const { isColorBlindMode } = useSettings();
   const location = useLocation();
   const { rivers, loading: riversLoading, error: riversError } = useRivers();
   const [loading, setLoading] = useState(true);
@@ -85,9 +85,9 @@ const MapPage: React.FC = () => {
         />
 
         {markers.map((pt, i) => {
-          const color = calculateColor(pt.river.running ?? null, isDarkMode, isColorBlindMode);
+          const color = calculateColor(pt.river.running ?? null, false, isColorBlindMode);
           // If it's a gauge, use a lighter purple. Otherwise use the flow color.
-          const fillColor = pt.river.isGauge ? "#df6af1" : (color || "#fff");
+          const fillColor = pt.river.isGauge ? "#df6af1" : (color || "var(--surface)");
           const opacity = pt.river.isGauge ? 1.0 : 0.9;
           
           return (
@@ -97,7 +97,7 @@ const MapPage: React.FC = () => {
               radius={pt.river.isGauge ? 3 : 8}
               fillColor={fillColor}
               fillOpacity={opacity}
-              color={pt.river.isGauge ? "#b53ebb" : "#333"}
+              color={pt.river.isGauge ? "#b53ebb" : "var(--text)"}
               weight={1}
               eventHandlers={{
                 click: () => {
@@ -115,9 +115,14 @@ const MapPage: React.FC = () => {
               radius={7}
               fillColor="#3b82f6" // Distinct Blue
               fillOpacity={1.0}
-              color="#ffffff" // White boundary
+              color="#ffffff" // White boundary specifically for map tiles
               weight={2}
-            />
+            >
+              <Popup>
+                You are here: <br />
+                {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+              </Popup>
+            </CircleMarker>
         )}
       </MapContainer>
 
@@ -130,7 +135,7 @@ const MapPage: React.FC = () => {
             bottom: 0,
             width: "100%",
             maxWidth: "450px",
-            backgroundColor: isDarkMode ? "#1e293b" : "#ffffff",
+            backgroundColor: "var(--surface)",
             zIndex: 2000,
             boxShadow: "-4px 0 15px rgba(0,0,0,0.2)",
             overflowY: "auto",
@@ -141,15 +146,15 @@ const MapPage: React.FC = () => {
               padding: "20px",
               position: "sticky",
               top: 0,
-              backgroundColor: isDarkMode ? "#1e293b" : "#ffffff",
-              borderBottom: isDarkMode ? "1px solid #334155" : "1px solid #e2e8f0",
+              backgroundColor: "var(--surface)",
+              borderBottom: "1px solid var(--border)",
               zIndex: 10,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <h2 style={{ margin: 0, color: isDarkMode ? "#f8fafc" : "#1e293b" }}>
+            <h2 style={{ margin: 0, color: "var(--text)" }}>
               {selectedRiver.name}{" "}
               {selectedRiver.section ? `(${selectedRiver.section})` : ""}
             </h2>
@@ -162,14 +167,14 @@ const MapPage: React.FC = () => {
                 background: "transparent",
                 fontSize: "2em",
                 cursor: "pointer",
-                color: isDarkMode ? "#cbd5e1" : "#64748b",
+                color: "var(--text-muted)",
                 lineHeight: 1,
               }}
             >
               &times;
             </button>
           </div>
-          <div style={{ padding: "0 20px 20px 20px", color: isDarkMode ? "#e2e8f0" : "#334155" }}>
+          <div style={{ padding: "0 20px 20px 20px", color: "var(--text-secondary)" }}>
             <RiverExpansion river={selectedRiver} />
           </div>
         </div>

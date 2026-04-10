@@ -1,5 +1,6 @@
 import { Firestore } from "firebase-admin/firestore";
 import { Bucket } from "@google-cloud/storage";
+import * as zlib from "zlib";
 
 const JSON_REMOTE_PATH = "public/rivers.json";
 const FULL_SYNC_HEURISTIC_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -26,7 +27,12 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
                 needsFullSync = true;
             } else {
                 const [buffer] = await file.download();
-                legacyRivers = JSON.parse(buffer.toString('utf-8'));
+                try {
+                    const decompressed = zlib.brotliDecompressSync(buffer);
+                    legacyRivers = JSON.parse(decompressed.toString('utf-8'));
+                } catch {
+                    legacyRivers = JSON.parse(buffer.toString('utf-8'));
+                }
                 lastCompileMs = updatedTime;
             }
         } else {
@@ -83,11 +89,13 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
 
     // 4. Force upload precisely securely 
     const jsonStr = JSON.stringify(legacyRivers);
-    console.log(`Deploying strictly natively modified river baseline JSON payload to storage (${(jsonStr.length / 1024).toFixed(2)} KB)...`);
+    const zippedBuffer = zlib.brotliCompressSync(Buffer.from(jsonStr), { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9 } });
+    console.log(`Deploying strictly natively modified river baseline JSON payload to storage (${(jsonStr.length / 1024).toFixed(2)} KB -> Brotli: ${(zippedBuffer.length / 1024).toFixed(2)} KB)...`);
 
-    await file.save(jsonStr, {
+    await file.save(zippedBuffer, {
         metadata: {
             contentType: "application/json",
+            contentEncoding: "br",
             cacheControl: "public, max-age=900, s-maxage=900"
         }
     });

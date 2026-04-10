@@ -8,6 +8,15 @@ button, select {
     color: black; /*iOS seems to use some darkish-blue color as the default now*/
 }
 
+a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+a:hover {
+    filter: brightness(1.2);
+}
+
 :root {
     --defaultFontSize: 3.2vw;
 
@@ -26,6 +35,18 @@ button, select {
     --border: #e2e8f0;
     --alert-bg: #eff6ff;
     --alert-border: #bfdbfe;
+
+    --primary: #3b82f6;      
+    --success: #10b981;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --danger: #ef4444;       
+    --danger-bg: #fee2e2;
+    --danger-text: #b91c1c;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --warning-text: #b45309;
+    --text-muted: #64748b;
 }
 
 @media screen and (min-width: 550px) {
@@ -218,10 +239,9 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 }
 
 
-#advancedsearch, #addAllToFavorites {
+#advancedsearch {
     display: inline-block;
     vertical-align: middle;
-    height: 36px;
 }
 
 .tempButton, .flowButton, .precipButton {
@@ -250,41 +270,10 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
     background-color: #0077BB;
 }
 
-#advancedSearchWarning {
-    text-align: center;
-    background-color:lightpink;
-    margin:0;
-    margin-bottom:8px;
-    padding:6px;
-    display:none;
-}
+
 
 #searchbox {
-    display:inline-block;
-    vertical-align:middle;
-    padding:0;
-    height: 36px;
-    width: 20%;
-	padding-left:5px;/*Prevent the text from being on the left edge.*/
-	font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
-}
-
-#advanced-search-modal > .modal-content > * {
     font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
-}
-#advanced-search-modal > .modal-content > #locationSearchPortion > * {
-    font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
-}
-button {
-    font-size: 16px; /*iOS auto zooms with font-size less than 16px.*/
-}
-
-#advanced-search-modal-close {
-    font-size: 36px !important; /*Set back to the default (the selector above would override)*/
-}
-
-#searchlink {
-    word-break: break-all; /*Allow breaking the advanced search link so it doesn't widen the page.*/
 }
 
 #searchbox::placeholder {
@@ -666,6 +655,18 @@ Those include name,section,skill,quality, and flow info*/
     --border: #334155;
     --alert-bg: #0f172a;
     --alert-border: #334155;
+
+    --primary: #60a5fa; 
+    --success: #34d399;
+    --success-bg: #064e3b;
+    --success-text: #a7f3d0;
+    --danger: #f87171;
+    --danger-bg: #7f1d1d;
+    --danger-text: #fecaca;
+    --warning: #fbbf24;
+    --warning-bg: #78350f;
+    --warning-text: #fde68a;
+    --text-muted: #94a3b8;
 }
 .dark-theme .riverbutton:nth-child(even) {
     background-color: #222222;
@@ -706,62 +707,17 @@ Those include name,section,skill,quality, and flow info*/
 .dark-theme .riverbuttonGauge:nth-child(odd){
     background-color: #3c0545 !important;
 }
-.dark-theme #advancedSearchWarning {
-    background-color:darkblue;
-}
+
 .dark-theme .riverbutton {
     color:#ffffff;
 }
 .dark-theme #topbar {
     color:black;
 }
-.dark-theme #searchbox {
-    background-color:#545454;
-    border: none;
-    color: #FAFAFA;
-}
-.dark-theme #searchbox::placeholder {
-    color: #FAFAFA;
-}
 
 
-/* Modal styles missing from legacy index.css but injected via allPages.js */
-.modal {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position:fixed;
-  z-index:100;
-  left:0;
-  top:0;
-  width:100%;
-  height: 100%;
-  overflow:auto;
-  background-color: rgba(0,0,0,0.4);
-}
 
-.modal-content {
-  color:black;
-  max-height: 90vh;
-  overflow: scroll;
-  background-color: #fefefe;
-  padding: 12px;
-  border: 1px solid #888;
-  width: calc(92% - 24px);
-}
 
-.modal-close {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-}
-
-.modal-close:hover, .modal-close:focus {
-  color: #888;
-  text-decoration: none;
-  cursor: pointer;
-}
 
 
 /* Standardized React Component Panel styling */
@@ -809,4 +765,9 @@ Those include name,section,skill,quality, and flow info*/
     background-color:black !important;
     color:#cfcfcf !important;
   }
+}
+
+/* OpenStreetMap Dark Mode Tile Inversion */
+.dark-theme .leaflet-tile-pane {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%);
 }

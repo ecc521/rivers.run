@@ -64,7 +64,7 @@ const CommunityLists: React.FC = () => {
       <h1 className="center" style={{ marginBottom: "10px" }}>
         Community Lists
       </h1>
-      <p className="center" style={{ color: "#64748b", marginBottom: "30px", fontSize: "1.1rem" }}>
+      <p className="center" style={{ color: "var(--text-muted)", marginBottom: "30px", fontSize: "1.1rem" }}>
         Curated river itineraries from legendary paddlers.
       </p>
 
@@ -75,8 +75,8 @@ const CommunityLists: React.FC = () => {
             style={{
               padding: "20px",
               borderRadius: "8px",
-              border: "1px solid #cbd5e1",
-              backgroundColor: "#ffffff",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--surface)",
               boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
               display: "flex",
               flexDirection: "column",
@@ -84,16 +84,16 @@ const CommunityLists: React.FC = () => {
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <h2 style={{ margin: 0, color: "#1e293b", fontSize: "1.4em" }}>{list.title}</h2>
-              <span style={{ backgroundColor: "#eff6ff", color: "#3b82f6", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
+              <h2 style={{ margin: 0, color: "var(--text)", fontSize: "1.4em" }}>{list.title}</h2>
+              <span style={{ backgroundColor: "#eff6ff", color: "var(--primary)", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
                 {list.subscribes} Subscribers
               </span>
             </div>
             
-            <p style={{ margin: 0, color: "#475569", fontStyle: "italic" }}>By {list.author}</p>
-            <p style={{ margin: 0, color: "#334155", lineHeight: "1.5" }}>{list.description}</p>
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontStyle: "italic" }}>By {list.author}</p>
+            <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: "1.5" }}>{list.description}</p>
             
-            <p style={{ margin: 0, color: "#64748b", fontSize: "0.9em" }}>
+            <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.9em" }}>
               Contains {list.rivers?.length || 0} River Sections
             </p>
 
@@ -102,8 +102,8 @@ const CommunityLists: React.FC = () => {
               style={{
                 alignSelf: "flex-start",
                 padding: "8px 16px",
-                backgroundColor: "#3b82f6",
-                color: "white",
+                backgroundColor: "var(--primary)",
+                color: "var(--surface)",
                 border: "none",
                 borderRadius: "6px",
                 fontWeight: "bold",
@@ -117,7 +117,7 @@ const CommunityLists: React.FC = () => {
         ))}
 
         {lists.length === 0 && (
-          <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
+          <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>
             No community lists published yet!
           </div>
         )}

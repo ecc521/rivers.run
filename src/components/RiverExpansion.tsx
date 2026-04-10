@@ -79,7 +79,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
       {river.accessPoints && river.accessPoints.length > 0 && (
         <a
           className="mapButton"
-          style={{ display: 'inline-block', backgroundColor: '#e2e8f0', padding: '8px 16px', borderRadius: '6px', color: '#475569', textDecoration: 'none', margin: '8px 0', fontSize: '0.9em' }}
+          style={{ display: 'inline-block', backgroundColor: "var(--border)", padding: '8px 16px', borderRadius: '6px', color: "var(--text-secondary)", textDecoration: 'none', margin: '8px 0', fontSize: '0.9em' }}
           href={`/map?lat=${river.accessPoints[0].lat}&lon=${river.accessPoints[0].lon}`}
         >
           View Area on Map
@@ -94,7 +94,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
             href={`/edit/${river.id}`}
             target="_blank"
             rel="noreferrer"
-            style={{ fontWeight: 'bold', color: '#B33', marginRight: '10px' }}
+            style={{ fontWeight: 'bold', color: "var(--danger)", marginRight: '10px' }}
           >
             [Admin] Edit River Data
           </a>

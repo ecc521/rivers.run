@@ -268,21 +268,21 @@ export default function RiverEditor() {
   return (
     <div className="page-content" style={{ maxWidth: 800, margin: "0 auto", paddingBottom: "100px" }}>
       {isReviewMode && liveData && (
-        <div style={{ display: 'flex', backgroundColor: '#f0f0f0', borderRadius: '5px', padding: '5px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', backgroundColor: "var(--surface-hover)", borderRadius: '5px', padding: '5px', marginBottom: '20px' }}>
           <button 
             onClick={() => toggleView("live")} 
-            style={{ flex: 1, padding: '10px', backgroundColor: viewMode === 'live' ? '#317EFB' : 'transparent', color: viewMode === 'live' ? 'white' : 'black', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}>
+            style={{ flex: 1, padding: '10px', backgroundColor: viewMode === 'live' ? "var(--primary)" : 'transparent', color: viewMode === 'live' ? 'white' : 'black', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}>
             Current Live River
           </button>
           <button 
             onClick={() => toggleView("proposed")}
-            style={{ flex: 1, padding: '10px', backgroundColor: viewMode === 'proposed' ? '#28a745' : 'transparent', color: viewMode === 'proposed' ? 'white' : 'black', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}>
+            style={{ flex: 1, padding: '10px', backgroundColor: viewMode === 'proposed' ? "var(--success)" : 'transparent', color: viewMode === 'proposed' ? 'white' : 'black', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}>
             Proposed Custom Edit
           </button>
         </div>
       )}
       {isReviewMode && !liveData && (
-          <div style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '15px', borderRadius: '5px', marginBottom: '20px', fontWeight: 'bold' }}>
+          <div style={{ backgroundColor: "var(--warning-bg)", color: "var(--warning-text)", padding: '15px', borderRadius: '5px', marginBottom: '20px', fontWeight: 'bold' }}>
             🌟 Completely New River Submission! No existing live data to diff against.
           </div>
       )}
@@ -416,14 +416,14 @@ export default function RiverEditor() {
             <button 
               onClick={handleApproveReview} 
               disabled={saving || viewMode === 'live'}
-              style={{ flex: 1, padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || viewMode === 'live') ? 'not-allowed' : 'pointer', opacity: viewMode === 'live' ? 0.5 : 1 }}
+              style={{ flex: 1, padding: '15px', backgroundColor: "var(--success)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || viewMode === 'live') ? 'not-allowed' : 'pointer', opacity: viewMode === 'live' ? 0.5 : 1 }}
             >
               {saving ? "Saving..." : "Approve & Deploy to Live Maps"}
             </button>
             <button 
               onClick={handleRejectReview} 
               disabled={saving}
-              style={{ padding: '15px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', fontSize: '18px', cursor: saving ? 'not-allowed' : 'pointer' }}
+              style={{ padding: '15px', backgroundColor: "var(--danger)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: saving ? 'not-allowed' : 'pointer' }}
             >
               Reject Submission
             </button>
@@ -432,7 +432,7 @@ export default function RiverEditor() {
           <button 
             onClick={handleSave} 
             disabled={saving}
-            style={{ padding: '15px', backgroundColor: '#317EFB', color: 'white', border: 'none', borderRadius: '5px', fontSize: '18px', cursor: 'pointer', marginTop: '20px' }}
+            style={{ padding: '15px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: 'pointer', marginTop: '20px' }}
           >
             {saving ? "Saving..." : "Save River Data"}
           </button>

@@ -92,10 +92,11 @@ export const NotificationSettings: React.FC = () => {
   return (
     <div
       style={{
-        backgroundColor: "#1e293b",
-        color: "white",
+        backgroundColor: "var(--surface-hover)",
+        color: "var(--text)",
         padding: "20px",
         borderRadius: "12px",
+        border: "1px solid var(--border)",
         marginBottom: "30px",
       }}
     >
@@ -112,7 +113,7 @@ export const NotificationSettings: React.FC = () => {
       {config.enabled ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
           <div>
-            <span style={{ color: "#4ade80", fontWeight: "bold" }}>
+            <span style={{ color: "var(--success)", fontWeight: "bold" }}>
               {isMuted
                 ? "Email Notifications Disabled Temporarily"
                 : "Email Notifications Enabled"}
@@ -131,9 +132,9 @@ export const NotificationSettings: React.FC = () => {
                 style={{
                   padding: "8px",
                   borderRadius: "4px",
-                  border: "1px solid #475569",
-                  backgroundColor: "#0f172a",
-                  color: "white",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text)",
                 }}
               />
             </label>
@@ -150,9 +151,9 @@ export const NotificationSettings: React.FC = () => {
                 style={{
                   padding: "8px",
                   borderRadius: "4px",
-                  border: "1px solid #475569",
-                  backgroundColor: "#0f172a",
-                  color: "white",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text)",
                 }}
               />
             </label>
@@ -163,7 +164,7 @@ export const NotificationSettings: React.FC = () => {
                   alignSelf: "flex-end",
                   paddingBottom: "10px",
                   fontSize: "0.9em",
-                  color: "#94a3b8",
+                  color: "var(--text-muted)",
                 }}
               >
                 Muted until: {new Date(config.noneUntil!).toLocaleString()}
@@ -176,8 +177,8 @@ export const NotificationSettings: React.FC = () => {
             style={{
               alignSelf: "flex-start",
               padding: "8px 16px",
-              backgroundColor: "#ef4444",
-              color: "white",
+              backgroundColor: "var(--danger)",
+              color: "var(--surface)",
               border: "none",
               borderRadius: "6px",
               cursor: "pointer",
@@ -189,15 +190,15 @@ export const NotificationSettings: React.FC = () => {
         </div>
       ) : (
         <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-          <span style={{ color: "#ef4444", fontWeight: "bold" }}>
+          <span style={{ color: "var(--danger)", fontWeight: "bold" }}>
             Email Notifications Disabled
           </span>
           <button
             onClick={() => updateConfig({ enabled: true, noneUntil: 0 })}
             style={{
               padding: "8px 16px",
-              backgroundColor: "#4ade80",
-              color: "#0f172a",
+              backgroundColor: "var(--success)",
+              color: "var(--text)",
               border: "none",
               borderRadius: "6px",
               cursor: "pointer",

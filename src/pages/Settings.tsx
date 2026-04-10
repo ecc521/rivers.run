@@ -69,7 +69,7 @@ const SettingsPage: React.FC = () => {
                 <option value="false">Light</option>
                 <option value="true">Dark</option>
               </select>
-              <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.9em", margin: 0 }}>
                 {themeStatusText}
               </p>
             </>
@@ -101,7 +101,7 @@ const SettingsPage: React.FC = () => {
               ))}
             </optgroup>
           </select>
-          <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9em", margin: 0 }}>
             Determines what loads by default when you open the app. Selecting a Community List will also automatically enforce its custom curated sorting order.
           </p>
         </div>
@@ -127,7 +127,7 @@ const SettingsPage: React.FC = () => {
               <option value="true">Yes</option>
             </select>
           )}
-          <p style={{ color: "#64748b", fontSize: "0.9em", margin: 0 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9em", margin: 0 }}>
             Color blind mode alters the primary flow color indicators natively
             embedded everywhere, as well as line-colors on Flow charts.
           </p>
@@ -228,22 +228,22 @@ const OfflineMapManager: React.FC = () => {
     >
       <h3 style={{ marginTop: 0, display: 'flex', justifyContent: 'space-between' }}>
         Offline Maps
-        <span style={{ fontSize: '0.8em', color: '#64748b', fontWeight: 'normal' }}>
+        <span style={{ fontSize: '0.8em', color: "var(--text-muted)", fontWeight: 'normal' }}>
           {storageString}
         </span>
       </h3>
-      <p style={{ color: "#475569", fontSize: "0.95em", marginBottom: "20px" }}>
+      <p style={{ color: "var(--text-secondary)", fontSize: "0.95em", marginBottom: "20px" }}>
         The app automatically saves the maps you look at. To guarantee you have a map when driving to remote put-ins without cell service, you can manually download entire areas below.
       </p>
 
       {isDownloading && downloadProgress && (
         <div className="settings-nested-panel" style={{ marginBottom: '20px', padding: '15px', borderRadius: '6px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>Downloading Map...</span>
+            <span style={{ fontWeight: 'bold', color: "var(--primary)" }}>Downloading Map...</span>
             <span>{downloadProgress.done} / {downloadProgress.total}</span>
           </div>
-          <div style={{ width: '100%', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', height: '8px' }}>
-            <div style={{ width: `${(downloadProgress.done / downloadProgress.total) * 100}%`, backgroundColor: '#3b82f6', height: '100%', transition: 'width 0.2s' }}></div>
+          <div style={{ width: '100%', backgroundColor: "var(--border)", borderRadius: '4px', overflow: 'hidden', height: '8px' }}>
+            <div style={{ width: `${(downloadProgress.done / downloadProgress.total) * 100}%`, backgroundColor: "var(--primary)", height: '100%', transition: 'width 0.2s' }}></div>
           </div>
         </div>
       )}
@@ -260,7 +260,7 @@ const OfflineMapManager: React.FC = () => {
               value={worldZoom} 
               onChange={e => setWorldZoom(Number(e.target.value))}
               disabled={isDownloading}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', flex: 1, backgroundColor: '#fff' }}
+              style={{ padding: '10px', borderRadius: '6px', border: "1px solid var(--border)", flex: 1, backgroundColor: "var(--surface)" }}
             >
               <option value={2}>Vague (Zoom 2) - Default</option>
               <option value={3}>Basic (Zoom 3)</option>
@@ -270,7 +270,7 @@ const OfflineMapManager: React.FC = () => {
             <button 
               onClick={() => handleDownload('world', worldZoom)}
               disabled={isDownloading}
-              style={{ padding: '10px 16px', backgroundColor: isDownloading ? '#cbd5e1' : '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', minWidth: '160px' }}
+              style={{ padding: '10px 16px', backgroundColor: isDownloading ? '#cbd5e1' : "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', minWidth: '160px' }}
             >
               Download
             </button>
@@ -287,7 +287,7 @@ const OfflineMapManager: React.FC = () => {
               value={usZoom} 
               onChange={e => setUsZoom(Number(e.target.value))}
               disabled={isDownloading}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', flex: 1, backgroundColor: '#fff' }}
+              style={{ padding: '10px', borderRadius: '6px', border: "1px solid var(--border)", flex: 1, backgroundColor: "var(--surface)" }}
             >
               <option value={4}>Basic (Zoom 4) - Default</option>
               <option value={5}>Standard (Zoom 5)</option>
@@ -298,19 +298,19 @@ const OfflineMapManager: React.FC = () => {
             <button 
               onClick={() => handleDownload('us', usZoom)}
               disabled={isDownloading}
-              style={{ padding: '10px 16px', backgroundColor: isDownloading ? '#cbd5e1' : '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', minWidth: '160px' }}
+              style={{ padding: '10px 16px', backgroundColor: isDownloading ? '#cbd5e1' : "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', minWidth: '160px' }}
             >
               Download
             </button>
           </div>
         </div>
         
-        <div style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '8px 0' }} />
+        <div style={{ height: '1px', backgroundColor: "var(--border)", margin: '8px 0' }} />
 
         <button 
           onClick={handleClearCache}
           disabled={isDownloading}
-          style={{ padding: '12px 16px', backgroundColor: 'transparent', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+          style={{ padding: '12px 16px', backgroundColor: 'transparent', border: '1px solid #ef4444', color: "var(--danger)", borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
         >
           Delete All Downloaded Maps
         </button>

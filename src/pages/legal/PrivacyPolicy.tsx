@@ -20,7 +20,7 @@ const PrivacyPolicy: React.FC = () => {
         Continued use of the Website after any such changes become effective shall constitute your consent to such changes.</p>
 
       <h2 id="contact">Contact Us</h2>
-      <p>If you have any questions about this privacy policy, feel free to contact us. You can send us an email at <a href="mailto:support@rivers.run" style={{ color: "#3b82f6", textDecoration: "none" }}>support@rivers.run</a></p>
+      <p>If you have any questions about this privacy policy, feel free to contact us. You can send us an email at <a href="mailto:support@rivers.run" style={{ color: "var(--primary)", textDecoration: "none" }}>support@rivers.run</a></p>
     </LegalLayout>
   );
 };

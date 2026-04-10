@@ -33,13 +33,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div
         style={{
           backgroundColor: "rgba(15, 23, 42, 0.9)",
-          color: "white",
+          color: "var(--surface)",
           padding: "10px",
           borderRadius: "4px",
           border: "1px solid #475569",
         }}
       >
-        <p style={{ margin: "0 0 5px 0", fontSize: "0.9em", color: "#cbd5e1" }}>
+        <p style={{ margin: "0 0 5px 0", fontSize: "0.9em", color: "var(--text-secondary)" }}>
           {formatDate(label)}
         </p>
         {payload.map((entry: any, index: number) => (
@@ -73,7 +73,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
 
   if (!data || data.length === 0 || (!hasFlow && !hasTemp && !hasPrecip)) {
     return (
-      <div style={{ color: "#64748b", fontStyle: "italic", padding: "10px 0" }}>
+      <div style={{ color: "var(--text-muted)", fontStyle: "italic", padding: "10px 0" }}>
         No historical graph data available for this gauge.
       </div>
     );
@@ -90,7 +90,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
   
   const tempColor = isDarkMode ? "#00AAFF" : "red";
   const precipColor = "#0099FF";
-  const axisColor = isDarkMode ? "#cbd5e1" : "#475569";
+  const axisColor = "var(--text-secondary)";
 
   // Calculate precip summary text identical to legacy
   const precipSummary = useMemo(() => {
@@ -137,7 +137,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               padding: "6px 12px",
               borderRadius: "4px",
               border: "1px solid #94a3b8",
-              backgroundColor: activeTab === "flow" ? "#3b82f6" : "transparent",
+              backgroundColor: activeTab === "flow" ? "var(--primary)" : "transparent",
               color: activeTab === "flow" ? "white" : "inherit",
               cursor: "pointer",
             }}
@@ -154,7 +154,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               padding: "6px 12px",
               borderRadius: "4px",
               border: "1px solid #94a3b8",
-              backgroundColor: activeTab === "temp" ? "#3b82f6" : "transparent",
+              backgroundColor: activeTab === "temp" ? "var(--primary)" : "transparent",
               color: activeTab === "temp" ? "white" : "inherit",
               cursor: "pointer",
             }}
@@ -172,7 +172,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               borderRadius: "4px",
               border: "1px solid #94a3b8",
               backgroundColor:
-                activeTab === "precip" ? "#3b82f6" : "transparent",
+                activeTab === "precip" ? "var(--primary)" : "transparent",
               color: activeTab === "precip" ? "white" : "inherit",
               cursor: "pointer",
             }}
@@ -186,7 +186,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
         style={{
           width: "100%",
           height: "300px",
-          backgroundColor: isDarkMode ? "#0f172a" : "#f8fafc",
+          backgroundColor: "var(--surface-hover)",
           padding: "10px 10px 10px 0",
           borderRadius: "8px",
           border: "1px solid #CBD5E1",
@@ -199,7 +199,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke={isDarkMode ? "#334155" : "#e2e8f0"}
+              stroke="var(--border)"
             />
             <XAxis
               dataKey="dateTime"
@@ -218,6 +218,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                   tick={{ fill: volumeColor, fontSize: 12 }}
                   offset={10}
                   width={45}
+                  domain={["auto", "auto"]}
                 />
                 <YAxis
                   yAxisId="right"
@@ -226,6 +227,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                   tick={{ fill: stageColor, fontSize: 12 }}
                   offset={10}
                   width={45}
+                  domain={["auto", "auto"]}
                 />
                 <Line
                   yAxisId="left"

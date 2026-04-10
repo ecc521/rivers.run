@@ -14,7 +14,7 @@ const Disclaimer: React.FC = () => {
       <h3>More info about gauges: </h3>
       <ul style={{ listStylePosition: "inside", paddingLeft: 0 }}>
         <li>Virtual gauges are NOT real gauges - they are values calculated based off of other gauges. Almost all virtual gauges <strong>will fail to provide accurate data</strong> under certain conditions.</li>
-        <li>USGS Flow Data is Provisional - Read more about provisional data at <a href="https://water.usgs.gov/data/provisional.html" style={{ color: "#3b82f6", textDecoration: "none" }}>USGS (United States Geological Survey)</a>.</li>
+        <li>USGS Flow Data is Provisional - Read more about provisional data at <a href="https://water.usgs.gov/data/provisional.html" style={{ color: "var(--primary)", textDecoration: "none" }}>USGS (United States Geological Survey)</a>.</li>
       </ul>
 
       <p style={{ fontSize: "1.5rem", fontWeight: "bold", textAlign: "center", margin: "30px 0" }}>
@@ -22,7 +22,7 @@ const Disclaimer: React.FC = () => {
       </p>
 
       <p style={{ fontWeight: "bold", fontSize: "0.9rem" }}>
-        IN ABSOLUTELY NO EVENT SHALL THE AUTHORS, ADMINISTRATORS, COPYRIGHT HOLDERS, DEVELOPERS, AND/OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH <a href="/" style={{ color: "#3b82f6", textDecoration: "none" }}>RIVERS.RUN, AND/OR IT'S SUBDOMAINS.</a>
+        IN ABSOLUTELY NO EVENT SHALL THE AUTHORS, ADMINISTRATORS, COPYRIGHT HOLDERS, DEVELOPERS, AND/OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH <a href="/" style={{ color: "var(--primary)", textDecoration: "none" }}>RIVERS.RUN, AND/OR IT'S SUBDOMAINS.</a>
       </p>
     </LegalLayout>
   );

@@ -39,7 +39,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({
     >
       <div
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--surface)",
           padding: "24px",
           borderRadius: "12px",
           maxWidth: "400px",
@@ -52,10 +52,10 @@ export const PromptModal: React.FC<PromptModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ margin: 0, color: "#1e293b", fontSize: "1.25rem" }}>
+        <h3 style={{ margin: 0, color: "var(--text)", fontSize: "1.25rem" }}>
           {title}
         </h3>
-        <p style={{ margin: 0, color: "#475569", lineHeight: "1.5" }}>
+        <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: "1.5" }}>
           {message}
         </p>
 
@@ -66,8 +66,8 @@ export const PromptModal: React.FC<PromptModalProps> = ({
               style={{
                 padding: "8px 16px",
                 backgroundColor: "transparent",
-                border: "1px solid #cbd5e1",
-                color: "#64748b",
+                border: "1px solid var(--border)",
+                color: "var(--text-muted)",
                 borderRadius: "6px",
                 cursor: "pointer",
                 fontWeight: 500,
@@ -81,8 +81,8 @@ export const PromptModal: React.FC<PromptModalProps> = ({
             onClick={onConfirm}
             style={{
               padding: "8px 16px",
-              backgroundColor: "#3b82f6",
-              color: "white",
+              backgroundColor: "var(--primary)",
+              color: "var(--surface)",
               border: "none",
               borderRadius: "6px",
               cursor: "pointer",
