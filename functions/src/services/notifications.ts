@@ -1,6 +1,8 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
+import { getStorage } from "firebase-admin/storage";
 import { sendEmail } from "./email";
+import { syncAlertDataToStorage } from "./alertdata";
 
 const meterInFeet = 3.2808399;
 const cubicMeterInFeet = Math.pow(meterInFeet, 3);
@@ -81,19 +83,15 @@ function addFlowDataToFavorites(favorites: any, gauges: any = {}) {
 
 export async function processNotifications(flowDataGlob: any) {
     const db = getFirestore();
+    const bucket = getStorage().bucket();
     const auth = getAuth();
 
-	const usersToExamine = await db.collection("users")
-		.where("notifications.enabled", "==", true) // Only where notifications enabled.
-		.where("notifications.noneUntil", "<=", Date.now()) // Only where noneUntil doesn't disable
-		.get();
+	const synchronizedUsers = await syncAlertDataToStorage(db, bucket);
 
 	const usersMap = new Map<string, any>();
 
-	usersToExamine.forEach((queryDocumentSnapshot) => {
-		const data = queryDocumentSnapshot.data();
-		const uid = queryDocumentSnapshot.id;
-		data.document = queryDocumentSnapshot; // Provide a reference to the original document so this record can be amended.
+	synchronizedUsers.forEach((data) => {
+		const uid = data.uid;
 		usersMap.set(uid, data);
 	});
 
@@ -112,7 +110,7 @@ export async function processNotifications(flowDataGlob: any) {
             result.notFound.forEach((user: any) => {
                 const userData = usersMap.get(user.uid);
                 if (userData) {
-                    userData.document.ref.delete();
+                    db.collection("users").doc(user.uid).delete(); // Native cleanup
                     usersMap.delete(user.uid);
                 }
             });

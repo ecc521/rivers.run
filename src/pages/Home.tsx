@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo } from "react";
-import type { RiverData } from "../types/River";
 import { RiverItem } from "../components/RiverItem";
 import { TopBar } from "../components/TopBar";
 import { SearchOverlay } from "../components/SearchOverlay";
@@ -7,8 +6,8 @@ import { useFavorites } from "../context/FavoritesContext";
 import { useSearchParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { useRivers } from "../hooks/useRivers";
 import {
-  calculateRelativeFlow,
   calculateColor,
 } from "../utils/flowInfoCalculations";
 import {
@@ -18,9 +17,19 @@ import {
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 
 const Home: React.FC = () => {
-  const [rivers, setRivers] = useState<RiverData[]>([]);
+  const { rivers, loading: riversLoading, error: riversError } = useRivers();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync internal loading state with rivers data hook
+  useEffect(() => {
+     if (riversLoading) {
+         setLoading(true);
+     } else {
+         setLoading(false);
+         if (riversError) setError(riversError);
+     }
+  }, [riversLoading, riversError]);
 
   const [searchParams] = useSearchParams();
 
@@ -88,100 +97,6 @@ const Home: React.FC = () => {
     loadPersistence();
   }, [searchParams]);
 
-  useEffect(() => {
-    const fetchRivers = async () => {
-      try {
-        const riverDataUrl = "https://storage.googleapis.com/rivers-run.appspot.com/public/riverdata.json";
-        const flowDataUrl = "https://storage.googleapis.com/rivers-run.appspot.com/public/flowdata3.json";
-
-        const [riverRes, flowRes] = await Promise.all([
-          fetch(riverDataUrl),
-          fetch(flowDataUrl),
-        ]);
-
-        if (!riverRes.ok || !riverRes.headers.get("content-type")?.includes("json")) {
-           throw new Error("Failed to fetch valid river data JSON");
-        }
-        let data: RiverData[] = await riverRes.json();
-
-        // If flow data is ok, enrich the rivers
-        if (flowRes.ok && flowRes.headers.get("content-type")?.includes("json")) {
-          const flowData = await flowRes.json();
-          const usedGauges = new Set<string>();
-
-          data = data.map((river: any, index: number) => {
-            river.index = index; // Inject index to be able to map to legacy IDs if needed
-            
-            if (river.gauge) {
-                usedGauges.add(river.gauge);
-            }
-
-            const gaugeRecord = flowData[river.gauge];
-            if (
-              gaugeRecord &&
-              gaugeRecord.readings &&
-              gaugeRecord.readings.length > 0
-            ) {
-              const latest =
-                gaugeRecord.readings[gaugeRecord.readings.length - 1];
-              river.cfs = latest.cfs;
-              river.feet = latest.feet;
-              river.flowData = gaugeRecord.readings;
-
-              river.running = calculateRelativeFlow(river) ?? undefined;
-
-              if (river.cfs && river.feet)
-                river.flow = `${Math.round(river.cfs)} cfs ${Math.round(river.feet * 100) / 100} ft`;
-              else if (river.cfs) river.flow = `${Math.round(river.cfs)} cfs`;
-              else if (river.feet)
-                river.flow = `${Math.round(river.feet * 100) / 100} ft`;
-            }
-            return river;
-          });
-
-          // Create virtual rivers for any gauge present in flowdata3 that isn't mapped to a river
-          const virtualGauges: RiverData[] = [];
-          let virtualIndex = data.length;
-
-          for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
-              if (!usedGauges.has(gaugeId)) {
-                  const gData: any = gaugeData;
-                  if (gData.readings && gData.readings.length > 0) {
-                      const latest = gData.readings[gData.readings.length - 1];
-                      let flowStr = "";
-                      if (latest.cfs && latest.feet) flowStr = `${Math.round(latest.cfs)} cfs ${Math.round(latest.feet * 100) / 100} ft`;
-                      else if (latest.cfs) flowStr = `${Math.round(latest.cfs)} cfs`;
-                      else if (latest.feet) flowStr = `${Math.round(latest.feet * 100) / 100} ft`;
-
-                      virtualGauges.push({
-                          id: gaugeId,
-                          name: gData.name || gaugeId,
-                          gauge: gaugeId,
-                          isGauge: true,
-                          index: virtualIndex++,
-                          cfs: latest.cfs,
-                          feet: latest.feet,
-                          flowData: gData.readings,
-                          flow: flowStr,
-                          access: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined
-                      } as unknown as RiverData);
-                  }
-              }
-          }
-          
-          data = [...data, ...virtualGauges];
-        }
-
-        setRivers(data);
-        setLoading(false);
-      } catch (err: any) {
-        setError(err.message || "An error occurred");
-        setLoading(false);
-      }
-    };
-
-    fetchRivers();
-  }, []);
 
   const { isFavorite } = useFavorites();
 
@@ -203,10 +118,13 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      // If we are within 500px of the bottom of the page
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+      
+      // If we are within 1200px of the bottom of the page
       if (
-        window.innerHeight + window.scrollY >=
-        document.body.offsetHeight - 500
+        window.innerHeight + scrollY >=
+        scrollHeight - 1200
       ) {
         setDisplayCount((prev) => Math.min(prev + 50, filteredRivers.length));
       }

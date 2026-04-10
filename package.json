@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "eslint . && npm run lint:duplication",
+    "lint:duplication": "jscpd src",
     "preview": "vite preview",
+    "test": "npm run lint && npm run test:rules",
     "test:rules": "npx firebase-tools emulators:exec --only firestore \"node --experimental-vm-modules node_modules/jest/bin/jest.js\""
   },
   "dependencies": {
@@ -49,8 +51,10 @@
     "eslint": "^10.2.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "eslint-plugin-sonarjs": "^4.0.2",
     "globals": "^17.4.0",
     "jest": "^30.3.0",
+    "jscpd": "^4.0.8",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.1",

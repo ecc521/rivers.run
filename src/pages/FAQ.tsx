@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ContactSupport, ContactAdmin } from "../components/ContactInfo";
 
 const FAQItem: React.FC<{ question: string; children: React.ReactNode }> = ({
   question,
@@ -107,21 +108,8 @@ const FAQ: React.FC = () => {
           of your ability, then press the button "Submit As New River
           Suggestion".
         </p>
-        <p>
-          You can also email{" "}
-          <a href="mailto:support@rivers.run" target="_blank" rel="noreferrer">
-            support@rivers.run
-          </a>{" "}
-          telling us about the river you would like to be added.
-        </p>
-        <p>
-          If you would like permission to edit directly, approve edits, add
-          rivers, and confirm river additions, please email{" "}
-          <a href="mailto:admin@rivers.run" target="_blank" rel="noreferrer">
-            admin@rivers.run
-          </a>
-          .
-        </p>
+        <ContactSupport />
+        <ContactAdmin />
         <p>
           If you are already an editor, follow the directions{" "}
           <a
@@ -145,22 +133,8 @@ const FAQ: React.FC = () => {
             YouTube Tutorial
           </a>
         </p>
-        <p>
-          All rivers and overviews have an "Edit this Overview/River" link that
-          allows you to suggest changes. You can also email{" "}
-          <a href="mailto:support@rivers.run" target="_blank" rel="noreferrer">
-            support@rivers.run
-          </a>{" "}
-          telling us what you would like to be changed.
-        </p>
-        <p>
-          If you would like permission to edit directly, approve edits, add
-          rivers, and confirm river additions, please email{" "}
-          <a href="mailto:admin@rivers.run" target="_blank" rel="noreferrer">
-            admin@rivers.run
-          </a>
-          .
-        </p>
+        <ContactSupport />
+        <ContactAdmin />
       </FAQItem>
 
       <FAQItem question="How do I use the search box?">

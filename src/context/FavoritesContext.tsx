@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { doc, setDoc, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "./AuthContext";
 import type { RiverData } from "../types/River";
@@ -139,7 +139,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
       const userRef = doc(db, "users", user.uid);
       await setDoc(
         userRef,
-        { favorites: newFavs, favoritesLastModified: now },
+        { favorites: newFavs, favoritesLastModified: now, updatedAt: serverTimestamp() },
         { merge: true },
       );
     }

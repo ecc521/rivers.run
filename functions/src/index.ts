@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { v1 } from "@google-cloud/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { getAuth } from "firebase-admin/auth";
 import { onSchedule } from "firebase-functions/v2/scheduler";
@@ -12,6 +13,8 @@ import { loadSitesFromUSGS } from "./services/usgs";
 import { loadCanadianProvince } from "./services/canada";
 import { processNotifications } from "./services/notifications";
 import { syncRiverDataToStorage } from "./services/riverdata";
+import { compileVirtualGaugesToStorage } from "./services/virtualGauges";
+import * as zlib from "zlib";
 
 // Initialize Firebase Admin seamlessly (uses default credentials inside the function environment)
 initializeApp({
@@ -46,6 +49,26 @@ export const pullGaugeDataPeriodic = onSchedule({
         }
     });
 
+    let virtualGauges: Record<string, {name: string, lat: number, lon: number}> = {};
+    try {
+        const file = bucket.file("public/virtualGauges.json");
+        const [exists] = await file.exists();
+        if (exists) {
+            const [buffer] = await file.download();
+            virtualGauges = JSON.parse(buffer.toString('utf-8'));
+            
+            Object.keys(virtualGauges).forEach(id => {
+                if (id.startsWith("USGS:")) usgsSet.add(id.replace("USGS:", ""));
+                else if (id.startsWith("canada:")) canadaProvincesSet.add(id.replace("canada:", ""));
+            });
+            console.log(`Successfully merged ${Object.keys(virtualGauges).length} static virtual gauges natively from Firebase Storage!`);
+        } else {
+            console.warn("Non-fatal: No virtualGauges.json discovered in Storage; relying entirely on Firestore mapping.");
+        }
+    } catch (e: any) {
+        console.error("Non-fatal: Could not pull virtual Gauges json from Storage natively.", e.message);
+    }
+
     const activeUsgsGauges = Array.from(usgsSet);
     const activeCanadaGauges = Array.from(canadaProvincesSet);
 
@@ -75,14 +98,28 @@ export const pullGaugeDataPeriodic = onSchedule({
     // 4. Merge results deeply
     // Append the legacy prefix universally to map correctly on frontend again!
     for (const [key, value] of Object.entries(usgsData)) {
-        flowData["USGS:" + key] = value;
+        const fullId = "USGS:" + key;
+        const v = value as any;
+        if (virtualGauges[fullId]) {
+            v.lat = virtualGauges[fullId].lat;
+            v.lon = virtualGauges[fullId].lon;
+            if (!v.name) v.name = virtualGauges[fullId].name; // USGS API name usually present, but just in case
+        }
+        flowData[fullId] = v;
     }
 
     canadaProvinceData.forEach((provData: any) => {
         // Appends any raw gauge IDs discovered in the CSV that match our active list
         for (const [key, value] of Object.entries(provData)) {
             if (activeCanadaGauges.includes(key)) {
-                flowData["canada:" + key] = value;
+                const fullId = "canada:" + key;
+                const v = value as any;
+                if (virtualGauges[fullId]) {
+                    v.lat = virtualGauges[fullId].lat;
+                    v.lon = virtualGauges[fullId].lon;
+                    if (!v.name) v.name = virtualGauges[fullId].name;
+                }
+                flowData[fullId] = v;
             }
         }
     });
@@ -90,17 +127,18 @@ export const pullGaugeDataPeriodic = onSchedule({
     flowData.generatedAt = Date.now();
     console.log(`Assembly complete. Total Gauges Synchronized: ${Object.keys(flowData).length - 1}`);
 
-    // 5. Build minified JSON payload
+    // 5. Build minified JSON payload and natively GZIP compress it
     const jsonStr = JSON.stringify(flowData);
+    const zippedBuffer = zlib.gzipSync(Buffer.from(jsonStr));
     
     // 6. Push buffer stream to Firebase Storage
-    console.log(`Writing payload to Firebase Storage public/flowdata3.json (${(jsonStr.length / 1024).toFixed(2)} KB)`);
+    console.log(`Writing payload to Firebase Storage public/flowdata3.json (Uncompressed: ${(jsonStr.length / 1024).toFixed(2)} KB, GZipped: ${(zippedBuffer.length / 1024).toFixed(2)} KB)`);
     const file = bucket.file("public/flowdata3.json");
 
-    await file.save(jsonStr, {
+    await file.save(zippedBuffer, {
         metadata: {
             contentType: "application/json",
-            // Extremely aggressive public CDN caching policy to prevent storage read spikes
+            contentEncoding: "gzip",
             cacheControl: "public, max-age=900, s-maxage=900" 
         }
     });
@@ -154,4 +192,48 @@ export const notifyAdminsOnReviewQueue = onDocumentCreated("reviewQueue/{docId}"
     } catch (e: any) {
         console.error("Non-fatal: Failed mapping queue alerts dynamically", e.message);
     }
+});
+
+export const scheduledFirestoreExport = onSchedule({
+    schedule: "every day 02:00", // Execute securely at 2AM every day
+    timeoutSeconds: 300,
+    memory: "256MiB"
+}, async () => {
+    const client = new v1.FirestoreAdminClient();
+    const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+
+    if (!projectId) {
+        console.error("Failed to determine GCP API Project ID for backup operation.");
+        return;
+    }
+
+    const databaseName = client.databasePath(projectId, '(default)');
+    const bucketName = `gs://${projectId}-backups`; 
+
+    try {
+        console.log(`Starting automated daily export of Firestore Database to ${bucketName}`);
+        
+        // This natively returns an LRO (Long Running Operation), so we don't need to await completion, just initialization!
+        const [operation] = await client.exportDocuments({
+            name: databaseName,
+            outputUriPrefix: bucketName,
+            // Empty array implies EVERYTHING (Users, Rivers, Reviews) natively!
+            collectionIds: [] 
+        });
+        
+        console.log(`Database export strictly initiated. Operation ID: ${operation.name}`);
+    } catch (err: any) {
+        console.error(`Automated Database Export Exception. Check if bucket exists and if Default App Engine Service account has 'Cloud Datastore Import Export Admin' & 'Storage Admin' ACLs: ${err.message}`);
+    }
+});
+
+export const syncGaugeRegistryWeekly = onSchedule({
+    schedule: "every monday 03:00",
+    timeoutSeconds: 540,
+    memory: "512MiB"
+}, async () => {
+    console.log("Starting weekly USGS/Canada static gauge compilation...");
+    const bucket = getStorage().bucket();
+    await compileVirtualGaugesToStorage(bucket);
+    console.log("Weekly compilation completed securely.");
 });

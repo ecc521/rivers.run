@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
@@ -24,7 +24,7 @@ export const NotificationSettings: React.FC = () => {
     setConfig(merged);
     await setDoc(
       doc(db, "users", user.uid),
-      { notifications: merged },
+      { notifications: merged, updatedAt: serverTimestamp() },
       { merge: true },
     );
   };

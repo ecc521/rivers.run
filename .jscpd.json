@@ -1,0 +1,8 @@
+{
+  "threshold": 5,
+  "reporters": ["console"],
+  "ignore": ["node_modules", "dist", "build", ".firebaserc", ".firebase", "public"],
+  "absolute": true,
+  "minLines": 10,
+  "minTokens": 50
+}

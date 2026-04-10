@@ -48,3 +48,6 @@ android/
 
 # Firebase Cache
 .firebase/
+
+# Firebase Cloud Functions Build Output
+functions/lib/

@@ -131,9 +131,8 @@ const GlobalNavBar: React.FC = () => {
           )}
         </div>
         <div className="nav-auth">
-          {loading ? (
-            <span style={{ color: "#94a3b8" }}>Loading...</span>
-          ) : user ? (
+          {loading && <span style={{ color: "#94a3b8" }}>Loading...</span>}
+          {!loading && user && (
             <div
               className="user-profile"
               style={{ display: "flex", gap: "12px", alignItems: "center", position: "relative" }}
@@ -240,7 +239,8 @@ const GlobalNavBar: React.FC = () => {
                 </div>
               )}
             </div>
-          ) : (
+          )}
+          {!loading && !user && (
             <button
               onClick={() => {
                 setIsAuthOpen(true);

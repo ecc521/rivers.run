@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useLocation } from "../hooks/useLocation";
+import { FilterCheckbox } from "./FilterCheckbox";
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -297,87 +298,32 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
             </div>
             <div className="filter-group">
               <h3>Include the Following:</h3>
-              <label
-                style={{ display: "block", margin: "8px 0", fontSize: "1.2em" }}
-              >
-                <input
-                  type="checkbox"
-                  checked={localQuery.includeUnknownSkill}
-                  onChange={(e) => {
-                    setLocalQuery({
-                      ...localQuery,
-                      includeUnknownSkill: e.target.checked,
-                    });
-                  }}
-                />{" "}
-                Unknown Skill Levels
-              </label>
-              <label
-                style={{ display: "block", margin: "8px 0", fontSize: "1.2em" }}
-              >
-                <input
-                  type="checkbox"
-                  checked={localQuery.includeUnknownFlow}
-                  onChange={(e) => {
-                    setLocalQuery({
-                      ...localQuery,
-                      includeUnknownFlow: e.target.checked,
-                    });
-                  }}
-                />{" "}
-                Unknown Flow Values
-              </label>
-              <label
-                style={{ display: "block", margin: "8px 0", fontSize: "1.2em" }}
-              >
-                <input
-                  type="checkbox"
-                  checked={localQuery.includeUnknownRating}
-                  onChange={(e) => {
-                    setLocalQuery({
-                      ...localQuery,
-                      includeUnknownRating: e.target.checked,
-                    });
-                  }}
-                />{" "}
-                Unknown Ratings
-              </label>
-              <label
-                style={{ display: "block", margin: "8px 0", fontSize: "1.2em" }}
-              >
-                <input
-                  type="checkbox"
-                  checked={localQuery.includeDams}
-                  onChange={(e) => {
-                    setLocalQuery({
-                      ...localQuery,
-                      includeDams: e.target.checked,
-                    });
-                  }}
-                />{" "}
-                Dams / Flatwater
-              </label>
-              <label
-                style={{
-                  display: "block",
-                  margin: "8px 0",
-                  fontSize: "1.2em",
-                  color: "#3b82f6",
-                  fontWeight: "bold",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={localQuery.favoritesOnly || false}
-                  onChange={(e) => {
-                    setLocalQuery({
-                      ...localQuery,
-                      favoritesOnly: e.target.checked,
-                    });
-                  }}
-                />{" "}
-                My Favorites Only
-              </label>
+              <FilterCheckbox
+                label="Unknown Skill Levels"
+                checked={localQuery.includeUnknownSkill || false}
+                onChange={(checked) => setLocalQuery({ ...localQuery, includeUnknownSkill: checked })}
+              />
+              <FilterCheckbox
+                label="Unknown Flow Values"
+                checked={localQuery.includeUnknownFlow || false}
+                onChange={(checked) => setLocalQuery({ ...localQuery, includeUnknownFlow: checked })}
+              />
+              <FilterCheckbox
+                label="Unknown Ratings"
+                checked={localQuery.includeUnknownRating || false}
+                onChange={(checked) => setLocalQuery({ ...localQuery, includeUnknownRating: checked })}
+              />
+              <FilterCheckbox
+                label="Dams / Flatwater"
+                checked={localQuery.includeDams || false}
+                onChange={(checked) => setLocalQuery({ ...localQuery, includeDams: checked })}
+              />
+              <FilterCheckbox
+                label="My Favorites Only"
+                checked={localQuery.favoritesOnly || false}
+                onChange={(checked) => setLocalQuery({ ...localQuery, favoritesOnly: checked })}
+                style={{ color: "#3b82f6", fontWeight: "bold" }}
+              />
             </div>
           </div>
         </div>

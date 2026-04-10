@@ -4,6 +4,7 @@ import { useFavorites } from "../context/FavoritesContext";
 import { NotificationSettings } from "../components/NotificationSettings";
 import { Link } from "react-router-dom";
 import { PromptModal } from "../components/PromptModal";
+import { getStorageUrl } from "../utils/storageUrls";
 
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();
@@ -14,7 +15,9 @@ const FavoritesPage: React.FC = () => {
   React.useEffect(() => {
     const fetchRivers = async () => {
       try {
-        const url = import.meta.env.DEV ? "https://rivers.run/riverdata.json" : "https://storage.googleapis.com/rivers-run.appspot.com/public/riverdata.json";
+        const url = import.meta.env.DEV && !import.meta.env.VITE_USE_FIREBASE_EMULATOR 
+             ? "https://rivers.run/riverdata.json" 
+             : getStorageUrl("public/riverdata.json");
         const res = await fetch(url);
         const data = await res.json();
         const dict: Record<string, {name: string, section: string}> = {};

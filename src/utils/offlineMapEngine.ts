@@ -161,29 +161,52 @@ export const detectMaxZoom = async (type: 'world' | 'na'): Promise<number> => {
         const keys = await cache.keys();
         const urls = keys.map(k => k.url);
         
-        // Default baselines
-        let maxFound = type === 'world' ? 2 : 4;
+        const bounds = type === 'world' ? WORLD_BOUNDS : NORTH_AMERICA_BOUNDS;
+        const tileCountsByZoom: Record<number, number> = {};
+        const zoomRegex = /\/(\d+)\/(\d+)\/(\d+)\.png$/;
         
-        // Extract zoom levels from URLs like .../tile.openstreetmap.org/Z/X/Y.png
-        const zoomRegex = /\/(\d+)\/\d+\/\d+\.png$/;
-        
+        // Group and count strictly within geographic target bounds
         for (const url of urls) {
             const match = url.match(zoomRegex);
             if (match) {
                 const z = parseInt(match[1], 10);
-                if (z > maxFound) {
-                    // For NA, we want to ensure it's actually within NA bounds 
-                    // (Roughly Z > 4 means it was a manual regional download)
-                    if (type === 'na' && z > 4) {
-                        maxFound = z;
-                    } else if (type === 'world' && z <= 5) {
-                        maxFound = z;
-                    }
+                const x = parseInt(match[2], 10);
+                const y = parseInt(match[3], 10);
+
+                const minX = Math.max(0, lon2tile(bounds.minLon, z));
+                const maxX = Math.min(Math.pow(2, z) - 1, lon2tile(bounds.maxLon, z));
+                const minY = Math.max(0, lat2tile(bounds.maxLat, z));
+                const maxY = Math.min(Math.pow(2, z) - 1, lat2tile(bounds.minLat, z));
+
+                if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+                    tileCountsByZoom[z] = (tileCountsByZoom[z] || 0) + 1;
                 }
             }
         }
         
-        return maxFound;
+        let maxCompleteZoom = -1;
+        const maxPossible = type === 'world' ? 10 : 14;
+        
+        // Validate each level sequentially. Break cleanly if a layer is missing tiles.
+        for (let z = 0; z <= maxPossible; z++) {
+            const minX = Math.max(0, lon2tile(bounds.minLon, z));
+            const maxX = Math.min(Math.pow(2, z) - 1, lon2tile(bounds.maxLon, z));
+            const minY = Math.max(0, lat2tile(bounds.maxLat, z));
+            const maxY = Math.min(Math.pow(2, z) - 1, lat2tile(bounds.minLat, z));
+            
+            const expectedCount = (maxX - minX + 1) * (maxY - minY + 1);
+            const actualCount = tileCountsByZoom[z] || 0;
+
+            if (actualCount >= expectedCount) {
+                maxCompleteZoom = z;
+            } else {
+                break; 
+            }
+        }
+        
+        // Return standard minimum baselines natively 
+        const defaultZoom = type === 'world' ? 2 : 4;
+        return maxCompleteZoom >= defaultZoom ? maxCompleteZoom : defaultZoom;
     } catch {
         return type === 'world' ? 2 : 4;
     }

@@ -4,109 +4,30 @@ import "leaflet/dist/leaflet.css";
 import type { RiverData } from "../types/River";
 import {
   calculateColor,
-  calculateRelativeFlow,
 } from "../utils/flowInfoCalculations";
 import { RiverExpansion } from "../components/RiverExpansion";
 import { useLocation } from "../hooks/useLocation";
+import { useRivers } from "../hooks/useRivers";
 
 const MapPage: React.FC = () => {
   const location = useLocation();
-  const [rivers, setRivers] = useState<RiverData[]>([]);
+  const { rivers, loading: riversLoading, error: riversError } = useRivers();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRiver, setSelectedRiver] = useState<RiverData | null>(null);
 
+  // Sync internal loading state with rivers data hook
   useEffect(() => {
-    const fetchRivers = async () => {
-      try {
-        const riverDataUrl = "https://storage.googleapis.com/rivers-run.appspot.com/public/riverdata.json";
-        const flowDataUrl = "https://storage.googleapis.com/rivers-run.appspot.com/public/flowdata3.json";
+     if (riversLoading) {
+         setLoading(true);
+     } else {
+         setLoading(false);
+         if (riversError) setError(riversError);
+     }
+  }, [riversLoading, riversError]);
 
-        const [riverRes, flowRes] = await Promise.all([
-          fetch(riverDataUrl),
-          fetch(flowDataUrl),
-        ]);
+  useEffect(() => {
 
-        if (!riverRes.ok || !riverRes.headers.get("content-type")?.includes("json")) {
-           throw new Error("Failed to fetch valid river data JSON");
-        }
-        let data: RiverData[] = await riverRes.json();
-
-        if (flowRes.ok && flowRes.headers.get("content-type")?.includes("json")) {
-          const flowData = await flowRes.json();
-          const usedGauges = new Set<string>();
-
-          data = data.map((river: any, index: number) => {
-            river.index = index; // Inject index to be able to map to legacy IDs if needed
-            if (river.gauge) usedGauges.add(river.gauge);
-
-            const gaugeRecord = flowData[river.gauge];
-            if (
-              gaugeRecord &&
-              gaugeRecord.readings &&
-              gaugeRecord.readings.length > 0
-            ) {
-              const latest =
-                gaugeRecord.readings[gaugeRecord.readings.length - 1];
-              river.cfs = latest.cfs;
-              river.feet = latest.feet;
-              river.flowData = gaugeRecord.readings;
-
-              river.running = calculateRelativeFlow(river) ?? undefined;
-
-              if (river.cfs && river.feet)
-                river.flow = `${Math.round(river.cfs)} cfs ${Math.round(river.feet * 100) / 100} ft`;
-              else if (river.cfs) river.flow = `${Math.round(river.cfs)} cfs`;
-              else if (river.feet)
-                river.flow = `${Math.round(river.feet * 100) / 100} ft`;
-            }
-            return river;
-          });
-
-          // Create virtual rivers for any gauge present in flowdata3 that isn't mapped to a river
-          const virtualGauges: RiverData[] = [];
-          let virtualIndex = data.length;
-
-          for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
-              if (!usedGauges.has(gaugeId)) {
-                  const gData: any = gaugeData;
-                  if (gData.readings && gData.readings.length > 0) {
-                      const latest = gData.readings[gData.readings.length - 1];
-                      let flowStr = "";
-                      if (latest.cfs && latest.feet) flowStr = `${Math.round(latest.cfs)} cfs ${Math.round(latest.feet * 100) / 100} ft`;
-                      else if (latest.cfs) flowStr = `${Math.round(latest.cfs)} cfs`;
-                      else if (latest.feet) flowStr = `${Math.round(latest.feet * 100) / 100} ft`;
-
-                      virtualGauges.push({
-                          id: gaugeId,
-                          name: gData.name || gaugeId,
-                          gauge: gaugeId,
-                          isGauge: true,
-                          index: virtualIndex++,
-                          cfs: latest.cfs,
-                          feet: latest.feet,
-                          flowData: gData.readings,
-                          flow: flowStr,
-                          access: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined
-                      } as unknown as RiverData);
-                  }
-              }
-          }
-          
-          data = [...data, ...virtualGauges];
-        }
-
-        setRivers(data);
-        setLoading(false);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    fetchRivers();
-    
     // Automatically query for user location to place native tracker token
     location.requestLocation({ enableHighAccuracy: true });
   }, []);
