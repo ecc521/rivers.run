@@ -5,7 +5,7 @@ service cloud.firestore {
     // Server-Side Verification Native Logic: 
     // Checks if logged in, AND the user document has isAdmin == true
     function isAdmin() {
-      return request.auth != null && 
+      return request.auth != null && exists(/databases/$(database)/documents/user/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/user/$(request.auth.uid)).data.isAdmin == true;
     }
     
@@ -14,6 +14,12 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId && !request.resource.data.keys().hasAny(['isAdmin']);
       allow write: if isAdmin();
+    }
+    
+    match /users/{userId} {
+      // Legacy support block (no admin access required for old data)
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId && !request.resource.data.keys().hasAny(['isAdmin']);
     }
 
     match /rivers/{riverId} {

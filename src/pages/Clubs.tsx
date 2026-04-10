@@ -74,7 +74,11 @@ const Clubs: React.FC = () => {
       </h1>
       <p
         className="center"
-        style={{ color: "#64748b", marginBottom: "30px", fontSize: "1.1rem" }}
+        style={{
+          color: "var(--text-secondary, #64748b)",
+          marginBottom: "30px",
+          fontSize: "1.1rem",
+        }}
       >
         Regional paddling clubs and their experts provide a wealth of river
         information.
@@ -84,10 +88,10 @@ const Clubs: React.FC = () => {
 
       <div
         style={{
-          backgroundColor: "#eff6ff",
+          backgroundColor: "var(--alert-bg, #eff6ff)",
           padding: "20px",
           borderRadius: "8px",
-          border: "1px solid #bfdbfe",
+          border: "1px solid var(--alert-border, #bfdbfe)",
           marginBottom: "40px",
         }}
       >
@@ -111,9 +115,9 @@ const Clubs: React.FC = () => {
       <h2
         style={{
           marginBottom: "20px",
-          color: "#1e293b",
+          color: "var(--text, #1e293b)",
           paddingBottom: "10px",
-          borderBottom: "2px solid #e2e8f0",
+          borderBottom: "2px solid var(--border, #e2e8f0)",
         }}
       >
         Paddling Club Events (Commonly Paddled)
@@ -141,9 +145,9 @@ const Clubs: React.FC = () => {
       <h2
         style={{
           marginBottom: "20px",
-          color: "#1e293b",
+          color: "var(--text, #1e293b)",
           paddingBottom: "10px",
-          borderBottom: "2px solid #e2e8f0",
+          borderBottom: "2px solid var(--border, #e2e8f0)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",

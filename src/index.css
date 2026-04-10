@@ -17,6 +17,15 @@ button, select {
     --riverSkillWidth: 8%;
     --riverClassWidth: 11%;
     --displayRatingSpan: none;
+
+    /* Theme Variables for general UI (Clubs page, panels, etc) */
+    --surface: #ffffff;
+    --surface-hover: #f8fafc;
+    --text: #1e293b;
+    --text-secondary: #475569;
+    --border: #e2e8f0;
+    --alert-bg: #eff6ff;
+    --alert-border: #bfdbfe;
 }
 
 @media screen and (min-width: 550px) {
@@ -124,7 +133,7 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
   font-family: 'Noto Sans HK';
   font-style: normal;
   font-weight: 400;
-  src: url(data:font/woff2;charset=utf-8;base64,d09GMk9UVE8AAAS8AAwAAAAAB3AAAARyAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAADYYfBmAOCABsATYCJAMMBAYFg3AHIBckGAwbngbIxIfezXqTMKFXUuXYs0pqhtiq0FV6KojVwtF0XWqyvyciMsAg//+949rat3AsDSzl9vu3sTbOZZ0vFgc0xrY+YBhg4JSWbTW1MLxcFk6VDIFOB0KIcZOqqWf6+gc613ecEYoM9voSUwdOryBDFWR4WK6qIEcI2EcF9jHx2EEdb5XF3O7crZWAIe6W60vpqFxdCeRfk2vpJQtLrHeF3ABso1xPSi2DnpCLL9+1f+i6J1aq8W2JWCSqKXarzdkOmuu1ecryoOoPKc1RTYsvsFi2bNli9o1qzAG1z9JiVq5zoRIbUHyKlvAFQ33qbI+ihhWPqkZ6Q8ra/oBZVNxKQulcr7iusfLgY6wNhvq1mLbttsfrWBXrj/h92sD0Bzyh/lAiFgAIFQjtJCIEgIAAFAIhJZUVZERurIBSCQjflFeQ0R6l4gtEsRxUAMFZGCdVZAUJc/mx1B/fn/9Y+R+PpboeMz74B5dNqXvTO7P3Ssn6zKUm/nayg6ZKJX535hyT8UPmcrPP67NWvymoZm9nOmjWmvqDWKaD/zfFG9IF5K60VUyfkxw0jfO/9Vxg39IjEhf4t5T/fURid3AfF/n3Y0PsHhZk9/Pd2vA4X/HfK/075n2m7cSI5knrJdEDi4N9S/rc0tJ/dyS/ilH8zdYjdxcLsLh6emuSUfUONV3Ynu2hohhrf1K9i7Mps7TEZJ34/TFmX9CzzXP8rHZWua32OeSjzSsauPyboMb3zLN5e8wxfcG/NsU3b/7niL20MvPU/59O0eHW6ibCv2Zcis6XvX5G5EreTV7KVIxL/KXkq/ylzKi12y0+nPmPPm/jK5JX8y8yVfOWQxH7KnMp+Sipv7svhD5TMg8PSa4VvGm6Zvk6Wbzl+nVw0Ipeld574v4mPSWy6Zsc9hfcY7vlElu/5xFdAFD8kE6BoEIaE8wCsL6XIJbCT1X2CgSJyLlM6L3u8Xg+WNdI2vRjPHwV0R4lyWTnRm4hQLXxmvAqkT8YmxlcbxBRV0EBIKeStgg7NFOkQgdAotenzeaCRtkkq9lHm3exGRQSyNjT3cEGOAI0SIgRoM3jbmVVHPiUACdFhvrRk0X8Fovjj6uSH5L07TF1mDv/RENeXhiAYnFy/NfflUyzLzMl+ZIifUxMtI+KPCKIRDbjCWdH1N2SBAoTPZ9GdwICfNLcigpNJqUhAMRFEItbg0V6dLKII4jyRhHo43y2GE0AUGjTEsQAWWDCAABKIIQ4NHDMG3u2FGSoSiMACL9ZgAzZBhQYVZ8KHfsh2Yj06cAZC6wfRCx8SOAchJPZFKvIV2GGGNfYtRFRDYBZtJs3mMcNGNJf5ffChB6ENxWGEsBWhvZELw91wwYX5cBxv+h544YUHC6/sVwuxHKvgxQqsntXsaVIICuGms5dbYYMT7a28C83z+csRhAr/tRI1P1fYEofM8Mlgvv9MHyxo8XrxOxiYPwA7olxSCvJvTv6CuHl39kIiUIFaYCEWog52) format('woff2');
+  src: url("data:font/woff2;charset=utf-8;base64,d09GMk9UVE8AAAS8AAwAAAAAB3AAAARyAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAADYYfBmAOCABsATYCJAMMBAYFg3AHIBckGAwbngbIxIfezXqTMKFXUuXYs0pqhtiq0FV6KojVwtF0XWqyvyciMsAg//+949rat3AsDSzl9vu3sTbOZZ0vFgc0xrY+YBhg4JSWbTW1MLxcFk6VDIFOB0KIcZOqqWf6+gc613ecEYoM9voSUwdOryBDFWR4WK6qIEcI2EcF9jHx2EEdb5XF3O7crZWAIe6W60vpqFxdCeRfk2vpJQtLrHeF3ABso1xPSi2DnpCLL9+1f+i6J1aq8W2JWCSqKXarzdkOmuu1ecryoOoPKc1RTYsvsFi2bNli9o1qzAG1z9JiVq5zoRIbUHyKlvAFQ33qbI+ihhWPqkZ6Q8ra/oBZVNxKQulcr7iusfLgY6wNhvq1mLbttsfrWBXrj/h92sD0Bzyh/lAiFgAIFQjtJCIEgIAAFAIhJZUVZERurIBSCQjflFeQ0R6l4gtEsRxUAMFZGCdVZAUJc/mx1B/fn/9Y+R+PpboeMz74B5dNqXvTO7P3Ssn6zKUm/nayg6ZKJX535hyT8UPmcrPP67NWvymoZm9nOmjWmvqDWKaD/zfFG9IF5K60VUyfkxw0jfO/9Vxg39IjEhf4t5T/fURid3AfF/n3Y0PsHhZk9/Pd2vA4X/HfK/075n2m7cSI5knrJdEDi4N9S/rc0tJ/dyS/ilH8zdYjdxcLsLh6emuSUfUONV3Ynu2hohhrf1K9i7Mps7TEZJ34/TFmX9CzzXP8rHZWua32OeSjzSsauPyboMb3zLN5e8wxfcG/NsU3b/7niL20MvPU/59O0eHW6ibCv2Zcis6XvX5G5EreTV7KVIxL/KXkq/ylzKi12y0+nPmPPm/jK5JX8y8yVfOWQxH7KnMp+Sipv7svhD5TMg8PSa4VvGm6Zvk6Wbzl+nVw0Ipeld574v4mPSWy6Zsc9hfcY7vlElu/5xFdAFD8kE6BoEIaE8wCsL6XIJbCT1X2CgSJyLlM6L3u8Xg+WNdI2vRjPHwV0R4lyWTnRm4hQLXxmvAqkT8YmxlcbxBRV0EBIKeStgg7NFOkQgdAotenzeaCRtkkq9lHm3exGRQSyNjT3cEGOAI0SIgRoM3jbmVVHPiUACdFhvrRk0X8Fovjj6uSH5L07TF1mDv/RENeXhiAYnFy/NfflUyzLzMl+ZIifUxMtI+KPCKIRDbjCWdH1N2SBAoTPZ9GdwICfNLcigpNJqUhAMRFEItbg0V6dLKII4jyRhHo43y2GE0AUGjTEsQAWWDCAABKIIQ4NHDMG3u2FGSoSiMACL9ZgAzZBhQYVZ8KHfsh2Yj06cAZC6wfRCx8SOAchJPZFKvIV2GGGNfYtRFRDYBZtJs3mMcNGNJf5ffChB6ENxWGEsBWhvZELw91wwYX5cBxv+h544YUHC6/sVwuxHKvgxQqsntXsaVIICuGms5dbYYMT7a28C83z+csRhAr/tRI1P1fYEofM8Mlgvv9MHyxo8XrxOxiYPwA7olxSCvJvTv6CuHl39kIiUIFaYCEWog52") format('woff2');
 }
 
 /*position: relative is on container (riverspan:nth-child(5)).*/
@@ -289,6 +298,7 @@ button {
 	position: sticky;
 	top: 0;
 	color: black;
+	background-color: #dffaff;
 	width: 100%;
 	font-size: calc(var(--defaultFontSize) * 1.15);
 	line-height: calc(var(--defaultFontSize) * 1.55);
@@ -647,6 +657,15 @@ Those include name,section,skill,quality, and flow info*/
 .dark-theme, .dark-theme body {
     background-color: #090920;
     color: #dddddd;
+
+    /* Dark Mode Theme Variables */
+    --surface: #1e293b;
+    --surface-hover: #0f172a;
+    --text: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --border: #334155;
+    --alert-bg: #0f172a;
+    --alert-border: #334155;
 }
 .dark-theme .riverbutton:nth-child(even) {
     background-color: #222222;
@@ -665,6 +684,7 @@ Those include name,section,skill,quality, and flow info*/
 }
 .dark-theme #legend {
     color: white;
+    background-color: #090920;
 }
 .dark-theme #legend:after {
     background-image: repeating-linear-gradient(150deg,transparent, transparent, rgba(255,255,255,.2),transparent, transparent, transparent 16%);

@@ -38,7 +38,6 @@ const GlobalNavBar: React.FC = () => {
       // Second confirmation
       if (window.confirm("FINAL WARNING: Click OK to permanently delete your account and all associated data.")) {
         try {
-          // Delete their users document if it exists to cleanly scrub data
           await deleteDoc(doc(db, "user", user.uid));
           
           await deleteUser(user);

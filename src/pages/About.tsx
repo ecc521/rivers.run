@@ -37,11 +37,9 @@ const About: React.FC = () => {
       </h2>
 
       <div
+        className="settings-card"
         style={{
-          backgroundColor: "var(--surface, #ffffff)",
           padding: "30px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
           textAlign: "left",
           lineHeight: "1.8",
         }}
@@ -84,7 +82,7 @@ const About: React.FC = () => {
           </strong>
           .
         </p>
-        <div style={{ marginTop: "40px", borderTop: "1px solid #e2e8f0", paddingTop: "20px", fontSize: "0.9rem", color: "#64748b" }}>
+        <div style={{ marginTop: "40px", borderTop: "1px solid var(--border, #e2e8f0)", paddingTop: "20px", fontSize: "0.9rem", color: "var(--text-secondary, #64748b)" }}>
           <p style={{ marginBottom: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.05em" }}>Legal Information</p>
           <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
              <Link to="/terms" style={{ color: "#3b82f6", textDecoration: "none" }}>Terms of Service</Link>

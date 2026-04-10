@@ -15,7 +15,7 @@ export default defineConfig({
       workbox: {
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/storage\.googleapis\.com\/rivers-run\.appspot\.com\/public\/flowdata3\.json$/i,
+            urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/rivers-run\.appspot\.com\/o\/public%2F(rivers|gauges)\.json/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'flow-data-cache',
@@ -75,24 +75,34 @@ export default defineConfig({
         ],
         icons: [
           {
-            src: 'resources/icons/144x144-Water-Drop.png',
-            sizes: '144x144',
-            type: 'image/png'
+            src: '/icons/icon-72.webp',
+            sizes: '72x72',
+            type: 'image/webp'
           },
           {
-            src: 'resources/icons/152x152-Water-Drop.png',
-            sizes: '152x152',
-            type: 'image/png'
+            src: '/icons/icon-96.webp',
+            sizes: '96x96',
+            type: 'image/webp'
           },
           {
-            src: 'resources/icons/180x180-Water-Drop.png',
-            sizes: '180x180',
-            type: 'image/png'
+            src: '/icons/icon-128.webp',
+            sizes: '128x128',
+            type: 'image/webp'
           },
           {
-            src: 'resources/icons/512x512-Water-Drop.png',
+            src: '/icons/icon-192.webp',
+            sizes: '192x192',
+            type: 'image/webp'
+          },
+          {
+            src: '/icons/icon-256.webp',
+            sizes: '256x256',
+            type: 'image/webp'
+          },
+          {
+            src: '/icons/icon-512.webp',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/webp'
           }
         ]
       }

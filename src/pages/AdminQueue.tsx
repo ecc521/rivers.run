@@ -31,7 +31,7 @@ export default function AdminQueue() {
 
     if (isAdmin && user) {
       fetchQueue();
-      getDoc(doc(db, "users", user.uid)).then(d => {
+      getDoc(doc(db, "user", user.uid)).then(d => {
         if (d.exists()) {
             setAdminQueueAlerts(!!d.data().notifications?.reviewQueueAlerts);
         }
@@ -42,7 +42,7 @@ export default function AdminQueue() {
   const toggleAdminAlerts = async (val: boolean) => {
       setAdminQueueAlerts(val);
       if (user) {
-          await setDoc(doc(db, "users", user.uid), {
+          await setDoc(doc(db, "user", user.uid), {
               notifications: { reviewQueueAlerts: val }
           }, { merge: true }).catch(e => console.error("Could not explicitly save admin alert pref:", e));
       }
