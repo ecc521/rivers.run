@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css"; 
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css"; 
 import { useAuth } from "../context/AuthContext";
 import { firebaseConfig } from "../firebase";
 

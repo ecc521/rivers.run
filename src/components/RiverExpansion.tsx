@@ -2,6 +2,7 @@ import React from "react";
 import type { RiverData } from "../types/River";
 import { skillTranslations } from "../utils/skillTranslations";
 import { USGSGraphs } from "./USGSGraphs";
+import { useDynamicUSGS } from "../hooks/useDynamicUSGS";
 import { useAuth } from "../context/AuthContext";
 import DOMPurify from "dompurify";
 
@@ -11,6 +12,9 @@ interface RiverExpansionProps {
 
 export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
   const { isAdmin } = useAuth();
+  
+  // The hook directly yields a fully cloned, flow-hydrated RiverData precisely compiled
+  const displayRiver = useDynamicUSGS(river) || river;
 
   const getSkillAndClassText = () => {
     if (river.class && river.skill) {
@@ -108,7 +112,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
         )}
       </p>
 
-      <USGSGraphs river={river} />
+      <USGSGraphs river={displayRiver} />
     </div>
   );
 };

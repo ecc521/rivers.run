@@ -60,7 +60,8 @@ const GlobalNavBar: React.FC = () => {
       <nav
         className="global-nav"
         style={{
-          padding: "16px 20px",
+          padding: "0 20px",
+          minHeight: "64px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -145,7 +146,7 @@ const GlobalNavBar: React.FC = () => {
                     src={user.photoURL}
                     alt="Avatar"
                     className="user-avatar"
-                    style={{ width: "36px", height: "36px", borderRadius: "50%", border: "2px solid #3b82f6" }}
+                    style={{ width: "36px", height: "36px", borderRadius: "50%", border: "2px solid #3b82f6", objectFit: "cover" }}
                   />
                 ) : (
                   <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "bold" }}>

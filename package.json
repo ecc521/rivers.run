@@ -33,7 +33,7 @@
     "react-dom": "^19.2.5",
     "react-is": "^19.2.5",
     "react-leaflet": "^5.0.0",
-    "react-quill": "^2.0.0",
+    "react-quill-new": "^3.8.3",
     "react-router-dom": "^7.14.0",
     "recharts": "^3.8.1",
     "ui-for-firebase-authentication": "^3.0.0"

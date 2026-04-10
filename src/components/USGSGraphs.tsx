@@ -22,7 +22,9 @@ const formatDate = (timestamp: number) => {
 
 const getUnit = (dataKey: string) => {
   if (dataKey === "cfs") return "cfs";
-  if (dataKey === "feet" || dataKey === "meters") return "ft/m";
+  if (dataKey === "cms") return "cms";
+  if (dataKey === "feet") return "ft";
+  if (dataKey === "m" || dataKey === "meters") return "m";
   if (dataKey === "temp") return "°F";
   return "in";
 };
@@ -39,13 +41,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           border: "1px solid #475569",
         }}
       >
-        <p style={{ margin: "0 0 5px 0", fontSize: "0.9em", color: "var(--text-secondary)" }}>
+        <p style={{ margin: "0 0 5px 0", fontSize: "1.35em", color: "var(--text-secondary)" }}>
           {formatDate(label)}
         </p>
         {payload.map((entry: any, index: number) => (
           <p
             key={`item-${index}`}
-            style={{ margin: 0, color: entry.color, fontWeight: "bold" }}
+            style={{ margin: 0, color: entry.color, fontWeight: "bold", fontSize: "1.35em" }}
           >
             {`${entry.name}: ${entry.value} ${getUnit(entry.dataKey)}`}
           </p>
@@ -61,9 +63,12 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
   const { isDarkMode, isColorBlindMode } = useSettings();
 
   // Detect available datasets
-  const hasFlow = data.some((d) => d.cfs || d.feet || d.cms || d.m);
-  const hasTemp = data.some((d) => d.temp);
-  const hasPrecip = data.some((d) => d.precip);
+  const hasFlow = data.some((d) => d.cfs != null || d.feet != null || d.cms != null || d.m != null);
+  const hasTemp = data.some((d) => d.temp != null);
+  const hasPrecip = data.some((d) => d.precip != null);
+
+  const flowKey = data.some((d) => d.cfs != null) ? "cfs" : "cms";
+  const stageKey = data.some((d) => d.feet != null) ? "feet" : "m";
 
   let defaultTab: "flow" | "temp" | "precip" = "precip";
   if (hasFlow) defaultTab = "flow";
@@ -187,12 +192,12 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
           width: "100%",
           height: "300px",
           backgroundColor: "var(--surface-hover)",
-          padding: "10px 10px 10px 0",
           borderRadius: "8px",
           border: "1px solid #CBD5E1",
+          overflow: "hidden"
         }}
       >
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
           <LineChart
             data={data}
             margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
@@ -205,7 +210,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               dataKey="dateTime"
               tickFormatter={formatDate}
               stroke={axisColor}
-              tick={{ fill: axisColor, fontSize: 12 }}
+              tick={{ fill: axisColor, fontSize: 18 }}
               minTickGap={30}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -215,7 +220,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                 <YAxis
                   yAxisId="left"
                   stroke={volumeColor}
-                  tick={{ fill: volumeColor, fontSize: 12 }}
+                  tick={{ fill: volumeColor, fontSize: 18 }}
                   offset={10}
                   width={45}
                   domain={["auto", "auto"]}
@@ -224,7 +229,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                   yAxisId="right"
                   orientation="right"
                   stroke={stageColor}
-                  tick={{ fill: stageColor, fontSize: 12 }}
+                  tick={{ fill: stageColor, fontSize: 18 }}
                   offset={10}
                   width={45}
                   domain={["auto", "auto"]}
@@ -232,20 +237,20 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                 <Line
                   yAxisId="left"
                   type="monotone"
-                  dataKey="cfs"
-                  name="CFS/CMS"
+                  dataKey={flowKey}
+                  name={flowKey === "cfs" ? "Flow (cfs)" : "Flow (cms)"}
                   stroke={volumeColor}
                   dot={false}
-                  strokeWidth={2}
+                  strokeWidth={4}
                 />
                 <Line
                   yAxisId="right"
                   type="monotone"
-                  dataKey="feet"
-                  name="Stage (ft)"
+                  dataKey={stageKey}
+                  name={stageKey === "feet" ? "Stage (ft)" : "Stage (m)"}
                   stroke={stageColor}
                   dot={false}
-                  strokeWidth={2}
+                  strokeWidth={4}
                 />
               </>
             )}
@@ -254,7 +259,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               <>
                 <YAxis
                   stroke={tempColor}
-                  tick={{ fill: tempColor, fontSize: 12 }}
+                  tick={{ fill: tempColor, fontSize: 18 }}
                   width={45}
                   domain={["auto", "auto"]}
                 />
@@ -264,7 +269,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                   name="Temperature"
                   stroke={tempColor}
                   dot={false}
-                  strokeWidth={2}
+                  strokeWidth={4}
                 />
               </>
             )}
@@ -273,7 +278,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               <>
                 <YAxis
                   stroke={precipColor}
-                  tick={{ fill: precipColor, fontSize: 12 }}
+                  tick={{ fill: precipColor, fontSize: 18 }}
                   width={45}
                   domain={[0, "auto"]}
                 />
@@ -283,7 +288,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                   name="Precipitation"
                   stroke={precipColor}
                   dot={false}
-                  strokeWidth={2}
+                  strokeWidth={4}
                 />
               </>
             )}
