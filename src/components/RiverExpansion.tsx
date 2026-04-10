@@ -24,25 +24,19 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
   };
 
   const getFlowRangeText = () => {
-    const values = [
-      "minrun",
-      "lowflow",
-      "midflow",
-      "highflow",
-      "maxrun",
-    ] as const;
-    const relativeFlowType = river.relativeflowtype || "";
+    const keys = ["min", "low", "mid", "high", "max"] as const;
+    const labels = ["minrun", "lowflow", "midflow", "highflow", "maxrun"];
+    const relativeFlowType = river.flow?.unit || "cfs";
     const range: string[] = [];
 
-    values.forEach((name) => {
-      // @ts-expect-error accessing dynamic keys
-      const val = parseFloat(river[name]);
-      if (!isNaN(val)) {
+    keys.forEach((key, index) => {
+      const val = river.flow?.[key];
+      if (val !== undefined && !isNaN(val)) {
         const rounded =
           relativeFlowType === "cfs"
             ? Math.round(val)
             : Math.round(val * 100) / 100;
-        range.push(`${name}:${rounded}${relativeFlowType}`);
+        range.push(`${labels[index]}:${rounded}${relativeFlowType}`);
       }
     });
 
@@ -64,19 +58,17 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
           <p>Maximum gradient: {river.maxgradient} feet per mile.</p>
         )}
 
-        {river.access && river.access.length > 0 && (
+        {river.accessPoints && river.accessPoints.length > 0 && (
           <div className="accessPoints">
-            {river.access.map((accessPoint, index) => (
+            {river.accessPoints.map((accessPoint, index) => (
               <p key={index}>
-                {/* @ts-expect-error dynamic fields */}
-                {accessPoint.name} ({accessPoint.label}) GPS Coordinates:{" "}
+                {accessPoint.name} GPS Coordinates:{" "}
                 <a
-                  href={`https://www.google.com/maps/dir//${accessPoint.lat || accessPoint.latitude},${accessPoint.lon || accessPoint.longitude || accessPoint.lng}/@${accessPoint.lat || accessPoint.latitude},${accessPoint.lon || accessPoint.longitude || accessPoint.lng},14z`}
+                  href={`https://www.google.com/maps/dir//${accessPoint.lat},${accessPoint.lon}/@${accessPoint.lat},${accessPoint.lon},14z`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {accessPoint.lat || accessPoint.latitude},{" "}
-                  {accessPoint.lon || accessPoint.longitude || accessPoint.lng}
+                  {accessPoint.lat}, {accessPoint.lon}
                 </a>
               </p>
             ))}
@@ -84,11 +76,11 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
         )}
       </div>
 
-      {river.access && river.access.length > 0 && (
+      {river.accessPoints && river.accessPoints.length > 0 && (
         <a
           className="mapButton"
           style={{ display: 'inline-block', backgroundColor: '#e2e8f0', padding: '8px 16px', borderRadius: '6px', color: '#475569', textDecoration: 'none', margin: '8px 0', fontSize: '0.9em' }}
-          href={`/map?lat=${river.access[0].lat || river.access[0].latitude}&lon=${river.access[0].lon || river.access[0].longitude || river.access[0].lng}`}
+          href={`/map?lat=${river.accessPoints[0].lat}&lon=${river.accessPoints[0].lon}`}
         >
           View Area on Map
         </a>

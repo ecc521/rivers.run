@@ -4,33 +4,10 @@ import { useFavorites } from "../context/FavoritesContext";
 import { NotificationSettings } from "../components/NotificationSettings";
 import { Link } from "react-router-dom";
 import { PromptModal } from "../components/PromptModal";
-import { getStorageUrl } from "../utils/storageUrls";
 
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();
   const { favorites, updateFavoriteConfig, toggleFavorite } = useFavorites();
-  
-  const [riverDictionary, setRiverDictionary] = React.useState<Record<string, {name: string, section: string}>>({});
-
-  React.useEffect(() => {
-    const fetchRivers = async () => {
-      try {
-        const url = import.meta.env.DEV && !import.meta.env.VITE_USE_FIREBASE_EMULATOR 
-             ? "https://rivers.run/riverdata.json" 
-             : getStorageUrl("public/riverdata.json");
-        const res = await fetch(url);
-        const data = await res.json();
-        const dict: Record<string, {name: string, section: string}> = {};
-        for (const river of data) {
-          dict[river.id] = { name: river.name, section: river.section || "" };
-        }
-        setRiverDictionary(dict);
-      } catch (err) {
-        console.error("Failed to load river dictionary for hydration", err);
-      }
-    };
-    fetchRivers();
-  }, []);
   
   const [promptConfig, setPromptConfig] = React.useState<{
     title: string;
@@ -38,21 +15,14 @@ const FavoritesPage: React.FC = () => {
     onConfirm: () => void;
   } | null>(null);
 
-  // Flatten the FavoritesMap for rendering
   const flattenedFavorites = [];
   for (const gauge in favorites) {
     for (const riverId in favorites[gauge]) {
       const dbEntry = favorites[gauge][riverId];
-      // Hydrate via riverDictionary if legacy data is missing keys
-      const hydratedName = dbEntry.name || riverDictionary[riverId]?.name || null;
-      const hydratedSection = dbEntry.section || riverDictionary[riverId]?.section || null;
-
+      
       flattenedFavorites.push({
         gauge,
         ...dbEntry,
-        id: riverId,
-        name: hydratedName,
-        section: hydratedSection
       });
     }
   }
@@ -82,7 +52,7 @@ const FavoritesPage: React.FC = () => {
       onConfirm: () => {
         toggleFavorite({
           id: riverObj.id,
-          gauge: riverObj.gauge,
+          gauges: [{ id: riverObj.gauge, isPrimary: true }],
           name: riverObj.name,
           section: riverObj.section,
         } as any);
@@ -317,10 +287,10 @@ const FavoritesPage: React.FC = () => {
                       }}
                     >
                       <option value="-">-</option>
-                      <option value="feet">Feet</option>
-                      <option value="cfs">CFS</option>
-                      <option value="meters">Meters</option>
-                      <option value="cms">CMS</option>
+                      <option value="ft">ft</option>
+                      <option value="cfs">cfs</option>
+                      <option value="m">m</option>
+                      <option value="cms">cms</option>
                     </select>
                   </td>
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>

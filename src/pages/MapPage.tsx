@@ -35,13 +35,13 @@ const MapPage: React.FC = () => {
   const markers = useMemo(() => {
     const points: any[] = [];
     rivers.forEach((river) => {
-      if (!river.access || river.access.length === 0) return;
+      if (!river.accessPoints || river.accessPoints.length === 0) return;
 
-      const start = river.access[0];
+      const start = river.accessPoints[0];
 
       // Calculate geometric center or just use put-in for simplicity
-      const lat = start.lat || start.latitude;
-      const lon = start.lon || start.longitude || start.lng;
+      const lat = start.lat;
+      const lon = start.lon;
 
       if (!lat || !lon) return;
 

@@ -5,7 +5,7 @@ import { useAuth } from "./AuthContext";
 import type { RiverData } from "../types/River";
 import { persistentStorage } from "../utils/persistentStorage";
 
-export interface LegacyFavoriteDetails {
+export interface FavoriteDetails {
   id: string;
   name: string;
   section: string;
@@ -16,7 +16,7 @@ export interface LegacyFavoriteDetails {
 
 export type FavoritesMap = Record<
   string,
-  Record<string, LegacyFavoriteDetails>
+  Record<string, FavoriteDetails>
 >;
 
 interface FavoritesContextType {
@@ -25,7 +25,7 @@ interface FavoritesContextType {
   updateFavoriteConfig: (
     gaugeId: string,
     riverId: string,
-    updates: Partial<LegacyFavoriteDetails>,
+    updates: Partial<FavoriteDetails>,
   ) => Promise<void>;
   isFavorite: (riverId: string) => boolean;
   loading: boolean;
@@ -147,7 +147,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const toggleFavorite = async (river: RiverData) => {
     const newFavs: FavoritesMap = JSON.parse(JSON.stringify(favorites));
-    const gauge = river.gauge || "none";
+    const gauge = river.gauges?.[0]?.id || "none";
 
     if (newFavs[gauge]?.[river.id]) {
       delete newFavs[gauge][river.id];
@@ -158,9 +158,9 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
         id: river.id.toString(),
         name: river.name,
         section: river.section || "",
-        minimum: river.minrun ? Number(river.minrun) : null,
-        maximum: river.maxrun ? Number(river.maxrun) : null,
-        units: river.relativeflowtype || "cfs",
+        minimum: river.flow?.min ?? null,
+        maximum: river.flow?.max ?? null,
+        units: river.flow?.unit ?? "cfs",
       };
     }
     await saveFavorites(newFavs);
@@ -169,7 +169,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateFavoriteConfig = async (
     gaugeId: string,
     riverId: string,
-    updates: Partial<LegacyFavoriteDetails>,
+    updates: Partial<FavoriteDetails>,
   ) => {
     const newFavs: FavoritesMap = JSON.parse(JSON.stringify(favorites));
     if (newFavs[gaugeId]?.[riverId]) {

@@ -72,8 +72,8 @@ export function calculateRelativeFlow(river: RiverData): number | null {
 
   let flowLevel: number | undefined;
   if (river.flow.unit === "cfs") flowLevel = river.latestReading ?? river.cfs;
-  else if (river.flow.unit === "feet" || river.flow.unit === "ft") flowLevel = river.latestReading ?? river.feet;
-  else if (river.flow.unit === "meters" || river.flow.unit === "m") flowLevel = river.latestReading ?? (river.meters || river.m);
+  else if (river.flow.unit === "ft") flowLevel = river.latestReading ?? river.ft;
+  else if (river.flow.unit === "m") flowLevel = river.latestReading ?? river.m;
   else if (river.flow.unit === "cms") flowLevel = river.latestReading ?? river.cms;
 
   if (flowLevel === undefined || isNaN(flowLevel)) return null;

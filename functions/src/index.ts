@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { v1 } from "@google-cloud/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { getAuth } from "firebase-admin/auth";
 import { onSchedule } from "firebase-functions/v2/scheduler";
@@ -191,39 +190,6 @@ export const notifyAdminsOnReviewQueue = onDocumentCreated("reviewQueue/{docId}"
         console.log(`Successfully dispatched Queue Alerts to ${emails.length} implicitly configured admins.`);
     } catch (e: any) {
         console.error("Non-fatal: Failed mapping queue alerts dynamically", e.message);
-    }
-});
-
-export const scheduledFirestoreExport = onSchedule({
-    schedule: "every day 02:00", // Execute securely at 2AM every day
-    timeoutSeconds: 300,
-    memory: "256MiB"
-}, async () => {
-    const client = new v1.FirestoreAdminClient();
-    const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
-
-    if (!projectId) {
-        console.error("Failed to determine GCP API Project ID for backup operation.");
-        return;
-    }
-
-    const databaseName = client.databasePath(projectId, '(default)');
-    const bucketName = `gs://${projectId}-backups`; 
-
-    try {
-        console.log(`Starting automated daily export of Firestore Database to ${bucketName}`);
-        
-        // This natively returns an LRO (Long Running Operation), so we don't need to await completion, just initialization!
-        const [operation] = await client.exportDocuments({
-            name: databaseName,
-            outputUriPrefix: bucketName,
-            // Empty array implies EVERYTHING (Users, Rivers, Reviews) natively!
-            collectionIds: [] 
-        });
-        
-        console.log(`Database export strictly initiated. Operation ID: ${operation.name}`);
-    } catch (err: any) {
-        console.error(`Automated Database Export Exception. Check if bucket exists and if Default App Engine Service account has 'Cloud Datastore Import Export Admin' & 'Storage Admin' ACLs: ${err.message}`);
     }
 });
 

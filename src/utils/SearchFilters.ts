@@ -82,7 +82,7 @@ export function filterRivers(
       (r) =>
         (r.name || "").toLowerCase().includes(term) ||
         (r.section || "").toLowerCase().includes(term) ||
-        (r.tags && r.tags.toLowerCase().includes(term)),
+        (r.tags && r.tags.some(t => t.toLowerCase().includes(term))),
     );
   }
 
@@ -121,7 +121,7 @@ export function filterRivers(
   if (query.flowMin !== undefined && query.flowMax !== undefined) {
     list = list.filter((r) => {
       if (r.dam && query.includeDams) return true;
-      if (r.running === undefined || r.running === null)
+      if (r.running === undefined)
         return query.includeUnknownFlow;
       return r.running >= query.flowMin! && r.running <= query.flowMax!;
     });
@@ -130,10 +130,10 @@ export function filterRivers(
   // 6. Proximity / Distance boundaries
   if (query.distanceMax && query.userLat && query.userLon) {
     list = list.filter((r) => {
-      if (!r.access || r.access.length === 0) return false;
-      const start = r.access[0];
-      const rLat = start.lat || start.latitude;
-      const rLon = start.lon || start.longitude || start.lng;
+      if (!r.accessPoints || r.accessPoints.length === 0) return false;
+      const start = r.accessPoints[0];
+      const rLat = start.lat;
+      const rLon = start.lon;
       if (!rLat || !rLon) return false;
       
       const distanceMiles = lambert(query.userLat!, query.userLon!, rLat, rLon);

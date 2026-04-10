@@ -11,7 +11,7 @@ export interface LinkedGauge {
 }
 
 export interface FlowThresholds {
-  unit: "cfs" | "feet" | "cms" | "m";
+  unit: "cfs" | "ft" | "cms" | "m";
   min?: number;
   low?: number;
   mid?: number;
@@ -31,7 +31,6 @@ export interface RiverData {
   rating?: number | null;
   
   accessPoints?: AccessPoint[];
-  access?: AccessPoint[]; // legacy bridge if needed temporarily
 
   averagegradient?: number;
   maxgradient?: number;
@@ -43,14 +42,15 @@ export interface RiverData {
 
   // DYNAMIC RUNTIME FIELDS (Injected dynamically on the client, NOT stored in Firestore rivers)
   cfs?: number;
-  feet?: number;
-  meters?: number;
-  cms?: number;
+  ft?: number;
   m?: number;
+  cms?: number;
   flowData?: any[];
   flowInfo?: string;
   status?: "high" | "low" | "running" | "unknown";
   latestReading?: number;
+  running?: number;
+  isGauge?: boolean;
   
   updatedAt?: any; // firestore timestamp
 }
@@ -66,7 +66,7 @@ export interface GaugeMetadata {
 export interface GaugeReading {
   dateTime: number; // UTC ms
   cfs?: number;
-  feet?: number;
+  ft?: number;
   m?: number;
   cms?: number;
   temp?: number;
@@ -78,11 +78,6 @@ export interface Gauge {
   id: string;
   metadata?: GaugeMetadata;
   readings: GaugeReading[];
-  
-  // legacy flow mappings dynamically patched in on the frontend:
-  name?: string;
-  lat?: number;
-  lon?: number;
 }
 
 export interface GaugesPayload {
@@ -90,18 +85,3 @@ export interface GaugesPayload {
   [gaugeId: string]: Gauge | any; // Supports raw mapping dictionary payload
 }
 
-// ------ Favorites Legacy Typings ------
-
-export interface FavoriteRiverSnapshot {
-  id: string;
-  name: string;
-  section: string;
-  units: "cfs" | "feet" | "cms" | "m";
-  minimum?: number;
-  maximum?: number;
-  
-  flowInfo: string;
-  running: boolean;
-}
-
-export type UserFavorites = Record<string, Record<string, FavoriteRiverSnapshot>>;

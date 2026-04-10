@@ -29,7 +29,8 @@ export default function RiverEditor() {
     gauges: [],
     accessPoints: [],
     overview: "",
-    imageUrls: []
+    imageUrls: [],
+    flow: { unit: "cfs", min: null, max: null }
   });
 
   const [rawGauges, setRawGauges] = useState("");
@@ -50,7 +51,8 @@ export default function RiverEditor() {
         gauges: data.gauges || [],
         accessPoints: data.accessPoints || [],
         overview: data.overview || "",
-        imageUrls: data.imageUrls || []
+        imageUrls: data.imageUrls || [],
+        flow: data.flow || { unit: "cfs", min: null, max: null }
       });
       setRawGauges((data.gauges || []).map((g: any) => g.id).join(", "));
       const pi = (data.accessPoints || []).find((a: any) => a.type === "put-in");
@@ -337,6 +339,40 @@ export default function RiverEditor() {
             value={rawGauges} 
             onChange={e => setRawGauges(e.target.value)} 
           />
+        </div>
+
+        <div style={{ display: 'flex', gap: '15px' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{fontWeight: 'bold', display: 'block'}}>Flow Unit</label>
+            <select 
+              style={{ width: '100%', padding: '8px' }} 
+              value={riverData.flow?.unit || "cfs"}
+              onChange={e => setRiverData({...riverData, flow: {...riverData.flow, unit: e.target.value}})}
+            >
+              <option value="cfs">cfs</option>
+              <option value="ft">ft</option>
+              <option value="m">m</option>
+              <option value="cms">cms</option>
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{fontWeight: 'bold', display: 'block'}}>Min Flow</label>
+            <input 
+              type="number" 
+              style={{ width: '100%', padding: '8px' }} 
+              value={riverData.flow?.min ?? ""} 
+              onChange={e => setRiverData({...riverData, flow: {...riverData.flow, min: e.target.value ? parseFloat(e.target.value) : null}})} 
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{fontWeight: 'bold', display: 'block'}}>Max Flow</label>
+            <input 
+              type="number" 
+              style={{ width: '100%', padding: '8px' }} 
+              value={riverData.flow?.max ?? ""} 
+              onChange={e => setRiverData({...riverData, flow: {...riverData.flow, max: e.target.value ? parseFloat(e.target.value) : null}})} 
+            />
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '15px' }}>
