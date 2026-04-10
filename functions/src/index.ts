@@ -2,6 +2,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { getAuth } from "firebase-admin/auth";
+import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
@@ -29,6 +30,40 @@ export const pullGaugeDataPeriodic = onSchedule({
     memory: "256MiB", // Reverted to 256MB to fix OOM
     secrets: [gmailPassword]
 }, async () => {
+    await executeGaugeSync();
+});
+
+/**
+ * DEVELOPMENT UTILITY: manualPullGaugeData
+ * This open HTTP endpoint is specifically designed for local development.
+ * It bypasses Pub/Sub scheduling restrictions, allowing developers to manually 
+ * generate mock payload JSON sequences via simple browser requests directly 
+ * to localhost:5001 after starting fresh emulator sandboxes.
+ */
+export const manualPullGaugeData = onRequest({
+    timeoutSeconds: 300,
+    memory: "256MiB",
+    secrets: [gmailPassword]
+}, async (request, response) => {
+    const bucket = getStorage().bucket();
+    const [riversExist] = await bucket.file("public/rivers.json").exists();
+    const [gaugesExist] = await bucket.file("public/gauges.json").exists();
+
+    if (riversExist && gaugesExist) {
+        response.status(200).send("Payload documents already definitively exist in Storage! Safely aborting explicitly to avoid bandwidth consumption.");
+        return;
+    }
+
+    try {
+        await executeGaugeSync();
+        response.status(200).send({ success: true, message: "Gauge synchronization completely synthesized.", timestamp: Date.now() });
+    } catch (e: any) {
+        console.error("Crucial manual synchronization explicit pipeline crashed:", e);
+        response.status(500).send("Sync fundamentally failed.");
+    }
+});
+
+async function executeGaugeSync() {
     console.log("Starting gauge sync protocol...");
 
     // 1. Sync riverdata.json using the exact Delta scheme to avoid unnecesssary reads!
@@ -157,7 +192,7 @@ export const pullGaugeDataPeriodic = onSchedule({
     }
 
     console.log("Gauge synchronization successfully terminated.");
-});
+}
 
 export const notifyAdminsOnReviewQueue = onDocumentCreated("reviewQueue/{docId}", async (event) => {
     const queueData = event.data?.data();

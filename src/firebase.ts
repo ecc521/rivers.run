@@ -1,7 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 export const firebaseConfig = {
   apiKey: "AIzaSyA8hvftc7idpGNcj5I9gvOqk-DQrTrkQco",
@@ -15,7 +16,16 @@ export const firebaseConfig = {
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
-export const analytics =
-  typeof window !== "undefined" ? getAnalytics(app) : null;
+export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Explcitly override standard getFirestore to enforce Multi-Tab offline IndexedDb persistence!
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+export const functions = getFunctions(app, "us-central1");
+
+if (import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true') {
+  console.info("Firebase Emulator mode natively detected! Intercepting Cloud Functions offline.");
+  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+}
