@@ -86,7 +86,14 @@ async function executeGaugeSync() {
     let virtualGauges: Record<string, {name: string, lat: number, lon: number}> = {};
     try {
         const file = bucket.file("public/virtualGauges.json");
-        const [exists] = await file.exists();
+        let [exists] = await file.exists();
+        
+        if (!exists) {
+            console.warn("No virtualGauges.json discovered in Storage; actively compiling the registry on-the-fly!");
+            await compileVirtualGaugesToStorage(bucket);
+            [exists] = await file.exists();
+        }
+
         if (exists) {
             const [buffer] = await file.download();
             try {
@@ -102,7 +109,7 @@ async function executeGaugeSync() {
             });
             console.log(`Successfully merged ${Object.keys(virtualGauges).length} static virtual gauges natively from Firebase Storage!`);
         } else {
-            console.warn("Non-fatal: No virtualGauges.json discovered in Storage; relying entirely on Firestore mapping.");
+            console.warn("Non-fatal: virtualGauges.json failed to synthesize; relying entirely on Firestore mapping.");
         }
     } catch (e: any) {
         console.error("Non-fatal: Could not pull virtual Gauges json from Storage natively.", e.message);
