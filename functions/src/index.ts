@@ -13,7 +13,7 @@ import { loadSitesFromUSGS } from "./services/usgs";
 import { loadCanadianProvince, CanadianProvinceData } from "./services/canada";
 import { processNotifications } from "./services/notifications";
 import { syncRiverDataToStorage } from "./services/riverdata";
-import { compileVirtualGaugesToStorage } from "./services/virtualGauges";
+import { compileGaugeRegistryToStorage } from "./services/gaugeRegistry";
 import * as zlib from "zlib";
 
 // Initialize Firebase Admin seamlessly (uses default credentials inside the function environment)
@@ -44,7 +44,7 @@ export const manualSyncRivers = onCall({
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "You must be logged in to trigger this function.");
     }
-    const userDoc = await db.collection("users").doc(request.auth.uid).get();
+    const userDoc = await db.collection("user").doc(request.auth.uid).get();
     if (!userDoc.exists || userDoc.data()?.isAdmin !== true) {
         throw new HttpsError("permission-denied", "You must be an admin to trigger this function.");
     }
@@ -78,9 +78,9 @@ async function executeGaugeSync() {
         }
     });
 
-    let virtualGauges: Record<string, {name: string, lat: number, lon: number}> = {};
+    let gaugeRegistry: Record<string, {name: string, lat: number, lon: number}> = {};
     try {
-        const file = bucket.file("public/virtualGauges.json");
+        const file = bucket.file("public/gaugeRegistry.json");
         let buffer: Buffer;
 
         try {
@@ -90,7 +90,7 @@ async function executeGaugeSync() {
             const statusCode = err.code || err.status || (err.response && err.response.status);
             
             if (statusCode === 404 || (err.message && err.message.includes("No such object"))) {
-                console.warn("No virtualGauges.json discovered in Storage; skipping compilation to protect the 15-minute sync layer. Admin must manually compile.");
+                console.warn("No gaugeRegistry.json discovered in Storage; skipping compilation to protect the 15-minute sync layer. Admin must manually compile.");
                 buffer = Buffer.from("{}");
             } else {
                 throw err; // Rethrow native network/IAM errors
@@ -99,16 +99,16 @@ async function executeGaugeSync() {
 
         try {
             const decomp = zlib.brotliDecompressSync(buffer);
-            virtualGauges = JSON.parse(decomp.toString('utf-8'));
+            gaugeRegistry = JSON.parse(decomp.toString('utf-8'));
         } catch {
-            virtualGauges = JSON.parse(buffer.toString('utf-8'));
+            gaugeRegistry = JSON.parse(buffer.toString('utf-8'));
         }
         
-        Object.keys(virtualGauges).forEach(id => {
+        Object.keys(gaugeRegistry).forEach(id => {
             if (id.startsWith("USGS:")) usgsSet.add(id.replace("USGS:", ""));
             else if (id.startsWith("canada:")) canadaProvincesSet.add(id.replace("canada:", ""));
         });
-        console.log(`Successfully merged ${Object.keys(virtualGauges).length} static virtual gauges natively from Firebase Storage!`);
+        console.log(`Successfully merged ${Object.keys(gaugeRegistry).length} static gauge registry natively from Firebase Storage!`);
     } catch (e: unknown) {
         console.error("Non-fatal: Could not pull virtual Gauges json from Storage natively.", e instanceof Error ? e.message : e);
     }
@@ -145,10 +145,10 @@ async function executeGaugeSync() {
     for (const [key, value] of Object.entries(usgsData)) {
         const fullId = "USGS:" + key;
         const v = value as any;
-        if (virtualGauges[fullId]) {
-            v.lat = virtualGauges[fullId].lat;
-            v.lon = virtualGauges[fullId].lon;
-            if (!v.name) v.name = virtualGauges[fullId].name; // USGS API name usually present, but just in case
+        if (gaugeRegistry[fullId]) {
+            v.lat = gaugeRegistry[fullId].lat;
+            v.lon = gaugeRegistry[fullId].lon;
+            if (!v.name) v.name = gaugeRegistry[fullId].name; // USGS API name usually present, but just in case
         }
         flowData[fullId] = v;
     }
@@ -159,10 +159,10 @@ async function executeGaugeSync() {
             if (canadaProvincesSet.has(key)) {
                 const fullId = "canada:" + key;
                 const v = value as any;
-                if (virtualGauges[fullId]) {
-                    v.lat = virtualGauges[fullId].lat;
-                    v.lon = virtualGauges[fullId].lon;
-                    if (!v.name) v.name = virtualGauges[fullId].name;
+                if (gaugeRegistry[fullId]) {
+                    v.lat = gaugeRegistry[fullId].lat;
+                    v.lon = gaugeRegistry[fullId].lon;
+                    if (!v.name) v.name = gaugeRegistry[fullId].name;
                 }
                 flowData[fullId] = v;
             }
@@ -246,14 +246,14 @@ export const manualSyncGaugeRegistry = onCall({
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "You must be logged in to trigger this function.");
     }
-    const userDoc = await db.collection("users").doc(request.auth.uid).get();
+    const userDoc = await db.collection("user").doc(request.auth.uid).get();
     if (!userDoc.exists || userDoc.data()?.isAdmin !== true) {
         throw new HttpsError("permission-denied", "You must be an admin to trigger this function.");
     }
 
     console.log("Starting manual USGS/Canada static gauge compilation...");
     const bucket = getStorage().bucket();
-    await compileVirtualGaugesToStorage(bucket);
+    await compileGaugeRegistryToStorage(bucket);
     console.log("Manual compilation completed securely.");
     return { success: true };
 });
@@ -265,7 +265,7 @@ export const deleteLiveRiver = onCall({
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "You must be logged in to trigger this function.");
     }
-    const userDoc = await db.collection("users").doc(request.auth.uid).get();
+    const userDoc = await db.collection("user").doc(request.auth.uid).get();
     if (!userDoc.exists || userDoc.data()?.isAdmin !== true) {
         throw new HttpsError("permission-denied", "You must be an admin to trigger this function.");
     }

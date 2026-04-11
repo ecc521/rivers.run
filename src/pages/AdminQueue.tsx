@@ -73,7 +73,7 @@ export default function AdminQueue() {
   };
 
   const handleManualRegistry = async () => {
-    if (!window.confirm("Warning: Recompiling the US/Canada virtual gauge registry takes several minutes and should only be explicitly invoked to restore missing standalone gauges. Proceed?")) return;
+    if (!window.confirm("Warning: Recompiling the US/Canada gauge registry takes several minutes and should only be explicitly invoked to restore missing standalone gauges. Proceed?")) return;
     setSyncingRegistry(true);
     try {
       const functions = getFunctions();

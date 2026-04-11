@@ -12,9 +12,9 @@ Here is how the system currently aligns with your intended structure:
 *   ✅ **Back up the database:** Handled via the standalone `scheduledFirestoreExport` function that runs via cron `every day 02:00`.
 
 ### Every Week
-*   ❌ **If it's Monday, sync the gauge list from USGS:** **Missing.** Currently, `virtualGauges.json` is a statically compiled JSON file bundled with your Cloud Functions at deploy time. There is no automated weekly function pulling from the master USGS site list.
+*   ❌ **If it's Monday, sync the gauge list from USGS:** **Missing.** Currently, `gaugeRegistry.json` is a statically compiled JSON file bundled with your Cloud Functions at deploy time. There is no automated weekly function pulling from the master USGS site list.
 
 ### Every 15 Minutes (The `pullGaugeDataPeriodic` Loop)
-*   ✅ **Fetch live flow data and create `flowdata3.json`:** Successfully implemented. The function pulls live flows concurrently via `loadSitesFromUSGS` and `loadCanadianProvince`, injects the `virtualGauges.json` metadata, compresses the payload natively with GZIP, and saves it.
+*   ✅ **Fetch live flow data and create `flowdata3.json`:** Successfully implemented. The function pulls live flows concurrently via `loadSitesFromUSGS` and `loadCanadianProvince`, injects the `gaugeRegistry.json` metadata, compresses the payload natively with GZIP, and saves it.
 *   ✅ **Patch notification settings based on update:** Successfully implemented. If the storage file is younger than 24 hours, it performs a strict targeted delta sync: `db.collection("users").where("updatedAt", ">", lastCompileMs)`. It then splices only the recently touched users directly into the running cache.
 *   ✅ **Patch `riverdata.json` based on updates:** Successfully implemented. It queries `db.collection("rivers").where("updatedAt", ">", lastCompileMs)` to selectively override patched rivers in the JSON cache.

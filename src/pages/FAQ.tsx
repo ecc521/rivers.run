@@ -97,7 +97,7 @@ const FAQ: React.FC = () => {
         <p>
           To add a new river, click <strong>Suggest a River</strong> in the top navigation menu. Fill out the form with the river's details and click "Submit River Proposal". Our administrators will review your suggestion before it is published.
         </p>
-        <br/>
+        <br />
         <ContactSupport />
         <ContactAdmin />
       </FAQItem>
@@ -106,7 +106,7 @@ const FAQ: React.FC = () => {
         <p>
           Click any river in the list to expand its details, then click the <strong>Suggest an Edit</strong> button at the top. Make your changes and submit them for admin review.
         </p>
-        <br/>
+        <br />
         <ContactSupport />
         <ContactAdmin />
       </FAQItem>
@@ -122,7 +122,7 @@ const FAQ: React.FC = () => {
         <p style={{ margin: 0 }}>
           Click the parameters on the advanced search interface or the sort
           options atop the river feed. Currently, you may sort by Name, Flow,
-          Quality, etc.
+          Skill Category, etc.
         </p>
       </FAQItem>
 
@@ -151,16 +151,6 @@ const FAQ: React.FC = () => {
         </p>
       </FAQItem>
 
-      <FAQItem question="What are virtual gauges?">
-        <p style={{ margin: 0 }}>
-          Virtual gauges combine mathematical data from multiple real physical gauges to calculate a more accurate flow for a specific river section. They are automatically flagged with "virtual:" in their name. If you would like to suggest a new virtual gauge formula, please contact{" "}
-          <a href="mailto:admin@rivers.run" target="_blank" rel="noreferrer">
-            admin@rivers.run
-          </a>
-          .
-        </p>
-      </FAQItem>
-
       <FAQItem question="I would like to help build rivers.run">
         <p style={{ margin: 0 }}>
           You can access the repository on{" "}
@@ -172,57 +162,6 @@ const FAQ: React.FC = () => {
             GitHub
           </a>
           .
-        </p>
-      </FAQItem>
-
-      <FAQItem question="Is the app the same thing as the website?">
-        <p style={{ margin: 0 }}>
-          The Android app is identical to the website. The iOS app shares the
-          vast majority of its code with the website, so will behave similar,
-          however using the app is recommended, as iOS Safari frequently causes
-          problems with rivers.run.
-        </p>
-      </FAQItem>
-
-      <FAQItem question="Quality used to show up and now doesn't!">
-        <p style={{ margin: 0 }}>
-          Quality only shows up on larger screens (and smartwatches) - if you
-          are on a phone, try rotating into landscape mode!
-        </p>
-      </FAQItem>
-
-      <FAQItem question="The rivers.run website is not working.">
-        <p>
-          If you are encountering issues, your browser may be too old. Here are
-          the browsers that should work:
-        </p>
-        <p>
-          Chrome, Firefox, Opera, Edge, Samsung Internet - Full support for
-          non-horribly outdated versions.
-        </p>
-        <p>
-          Any Browser on iOS 8.4+ (maybe lower). iOS 11.3+ needed for offline
-          support. Web push notifications not supported. Dark mode needs iOS 10.
-        </p>
-        <p>Opera Mini - Fails in extreme data saving mode.</p>
-        <p style={{ margin: 0 }}>
-          If you encounter issues while using a supported browser, please refer
-          to the contact info below.
-        </p>
-      </FAQItem>
-
-      <FAQItem question="Where can I contact you?">
-        <p style={{ margin: 0 }}>
-          You can use the{" "}
-          <a
-            href="https://forms.gle/4iNq9y92y9bzzV"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Feedback Form
-          </a>
-          , or you can email the administrator at{" "}
-          <a href="mailto:contact@rivers.run">contact@rivers.run</a>
         </p>
       </FAQItem>
 

@@ -14,8 +14,8 @@ export const ContactAdmin: React.FC = () => (
   <p>
     If you would like permission to edit directly, approve edits, add
     rivers, and confirm river additions, please email{" "}
-    <a href="mailto:admin@rivers.run" target="_blank" rel="noreferrer">
-      admin@rivers.run
+    <a href="mailto:support@rivers.run" target="_blank" rel="noreferrer">
+      support@rivers.run
     </a>
     .
   </p>

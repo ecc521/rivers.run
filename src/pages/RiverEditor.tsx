@@ -388,8 +388,9 @@ export default function RiverEditor() {
             <label style={{fontWeight: 'bold', display: 'block'}}>River Name</label>
             <input 
               type="text" 
-              style={{ width: '100%', padding: '8px' }} 
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
               value={riverData.name} 
+              placeholder="e.g. Potomac River"
               onChange={e => setRiverData({...riverData, name: e.target.value})} 
             />
           </div>
@@ -397,8 +398,9 @@ export default function RiverEditor() {
             <label style={{fontWeight: 'bold', display: 'block'}}>Section</label>
             <input 
               type="text" 
-              style={{ width: '100%', padding: '8px' }} 
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
               value={riverData.section} 
+              placeholder="e.g. Little Falls"
               onChange={e => setRiverData({...riverData, section: e.target.value})} 
             />
           </div>
@@ -409,15 +411,16 @@ export default function RiverEditor() {
             <label style={{fontWeight: 'bold', display: 'block'}}>Class</label>
             <input 
               type="text" 
-              style={{ width: '100%', padding: '8px' }} 
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
               value={riverData.class} 
+              placeholder="e.g. II-III+"
               onChange={e => setRiverData({...riverData, class: e.target.value})} 
             />
           </div>
           <div style={{ flex: 1 }}>
             <label style={{fontWeight: 'bold', display: 'block'}}>Skill Level</label>
             <select 
-              style={{ width: '100%', padding: '8px' }} 
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
               value={riverData.skill} 
               onChange={e => setRiverData({...riverData, skill: e.target.value})} 
             >
@@ -427,7 +430,7 @@ export default function RiverEditor() {
           <div style={{ flex: 1 }}>
             <label style={{fontWeight: 'bold', display: 'block'}}>State/Region</label>
             <select
-              style={{ width: '100%', padding: '8px' }} 
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
               value={riverData.state} 
               onChange={e => setRiverData({...riverData, state: e.target.value})} 
             >

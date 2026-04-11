@@ -68,7 +68,7 @@ export interface RiverData {
   /** Manual hover/scrub integer override injected by the UI Graph charts to simulate historical flow states visually into component bounds */
   latestReading?: number;
   
-  /** Flag used by the virtual map to identify instances that natively just represent blank gauge sensors instead of actual valid river runs */
+  /** Flag used by the map to identify instances that natively just represent standalone gauge sensors instead of actual valid river runs */
   isGauge?: boolean;
   
   updatedAt?: any; // firestore timestamp

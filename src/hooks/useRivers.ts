@@ -69,7 +69,7 @@ const enrichRiver = (river: any, _index: number, flowData: any, usedGauges: Set<
   return river;
 };
 
-const buildVirtualGauge = (gaugeId: string, gaugeData: any): RiverData | null => {
+const buildStandaloneGauge = (gaugeId: string, gaugeData: any): RiverData | null => {
    const gData: any = gaugeData;
    if (!gData.readings || gData.readings.length === 0) return null;
 
@@ -155,18 +155,18 @@ export const useRivers = (): UseRiversResult => {
 
           data = data.map((river: any, index: number) => enrichRiver(river, index, flowData, usedGauges));
 
-          // Create virtual rivers for any gauge present in gauges.json that isn't mapped to a river
-          const virtualGauges: RiverData[] = [];
+          // Create standalone gauges for any gauge present in gauges.json that isn't mapped to a river
+          const standaloneGauges: RiverData[] = [];
 
           for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
               if (usedGauges.has(gaugeId)) continue;
-              const virtualGauge = buildVirtualGauge(gaugeId, gaugeData);
-              if (virtualGauge) {
-                 virtualGauges.push(virtualGauge);
+              const standaloneGauge = buildStandaloneGauge(gaugeId, gaugeData);
+              if (standaloneGauge) {
+                 standaloneGauges.push(standaloneGauge);
               }
           }
           
-          data = [...data, ...virtualGauges];
+          data = [...data, ...standaloneGauges];
         }
 
         globalRiversCache = data;

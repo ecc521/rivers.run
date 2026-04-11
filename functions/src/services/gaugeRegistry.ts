@@ -1,5 +1,5 @@
-import { Bucket } from "@google-cloud/storage";
-import * as zlib from "zlib";
+import { promisify } from "util";
+import { gzip } from "zlib";
 
 const states = [
   "al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl", "ga",
@@ -27,7 +27,9 @@ function fixSiteName(siteName: string): string {
   return fixCasing(name);
 }
 
-function parseUSGSLine(line: string, headers: string[], virtualGauges: Record<string, any>) {
+function parseUSGSLine(line: string, headers: string[], gaugeRegistry: Record<string, any>) {
+    if (line.trim().length === 0) return;
+
     const tokens = line.split('\t');
     if (tokens.length >= headers.length && headers.length > 0) {
         const idIndex = headers.indexOf('site_no');
@@ -41,13 +43,13 @@ function parseUSGSLine(line: string, headers: string[], virtualGauges: Record<st
             const lat = parseFloat(tokens[latIndex]);
             const lon = parseFloat(tokens[lonIndex]);
             if (!isNaN(lat) && !isNaN(lon)) {
-                virtualGauges[id] = { name, lat, lon };
+                gaugeRegistry[id] = { name, lat, lon };
             }
         }
     }
 }
 
-async function scrapeUSGS(virtualGauges: Record<string, any>) {
+async function scrapeUSGS(gaugeRegistry: Record<string, any>) {
     console.log("1. Pulling USGS Native Metadata...");
     for (const state of states) {
         const url = `https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=${state}&siteStatus=active&siteType=ST&hasDataTypeCd=iv&siteOutput=expanded`;
@@ -65,9 +67,9 @@ async function scrapeUSGS(virtualGauges: Record<string, any>) {
                     headers = line.split('\t');
                     continue;
                 }
-                parseUSGSLine(line, headers, virtualGauges);
+                parseUSGSLine(line, headers, gaugeRegistry);
             }
-            console.log(`- Compiled state: ${state} (Total so far: ${Object.keys(virtualGauges).length})`);
+            console.log(`- Compiled state: ${state} (Total so far: ${Object.keys(gaugeRegistry).length})`);
             await new Promise(r => setTimeout(r, 600));
         } catch (e: unknown) {
             console.error(`- Failed to retrieve state ${state}:`, e instanceof Error ? e.message : e);
@@ -75,7 +77,7 @@ async function scrapeUSGS(virtualGauges: Record<string, any>) {
     }
 }
 
-async function scrapeCanada(virtualGauges: Record<string, any>) {
+async function scrapeCanada(gaugeRegistry: Record<string, any>) {
     console.log("2. Pulling Canadian Native Metadata...");
     try {
         const canRes = await fetch("https://wateroffice.ec.gc.ca/services/map_data");
@@ -87,35 +89,36 @@ async function scrapeCanada(virtualGauges: Record<string, any>) {
             const finalLat = parseFloat(s.lat || s.latitude);
             const finalLon = parseFloat(s.lon || s.longitude);
             if (!isNaN(finalLat) && !isNaN(finalLon)) {
-                virtualGauges["canada:" + id] = { name, lat: finalLat, lon: finalLon };
+                gaugeRegistry["canada:" + id] = { name, lat: finalLat, lon: finalLon };
             }
         }
-        console.log(`- Compiled Canadian stations. Total Gauges: ${Object.keys(virtualGauges).length}`);
+        console.log(`- Compiled Canadian stations. Total Gauges: ${Object.keys(gaugeRegistry).length}`);
     } catch(e: unknown) {
         console.error("Failed to parse Canadian gauge points.", e instanceof Error ? e.message : e);
     }
 }
 
-export async function compileVirtualGaugesToStorage(bucket: Bucket): Promise<void> {
-    console.log("Compiling Virtual Gauges Mapping Dictionary...");
+export async function compileGaugeRegistryToStorage(bucket: any): Promise<void> {
+    console.log("Starting full USGS/Canada static gauge registry compilation...");
     
-    const virtualGauges: Record<string, {name: string, lat: number, lon: number}> = {};
+    // We strictly use an efficient in-memory map here before compression
+    const gaugeRegistry: Record<string, {name: string, lat: number, lon: number}> = {};
 
-    await scrapeUSGS(virtualGauges);
-    await scrapeCanada(virtualGauges);
+    await scrapeUSGS(gaugeRegistry);
+    await scrapeCanada(gaugeRegistry);
 
-    const payload = JSON.stringify(virtualGauges);
-    const zippedBuffer = zlib.brotliCompressSync(Buffer.from(payload), { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9 } });
-    
-    const byteSize = Buffer.byteLength(payload);
-    console.log(`3. Pushing mapped payload array to Cloud Storage (Uncompressed: ${(byteSize / 1024 / 1024).toFixed(2)} MB, Brotli: ${(zippedBuffer.length / 1024 / 1024).toFixed(2)} MB)...`);
-    
-    const file = bucket.file("public/virtualGauges.json");
-    await file.save(zippedBuffer, {
+    const payload = JSON.stringify(gaugeRegistry);
+    console.log(`Final Gauge Registry JSON length: ${payload.length} bytes`);
+
+    // Gzip natively to severely reduce egress footprint when deploying dynamically
+    const buffer = Buffer.from(payload, "utf-8");
+    const compressed = await promisify(gzip)(buffer);
+
+    const file = bucket.file("public/gaugeRegistry.json");
+    await file.save(compressed, {
         metadata: {
             contentType: "application/json",
-            contentEncoding: "br",
-            cacheControl: "public, max-age=604800" // Cache for 1 week essentially
+            contentEncoding: "gzip"
         }
     });
 
@@ -125,5 +128,5 @@ export async function compileVirtualGaugesToStorage(bucket: Bucket): Promise<voi
         console.warn("Non-fatal: makePublic IAM assertion blipped, file is likely already inheriting.");
     }
     
-    console.log("Virtual Gauges Tracker natively deployed to Cloud Storage bucket!");
+    console.log("Gauge Registry JSON natively deployed to Cloud Storage bucket!");
 }
