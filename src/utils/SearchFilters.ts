@@ -19,6 +19,7 @@ export interface AdvancedSearchQuery {
   sortBy?: "none" | "alphabetical" | "skill" | "class" | "running";
   sortReverse?: boolean;
   listData?: { id: string; order: number }[];
+  mapRadiusMode?: "current" | "center" | "custom";
 }
 
 export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
@@ -70,7 +71,8 @@ function matchNormalSearch(r: RiverData, terms: string[]): boolean {
     r.name || "",
     r.section || "",
     ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : [])),
-    r.isGauge ? "gauge" : ""
+    r.isGauge ? "gauge" : "",
+    ...(r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [])
   ].join(" ").toLowerCase();
   
   return terms.every(term => searchStr.includes(term));
@@ -128,6 +130,30 @@ function getSortKey(r: RiverData, sortBy: string): any {
   }
 }
 
+function getSearchRelevanceScore(r: RiverData, terms: string[]): number {
+  if (terms.length === 0) return 0;
+  
+  const searchStr = [
+    r.name || "",
+    r.section || "",
+    ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : [])),
+    r.isGauge ? "gauge" : "",
+    ...(r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [])
+  ].join(" ").toLowerCase();
+
+  let score = 0;
+  for (const term of terms) {
+    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(^|[^a-z0-9])${escapedTerm}([^a-z0-9]|$)`, 'i');
+    if (regex.test(searchStr)) {
+      score += 2;
+    } else {
+      score += 1;
+    }
+  }
+  return score;
+}
+
 export function filterRivers(
   rivers: RiverData[],
   query: AdvancedSearchQuery,
@@ -179,12 +205,32 @@ export function filterRivers(
     list = mapped.map(m => m.value);
   } else {
     // If no explicit sort and no list constraint, sort rivers above gauges
-    const mapped = list.map((r, i) => ({ index: i, value: r }));
+    // Prioritize full word matches in search
+    const mapped = list.map((r, i) => ({ 
+      index: i, 
+      value: r,
+      score: getSearchRelevanceScore(r, terms)
+    }));
     mapped.sort((a, b) => {
       const aGauge = !!a.value.isGauge;
       const bGauge = !!b.value.isGauge;
-      if (aGauge && !bGauge) return 1;
+
+      // 1. Strictly Rivers above Gauges (ONLY IF "gauge" is NOT in search terms)
+      if (terms.indexOf("gauge") === -1) {
+        if (!aGauge && bGauge) return -1;
+        if (aGauge && !bGauge) return 1;
+      }
+
+      // 2. Sort by search relevance
+      if (a.score !== b.score) {
+        return b.score - a.score;
+      }
+      
+      // 3. Tiebreaker: Rivers above Gauges (Fallthrough)
       if (!aGauge && bGauge) return -1;
+      if (aGauge && !bGauge) return 1;
+      
+      // 4. Preserve original order
       return a.index - b.index; // Preserve original order
     });
     list = mapped.map(m => m.value);

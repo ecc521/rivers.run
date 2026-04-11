@@ -30,8 +30,46 @@ const getUnit = (dataKey: string) => {
   return "in";
 };
 
-const CustomTooltip = ({ active, payload, label, isDarkMode }: any) => {
+const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, volumeColor, stageColor, tempColor, precipColor }: any) => {
   if (active && payload && payload.length) {
+    const rowData = payload[0].payload;
+    const items: { name: string, value: any, color: string, dataKey: string }[] = [];
+
+    if (activeTab === "flow") {
+      const isForecastFlow = rowData[flowKey] == null && rowData[`${flowKey}Forecast`] != null;
+      const isForecastStage = rowData[stageKey] == null && rowData[`${stageKey}Forecast`] != null;
+      
+      const flowVal = rowData[flowKey] ?? rowData[`${flowKey}Forecast`];
+      const stageVal = rowData[stageKey] ?? rowData[`${stageKey}Forecast`];
+
+      items.push({ 
+        name: isForecastFlow ? "Forecasted Flow" : "Flow", 
+        value: flowVal, 
+        color: volumeColor, 
+        dataKey: flowKey 
+      });
+      items.push({ 
+        name: isForecastStage ? "Forecasted Stage" : "Stage", 
+        value: stageVal, 
+        color: stageColor, 
+        dataKey: stageKey 
+      });
+    } else if (activeTab === "temp") {
+      items.push({ 
+        name: "Temperature", 
+        value: rowData.temp, 
+        color: tempColor, 
+        dataKey: "temp" 
+      });
+    } else if (activeTab === "precip") {
+      items.push({ 
+        name: "Precipitation", 
+        value: rowData.precip, 
+        color: precipColor, 
+        dataKey: "precip" 
+      });
+    }
+
     return (
       <div
         style={{
@@ -45,12 +83,18 @@ const CustomTooltip = ({ active, payload, label, isDarkMode }: any) => {
         <p style={{ margin: "0 0 5px 0", fontSize: "1.35em", color: isDarkMode ? "#94a3b8" : "#475569" }}>
           {formatDate(label)}
         </p>
-        {payload.map((entry: any, index: number) => (
+        {items.map((entry: any, index: number) => (
           <p
             key={`item-${index}`}
-            style={{ margin: 0, color: entry.color, fontWeight: "bold", fontSize: "1.35em" }}
+            style={{ 
+                margin: 0, 
+                color: entry.value != null ? entry.color : "var(--text-muted)", 
+                fontWeight: "bold", 
+                fontSize: "1.35em",
+                opacity: entry.value != null ? 1 : 0.6
+            }}
           >
-            {`${entry.name}: ${entry.value} ${getUnit(entry.dataKey)}`}
+            {entry.name}: {entry.value != null ? `${entry.value} ${getUnit(entry.dataKey)}` : "(No Reading)"}
           </p>
         ))}
       </div>
@@ -65,19 +109,20 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
   const { isDarkMode, isColorBlindMode } = useSettings();
 
   // Detect available datasets
-  const hasFlow = data.some((d) => d.cfs != null || d.ft != null || d.cms != null || d.m != null);
+  const hasFlow = data.some((d) => d.cfs != null || d.ft != null || d.cms != null || d.m != null || d.cfsForecast != null || d.ftForecast != null);
   const hasTemp = data.some((d) => d.temp != null);
   const hasPrecip = data.some((d) => d.precip != null);
 
-  const flowKey = data.some((d) => d.cfs != null) ? "cfs" : "cms";
-  const stageKey = data.some((d) => d.ft != null) ? "ft" : "m";
+  const flowKey = data.some((d) => d.cfs != null || d.cfsForecast != null) ? "cfs" : "cms";
+  const stageKey = data.some((d) => d.ft != null || d.ftForecast != null) ? "ft" : "m";
 
   type TabType = "flow" | "temp" | "precip";
   let defaultTab: TabType = "precip";
   if (hasFlow) defaultTab = "flow";
   else if (hasTemp) defaultTab = "temp";
 
-  const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
+  const [userTab, setUserTab] = useState<TabType | "auto">("auto");
+  const activeTab = userTab === "auto" ? defaultTab : userTab;
 
   const precipSummary = useMemo(() => {
     if (!hasPrecip || data.length === 0) return null;
@@ -151,7 +196,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
           >
             {river.gauges.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.name ? `${g.name}` : g.id} {g.isPrimary ? "(Primary)" : ""}
+                {g.name ? `${g.name}` : g.id} {g.section ? `(${g.section})` : ""} {g.isPrimary ? "(Primary)" : ""}
               </option>
             ))}
           </select>
@@ -175,7 +220,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               }}
             >
               <option>
-                {river.gauges[0].name ? `${river.gauges[0].name}` : river.gauges[0].id} {river.gauges[0].isPrimary ? "(Primary)" : ""}
+                {river.gauges[0].name ? `${river.gauges[0].name}` : river.gauges[0].id} {river.gauges[0].section ? `(${river.gauges[0].section})` : ""} {river.gauges[0].isPrimary ? "(Primary)" : ""}
               </option>
             </select>
           )
@@ -185,7 +230,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
         {!hasNoData && metricOptionsCount > 1 && (
         <select
           value={activeTab}
-          onChange={(e) => setActiveTab(e.target.value as "flow" | "temp" | "precip")}
+          onChange={(e) => setUserTab(e.target.value as TabType)}
           style={{
             padding: "8px 12px",
             borderRadius: "6px",
@@ -237,7 +282,18 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                   tick={{ fill: axisColor, fontSize: 18 }}
                   minTickGap={30}
                 />
-                <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
+                <Tooltip content={
+                    <CustomTooltip 
+                        isDarkMode={isDarkMode} 
+                        activeTab={activeTab} 
+                        flowKey={flowKey} 
+                        stageKey={stageKey} 
+                        volumeColor={volumeColor}
+                        stageColor={stageColor}
+                        tempColor={tempColor}
+                        precipColor={precipColor}
+                    />
+                } />
 
                 {activeTab === "flow" && (
                   <>
@@ -267,6 +323,20 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                       dot={false}
                       strokeWidth={4}
                       animationDuration={200}
+                      connectNulls={true}
+                    />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey={`${flowKey}Forecast`}
+                      stroke={volumeColor}
+                      strokeDasharray="5 5"
+                      dot={false}
+                      strokeWidth={3}
+                      animationDuration={200}
+                      connectNulls={true}
+                      activeDot={false}
+                      legendType="none"
                     />
                     <Line
                       yAxisId="right"
@@ -277,6 +347,20 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                       dot={false}
                       strokeWidth={4}
                       animationDuration={200}
+                      connectNulls={true}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey={`${stageKey}Forecast`}
+                      stroke={stageColor}
+                      strokeDasharray="5 5"
+                      dot={false}
+                      strokeWidth={3}
+                      animationDuration={200}
+                      connectNulls={true}
+                      activeDot={false}
+                      legendType="none"
                     />
                     
                     {/* Threshold Lines */}
@@ -330,6 +414,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                       dot={false}
                       strokeWidth={4}
                       animationDuration={200}
+                      connectNulls={true}
                     />
                   </>
                 )}
@@ -350,6 +435,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                       dot={false}
                       strokeWidth={4}
                       animationDuration={200}
+                      connectNulls={true}
                     />
                   </>
                 )}

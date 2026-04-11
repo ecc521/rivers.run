@@ -101,7 +101,7 @@ export default function AdminQueue() {
         />
         <div>
           <label htmlFor="adminAlertsQueue" style={{ fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', display: 'block' }}>Email me when new submissions arrive</label>
-          <span style={{ fontSize: '13px', color: "var(--text-secondary)" }}>Automatically dispatches an alert logically whenever a paddler hits submit.</span>
+          <span style={{ fontSize: '13px', color: "var(--text-secondary)" }}>Receive notifications when items are submitted to the queue.</span>
         </div>
       </div>
 

@@ -9,11 +9,11 @@ export function useDynamicUSGS(river: RiverData) {
   const [dynamicPayload, setDynamicPayload] = useState<{ gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> } | null>(null);
 
   useEffect(() => {
-    // Only attempt fetch if USGS gauges exist
     const usgsIDs = river.gauges?.filter(g => g.id.startsWith("USGS:")).map(g => g.id.replace("USGS:", "")) || [];
-    if (usgsIDs.length === 0) return;
+    const nwpsIDs = river.gauges?.filter(g => g.id.startsWith("NWS:")).map(g => g.id.replace("NWS:", "")) || [];
+    if (usgsIDs.length === 0 && nwpsIDs.length === 0) return;
 
-    const cacheKey = usgsIDs.join(",");
+    const cacheKey = usgsIDs.join(",") + "|" + nwpsIDs.join(",");
     const cached = dynamicUSGSCache.get(cacheKey);
 
     const primaryGaugeID = river.gauges?.[0]?.id;
@@ -34,9 +34,13 @@ export function useDynamicUSGS(river: RiverData) {
 
     let isMounted = true;
     
-    const fetchUSGS = async () => {
+    const fetchGauges = async () => {
       try {
-        const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${usgsIDs.join(",")}&period=P3D&parameterCd=00060,00065,00010,00011,00045`;
+        const gaugeDataMap: Record<string, Map<number, any>> = {};
+        const siteNameMap: Record<string, string> = {};
+
+        if (usgsIDs.length > 0) {
+            const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${usgsIDs.join(",")}&period=P3D&parameterCd=00060,00065,00010,00011,00045`;
         const res = await fetch(url);
         if (!res.ok) throw new Error("USGS server error");
         
@@ -87,6 +91,75 @@ export function useDynamicUSGS(river: RiverData) {
                 });
             }
         }
+        }
+
+        if (nwpsIDs.length > 0) {
+           for (const nwsId of nwpsIDs) {
+               try {
+                   const res = await fetch(`https://api.water.noaa.gov/nwps/v1/gauges/${nwsId}/stageflow`);
+                   if (!res.ok) continue;
+                   const data = await res.json();
+                   const gaugeId = `NWS:${nwsId}`;
+                   
+                   if (!gaugeDataMap[gaugeId]) gaugeDataMap[gaugeId] = new Map();
+                   if (data.name && !siteNameMap[gaugeId]) siteNameMap[gaugeId] = data.name;
+
+                   const isPrimaryStage = data.observed?.primaryUnits === "ft";
+                   const isSecondaryStage = data.observed?.secondaryUnits === "ft";
+                   const isPrimaryFlow = data.observed?.primaryUnits === "kcfs" || data.observed?.primaryUnits === "cfs";
+                   const isSecondaryFlow = data.observed?.secondaryUnits === "kcfs" || data.observed?.secondaryUnits === "cfs";
+                   const isPrimaryKcfs = data.observed?.primaryUnits === "kcfs";
+                   const isSecondaryKcfs = data.observed?.secondaryUnits === "kcfs";
+
+                   const processNWPSData = (arr: any[], isForecast: boolean) => {
+                       for (const obs of arr) {
+                           const ts = new Date(obs.validTime).getTime();
+                           const existing = gaugeDataMap[gaugeId].get(ts) || { dateTime: ts };
+                           
+                           let ftVal = null;
+                           if (isPrimaryStage && obs.primary != null) ftVal = obs.primary;
+                           else if (isSecondaryStage && obs.secondary != null) ftVal = obs.secondary;
+                           
+                           let flowVal = null;
+                           if (isPrimaryFlow && obs.primary != null) flowVal = obs.primary;
+                           else if (isSecondaryFlow && obs.secondary != null) flowVal = obs.secondary;
+                           
+                           if (flowVal != null && (isPrimaryKcfs || isSecondaryKcfs)) {
+                               flowVal = Number(flowVal) * 1000;
+                           }
+
+                           if (isForecast) {
+                               if (ftVal != null) existing.ftForecast = Number(ftVal);
+                               if (flowVal != null) existing.cfsForecast = Number(flowVal);
+                           } else {
+                               if (ftVal != null) existing.ft = Number(ftVal);
+                               if (flowVal != null) existing.cfs = Number(flowVal);
+                           }
+                           
+                           gaugeDataMap[gaugeId].set(ts, existing);
+                       }
+                   };
+
+                   if (data.observed?.data) processNWPSData(data.observed.data, false);
+                   if (data.forecast?.data) processNWPSData(data.forecast.data, true);
+
+                   // Splice the last observed reading to the forecast array so Recharts makes a continuous line
+                   const allReadings = Array.from(gaugeDataMap[gaugeId].values()).sort((a: any, b: any) => a.dateTime - b.dateTime);
+                   let lastObserved = null;
+                   for (const r of allReadings) {
+                       if (r.cfs !== undefined || r.ft !== undefined) {
+                           lastObserved = r;
+                       } else if ((r.cfsForecast !== undefined || r.ftForecast !== undefined) && lastObserved) {
+                           lastObserved.cfsForecast = lastObserved.cfs;
+                           lastObserved.ftForecast = lastObserved.ft;
+                           lastObserved = null; // Only apply onto the transition point
+                       }
+                   }
+               } catch (nwpsErr) {
+                   console.error("NWPS Native Fetch Error for " + nwsId, nwpsErr);
+               }
+           }
+        }
 
         if (!isMounted) return;
 
@@ -114,11 +187,11 @@ export function useDynamicUSGS(river: RiverData) {
         setDynamicPayload({ gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
 
       } catch (err: unknown) {
-        if (isMounted && err instanceof Error) console.error("Dynamic USGS Native Fetch Error:", err.message);
+        if (isMounted && err instanceof Error) console.error("Dynamic Gauge Fetch Error:", err.message);
       }
     };
 
-    const timeoutId = setTimeout(fetchUSGS, 300);
+    const timeoutId = setTimeout(fetchGauges, 300);
 
     return () => { 
         isMounted = false;
@@ -143,7 +216,16 @@ export function useDynamicUSGS(river: RiverData) {
     
     const primaryGaugeID = enriched.gauges?.[0]?.id;
     const primaryData = primaryGaugeID && enriched.gaugeData[primaryGaugeID] ? enriched.gaugeData[primaryGaugeID] : null;
-    const latest = primaryData && primaryData.length > 0 ? primaryData[primaryData.length - 1] : null;
+    
+    let latest = null;
+    if (primaryData && primaryData.length > 0) {
+        for (let i = primaryData.length - 1; i >= 0; i--) {
+            if (primaryData[i].cfs !== undefined || primaryData[i].ft !== undefined) {
+                latest = primaryData[i];
+                break;
+            }
+        }
+    }
 
     if (latest) {
         enriched.cfs = latest.cfs ?? enriched.cfs;

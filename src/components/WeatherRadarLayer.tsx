@@ -24,7 +24,7 @@ export const WeatherRadarLayer: React.FC<{ mode: "off" | "live" | "60min" }> = (
             setFrames(paths);
             setActiveIndex(0);
             
-            // eslint-disable-next-line sonarjs/no-nested-functions
+             
             animationInterval = setInterval(() => {
                 setActiveIndex(prev => (prev + 1) % paths.length);
             }, 750);

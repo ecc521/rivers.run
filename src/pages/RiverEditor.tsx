@@ -560,24 +560,40 @@ export default function RiverEditor() {
         <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
           <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Access Points</label>
           {(riverData.accessPoints || []).map((ap: any, i: number) => (
-             <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+             <div key={i} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '15px', backgroundColor: 'var(--surface)', padding: '10px', borderRadius: '5px' }}>
                 <select 
-                  style={{ padding: '8px', minWidth: '130px' }} 
+                  style={{ padding: '8px', minWidth: '130px', boxSizing: 'border-box' }} 
                   value={ap.type || "put-in"} 
                   onChange={(e) => {
                       const newA = [...riverData.accessPoints];
                       newA[i].type = e.target.value;
-                      newA[i].name = {"put-in": "Put-In", "midpoint": "Midpoint", "take-out": "Take-Out"}[e.target.value] || "Access Point";
+                      
+                      const defaultNames = ["Put-In", "Midpoint", "Access", "Take-Out", "Access Point"];
+                      if (!newA[i].name || defaultNames.includes(newA[i].name)) {
+                          newA[i].name = {"put-in": "Put-In", "access": "Access", "take-out": "Take-Out"}[e.target.value] || "Access";
+                      }
+                      
                       setRiverData({...riverData, accessPoints: newA});
                   }}
                 >
                    <option value="put-in">Put-In</option>
-                   <option value="midpoint">Midpoint</option>
+                   <option value="access">Access</option>
                    <option value="take-out">Take-Out</option>
                 </select>
                 <input 
                    type="text" 
-                   style={{ flex: 1, padding: '8px' }} 
+                   style={{ flex: 1, padding: '8px', minWidth: '150px', boxSizing: 'border-box' }} 
+                   placeholder="Name (e.g. Pattons)" 
+                   value={ap.name ?? ""} 
+                   onChange={(e) => {
+                      const newA = [...riverData.accessPoints];
+                      newA[i].name = e.target.value;
+                      setRiverData({...riverData, accessPoints: newA});
+                   }}
+                />
+                <input 
+                   type="text" 
+                   style={{ flex: 1, padding: '8px', minWidth: '150px', boxSizing: 'border-box' }} 
                    placeholder="Latitude (e.g. 38° 50' 11.2 N)" 
                    value={ap.rawLat ?? ap.lat ?? ""} 
                    onChange={(e) => {
@@ -588,7 +604,7 @@ export default function RiverEditor() {
                 />
                 <input 
                    type="text" 
-                   style={{ flex: 1, padding: '8px' }} 
+                   style={{ flex: 1, padding: '8px', minWidth: '150px', boxSizing: 'border-box' }} 
                    placeholder="Longitude (e.g. W 77° 12' 3.4&quot;)" 
                    value={ap.rawLon ?? ap.lon ?? ""} 
                    onChange={(e) => {

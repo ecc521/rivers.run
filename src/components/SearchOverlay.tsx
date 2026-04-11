@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useLocation } from "../hooks/useLocation";
 import { FilterCheckbox } from "./FilterCheckbox";
@@ -10,6 +11,7 @@ interface SearchOverlayProps {
   onClose: () => void;
   query: AdvancedSearchQuery;
   setQuery: (q: AdvancedSearchQuery) => void;
+  isMapMode?: boolean;
 }
 
 export const SearchOverlay: React.FC<SearchOverlayProps> = ({
@@ -17,6 +19,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   onClose,
   query,
   setQuery,
+  isMapMode = false,
 }) => {
   const [localQuery, setLocalQuery] = useState<AdvancedSearchQuery>(query);
   const location = useLocation();
@@ -29,8 +32,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const handleApply = async () => {
     const finalQuery = { ...localQuery };
     
-    // If user wants distance filter, we MUST have their location!
-    if (finalQuery.distanceMax && finalQuery.distanceMax > 0) {
+    // If user wants distance filter, we MUST have their location (unless they are doing a center-map search or custom)
+    if (finalQuery.distanceMax && finalQuery.distanceMax > 0 && finalQuery.mapRadiusMode !== "center" && finalQuery.mapRadiusMode !== "custom") {
       if (!location.latitude || !location.longitude) {
          const coords = await location.requestLocation();
          if (coords) {
@@ -65,12 +68,13 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       userLon: undefined,
       sortBy: "none" as const,
       sortReverse: false,
+      mapRadiusMode: undefined,
     };
     setLocalQuery(resetQ);
     setQuery(resetQ);
   };
 
-  return (
+  return ReactDOM.createPortal(
     <div
       style={{
         position: "fixed",
@@ -130,7 +134,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               color: "var(--text)",
             }}
           >
-            Advanced Filters
+            {isMapMode ? "Map Filters" : "Advanced Filters"}
           </h2>
           <button
             onClick={onClose}
@@ -190,22 +194,81 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
           <div style={getSectionStyle()}>
             <label style={getLabelStyle()}>
-              Search within Radius: {!localQuery.distanceMax || localQuery.distanceMax > 500 ? 'Any Distance' : `${localQuery.distanceMax} Miles`}
+              {isMapMode ? "Draw Radius Circle" : "Search within Radius"}: {!localQuery.distanceMax || localQuery.distanceMax > 500 ? (isMapMode ? 'No Circle' : 'Any Distance') : `${localQuery.distanceMax} Miles`}
             </label>
+
+            <div style={{ display: "flex", gap: "10px", marginTop: "5px", marginBottom: "15px", flexWrap: "wrap" }}>
+              <label style={{ fontSize: "0.9rem", color: "var(--text)", display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>
+                <input 
+                  type="radio" 
+                  name="radiusMode" 
+                  checked={localQuery.mapRadiusMode === "current" || (!localQuery.mapRadiusMode && !localQuery.userLat)} 
+                  onChange={() => setLocalQuery({ ...localQuery, mapRadiusMode: "current" })}
+                /> 
+                From Current Location
+              </label>
+              {isMapMode && (
+                <label style={{ fontSize: "0.9rem", color: "var(--text)", display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>
+                  <input 
+                    type="radio" 
+                    name="radiusMode" 
+                    checked={localQuery.mapRadiusMode === "center"} 
+                    onChange={() => setLocalQuery({ ...localQuery, mapRadiusMode: "center" })}
+                  /> 
+                  From Center of Map
+                </label>
+              )}
+              <label style={{ fontSize: "0.9rem", color: "var(--text)", display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>
+                <input 
+                  type="radio" 
+                  name="radiusMode" 
+                  checked={localQuery.mapRadiusMode === "custom" || (!localQuery.mapRadiusMode && localQuery.userLat !== undefined)} 
+                  onChange={() => setLocalQuery({ ...localQuery, mapRadiusMode: "custom" })}
+                /> 
+                Custom Coordinates
+              </label>
+            </div>
+
+            { (localQuery.mapRadiusMode === "custom" || (!localQuery.mapRadiusMode && localQuery.userLat !== undefined)) && (
+                <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
+                    <input 
+                        style={{ ...getInputStyle(), flex: 1, padding: "8px 12px", fontSize: "0.9rem" }}
+                        type="number"
+                        placeholder="Latitude (e.g. 39.8283)"
+                        step="0.00001"
+                        value={localQuery.userLat ?? ""}
+                        onChange={(e) => setLocalQuery({ ...localQuery, userLat: parseFloat(e.target.value) || undefined, mapRadiusMode: "custom" })}
+                    />
+                    <input 
+                        style={{ ...getInputStyle(), flex: 1, padding: "8px 12px", fontSize: "0.9rem" }}
+                        type="number"
+                        placeholder="Longitude (e.g. -98.5795)"
+                        step="0.00001"
+                        value={localQuery.userLon ?? ""}
+                        onChange={(e) => setLocalQuery({ ...localQuery, userLon: parseFloat(e.target.value) || undefined, mapRadiusMode: "custom" })}
+                    />
+                </div>
+            )}
+
             <input
               type="range"
               min={10}
               max={510}
               step={10}
-              value={localQuery.distanceMax || 510}
+              value={520 - (localQuery.distanceMax || 510)}
               onChange={(e) => {
-                const val = parseInt(e.target.value);
-                setLocalQuery({ ...localQuery, distanceMax: val > 500 ? undefined : val });
+                const rawVal = parseInt(e.target.value);
+                const actualDistance = 520 - rawVal;
+                setLocalQuery({ ...localQuery, distanceMax: actualDistance > 500 ? undefined : actualDistance });
               }}
               style={{ width: "100%" }}
             />
-            {location.loading && <span style={{fontSize: '0.8em', color: "var(--text-muted)"}}>Requesting location hardware...</span>}
-            {location.error && <span style={{fontSize: '0.8em', color: "var(--danger)"}}>{location.error}</span>}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px" }}>
+              <span>Unlimited</span>
+              <span>10 Mi</span>
+            </div>
+            {location.loading && (!isMapMode || (localQuery.mapRadiusMode !== "center" && localQuery.mapRadiusMode !== "custom")) && <span style={{fontSize: '0.8em', color: "var(--text-muted)"}}>Requesting location hardware...</span>}
+            {location.error && (!isMapMode || (localQuery.mapRadiusMode !== "center" && localQuery.mapRadiusMode !== "custom")) && <span style={{fontSize: '0.8em', color: "var(--danger)"}}>{location.error}</span>}
           </div>
 
           <div style={getSectionStyle()}>
@@ -363,7 +426,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

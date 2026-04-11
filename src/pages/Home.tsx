@@ -3,6 +3,7 @@ import { RiverItem } from "../components/RiverItem";
 import { TopBar } from "../components/TopBar";
 import { SearchOverlay } from "../components/SearchOverlay";
 import { useFavorites } from "../context/FavoritesContext";
+import { useLocation } from "../hooks/useLocation";
 import { useSearchParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
@@ -43,6 +44,38 @@ const Home: React.FC = () => {
     if (searchParamVal) {
       q.normalSearch = searchParamVal;
     }
+    
+    const nameVal = searchParams.get("name");
+    if (nameVal) q.name = nameVal;
+    
+    const sectionVal = searchParams.get("section");
+    if (sectionVal) q.section = sectionVal;
+    
+    const distMax = searchParams.get("distanceMax");
+    if (distMax) {
+        q.distanceMax = parseInt(distMax);
+        q.mapRadiusMode = (searchParams.get("radiusMode") as "current" | "center" | "custom" | null) || "current";
+        const customLat = searchParams.get("userLat");
+        const customLon = searchParams.get("userLon");
+        if (customLat) q.userLat = parseFloat(customLat);
+        if (customLon) q.userLon = parseFloat(customLon);
+    }
+    
+    const favOnly = searchParams.get("favoritesOnly");
+    if (favOnly) q.favoritesOnly = favOnly === "true";
+    
+    const sMin = searchParams.get("skillMin");
+    if (sMin) q.skillMin = parseInt(sMin);
+    
+    const sMax = searchParams.get("skillMax");
+    if (sMax) q.skillMax = parseInt(sMax);
+    
+    const fMin = searchParams.get("flowMin");
+    if (fMin) q.flowMin = parseFloat(fMin);
+    
+    const fMax = searchParams.get("flowMax");
+    if (fMax) q.flowMax = parseFloat(fMax);
+
     return q;
   });
 
@@ -100,6 +133,19 @@ const Home: React.FC = () => {
     }
     loadPersistence();
   }, [searchParams]);
+
+  const location = useLocation();
+
+  // Evaluate "current location" requests if a shared link or default search relies on runtime proximity
+  useEffect(() => {
+    if (searchQuery.distanceMax && (!searchQuery.mapRadiusMode || searchQuery.mapRadiusMode === "current") && searchQuery.userLat === undefined) {
+      if (location.latitude && location.longitude) {
+         setSearchQuery(prev => ({ ...prev, userLat: location.latitude!, userLon: location.longitude! }));
+      } else if (!location.loading && !location.error) {
+         location.requestLocation();
+      }
+    }
+  }, [searchQuery.distanceMax, searchQuery.mapRadiusMode, searchQuery.userLat, location.latitude, location.longitude, location.loading, location.error]);
 
 
   const { isFavorite } = useFavorites();
@@ -221,6 +267,18 @@ const Home: React.FC = () => {
           Advanced
         </button>
       </div>
+
+      {location.loading && (!searchQuery.mapRadiusMode || searchQuery.mapRadiusMode === "current") && searchQuery.distanceMax !== undefined && searchQuery.userLat === undefined && (
+          <div style={{ textAlign: "center", marginBottom: "15px", color: "var(--text-muted)", fontSize: "0.9em" }}>
+             <em>Requesting device location to evaluate shared radius search...</em>
+          </div>
+      )}
+      
+      {location.error && (!searchQuery.mapRadiusMode || searchQuery.mapRadiusMode === "current") && searchQuery.distanceMax !== undefined && searchQuery.userLat === undefined && (
+          <div style={{ textAlign: "center", marginBottom: "15px", color: "var(--danger)", fontSize: "0.9em" }}>
+             <em>Failed to get location for radius search: {location.error}</em>
+          </div>
+      )}
 
       {hasActiveFilters(searchQuery) && (
          <div style={{ textAlign: "center", marginBottom: "15px" }}>

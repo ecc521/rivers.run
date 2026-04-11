@@ -1,4 +1,4 @@
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
 import { sendEmail } from "./email";
@@ -118,7 +118,7 @@ export async function processNotifications(flowDataGlob: any) {
 		if (!user.notifications?.enabled) { return false; }
 
         // Mute Beta/Dev environments purely natively specifically for non-Admins!
-        const isBeta = process.env.GCLOUD_PROJECT !== "rivers-run";
+        const isBeta = process.env.GCLOUD_PROJECT !== "rivers-run" || process.env.FUNCTIONS_EMULATOR === "true";
         if (isBeta && !user.isAdmin) { return false; }
         return true;
     });
@@ -152,7 +152,10 @@ export async function processNotifications(flowDataGlob: any) {
         const fbBatch = db.batch();
 
         for (const res of chunk) {
-            fbBatch.set(db.collection("user").doc(res.user.uid), { notifications: res.notifications }, { merge: true });
+            fbBatch.set(db.collection("user").doc(res.user.uid), { 
+                notifications: res.notifications,
+                updatedAt: FieldValue.serverTimestamp()
+            }, { merge: true });
         }
 
         try {

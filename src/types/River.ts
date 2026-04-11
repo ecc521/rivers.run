@@ -9,6 +9,7 @@ export interface LinkedGauge {
   id: string; // e.g. 'USGS:12345'
   isPrimary?: boolean;
   name?: string;
+  section?: string;
 }
 
 export interface FlowThresholds {
@@ -91,6 +92,8 @@ export interface GaugeReading {
   temp?: number;
   precip?: number;
   forecast?: boolean;
+  cfsForecast?: number;
+  ftForecast?: number;
 }
 
 export interface Gauge {

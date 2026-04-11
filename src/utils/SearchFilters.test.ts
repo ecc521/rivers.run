@@ -130,5 +130,64 @@ describe("SearchFilters", () => {
       expect(results[0].id).toBe("r3");
       expect(results[1].id).toBe("r1");
     });
+
+    it("prioritizes full word matches over partial matches in search results sorting", () => {
+      const searchMockRivers: RiverData[] = [
+        {
+          id: "partialMatch",
+          name: "Saline River near Shaw",
+          isGauge: false,
+          tags: ["gauge"],
+        } as RiverData,
+        {
+          id: "fullMatch",
+          name: "Haw River",
+          isGauge: true,
+        } as RiverData,
+      ];
+
+      const query: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        normalSearch: "haw river gauge",
+      };
+
+      const results = filterRivers(searchMockRivers, query);
+      expect(results.length).toBe(2);
+      expect(results[0].id).toBe("fullMatch");
+      expect(results[1].id).toBe("partialMatch");
+    });
+
+    it("places rivers before gauges unless 'gauge' is in search terms", () => {
+      const mixedMockRivers: RiverData[] = [
+        {
+          id: "gauge2",
+          name: "Saline River Gauge",
+          isGauge: true,
+        } as RiverData,
+        {
+          id: "river1",
+          name: "Saline River",
+          isGauge: false,
+        } as RiverData,
+      ];
+
+      // 1. Without 'gauge', River comes first despite equal relevance
+      const queryNoGauge: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        normalSearch: "saline river",
+      };
+      
+      const resultsNoGauge = filterRivers(mixedMockRivers, queryNoGauge);
+      expect(resultsNoGauge[0].id).toBe("river1");
+
+      // 2. With 'gauge', Gauge gets more relevance points and comes first
+      const queryWithGauge: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        normalSearch: "saline river gauge",
+      };
+
+      const resultsWithGauge = filterRivers(mixedMockRivers, queryWithGauge);
+      expect(resultsWithGauge[0].id).toBe("gauge2");
+    });
   });
 });

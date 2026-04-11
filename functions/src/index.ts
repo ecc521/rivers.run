@@ -10,6 +10,7 @@ import { defineSecret } from "firebase-functions/params";
 const gmailPassword = defineSecret("GMAIL_PASSWORD");
 
 import { loadSitesFromUSGS } from "./services/usgs";
+import { loadSitesFromNWS } from "./services/nws";
 import { loadCanadianProvince, CanadianProvinceData } from "./services/canada";
 import { processNotifications } from "./services/notifications";
 import { syncRiverDataToStorage } from "./services/riverdata";
@@ -67,6 +68,7 @@ async function executeGaugeSync() {
     // 2. Fetch all unique gauges natively from the explicitly merged baseline memory 
     const usgsSet = new Set<string>();
     const canadaProvincesSet = new Set<string>();
+    const nwsSet = new Set<string>();
 
     activeRivers.forEach(river => {
         if (river.gauges && Array.isArray(river.gauges)) {
@@ -74,6 +76,7 @@ async function executeGaugeSync() {
                 const id = g.id || "";
                 if (id.startsWith("USGS:")) usgsSet.add(id.replace("USGS:", ""));
                 else if (id.startsWith("canada:")) canadaProvincesSet.add(id.replace("canada:", ""));
+                else if (id.startsWith("NWS:")) nwsSet.add(id.replace("NWS:", ""));
             });
         }
     });
@@ -107,6 +110,7 @@ async function executeGaugeSync() {
         Object.keys(gaugeRegistry).forEach(id => {
             if (id.startsWith("USGS:")) usgsSet.add(id.replace("USGS:", ""));
             else if (id.startsWith("canada:")) canadaProvincesSet.add(id.replace("canada:", ""));
+            else if (id.startsWith("NWS:")) nwsSet.add(id.replace("NWS:", ""));
         });
         console.log(`Successfully merged ${Object.keys(gaugeRegistry).length} static gauge registry natively from Firebase Storage!`);
     } catch (e: unknown) {
@@ -115,8 +119,9 @@ async function executeGaugeSync() {
 
     const activeUsgsGauges = Array.from(usgsSet);
     const activeCanadaGauges = Array.from(canadaProvincesSet);
+    const activeNwsGauges = Array.from(nwsSet);
 
-    console.log(`Discovered ${activeUsgsGauges.length} active USGS gauges and ${activeCanadaGauges.length} Canada targets.`);
+    console.log(`Discovered ${activeUsgsGauges.length} active USGS gauges, ${activeNwsGauges.length} active NWS gauges, and ${activeCanadaGauges.length} Canada targets.`);
 
     // 2. Extrapolate provinces from Canadian gauges
     // Canadian gauge codes are often the Province prefix (ex: BC_something). We strip the province physically.
@@ -135,8 +140,9 @@ async function executeGaugeSync() {
     console.log("Initiating highly concurrent network fetch...");
     const flowData: Record<string, any> = {};
 
-    const [usgsData, ...canadaProvinceData] = await Promise.all([
+    const [usgsData, nwsData, ...canadaProvinceData] = await Promise.all([
         loadSitesFromUSGS(activeUsgsGauges, 1000 * 60 * 60 * 3), // Exact 3 hour bound matching legacy!
+        loadSitesFromNWS(activeNwsGauges, 1000 * 60 * 60 * 3),
         ...Array.from(provinces).map(prov => loadCanadianProvince(prov))
     ]);
 
@@ -149,6 +155,17 @@ async function executeGaugeSync() {
             v.lat = gaugeRegistry[fullId].lat;
             v.lon = gaugeRegistry[fullId].lon;
             if (!v.name) v.name = gaugeRegistry[fullId].name; // USGS API name usually present, but just in case
+        }
+        flowData[fullId] = v;
+    }
+
+    for (const [key, value] of Object.entries(nwsData)) {
+        const fullId = "NWS:" + key;
+        const v = value as any;
+        if (gaugeRegistry[fullId]) {
+            v.lat = gaugeRegistry[fullId].lat;
+            v.lon = gaugeRegistry[fullId].lon;
+            if (!v.name) v.name = gaugeRegistry[fullId].name;
         }
         flowData[fullId] = v;
     }

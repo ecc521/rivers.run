@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { MapContainer, TileLayer, CircleMarker, Marker, Tooltip, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Marker, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RiverData } from "../types/River";
@@ -9,6 +9,30 @@ import { useRivers } from "../hooks/useRivers";
 import { useLocation } from "../hooks/useLocation";
 import { WeatherRadarLayer } from "./WeatherRadarLayer";
 import { RiverExpansion } from "./RiverExpansion";
+import { useSearchParams } from "react-router-dom";
+import { filterRivers, defaultAdvancedSearchQuery } from "../utils/SearchFilters";
+import type { AdvancedSearchQuery } from "../utils/SearchFilters";
+import { SearchOverlay } from "./SearchOverlay";
+import { ShareMapModal } from "./ShareMapModal";
+import { Circle } from "react-leaflet";
+
+const MapStateObserver = ({ setCenter, setZoom }: { setCenter: any, setZoom: any }) => {
+    const map = useMap();
+    useEffect(() => {
+        const onMoveEnd = () => {
+            const center = map.getCenter();
+            setCenter([center.lat, center.lng]);
+            setZoom(map.getZoom());
+        };
+        map.on("moveend", onMoveEnd);
+        map.on("zoomend", onMoveEnd);
+        return () => {
+            map.off("moveend", onMoveEnd);
+            map.off("zoomend", onMoveEnd);
+        };
+    }, [map, setCenter, setZoom]);
+    return null;
+};
 // Helper component to bind map events like programmatic auto-zoom when fullscreen toggles
 const MapController = ({ isFullScreen }: { isFullScreen: boolean }) => {
     const map = useMap();
@@ -39,6 +63,53 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const [selectedRiver, setSelectedRiver] = useState<RiverData | null>(null);
     const [radarMode, setRadarMode] = useState<"off" | "live" | "60min">("off");
     
+    const [searchParams] = useSearchParams();
+
+    // Pull initial map state from URL or use defaults
+    const urlLat = searchParams.get("lat");
+    const urlLng = searchParams.get("lng");
+    const urlZoom = searchParams.get("zoom");
+    
+    const mapInitialCenter: [number, number] = urlLat && urlLng 
+        ? [parseFloat(urlLat), parseFloat(urlLng)] 
+        : initialCenter;
+    const mapInitialZoom = urlZoom ? parseInt(urlZoom) : initialZoom;
+
+    const [mapCenter, setMapCenter] = useState<[number, number]>(mapInitialCenter);
+    const [mapZoom, setMapZoom] = useState<number>(mapInitialZoom);
+
+    const [searchQuery, setSearchQuery] = useState<AdvancedSearchQuery>(() => {
+        const q: AdvancedSearchQuery = { ...defaultAdvancedSearchQuery };
+        if (searchParams.get("name")) q.name = searchParams.get("name")!;
+        if (searchParams.get("section")) q.section = searchParams.get("section")!;
+        
+        if (searchParams.get("distanceMax")) {
+            q.distanceMax = parseInt(searchParams.get("distanceMax")!);
+            q.mapRadiusMode = (searchParams.get("radiusMode") as "current" | "center" | null) || "current";
+            if (searchParams.get("userLat")) q.userLat = parseFloat(searchParams.get("userLat")!);
+            if (searchParams.get("userLon")) q.userLon = parseFloat(searchParams.get("userLon")!);
+        }
+
+        if (searchParams.get("skillMin")) q.skillMin = parseInt(searchParams.get("skillMin")!);
+        if (searchParams.get("skillMax")) q.skillMax = parseInt(searchParams.get("skillMax")!);
+        if (searchParams.get("flowMin")) q.flowMin = parseFloat(searchParams.get("flowMin")!);
+        if (searchParams.get("flowMax")) q.flowMax = parseFloat(searchParams.get("flowMax")!);
+        if (searchParams.get("favoritesOnly") === "true") q.favoritesOnly = true;
+        
+        return q;
+    });
+
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isShareOpen, setIsShareOpen] = useState(false);
+
+    useEffect(() => {
+        // Automatically request hardware location permissions when rendering a map view
+        if (!location.latitude && !location.longitude && !location.loading && !location.error) {
+            location.requestLocation();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const mapContainerRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -82,8 +153,12 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     };
 
     const globalMarkers = useMemo(() => {
+        // Strip out distanceMax so markers aren't filtered out by distance on the map!
+        const filterQuery = { ...searchQuery, distanceMax: undefined };
+        const filtered = filterRivers(rivers, filterQuery);
+
         const rawPoints: any[] = [];
-        rivers.forEach(river => {
+        filtered.forEach(river => {
             river.accessPoints?.forEach(pt => {
                 if (pt.lat && pt.lon) {
                     rawPoints.push({ lat: pt.lat, lon: pt.lon, river, point: pt });
@@ -126,7 +201,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         });
         
         return finalPoints;
-    }, [rivers]);
+    }, [rivers, searchQuery]);
 
     // Using true HTML5 Native Fullscreen where supported! 
     return (
@@ -162,6 +237,63 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 {isFullScreen ? "↖ Exit Fullscreen" : "⤢ Fullscreen"}
             </button>
 
+            {/* Filter and Share Controls next to Zoom Controls */}
+            <div style={{
+                position: "absolute",
+                top: "10px",
+                left: "50px", // Leaflet zoom controls are 10px from left and 34px wide
+                zIndex: 1000,
+                display: "flex",
+                gap: "10px"
+            }}>
+                <button
+                    onClick={() => setIsFilterOpen(true)}
+                    style={{
+                        padding: "8px 12px",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--text)",
+                        border: "2px solid var(--border)",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.3)"
+                    }}
+                >
+                    Filter
+                </button>
+                <button
+                    onClick={() => setIsShareOpen(true)}
+                    style={{
+                        padding: "8px 12px",
+                        backgroundColor: "var(--primary)",
+                        color: "var(--surface)",
+                        border: "2px solid var(--border)",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.3)"
+                    }}
+                >
+                    Share
+                </button>
+            </div>
+
+            <SearchOverlay 
+                isOpen={isFilterOpen} 
+                onClose={() => setIsFilterOpen(false)} 
+                query={searchQuery} 
+                setQuery={setSearchQuery} 
+                isMapMode={true}
+            />
+
+            <ShareMapModal 
+                isOpen={isShareOpen}
+                onClose={() => setIsShareOpen(false)}
+                currentQuery={searchQuery}
+                mapCenter={mapCenter}
+                mapZoom={mapZoom}
+            />
+
             {/* Radar Controls */}
             <div style={{
                 position: "absolute",
@@ -194,12 +326,13 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             </div>
 
             <MapContainer 
-                center={initialCenter} 
-                zoom={initialZoom} 
+                center={mapInitialCenter} 
+                zoom={mapInitialZoom} 
                 style={{ height: "100%", width: "100%" }}
                 zoomControl={true}
                 preferCanvas={true}
             >
+                <MapStateObserver setCenter={setMapCenter} setZoom={setMapZoom} />
                 <MapController isFullScreen={isFullScreen} />
                 
                 <TileLayer
@@ -220,14 +353,18 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     
                     const isPutIn = pt.point && pt.point.type === "put-in";
                     const isTakeOut = pt.point && pt.point.type === "take-out";
-                    const accessName = pt.point?.name || (isPutIn ? "Put-In" : isTakeOut ? "Take-Out" : "Access Point");
+                    const typeLabel = isPutIn ? "Put-In" : isTakeOut ? "Take-Out" : "Access";
+                    let accessName = pt.point?.name || typeLabel;
+                    if (accessName !== typeLabel && !accessName.startsWith(`${typeLabel}:`)) {
+                        accessName = `${typeLabel}: ${accessName}`;
+                    }
 
                     if (pt.river.isGauge) {
                         return (
                             <CircleMarker
                                 key={`global-${i}`}
                                 center={[pt.lat, pt.lon]}
-                                radius={3}
+                                radius={4.5}
                                 fillColor={fillColor}
                                 fillOpacity={opacity}
                                 color={"var(--text)"}
@@ -294,11 +431,28 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         color="#ffffff"
                         weight={2}
                     >
-                        <Popup>
-                            You are here: <br />
-                            {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
-                        </Popup>
+                        <Tooltip direction="top" offset={[0, -5]}>
+                            <div style={{ textAlign: "center" }}>
+                                <strong>Your Current Location</strong><br />
+                                {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+                            </div>
+                        </Tooltip>
                     </CircleMarker>
+                )}
+
+                {/* Distance Radius Circle */}
+                {searchQuery.distanceMax && (
+                    <Circle 
+                        center={(searchQuery.mapRadiusMode === "center" || !location.latitude || !location.longitude) ? mapCenter : [location.latitude, location.longitude]} 
+                        radius={searchQuery.distanceMax * 1609.34} // Convert miles to meters
+                        pathOptions={{ 
+                            fillColor: 'var(--primary)', 
+                            fillOpacity: 0.1, 
+                            color: 'var(--primary)', 
+                            weight: 2, 
+                            dashArray: "4 4" 
+                        }} 
+                    />
                 )}
             </MapContainer>
 

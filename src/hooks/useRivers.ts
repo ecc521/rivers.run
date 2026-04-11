@@ -19,12 +19,8 @@ const notifySubscribers = () => {
     fetchSubscribers.forEach(fn => fn());
 };
 
-const enrichRiver = (river: any, _index: number, flowData: any, usedGauges: Set<string>) => {
+const enrichRiver = (river: any, _index: number, flowData: any) => {
   const activeGaugeId = river.gauges?.[0]?.id;
-
-  if (activeGaugeId) {
-      usedGauges.add(activeGaugeId);
-  }
 
   const gaugeRecord = activeGaugeId ? flowData[activeGaugeId] : null;
 
@@ -34,6 +30,7 @@ const enrichRiver = (river: any, _index: number, flowData: any, usedGauges: Set<
       river.gauges.forEach((g: any) => {
           if (flowData[g.id]) {
               if (flowData[g.id].name) g.name = flowData[g.id].name;
+              if (flowData[g.id].section) g.section = flowData[g.id].section;
               if (flowData[g.id].readings) {
                   river.gaugeData![g.id] = flowData[g.id].readings;
               }
@@ -90,7 +87,8 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any): RiverData | null
    return {
        id: gaugeId,
        name: gData.name || gaugeId,
-       gauges: [{ id: gaugeId, isPrimary: true, name: gData.name || gaugeId }],
+       section: gData.section || "",
+       gauges: [{ id: gaugeId, isPrimary: true, name: gData.name || gaugeId, section: gData.section || "" }],
        isGauge: true,
        cfs: cfsValue,
        ft: ftValue,
@@ -151,15 +149,12 @@ export const useRivers = (): UseRiversResult => {
         // If flow data is ok, enrich the rivers
         if (flowRes.ok && flowRes.headers.get("content-type")?.includes("json")) {
           const flowData = await flowRes.json();
-          const usedGauges = new Set<string>();
+          data = data.map((river: any, index: number) => enrichRiver(river, index, flowData));
 
-          data = data.map((river: any, index: number) => enrichRiver(river, index, flowData, usedGauges));
-
-          // Create standalone gauges for any gauge present in gauges.json that isn't mapped to a river
+          // Create standalone gauges for any gauge present in gauges.json
           const standaloneGauges: RiverData[] = [];
 
           for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
-              if (usedGauges.has(gaugeId)) continue;
               const standaloneGauge = buildStandaloneGauge(gaugeId, gaugeData);
               if (standaloneGauge) {
                  standaloneGauges.push(standaloneGauge);
