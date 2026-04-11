@@ -86,31 +86,35 @@ async function executeGaugeSync() {
     let virtualGauges: Record<string, {name: string, lat: number, lon: number}> = {};
     try {
         const file = bucket.file("public/virtualGauges.json");
-        let [exists] = await file.exists();
-        
-        if (!exists) {
-            console.warn("No virtualGauges.json discovered in Storage; actively compiling the registry on-the-fly!");
-            await compileVirtualGaugesToStorage(bucket);
-            [exists] = await file.exists();
+        let buffer: Buffer;
+
+        try {
+            [buffer] = await file.download();
+        } catch (downloadErr: any) {
+            const statusCode = downloadErr.code || downloadErr.status || (downloadErr.response && downloadErr.response.status);
+            
+            // 404 Object Not Found
+            if (statusCode === 404 || (downloadErr.message && downloadErr.message.includes("No such object"))) {
+                console.warn("No virtualGauges.json discovered in Storage; actively compiling the registry on-the-fly!");
+                await compileVirtualGaugesToStorage(bucket);
+                [buffer] = await file.download(); // Download immediately after synthesizing it
+            } else {
+                throw downloadErr; // Rethrow native network/IAM errors
+            }
         }
 
-        if (exists) {
-            const [buffer] = await file.download();
-            try {
-                const decomp = zlib.brotliDecompressSync(buffer);
-                virtualGauges = JSON.parse(decomp.toString('utf-8'));
-            } catch {
-                virtualGauges = JSON.parse(buffer.toString('utf-8'));
-            }
-            
-            Object.keys(virtualGauges).forEach(id => {
-                if (id.startsWith("USGS:")) usgsSet.add(id.replace("USGS:", ""));
-                else if (id.startsWith("canada:")) canadaProvincesSet.add(id.replace("canada:", ""));
-            });
-            console.log(`Successfully merged ${Object.keys(virtualGauges).length} static virtual gauges natively from Firebase Storage!`);
-        } else {
-            console.warn("Non-fatal: virtualGauges.json failed to synthesize; relying entirely on Firestore mapping.");
+        try {
+            const decomp = zlib.brotliDecompressSync(buffer);
+            virtualGauges = JSON.parse(decomp.toString('utf-8'));
+        } catch {
+            virtualGauges = JSON.parse(buffer.toString('utf-8'));
         }
+        
+        Object.keys(virtualGauges).forEach(id => {
+            if (id.startsWith("USGS:")) usgsSet.add(id.replace("USGS:", ""));
+            else if (id.startsWith("canada:")) canadaProvincesSet.add(id.replace("canada:", ""));
+        });
+        console.log(`Successfully merged ${Object.keys(virtualGauges).length} static virtual gauges natively from Firebase Storage!`);
     } catch (e: any) {
         console.error("Non-fatal: Could not pull virtual Gauges json from Storage natively.", e.message);
     }
