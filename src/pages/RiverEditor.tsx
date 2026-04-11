@@ -294,7 +294,7 @@ export default function RiverEditor() {
   const memoizedPreviewBase = useMemo(() => generateFinalObj(), [previewStateStr]);
   const hydratedPreview = useDynamicUSGS(memoizedPreviewBase) || memoizedPreviewBase;
   
-  const { errors: liveErrors, warnings: liveWarnings } = validateRiver(hydratedPreview);
+  const { errors: liveErrors, warnings: liveWarnings } = validateRiver(memoizedPreviewBase);
 
   if (loading) return <div className="page-content center"><h2>Loading Editor...</h2></div>;
 

@@ -102,7 +102,7 @@ export function useDynamicUSGS(river: RiverData) {
             } else if (unitCode === "ft3/s") {
                property = "cfs";
             } else if (unitCode === "ft") {
-               property = "feet";
+                property = "ft";
             } else if (unitCode === "in") {
                property = "precip";
             }

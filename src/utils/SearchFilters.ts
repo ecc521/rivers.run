@@ -55,23 +55,13 @@ function skillToNumber(skill: string): number {
     FW: 1,
     B: 2,
     N: 3,
-    "LI-": 3.5,
     LI: 4,
-    "LI+": 4.5,
-    "I-": 4.5,
     I: 5,
-    "I+": 5.5,
-    "HI-": 5.5,
     HI: 6,
-    "HI+": 6.5,
-    "A-": 6.5,
     A: 7,
-    "A+": 7.5,
-    "E-": 7.5,
     E: 8,
-    "E+": 8.5,
   };
-  return map[skill] || Infinity;
+  return map[skill.toUpperCase()] || Infinity;
 }
 
 export function filterRivers(
@@ -87,13 +77,20 @@ export function filterRivers(
 
   // 1. Normal Search (matches Name, Section, or Tags)
   if (query.normalSearch) {
-    const term = query.normalSearch.toLowerCase();
-    list = list.filter(
-      (r) =>
-        String(r.name || "").toLowerCase().includes(term) ||
-        String(r.section || "").toLowerCase().includes(term) ||
-        (Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : [])).some(t => String(t).toLowerCase().includes(term)),
-    );
+    const terms = query.normalSearch.toLowerCase().split(/[ ,]+/).filter(t => t.length > 0);
+    if (terms.length > 0) {
+      list = list.filter(
+        (r) => {
+          const searchStr = [
+            r.name || "",
+            r.section || "",
+            ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : []))
+          ].join(" ").toLowerCase();
+          
+          return terms.every(term => searchStr.includes(term));
+        }
+      );
+    }
   }
 
   // 2. Name / Section explicit matches

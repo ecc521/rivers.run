@@ -210,13 +210,23 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
           <div style={getSectionStyle()}>
             <label style={getLabelStyle()}>
-              Skill Range: {localQuery.skillMin} - {localQuery.skillMax}
+              Skill Range
             </label>
-            <div style={{ padding: "10px 10px" }}>
+            <div style={{ padding: "10px 10px 30px" }}>
               <Slider
                 range
                 min={1}
                 max={8}
+                marks={{
+                  1: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "FW" },
+                  2: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "B" },
+                  3: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "N" },
+                  4: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "LI" },
+                  5: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "I" },
+                  6: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "HI" },
+                  7: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "A" },
+                  8: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "E" }
+                }}
                 value={[localQuery.skillMin ?? 1, localQuery.skillMax ?? 8]}
                 onChange={(val) => {
                   if (Array.isArray(val)) {
@@ -238,14 +248,21 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
           <div style={getSectionStyle()}>
             <label style={getLabelStyle()}>
-              Flow Range: {localQuery.flowMin} - {localQuery.flowMax}
+              Relative Flow
             </label>
-            <div style={{ padding: "10px 10px 20px" }}>
+            <div style={{ padding: "10px 10px 30px" }}>
               <Slider
                 range
                 min={0}
                 max={4}
                 step={0.1}
+                marks={{
+                  0: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "Min" },
+                  1: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "Low" },
+                  2: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "Mid" },
+                  3: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "High" },
+                  4: { style: { color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }, label: "Max" }
+                }}
                 value={[localQuery.flowMin ?? 0, localQuery.flowMax ?? 4]}
                 onChange={(val) => {
                   if (Array.isArray(val)) {

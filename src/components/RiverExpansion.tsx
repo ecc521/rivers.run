@@ -13,7 +13,7 @@ interface RiverExpansionProps {
   onShowAccessPoints?: () => void;
 }
 
-export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, onShowAccessPoints }) => {
+export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay }) => {
   const [showMap, setShowMap] = useState(false);
   const { isAdmin } = useAuth();
   
@@ -50,57 +50,41 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
 
         {displayRiver.accessPoints && displayRiver.accessPoints.length > 0 && (
           <div className="accessPoints" style={{ marginTop: "15px" }}>
-            <h4 style={{ margin: "0 0 10px 0", color: "var(--text)" }}>Access Points</h4>
-            
             {isMapOverlay ? (
-               <button
-                  onClick={() => {
-                     if (onShowAccessPoints) onShowAccessPoints();
-                     setShowMap(true);
-                  }}
-                  disabled={showMap}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '12px',
-                    backgroundColor: showMap ? 'var(--surface)' : 'var(--surface-hover)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
-                    color: showMap ? 'var(--text-muted)' : 'var(--success)',
-                    fontWeight: 600,
-                    marginBottom: '15px',
-                    cursor: showMap ? 'default' : 'pointer'
-                  }}
-                >
-                  {showMap ? "Access Points Displayed on Parent Map" : `Show Access Points on Map (${displayRiver.accessPoints.length})`}
-                </button>
-            ) : showMap ? (
-              <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", marginBottom: "15px" }}>
-                <SharedMap 
-                   focusRiver={displayRiver}
-                   initialCenter={[displayRiver.accessPoints[0].lat, displayRiver.accessPoints[0].lon]}
-                   initialZoom={12}
-                   height="250px"
-                />
-              </div>
+               <h4 style={{ margin: "0 0 15px 0", color: "var(--text-muted)", fontWeight: "normal" }}>
+                 {displayRiver.accessPoints.length} Access {displayRiver.accessPoints.length === 1 ? 'Point' : 'Points'} displayed on map
+               </h4>
             ) : (
-                <button
-                  onClick={() => setShowMap(true)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '12px',
-                    backgroundColor: 'var(--surface-hover)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
-                    color: 'var(--primary)',
-                    fontWeight: 600,
-                    marginBottom: '15px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Load Mini Map ({displayRiver.accessPoints.length} Access {displayRiver.accessPoints.length === 1 ? 'Point' : 'Points'})
-                </button>
+               <>
+                 {showMap ? (
+                   <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", marginBottom: "15px" }}>
+                     <SharedMap 
+                        focusRiver={displayRiver}
+                        initialCenter={[displayRiver.accessPoints[0].lat, displayRiver.accessPoints[0].lon]}
+                        initialZoom={12}
+                        height="250px"
+                     />
+                   </div>
+                 ) : (
+                     <button
+                       onClick={() => setShowMap(true)}
+                       style={{
+                         display: 'block',
+                         width: '100%',
+                         padding: '12px',
+                         backgroundColor: 'var(--surface-hover)',
+                         border: '1px solid var(--border)',
+                         borderRadius: '8px',
+                         color: 'var(--primary)',
+                         fontWeight: 600,
+                         marginBottom: '15px',
+                         cursor: 'pointer'
+                       }}
+                     >
+                       Load Mini Map ({displayRiver.accessPoints.length} Access {displayRiver.accessPoints.length === 1 ? 'Point' : 'Points'})
+                     </button>
+                 )}
+               </>
             )}
           </div>
         )}

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Marker, Tooltip, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RiverData } from "../types/River";
 import { calculateColor } from "../utils/flowInfoCalculations";
@@ -8,7 +9,6 @@ import { useRivers } from "../hooks/useRivers";
 import { useLocation } from "../hooks/useLocation";
 import { WeatherRadarLayer } from "./WeatherRadarLayer";
 import { RiverExpansion } from "./RiverExpansion";
-
 // Helper component to bind map events like programmatic auto-zoom when fullscreen toggles
 const MapController = ({ isFullScreen }: { isFullScreen: boolean }) => {
     const map = useMap();
@@ -29,7 +29,6 @@ interface SharedMapProps {
 export const SharedMap: React.FC<SharedMapProps> = ({ 
     initialCenter = [39.8283, -98.5795], 
     initialZoom = 4, 
-    focusRiver, 
     height = "calc(100vh - 60px)" 
 }) => {
     const { isColorBlindMode, isDarkMode } = useSettings();
@@ -39,37 +38,112 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [selectedRiver, setSelectedRiver] = useState<RiverData | null>(null);
     const [radarMode, setRadarMode] = useState<"off" | "live" | "60min">("off");
-    const [showLocalAccessPoints, setShowLocalAccessPoints] = useState(false);
+    
+    const mapContainerRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        setShowLocalAccessPoints(false);
-    }, [selectedRiver]);
+        const handleFullscreenChange = () => {
+            setIsFullScreen(!!document.fullscreenElement || !!(document as any).webkitFullscreenElement);
+        };
+        document.addEventListener("fullscreenchange", handleFullscreenChange);
+        document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+        return () => {
+            document.removeEventListener("fullscreenchange", handleFullscreenChange);
+            document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+        };
+    }, []);
+
+    const toggleFullScreen = async () => {
+        // Fallback for browsers without native Fullscreen API (e.g. old iOS)
+        const canNativeFullscreen = document.fullscreenEnabled || (document as any).webkitFullscreenEnabled;
+        
+        if (!isFullScreen) {
+            if (mapContainerRef.current && canNativeFullscreen) {
+                if (mapContainerRef.current.requestFullscreen) {
+                    await mapContainerRef.current.requestFullscreen().catch(() => {});
+                } else if ((mapContainerRef.current as any).webkitRequestFullscreen) {
+                    await (mapContainerRef.current as any).webkitRequestFullscreen();
+                }
+            } else {
+                // Manually trigger CSS fallback state if native API is unavailable
+                setIsFullScreen(true);
+            }
+        } else {
+            if (canNativeFullscreen && (document.fullscreenElement || (document as any).webkitFullscreenElement)) {
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen().catch(() => {});
+                } else if ((document as any).webkitExitFullscreen) {
+                    await (document as any).webkitExitFullscreen();
+                }
+            } else {
+                setIsFullScreen(false);
+            }
+        }
+    };
 
     const globalMarkers = useMemo(() => {
-        const points: any[] = [];
+        const rawPoints: any[] = [];
         rivers.forEach(river => {
             river.accessPoints?.forEach(pt => {
                 if (pt.lat && pt.lon) {
-                    points.push({ lat: pt.lat, lon: pt.lon, river });
+                    rawPoints.push({ lat: pt.lat, lon: pt.lon, river, point: pt });
                 }
             });
         });
-        return points;
+
+        const GRID_SIZE = 0.0005; // Spatial grid tolerance for clustering
+        const buckets: Record<string, any[]> = {};
+
+        rawPoints.forEach(pt => {
+            const key = `${Math.floor(pt.lat / GRID_SIZE)}_${Math.floor(pt.lon / GRID_SIZE)}`;
+            if (!buckets[key]) buckets[key] = [];
+            buckets[key].push(pt);
+        });
+
+        const finalPoints: any[] = [];
+        const OFFSET_RADIUS = 0.0007; // Degrees
+
+        Object.values(buckets).forEach(bucket => {
+            if (bucket.length === 1) {
+                finalPoints.push(bucket[0]);
+            } else {
+                const centerLat = bucket.reduce((sum, p) => sum + p.lat, 0) / bucket.length;
+                const centerLon = bucket.reduce((sum, p) => sum + p.lon, 0) / bucket.length;
+
+                const n = bucket.length;
+                bucket.forEach((pt, idx) => {
+                    const angle = (2 * Math.PI * idx) / n;
+                    const latOffset = OFFSET_RADIUS * Math.sin(angle);
+                    const lonOffset = (OFFSET_RADIUS / Math.cos(centerLat * Math.PI / 180)) * Math.cos(angle);
+                    
+                    finalPoints.push({
+                        ...pt,
+                        lat: centerLat + latOffset,
+                        lon: centerLon + lonOffset
+                    });
+                });
+            }
+        });
+        
+        return finalPoints;
     }, [rivers]);
 
+    // Using true HTML5 Native Fullscreen where supported! 
     return (
         <div 
+            ref={mapContainerRef}
             style={{ 
-                height: height, 
+                height: isFullScreen ? "100vh" : height, 
                 width: "100%", 
                 position: isFullScreen ? "fixed" : "relative",
                 top: isFullScreen ? 0 : "auto",
                 left: isFullScreen ? 0 : "auto",
                 zIndex: isFullScreen ? 1000 : 1,
+                backgroundColor: isDarkMode ? "#000" : "#fff"  // Prevent native fullscreen from having clear/black background dynamically
             }}
         >
             <button 
-                onClick={() => setIsFullScreen(!isFullScreen)}
+                onClick={toggleFullScreen}
                 style={{
                     position: "absolute",
                     top: "10px",
@@ -138,55 +212,77 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
                 {/* Global River Markers */}
                 {globalMarkers.map((pt, i) => {
-                    const color = calculateColor(pt.river.running ?? null, false, isColorBlindMode);
-                    const fillColor = pt.river.isGauge ? "#df6af1" : (color || "var(--surface)");
+                    const isValidRunning = typeof pt.river.running === 'number' && !isNaN(pt.river.running);
+                    const colorStr = calculateColor(isValidRunning ? pt.river.running : null, false, isColorBlindMode);
+                    const unknownColor = isDarkMode ? "#000000" : "#9ca3af";
+                    const fillColor = pt.river.isGauge ? "#df6af1" : (colorStr || unknownColor);
                     const opacity = pt.river.isGauge ? 1.0 : 0.9;
                     
+                    const isPutIn = pt.point && pt.point.type === "put-in";
+                    const isTakeOut = pt.point && pt.point.type === "take-out";
+                    const accessName = pt.point?.name || (isPutIn ? "Put-In" : isTakeOut ? "Take-Out" : "Access Point");
+
+                    if (pt.river.isGauge) {
+                        return (
+                            <CircleMarker
+                                key={`global-${i}`}
+                                center={[pt.lat, pt.lon]}
+                                radius={3}
+                                fillColor={fillColor}
+                                fillOpacity={opacity}
+                                color={"var(--text)"}
+                                weight={1}
+                                eventHandlers={{
+                                    click: () => setSelectedRiver(pt.river)
+                                }}
+                            >
+                               <Tooltip>
+                                  <strong>{accessName}</strong><br/>
+                                  {pt.river.name} {pt.river.section ? `(${pt.river.section})` : ""}<br/>
+                                  {pt.river.flowInfo ? <span>{pt.river.flowInfo}</span> : null}
+                               </Tooltip>
+                            </CircleMarker>
+                        );
+                    }
+
+                    const letter = isPutIn ? "P" : isTakeOut ? "T" : "A";
+                    const pathFilter = isDarkMode ? 'filter: brightness(0.82);' : '';
+                    const iconHtml = `
+                        <svg viewBox="0 0 28 40" width="28" height="40" style="transform-origin: bottom center;" xmlns="http://www.w3.org/2000/svg">
+                          <g transform="translate(2, 2)">
+                            <path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 24 12 24s12-15.75 12-24C24 5.373 18.627 0 12 0z" fill="${fillColor}" fill-opacity="${opacity}" stroke="var(--text)" stroke-width="1.5" stroke-linejoin="round" style="${pathFilter}"/>
+                            <text x="12" y="13.5" dominant-baseline="central" fill="#ffffff" paint-order="stroke fill" stroke="rgba(0,0,0,0.85)" stroke-width="2.5" font-size="14" font-family="sans-serif" font-weight="900" text-anchor="middle">${letter}</text>
+                          </g>
+                        </svg>
+                    `;
+                    
+                    const icon = L.divIcon({
+                        html: iconHtml,
+                        className: '', // disable default generic divIcon backgrounds
+                        iconSize: [28, 40],
+                        iconAnchor: [14, 38], // path bottom is at 36, offset +2 = 38
+                        tooltipAnchor: [0, -38]
+                    });
+
                     return (
-                        <CircleMarker
+                        <Marker
                             key={`global-${i}`}
-                            center={[pt.lat, pt.lon]}
-                            radius={pt.river.isGauge ? 3 : 8}
-                            fillColor={fillColor}
-                            fillOpacity={opacity}
-                            color={pt.river.isGauge ? "#b53ebb" : "var(--text)"}
-                            weight={1}
+                            position={[pt.lat, pt.lon]}
+                            icon={icon}
                             eventHandlers={{
                                 click: () => setSelectedRiver(pt.river)
                             }}
                         >
-                           <Popup>
-                              <strong>{pt.river.name}</strong><br/>
-                              {pt.river.section && <span>{pt.river.section}<br/></span>}
-                              {pt.river.class && <span>Class {pt.river.class}<br/></span>}
-                           </Popup>
-                        </CircleMarker>
+                           <Tooltip>
+                              <strong>{accessName}</strong><br/>
+                              {pt.river.name} {pt.river.section ? `(${pt.river.section})` : ""}<br/>
+                              {pt.river.flowInfo ? <span>{pt.river.flowInfo}</span> : null}
+                           </Tooltip>
+                        </Marker>
                     );
                 })}
 
-                {/* Focus River Dedicated Access Markers (Overlaid strictly for Mini Maps or user triggered) */}
-                {(focusRiver || (showLocalAccessPoints ? selectedRiver : null))?.accessPoints?.map((point, idx) => (
-                    <CircleMarker 
-                        key={`local-${idx}`}
-                        center={[point.lat, point.lon]}
-                        radius={6}
-                        fillColor={point.type === "put-in" ? "#22c55e" : point.type === "take-out" ? "#ef4444" : "#3b82f6"}
-                        fillOpacity={0.9}
-                        color="white"
-                        weight={2}
-                    >
-                        <Popup>
-                            <strong>{point.name || point.type || "Access Point"}</strong><br/>
-                            <a
-                                href={`https://www.google.com/maps/dir//${point.lat},${point.lon}/@${point.lat},${point.lon},14z`}
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                {point.lat}, {point.lon}
-                            </a>
-                        </Popup>
-                    </CircleMarker>
-                ))}
+
 
                 {/* Local User Physical GPS Position Marker */}
                 {location.latitude && location.longitude && (
@@ -256,12 +352,11 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     </div>
                     
                     <div style={{ padding: "0 20px 20px 20px", color: "var(--text-secondary)" }}>
-                        <RiverExpansion 
-                             key={selectedRiver.id}
-                             river={selectedRiver} 
-                             isMapOverlay={true} 
-                             onShowAccessPoints={() => setShowLocalAccessPoints(true)} 
-                        />
+                            <RiverExpansion 
+                                 key={selectedRiver.id}
+                                 river={selectedRiver} 
+                                 isMapOverlay={true} 
+                            />
                     </div>
                 </div>
             )}

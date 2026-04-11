@@ -24,7 +24,7 @@ const formatDate = (timestamp: number) => {
 const getUnit = (dataKey: string) => {
   if (dataKey === "cfs") return "cfs";
   if (dataKey === "cms") return "cms";
-  if (dataKey === "feet") return "ft";
+  if (dataKey === "feet" || dataKey === "ft") return "ft";
   if (dataKey === "m" || dataKey === "meters") return "m";
   if (dataKey === "temp") return "°F";
   return "in";
@@ -72,11 +72,12 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
   const flowKey = data.some((d) => d.cfs != null) ? "cfs" : "cms";
   const stageKey = data.some((d) => d.ft != null) ? "ft" : "m";
 
-  let defaultTab: "flow" | "temp" | "precip" = "precip";
+  type TabType = "flow" | "temp" | "precip";
+  let defaultTab: TabType = "precip";
   if (hasFlow) defaultTab = "flow";
   else if (hasTemp) defaultTab = "temp";
 
-  const [activeTab, setActiveTab] = useState<"flow" | "temp" | "precip">(defaultTab);
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
 
   const precipSummary = useMemo(() => {
     if (!hasPrecip || data.length === 0) return null;
@@ -132,7 +133,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
       <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: "10px", marginBottom: "15px" }}>
         
         {/* Gauge Dropdown (if multiple gauges exist) */}
-        {river.gauges && river.gauges.length > 1 && (
+        {river.gauges && river.gauges.length > 1 ? (
           <select
             value={activeGaugeId}
             onChange={(e) => setActiveGaugeId(e.target.value)}
@@ -145,7 +146,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               cursor: "pointer",
               fontWeight: "bold",
               flex: "1 1 auto",
-              maxWidth: "320px"
+              maxWidth: "100%"
             }}
           >
             {river.gauges.map((g) => (
@@ -154,6 +155,30 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               </option>
             ))}
           </select>
+        ) : (
+          river.gauges && river.gauges.length === 1 && (
+            <select
+              disabled
+              style={{
+                padding: "8px 12px",
+                borderRadius: "6px",
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--surface)",
+                color: "var(--text)",
+                fontWeight: "bold",
+                flex: "1 1 auto",
+                maxWidth: "100%",
+                appearance: "none",
+                MozAppearance: "none",
+                WebkitAppearance: "none",
+                opacity: 1 // prevent browser from dimming disabled selects
+              }}
+            >
+              <option>
+                {river.gauges[0].name ? `${river.gauges[0].name}` : river.gauges[0].id} {river.gauges[0].isPrimary ? "(Primary)" : ""}
+              </option>
+            </select>
+          )
         )}
 
         {/* Metric Dropdown */}
@@ -170,7 +195,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
             cursor: "pointer",
             fontWeight: "bold",
             flex: "1 1 auto",
-            maxWidth: "320px"
+            maxWidth: "100%"
           }}
         >
           {hasFlow && <option value="flow">Flow Info</option>}
@@ -196,7 +221,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               overflow: "hidden"
             }}
           >
-            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={100}>
               <LineChart
                 data={data}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
@@ -254,24 +279,38 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                       animationDuration={200}
                     />
                     
-                    {river.flow?.min != null && !isNaN(river.flow.min) && (
-                      <ReferenceLine 
-                        yAxisId={river.flow.unit === "ft" || river.flow.unit === "m" ? "right" : "left"} 
-                        y={river.flow.min} 
-                        stroke="var(--primary)" 
-                        strokeDasharray="3 3" 
-                        label={{ position: 'insideBottomLeft', value: `Min (${river.flow.min})`, fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 'bold' }} 
-                      />
-                    )}
-                    {river.flow?.max != null && !isNaN(river.flow.max) && (
-                      <ReferenceLine 
-                        yAxisId={river.flow.unit === "ft" || river.flow.unit === "m" ? "right" : "left"} 
-                        y={river.flow.max} 
-                        stroke="var(--danger)" 
-                        strokeDasharray="3 3" 
-                        label={{ position: 'insideTopLeft', value: `Max (${river.flow.max})`, fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 'bold' }} 
-                      />
-                    )}
+                    {/* Threshold Lines */}
+                    {(['min', 'low', 'mid', 'high', 'max'] as const).map((key, i) => {
+                      const val = river.flow?.[key];
+                      if (val == null || isNaN(val)) return null;
+
+                      const isStageUnit = river.flow.unit === "ft" || river.flow.unit === "m";
+                      const yAxisId = isStageUnit ? "right" : "left";
+                      
+                      // Match the HSL logic from calculateColor in flowInfoCalculations.ts
+                      // min=0, low=1, mid=2, high=3, max=4
+                      const lightness = isDarkMode ? 35 : 60;
+                      const strokeColor = `hsl(${i * 60}, 100%, ${lightness}%)`;
+
+                      return (
+                        <ReferenceLine
+                          key={key}
+                          yAxisId={yAxisId}
+                          y={val}
+                          stroke={strokeColor}
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          label={{
+                            position: 'insideLeft',
+                            value: `${key.charAt(0).toUpperCase() + key.slice(1)} (${val})`,
+                            fill: isDarkMode ? "#cbd5e1" : "#475569",
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            dy: -10
+                          }}
+                        />
+                      );
+                    })}
                   </>
                 )}
 
