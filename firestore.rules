@@ -30,7 +30,7 @@ service cloud.firestore {
 
     match /reviewQueue/{queueId} {
       allow read: if isAdmin(); // Queue is invisible to the public
-      allow create: if request.auth != null; // Any user can submit a river
+      allow create: if true; // Open submissions for anonymous crowdsourcing
       allow update, delete: if isAdmin(); // Only admins can delete/edit from the queue
     }
 

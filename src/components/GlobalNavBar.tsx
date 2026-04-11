@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { signOut, deleteUser } from "firebase/auth";
 import { auth, db } from "../firebase";
@@ -10,6 +10,19 @@ const GlobalNavBar: React.FC = () => {
   const { user, loading, isAdmin } = useAuth();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 850);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 850);
+      if (window.innerWidth > 850) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleDownloadData = async () => {
     try {
@@ -69,68 +82,42 @@ const GlobalNavBar: React.FC = () => {
           color: "white",
         }}
       >
-        <div
-          className="nav-links"
-          style={{ display: "flex", gap: "20px", alignItems: "center" }}
+        <Link
+          to="/"
+          className="nav-brand"
+          style={{
+            fontWeight: 700,
+            fontSize: "1.25rem",
+            color: "white",
+            textDecoration: "none",
+            flexShrink: 0
+          }}
         >
-          <Link
-            to="/"
-            className="nav-brand"
-            style={{
-              fontWeight: 700,
-              fontSize: "1.25rem",
-              color: "white",
-              textDecoration: "none",
-            }}
+          Rivers.run
+        </Link>
+
+        {!isMobile && (
+          <div
+            className="nav-links"
+            style={{ display: "flex", gap: "20px", alignItems: "center", marginLeft: "20px", flexWrap: "wrap", flexGrow: 1 }}
           >
-            Rivers.run
-          </Link>
-          <Link to="/map" style={{ color: "#cbd5e1", textDecoration: "none" }}>
-            Map
-          </Link>
-          <Link
-            to="/favorites"
-            style={{ color: "#cbd5e1", textDecoration: "none" }}
-          >
-            Favorites
-          </Link>
-          <Link
-            to="/clubs"
-            style={{ color: "#cbd5e1", textDecoration: "none" }}
-          >
-            Clubs
-          </Link>
-          <Link
-            to="/lists"
-            style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: "bold" }}
-          >
-            Lists
-          </Link>
-          <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>
-            FAQ
-          </Link>
-          <Link
-            to="/about"
-            style={{ color: "#cbd5e1", textDecoration: "none" }}
-          >
-            About
-          </Link>
-          <Link
-            to="/settings"
-            style={{ color: "#cbd5e1", textDecoration: "none" }}
-          >
-            Settings
-          </Link>
-          {isAdmin && (
-            <Link
-              to="/admin"
-              style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold", marginLeft: "10px" }}
-            >
-              Admin Tools
-            </Link>
-          )}
-        </div>
-        <div className="nav-auth">
+            <Link to="/map" style={{ color: "#cbd5e1", textDecoration: "none" }}>Map</Link>
+            <Link to="/favorites" style={{ color: "#cbd5e1", textDecoration: "none" }}>Favorites</Link>
+            <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }}>Clubs</Link>
+            <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: "bold" }}>Lists</Link>
+            <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>FAQ</Link>
+            <Link to="/about" style={{ color: "#cbd5e1", textDecoration: "none" }}>About</Link>
+            <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>Settings</Link>
+            {isAdmin && (
+              <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold", marginLeft: "auto", marginRight: "10px" }}>
+                Admin Tools
+              </Link>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: "auto" }}>
+          <div className="nav-auth">
           {loading && <span style={{ color: "#94a3b8" }}>Loading...</span>}
           {!loading && user && (
             <div
@@ -259,6 +246,57 @@ const GlobalNavBar: React.FC = () => {
             </button>
           )}
         </div>
+
+        {isMobile && (
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              style={{
+                background: "transparent",
+                border: "1px solid #475569",
+                color: "white",
+                padding: "6px 14px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "1.2em",
+                outline: "none"
+              }}
+            >
+              ☰
+            </button>
+            {isMobileMenuOpen && (
+              <div style={{
+                position: "absolute",
+                top: "55px",
+                right: "0",
+                backgroundColor: "#1e293b",
+                border: "1px solid #334155",
+                borderRadius: "8px",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
+                padding: "16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "18px",
+                zIndex: 2000,
+                width: "200px"
+              }}>
+                <Link to="/map" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Map</Link>
+                <Link to="/favorites" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Favorites</Link>
+                <Link to="/clubs" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Clubs</Link>
+                <Link to="/lists" style={{ color: "white", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Lists</Link>
+                <Link to="/faq" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>FAQ</Link>
+                <Link to="/about" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+                <Link to="/settings" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Settings</Link>
+                {isAdmin && (
+                  <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em", marginTop: "10px", borderTop: "1px solid #334155", paddingTop: "10px" }} onClick={() => setIsMobileMenuOpen(false)}>
+                    Admin Tools
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       </nav>
 
       <AuthModal

@@ -60,46 +60,21 @@ export const RiverItem: React.FC<RiverItemProps> = ({
           style={{ borderBottom: "none" }}
         >
           <div className="tooltip">
-            {river.skill}
+            {(!river.skill || river.skill.toLowerCase() === "unknown") ? "?" : river.skill}
             <span className="tooltiptext">{translatedSkill}</span>
           </div>
         </span>
 
         {/* Class Span */}
-        <span className="riverspan classspan">{riverClass}</span>
+        <span className="riverspan classspan">{(!riverClass || riverClass.trim().toLowerCase() === "unknown") ? "?" : riverClass}</span>
 
-        {/* Rating Span */}
-        {(!river.rating || Number(river.rating) < 0 || isNaN(Number(river.rating))) ? (
-          <span className="riverspan emptyStars" style={{ opacity: 0.2 }}>
-            ☆☆☆☆☆
-          </span>
-        ) : (
-          <span className="riverspan">
-            <span className="emptyStars" style={{ opacity: 0 }}>
-              ☆☆☆☆☆
-            </span>
-            <span
-              className="emptyStars"
-              style={{ position: "absolute", zIndex: 1 }}
-            >
-              ☆☆☆☆☆
-            </span>
-            <span
-              className="fullStars"
-              style={{ width: `${river.rating * 20}%` }}
-            >
-              ★★★★★
-            </span>
-          </span>
-        )}
 
         {/* Flow Span */}
-        {typeof river.flow === "string" && (
-          <span className="riverspan flowspan">{river.flow}</span>
-        )}
-        {typeof river.flow !== "string" && river.dam && (
+        {(river.flowInfo || typeof river.flow === "string") ? (
+          <span className="riverspan flowspan">{river.flowInfo || (typeof river.flow === "string" ? river.flow : "")}</span>
+        ) : (river.dam ? (
           <span className="riverspan flowspan">Dam</span>
-        )}
+        ) : <span className="riverspan flowspan"></span>)}
 
         {/* Favorite Span (Moved to Right) */}
         <span

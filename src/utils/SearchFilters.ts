@@ -9,17 +9,14 @@ export interface AdvancedSearchQuery {
   skillMax?: number;
   flowMin?: number;
   flowMax?: number;
-  ratingMin?: number;
-  ratingMax?: number;
   includeUnknownSkill?: boolean;
   includeUnknownFlow?: boolean;
-  includeUnknownRating?: boolean;
   includeDams?: boolean;
   favoritesOnly?: boolean;
   distanceMax?: number;
   userLat?: number;
   userLon?: number;
-  sortBy?: "none" | "alphabetical" | "rating" | "skill" | "class" | "running";
+  sortBy?: "none" | "alphabetical" | "skill" | "class" | "running";
   sortReverse?: boolean;
   listData?: { id: string; order: number }[];
 }
@@ -30,11 +27,8 @@ export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
   skillMax: 8,
   flowMin: 0,
   flowMax: 4,
-  ratingMin: 1,
-  ratingMax: 5,
   includeUnknownSkill: true,
   includeUnknownFlow: true,
-  includeUnknownRating: true,
   includeDams: true,
   sortBy: "none",
   sortReverse: false,
@@ -50,11 +44,8 @@ export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
   if (query.skillMax !== defaultAdvancedSearchQuery.skillMax) return true;
   if (query.flowMin !== defaultAdvancedSearchQuery.flowMin) return true;
   if (query.flowMax !== defaultAdvancedSearchQuery.flowMax) return true;
-  if (query.ratingMin !== defaultAdvancedSearchQuery.ratingMin) return true;
-  if (query.ratingMax !== defaultAdvancedSearchQuery.ratingMax) return true;
   if (query.includeUnknownSkill !== defaultAdvancedSearchQuery.includeUnknownSkill) return true;
   if (query.includeUnknownFlow !== defaultAdvancedSearchQuery.includeUnknownFlow) return true;
-  if (query.includeUnknownRating !== defaultAdvancedSearchQuery.includeUnknownRating) return true;
   if (query.includeDams !== defaultAdvancedSearchQuery.includeDams) return true;
   return false;
 }
@@ -126,16 +117,6 @@ export function filterRivers(
     });
   }
 
-  // 4. Rating
-  if (query.ratingMin !== undefined && query.ratingMax !== undefined) {
-    list = list.filter((r) => {
-      const rate = Number(r.rating);
-      if (r.rating == null || isNaN(rate) || rate < 0)
-        return query.includeUnknownRating;
-      return rate >= query.ratingMin! && rate <= query.ratingMax!;
-    });
-  }
-
   // 5. Flow
   if (query.flowMin !== undefined && query.flowMax !== undefined) {
     list = list.filter((r) => {
@@ -168,10 +149,6 @@ export function filterRivers(
         case "alphabetical":
           valA = (a.name || "").toLowerCase();
           valB = (b.name || "").toLowerCase();
-          break;
-        case "rating":
-          valA = (a.rating == null || Number(a.rating) < 0) ? -1 : Number(a.rating);
-          valB = (b.rating == null || Number(b.rating) < 0) ? -1 : Number(b.rating);
           break;
         case "skill":
           valA = skillToNumber(a.skill || "");

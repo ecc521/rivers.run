@@ -27,19 +27,32 @@ const enrichRiver = (river: any, _index: number, flowData: any, usedGauges: Set<
   }
 
   const gaugeRecord = activeGaugeId ? flowData[activeGaugeId] : null;
+
+  river.gaugeData = {};
+
+  if (river.gauges && Array.isArray(river.gauges)) {
+      river.gauges.forEach((g: any) => {
+          if (flowData[g.id]) {
+              if (flowData[g.id].name) g.name = flowData[g.id].name;
+              if (flowData[g.id].readings) {
+                  river.gaugeData![g.id] = flowData[g.id].readings;
+              }
+          }
+      });
+  }
+
   if (gaugeRecord && gaugeRecord.readings && gaugeRecord.readings.length > 0) {
     const latest = gaugeRecord.readings[gaugeRecord.readings.length - 1];
     river.cfs = latest.cfs;
     river.ft = latest.ft || latest.feet; // Bridge during transition if needed, though plan says drop
-    river.flowData = gaugeRecord.readings;
 
     river.running = calculateRelativeFlow(river) ?? undefined;
 
     if (river.cfs && river.ft)
-      river.flow = `${Math.round(river.cfs)} cfs ${Math.round(river.ft * 100) / 100} ft`;
-    else if (river.cfs) river.flow = `${Math.round(river.cfs)} cfs`;
+      river.flowInfo = `${Math.round(river.cfs)} cfs ${Math.round(river.ft * 100) / 100} ft`;
+    else if (river.cfs) river.flowInfo = `${Math.round(river.cfs)} cfs`;
     else if (river.ft)
-      river.flow = `${Math.round(river.ft * 100) / 100} ft`;
+      river.flowInfo = `${Math.round(river.ft * 100) / 100} ft`;
   }
   return river;
 };
@@ -58,12 +71,12 @@ const buildVirtualGauge = (gaugeId: string, gaugeData: any): RiverData | null =>
    return {
        id: gaugeId,
        name: gData.name || gaugeId,
-       gauges: [{ id: gaugeId, isPrimary: true }],
+       gauges: [{ id: gaugeId, isPrimary: true, name: gData.name || gaugeId }],
        isGauge: true,
        cfs: latest.cfs,
        ft: ftValue,
-       flowData: gData.readings,
-       flow: flowStr,
+       gaugeData: { [gaugeId]: gData.readings },
+       flowInfo: flowStr,
        accessPoints: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined
    } as unknown as RiverData;
 };
@@ -90,6 +103,15 @@ export const useRivers = (): UseRiversResult => {
       
       globalLoading = true;
       notifySubscribers();
+
+      // Safety timeout to prevent permanently stuck loading state
+      const timeoutId = setTimeout(() => {
+          if (globalLoading && !globalRiversCache) {
+              globalLoading = false;
+              globalError = "Request timed out. Please try again or check your connection.";
+              notifySubscribers();
+          }
+      }, 15000);
 
       try {
         const riverDataUrl = getStorageUrl("public/rivers.json");
@@ -128,9 +150,11 @@ export const useRivers = (): UseRiversResult => {
 
         globalRiversCache = data;
         globalLoading = false;
+        clearTimeout(timeoutId);
         notifySubscribers();
 
       } catch (err: any) {
+        clearTimeout(timeoutId);
         globalError = err.message || "An error occurred";
         globalLoading = false;
         notifySubscribers();

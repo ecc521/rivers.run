@@ -1,6 +1,7 @@
 import { Firestore } from "firebase-admin/firestore";
 import { Bucket } from "@google-cloud/storage";
 import * as zlib from "zlib";
+import { validateRiver } from "./riverValidation";
 
 const JSON_REMOTE_PATH = "public/rivers.json";
 const FULL_SYNC_HEURISTIC_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -51,11 +52,36 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
         // Fetch completely from scratch
         const querySnapshot = await db.collection("rivers").get();
         legacyRivers = [];
+        const invalidRivers: any[] = [];
+
         querySnapshot.forEach(doc => {
-            legacyRivers.push(doc.data());
+            const data = doc.data();
+            const { isValid, errors } = validateRiver(data);
+            if (!isValid) {
+                invalidRivers.push({ data, errors });
+            } else {
+                legacyRivers.push(data);
+            }
         });
         modifiedCount = legacyRivers.length;
         console.log(`Executed exact native Full Sync. Downloaded ${modifiedCount} rivers securely.`);
+
+        for (const item of invalidRivers) {
+            console.warn(`River ${item.data.id || 'UNKNOWN'} is improperly formatted. Moving to reviewQueue. Errors: ${item.errors.join(", ")}`);
+            try {
+                if (item.data.id) {
+                    await db.collection("reviewQueue").doc(item.data.id).set({
+                        ...item.data,
+                        _moveReason: "Automatically moved due to backend formatting validation failure.",
+                        _moveErrors: item.errors,
+                        _movedAt: new Date()
+                    });
+                    await db.collection("rivers").doc(item.data.id).delete();
+                }
+            } catch (e) {
+                console.error(`Failed to move invalid river ${item.data.id}`, e);
+            }
+        }
     } else {
         // Run specific Delta Sync since the exact millisecond boundary securely identified from the storage file payload 
         const deltaBoundary = new Date(lastCompileMs);
@@ -69,16 +95,46 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
         modifiedCount = querySnapshot.size;
         console.log(`Delta sync successfully identified exactly ${modifiedCount} recently modified downstream changes.`);
 
+        const invalidRivers: any[] = [];
+
         // Systematically splice securely into explicit existing memory
         querySnapshot.forEach(doc => {
             const data = doc.data();
-            const index = legacyRivers.findIndex(legacy => legacy.id === data.id);
-            if (index >= 0) {
-                legacyRivers[index] = data; // Replaces cleanly!
+            const { isValid, errors } = validateRiver(data);
+            
+            if (!isValid) {
+                invalidRivers.push({ data, errors });
+                // If it became invalid, ensure it is removed from the public JSON payload
+                const index = legacyRivers.findIndex(legacy => legacy.id === data.id);
+                if (index >= 0) {
+                    legacyRivers.splice(index, 1);
+                }
             } else {
-                legacyRivers.push(data); // Injects completely!
+                const index = legacyRivers.findIndex(legacy => legacy.id === data.id);
+                if (index >= 0) {
+                    legacyRivers[index] = data; // Replaces cleanly!
+                } else {
+                    legacyRivers.push(data); // Injects completely!
+                }
             }
         });
+
+        for (const item of invalidRivers) {
+            console.warn(`River ${item.data.id || 'UNKNOWN'} is improperly formatted. Moving to reviewQueue. Errors: ${item.errors.join(", ")}`);
+            try {
+                if (item.data.id) {
+                    await db.collection("reviewQueue").doc(item.data.id).set({
+                        ...item.data,
+                        _moveReason: "Automatically moved due to backend formatting validation failure.",
+                        _moveErrors: item.errors,
+                        _movedAt: new Date()
+                    });
+                    await db.collection("rivers").doc(item.data.id).delete();
+                }
+            } catch (e) {
+                console.error(`Failed to move invalid river ${item.data.id}`, e);
+            }
+        }
     }
 
     // 3. Construct securely the final concatenated buffer

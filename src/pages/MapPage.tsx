@@ -1,22 +1,13 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import type { RiverData } from "../types/River";
-import {
-  calculateColor,
-} from "../utils/flowInfoCalculations";
-import { RiverExpansion } from "../components/RiverExpansion";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "../hooks/useLocation";
 import { useRivers } from "../hooks/useRivers";
-import { useSettings } from "../context/SettingsContext";
+import { SharedMap } from "../components/SharedMap";
 
 const MapPage: React.FC = () => {
-  const { isColorBlindMode } = useSettings();
   const location = useLocation();
-  const { rivers, loading: riversLoading, error: riversError } = useRivers();
+  const { loading: riversLoading, error: riversError } = useRivers();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRiver, setSelectedRiver] = useState<RiverData | null>(null);
 
   // Sync internal loading state with rivers data hook
   useEffect(() => {
@@ -29,28 +20,9 @@ const MapPage: React.FC = () => {
   }, [riversLoading, riversError]);
 
   useEffect(() => {
-
     // Automatically query for user location to place native tracker token
     location.requestLocation({ enableHighAccuracy: true });
   }, []);
-
-  const markers = useMemo(() => {
-    const points: any[] = [];
-    rivers.forEach((river) => {
-      if (!river.accessPoints || river.accessPoints.length === 0) return;
-
-      const start = river.accessPoints[0];
-
-      // Calculate geometric center or just use put-in for simplicity
-      const lat = start.lat;
-      const lon = start.lon;
-
-      if (!lat || !lon) return;
-
-      points.push({ river, lat, lon });
-    });
-    return points;
-  }, [rivers]);
 
   if (loading)
     return (
@@ -65,122 +37,7 @@ const MapPage: React.FC = () => {
       </div>
     );
 
-  return (
-    <div
-      style={{
-        height: "calc(100vh - 60px)",
-        width: "100%",
-        position: "relative",
-      }}
-    >
-      <MapContainer
-        center={[39.8283, -98.5795]}
-        zoom={4}
-        style={{ height: "100%", width: "100%" }}
-        preferCanvas={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        {markers.map((pt, i) => {
-          const color = calculateColor(pt.river.running ?? null, false, isColorBlindMode);
-          // If it's a gauge, use a lighter purple. Otherwise use the flow color.
-          const fillColor = pt.river.isGauge ? "#df6af1" : (color || "var(--surface)");
-          const opacity = pt.river.isGauge ? 1.0 : 0.9;
-          
-          return (
-            <CircleMarker
-              key={i}
-              center={[pt.lat, pt.lon]}
-              radius={pt.river.isGauge ? 3 : 8}
-              fillColor={fillColor}
-              fillOpacity={opacity}
-              color={pt.river.isGauge ? "#b53ebb" : "var(--text)"}
-              weight={1}
-              eventHandlers={{
-                click: () => {
-                  setSelectedRiver(pt.river);
-                },
-              }}
-            />
-          );
-        })}
-
-        {/* Dedicated Local User Map Marker */}
-        {location.latitude && location.longitude && (
-            <CircleMarker
-              center={[location.latitude, location.longitude]}
-              radius={7}
-              fillColor="#3b82f6" // Distinct Blue
-              fillOpacity={1.0}
-              color="#ffffff" // White boundary specifically for map tiles
-              weight={2}
-            >
-              <Popup>
-                You are here: <br />
-                {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
-              </Popup>
-            </CircleMarker>
-        )}
-      </MapContainer>
-
-      {selectedRiver && (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: "100%",
-            maxWidth: "450px",
-            backgroundColor: "var(--surface)",
-            zIndex: 2000,
-            boxShadow: "-4px 0 15px rgba(0,0,0,0.2)",
-            overflowY: "auto",
-          }}
-        >
-          <div
-            style={{
-              padding: "20px",
-              position: "sticky",
-              top: 0,
-              backgroundColor: "var(--surface)",
-              borderBottom: "1px solid var(--border)",
-              zIndex: 10,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h2 style={{ margin: 0, color: "var(--text)" }}>
-              {selectedRiver.name}{" "}
-              {selectedRiver.section ? `(${selectedRiver.section})` : ""}
-            </h2>
-            <button
-              onClick={() => {
-                setSelectedRiver(null);
-              }}
-              style={{
-                border: "none",
-                background: "transparent",
-                fontSize: "2em",
-                cursor: "pointer",
-                color: "var(--text-muted)",
-                lineHeight: 1,
-              }}
-            >
-              &times;
-            </button>
-          </div>
-          <div style={{ padding: "0 20px 20px 20px", color: "var(--text-secondary)" }}>
-            <RiverExpansion river={selectedRiver} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return <SharedMap height="calc(100vh - 60px)" />;
 };
 
 export default MapPage;

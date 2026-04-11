@@ -58,7 +58,7 @@ export default function AdminQueue() {
   return (
     <div className="page-content" style={{ maxWidth: 800, margin: "0 auto", paddingBottom: "100px" }}>
       <h1>Admin Review Queue</h1>
-      <p>Verify user submissions organically before they deploy permanently natively onto the map!</p>
+      <p>Review user submissions before publishing to the public.</p>
 
       <div style={{ backgroundColor: "var(--border)", padding: '15px', borderRadius: '8px', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
          <input 

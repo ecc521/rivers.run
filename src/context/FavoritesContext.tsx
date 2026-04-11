@@ -89,35 +89,15 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
         const localLastModifiedStr = await persistentStorage.get("rivers_favorites_last_modified");
         const localLastModified = parseInt(localLastModifiedStr || "0", 10);
 
-        let newFavorites: FavoritesList;
-
-        // If cloud is explicitly newer, prefer cloud. Otherwise merge.
-        if (
-          cloudLastModified > localLastModified &&
-          localLastModified !== 0
-        ) {
-          newFavorites = cloudFavorites;
-        } else {
-          newFavorites = mergeFavoritesLists(favorites, cloudFavorites);
+        // If cloud is explicitly newer or we are fresh, apply it locally. No merging or rewriting to cloud.
+        if (cloudLastModified > localLastModified || localLastModified === 0) {
+          setFavorites((currentFavs) => {
+             const merged = mergeFavoritesLists(currentFavs, cloudFavorites);
+             persistentStorage.set("rivers_favorites", JSON.stringify(merged));
+             persistentStorage.set("rivers_favorites_last_modified", cloudLastModified.toString());
+             return merged;
+          });
         }
-
-        setFavorites(newFavorites);
-        await persistentStorage.set("rivers_favorites", JSON.stringify(newFavorites));
-
-        if (cloudLastModified <= localLastModified) {
-          // We merged local stuff up. Push back to cloud seamlessly.
-          setDoc(
-            userRef,
-            { favorites: newFavorites, favoritesLastModified: Date.now() },
-            { merge: true },
-          );
-        }
-      } else {
-        setDoc(
-          userRef,
-          { favorites, favoritesLastModified: Date.now() },
-          { merge: true },
-        );
       }
     });
 
@@ -128,7 +108,6 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const saveFavorites = async (newFavs: FavoritesList) => {
     const now = Date.now();
-    setFavorites(newFavs);
     await persistentStorage.set("rivers_favorites", JSON.stringify(newFavs));
     await persistentStorage.set("rivers_favorites_last_modified", now.toString());
 
@@ -143,43 +122,49 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const toggleFavorite = async (river: RiverData) => {
-    const newFavs: FavoritesList = JSON.parse(JSON.stringify(favorites));
     const riverIdStr = String(river.id);
 
-    const existingIndex = newFavs.findIndex(f => f.id === riverIdStr);
+    setFavorites((prevFavs) => {
+      const newFavs: FavoritesList = JSON.parse(JSON.stringify(prevFavs));
+      const existingIndex = newFavs.findIndex(f => f.id === riverIdStr);
 
-    if (existingIndex !== -1) {
-      newFavs.splice(existingIndex, 1);
-    } else {
-      const gauge = river.gauges?.[0]?.id || "none";
-      const newItem: FavoriteItem = {
-        id: riverIdStr,
-        name: river.name,
-        section: river.section || ""
-      };
-      
-      if (gauge !== "none") {
-          newItem.gauge = gauge;
-          newItem.minimum = river.flow?.min ?? null;
-          newItem.maximum = river.flow?.max ?? null;
-          newItem.units = river.flow?.unit ?? "ft";
+      if (existingIndex !== -1) {
+        newFavs.splice(existingIndex, 1);
+      } else {
+        const gauge = river.gauges?.[0]?.id || "none";
+        const newItem: FavoriteItem = {
+          id: riverIdStr,
+          name: river.name,
+          section: river.section || ""
+        };
+        
+        if (gauge !== "none") {
+            newItem.gauge = gauge;
+            newItem.minimum = river.flow?.min ?? null;
+            newItem.maximum = river.flow?.max ?? null;
+            newItem.units = river.flow?.unit ?? "ft";
+        }
+
+        newFavs.push(newItem);
       }
-
-      newFavs.push(newItem);
-    }
-    await saveFavorites(newFavs);
+      saveFavorites(newFavs);
+      return newFavs;
+    });
   };
 
   const updateFavoriteConfig = async (
     riverId: string,
     updates: Partial<FavoriteItem>,
   ) => {
-    const newFavs: FavoritesList = JSON.parse(JSON.stringify(favorites));
-    const targetIdx = newFavs.findIndex(f => f.id === riverId);
-    if (targetIdx !== -1) {
-      newFavs[targetIdx] = { ...newFavs[targetIdx], ...updates };
-      await saveFavorites(newFavs);
-    }
+    setFavorites((prevFavs) => {
+      const newFavs: FavoritesList = JSON.parse(JSON.stringify(prevFavs));
+      const targetIdx = newFavs.findIndex(f => f.id === riverId);
+      if (targetIdx !== -1) {
+        newFavs[targetIdx] = { ...newFavs[targetIdx], ...updates };
+        saveFavorites(newFavs);
+      }
+      return newFavs;
+    });
   };
 
   const isFavorite = (riverId: string) => {

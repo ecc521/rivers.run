@@ -57,11 +57,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       skillMax: 8,
       flowMin: 0,
       flowMax: 4,
-      ratingMin: 1,
-      ratingMax: 5,
       includeUnknownSkill: true,
       includeUnknownFlow: true,
-      includeUnknownRating: true,
       includeDams: true,
       distanceMax: undefined,
       userLat: undefined,
@@ -287,11 +284,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 checked={localQuery.includeUnknownFlow || false}
                 onChange={(checked) => setLocalQuery({ ...localQuery, includeUnknownFlow: checked })}
               />
-              <FilterCheckbox
-                label="Unknown Ratings"
-                checked={localQuery.includeUnknownRating || false}
-                onChange={(checked) => setLocalQuery({ ...localQuery, includeUnknownRating: checked })}
-              />
+
               <FilterCheckbox
                 label="Dams / Flatwater"
                 checked={localQuery.includeDams || false}

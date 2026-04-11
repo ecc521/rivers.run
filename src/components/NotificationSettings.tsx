@@ -178,7 +178,7 @@ export const NotificationSettings: React.FC = () => {
               alignSelf: "flex-start",
               padding: "8px 16px",
               backgroundColor: "var(--danger)",
-              color: "var(--surface)",
+              color: "white",
               border: "none",
               borderRadius: "6px",
               cursor: "pointer",
@@ -198,7 +198,7 @@ export const NotificationSettings: React.FC = () => {
             style={{
               padding: "8px 16px",
               backgroundColor: "var(--success)",
-              color: "var(--text)",
+              color: "white",
               border: "none",
               borderRadius: "6px",
               cursor: "pointer",

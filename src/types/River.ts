@@ -8,6 +8,7 @@ export interface AccessPoint {
 export interface LinkedGauge {
   id: string; // e.g. 'USGS:12345'
   isPrimary?: boolean;
+  name?: string;
 }
 
 export interface FlowThresholds {
@@ -23,12 +24,10 @@ export interface RiverData {
   id: string;
   name: string;
   section: string;
-  overview?: string;
   writeup?: string;
   tags?: string[];
   class: string;
   skill: string;
-  rating?: number | null;
   
   accessPoints?: AccessPoint[];
 
@@ -41,17 +40,35 @@ export interface RiverData {
   flow: FlowThresholds;
 
   // DYNAMIC RUNTIME FIELDS (Injected dynamically on the client, NOT stored in Firestore rivers)
+  
+  /** Current active cubic feet per second directly read from the live gauge telemetry */
   cfs?: number;
+  
+  /** Current active feet stage natively read from the gauge telemetry */
   ft?: number;
+  
+  /** Metric variation of stage natively aggregated if applicable */
   m?: number;
+  
+  /** Metric variation of volume native telemetry */
   cms?: number;
-  flowData?: any[];
+  
+  /** Formatted string representation of the flow explicitly derived (e.g. "500 cfs 2.1 ft") */
   flowInfo?: string;
+  
+  /** Evaluated dynamic threshold condition mapping to the bounds mapping (calculates to 1-3 generally or undefined) */
   status?: "high" | "low" | "running" | "unknown";
   
-  /** Manual hover/scrub integer override injected by the UI Graph charts to simulate historical flow states */
-  latestReading?: number;
+  /** Numeric representation of the evaluative relative visual fill state of the river bounds (0: low/empty, 1-3: running, 4+: flooding) */
   running?: number;
+  
+  /** Represents historical telemetry mapped specifically by internal gaugeId strings representing the precise physical sensor datasets sequentially over time */
+  gaugeData?: Record<string, GaugeReading[]>;
+
+  /** Manual hover/scrub integer override injected by the UI Graph charts to simulate historical flow states visually into component bounds */
+  latestReading?: number;
+  
+  /** Flag used by the virtual map to identify instances that natively just represent blank gauge sensors instead of actual valid river runs */
   isGauge?: boolean;
   
   updatedAt?: any; // firestore timestamp

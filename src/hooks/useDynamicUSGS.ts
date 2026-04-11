@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import type { RiverData } from "../types/River";
+import type { RiverData, GaugeReading } from "../types/River";
 import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 
-const dynamicUSGSCache = new Map<string, { lastFetchedMs: number; data: any[] }>();
+const dynamicUSGSCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> }>();
 
 export function useDynamicUSGS(river: RiverData) {
   const [liveRiver, setLiveRiver] = useState<RiverData | null>(null);
@@ -15,32 +15,49 @@ export function useDynamicUSGS(river: RiverData) {
     const cacheKey = usgsIDs.join(",");
     const cached = dynamicUSGSCache.get(cacheKey);
 
-    const existingData = cached?.data || river.flowData || [];
-    const hasThreeDays = existingData.length > 0 && 
-       (existingData[existingData.length - 1].dateTime - existingData[0].dateTime >= 2.5 * 24 * 60 * 60 * 1000);
+    const primaryGaugeID = river.gauges?.[0]?.id;
+    const existingDatasetLength = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.length ? river.gaugeData[primaryGaugeID].length : 0;
+    const existingFirstTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[0]?.dateTime ? river.gaugeData[primaryGaugeID][0].dateTime : 0;
+    const existingLastTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[existingDatasetLength - 1]?.dateTime ? river.gaugeData[primaryGaugeID][existingDatasetLength - 1].dateTime : 0;
+
+    const hasThreeDays = existingDatasetLength > 0 && 
+       (existingLastTime - existingFirstTime >= 2.5 * 24 * 60 * 60 * 1000);
     
     // Fall back tightly to a 15 minute fetch constraint
     const newlyFetched = cached && (Date.now() - cached.lastFetchedMs < 15 * 60 * 1000);
 
-    const enrichAndSet = (data: any[]) => {
-       const latest = data[data.length - 1];
+    const enrichAndSet = (dynamicGaugeData: Record<string, GaugeReading[]>, fetchedNames?: Record<string, string>) => {
+       // Create a fresh clone to avoid prop mutation
+       const enriched = { ...river };
+       enriched.gaugeData = { ...(enriched.gaugeData || {}), ...dynamicGaugeData };
        
-       // Mutate globally so parent 'RiverItem' automatically adopts the new preview natively without prop bubbling
-       river.flowData = data;
-       river.cfs = latest.cfs;
-       const ftValue = latest.ft || latest.feet;
-       river.ft = isNaN(ftValue) ? undefined : ftValue;
-       river.running = calculateRelativeFlow(river) ?? undefined;
+       const names = fetchedNames || cached?.gaugeNames;
+       if (names && enriched.gauges) {
+           enriched.gauges = enriched.gauges.map(g => {
+               if (names[g.id]) return { ...g, name: names[g.id] };
+               return g;
+           });
+       }
        
-       if (river.cfs && river.ft) river.flow = `${Math.round(river.cfs)} cfs ${Math.round(river.ft * 100) / 100} ft`;
-       else if (river.cfs) river.flow = `${Math.round(river.cfs)} cfs`;
-       else if (river.ft) river.flow = `${Math.round(river.ft * 100) / 100} ft`;
+       const primaryData = primaryGaugeID && enriched.gaugeData[primaryGaugeID] ? enriched.gaugeData[primaryGaugeID] : null;
+       const latest = primaryData && primaryData.length > 0 ? primaryData[primaryData.length - 1] : null;
+
+       if (latest) {
+           enriched.cfs = latest.cfs ?? enriched.cfs;
+           const ftValue = latest.ft;
+           enriched.ft = (ftValue !== undefined && !isNaN(ftValue)) ? ftValue : enriched.ft;
+           enriched.running = calculateRelativeFlow(enriched) ?? enriched.running;
+           
+           if (enriched.cfs && enriched.ft) enriched.flowInfo = `${Math.round(enriched.cfs)} cfs ${Math.round(enriched.ft * 100) / 100} ft`;
+           else if (enriched.cfs) enriched.flowInfo = `${Math.round(enriched.cfs)} cfs`;
+           else if (enriched.ft) enriched.flowInfo = `${Math.round(enriched.ft * 100) / 100} ft`;
+       }
        
-       setLiveRiver({ ...river });
+       setLiveRiver(enriched);
     };
 
     if (hasThreeDays && newlyFetched && cached) {
-       enrichAndSet(cached.data);
+       enrichAndSet(cached.gaugeData);
        return;
     }
 
@@ -54,9 +71,22 @@ export function useDynamicUSGS(river: RiverData) {
         
         const json = await res.json();
         const timeSeries = json.value?.timeSeries || [];
-        const readingsMap = new Map<number, any>();
+        
+        const gaugeDataMap: Record<string, Map<number, any>> = {};
+        const siteNameMap: Record<string, string> = {};
 
         for (const seriesItem of timeSeries) {
+            const sc = seriesItem.sourceInfo?.siteCode?.[0]?.value;
+            if (!sc) continue;
+            const gaugeId = `USGS:${sc}`;
+            
+            if (!gaugeDataMap[gaugeId]) gaugeDataMap[gaugeId] = new Map();
+
+            const sn = seriesItem.sourceInfo?.siteName;
+            if (sn && !siteNameMap[gaugeId]) {
+                siteNameMap[gaugeId] = sn;
+            }
+
             const noDataValue = seriesItem.variable.noDataValue;
             // Filter dead zones
             const values = seriesItem.values[0].value.filter((val: any) => val.value !== noDataValue && val.value !== String(noDataValue));
@@ -80,46 +110,50 @@ export function useDynamicUSGS(river: RiverData) {
             if (property) {
                 values.forEach((val: any) => {
                     const ts = new Date(val.dateTime).getTime();
-                    const existing = readingsMap.get(ts) || { dateTime: ts };
+                    const existing = gaugeDataMap[gaugeId].get(ts) || { dateTime: ts };
                     existing[property] = Number(val.value);
-                    readingsMap.set(ts, existing);
+                    gaugeDataMap[gaugeId].set(ts, existing);
                 });
             }
         }
 
         if (!isMounted) return;
 
-        // Compile and sort the live readings natively
-        const sortedLive = Array.from(readingsMap.values()).sort((a, b) => a.dateTime - b.dateTime);
-        if (sortedLive.length === 0) return;
-
-        // Splice seamlessly with our 15-minute cached `flowData` from Firebase!
-        const mergedData = [...(river.flowData || [])];
+        // Splice seamlessly with our 15-minute cached `gaugeData` from Firebase!
+        const mergedGaugeData: Record<string, GaugeReading[]> = {};
         
-        for (const liveReading of sortedLive) {
-            const matchIndex = mergedData.findIndex(item => item.dateTime === liveReading.dateTime);
-            if (matchIndex >= 0) {
-               // Update completely precisely inline (e.g. if the cache was missing parameter values)
-               mergedData[matchIndex] = { ...mergedData[matchIndex], ...liveReading };
-            } else {
-               mergedData.push(liveReading);
+        for (const [gaugeId, map] of Object.entries(gaugeDataMap)) {
+            const sortedLive = Array.from(map.values()).sort((a, b) => a.dateTime - b.dateTime);
+            const cachedDataset = [...(river.gaugeData?.[gaugeId] || [])];
+            
+            for (const liveReading of sortedLive) {
+                const matchIndex = cachedDataset.findIndex(item => item.dateTime === liveReading.dateTime);
+                if (matchIndex >= 0) {
+                   // Update completely precisely inline (e.g. if the cache was missing parameter values)
+                   cachedDataset[matchIndex] = { ...cachedDataset[matchIndex], ...liveReading };
+                } else {
+                   cachedDataset.push(liveReading as GaugeReading);
+                }
             }
+            cachedDataset.sort((a, b) => a.dateTime - b.dateTime);
+            mergedGaugeData[gaugeId] = cachedDataset;
         }
-        
-        // Final resort
-        mergedData.sort((a, b) => a.dateTime - b.dateTime);
-        dynamicUSGSCache.set(cacheKey, { lastFetchedMs: Date.now(), data: mergedData });
-        enrichAndSet(mergedData);
+
+        dynamicUSGSCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
+        enrichAndSet(mergedGaugeData, siteNameMap);
 
       } catch (err) {
-        console.error("Dynamic USGS Native Fetch Error:", err);
+        if (isMounted) console.error("Dynamic USGS Native Fetch Error:", err);
       }
     };
 
-    fetchUSGS();
+    const timeoutId = setTimeout(fetchUSGS, 300);
 
-    return () => { isMounted = false; };
-  }, [river.gauges, river.flowData]);
+    return () => { 
+        isMounted = false;
+        clearTimeout(timeoutId);
+    };
+  }, [river.id, river.gauges?.map(g => g.id).join(",")]);
 
   return liveRiver;
 }

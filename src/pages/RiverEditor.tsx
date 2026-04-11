@@ -6,59 +6,74 @@ import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css"; 
 import { useAuth } from "../context/AuthContext";
 import { firebaseConfig } from "../firebase";
+import { skillLevels } from "../utils/skillTranslations";
+import { RiverItem } from "../components/RiverItem";
+import { validateRiver } from "../utils/riverValidation";
+import { toDecimalDegrees } from "../utils/toDecimalDegrees";
+import { useSettings } from "../context/SettingsContext";
+import { AuthModal } from "../components/AuthModal";
+import { useDynamicUSGS } from "../hooks/useDynamicUSGS";
+
+const STATES_AND_PROVINCES = [
+  "AB", "AK", "AL", "AR", "AZ", "BC", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MB", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NB", "NC", "ND", "NE", "NH", "NJ", "NL", "NM", "NS", "NT", "NU", "NV", "NY", "OH", "OK", "ON", "OR", "PA", "PE", "QC", "RI", "SC", "SD", "SK", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "YT"
+];
 
 export default function RiverEditor() {
   const { riverId, queueId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAdmin } = useAuth();
+  const { isDarkMode, isColorBlindMode } = useSettings();
   
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
   
   const isNew = !riverId && !queueId;
   const isReviewMode = location.pathname.startsWith('/review') && !!queueId;
   const targetId = riverId || queueId || "";
 
+  const stableRandomId = useMemo(() => window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36), []);
+
   const [riverData, setRiverData] = useState<any>({
     id: targetId,
     name: "",
-    state: "",
+    state: "MD",
     class: "",
+    skill: "fw",
+    dam: false,
+    aw: "",
     section: "",
     gauges: [],
     accessPoints: [],
-    overview: "",
+    writeup: "",
     imageUrls: [],
-    flow: { unit: "cfs", min: null, max: null }
+    flow: { unit: "cfs", min: null, low: null, mid: null, high: null, max: null }
   });
-
-  const [rawGauges, setRawGauges] = useState("");
-  const [rawPutIn, setRawPutIn] = useState("");
-  const [rawTakeOut, setRawTakeOut] = useState("");
 
   const [liveData, setLiveData] = useState<any>(null);
   const [proposedData, setProposedData] = useState<any>(null);
-  const [viewMode, setViewMode] = useState<"proposed" | "live">("proposed");
+  const [viewMode, setViewMode] = useState<"draft" | "original">("draft");
 
-  const syncRawStrings = (data: any) => {
+  const syncInputs = (data: any) => {
+      if (!data) return;
+      const safeAccess = (data.accessPoints || []).map((ap: any) => ({ ...ap, rawLat: ap.lat ? String(ap.lat) : "", rawLon: ap.lon ? String(ap.lon) : "" }));
       setRiverData({
         id: data.id || targetId,
         name: data.name || "",
-        state: data.state || "",
+        state: data.state || "MD",
         class: data.class || "",
+        skill: data.skill || "fw",
+        dam: data.dam || false,
+        aw: data.aw || "",
         section: data.section || "",
         gauges: data.gauges || [],
-        accessPoints: data.accessPoints || [],
-        overview: data.overview || "",
+        accessPoints: safeAccess,
+        writeup: data.writeup || "",
         imageUrls: data.imageUrls || [],
-        flow: data.flow || { unit: "cfs", min: null, max: null }
+        flow: data.flow || { unit: "cfs", min: null, low: null, mid: null, high: null, max: null }
       });
-      setRawGauges((data.gauges || []).map((g: any) => g.id).join(", "));
-      const pi = (data.accessPoints || []).find((a: any) => a.type === "put-in");
-      setRawPutIn(pi ? `${pi.lat}, ${pi.lon}` : "");
-      const to = (data.accessPoints || []).find((a: any) => a.type === "take-out");
-      setRawTakeOut(to ? `${to.lat}, ${to.lon}` : "");
   };
 
   useEffect(() => {
@@ -71,12 +86,10 @@ export default function RiverEditor() {
            const d = await getDoc(doc(db, "reviewQueue", queueId as string));
            if (d.exists()) {
               const proposed = d.data();
-              // Store explicit pointer internally so we can clean up
               proposed.queueId = d.id; 
               setProposedData(proposed);
-              syncRawStrings(proposed);
+              syncInputs(proposed);
               
-              // Load Live Data identically if this proposed edit mapped against an existing river exactly
               const liveD = await getDoc(doc(db, "rivers", proposed.id));
               if (liveD.exists()) {
                  setLiveData(liveD.data());
@@ -87,10 +100,11 @@ export default function RiverEditor() {
            }
         }
         else {
-           // Normal load logic
            const d = await getDoc(doc(db, "rivers", riverId as string));
            if (d.exists()) {
-              syncRawStrings(d.data());
+              const live = d.data();
+              setLiveData(live);
+              syncInputs(live);
            }
         }
       } catch (e) {
@@ -140,36 +154,34 @@ export default function RiverEditor() {
     };
   }, []);
 
-  const toggleView = (mode: "live" | "proposed") => {
-      setViewMode(mode);
-      if (mode === "live" && liveData) syncRawStrings(liveData);
-      if (mode === "proposed" && proposedData) syncRawStrings(proposedData);
-  };
-
   const generateFinalObj = () => {
-      const parsedGauges = rawGauges.split(",").map(g => g.trim()).filter(g => g).map((g, i) => ({
-        id: g,
-        isPrimary: i === 0 // Make first gauge the primary one
-      }));
-
       const newAccessPoints: any[] = [];
-      const accessRegex = /^\s*([-\d.]{1,20})[,\s]+([-\d.]{1,20})\s*$/;
       
-      const pMatch = accessRegex.exec(rawPutIn);
-      if (pMatch) {
-         newAccessPoints.push({ name: "Put-In", type: "put-in", lat: parseFloat(pMatch[1]), lon: parseFloat(pMatch[2]) });
-      }
+      (riverData.accessPoints || []).forEach((ap: any) => {
+          const parsedLat = toDecimalDegrees(ap.rawLat || ap.lat);
+          const parsedLon = toDecimalDegrees(ap.rawLon || ap.lon);
+          if (parsedLat !== null && parsedLon !== null) {
+              newAccessPoints.push({
+                  name: ap.name || "Access Point",
+                  type: ap.type || "put-in",
+                  lat: parsedLat,
+                  lon: parsedLon
+              });
+          }
+      });
       
-      const tMatch = accessRegex.exec(rawTakeOut);
-      if (tMatch) {
-         newAccessPoints.push({ name: "Take-Out", type: "take-out", lat: parseFloat(tMatch[1]), lon: parseFloat(tMatch[2]) });
-      }
+      const parsedGauges = (riverData.gauges || []).map((g: any) => {
+         let sanitized = g.id.trim().toUpperCase().replace(/\s+/g, '');
+         if (!sanitized.includes(':') && sanitized.length > 0) sanitized = "USGS:" + sanitized;
+         return { ...g, id: sanitized };
+      }).filter((g: any) => g.id && g.id.includes(":") && g.id.split(":")[1].trim().length > 0);
+
+      const hasPrimary = parsedGauges.some((g: any) => g.isPrimary);
 
       let idToSave: string;
       if (isNew) {
         const baseSlug = riverData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const secureRandom = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
-        idToSave = isAdmin ? baseSlug : `${baseSlug}-${secureRandom}`;
+        idToSave = isAdmin ? baseSlug : `${baseSlug}-${stableRandomId}`;
       } else {
         idToSave = riverData.id;
       }
@@ -179,33 +191,48 @@ export default function RiverEditor() {
         id: idToSave,
         gauges: parsedGauges,
         accessPoints: newAccessPoints,
+        flow: hasPrimary ? riverData.flow : { unit: riverData.flow?.unit || "cfs", min: null, low: null, mid: null, high: null, max: null },
         updatedAt: new Date(),
-        submittedBy: isReviewMode ? (proposedData?.submittedBy || user?.uid) : user?.uid
+        submittedBy: isReviewMode ? (proposedData?.submittedBy || user?.uid || "anonymous") : (user?.uid || "anonymous")
       };
   };
 
+  const toggleView = (mode: "draft" | "original") => {
+      if (mode === "original") {
+          setProposedData(generateFinalObj());
+          setViewMode("original");
+          syncInputs(liveData);
+      } else {
+          setViewMode("draft");
+          syncInputs(proposedData || liveData);
+      }
+  };
+
   const validatePayload = (finalObj: any) => {
-      if ((finalObj.overview || "").match(/<img[^>]+src=["']data:image/i)) {
-          alert("Error: Raw image structures (base64) are strictly disallowed to maintain fast load times and save database space! \n\nPlease delete the photo specifically from the editor and use the 'Image' button securely to paste a Google Drive Hotlink instead!");
+      const { isValid, errors, warnings } = validateRiver(finalObj);
+      
+      if (warnings.length > 0) {
+          const proceed = window.confirm(`Warning:\n${warnings.join('\n')}\n\nProceed submitting?`);
+          if (!proceed) return false;
+      }
+
+      if (!isValid) {
+          alert(`Error:\n${errors.join('\n')}`);
           return false;
       }
 
-      const byteLength = new Blob([JSON.stringify(finalObj)]).size;
-      if (byteLength > 25000) {
-          const proceed = window.confirm(`Warning: This river profile is abnormally large (${(byteLength / 1024).toFixed(1)} kB). The standard recommended limit is ~25 kB maximum.\n\nThis usually occurs if you pasted an unstructured hidden image explicitly! Proceed submitting?`);
-          if (!proceed) {
-             return false;
-          }
-      }
       return true;
   };
 
   const handleSave = async () => {
     if (!user) {
-      alert("You must be logged in to save.");
+      setShowSubmitModal(true);
       return;
     }
-    
+    await processSave();
+  };
+
+  const processSave = async () => {
     try {
       setSaving(true);
       const finalObj = generateFinalObj();
@@ -263,24 +290,36 @@ export default function RiverEditor() {
       }
   };
 
+  const previewStateStr = JSON.stringify(riverData);
+  const memoizedPreviewBase = useMemo(() => generateFinalObj(), [previewStateStr]);
+  const hydratedPreview = useDynamicUSGS(memoizedPreviewBase) || memoizedPreviewBase;
+  
+  const { errors: liveErrors, warnings: liveWarnings } = validateRiver(hydratedPreview);
+
   if (loading) return <div className="page-content center"><h2>Loading Editor...</h2></div>;
 
+  const isOriginalView = viewMode === "original";
+  const pointerEvents = isOriginalView ? 'none' : 'auto';
+  const opacity = 1;
+  const hasPrimaryGauge = riverData.gauges.some((g: any) => g.isPrimary);
+
   return (
-    <div className="page-content" style={{ maxWidth: 800, margin: "0 auto", paddingBottom: "100px" }}>
-      {isReviewMode && liveData && (
-        <div style={{ display: 'flex', backgroundColor: "var(--surface-hover)", borderRadius: '5px', padding: '5px', marginBottom: '20px' }}>
-          <button 
-            onClick={() => toggleView("live")} 
-            style={{ flex: 1, padding: '10px', backgroundColor: viewMode === 'live' ? "var(--primary)" : 'transparent', color: viewMode === 'live' ? 'white' : 'black', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}>
-            Current Live River
-          </button>
-          <button 
-            onClick={() => toggleView("proposed")}
-            style={{ flex: 1, padding: '10px', backgroundColor: viewMode === 'proposed' ? "var(--success)" : 'transparent', color: viewMode === 'proposed' ? 'white' : 'black', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}>
-            Proposed Custom Edit
-          </button>
-        </div>
-      )}
+    <>
+    <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+    {showSubmitModal && (
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+         <div style={{ backgroundColor: 'var(--surface)', padding: '20px', borderRadius: '10px', maxWidth: '400px', width: '100%', position: 'relative', margin: '20px' }}>
+            <button onClick={() => setShowSubmitModal(false)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '24px', color: 'var(--text)' }}>×</button>
+            <h3 style={{ marginTop: 0 }}>Almost Done!</h3>
+            <p>Would you like to sign in? If you sign in, we can contact you if there are questions with this submission.</p>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+               <button onClick={() => { setShowSubmitModal(false); setShowAuthModal(true); }} style={{ padding: '8px 15px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Sign In</button>
+               <button onClick={() => { setShowSubmitModal(false); processSave(); }} style={{ padding: '8px 15px', backgroundColor: 'var(--surface-hover)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer' }}>Submit Anonymously</button>
+            </div>
+         </div>
+      </div>
+    )}
+    <div className="page-content" style={{ maxWidth: 800, margin: "0 auto", paddingBottom: "250px" }}>
       {isReviewMode && !liveData && (
           <div style={{ backgroundColor: "var(--warning-bg)", color: "var(--warning-text)", padding: '15px', borderRadius: '5px', marginBottom: '20px', fontWeight: 'bold' }}>
             🌟 Completely New River Submission! No existing live data to diff against.
@@ -289,25 +328,26 @@ export default function RiverEditor() {
 
       <h1>{isNew ? 'Create New River' : (isReviewMode ? `Review Edit: ${riverData.name}` : `Edit: ${riverData.name}`)}</h1>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div>
-          <label style={{fontWeight: 'bold', display: 'block'}}>River Name</label>
-          <input 
-            type="text" 
-            style={{ width: '100%', padding: '8px' }} 
-            value={riverData.name} 
-            onChange={e => setRiverData({...riverData, name: e.target.value})} 
-          />
-        </div>
-
-        <div>
-          <label style={{fontWeight: 'bold', display: 'block'}}>Section</label>
-          <input 
-            type="text" 
-            style={{ width: '100%', padding: '8px' }} 
-            value={riverData.section} 
-            onChange={e => setRiverData({...riverData, section: e.target.value})} 
-          />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents, opacity }}>
+        <div style={{ display: 'flex', gap: '15px' }}>
+          <div style={{ flex: 2 }}>
+            <label style={{fontWeight: 'bold', display: 'block'}}>River Name</label>
+            <input 
+              type="text" 
+              style={{ width: '100%', padding: '8px' }} 
+              value={riverData.name} 
+              onChange={e => setRiverData({...riverData, name: e.target.value})} 
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{fontWeight: 'bold', display: 'block'}}>Section</label>
+            <input 
+              type="text" 
+              style={{ width: '100%', padding: '8px' }} 
+              value={riverData.section} 
+              onChange={e => setRiverData({...riverData, section: e.target.value})} 
+            />
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '15px' }}>
@@ -321,123 +361,291 @@ export default function RiverEditor() {
             />
           </div>
           <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>State/Region (e.g. MD)</label>
-            <input 
-              type="text" 
-              style={{ width: '100%', padding: '8px' }} 
-              value={riverData.state} 
-              onChange={e => setRiverData({...riverData, state: e.target.value})} 
-            />
-          </div>
-        </div>
-
-        <div>
-          <label style={{fontWeight: 'bold', display: 'block'}}>Gauges (Comma separated, e.g. "USGS:01646500, USGS:01646502")</label>
-          <input 
-            type="text" 
-            style={{ width: '100%', padding: '8px' }} 
-            value={rawGauges} 
-            onChange={e => setRawGauges(e.target.value)} 
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>Flow Unit</label>
+            <label style={{fontWeight: 'bold', display: 'block'}}>Skill Level</label>
             <select 
               style={{ width: '100%', padding: '8px' }} 
-              value={riverData.flow?.unit || "cfs"}
-              onChange={e => setRiverData({...riverData, flow: {...riverData.flow, unit: e.target.value}})}
+              value={riverData.skill} 
+              onChange={e => setRiverData({...riverData, skill: e.target.value})} 
             >
-              <option value="cfs">cfs</option>
-              <option value="ft">ft</option>
-              <option value="m">m</option>
-              <option value="cms">cms</option>
+               {skillLevels.map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}
             </select>
           </div>
           <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>Min Flow</label>
-            <input 
-              type="number" 
+            <label style={{fontWeight: 'bold', display: 'block'}}>State/Region</label>
+            <select
               style={{ width: '100%', padding: '8px' }} 
-              value={riverData.flow?.min ?? ""} 
-              onChange={e => setRiverData({...riverData, flow: {...riverData.flow, min: e.target.value ? parseFloat(e.target.value) : null}})} 
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>Max Flow</label>
-            <input 
-              type="number" 
-              style={{ width: '100%', padding: '8px' }} 
-              value={riverData.flow?.max ?? ""} 
-              onChange={e => setRiverData({...riverData, flow: {...riverData.flow, max: e.target.value ? parseFloat(e.target.value) : null}})} 
-            />
+              value={riverData.state} 
+              onChange={e => setRiverData({...riverData, state: e.target.value})} 
+            >
+               {STATES_AND_PROVINCES.map(st => <option key={st} value={st}>{st}</option>)}
+            </select>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '15px' }}>
-          <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>Put-In (Lat, Lon)</label>
-            <input 
-              type="text" 
-              style={{ width: '100%', padding: '8px' }} 
-              placeholder="e.g. 38.92, -77.12"
-              value={rawPutIn} 
-              onChange={e => setRawPutIn(e.target.value)} 
-            />
+
+             <div style={{ flex: 1 }}>
+                <label style={{fontWeight: 'bold', display: 'block'}}>AW River ID (Optional)</label>
+                <input 
+                  type="text" 
+                  style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+                  placeholder="e.g. 129"
+                  value={riverData.aw} 
+                  onChange={e => setRiverData({...riverData, aw: e.target.value})} 
+                />
+             </div>
+             <div style={{ display: 'flex', alignItems: 'center', marginTop: '20px' }}>
+                <label style={{fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer'}}>
+                   <input 
+                     type="checkbox" 
+                     checked={riverData.dam || false} 
+                     onChange={e => setRiverData({...riverData, dam: e.target.checked})} 
+                   />
+                   Dam Released
+                </label>
+             </div>
+        </div>
+
+        <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
+          <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Gauges</label>
+          {(riverData.gauges || []).map((g: any, i: number) => {
+             const agency = g.id?.includes(":") ? g.id.split(":")[0].toUpperCase() : "USGS";
+             const code = g.id?.includes(":") ? g.id.substring(g.id.indexOf(":")+1) : (g.id || "");
+             return (
+             <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', flexShrink: 0 }}>
+                   <input type="checkbox" checked={g.isPrimary || false} onChange={(e) => {
+                      const newG = [...riverData.gauges];
+                      const wasChecked = e.target.checked;
+                      newG.forEach(gObj => gObj.isPrimary = false);
+                      if (wasChecked) {
+                          newG[i].isPrimary = true;
+                      }
+                      setRiverData({...riverData, gauges: newG});
+                   }} />
+                   Primary?
+                </label>
+                
+                <select 
+                   style={{ padding: '8px', boxSizing: 'border-box' }}
+                   value={agency}
+                   onChange={(e) => {
+                      const newG = [...riverData.gauges];
+                      newG[i].id = `${e.target.value}:${code}`;
+                      setRiverData({...riverData, gauges: newG});
+                   }}
+                >
+                   <option value="USGS">USGS</option>
+                   <option value="EC">Environment Canada (EC)</option>
+                   <option value="NWS">NWS / Weather.gov</option>
+                </select>
+
+                <input 
+                   type="text" 
+                   style={{ flex: 1, padding: '8px', boxSizing: 'border-box' }} 
+                   placeholder={agency === "USGS" ? "e.g., 01646500" : (agency === "EC" ? "e.g., 08MA002" : "e.g., LINC2")} 
+                   value={code} 
+                   onChange={(e) => {
+                      const newG = [...riverData.gauges];
+                      newG[i].id = `${agency}:${e.target.value}`;
+                      setRiverData({...riverData, gauges: newG});
+                   }}
+                />
+                <button 
+                  onClick={() => {
+                      const newG = riverData.gauges.filter((_:any, index:number) => index !== i);
+                      setRiverData({...riverData, gauges: newG});
+                  }} 
+                  style={{ backgroundColor: 'var(--danger)', color: 'white', border: 'none', padding: '8px', cursor: 'pointer' }}>Delete</button>
+             </div>
+             );
+          })}
+          <button onClick={() => {
+              const newG = [...(riverData.gauges || [])];
+              newG.push({ id: "USGS:", isPrimary: newG.length === 0 });
+              setRiverData({...riverData, gauges: newG});
+          }} style={{ padding: '8px', cursor: 'pointer' }}>+ Add Gauge</button>
+        </div>
+
+        {hasPrimaryGauge && (
+          <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
+            <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Flow Thresholds (Used for Color Coding)</label>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ width: '80px' }}>
+                <label style={{fontSize: '12px', display: 'block'}}>Unit</label>
+                <select 
+                  style={{ width: '100%', padding: '6px', height: '34px', boxSizing: 'border-box' }} 
+                  value={riverData.flow?.unit || "cfs"}
+                  onChange={e => setRiverData({...riverData, flow: {...riverData.flow, unit: e.target.value}})}
+                >
+                  <option value="cfs">cfs</option>
+                  <option value="ft">ft</option>
+                  <option value="m">m</option>
+                  <option value="cms">cms</option>
+                </select>
+              </div>
+              
+              {["Min", "Low", "Mid", "High", "Max"].map((field) => (
+                 <div key={field} style={{ flex: 1, minWidth: '80px' }}>
+                  <label style={{fontSize: '12px', display: 'block'}}>{field}</label>
+                  <input 
+                    type="number" 
+                    style={{ width: '100%', padding: '6px', height: '34px', boxSizing: 'border-box' }} 
+                    value={riverData.flow?.[field.toLowerCase()] ?? ""} 
+                    onChange={e => setRiverData({...riverData, flow: {...riverData.flow, [field.toLowerCase()]: e.target.value ? parseFloat(e.target.value) : null}})} 
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>Take-Out (Lat, Lon)</label>
-            <input 
-              type="text" 
-              style={{ width: '100%', padding: '8px' }} 
-               placeholder="e.g. 38.92, -77.12"
-              value={rawTakeOut} 
-              onChange={e => setRawTakeOut(e.target.value)} 
-            />
-          </div>
+        )}
+
+        <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
+          <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Access Points</label>
+          {(riverData.accessPoints || []).map((ap: any, i: number) => (
+             <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                <select 
+                  style={{ padding: '8px', minWidth: '130px' }} 
+                  value={ap.type || "put-in"} 
+                  onChange={(e) => {
+                      const newA = [...riverData.accessPoints];
+                      newA[i].type = e.target.value;
+                      newA[i].name = {"put-in": "Put-In", "midpoint": "Midpoint", "take-out": "Take-Out"}[e.target.value] || "Access Point";
+                      setRiverData({...riverData, accessPoints: newA});
+                  }}
+                >
+                   <option value="put-in">Put-In</option>
+                   <option value="midpoint">Midpoint</option>
+                   <option value="take-out">Take-Out</option>
+                </select>
+                <input 
+                   type="text" 
+                   style={{ flex: 1, padding: '8px' }} 
+                   placeholder="Latitude (e.g. 38° 50' 11.2 N)" 
+                   value={ap.rawLat ?? ap.lat ?? ""} 
+                   onChange={(e) => {
+                      const newA = [...riverData.accessPoints];
+                      newA[i].rawLat = e.target.value;
+                      setRiverData({...riverData, accessPoints: newA});
+                   }}
+                />
+                <input 
+                   type="text" 
+                   style={{ flex: 1, padding: '8px' }} 
+                   placeholder="Longitude (e.g. W 77° 12' 3.4&quot;)" 
+                   value={ap.rawLon ?? ap.lon ?? ""} 
+                   onChange={(e) => {
+                      const newA = [...riverData.accessPoints];
+                      newA[i].rawLon = e.target.value;
+                      setRiverData({...riverData, accessPoints: newA});
+                   }}
+                />
+                <button 
+                  onClick={() => {
+                      const newA = riverData.accessPoints.filter((_:any, index:number) => index !== i);
+                      setRiverData({...riverData, accessPoints: newA});
+                  }} 
+                  style={{ backgroundColor: 'var(--danger)', color: 'white', border: 'none', padding: '8px', cursor: 'pointer' }}>Delete</button>
+             </div>
+          ))}
+          <button onClick={() => {
+              const newA = [...(riverData.accessPoints || [])];
+              newA.push({ type: "put-in", name: "Put-In", lat: null, lon: null, rawLat: "", rawLon: "" });
+              setRiverData({...riverData, accessPoints: newA});
+          }} style={{ padding: '8px', cursor: 'pointer' }}>+ Add Access Point</button>
         </div>
 
         <div style={{ marginTop: '20px' }}>
-          <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>River Overview & Description</label>
-          <div style={{ backgroundColor: 'white', color: 'black' }}>
+          <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>River Writeup & Description</label>
+          <div style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text)' }}>
             <ReactQuill 
               theme="snow" 
-              value={riverData.overview} 
-              onChange={(val) => setRiverData({...riverData, overview: val})}
+              value={riverData.writeup || ""} 
+              onChange={(val) => setRiverData({...riverData, writeup: val})}
               modules={quillModules}
               style={{ height: '300px', marginBottom: '50px' }}
             />
           </div>
         </div>
+      </div>
 
-        {isReviewMode ? (
-          <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
-            <button 
-              onClick={handleApproveReview} 
-              disabled={saving || viewMode === 'live'}
-              style={{ flex: 1, padding: '15px', backgroundColor: "var(--success)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || viewMode === 'live') ? 'not-allowed' : 'pointer', opacity: viewMode === 'live' ? 0.5 : 1 }}
-            >
-              {saving ? "Saving..." : "Approve & Deploy to Live Maps"}
-            </button>
-            <button 
-              onClick={handleRejectReview} 
-              disabled={saving}
-              style={{ padding: '15px', backgroundColor: "var(--danger)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: saving ? 'not-allowed' : 'pointer' }}
-            >
-              Reject Submission
-            </button>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, backgroundColor: "var(--surface)", borderTop: "1px solid var(--border)", zIndex: 100, padding: '15px', boxShadow: '0 -4px 10px rgba(0,0,0,0.1)', maxHeight: '60vh', overflowY: 'auto' }}>
+          <div style={{ maxWidth: 800, margin: '0 auto' }}>
+              
+              <div style={{ marginBottom: '15px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--text-muted)'}}>Live Preview</label>
+                  
+                  {liveWarnings.length > 0 && (
+                     <div style={{ backgroundColor: 'var(--warning-bg)', color: 'var(--warning-text)', padding: '10px', borderRadius: '5px', marginBottom: '10px', fontSize: '14px' }}>
+                        <strong style={{ display: 'block', marginBottom: '5px' }}>⚠️ Warnings:</strong>
+                        <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                           {liveWarnings.map((w, idx) => <li key={idx}>{w}</li>)}
+                        </ul>
+                     </div>
+                  )}
+
+                  {liveErrors.length > 0 ? (
+                     <div style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '15px', borderRadius: '5px', fontSize: '14px' }}>
+                        <strong style={{ display: 'block', marginBottom: '5px', fontSize: '16px' }}>❌ Cannot Preview (Errors Found):</strong>
+                        <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                           {liveErrors.map((e, idx) => <li key={idx}>{e}</li>)}
+                        </ul>
+                     </div>
+                  ) : (
+                     <div style={{ borderRadius: '10px' }}>
+                        <RiverItem river={{...hydratedPreview, running: 2}} index={0} isDarkMode={isDarkMode} isColorBlindMode={isColorBlindMode} />
+                     </div>
+                  )}
+              </div>
+
+              {(!isNew && liveData) ? (
+                 <div style={{ display: 'flex', backgroundColor: "var(--surface-hover)", borderRadius: '5px', padding: '5px', marginBottom: '15px' }}>
+                    <button 
+                      onClick={() => toggleView("original")} 
+                      style={{ flex: 1, padding: '10px', backgroundColor: viewMode === 'original' ? "var(--primary)" : 'transparent', color: viewMode === 'original' ? 'white' : 'var(--text)', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}>
+                      Original Live River
+                    </button>
+                    <button 
+                      onClick={() => toggleView("draft")}
+                      style={{ flex: 1, padding: '10px', backgroundColor: viewMode === 'draft' ? "var(--success)" : 'transparent', color: viewMode === 'draft' ? 'white' : 'var(--text)', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}>
+                      Your Current Working Draft
+                    </button>
+                 </div>
+              ) : (
+                  <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '15px', color: 'var(--primary)' }}>
+                      📝 New River Suggestion
+                  </div>
+              )}
+
+              {isReviewMode ? (
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <button 
+                    onClick={handleApproveReview} 
+                    disabled={saving || isOriginalView}
+                    style={{ flex: 1, padding: '15px', backgroundColor: "var(--success)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
+                  >
+                    {saving ? "Saving..." : "Approve & Deploy to Live Maps"}
+                  </button>
+                  <button 
+                    onClick={handleRejectReview} 
+                    disabled={saving || isOriginalView}
+                    style={{ padding: '15px', backgroundColor: "var(--danger)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
+                  >
+                    Reject Submission
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={handleSave} 
+                  disabled={saving || isOriginalView}
+                  style={{ width: '100%', padding: '15px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
+                >
+                  {saving ? "Saving..." : "Save River Data"}
+                </button>
+              )}
           </div>
-        ) : (
-          <button 
-            onClick={handleSave} 
-            disabled={saving}
-            style={{ padding: '15px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: 'pointer', marginTop: '20px' }}
-          >
-            {saving ? "Saving..." : "Save River Data"}
-          </button>
-        )}
       </div>
     </div>
+    </>
   );
 }

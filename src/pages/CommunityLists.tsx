@@ -85,7 +85,7 @@ const CommunityLists: React.FC = () => {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <h2 style={{ margin: 0, color: "var(--text)", fontSize: "1.4em" }}>{list.title}</h2>
-              <span style={{ backgroundColor: "#eff6ff", color: "var(--primary)", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
+              <span style={{ backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
                 {list.subscribes} Subscribers
               </span>
             </div>

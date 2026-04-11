@@ -84,17 +84,10 @@ a:hover {
     }
 }
 
-.riverspan:nth-child(5) {
-    transform: scaleY(1.25) /*Make the stars larger without using more horizontal space.*/
-}
 @media screen and (min-width: 500px) {
     :root {
         --defaultFontSize: 2.8vw;
         --riverRatingSize: var(--defaultFontSize);
-    }
-
-    .riverspan:nth-child(5) {
-        transform: scaleY(1); /*Remove the vertical scaling of star images.*/
     }
 }
 
@@ -380,14 +373,7 @@ Those include name,section,skill,quality, and flow info*/
     max-width: var(--riverClassWidth);
 }
 
-/*Child #5 acts as a tooltip too. That declaration is a around 40 lines below (May change. Do a search for nth-child(5))*/
-.riverspan:nth-child(5) {
-	position: relative;
-    min-width: calc(var(--riverRatingSize) * 5); /*There are 5 stars - and each star is as wide as the font size in pixels.*/
-    display: var(--displayRatingSpan);
-}
-
-.riverspan:nth-child(6) {
+.flowspan {
     margin-left: 1%;
     font-family: BlinkMacSystemFont, "Noto Sans HK", Arial, Helvetica, sans-serif; /*Noto Sans HK contains the arrows that I want. On Apple Macs, use the system font.*/
 }
@@ -403,7 +389,7 @@ Those include name,section,skill,quality, and flow info*/
 
 @media screen and (max-width:309px) {
     /*Smart watch mode.*/
-    .riverspan:nth-child(6) {
+    .flowspan {
         margin-left: 2%;
     }
     .riverbutton {

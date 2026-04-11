@@ -1,16 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import type { RiverData } from "../types/River";
 import { skillTranslations } from "../utils/skillTranslations";
 import { USGSGraphs } from "./USGSGraphs";
 import { useDynamicUSGS } from "../hooks/useDynamicUSGS";
 import { useAuth } from "../context/AuthContext";
 import DOMPurify from "dompurify";
+import { SharedMap } from "./SharedMap";
 
 interface RiverExpansionProps {
   river: RiverData;
+  isMapOverlay?: boolean;
+  onShowAccessPoints?: () => void;
 }
 
-export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
+export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, onShowAccessPoints }) => {
+  const [showMap, setShowMap] = useState(false);
   const { isAdmin } = useAuth();
   
   // The hook directly yields a fully cloned, flow-hydrated RiverData precisely compiled
@@ -27,25 +31,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
     return null;
   };
 
-  const getFlowRangeText = () => {
-    const keys = ["min", "low", "mid", "high", "max"] as const;
-    const labels = ["minrun", "lowflow", "midflow", "highflow", "maxrun"];
-    const relativeFlowType = river.flow?.unit || "cfs";
-    const range: string[] = [];
 
-    keys.forEach((key, index) => {
-      const val = river.flow?.[key];
-      if (val !== undefined && !isNaN(val)) {
-        const rounded =
-          relativeFlowType === "cfs"
-            ? Math.round(val)
-            : Math.round(val * 100) / 100;
-        range.push(`${labels[index]}:${rounded}${relativeFlowType}`);
-      }
-    });
-
-    return range.length > 0 ? range.join(" ") : null;
-  };
 
   return (
     <div className="riverWriteup" style={{ padding: "6px" }}>
@@ -62,35 +48,64 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river }) => {
           <p>Maximum gradient: {river.maxgradient} feet per mile.</p>
         )}
 
-        {river.accessPoints && river.accessPoints.length > 0 && (
-          <div className="accessPoints">
-            {river.accessPoints.map((accessPoint, index) => (
-              <p key={index}>
-                {accessPoint.name} GPS Coordinates:{" "}
-                <a
-                  href={`https://www.google.com/maps/dir//${accessPoint.lat},${accessPoint.lon}/@${accessPoint.lat},${accessPoint.lon},14z`}
-                  target="_blank"
-                  rel="noreferrer"
+        {displayRiver.accessPoints && displayRiver.accessPoints.length > 0 && (
+          <div className="accessPoints" style={{ marginTop: "15px" }}>
+            <h4 style={{ margin: "0 0 10px 0", color: "var(--text)" }}>Access Points</h4>
+            
+            {isMapOverlay ? (
+               <button
+                  onClick={() => {
+                     if (onShowAccessPoints) onShowAccessPoints();
+                     setShowMap(true);
+                  }}
+                  disabled={showMap}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '12px',
+                    backgroundColor: showMap ? 'var(--surface)' : 'var(--surface-hover)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    color: showMap ? 'var(--text-muted)' : 'var(--success)',
+                    fontWeight: 600,
+                    marginBottom: '15px',
+                    cursor: showMap ? 'default' : 'pointer'
+                  }}
                 >
-                  {accessPoint.lat}, {accessPoint.lon}
-                </a>
-              </p>
-            ))}
+                  {showMap ? "Access Points Displayed on Parent Map" : `Show Access Points on Map (${displayRiver.accessPoints.length})`}
+                </button>
+            ) : showMap ? (
+              <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", marginBottom: "15px" }}>
+                <SharedMap 
+                   focusRiver={displayRiver}
+                   initialCenter={[displayRiver.accessPoints[0].lat, displayRiver.accessPoints[0].lon]}
+                   initialZoom={12}
+                   height="250px"
+                />
+              </div>
+            ) : (
+                <button
+                  onClick={() => setShowMap(true)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '12px',
+                    backgroundColor: 'var(--surface-hover)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    color: 'var(--primary)',
+                    fontWeight: 600,
+                    marginBottom: '15px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Load Mini Map ({displayRiver.accessPoints.length} Access {displayRiver.accessPoints.length === 1 ? 'Point' : 'Points'})
+                </button>
+            )}
           </div>
         )}
       </div>
 
-      {river.accessPoints && river.accessPoints.length > 0 && (
-        <a
-          className="mapButton"
-          style={{ display: 'inline-block', backgroundColor: "var(--border)", padding: '8px 16px', borderRadius: '6px', color: "var(--text-secondary)", textDecoration: 'none', margin: '8px 0', fontSize: '0.9em' }}
-          href={`/map?lat=${river.accessPoints[0].lat}&lon=${river.accessPoints[0].lon}`}
-        >
-          View Area on Map
-        </a>
-      )}
-
-      {getFlowRangeText() && <p>{getFlowRangeText()}</p>}
 
       <p style={{ margin: "10px 0" }}>
         {isAdmin ? (

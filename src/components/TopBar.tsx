@@ -51,15 +51,6 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery }) => {
       <span
         className="riverspan"
         onClick={() => {
-          toggleSort("rating");
-        }}
-        style={{ cursor: "pointer" }}
-      >
-        Quality⇅
-      </span>
-      <span
-        className="riverspan"
-        onClick={() => {
           toggleSort("running");
         }}
         style={{ cursor: "pointer" }}
