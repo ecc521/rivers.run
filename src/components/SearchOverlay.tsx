@@ -303,7 +303,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               />
 
               <FilterCheckbox
-                label="Dams / Flatwater"
+                label="Include Dam Controlled Rivers"
                 checked={localQuery.includeDams || false}
                 onChange={(checked) => setLocalQuery({ ...localQuery, includeDams: checked })}
               />
