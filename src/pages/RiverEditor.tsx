@@ -13,6 +13,7 @@ import { toDecimalDegrees } from "../utils/toDecimalDegrees";
 import { useSettings } from "../context/SettingsContext";
 import { AuthModal } from "../components/AuthModal";
 import { useDynamicUSGS } from "../hooks/useDynamicUSGS";
+import { useModal } from "../context/ModalContext";
 
 const STATES_AND_PROVINCES = [
   "AB", "AK", "AL", "AR", "AZ", "BC", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MB", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NB", "NC", "ND", "NE", "NH", "NJ", "NL", "NM", "NS", "NT", "NU", "NV", "NY", "OH", "OK", "ON", "OR", "PA", "PE", "QC", "RI", "SC", "SD", "SK", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "YT"
@@ -24,6 +25,7 @@ export default function RiverEditor() {
   const location = useLocation();
   const { user, isAdmin } = useAuth();
   const { isDarkMode, isColorBlindMode } = useSettings();
+  const { alert, confirm, prompt } = useModal();
   
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,8 +67,8 @@ export default function RiverEditor() {
       setRiverData({
         id: data.id || targetId,
         name: data.name || "",
-        state: data.state || "MD",
-        class: data.class || "",
+        states: data.states || "MD",
+        class: data.class || "I",
         skill: data.skill || "FW",
         dam: data.dam || false,
         aw: data.aw || "",
@@ -93,29 +95,29 @@ export default function RiverEditor() {
               setProposedData(proposed);
               syncInputs(proposed);
               
-              const liveD = await getDoc(doc(db, "rivers", proposed.id));
-              if (liveD.exists()) {
-                 setLiveData(liveD.data());
-              }
-           } else {
-              alert("That review queue item no longer exists or was already processed.");
-              navigate("/admin");
-           }
-        }
-        else {
-           const d = await getDoc(doc(db, "rivers", riverId as string));
-           if (d.exists()) {
-              const live = d.data();
-              setLiveData(live);
-              syncInputs(live);
-           }
-        }
-      } catch (e: unknown) {
-        if (e instanceof Error) console.error("Error loading river", e.message);
-        alert("Failed to load river data");
-      }
-      setLoading(false);
-    }
+               const liveD = await getDoc(doc(db, "rivers", proposed.id));
+               if (liveD.exists()) {
+                  setLiveData(liveD.data());
+               }
+            } else {
+               await alert("That review queue item no longer exists or was already processed.");
+               navigate("/admin");
+            }
+         }
+         else {
+            const d = await getDoc(doc(db, "rivers", riverId as string));
+            if (d.exists()) {
+               const live = d.data();
+               setLiveData(live);
+               syncInputs(live);
+            }
+         }
+       } catch (e: unknown) {
+         if (e instanceof Error) console.error("Error loading river", e.message);
+         await alert("Failed to load river data");
+       }
+       setLoading(false);
+     }
     load();
   }, [riverId, queueId, isNew, isReviewMode, navigate]);
 
@@ -130,8 +132,8 @@ export default function RiverEditor() {
           ['clean']
         ],
         handlers: {
-          image: function() {
-            const url = prompt("Please paste a Direct Image URL or a Google Drive sharing link:");
+          image: async function() {
+            const url = await prompt("Please paste a Direct Image URL or a Google Drive sharing link:");
             if (!url) return;
             
             let finalUrl = url;
@@ -155,7 +157,7 @@ export default function RiverEditor() {
         }
       }
     };
-  }, []);
+  }, [prompt]);
 
   const generateFinalObj = () => {
       const newAccessPoints: any[] = [];
@@ -212,16 +214,16 @@ export default function RiverEditor() {
       }
   };
 
-  const validatePayload = (finalObj: any) => {
+  const validatePayload = async (finalObj: any) => {
       const { isValid, errors, warnings } = validateRiver(finalObj);
       
       if (warnings.length > 0) {
-          const proceed = window.confirm(`Warning:\n${warnings.join('\n')}\n\nProceed submitting?`);
+          const proceed = await confirm(`Warning:\n${warnings.join('\n')}\n\nProceed submitting?`);
           if (!proceed) return false;
       }
 
       if (!isValid) {
-          alert(`Error:\n${errors.join('\n')}`);
+          await alert(`Error:\n${errors.join('\n')}`);
           return false;
       }
 
@@ -240,7 +242,7 @@ export default function RiverEditor() {
     try {
       setSaving(true);
       const finalObj = generateFinalObj();
-      if (!validatePayload(finalObj)) {
+      if (!(await validatePayload(finalObj))) {
           setSaving(false);
           return;
       }
@@ -251,13 +253,18 @@ export default function RiverEditor() {
 
       await setDoc(doc(db, targetCollection, documentId), finalObj);
       
-      alert((isAdmin && !forceQueue) ? "Saved successfully to Live Maps!" : "Submitted successfully to the Review Queue!");
-      if (isNew && isAdmin && !forceQueue) navigate(`/edit/${finalObj.id}`);
-      else if (forceQueue || !isAdmin) navigate("/");
+      await alert((isAdmin && !forceQueue) ? "Saved successfully!" : "Submitted successfully!");
+      
+      if (targetCollection === "reviewQueue") {
+         if (isAdmin) navigate("/admin");
+         else navigate("/");
+      } else {
+         if (isNew) navigate(`/edit/${finalObj.id}`);
+      }
     } catch (e: unknown) {
       if (e instanceof Error) {
           console.error(e.message);
-          alert(`Save failed: ${e.message}`);
+          await alert(`Save failed: ${e.message}`);
       }
     } finally {
       setSaving(false);
@@ -269,7 +276,7 @@ export default function RiverEditor() {
       try {
           setSaving(true);
           const finalObj = generateFinalObj();
-          if (!validatePayload(finalObj)) {
+          if (!(await validatePayload(finalObj))) {
               setSaving(false);
               return;
           }
@@ -277,34 +284,34 @@ export default function RiverEditor() {
           await setDoc(doc(db, "rivers", finalObj.id), finalObj);
           await deleteDoc(doc(db, "reviewQueue", proposedData.queueId));
           
-          alert("Successfully approved and mapped to LIVE infrastructure!");
+          await alert("Successfully approved!");
           navigate("/admin");
       } catch (e: unknown) {
-          if (e instanceof Error) alert(`Failed to approve natively: ${e.message}`);
-          else alert('Failed to approve natively');
+          if (e instanceof Error) await alert(`Failed to approve natively: ${e.message}`);
+          else await alert('Failed to approve natively');
           setSaving(false);
       }
   };
 
   const handleRejectReview = async () => {
       if (!isAdmin || !proposedData?.queueId) return;
-      if (!window.confirm("Reject and irrevocably destroy this crowdsourced submission?")) return;
+      if (!(await confirm("Reject this submission completely?"))) return;
       
       try {
           setSaving(true);
           await deleteDoc(doc(db, "reviewQueue", proposedData.queueId));
-          alert("Submission completely rejected.");
+          await alert("Submission completely rejected.");
           navigate("/admin");
       } catch (e: unknown) {
-          if (e instanceof Error) alert(`Failed to reject natively: ${e.message}`);
-          else alert('Failed to reject natively');
+          if (e instanceof Error) await alert(`Failed to reject natively: ${e.message}`);
+          else await alert('Failed to reject natively');
           setSaving(false);
       }
   };
 
   const handleDeleteRiver = async () => {
       if (!isAdmin || isNew || isReviewMode) return;
-      if (!window.confirm("Are you sure you want to delete this river? This action cannot be reversed.")) return;
+      if (!(await confirm("Are you sure you want to delete this river? This action cannot be reversed."))) return;
 
       try {
           setSaving(true);
@@ -312,11 +319,11 @@ export default function RiverEditor() {
           const functions = getFunctions();
           const fn = httpsCallable(functions, "deleteLiveRiver");
           await fn({ riverId: riverData.id });
-          alert("River permanently deleted from LIVE database and disaster-recovery email dispatched.");
+          await alert("River permanently deleted.");
           navigate("/admin");
       } catch (e: unknown) {
-          if (e instanceof Error) alert(`Failed to delete river natively: ${e.message}`);
-          else alert('Failed to delete river natively');
+          if (e instanceof Error) await alert(`Failed to delete river natively: ${e.message}`);
+          else await alert('Failed to delete river natively');
           setSaving(false);
       }
   };
@@ -376,7 +383,7 @@ export default function RiverEditor() {
             disabled={saving}
             style={{ padding: '8px 15px', backgroundColor: "transparent", color: "var(--danger)", border: '1px solid var(--danger)', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold', cursor: saving ? 'not-allowed' : 'pointer', flexShrink: 0 }}
           >
-            Delete Live River
+            Delete River
           </button>
         )}
       </div>
@@ -429,12 +436,36 @@ export default function RiverEditor() {
           </div>
           <div style={{ flex: 1 }}>
             <label style={{fontWeight: 'bold', display: 'block'}}>State/Region</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginBottom: riverData.states ? "5px" : "0" }}>
+              {riverData.states?.split(',').map((s: string) => s.trim()).filter(Boolean).map((s: string) => (
+                <span 
+                  key={s} 
+                  style={{ backgroundColor: "var(--primary)", color: "white", padding: "2px 6px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+                  onClick={() => {
+                    const newState = riverData.states!.split(',').map((st: string) => st.trim()).filter((st: string) => st !== s).join(', ');
+                    setRiverData({...riverData, states: newState});
+                  }}
+                  title="Click to remove"
+                >
+                  {s} &times;
+                </span>
+              ))}
+            </div>
             <select
               style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
-              value={riverData.state} 
-              onChange={e => setRiverData({...riverData, state: e.target.value})} 
+              value="" 
+              onChange={e => {
+                 if (e.target.value) {
+                   const curr = riverData.states?.split(',').map((s: string) => s.trim()).filter(Boolean) || [];
+                   if (!curr.includes(e.target.value)) {
+                     curr.push(e.target.value);
+                     setRiverData({...riverData, states: curr.join(', ')});
+                   }
+                 }
+              }} 
             >
-               {STATES_AND_PROVINCES.map(st => <option key={st} value={st}>{st}</option>)}
+               <option value="" disabled>Add State...</option>
+               {STATES_AND_PROVINCES.filter(st => !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
             </select>
           </div>
         </div>
@@ -646,7 +677,7 @@ export default function RiverEditor() {
           <div style={{ maxWidth: 800, margin: '0 auto' }}>
               
               <div style={{ marginBottom: '15px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--text-muted)'}}>Live Preview</label>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--text-muted)'}}>Live Preview - Click to Expand</label>
                   
                   {liveWarnings.length > 0 && (
                      <div style={{ backgroundColor: 'var(--warning-bg)', color: 'var(--warning-text)', padding: '10px', borderRadius: '5px', marginBottom: '10px', fontSize: '14px' }}>
@@ -697,7 +728,7 @@ export default function RiverEditor() {
                     disabled={saving || isOriginalView}
                     style={{ flex: 1, padding: '15px', backgroundColor: "var(--success)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
                   >
-                    {saving ? "Saving..." : "Approve & Deploy to Live Maps"}
+                    {saving ? "Saving..." : "Approve and Deploy"}
                   </button>
                   <button 
                     onClick={handleRejectReview} 
@@ -714,7 +745,7 @@ export default function RiverEditor() {
                     disabled={saving || isOriginalView}
                     style={{ flex: isAdmin ? 2 : 1, padding: '15px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
                   >
-                    {saving ? "Saving..." : (isAdmin ? "Publish to Live Maps" : "Submit Edit for Review")}
+                    {saving ? "Saving..." : (isAdmin ? "Publish" : "Submit for Review")}
                   </button>
                   {isAdmin && (
                     <button 
@@ -722,7 +753,7 @@ export default function RiverEditor() {
                       disabled={saving || isOriginalView}
                       style={{ flex: 1, padding: '15px', backgroundColor: "var(--surface-hover)", color: "var(--text)", border: '2px solid var(--border)', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
                     >
-                      Save to Queue Drafts
+                      Save to Queue
                     </button>
                   )}
                 </div>

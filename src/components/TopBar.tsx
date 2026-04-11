@@ -49,13 +49,22 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery }) => {
         Class⇅
       </span>
       <span
-        className="riverspan"
+        className="riverspan flowspan"
         onClick={() => {
           toggleSort("running");
         }}
         style={{ cursor: "pointer" }}
       >
-        Flow/Trend⇅
+        Flow⇅
+      </span>
+      <span
+        className="riverspan statespan"
+        onClick={() => {
+          toggleSort("state" as any);
+        }}
+        style={{ cursor: "pointer" }}
+      >
+        State⇅
       </span>
     </button>
   );

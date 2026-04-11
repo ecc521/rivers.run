@@ -76,15 +76,20 @@ export const RiverItem: React.FC<RiverItemProps> = ({
           <span className="riverspan flowspan">Dam</span>
         ) : <span className="riverspan flowspan"></span>)}
 
+        {/* State Span */}
+        <span 
+          className="riverspan statespan"
+          title={river.states?.includes(',') ? river.states.split(',').map((s: string)=>s.trim()).join(', ') : ""}
+        >
+          {river.states?.includes(',') ? `${river.states.split(',')[0].trim()}+` : (river.states || "")}
+        </span>
+
         {/* Favorite Span (Moved to Right) */}
         <span
-          className="riverspan"
+          className="riverspan favspan"
+          title={isFav ? "Remove River from Favorites" : "Add River to Favorites"}
           style={{
-            marginLeft: "auto",
-            paddingRight: "8px",
-            cursor: "pointer",
             color: isFav ? "#ffd700" : "inherit",
-            fontSize: "1.2em",
           }}
           onClick={(e) => {
             e.stopPropagation();

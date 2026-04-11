@@ -16,7 +16,7 @@ export interface AdvancedSearchQuery {
   distanceMax?: number;
   userLat?: number;
   userLon?: number;
-  sortBy?: "none" | "alphabetical" | "skill" | "class" | "running";
+  sortBy?: "none" | "alphabetical" | "skill" | "class" | "running" | "state";
   sortReverse?: boolean;
   listData?: { id: string; order: number }[];
   mapRadiusMode?: "current" | "center" | "custom";
@@ -31,7 +31,7 @@ export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
   includeUnknownSkill: true,
   includeUnknownFlow: true,
   includeDams: true,
-  sortBy: "none",
+  sortBy: "alphabetical",
   sortReverse: false,
 };
 
@@ -126,6 +126,7 @@ function getSortKey(r: RiverData, sortBy: string): any {
     case "skill": return skillToNumber(r.skill || "");
     case "class": return r.class || "";
     case "running": return r.running ?? -1;
+    case "state": return (r.states || "").toLowerCase();
     default: return 0;
   }
 }
@@ -180,19 +181,44 @@ export function filterRivers(
 
   // Sorting
   if (query.sortBy && query.sortBy !== "none") {
-    const mapped = list.map((r, i) => ({ index: i, value: r, sortKey: getSortKey(r, query.sortBy!) }));
+    const isAlphabetical = query.sortBy === "alphabetical";
+    const mapped = list.map((r, i) => ({ 
+        index: i, 
+        value: r, 
+        sortKey: getSortKey(r, query.sortBy!),
+    }));
     
     mapped.sort((a, b) => {
-      if (a.sortKey > b.sortKey) return 1;
-      if (a.sortKey < b.sortKey) return -1;
-      return 0;
+      // Gauge separation ONLY for alphabetical sort
+      if (isAlphabetical && terms.indexOf("gauge") === -1) {
+        const aGauge = !!a.value.isGauge;
+        const bGauge = !!b.value.isGauge;
+        if (!aGauge && bGauge) return -1;
+        if (aGauge && !bGauge) return 1;
+      }
+
+      // Respect search relevance for alphabetical sort if search terms exist
+      if (isAlphabetical && terms.length > 0) {
+        const aScore = getSearchRelevanceScore(a.value, terms);
+        const bScore = getSearchRelevanceScore(b.value, terms);
+        if (aScore !== bScore) {
+          return bScore - aScore;
+        }
+      }
+
+      let cmp = 0;
+      if (a.sortKey > b.sortKey) cmp = 1;
+      else if (a.sortKey < b.sortKey) cmp = -1;
+
+      if (cmp !== 0) {
+        return query.sortReverse ? -cmp : cmp;
+      }
+      
+      return a.index - b.index;
     });
 
     list = mapped.map(m => m.value);
 
-    if (query.sortReverse) {
-      list.reverse();
-    }
   } else if (query.listData && query.listData.length > 0) {
     // If no explicit sort is chosen but we have list constraints, sort by the implicit List Order!
     const orderMap = new Map(query.listData.map((ld) => [ld.id, ld.order]));

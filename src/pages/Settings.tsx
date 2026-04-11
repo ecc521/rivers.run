@@ -8,7 +8,7 @@ import {
   WORLD_BOUNDS, 
   NORTH_AMERICA_BOUNDS 
 } from "../utils/offlineMapEngine";
-import { PromptModal } from "../components/PromptModal";
+import { useModal } from "../context/ModalContext";
 
 const SettingsPage: React.FC = () => {
   const { isDarkMode, homePageDefaultSearch, updateSetting, loading, themePref, colorBlindPref } = useSettings();
@@ -150,12 +150,7 @@ const OfflineMapManager: React.FC = () => {
   
   const [worldZoom, setWorldZoom] = useState(2);
   const [usZoom, setUsZoom] = useState(4);
-
-  const [promptConfig, setPromptConfig] = useState<{
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  } | null>(null);
+  const { confirm } = useModal();
 
   const refreshCacheString = async () => {
     const mem = await getCacheUsageString();
@@ -173,50 +168,39 @@ const OfflineMapManager: React.FC = () => {
     if (isDownloading) return;
     setIsDownloading(true);
 
-    let urls: string[] = [];
-    if (type === 'world') {
-      urls = generateTileQueue(WORLD_BOUNDS, 0, exactZoom);
-    } else {
-      urls = generateTileQueue(NORTH_AMERICA_BOUNDS, 0, exactZoom);
-    }
+    const urls = type === 'world' 
+      ? generateTileQueue(WORLD_BOUNDS, 0, exactZoom)
+      : generateTileQueue(NORTH_AMERICA_BOUNDS, 0, exactZoom);
 
     const estimatedMb = ((urls.length * 15) / 1024).toFixed(1);
 
-    setPromptConfig({
-      title: "Download Offline Map",
-      message: `This will download ~${estimatedMb} MB to your device so you can view the map without cell service. Continue?`,
-      onConfirm: async () => {
-        setPromptConfig(null);
-        setDownloadProgress({ done: 0, total: urls.length });
+    if (await confirm(`This will download ~${estimatedMb} MB to your device so you can view the map without cell service. Continue?`, "Download Offline Map")) {
+      setDownloadProgress({ done: 0, total: urls.length });
 
-        await downloadMapTiles(urls, (done, total) => {
-          setDownloadProgress({ done, total });
-        });
+      await downloadMapTiles(urls, (done, total) => {
+        setDownloadProgress({ done, total });
+      });
 
-        setDownloadProgress(null);
-        setIsDownloading(false);
-        refreshCacheString();
-        // Force re-detect to update UI after a manual download finishes
-        detectMaxZoom('world').then(setWorldZoom);
-        detectMaxZoom('na').then(setUsZoom);
-      }
-    });
+      setDownloadProgress(null);
+      setIsDownloading(false);
+      refreshCacheString();
+      // Force re-detect to update UI after a manual download finishes
+      detectMaxZoom('world').then(setWorldZoom);
+      detectMaxZoom('na').then(setUsZoom);
+    } else {
+      setIsDownloading(false);
+    }
   };
 
   const handleClearCache = async () => {
-    setPromptConfig({
-      title: "Delete Downloaded Maps?",
-      message: "This will delete the offline maps you manually downloaded to your device. Are you sure?",
-      onConfirm: async () => {
-        setPromptConfig(null);
-        try {
-          await caches.delete('offline-map-tiles');
-          refreshCacheString();
-        } catch (e: unknown) {
-          if (e instanceof Error) console.error(e.message);
-        }
+    if (await confirm("This will delete the offline maps you manually downloaded to your device. Are you sure?", "Delete Downloaded Maps?")) {
+      try {
+        await caches.delete('offline-map-tiles');
+        refreshCacheString();
+      } catch (e: unknown) {
+        if (e instanceof Error) console.error(e.message);
       }
-    });
+    }
   };
 
   return (
@@ -316,16 +300,6 @@ const OfflineMapManager: React.FC = () => {
         </button>
       </div>
 
-      <PromptModal
-        isOpen={promptConfig !== null}
-        title={promptConfig?.title || ""}
-        message={promptConfig?.message || ""}
-        onConfirm={() => promptConfig?.onConfirm()}
-        onCancel={() => {
-          setPromptConfig(null);
-          setIsDownloading(false);
-        }}
-      />
     </div>
   );
 };

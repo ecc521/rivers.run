@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { NotificationSettings } from "../components/NotificationSettings";
 import { Link } from "react-router-dom";
-import { PromptModal } from "../components/PromptModal";
+import { useModal } from "../context/ModalContext";
 const DebouncedNumericInput = ({ value, onChange, placeholder }: { value: number | null, onChange: (val: string) => void, placeholder?: string }) => {
   const [localVal, setLocalVal] = React.useState<string>(value !== null ? String(value) : "");
 
@@ -38,12 +38,7 @@ const DebouncedNumericInput = ({ value, onChange, placeholder }: { value: number
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();
   const { favorites, updateFavoriteConfig, toggleFavorite, clearAllFavorites } = useFavorites();
-  
-  const [promptConfig, setPromptConfig] = React.useState<{
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  } | null>(null);
+  const { confirm } = useModal();
 
   // Sort alphabetically by name
   const sortedFavorites = [...favorites].sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
@@ -62,32 +57,22 @@ const FavoritesPage: React.FC = () => {
     updateFavoriteConfig(id, { units: val });
   };
 
-  const handleDelete = (riverObj: any) => {
+  const handleDelete = async (riverObj: any) => {
     const displayName = riverObj.name || riverObj.id;
-    setPromptConfig({
-      title: "Remove Favorite",
-      message: `Remove ${displayName}?`,
-      onConfirm: () => {
-        toggleFavorite({
-          id: riverObj.id,
-          gauges: [{ id: riverObj.gauge, isPrimary: true }],
-          name: riverObj.name,
-          section: riverObj.section,
-        } as any);
-        setPromptConfig(null);
-      }
-    });
+    if (await confirm(`Remove ${displayName}?`, "Remove Favorite")) {
+      toggleFavorite({
+        id: riverObj.id,
+        gauges: [{ id: riverObj.gauge, isPrimary: true }],
+        name: riverObj.name,
+        section: riverObj.section,
+      } as any);
+    }
   };
 
-  const clearAll = () => {
-    setPromptConfig({
-      title: "Delete All Favorites",
-      message: "Are you sure you want to permanently delete all your favorites? This action cannot be undone.",
-      onConfirm: async () => {
-        await clearAllFavorites();
-        setPromptConfig(null);
-      }
-    });
+  const clearAll = async () => {
+    if (await confirm("Are you sure you want to permanently delete all your favorites? This action cannot be undone.", "Delete All Favorites")) {
+      await clearAllFavorites();
+    }
   };
 
   return (
@@ -319,13 +304,6 @@ const FavoritesPage: React.FC = () => {
         </table>
       </div>
       
-      <PromptModal
-        isOpen={promptConfig !== null}
-        title={promptConfig?.title || ""}
-        message={promptConfig?.message || ""}
-        onConfirm={() => promptConfig?.onConfirm()}
-        onCancel={() => setPromptConfig(null)}
-      />
     </div>
   );
 };

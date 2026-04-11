@@ -114,6 +114,7 @@ export async function processNotifications(flowDataGlob: any) {
     console.log(`Evaluating alerts for ${userData.length} active users.`);
 
 	const activeUsers = userData.filter((user) => {
+        if (!Array.isArray(user.favorites) || user.favorites.length === 0) { return false; }
 		if (user.notifications?.noneUntil > Date.now()) { return false; }
 		if (!user.notifications?.enabled) { return false; }
 

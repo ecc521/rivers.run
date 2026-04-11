@@ -47,17 +47,6 @@ export function getMessage(user: any) {
             const s = river.status || "unknown";
             statusMap.get(s)?.push(river);
         }
-    } else {
-        for (const gaugeID in favorites) {
-            const rivers = favorites[gaugeID];
-            for (const riverID in rivers) {
-                const river = rivers[riverID];
-                if (!river) { continue; }
-                IDs.push(riverID);
-                const s = river.status || "unknown";
-                statusMap.get(s)?.push(river);
-            }
-        }
     }
 
 	if (IDs.length === 0) { return null; } // User has no favorites. No reason to send an email.

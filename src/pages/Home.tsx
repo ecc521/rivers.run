@@ -76,6 +76,16 @@ const Home: React.FC = () => {
     const fMax = searchParams.get("flowMax");
     if (fMax) q.flowMax = parseFloat(fMax);
 
+    const sortByVal = searchParams.get("sortBy") as AdvancedSearchQuery["sortBy"];
+    if (sortByVal) {
+      q.sortBy = sortByVal;
+    } else if (searchParamVal) {
+      q.sortBy = "none";
+    }
+
+    const sortReverseVal = searchParams.get("sortReverse");
+    if (sortReverseVal) q.sortReverse = sortReverseVal === "true";
+
     return q;
   });
 
@@ -229,7 +239,17 @@ const Home: React.FC = () => {
           placeholder="Search for a river..."
           value={searchQuery.normalSearch || ""}
           onChange={(e) => {
-            setSearchQuery({ ...searchQuery, normalSearch: e.target.value });
+            const hasText = e.target.value.trim().length > 0;
+            // When typing starts (hasText), default to relevance sort ("none"). 
+            // When cleared, revert back to alphabetical. 
+            // Preserve explicit sorts only if they manually clicked a sort header. 
+            // Since there's no easy way to know if they manually clicked vs just had the default,
+            // we will strictly follow: "typing resets any sorting".
+            setSearchQuery({ 
+              ...searchQuery, 
+              normalSearch: e.target.value,
+              sortBy: hasText ? "none" : (searchQuery.sortBy === "none" ? "alphabetical" : searchQuery.sortBy)
+            });
           }}
           style={{
             flex: 1,

@@ -21,7 +21,8 @@ The project has recently undergone a massive migration to a modern, fully server
 
 ## Development
 
-To spin up a local development environment:
+### Local Frontend Server
+To spin up a local development environment for the web app:
 
 ```bash
 # Install frontend dependencies
@@ -31,6 +32,22 @@ npm install
 npm run dev
 ```
 
+### Native Mobile Apps (iOS / Android)
+The mobile apps wrap the compiled web assets using Capacitor. To build and test them locally:
+
+```bash
+# 1. Build the frontend web assets
+npm run build
+
+# 2. Sync the compiled assets and update native dependencies
+npx cap sync
+
+# 3. Open the native project IDE (or use 'npx cap run ios' to bypass the IDE entirely)
+npx cap open ios
+# OR npx cap open android
+```
+
+### Local Serverless Backend
 To run and debug the serverless pipeline (Cloud Functions) locally:
 ```bash
 # Install backend dependencies
@@ -39,6 +56,28 @@ npm install
 
 # Build Typescript functions
 npm run build
+```
+
+## Deployment & CI/CD
+
+### Firebase Hosting (Web)
+The frontend web application is automatically deployed via GitHub Actions:
+- **Pull Requests**: Creating or pushing to a PR automatically generates an isolated preview URL for testing and review.
+- **Main Branch**: Merging code into the `main` branch permanently deploys the production build to the live `rivers.run` Firebase domain.
+
+### Firebase Cloud Functions
+Deployments to the Cloud Functions architecture are currently handled manually via the Firebase CLI to ensure controlled rollouts.
+
+```bash
+# Move into the functions directory
+cd functions/
+
+# Compile the TypeScript functions
+npm run build
+
+# Return to root and deploy to production
+cd ..
+npx firebase-tools deploy --only functions
 ```
 
 ## Community Administration

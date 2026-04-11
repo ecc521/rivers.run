@@ -5,19 +5,22 @@ import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { AuthModal } from "./AuthModal";
 import { doc, deleteDoc } from "firebase/firestore";
+import { useModal } from "../context/ModalContext";
 
 const GlobalNavBar: React.FC = () => {
   const { user, loading, isAdmin } = useAuth();
+  const { alert, confirm } = useModal();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 850);
+  const [isNavMoreOpen, setIsNavMoreOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 850);
-      if (window.innerWidth > 850) {
-        setIsMobileMenuOpen(false);
+      setWindowWidth(window.innerWidth);
+      if (window.innerWidth > 930) {
+        setIsNavMoreOpen(false);
       }
     };
     window.addEventListener("resize", handleResize);
@@ -39,7 +42,7 @@ const GlobalNavBar: React.FC = () => {
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
       if (e instanceof Error) console.error("Failed to download data", e.message);
-      alert("No data found or failed to parse favorites.");
+      await alert("No data found or failed to parse favorites.");
     }
   };
 
@@ -47,25 +50,25 @@ const GlobalNavBar: React.FC = () => {
     if (!user) return;
     
     // First confirmation
-    if (window.confirm("WARNING: Are you absolutely sure you want to delete your account? This action cannot be undone.")) {
+    if (await confirm("WARNING: Are you absolutely sure you want to delete your account? This action cannot be undone.")) {
       // Second confirmation
-      if (window.confirm("FINAL WARNING: Click OK to permanently delete your account and all associated data.")) {
+      if (await confirm("FINAL WARNING: Click OK to permanently delete your account and all associated data.")) {
         try {
           await deleteDoc(doc(db, "user", user.uid));
           
           await deleteUser(user);
-          alert("Your account has been entirely deleted.");
+          await alert("Account deleted.");
           setIsDropdownOpen(false);
         } catch (error: unknown) {
           if (error instanceof Error) {
             console.error("Error deleting account:", error.message);
             if ('code' in error && error.code === 'auth/requires-recent-login') {
-              alert("For security reasons, you must sign out and sign back in before deleting your account.");
+              await alert("Sign out and sign back in before deleting your account.");
             } else {
-              alert("Failed to delete account. Please contact support.");
+              await alert("Failed to delete account.");
             }
           } else {
-            alert("Failed to delete account. Please contact support.");
+            await alert("Failed to delete account.");
           }
         }
       }
@@ -100,34 +103,93 @@ const GlobalNavBar: React.FC = () => {
           Rivers.run
         </Link>
 
-        {!isMobile && (
-          <div
-            className="nav-links"
-            style={{ display: "flex", gap: "20px", alignItems: "center", marginLeft: "20px", flexWrap: "wrap", flexGrow: 1 }}
-          >
+        <div
+          className="nav-links"
+          style={{ display: "flex", gap: "20px", alignItems: "center", marginLeft: "20px", flexWrap: "nowrap", flexGrow: 1 }}
+        >
+          <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
             <Link to="/map" style={{ color: "#cbd5e1", textDecoration: "none" }}>Map</Link>
-            <Link to="/favorites" style={{ color: "#cbd5e1", textDecoration: "none" }}>Favorites</Link>
-            <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }}>Clubs</Link>
-            <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: "bold" }}>Lists</Link>
-            <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>FAQ</Link>
-            <Link to="/about" style={{ color: "#cbd5e1", textDecoration: "none" }}>About</Link>
-            <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>Settings</Link>
-            {isAdmin ? (
-              <div style={{ display: "flex", marginLeft: "auto", gap: "15px", alignItems: "center" }}>
-                <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontSize: "0.85em", fontWeight: "bold" }}>
-                  Create River
-                </Link>
-                <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold", marginRight: "10px" }}>
-                  Admin Tools
-                </Link>
-              </div>
+            {windowWidth > 450 && <Link to="/favorites" style={{ color: "#cbd5e1", textDecoration: "none" }}>Favorites</Link>}
+            {windowWidth > 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }}>Clubs</Link>}
+            {windowWidth > 580 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: "bold" }}>Lists</Link>}
+            {windowWidth > 650 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>FAQ</Link>}
+            {windowWidth > 720 && <Link to="/about" style={{ color: "#cbd5e1", textDecoration: "none" }}>About</Link>}
+            {windowWidth > 790 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>Settings</Link>}
+          </div>
+
+          <div style={{ display: "flex", gap: "20px", alignItems: "center", marginLeft: "auto", marginRight: "10px" }}>
+            {windowWidth > 860 && (isAdmin ? (
+               <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontSize: "0.85em", fontWeight: "bold" }}>
+                 Create River
+               </Link>
             ) : (
-              <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold", marginLeft: "auto", marginRight: "10px" }}>
-                Suggest a River
-              </Link>
+               <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold" }}>
+                 Suggest a River
+               </Link>
+            ))}
+
+            {windowWidth > 930 && isAdmin && (
+               <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold" }}>
+                 Admin Tools
+               </Link>
+            )}
+
+            {(windowWidth <= 860 || (isAdmin && windowWidth <= 930)) && (
+               <div style={{ position: "relative" }}>
+                 <div
+                   onClick={() => setIsNavMoreOpen(!isNavMoreOpen)}
+                   style={{ color: "#cbd5e1", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px" }}
+                 >
+                   More <span style={{ fontSize: "0.8em" }}>▼</span>
+                 </div>
+                 {isNavMoreOpen && (
+                   <div style={{ 
+                     position: "absolute", 
+                     top: "40px", 
+                     right: "0", 
+                     backgroundColor: "#1e293b", 
+                     padding: "16px", 
+                     borderRadius: "8px", 
+                     display: "flex", 
+                     flexDirection: "column", 
+                     gap: "15px", 
+                     zIndex: 1000, 
+                     border: "1px solid #334155",
+                     boxShadow: "0 4px 12px rgba(0,0,0,0.5)", 
+                     width: "160px" 
+                   }}>
+                     {windowWidth <= 450 && <Link to="/favorites" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Favorites</Link>}
+                     {windowWidth <= 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Clubs</Link>}
+                     {windowWidth <= 580 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: "bold" }} onClick={() => setIsNavMoreOpen(false)}>Lists</Link>}
+                     {windowWidth <= 650 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>FAQ</Link>}
+                     {windowWidth <= 720 && <Link to="/about" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>About</Link>}
+                     {windowWidth <= 790 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Settings</Link>}
+                     
+                     {windowWidth <= 860 && (
+                        <hr style={{ borderColor: "#334155", width: "100%", margin: 0 }} />
+                     )}
+                     {windowWidth <= 860 && (
+                        isAdmin ? (
+                         <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold" }} onClick={() => setIsNavMoreOpen(false)}>
+                           Create River
+                         </Link>
+                        ) : (
+                         <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold" }} onClick={() => setIsNavMoreOpen(false)}>
+                           Suggest a River
+                         </Link>
+                        )
+                     )}
+                     {windowWidth <= 930 && isAdmin && (
+                        <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold" }} onClick={() => setIsNavMoreOpen(false)}>
+                          Admin Tools
+                        </Link>
+                     )}
+                   </div>
+                 )}
+               </div>
             )}
           </div>
-        )}
+          </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: "auto" }}>
           <div className="nav-auth">
@@ -141,11 +203,13 @@ const GlobalNavBar: React.FC = () => {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 style={{ display: "flex", alignItems: "center", cursor: "pointer", gap: "8px" }}
               >
-                {user.photoURL ? (
+                {user.photoURL && !imgError ? (
                   <img
                     src={user.photoURL}
                     alt="Avatar"
                     className="user-avatar"
+                    referrerPolicy="no-referrer"
+                    onError={() => setImgError(true)}
                     style={{ width: "36px", height: "36px", borderRadius: "50%", border: "2px solid #3b82f6", objectFit: "cover" }}
                   />
                 ) : (
@@ -153,7 +217,6 @@ const GlobalNavBar: React.FC = () => {
                     {user.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
                 )}
-                
               </div>
 
               {isDropdownOpen && (
@@ -260,64 +323,6 @@ const GlobalNavBar: React.FC = () => {
           )}
         </div>
 
-        {isMobile && (
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              style={{
-                background: "transparent",
-                border: "1px solid #475569",
-                color: "white",
-                padding: "6px 14px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "1.2em",
-                outline: "none"
-              }}
-            >
-              ☰
-            </button>
-            {isMobileMenuOpen && (
-              <div style={{
-                position: "absolute",
-                top: "55px",
-                right: "0",
-                backgroundColor: "#1e293b",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
-                padding: "16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "18px",
-                zIndex: 2000,
-                width: "200px"
-              }}>
-                <Link to="/map" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Map</Link>
-                <Link to="/favorites" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Favorites</Link>
-                <Link to="/clubs" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Clubs</Link>
-                <Link to="/lists" style={{ color: "white", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Lists</Link>
-                <Link to="/faq" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>FAQ</Link>
-                <Link to="/about" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>About</Link>
-                <Link to="/settings" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Settings</Link>
-                {isAdmin ? (
-                  <>
-                    <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em", marginTop: "10px", borderTop: "1px solid #334155", paddingTop: "10px" }} onClick={() => setIsMobileMenuOpen(false)}>
-                      Create River
-                    </Link>
-                    <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em", marginTop: "10px" }} onClick={() => setIsMobileMenuOpen(false)}>
-                      Admin Tools
-                    </Link>
-                  </>
-                ) : (
-                  <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em", marginTop: "10px", borderTop: "1px solid #334155", paddingTop: "10px" }} onClick={() => setIsMobileMenuOpen(false)}>
-                    Suggest a River
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </div>
       </nav>
 

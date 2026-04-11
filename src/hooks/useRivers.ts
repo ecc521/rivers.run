@@ -54,14 +54,14 @@ const enrichRiver = (river: any, _index: number, flowData: any) => {
     const cfsValue = latest.cfs;
 
     if (cmsValue !== undefined && mValue !== undefined)
-      river.flowInfo = `${Math.round(cmsValue)} cms ${Math.round(mValue * 100) / 100} m`;
-    else if (cmsValue !== undefined) river.flowInfo = `${Math.round(cmsValue)} cms`;
-    else if (mValue !== undefined) river.flowInfo = `${Math.round(mValue * 100) / 100} m`;
+      river.flowInfo = `${Math.round(cmsValue)}cms, ${Math.round(mValue * 100) / 100}m`;
+    else if (cmsValue !== undefined) river.flowInfo = `${Math.round(cmsValue)}cms`;
+    else if (mValue !== undefined) river.flowInfo = `${Math.round(mValue * 100) / 100}m`;
     else if (cfsValue !== undefined && ftValue !== undefined)
-      river.flowInfo = `${Math.round(cfsValue)} cfs ${Math.round(ftValue * 100) / 100} ft`;
-    else if (cfsValue !== undefined) river.flowInfo = `${Math.round(cfsValue)} cfs`;
+      river.flowInfo = `${Math.round(cfsValue)}cfs, ${Math.round(ftValue * 100) / 100}ft`;
+    else if (cfsValue !== undefined) river.flowInfo = `${Math.round(cfsValue)}cfs`;
     else if (ftValue !== undefined)
-      river.flowInfo = `${Math.round(ftValue * 100) / 100} ft`;
+      river.flowInfo = `${Math.round(ftValue * 100) / 100}ft`;
   }
   return river;
 };
@@ -77,12 +77,12 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any): RiverData | null
    const cfsValue = latest.cfs;
 
    let flowStr = "";
-   if (cmsValue !== undefined && mValue !== undefined) flowStr = `${Math.round(cmsValue)} cms ${Math.round(mValue * 100) / 100} m`;
-   else if (cmsValue !== undefined) flowStr = `${Math.round(cmsValue)} cms`;
-   else if (mValue !== undefined) flowStr = `${Math.round(mValue * 100) / 100} m`;
-   else if (cfsValue !== undefined && ftValue !== undefined) flowStr = `${Math.round(cfsValue)} cfs ${Math.round(ftValue * 100) / 100} ft`;
-   else if (cfsValue !== undefined) flowStr = `${Math.round(cfsValue)} cfs`;
-   else if (ftValue !== undefined) flowStr = `${Math.round(ftValue * 100) / 100} ft`;
+   if (cmsValue !== undefined && mValue !== undefined) flowStr = `${Math.round(cmsValue)}cms, ${Math.round(mValue * 100) / 100}m`;
+   else if (cmsValue !== undefined) flowStr = `${Math.round(cmsValue)}cms`;
+   else if (mValue !== undefined) flowStr = `${Math.round(mValue * 100) / 100}m`;
+   else if (cfsValue !== undefined && ftValue !== undefined) flowStr = `${Math.round(cfsValue)}cfs, ${Math.round(ftValue * 100) / 100}ft`;
+   else if (cfsValue !== undefined) flowStr = `${Math.round(cfsValue)}cfs`;
+   else if (ftValue !== undefined) flowStr = `${Math.round(ftValue * 100) / 100}ft`;
 
    return {
        id: gaugeId,

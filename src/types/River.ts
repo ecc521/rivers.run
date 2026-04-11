@@ -1,8 +1,16 @@
 export interface AccessPoint {
-  name?: string;
-  type?: string;
   lat: number;
   lon: number;
+  type?: string;
+  name?: string;
+
+  // TRANSIENT EDITOR FIELDS (Used only in the UI for handling coordinate text, NOT stored in Firestore)
+  
+  /** Transient string buffer for latitude input (e.g. "38° 50' 11.2 N") */
+  rawLat?: string;
+
+  /** Transient string buffer for longitude input (e.g. "W 77° 12' 3.4\"") */
+  rawLon?: string;
 }
 
 export interface LinkedGauge {
@@ -25,6 +33,8 @@ export interface RiverData {
   id: string;
   name: string;
   section: string;
+  /** Primary associated area(s). Comma separated string for multiple states: e.g. "VA, MD" */
+  states?: string;
   writeup?: string;
   tags?: string[];
   class: string;

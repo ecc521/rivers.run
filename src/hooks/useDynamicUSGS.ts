@@ -233,9 +233,9 @@ export function useDynamicUSGS(river: RiverData) {
         enriched.ft = (ftValue !== undefined && !isNaN(ftValue)) ? ftValue : enriched.ft;
         enriched.running = calculateRelativeFlow(enriched) ?? enriched.running;
         
-        if (enriched.cfs && enriched.ft) enriched.flowInfo = `${Math.round(enriched.cfs)} cfs ${Math.round(enriched.ft * 100) / 100} ft`;
-        else if (enriched.cfs) enriched.flowInfo = `${Math.round(enriched.cfs)} cfs`;
-        else if (enriched.ft) enriched.flowInfo = `${Math.round(enriched.ft * 100) / 100} ft`;
+        if (enriched.cfs && enriched.ft) enriched.flowInfo = `${Math.round(enriched.cfs)}cfs, ${Math.round(enriched.ft * 100) / 100}ft`;
+        else if (enriched.cfs) enriched.flowInfo = `${Math.round(enriched.cfs)}cfs`;
+        else if (enriched.ft) enriched.flowInfo = `${Math.round(enriched.ft * 100) / 100}ft`;
     }
     
     return enriched;

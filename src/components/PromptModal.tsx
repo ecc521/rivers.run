@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 interface PromptModalProps {
   isOpen: boolean;
   title: string;
   message: string;
   isAlert?: boolean;
-  onConfirm: () => void;
+  isPrompt?: boolean;
+  onConfirm: (val?: string) => void;
   onCancel: () => void;
 }
 
@@ -14,9 +15,18 @@ export const PromptModal: React.FC<PromptModalProps> = ({
   title,
   message,
   isAlert = false,
+  isPrompt = false,
   onConfirm,
   onCancel,
 }) => {
+  const [inputValue, setInputValue] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setInputValue("");
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -59,6 +69,24 @@ export const PromptModal: React.FC<PromptModalProps> = ({
           {message}
         </p>
 
+        {isPrompt && (
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            autoFocus
+            style={{
+              padding: "10px",
+              borderRadius: "6px",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--surface-hover)",
+              color: "var(--text)",
+              width: "100%",
+              boxSizing: "border-box"
+            }}
+          />
+        )}
+
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "8px" }}>
           {!isAlert && (
             <button
@@ -78,7 +106,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({
             </button>
           )}
           <button
-            onClick={onConfirm}
+            onClick={() => onConfirm(isPrompt ? inputValue : undefined)}
             style={{
               padding: "8px 16px",
               backgroundColor: "var(--primary)",

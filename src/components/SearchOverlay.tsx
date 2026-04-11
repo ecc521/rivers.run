@@ -22,6 +22,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   isMapMode = false,
 }) => {
   const [localQuery, setLocalQuery] = useState<AdvancedSearchQuery>(query);
+  const [copied, setCopied] = useState(false);
   const location = useLocation();
   useEffect(() => {
     setLocalQuery(query);
@@ -66,13 +67,32 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       distanceMax: undefined,
       userLat: undefined,
       userLon: undefined,
-      sortBy: "none" as const,
-      sortReverse: false,
       mapRadiusMode: undefined,
     };
     setLocalQuery(resetQ);
     setQuery(resetQ);
   };
+
+  const getShareUrl = () => {
+      const url = new URL(window.location.origin + window.location.pathname);
+      if (localQuery.normalSearch) url.searchParams.set("search", localQuery.normalSearch);
+      if (localQuery.name) url.searchParams.set("name", localQuery.name);
+      if (localQuery.section) url.searchParams.set("section", localQuery.section);
+      if (localQuery.distanceMax) {
+          url.searchParams.set("distanceMax", localQuery.distanceMax.toString());
+          if (localQuery.mapRadiusMode) url.searchParams.set("radiusMode", localQuery.mapRadiusMode);
+          if (localQuery.userLat !== undefined) url.searchParams.set("userLat", localQuery.userLat.toString());
+          if (localQuery.userLon !== undefined) url.searchParams.set("userLon", localQuery.userLon.toString());
+      }
+      if (localQuery.skillMin !== undefined && localQuery.skillMin !== 1) url.searchParams.set("skillMin", localQuery.skillMin.toString());
+      if (localQuery.skillMax !== undefined && localQuery.skillMax !== 8) url.searchParams.set("skillMax", localQuery.skillMax.toString());
+      if (localQuery.flowMin !== undefined && localQuery.flowMin !== 0) url.searchParams.set("flowMin", localQuery.flowMin.toString());
+      if (localQuery.flowMax !== undefined && localQuery.flowMax !== 4) url.searchParams.set("flowMax", localQuery.flowMax.toString());
+      if (localQuery.sortBy && localQuery.sortBy !== "none") url.searchParams.set("sortBy", localQuery.sortBy);
+      if (localQuery.sortReverse) url.searchParams.set("sortReverse", "true");
+      return url.toString();
+  };
+  const shareUrl = getShareUrl();
 
   return ReactDOM.createPortal(
     <div
@@ -166,6 +186,52 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
             gap: "20px",
           }}
         >
+          {!localQuery.favoritesOnly && (
+            <div style={{...getSectionStyle(), backgroundColor: "var(--surface-hover)", padding: "15px", borderRadius: "8px", border: "1px solid var(--border)"}}>
+              <label style={getLabelStyle()}>Sharable Link to This Search</label>
+              <div style={{ display: "flex", gap: "10px", marginTop: "5px" }}>
+                <input 
+                    type="text" 
+                    readOnly 
+                    value={shareUrl}
+                    style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border)",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--text)",
+                        fontSize: "0.85rem"
+                    }}
+                />
+                <button 
+                    onClick={async () => {
+                        try {
+                            await navigator.clipboard.writeText(shareUrl);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                        } catch (err) {
+                            console.error("Failed to copy", err);
+                        }
+                    }}
+                    style={{
+                        padding: "8px 16px",
+                        borderRadius: "8px",
+                        border: "none",
+                        backgroundColor: copied ? "var(--success, #10b981)" : "var(--primary)",
+                        color: "white",
+                        fontWeight: "bold",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        transition: "all 0.2s"
+                    }}
+                >
+                    {copied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div style={getSectionStyle()}>
             <label style={getLabelStyle()}>River Name Contains</label>
             <input

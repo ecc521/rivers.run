@@ -16,6 +16,7 @@ import { processNotifications } from "./services/notifications";
 import { syncRiverDataToStorage } from "./services/riverdata";
 import { compileGaugeRegistryToStorage } from "./services/gaugeRegistry";
 import * as zlib from "zlib";
+import * as nodemailer from "nodemailer";
 
 // Initialize Firebase Admin seamlessly (uses default credentials inside the function environment)
 initializeApp({
@@ -243,14 +244,22 @@ export const notifyAdminsOnReviewQueue = onDocumentCreated("reviewQueue/{docId}"
     if (emails.length === 0) return;
 
     try {
-        await db.collection("mail").add({
-            to: emails,
-            message: {
+        const password = gmailPassword.value();
+        if (password) {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                secure: true,
+                auth: { user: 'email.rivers.run@gmail.com', pass: password }
+            });
+
+            await transporter.sendMail({
+                from: 'email.rivers.run@gmail.com',
+                to: emails,
                 subject: `New rivers.run Edit Submission: ${queueData.name}`,
-                text: `A paddler has structurally submitted an edit or creation mapping for: ${queueData.name}.\n\nYou can natively review, interactively explicitly toggle dual-pane diffs, and deploy the configuration natively here:\nhttps://rivers.run/admin`
-            }
-        });
-        console.log(`Successfully dispatched Queue Alerts to ${emails.length} implicitly configured admins.`);
+                text: `A paddler has submitted an edit or new river mapping for: ${queueData.name}.\n\nYou can review the changes and deploy them to the live map here:\nhttps://rivers.run/admin`
+            });
+        }
+        console.log(`Successfully dispatched Queue Alerts to ${emails.length} admins.`);
     } catch (e: unknown) {
         console.error("Non-fatal: Failed mapping queue alerts dynamically", e instanceof Error ? e.message : e);
     }
@@ -303,13 +312,21 @@ export const deleteLiveRiver = onCall({
     const adminEmail = request.auth.token?.email || "Unknown Admin";
 
     try {
-        await db.collection("mail").add({
-            to: [adminEmail, "email.rivers.run@gmail.com"],
-            message: {
+        const password = gmailPassword.value();
+        if (password) {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                secure: true,
+                auth: { user: 'email.rivers.run@gmail.com', pass: password }
+            });
+
+            await transporter.sendMail({
+                from: 'email.rivers.run@gmail.com',
+                to: [adminEmail, "email.rivers.run@gmail.com"],
                 subject: `DELETION ALERT: River Component Removed - ${riverData?.name || riverId}`,
                 text: `This river was deleted. The info prior to deletion is attached:\n\n${JSON.stringify(riverData, null, 2)}`
-            }
-        });
+            });
+        }
     } catch (e: unknown) {
         console.error("Non-fatal: Failed to log native river deletion email natively:", e instanceof Error ? e.message : e);
     }

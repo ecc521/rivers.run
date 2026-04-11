@@ -4,10 +4,12 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useModal } from "../context/ModalContext";
 
 export default function AdminQueue() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { alert, confirm } = useModal();
   const [queue, setQueue] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [adminQueueAlerts, setAdminQueueAlerts] = useState<boolean>(false);
@@ -27,7 +29,7 @@ export default function AdminQueue() {
         setQueue(items);
       } catch (err: unknown) {
         if (err instanceof Error) console.error("Failed to fetch queue", err.message);
-        alert("Failed to load review queue. Ensure you have admin permissions.");
+        await alert("Failed to load review queue. Ensure you have admin permissions.");
       }
       setLoading(false);
     }
@@ -40,7 +42,7 @@ export default function AdminQueue() {
         }
       });
     }
-  }, [isAdmin, user, authLoading, navigate]);
+  }, [isAdmin, user, authLoading, navigate, alert]);
 
   const toggleAdminAlerts = async (val: boolean) => {
     setAdminQueueAlerts(val);
@@ -59,29 +61,29 @@ export default function AdminQueue() {
   if (authLoading || loading) return <div className="page-content center"><h2>Loading Admin Queue...</h2></div>;
 
   const handleManualPull = async () => {
-    if (!window.confirm("Force immediate resync of Gauge flows and River data DB snapshot? Use this if you just edited or deleted a river and want to bypass the 15 minute delay.")) return;
+    if (!(await confirm("Force immediate resync of Gauge flows and River data DB snapshot? Use this if you just edited or deleted a river and want to bypass the 15 minute delay."))) return;
     setSyncingGauges(true);
     try {
       const functions = getFunctions();
       const fn = httpsCallable(functions, "manualSyncRivers", { timeout: 300000 });
       const res = await fn();
-      alert(`Success: ${(res.data as any)?.message}`);
+      await alert(`Success: ${(res.data as any)?.message}`);
     } catch (e: any) {
-      alert(`Error syncing: ${e.message}`);
+      await alert(`Error: ${e.message}`);
     }
     setSyncingGauges(false);
   };
 
   const handleManualRegistry = async () => {
-    if (!window.confirm("Warning: Recompiling the US/Canada gauge registry takes several minutes and should only be explicitly invoked to restore missing standalone gauges. Proceed?")) return;
+    if (!(await confirm("Warning: Recompiling the US/Canada gauge registry takes several minutes and should only be explicitly invoked to restore missing standalone gauges. Proceed?"))) return;
     setSyncingRegistry(true);
     try {
       const functions = getFunctions();
       const fn = httpsCallable(functions, "manualSyncGaugeRegistry", { timeout: 540000 });
       await fn();
-      alert("Gauge Registry dynamically synthesized!");
+      await alert("Gauge Registry updated!");
     } catch (e: any) {
-      alert(`Error synthesizing registry: ${e.message}`);
+      await alert(`Error: ${e.message}`);
     }
     setSyncingRegistry(false);
   };
@@ -115,7 +117,7 @@ export default function AdminQueue() {
           {queue.map(item => (
             <div key={item.queueId} style={{ border: "2px solid #ccc", borderRadius: "8px", padding: "15px", backgroundColor: "var(--surface)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <h2 style={{ margin: 0 }}>{item.name} <small style={{ fontWeight: 'normal', color: "var(--text-muted)" }}>({item.state || 'N/A'})</small></h2>
+                <h2 style={{ margin: 0 }}>{item.name} <small style={{ fontWeight: 'normal', color: "var(--text-muted)" }}>({item.states || 'N/A'})</small></h2>
                 <div style={{ fontSize: "14px", color: "var(--text-muted)", marginTop: "5px" }}>
                   Submitted By: {item.submittedBy || 'Anonymous'}
                 </div>
