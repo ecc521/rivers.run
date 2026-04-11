@@ -158,10 +158,7 @@ export async function sendEmail(user: any) {
 		notifications.lastMessageData = mailInfo.lastMessageData;
 	}
 
-	// Write the value to firebase internally to update the noneUntil constraint
-	await user.document.ref.set({notifications}, {merge: true});
-
-	if (!mailInfo) { return; } 
+	if (!mailInfo) { return { status: "skipped", notifications }; } 
 
 	const mailOptions = {
 	  from: 'email.rivers.run@gmail.com',
@@ -173,9 +170,9 @@ export async function sendEmail(user: any) {
     try {
         const info = await transporter.sendMail(mailOptions);
         console.log("Notified user:", user.auth.email, info.messageId);
-        return info;
-    } catch (e) {
-        console.error("Failed sending email:", e);
-        return false;
+        return { status: info, notifications };
+    } catch (e: unknown) {
+        console.error("Failed sending email:", e instanceof Error ? e.message : e);
+        return { status: false, notifications };
     }
 }

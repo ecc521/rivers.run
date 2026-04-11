@@ -35,8 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 } else {
                     setIsAdmin(false);
                 }
-            } catch (err) {
-                console.error("Failed to fetch user roles", err);
+            } catch (err: unknown) {
+                if (err instanceof Error) console.error("Failed to fetch user roles", err.message);
                 setIsAdmin(false);
             }
         } else {
@@ -47,8 +47,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return () => {
         unsubscribe();
       };
-    } catch (e) {
-      console.warn("Firebase Auth unhandled error.", e);
+    } catch (e: unknown) {
+      if (e instanceof Error) console.warn("Firebase Auth unhandled error.", e.message);
       setLoading(false);
     }
   }, []);

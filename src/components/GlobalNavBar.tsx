@@ -37,8 +37,8 @@ const GlobalNavBar: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error("Failed to download data", e);
+    } catch (e: unknown) {
+      if (e instanceof Error) console.error("Failed to download data", e.message);
       alert("No data found or failed to parse favorites.");
     }
   };
@@ -56,10 +56,14 @@ const GlobalNavBar: React.FC = () => {
           await deleteUser(user);
           alert("Your account has been entirely deleted.");
           setIsDropdownOpen(false);
-        } catch (error: any) {
-          console.error("Error deleting account:", error);
-          if (error.code === 'auth/requires-recent-login') {
-            alert("For security reasons, you must sign out and sign back in before deleting your account.");
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            console.error("Error deleting account:", error.message);
+            if ('code' in error && error.code === 'auth/requires-recent-login') {
+              alert("For security reasons, you must sign out and sign back in before deleting your account.");
+            } else {
+              alert("Failed to delete account. Please contact support.");
+            }
           } else {
             alert("Failed to delete account. Please contact support.");
           }

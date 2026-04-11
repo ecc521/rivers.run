@@ -69,8 +69,8 @@ async function scrapeUSGS(virtualGauges: Record<string, any>) {
             }
             console.log(`- Compiled state: ${state} (Total so far: ${Object.keys(virtualGauges).length})`);
             await new Promise(r => setTimeout(r, 600));
-        } catch (e: any) {
-            console.error(`- Failed to retrieve state ${state}:`, e.message);
+        } catch (e: unknown) {
+            console.error(`- Failed to retrieve state ${state}:`, e instanceof Error ? e.message : e);
         }
     }
 }
@@ -91,8 +91,8 @@ async function scrapeCanada(virtualGauges: Record<string, any>) {
             }
         }
         console.log(`- Compiled Canadian stations. Total Gauges: ${Object.keys(virtualGauges).length}`);
-    } catch(e: any) {
-        console.error("Failed to parse Canadian gauge points.", e.message);
+    } catch(e: unknown) {
+        console.error("Failed to parse Canadian gauge points.", e instanceof Error ? e.message : e);
     }
 }
 

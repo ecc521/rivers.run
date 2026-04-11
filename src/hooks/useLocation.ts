@@ -39,11 +39,11 @@ export function useLocation() {
                         throw new Error("Location permission denied.");
                     }
                 }
-            } catch (permError: any) {
+            } catch (permError: unknown) {
                 // Web browsers handle location permissions automatically via the DOM Geolocation API prompt.
                 // Capacitor throws "Not implemented on web." for the explicit permission request methods.
                 // We can safely ignore this error and fall through to getCurrentPosition.
-                if (permError.message !== 'Not implemented on web.') {
+                if (permError instanceof Error && permError.message !== 'Not implemented on web.') {
                     throw permError;
                 }
             }

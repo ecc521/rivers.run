@@ -1,0 +1,134 @@
+import { describe, it, expect } from "@jest/globals";
+import { filterRivers, type AdvancedSearchQuery, defaultAdvancedSearchQuery } from "./SearchFilters";
+import type { RiverData } from "../types/River";
+
+const mockRivers: RiverData[] = [
+  {
+    id: "r1",
+    name: "Lower Green River",
+    section: "Tuxedo to Fish Top",
+    skill: "I", // Intermediate
+    running: 2.5, // Between mid and high (flow max is 4 usually in UI terms, assume running is a normalized value 0-4 or raw CFS)
+    accessPoints: [{ lat: 35.2443, lon: -82.3524 }], // random coordinates roughly in NC
+    tags: ["dam release", "classic"],
+    class: "III"
+  } as RiverData,
+  {
+    id: "r2",
+    name: "Ocoee River",
+    section: "Middle",
+    skill: "A", // Advanced
+    running: 3, 
+    accessPoints: [{ lat: 35.088, lon: -84.508 }],
+    class: "III-IV"
+  } as RiverData,
+  {
+    id: "r3",
+    name: "Gauley River",
+    section: "Upper",
+    skill: "E", // Expert
+    running: 4,
+    accessPoints: [{ lat: 38.252, lon: -80.895 }],
+    class: "V"
+  } as RiverData,
+  {
+    id: "r4",
+    name: "Nantahala River",
+    section: "Powerhouse to Wesser",
+    skill: "N", // Novice
+    running: 2,
+    accessPoints: [{ lat: 35.281, lon: -83.639 }],
+    class: "II"
+  } as RiverData,
+  {
+    id: "r5",
+    name: "French Broad",
+    section: "Section 9",
+    skill: "I", 
+    running: undefined, // Unknown flow
+    accessPoints: [{ lat: 35.807, lon: -82.809 }], 
+    class: "II-III"
+  } as RiverData
+];
+
+describe("SearchFilters", () => {
+  describe("filterRivers", () => {
+    it("returns all rivers with default query", () => {
+      const results = filterRivers(mockRivers, defaultAdvancedSearchQuery);
+      expect(results.length).toBe(mockRivers.length);
+    });
+
+    it("filters by fuzzy string matching in name/section/tags (e.g. 'lower green')", () => {
+      const query: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        normalSearch: "lower green"
+      };
+      const results = filterRivers(mockRivers, query);
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe("r1");
+    });
+
+    it("filters by explicit name and section", () => {
+      const query: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        name: "River",
+        section: "Middle"
+      };
+      const results = filterRivers(mockRivers, query);
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe("r2");
+    });
+
+    it("filters by skill range", () => {
+      const query: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        skillMin: 1, // FW
+        skillMax: 4, // LI
+        includeUnknownSkill: false
+      };
+      const results = filterRivers(mockRivers, query);
+      // Only r4 (Novice, which is 3) should match
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe("r4");
+    });
+
+    it("filters by distance (lambert projection approximation)", () => {
+      // User is right at the Lower Green put-in
+      const query: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        userLat: 35.2443,
+        userLon: -82.3524,
+        distanceMax: 10 // Only rivers within 10 miles. r1 matches.
+      };
+      const results = filterRivers(mockRivers, query);
+      expect(results.length).toBe(1);
+      expect(results[0].name).toBe("Lower Green River");
+    });
+
+    it("applies sorting using Schwartzian transform", () => {
+      const query: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        sortBy: "alphabetical"
+      };
+      const results = filterRivers(mockRivers, query);
+      expect(results.length).toBe(5);
+      expect(results[0].id).toBe("r5"); // French Broad
+      expect(results[1].id).toBe("r3"); // Gauley
+      expect(results[2].id).toBe("r1"); // Lower Green
+    });
+
+    it("sorts by implicit listData order appropriately", () => {
+      const query: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        listData: [
+          { id: "r3", order: 1 },
+          { id: "r1", order: 2 }
+        ]
+      };
+      const results = filterRivers(mockRivers, query);
+      expect(results.length).toBe(2);
+      expect(results[0].id).toBe("r3");
+      expect(results[1].id).toBe("r1");
+    });
+  });
+});

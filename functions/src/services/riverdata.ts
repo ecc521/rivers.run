@@ -40,8 +40,8 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
             console.log("No existing storage baseline discovered. Executing baseline fetch.");
             needsFullSync = true;
         }
-    } catch (e) {
-        console.warn("Failed to natively load existing river baseline configuration. Safely failing backward to Full Sync.", e);
+    } catch (e: unknown) {
+        console.warn("Failed to natively load existing river baseline configuration. Safely failing backward to Full Sync.", e instanceof Error ? e.message : e);
         needsFullSync = true;
     }
 
@@ -78,8 +78,10 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
                     });
                     await db.collection("rivers").doc(item.data.id).delete();
                 }
-            } catch (e) {
-                console.error(`Failed to move invalid river ${item.data.id}`, e);
+            } catch (e: unknown) {
+                if (e instanceof Error) {
+                    console.error(`Failed to move invalid river ${item.data.id}`, e.message);
+                }
             }
         }
     } else {
@@ -127,8 +129,10 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
                     });
                     await db.collection("rivers").doc(item.data.id).delete();
                 }
-            } catch (e) {
-                console.error(`Failed to move invalid river ${item.data.id}`, e);
+            } catch (e: unknown) {
+                if (e instanceof Error) {
+                    console.error(`Failed to move invalid river ${item.data.id}`, e.message);
+                }
             }
         }
     }

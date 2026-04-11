@@ -64,6 +64,69 @@ function skillToNumber(skill: string): number {
   return map[skill.toUpperCase()] || Infinity;
 }
 
+function matchNormalSearch(r: RiverData, terms: string[]): boolean {
+  if (terms.length === 0) return true;
+  const searchStr = [
+    r.name || "",
+    r.section || "",
+    ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : []))
+  ].join(" ").toLowerCase();
+  
+  return terms.every(term => searchStr.includes(term));
+}
+
+function matchExplicitMatch(r: RiverData, query: AdvancedSearchQuery): boolean {
+  if (query.name && !String(r.name || "").toLowerCase().includes(query.name!.toLowerCase())) {
+     return false;
+  }
+  if (query.section && !String(r.section || "").toLowerCase().includes(query.section!.toLowerCase())) {
+     return false;
+  }
+  return true;
+}
+
+function matchSkill(r: RiverData, query: AdvancedSearchQuery): boolean {
+  if (query.skillMin !== undefined && query.skillMax !== undefined) {
+    const s = skillToNumber(r.skill || "");
+    if (s === Infinity) return !!query.includeUnknownSkill;
+    return s >= query.skillMin! && s <= query.skillMax!;
+  }
+  return true;
+}
+
+function matchFlow(r: RiverData, query: AdvancedSearchQuery): boolean {
+  if (query.flowMin !== undefined && query.flowMax !== undefined) {
+    if (r.dam && query.includeDams) return true;
+    if (r.running === undefined) return !!query.includeUnknownFlow;
+    return r.running >= query.flowMin! && r.running <= query.flowMax!;
+  }
+  return true;
+}
+
+function matchProximity(r: RiverData, query: AdvancedSearchQuery): boolean {
+  if (query.distanceMax && query.userLat && query.userLon) {
+    if (!r.accessPoints || r.accessPoints.length === 0) return false;
+    const start = r.accessPoints[0];
+    const rLat = start.lat;
+    const rLon = start.lon;
+    if (!rLat || !rLon) return false;
+    
+    const distanceMiles = lambert(query.userLat!, query.userLon!, rLat, rLon);
+    return distanceMiles <= query.distanceMax!;
+  }
+  return true;
+}
+
+function getSortKey(r: RiverData, sortBy: string): any {
+  switch (sortBy) {
+    case "alphabetical": return (r.name || "").toLowerCase();
+    case "skill": return skillToNumber(r.skill || "");
+    case "class": return r.class || "";
+    case "running": return r.running ?? -1;
+    default: return 0;
+  }
+}
+
 export function filterRivers(
   rivers: RiverData[],
   query: AdvancedSearchQuery,
@@ -75,97 +138,30 @@ export function filterRivers(
     list = list.filter((r) => validIds.has(r.id));
   }
 
-  // 1. Normal Search (matches Name, Section, or Tags)
-  if (query.normalSearch) {
-    const terms = query.normalSearch.toLowerCase().split(/[ ,]+/).filter(t => t.length > 0);
-    if (terms.length > 0) {
-      list = list.filter(
-        (r) => {
-          const searchStr = [
-            r.name || "",
-            r.section || "",
-            ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : []))
-          ].join(" ").toLowerCase();
-          
-          return terms.every(term => searchStr.includes(term));
-        }
-      );
-    }
-  }
+  const terms = query.normalSearch 
+    ? query.normalSearch.toLowerCase().split(/[ ,]+/).filter(t => t.length > 0) 
+    : [];
 
-  // 2. Name / Section explicit matches
-  if (query.name) {
-    list = list.filter((r) =>
-      String(r.name || "").toLowerCase().includes(query.name!.toLowerCase()),
-    );
-  }
-  if (query.section) {
-    list = list.filter((r) =>
-      String(r.section || "").toLowerCase().includes(query.section!.toLowerCase()),
-    );
-  }
-
-  // 3. Skill
-  if (query.skillMin !== undefined && query.skillMax !== undefined) {
-    list = list.filter((r) => {
-      const s = skillToNumber(r.skill || "");
-      if (s === Infinity) return query.includeUnknownSkill;
-      return s >= query.skillMin! && s <= query.skillMax!;
-    });
-  }
-
-  // 5. Flow
-  if (query.flowMin !== undefined && query.flowMax !== undefined) {
-    list = list.filter((r) => {
-      if (r.dam && query.includeDams) return true;
-      if (r.running === undefined)
-        return query.includeUnknownFlow;
-      return r.running >= query.flowMin! && r.running <= query.flowMax!;
-    });
-  }
-
-  // 6. Proximity / Distance boundaries
-  if (query.distanceMax && query.userLat && query.userLon) {
-    list = list.filter((r) => {
-      if (!r.accessPoints || r.accessPoints.length === 0) return false;
-      const start = r.accessPoints[0];
-      const rLat = start.lat;
-      const rLon = start.lon;
-      if (!rLat || !rLon) return false;
-      
-      const distanceMiles = lambert(query.userLat!, query.userLon!, rLat, rLon);
-      return distanceMiles <= query.distanceMax!;
-    });
-  }
+  list = list.filter((r) => {
+    if (!matchNormalSearch(r, terms)) return false;
+    if (!matchExplicitMatch(r, query)) return false;
+    if (!matchSkill(r, query)) return false;
+    if (!matchFlow(r, query)) return false;
+    if (!matchProximity(r, query)) return false;
+    return true;
+  });
 
   // Sorting
   if (query.sortBy && query.sortBy !== "none") {
-    list.sort((a, b) => {
-      let valA: any, valB: any;
-      switch (query.sortBy) {
-        case "alphabetical":
-          valA = (a.name || "").toLowerCase();
-          valB = (b.name || "").toLowerCase();
-          break;
-        case "skill":
-          valA = skillToNumber(a.skill || "");
-          valB = skillToNumber(b.skill || "");
-          break;
-        case "class":
-          valA = a.class || "";
-          valB = b.class || ""; // Note: simplified class sort
-          break;
-        case "running":
-          valA = a.running ?? -1;
-          valB = b.running ?? -1;
-          break;
-        default:
-          return 0;
-      }
-      if (valA > valB) return 1;
-      if (valA < valB) return -1;
+    const mapped = list.map((r, i) => ({ index: i, value: r, sortKey: getSortKey(r, query.sortBy!) }));
+    
+    mapped.sort((a, b) => {
+      if (a.sortKey > b.sortKey) return 1;
+      if (a.sortKey < b.sortKey) return -1;
       return 0;
     });
+
+    list = mapped.map(m => m.value);
 
     if (query.sortReverse) {
       list.reverse();
@@ -173,11 +169,13 @@ export function filterRivers(
   } else if (query.listData && query.listData.length > 0) {
     // If no explicit sort is chosen but we have list constraints, sort by the implicit List Order!
     const orderMap = new Map(query.listData.map((ld) => [ld.id, ld.order]));
-    list.sort((a, b) => {
-       const orderA = orderMap.get(a.id) ?? Infinity;
-       const orderB = orderMap.get(b.id) ?? Infinity;
-       return orderA - orderB;
+    const mapped = list.map((r, i) => ({ index: i, value: r, sortKey: orderMap.get(r.id) ?? Infinity }));
+    
+    mapped.sort((a, b) => {
+      return a.sortKey - b.sortKey;
     });
+
+    list = mapped.map(m => m.value);
   }
 
   return list;

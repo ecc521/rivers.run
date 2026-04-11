@@ -22,8 +22,8 @@ export default function AdminQueue() {
         const snap = await getDocs(collection(db, "reviewQueue"));
         const items = snap.docs.map(doc => ({ ...doc.data(), queueId: doc.id }));
         setQueue(items);
-      } catch (err) {
-        console.error("Failed to fetch queue", err);
+      } catch (err: unknown) {
+        if (err instanceof Error) console.error("Failed to fetch queue", err.message);
         alert("Failed to load review queue. Ensure you have admin permissions.");
       }
       setLoading(false);

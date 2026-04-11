@@ -23,15 +23,18 @@ export const NORTH_AMERICA_BOUNDS: BoundingBox = {
     maxLon: -50.0
 };
 
-const lon2tile = (lon: number, zoom: number): number => {
+const DEG_TO_RAD = Math.PI / 180;
+
+export const lon2tile = (lon: number, zoom: number): number => {
     return Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
 };
 
-const lat2tile = (lat: number, zoom: number): number => {
+export const lat2tile = (lat: number, zoom: number): number => {
+    const latRad = lat * DEG_TO_RAD;
     return Math.floor(
         ((1 -
             Math.log(
-                Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)
+                Math.tan(latRad) + 1 / Math.cos(latRad)
             ) /
                 Math.PI) /
             2) *
@@ -92,8 +95,8 @@ export const downloadMapTiles = async (
                     if (res.ok) {
                         await cache.put(url, res);
                     }
-                } catch (e) {
-                    console.warn("Failed to fetch map tile:", url, e);
+                } catch (e: unknown) {
+                    if (e instanceof Error) console.warn("Failed to fetch map tile:", url, e.message);
                 }
             })
         );
@@ -146,8 +149,8 @@ export const autoDownloadBaseMaps = async () => {
         
         // Let it run silently in the background
         await downloadMapTiles([...worldUrls, ...usUrls], () => {});
-    } catch (err) {
-        console.error("Auto base map download failed", err);
+    } catch (err: unknown) {
+        if (err instanceof Error) console.error("Auto base map download failed", err.message);
     }
 };
 
@@ -165,12 +168,19 @@ export const detectMaxZoom = async (type: 'world' | 'na'): Promise<number> => {
         const tileCountsByZoom: Record<number, number> = {};
         const zoomRegex = /\/(\d+)\/(\d+)\/(\d+)\.png$/;
         
+        const boundsCache: Record<number, { minX: number, maxX: number, minY: number, maxY: number }> = {};
+        
         function isTileInBounds(x: number, y: number, z: number, bounds: BoundingBox) {
-            const minX = Math.max(0, lon2tile(bounds.minLon, z));
-            const maxX = Math.min(Math.pow(2, z) - 1, lon2tile(bounds.maxLon, z));
-            const minY = Math.max(0, lat2tile(bounds.maxLat, z));
-            const maxY = Math.min(Math.pow(2, z) - 1, lat2tile(bounds.minLat, z));
-            return (x >= minX && x <= maxX && y >= minY && y <= maxY);
+            if (!boundsCache[z]) {
+                boundsCache[z] = {
+                    minX: Math.max(0, lon2tile(bounds.minLon, z)),
+                    maxX: Math.min(Math.pow(2, z) - 1, lon2tile(bounds.maxLon, z)),
+                    minY: Math.max(0, lat2tile(bounds.maxLat, z)),
+                    maxY: Math.min(Math.pow(2, z) - 1, lat2tile(bounds.minLat, z))
+                };
+            }
+            const b = boundsCache[z];
+            return (x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY);
         }
 
         // Group and count strictly within geographic target bounds

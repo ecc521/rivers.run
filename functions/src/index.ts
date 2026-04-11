@@ -10,7 +10,7 @@ import { defineSecret } from "firebase-functions/params";
 const gmailPassword = defineSecret("GMAIL_PASSWORD");
 
 import { loadSitesFromUSGS } from "./services/usgs";
-import { loadCanadianProvince } from "./services/canada";
+import { loadCanadianProvince, CanadianProvinceData } from "./services/canada";
 import { processNotifications } from "./services/notifications";
 import { syncRiverDataToStorage } from "./services/riverdata";
 import { compileVirtualGaugesToStorage } from "./services/virtualGauges";
@@ -57,8 +57,8 @@ export const manualPullGaugeData = onRequest({
     try {
         await executeGaugeSync();
         response.status(200).send({ success: true, message: "Gauge synchronization completely synthesized.", timestamp: Date.now() });
-    } catch (e: any) {
-        console.error("Crucial manual synchronization explicit pipeline crashed:", e);
+    } catch (e: unknown) {
+        console.error("Crucial manual synchronization explicit pipeline crashed:", e instanceof Error ? e.message : e);
         response.status(500).send("Sync fundamentally failed.");
     }
 });
@@ -90,16 +90,17 @@ async function executeGaugeSync() {
 
         try {
             [buffer] = await file.download();
-        } catch (downloadErr: any) {
-            const statusCode = downloadErr.code || downloadErr.status || (downloadErr.response && downloadErr.response.status);
+        } catch (downloadErr: unknown) {
+            const err = downloadErr as any; // Cast temporarily for legacy google API properties
+            const statusCode = err.code || err.status || (err.response && err.response.status);
             
             // 404 Object Not Found
-            if (statusCode === 404 || (downloadErr.message && downloadErr.message.includes("No such object"))) {
+            if (statusCode === 404 || (err.message && err.message.includes("No such object"))) {
                 console.warn("No virtualGauges.json discovered in Storage; actively compiling the registry on-the-fly!");
                 await compileVirtualGaugesToStorage(bucket);
                 [buffer] = await file.download(); // Download immediately after synthesizing it
             } else {
-                throw downloadErr; // Rethrow native network/IAM errors
+                throw err; // Rethrow native network/IAM errors
             }
         }
 
@@ -115,8 +116,8 @@ async function executeGaugeSync() {
             else if (id.startsWith("canada:")) canadaProvincesSet.add(id.replace("canada:", ""));
         });
         console.log(`Successfully merged ${Object.keys(virtualGauges).length} static virtual gauges natively from Firebase Storage!`);
-    } catch (e: any) {
-        console.error("Non-fatal: Could not pull virtual Gauges json from Storage natively.", e.message);
+    } catch (e: unknown) {
+        console.error("Non-fatal: Could not pull virtual Gauges json from Storage natively.", e instanceof Error ? e.message : e);
     }
 
     const activeUsgsGauges = Array.from(usgsSet);
@@ -127,10 +128,11 @@ async function executeGaugeSync() {
     // 2. Extrapolate provinces from Canadian gauges
     // Canadian gauge codes are often the Province prefix (ex: BC_something). We strip the province physically.
     const provinces = new Set<string>();
+    const validProvinces = new Set(["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"]);
     activeCanadaGauges.forEach(code => {
         if (code.length > 2) {
              const prov = code.substring(0, 2).toUpperCase(); // e.g. "BC", "ON"
-             if (["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"].includes(prov)) {
+             if (validProvinces.has(prov)) {
                  provinces.add(prov);
              }
         }
@@ -138,7 +140,7 @@ async function executeGaugeSync() {
 
     // 3. Kick off async network pulls concurrently
     console.log("Initiating highly concurrent network fetch...");
-    const flowData: any = {};
+    const flowData: Record<string, any> = {};
 
     const [usgsData, ...canadaProvinceData] = await Promise.all([
         loadSitesFromUSGS(activeUsgsGauges, 1000 * 60 * 60 * 3), // Exact 3 hour bound matching legacy!
@@ -158,10 +160,10 @@ async function executeGaugeSync() {
         flowData[fullId] = v;
     }
 
-    canadaProvinceData.forEach((provData: any) => {
+    canadaProvinceData.forEach((provData: CanadianProvinceData) => {
         // Appends any raw gauge IDs discovered in the CSV that match our active list
         for (const [key, value] of Object.entries(provData)) {
-            if (activeCanadaGauges.includes(key)) {
+            if (canadaProvincesSet.has(key)) {
                 const fullId = "canada:" + key;
                 const v = value as any;
                 if (virtualGauges[fullId]) {
@@ -203,8 +205,8 @@ async function executeGaugeSync() {
     console.log("Analyzing configured alerts exclusively against newly tracked limits...");
     try {
         await processNotifications(flowData);
-    } catch (e) {
-        console.error("Non-fatal evaluation crash inside notification dispatcher", e);
+    } catch (e: unknown) {
+        console.error("Non-fatal evaluation crash inside notification dispatcher", e instanceof Error ? e.message : e);
     }
 
     console.log("Gauge synchronization successfully terminated.");
@@ -239,8 +241,8 @@ export const notifyAdminsOnReviewQueue = onDocumentCreated("reviewQueue/{docId}"
             }
         });
         console.log(`Successfully dispatched Queue Alerts to ${emails.length} implicitly configured admins.`);
-    } catch (e: any) {
-        console.error("Non-fatal: Failed mapping queue alerts dynamically", e.message);
+    } catch (e: unknown) {
+        console.error("Non-fatal: Failed mapping queue alerts dynamically", e instanceof Error ? e.message : e);
     }
 });
 

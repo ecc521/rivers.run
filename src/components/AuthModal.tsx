@@ -46,9 +46,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       onClose();
-    } catch (e: any) {
-      console.error("Authentication Error:", e.message);
-      setErrorText("Failed to authenticate: " + e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        console.error("Authentication Error:", e.message);
+        setErrorText("Failed to authenticate: " + e.message);
+      } else {
+        setErrorText("Failed to authenticate: An unknown error occurred.");
+      }
       setLoading(false);
     }
   };
@@ -64,9 +68,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       
       await signInWithPopup(auth, provider);
       onClose();
-    } catch (e: any) {
-      console.error("Authentication Error:", e.message);
-      setErrorText("Failed to authenticate: " + e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        console.error("Authentication Error:", e.message);
+        setErrorText("Failed to authenticate: " + e.message);
+      } else {
+        setErrorText("Failed to authenticate: An unknown error occurred.");
+      }
       setLoading(false);
     }
   };
@@ -82,12 +90,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setErrorText(null);
       await signInWithEmailAndPassword(auth, email, password);
       onClose();
-    } catch (e: any) {
-      console.error("Authentication Error:", e.message);
-      if (e.code === 'auth/invalid-credential') {
-         setErrorText("Incorrect email or password.");
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        console.error("Authentication Error:", e.message);
+        if ('code' in e && e.code === 'auth/invalid-credential') {
+          setErrorText("Incorrect email or password.");
+        } else {
+          setErrorText(e.message);
+        }
       } else {
-         setErrorText(e.message);
+         setErrorText("An unknown error occurred.");
       }
       setLoading(false);
     }
@@ -104,12 +116,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setErrorText(null);
       await createUserWithEmailAndPassword(auth, email, password);
       onClose();
-    } catch (e: any) {
-      console.error("Authentication Error:", e.message);
-      if (e.code === 'auth/email-already-in-use') {
-         setErrorText("An account with this email already exists.");
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        console.error("Authentication Error:", e.message);
+        if ('code' in e && e.code === 'auth/email-already-in-use') {
+          setErrorText("An account with this email already exists.");
+        } else {
+          setErrorText(e.message);
+        }
       } else {
-         setErrorText(e.message);
+        setErrorText("An unknown error occurred.");
       }
       setLoading(false);
     }
@@ -128,9 +144,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       await sendPasswordResetEmail(auth, email);
       setSuccessText("Password reset email sent! Check your inbox.");
       setLoading(false);
-    } catch (e: any) {
-      console.error("Reset Error:", e.message);
-      setErrorText(e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        console.error("Reset Error:", e.message);
+        setErrorText(e.message);
+      } else {
+        setErrorText("An unknown error occurred.");
+      }
       setLoading(false);
     }
   };

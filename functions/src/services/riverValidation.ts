@@ -27,7 +27,7 @@ export function validateRiver(river: any): RiverValidationResult {
     errors.push("Missing or invalid River Name.");
   }
 
-  if ((river.overview || "").match(/<img[^>]+src=["']data:image/i)) {
+  if ((river.writeup || "").match(/<img[^>]+src=["']data:image/i)) {
     errors.push("Raw image structures (base64) are strictly disallowed to maintain fast load times and database space.");
   }
 

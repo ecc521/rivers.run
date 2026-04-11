@@ -1,32 +1,38 @@
 import csvParser from "csv-parser";
-import { Readable } from "stream";
 
-const meterInFeet = 3.2808399;
-const cubicMeterInFeet = Math.pow(meterInFeet, 3);
+export interface CanadaGaugeReading {
+    dateTime: number;
+    cms?: number;
+    m?: number;
+}
+
+export interface CanadaGauge {
+    readings: CanadaGaugeReading[];
+    units: string;
+    name?: string | null;
+}
+
+export type CanadianProvinceData = Record<string, CanadaGauge>;
 
 function reformatReadings(readingsArr: any[]) {
     for (let i = 0; i < readingsArr.length; i++) {
         const reading = readingsArr[i];
         reading.dateTime = new Date(reading.dateTime).getTime();
 
-        if (!isNaN(parseFloat(reading.cms))) {
-            const cfs = Number(reading.cms) * cubicMeterInFeet;
-            reading.cfs = Math.round(cfs * 10) / 10;
+        if (reading.cms !== undefined && !isNaN(parseFloat(reading.cms))) {
+            reading.cms = Number(reading.cms);
         }
-        delete reading.cms;
 
-        if (!isNaN(parseFloat(reading.meters))) {
-            const feet = Number(reading.meters) * meterInFeet;
-            reading.feet = Math.round(feet * 100) / 100;
+        if (reading.m !== undefined && !isNaN(parseFloat(reading.m))) {
+            reading.m = Number(reading.m);
         }
-        delete reading.meters;
     }
     // Sort so newest values are last
     readingsArr.sort((a, b) => a.dateTime - b.dateTime);
 }
 
 // Fetch loop function
-export async function loadCanadianProvince(province: string): Promise<any> {
+export async function loadCanadianProvince(province: string): Promise<CanadianProvinceData> {
     const url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_hourly_hydrometric.csv`;
 
     let res;
@@ -36,19 +42,21 @@ export async function loadCanadianProvince(province: string): Promise<any> {
             if (res.status === 404) return {}; // seasonal gauge downtime
             throw new Error(`Canada HTTP Error: ${res.status}`);
         }
-    } catch (e: any) {
-        console.error(`Canadian Fetch failed for ${province}: ${e.message}`);
+    } catch (e: unknown) {
+        console.error(`Canadian Fetch failed for ${province}:`, e instanceof Error ? e.message : e);
         return {};
     }
 
-    const gaugeReadings: any = {};
-    const nodeStream = Readable.fromWeb(res.body as any);
+    if (!res.body) return {};
+
+    const gaugeReadings: Record<string, any[]> = {};
+    const nodeStream = res.body as unknown as NodeJS.ReadableStream;
 
     try {
         await new Promise((resolve, reject) => {
             nodeStream.pipe(csvParser({
                 mapHeaders: ({ header }: { header: string }) => {
-                    if (header === "Water Level / Niveau d'eau (m)") return "meters";
+                    if (header === "Water Level / Niveau d'eau (m)") return "m";
                     if (header === "Discharge / Débit (cms)") return "cms";
                     if (header === "Date") return "dateTime";
                     if (header === " ID") return "ID";
@@ -63,12 +71,12 @@ export async function loadCanadianProvince(province: string): Promise<any> {
             .on('end', resolve)
             .on('error', reject);
         });
-    } catch (e: any) {
-        console.error(`Canada CSV parse failed for ${province}: ${e.message}`);
+    } catch (e: unknown) {
+        console.error(`Canada CSV parse failed for ${province}:`, e instanceof Error ? e.message : e);
         return {};
     }
 
-    const outputGauges: any = {};
+    const outputGauges: CanadianProvinceData = {};
     // Optional bounding timeframe could go here, but CSV is minimal length already.
     const cutoffTime = Date.now() - (1000 * 60 * 60 * 6); // Cap at last 6 hours locally to trim fat
 

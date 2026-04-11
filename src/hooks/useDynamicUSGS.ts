@@ -142,8 +142,8 @@ export function useDynamicUSGS(river: RiverData) {
         dynamicUSGSCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
         enrichAndSet(mergedGaugeData, siteNameMap);
 
-      } catch (err) {
-        if (isMounted) console.error("Dynamic USGS Native Fetch Error:", err);
+      } catch (err: unknown) {
+        if (isMounted && err instanceof Error) console.error("Dynamic USGS Native Fetch Error:", err.message);
       }
     };
 

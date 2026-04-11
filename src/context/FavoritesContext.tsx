@@ -54,8 +54,8 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
         try {
           const parsed = JSON.parse(local);
           setFavorites(Array.isArray(parsed) ? parsed : []);
-        } catch (e) {
-          console.error("Failed to parse local favorites", e);
+        } catch (e: unknown) {
+          if (e instanceof Error) console.error("Failed to parse local favorites", e.message);
         }
       }
       setLoading(false);

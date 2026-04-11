@@ -105,30 +105,60 @@ export async function processNotifications(flowDataGlob: any) {
                 const d = usersMap.get(user.uid);
                 if (d) d.auth = user;
             });
-        } catch (e: any) {
-            console.error("Non-fatal: Auth batch lookup failed, skipping users chunk.", e.message);
+        } catch (e: unknown) {
+            console.error("Non-fatal: Auth batch lookup failed, skipping users chunk.", e instanceof Error ? e.message : e);
         }
     }
 
 	const userData = Array.from(usersMap.values());
     console.log(`Evaluating alerts for ${userData.length} active users.`);
 
-	for (let i = 0; i < userData.length; i++) {
-		const user = userData[i];
-
-		if (user.notifications?.noneUntil > Date.now()) { continue; }
-		if (!user.notifications?.enabled) { continue; }
+	const activeUsers = userData.filter((user) => {
+		if (user.notifications?.noneUntil > Date.now()) { return false; }
+		if (!user.notifications?.enabled) { return false; }
 
         // Mute Beta/Dev environments purely natively specifically for non-Admins!
         const isBeta = process.env.GCLOUD_PROJECT !== "rivers-run";
-        if (isBeta && !user.isAdmin) { continue; }
+        if (isBeta && !user.isAdmin) { return false; }
+        return true;
+    });
 
-		addFlowDataToFavorites(user.favorites, flowDataGlob);
+    const CONCURRENCY_LIMIT = 20;
+    let userIndex = 0;
+    const writeResults: { user: any, notifications: any }[] = [];
 
-		try {
-		    await sendEmail(user);
-        } catch (e: any) {
-            console.error(`Non-fatal: Failed to process email alerts for ${user.auth?.email || "Unknown"}`, e.message);
+    const worker = async () => {
+        while (userIndex < activeUsers.length) {
+            const user = activeUsers[userIndex++];
+            addFlowDataToFavorites(user.favorites, flowDataGlob);
+            
+            try {
+                const result = await sendEmail(user);
+                if (result?.notifications) {
+                    writeResults.push({ user, notifications: result.notifications });
+                }
+            } catch (e: unknown) {
+                console.error(`Non-fatal: Failed to process email alerts for ${user.auth?.email || "Unknown"}`, e instanceof Error ? e.message : e);
+            }
         }
-	}
+    };
+
+    await Promise.all(Array(Math.min(CONCURRENCY_LIMIT, activeUsers.length)).fill(0).map(() => worker()));
+
+    // Securely batch database commits inside maximum Firestore transaction size block constraint
+    const FIRESTORE_BATCH_MAX = 400;
+    for (let i = 0; i < writeResults.length; i += FIRESTORE_BATCH_MAX) {
+        const chunk = writeResults.slice(i, i + FIRESTORE_BATCH_MAX);
+        const fbBatch = db.batch();
+
+        for (const res of chunk) {
+            fbBatch.set(res.user.document.ref, { notifications: res.notifications }, { merge: true });
+        }
+
+        try {
+            await fbBatch.commit();
+        } catch (e: unknown) {
+            console.error("Non-fatal: Bulk save of user notifications failed.", e instanceof Error ? e.message : e);
+        }
+    }
 }

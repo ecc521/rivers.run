@@ -46,13 +46,25 @@ const enrichRiver = (river: any, _index: number, flowData: any, usedGauges: Set<
     river.cfs = latest.cfs;
     river.ft = latest.ft || latest.feet; // Bridge during transition if needed, though plan says drop
 
+    river.m = latest.m;
+    river.cms = latest.cms;
+
     river.running = calculateRelativeFlow(river) ?? undefined;
 
-    if (river.cfs && river.ft)
-      river.flowInfo = `${Math.round(river.cfs)} cfs ${Math.round(river.ft * 100) / 100} ft`;
-    else if (river.cfs) river.flowInfo = `${Math.round(river.cfs)} cfs`;
-    else if (river.ft)
-      river.flowInfo = `${Math.round(river.ft * 100) / 100} ft`;
+    const mValue = latest.m;
+    const cmsValue = latest.cms;
+    const ftValue = latest.ft || latest.feet;
+    const cfsValue = latest.cfs;
+
+    if (cmsValue !== undefined && mValue !== undefined)
+      river.flowInfo = `${Math.round(cmsValue)} cms ${Math.round(mValue * 100) / 100} m`;
+    else if (cmsValue !== undefined) river.flowInfo = `${Math.round(cmsValue)} cms`;
+    else if (mValue !== undefined) river.flowInfo = `${Math.round(mValue * 100) / 100} m`;
+    else if (cfsValue !== undefined && ftValue !== undefined)
+      river.flowInfo = `${Math.round(cfsValue)} cfs ${Math.round(ftValue * 100) / 100} ft`;
+    else if (cfsValue !== undefined) river.flowInfo = `${Math.round(cfsValue)} cfs`;
+    else if (ftValue !== undefined)
+      river.flowInfo = `${Math.round(ftValue * 100) / 100} ft`;
   }
   return river;
 };
@@ -62,19 +74,28 @@ const buildVirtualGauge = (gaugeId: string, gaugeData: any): RiverData | null =>
    if (!gData.readings || gData.readings.length === 0) return null;
 
    const latest = gData.readings[gData.readings.length - 1];
+   const mValue = latest.m;
+   const cmsValue = latest.cms;
    const ftValue = latest.ft || latest.feet;
+   const cfsValue = latest.cfs;
+
    let flowStr = "";
-   if (latest.cfs && ftValue) flowStr = `${Math.round(latest.cfs)} cfs ${Math.round(ftValue * 100) / 100} ft`;
-   else if (latest.cfs) flowStr = `${Math.round(latest.cfs)} cfs`;
-   else if (ftValue) flowStr = `${Math.round(ftValue * 100) / 100} ft`;
+   if (cmsValue !== undefined && mValue !== undefined) flowStr = `${Math.round(cmsValue)} cms ${Math.round(mValue * 100) / 100} m`;
+   else if (cmsValue !== undefined) flowStr = `${Math.round(cmsValue)} cms`;
+   else if (mValue !== undefined) flowStr = `${Math.round(mValue * 100) / 100} m`;
+   else if (cfsValue !== undefined && ftValue !== undefined) flowStr = `${Math.round(cfsValue)} cfs ${Math.round(ftValue * 100) / 100} ft`;
+   else if (cfsValue !== undefined) flowStr = `${Math.round(cfsValue)} cfs`;
+   else if (ftValue !== undefined) flowStr = `${Math.round(ftValue * 100) / 100} ft`;
 
    return {
        id: gaugeId,
        name: gData.name || gaugeId,
        gauges: [{ id: gaugeId, isPrimary: true, name: gData.name || gaugeId }],
        isGauge: true,
-       cfs: latest.cfs,
+       cfs: cfsValue,
        ft: ftValue,
+       cms: cmsValue,
+       m: mValue,
        gaugeData: { [gaugeId]: gData.readings },
        flowInfo: flowStr,
        accessPoints: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined
@@ -153,9 +174,9 @@ export const useRivers = (): UseRiversResult => {
         clearTimeout(timeoutId);
         notifySubscribers();
 
-      } catch (err: any) {
+      } catch (err: unknown) {
         clearTimeout(timeoutId);
-        globalError = err.message || "An error occurred";
+        globalError = err instanceof Error ? err.message : "An error occurred";
         globalLoading = false;
         notifySubscribers();
       }

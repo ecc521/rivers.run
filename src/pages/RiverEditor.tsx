@@ -107,8 +107,8 @@ export default function RiverEditor() {
               syncInputs(live);
            }
         }
-      } catch (e) {
-        console.error("Error loading river", e);
+      } catch (e: unknown) {
+        if (e instanceof Error) console.error("Error loading river", e.message);
         alert("Failed to load river data");
       }
       setLoading(false);
@@ -246,9 +246,11 @@ export default function RiverEditor() {
       
       alert(isAdmin ? "Saved successfully!" : "Submitted successfully for admin review!");
       if (isNew) navigate(`/edit/${finalObj.id}`);
-    } catch (e: any) {
-      console.error(e);
-      alert(`Save failed: ${e.message}`);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+          console.error(e.message);
+          alert(`Save failed: ${e.message}`);
+      }
     } finally {
       setSaving(false);
     }
@@ -269,8 +271,9 @@ export default function RiverEditor() {
           
           alert("Successfully approved and mapped to LIVE infrastructure!");
           navigate("/admin");
-      } catch (e: any) {
-          alert(`Failed to approve natively: ${e.message}`);
+      } catch (e: unknown) {
+          if (e instanceof Error) alert(`Failed to approve natively: ${e.message}`);
+          else alert('Failed to approve natively');
           setSaving(false);
       }
   };
@@ -284,8 +287,9 @@ export default function RiverEditor() {
           await deleteDoc(doc(db, "reviewQueue", proposedData.queueId));
           alert("Submission completely rejected.");
           navigate("/admin");
-      } catch (e: any) {
-          alert(`Failed to reject natively: ${e.message}`);
+      } catch (e: unknown) {
+          if (e instanceof Error) alert(`Failed to reject natively: ${e.message}`);
+          else alert('Failed to reject natively');
           setSaving(false);
       }
   };

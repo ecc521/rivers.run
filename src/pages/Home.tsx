@@ -91,8 +91,8 @@ const Home: React.FC = () => {
             } else if (!cachedListStr) {
                setError("Requested list does not exist.");
             }
-        } catch (err) {
-            console.error("Failed to load list from network, trying to rely on cache", err);
+        } catch (err: unknown) {
+            if (err instanceof Error) console.error("Failed to load list from network, trying to rely on cache", err.message);
         } finally {
             setLoading(false);
         }

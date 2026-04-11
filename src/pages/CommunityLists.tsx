@@ -33,9 +33,13 @@ const CommunityLists: React.FC = () => {
         });
         setLists(loaded);
         setLoading(false);
-      } catch (err: any) {
-        console.error("Error fetching community lists:", err);
-        setError(err.message || "Failed to load lists");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+            console.error("Error fetching community lists:", err.message);
+            setError(err.message || "Failed to load lists");
+        } else {
+            setError("Failed to load lists");
+        }
         setLoading(false);
       }
     };

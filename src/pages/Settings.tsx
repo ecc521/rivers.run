@@ -27,8 +27,8 @@ const SettingsPage: React.FC = () => {
            loaded.push({id: doc.id, title: doc.data().title});
         });
         setCommunityLists(loaded);
-      } catch (e) {
-        console.error("Could not fetch lists for settings dropdown", e);
+      } catch (e: unknown) {
+        if (e instanceof Error) console.error("Could not fetch lists for settings dropdown", e.message);
       }
     };
     fetchLists();
@@ -212,8 +212,8 @@ const OfflineMapManager: React.FC = () => {
         try {
           await caches.delete('offline-map-tiles');
           refreshCacheString();
-        } catch (e) {
-          console.error(e);
+        } catch (e: unknown) {
+          if (e instanceof Error) console.error(e.message);
         }
       }
     });

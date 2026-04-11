@@ -6,7 +6,8 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test": "jest"
   },
   "engines": {
     "node": "24"
@@ -21,9 +22,12 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.5.2",
     "@types/nodemailer": "^8.0.0",
     "firebase-functions-test": "^3.4.1",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
     "typescript": "^6.0.2"
   },
   "private": true

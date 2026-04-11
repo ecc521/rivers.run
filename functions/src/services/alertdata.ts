@@ -32,8 +32,8 @@ export async function syncAlertDataToStorage(db: Firestore, bucket: Bucket): Pro
             console.log("No existing alert baseline discovered. Executing full dump.");
             needsFullSync = true;
         }
-    } catch (e) {
-        console.warn("Failed to natively load existing alert baseline. Safely failing backward to Full Sync.", e);
+    } catch (e: unknown) {
+        console.warn("Failed to natively load existing alert baseline. Safely failing backward to Full Sync.", e instanceof Error ? e.message : e);
         needsFullSync = true;
     }
 
