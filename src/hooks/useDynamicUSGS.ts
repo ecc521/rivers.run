@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { RiverData, GaugeReading } from "../types/River";
 import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 
 const dynamicUSGSCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> }>();
 
 export function useDynamicUSGS(river: RiverData) {
-  const [liveRiver, setLiveRiver] = useState<RiverData | null>(null);
+  // Store only the dynamic payload, not the whole river
+  const [dynamicPayload, setDynamicPayload] = useState<{ gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> } | null>(null);
 
   useEffect(() => {
     // Only attempt fetch if USGS gauges exist
@@ -26,38 +27,8 @@ export function useDynamicUSGS(river: RiverData) {
     // Fall back tightly to a 15 minute fetch constraint
     const newlyFetched = cached && (Date.now() - cached.lastFetchedMs < 15 * 60 * 1000);
 
-    const enrichAndSet = (dynamicGaugeData: Record<string, GaugeReading[]>, fetchedNames?: Record<string, string>) => {
-       // Create a fresh clone to avoid prop mutation
-       const enriched = { ...river };
-       enriched.gaugeData = { ...(enriched.gaugeData || {}), ...dynamicGaugeData };
-       
-       const names = fetchedNames || cached?.gaugeNames;
-       if (names && enriched.gauges) {
-           enriched.gauges = enriched.gauges.map(g => {
-               if (names[g.id]) return { ...g, name: names[g.id] };
-               return g;
-           });
-       }
-       
-       const primaryData = primaryGaugeID && enriched.gaugeData[primaryGaugeID] ? enriched.gaugeData[primaryGaugeID] : null;
-       const latest = primaryData && primaryData.length > 0 ? primaryData[primaryData.length - 1] : null;
-
-       if (latest) {
-           enriched.cfs = latest.cfs ?? enriched.cfs;
-           const ftValue = latest.ft;
-           enriched.ft = (ftValue !== undefined && !isNaN(ftValue)) ? ftValue : enriched.ft;
-           enriched.running = calculateRelativeFlow(enriched) ?? enriched.running;
-           
-           if (enriched.cfs && enriched.ft) enriched.flowInfo = `${Math.round(enriched.cfs)} cfs ${Math.round(enriched.ft * 100) / 100} ft`;
-           else if (enriched.cfs) enriched.flowInfo = `${Math.round(enriched.cfs)} cfs`;
-           else if (enriched.ft) enriched.flowInfo = `${Math.round(enriched.ft * 100) / 100} ft`;
-       }
-       
-       setLiveRiver(enriched);
-    };
-
     if (hasThreeDays && newlyFetched && cached) {
-       enrichAndSet(cached.gaugeData);
+       setDynamicPayload({ gaugeData: cached.gaugeData, gaugeNames: cached.gaugeNames });
        return;
     }
 
@@ -140,7 +111,7 @@ export function useDynamicUSGS(river: RiverData) {
         }
 
         dynamicUSGSCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
-        enrichAndSet(mergedGaugeData, siteNameMap);
+        setDynamicPayload({ gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
 
       } catch (err: unknown) {
         if (isMounted && err instanceof Error) console.error("Dynamic USGS Native Fetch Error:", err.message);
@@ -155,5 +126,38 @@ export function useDynamicUSGS(river: RiverData) {
     };
   }, [river.id, river.gauges?.map(g => g.id).join(",")]);
 
-  return liveRiver;
+  const enrichedRiver = useMemo(() => {
+    if (!dynamicPayload) return null;
+    
+    // Create a fresh clone to apply synchronous enrichment
+    const enriched = { ...river };
+    enriched.gaugeData = { ...(enriched.gaugeData || {}), ...dynamicPayload.gaugeData };
+    
+    const names = dynamicPayload.gaugeNames;
+    if (names && enriched.gauges) {
+        enriched.gauges = enriched.gauges.map(g => {
+            if (names[g.id]) return { ...g, name: names[g.id] };
+            return g;
+        });
+    }
+    
+    const primaryGaugeID = enriched.gauges?.[0]?.id;
+    const primaryData = primaryGaugeID && enriched.gaugeData[primaryGaugeID] ? enriched.gaugeData[primaryGaugeID] : null;
+    const latest = primaryData && primaryData.length > 0 ? primaryData[primaryData.length - 1] : null;
+
+    if (latest) {
+        enriched.cfs = latest.cfs ?? enriched.cfs;
+        const ftValue = latest.ft;
+        enriched.ft = (ftValue !== undefined && !isNaN(ftValue)) ? ftValue : enriched.ft;
+        enriched.running = calculateRelativeFlow(enriched) ?? enriched.running;
+        
+        if (enriched.cfs && enriched.ft) enriched.flowInfo = `${Math.round(enriched.cfs)} cfs ${Math.round(enriched.ft * 100) / 100} ft`;
+        else if (enriched.cfs) enriched.flowInfo = `${Math.round(enriched.cfs)} cfs`;
+        else if (enriched.ft) enriched.flowInfo = `${Math.round(enriched.ft * 100) / 100} ft`;
+    }
+    
+    return enriched;
+  }, [river, dynamicPayload]);
+
+  return enrichedRiver;
 }

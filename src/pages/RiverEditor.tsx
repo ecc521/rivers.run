@@ -41,7 +41,7 @@ export default function RiverEditor() {
     name: "",
     state: "MD",
     class: "",
-    skill: "fw",
+    skill: "FW",
     dam: false,
     aw: "",
     section: "",
@@ -56,15 +56,18 @@ export default function RiverEditor() {
   const [proposedData, setProposedData] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"draft" | "original">("draft");
 
-  const syncInputs = (data: any) => {
-      if (!data) return;
+  const syncInputs = (inputData: any) => {
+      if (!inputData) return;
+      // Rigorously deep clone to completely sever object references
+      const data = JSON.parse(JSON.stringify(inputData));
+
       const safeAccess = (data.accessPoints || []).map((ap: any) => ({ ...ap, rawLat: ap.lat ? String(ap.lat) : "", rawLon: ap.lon ? String(ap.lon) : "" }));
       setRiverData({
         id: data.id || targetId,
         name: data.name || "",
         state: data.state || "MD",
         class: data.class || "",
-        skill: data.skill || "fw",
+        skill: data.skill || "FW",
         dam: data.dam || false,
         aw: data.aw || "",
         section: data.section || "",
@@ -199,7 +202,8 @@ export default function RiverEditor() {
 
   const toggleView = (mode: "draft" | "original") => {
       if (mode === "original") {
-          setProposedData(generateFinalObj());
+          // Sever references by deep cloning, preserving the draft exactly as-is
+          setProposedData(JSON.parse(JSON.stringify(generateFinalObj())));
           setViewMode("original");
           syncInputs(liveData);
       } else {
@@ -224,15 +228,15 @@ export default function RiverEditor() {
       return true;
   };
 
-  const handleSave = async () => {
+  const handleSave = async (forceQueue: boolean = false) => {
     if (!user) {
       setShowSubmitModal(true);
       return;
     }
-    await processSave();
+    await processSave(forceQueue);
   };
 
-  const processSave = async () => {
+  const processSave = async (forceQueue: boolean = false) => {
     try {
       setSaving(true);
       const finalObj = generateFinalObj();
@@ -241,11 +245,15 @@ export default function RiverEditor() {
           return;
       }
 
-      const targetCollection = isAdmin ? "rivers" : "reviewQueue";
-      await setDoc(doc(db, targetCollection, finalObj.id), finalObj);
+      const targetCollection = (isAdmin && !forceQueue) ? "rivers" : "reviewQueue";
+      // By appending the stable random ID, we bypass Firebase permission blocks where users overwrite each other's queue drafts!
+      const documentId = (!isAdmin || forceQueue) && !isNew ? `${finalObj.id}-${stableRandomId}` : finalObj.id;
+
+      await setDoc(doc(db, targetCollection, documentId), finalObj);
       
-      alert(isAdmin ? "Saved successfully!" : "Submitted successfully for admin review!");
-      if (isNew) navigate(`/edit/${finalObj.id}`);
+      alert((isAdmin && !forceQueue) ? "Saved successfully to Live Maps!" : "Submitted successfully to the Review Queue!");
+      if (isNew && isAdmin && !forceQueue) navigate(`/edit/${finalObj.id}`);
+      else if (forceQueue || !isAdmin) navigate("/");
     } catch (e: unknown) {
       if (e instanceof Error) {
           console.error(e.message);
@@ -294,11 +302,41 @@ export default function RiverEditor() {
       }
   };
 
+  const handleDeleteRiver = async () => {
+      if (!isAdmin || isNew || isReviewMode) return;
+      if (!window.confirm("Are you sure you want to delete this river? This action cannot be reversed.")) return;
+
+      try {
+          setSaving(true);
+          const { getFunctions, httpsCallable } = await import("firebase/functions");
+          const functions = getFunctions();
+          const fn = httpsCallable(functions, "deleteLiveRiver");
+          await fn({ riverId: riverData.id });
+          alert("River permanently deleted from LIVE database and disaster-recovery email dispatched.");
+          navigate("/admin");
+      } catch (e: unknown) {
+          if (e instanceof Error) alert(`Failed to delete river natively: ${e.message}`);
+          else alert('Failed to delete river natively');
+          setSaving(false);
+      }
+  };
+
   const previewStateStr = JSON.stringify(riverData);
   const memoizedPreviewBase = useMemo(() => generateFinalObj(), [previewStateStr]);
   const hydratedPreview = useDynamicUSGS(memoizedPreviewBase) || memoizedPreviewBase;
   
-  const { errors: liveErrors, warnings: liveWarnings } = validateRiver(memoizedPreviewBase);
+  let { errors: liveErrors, warnings: liveWarnings } = validateRiver(memoizedPreviewBase);
+
+  if (isNew) {
+      // The River ID is strictly auto-generated from the name. A duplicate error here is inherently redundant.
+      liveErrors = liveErrors.filter(e => !e.includes("River ID"));
+      
+      // If they haven't literally typed anything yet into the new submission, gracefully suppress the wall of red text
+      if (riverData.name.trim() === "") {
+         liveErrors = [];
+         liveWarnings = [];
+      }
+  }
 
   if (loading) return <div className="page-content center"><h2>Loading Editor...</h2></div>;
 
@@ -318,7 +356,7 @@ export default function RiverEditor() {
             <p>Would you like to sign in? If you sign in, we can contact you if there are questions with this submission.</p>
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                <button onClick={() => { setShowSubmitModal(false); setShowAuthModal(true); }} style={{ padding: '8px 15px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Sign In</button>
-               <button onClick={() => { setShowSubmitModal(false); processSave(); }} style={{ padding: '8px 15px', backgroundColor: 'var(--surface-hover)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer' }}>Submit Anonymously</button>
+               <button onClick={() => { setShowSubmitModal(false); processSave(false); }} style={{ padding: '8px 15px', backgroundColor: 'var(--surface-hover)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer' }}>Submit Anonymously</button>
             </div>
          </div>
       </div>
@@ -330,7 +368,19 @@ export default function RiverEditor() {
           </div>
       )}
 
-      <h1>{isNew ? 'Create New River' : (isReviewMode ? `Review Edit: ${riverData.name}` : `Edit: ${riverData.name}`)}</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '25px' }}>
+        <h1 style={{ margin: 0 }}>{isNew ? 'Create New River' : (isReviewMode ? `Review Edit: ${riverData.name}` : `Edit: ${riverData.name}`)}</h1>
+        {(!isNew && !isReviewMode && isAdmin) && (
+          <button 
+            onClick={handleDeleteRiver} 
+            disabled={saving}
+            style={{ padding: '8px 15px', backgroundColor: "transparent", color: "var(--danger)", border: '1px solid var(--danger)', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold', cursor: saving ? 'not-allowed' : 'pointer', flexShrink: 0 }}
+          >
+            Delete Live River
+          </button>
+        )}
+      </div>
+      <hr style={{ borderColor: 'var(--border)', margin: '15px 0 20px 0' }} />
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents, opacity }}>
         <div style={{ display: 'flex', gap: '15px' }}>
@@ -639,13 +689,24 @@ export default function RiverEditor() {
                   </button>
                 </div>
               ) : (
-                <button 
-                  onClick={handleSave} 
-                  disabled={saving || isOriginalView}
-                  style={{ width: '100%', padding: '15px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
-                >
-                  {saving ? "Saving..." : "Save River Data"}
-                </button>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <button 
+                    onClick={() => handleSave(false)} 
+                    disabled={saving || isOriginalView}
+                    style={{ flex: isAdmin ? 2 : 1, padding: '15px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
+                  >
+                    {saving ? "Saving..." : (isAdmin ? "Publish to Live Maps" : "Submit Edit for Review")}
+                  </button>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => handleSave(true)} 
+                      disabled={saving || isOriginalView}
+                      style={{ flex: 1, padding: '15px', backgroundColor: "var(--surface-hover)", color: "var(--text)", border: '2px solid var(--border)', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
+                    >
+                      Save to Queue Drafts
+                    </button>
+                  )}
+                </div>
               )}
           </div>
       </div>

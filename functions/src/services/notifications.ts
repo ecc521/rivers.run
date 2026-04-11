@@ -152,7 +152,7 @@ export async function processNotifications(flowDataGlob: any) {
         const fbBatch = db.batch();
 
         for (const res of chunk) {
-            fbBatch.set(res.user.document.ref, { notifications: res.notifications }, { merge: true });
+            fbBatch.set(db.collection("user").doc(res.user.uid), { notifications: res.notifications }, { merge: true });
         }
 
         try {

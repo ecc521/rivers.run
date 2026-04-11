@@ -2,7 +2,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { getAuth } from "firebase-admin/auth";
-import { onRequest } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
@@ -34,32 +34,27 @@ export const pullGaugeDataPeriodic = onSchedule({
 });
 
 /**
- * DEVELOPMENT UTILITY: manualPullGaugeData
- * This open HTTP endpoint is specifically designed for local development.
- * It bypasses Pub/Sub scheduling restrictions, allowing developers to manually 
- * generate mock payload JSON sequences via simple browser requests directly 
- * to localhost:5001 after starting fresh emulator sandboxes.
+ * DEVELOPMENT UTILITY: manualSyncRivers
+ * Bypasses scheduling restrictions to sync riverdata manually.
  */
-export const manualPullGaugeData = onRequest({
+export const manualSyncRivers = onCall({
     timeoutSeconds: 300,
-    memory: "256MiB",
-    secrets: [gmailPassword]
-}, async (request, response) => {
-    const bucket = getStorage().bucket();
-    const [riversExist] = await bucket.file("public/rivers.json").exists();
-    const [gaugesExist] = await bucket.file("public/gauges.json").exists();
-
-    if (riversExist && gaugesExist) {
-        response.status(200).send("Payload documents already definitively exist in Storage! Safely aborting explicitly to avoid bandwidth consumption.");
-        return;
+    memory: "256MiB"
+}, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "You must be logged in to trigger this function.");
+    }
+    const userDoc = await db.collection("users").doc(request.auth.uid).get();
+    if (!userDoc.exists || userDoc.data()?.isAdmin !== true) {
+        throw new HttpsError("permission-denied", "You must be an admin to trigger this function.");
     }
 
     try {
-        await executeGaugeSync();
-        response.status(200).send({ success: true, message: "Gauge synchronization completely synthesized.", timestamp: Date.now() });
+        await syncRiverDataToStorage(db, bucket);
+        return { success: true, message: "River database natively synchronized.", timestamp: Date.now() };
     } catch (e: unknown) {
         console.error("Crucial manual synchronization explicit pipeline crashed:", e instanceof Error ? e.message : e);
-        response.status(500).send("Sync fundamentally failed.");
+        throw new HttpsError("internal", "Sync fundamentally failed.");
     }
 });
 
@@ -94,11 +89,9 @@ async function executeGaugeSync() {
             const err = downloadErr as any; // Cast temporarily for legacy google API properties
             const statusCode = err.code || err.status || (err.response && err.response.status);
             
-            // 404 Object Not Found
             if (statusCode === 404 || (err.message && err.message.includes("No such object"))) {
-                console.warn("No virtualGauges.json discovered in Storage; actively compiling the registry on-the-fly!");
-                await compileVirtualGaugesToStorage(bucket);
-                [buffer] = await file.download(); // Download immediately after synthesizing it
+                console.warn("No virtualGauges.json discovered in Storage; skipping compilation to protect the 15-minute sync layer. Admin must manually compile.");
+                buffer = Buffer.from("{}");
             } else {
                 throw err; // Rethrow native network/IAM errors
             }
@@ -246,13 +239,66 @@ export const notifyAdminsOnReviewQueue = onDocumentCreated("reviewQueue/{docId}"
     }
 });
 
-export const syncGaugeRegistryWeekly = onSchedule({
-    schedule: "every monday 03:00",
+export const manualSyncGaugeRegistry = onCall({
     timeoutSeconds: 540,
     memory: "512MiB"
-}, async () => {
-    console.log("Starting weekly USGS/Canada static gauge compilation...");
+}, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "You must be logged in to trigger this function.");
+    }
+    const userDoc = await db.collection("users").doc(request.auth.uid).get();
+    if (!userDoc.exists || userDoc.data()?.isAdmin !== true) {
+        throw new HttpsError("permission-denied", "You must be an admin to trigger this function.");
+    }
+
+    console.log("Starting manual USGS/Canada static gauge compilation...");
     const bucket = getStorage().bucket();
     await compileVirtualGaugesToStorage(bucket);
-    console.log("Weekly compilation completed securely.");
+    console.log("Manual compilation completed securely.");
+    return { success: true };
+});
+
+export const deleteLiveRiver = onCall({
+    timeoutSeconds: 60,
+    memory: "256MiB"
+}, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "You must be logged in to trigger this function.");
+    }
+    const userDoc = await db.collection("users").doc(request.auth.uid).get();
+    if (!userDoc.exists || userDoc.data()?.isAdmin !== true) {
+        throw new HttpsError("permission-denied", "You must be an admin to trigger this function.");
+    }
+
+    const { riverId } = request.data;
+    if (!riverId || typeof riverId !== "string") {
+        throw new HttpsError("invalid-argument", "Valid River ID strictly required.");
+    }
+
+    const riverRef = db.collection("rivers").doc(riverId);
+    const riverDoc = await riverRef.get();
+    
+    if (!riverDoc.exists) {
+        throw new HttpsError("not-found", "River currently does not exist natively in the database.");
+    }
+
+    const riverData = riverDoc.data();
+    const adminEmail = request.auth.token?.email || "Unknown Admin";
+
+    try {
+        await db.collection("mail").add({
+            to: [adminEmail, "email.rivers.run@gmail.com"],
+            message: {
+                subject: `DELETION ALERT: River Component Removed - ${riverData?.name || riverId}`,
+                text: `This river was deleted. The info prior to deletion is attached:\n\n${JSON.stringify(riverData, null, 2)}`
+            }
+        });
+    } catch (e: unknown) {
+        console.error("Non-fatal: Failed to log native river deletion email natively:", e instanceof Error ? e.message : e);
+    }
+
+    await riverRef.delete();
+    console.log(`Explicitly deleted river natively: ${riverId} by admin ${adminEmail}`);
+
+    return { success: true, message: "River permanently destroyed." };
 });

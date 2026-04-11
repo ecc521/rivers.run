@@ -139,6 +139,12 @@ const Home: React.FC = () => {
     };
   }, [filteredRivers.length]);
 
+  useEffect(() => {
+    // Debugging only
+    const gaugeCount = rivers.filter(r => r.isGauge).length;
+    console.log("TOTAL GAUGES IN RIVERS:", gaugeCount, "TOTAL RIVERS:", rivers.length);
+  }, [rivers]);
+
   if (loading)
     return (
       <div className="page-content center">

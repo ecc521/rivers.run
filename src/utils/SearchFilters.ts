@@ -69,7 +69,8 @@ function matchNormalSearch(r: RiverData, terms: string[]): boolean {
   const searchStr = [
     r.name || "",
     r.section || "",
-    ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : []))
+    ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : [])),
+    r.isGauge ? "gauge" : ""
   ].join(" ").toLowerCase();
   
   return terms.every(term => searchStr.includes(term));
@@ -175,6 +176,17 @@ export function filterRivers(
       return a.sortKey - b.sortKey;
     });
 
+    list = mapped.map(m => m.value);
+  } else {
+    // If no explicit sort and no list constraint, sort rivers above gauges
+    const mapped = list.map((r, i) => ({ index: i, value: r }));
+    mapped.sort((a, b) => {
+      const aGauge = !!a.value.isGauge;
+      const bGauge = !!b.value.isGauge;
+      if (aGauge && !bGauge) return 1;
+      if (!aGauge && bGauge) return -1;
+      return a.index - b.index; // Preserve original order
+    });
     list = mapped.map(m => m.value);
   }
 

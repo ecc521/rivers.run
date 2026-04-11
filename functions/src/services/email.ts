@@ -44,6 +44,7 @@ export function getMessage(user: any) {
 		const rivers = favorites[gaugeID];
 		for (const riverID in rivers) {
 			const river = rivers[riverID];
+            if (!river) { continue; }
 			IDs.push(riverID);
             const s = river.status || "unknown";
 			statusMap.get(s)?.push(river);

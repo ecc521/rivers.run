@@ -61,10 +61,10 @@ const About: React.FC = () => {
           Popular{" "}
           <strong>
             <Link
-              to="/clubs"
+              to="/lists"
               style={{ color: "var(--primary)", textDecoration: "none" }}
             >
-              river lists
+              community river lists
             </Link>
           </strong>{" "}
           for areas and clubs!

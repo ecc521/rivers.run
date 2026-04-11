@@ -24,6 +24,7 @@ interface FavoritesContextType {
     riverId: string,
     updates: Partial<FavoriteItem>,
   ) => Promise<void>;
+  clearAllFavorites: () => Promise<void>;
   isFavorite: (riverId: string) => boolean;
   loading: boolean;
 }
@@ -32,6 +33,7 @@ const FavoritesContext = createContext<FavoritesContextType>({
   favorites: [],
   toggleFavorite: async () => {},
   updateFavoriteConfig: async () => {},
+  clearAllFavorites: async () => {},
   isFavorite: () => false,
   loading: true,
 });
@@ -167,6 +169,11 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const clearAllFavorites = async () => {
+    setFavorites([]);
+    await saveFavorites([]);
+  };
+
   const isFavorite = (riverId: string) => {
     const rid = String(riverId);
     return favorites.some(f => f.id === rid);
@@ -174,7 +181,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <FavoritesContext.Provider
-      value={{ favorites, toggleFavorite, updateFavoriteConfig, isFavorite, loading }}
+      value={{ favorites, toggleFavorite, updateFavoriteConfig, clearAllFavorites, isFavorite, loading }}
     >
       {children}
     </FavoritesContext.Provider>

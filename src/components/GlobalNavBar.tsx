@@ -112,9 +112,18 @@ const GlobalNavBar: React.FC = () => {
             <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>FAQ</Link>
             <Link to="/about" style={{ color: "#cbd5e1", textDecoration: "none" }}>About</Link>
             <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>Settings</Link>
-            {isAdmin && (
-              <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold", marginLeft: "auto", marginRight: "10px" }}>
-                Admin Tools
+            {isAdmin ? (
+              <div style={{ display: "flex", marginLeft: "auto", gap: "15px", alignItems: "center" }}>
+                <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontSize: "0.85em", fontWeight: "bold" }}>
+                  Create River
+                </Link>
+                <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold", marginRight: "10px" }}>
+                  Admin Tools
+                </Link>
+              </div>
+            ) : (
+              <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold", marginLeft: "auto", marginRight: "10px" }}>
+                Suggest a River
               </Link>
             )}
           </div>
@@ -291,9 +300,18 @@ const GlobalNavBar: React.FC = () => {
                 <Link to="/faq" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>FAQ</Link>
                 <Link to="/about" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>About</Link>
                 <Link to="/settings" style={{ color: "white", textDecoration: "none", fontWeight: "500", fontSize: "1.1em" }} onClick={() => setIsMobileMenuOpen(false)}>Settings</Link>
-                {isAdmin && (
-                  <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em", marginTop: "10px", borderTop: "1px solid #334155", paddingTop: "10px" }} onClick={() => setIsMobileMenuOpen(false)}>
-                    Admin Tools
+                {isAdmin ? (
+                  <>
+                    <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em", marginTop: "10px", borderTop: "1px solid #334155", paddingTop: "10px" }} onClick={() => setIsMobileMenuOpen(false)}>
+                      Create River
+                    </Link>
+                    <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em", marginTop: "10px" }} onClick={() => setIsMobileMenuOpen(false)}>
+                      Admin Tools
+                    </Link>
+                  </>
+                ) : (
+                  <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold", fontSize: "1.1em", marginTop: "10px", borderTop: "1px solid #334155", paddingTop: "10px" }} onClick={() => setIsMobileMenuOpen(false)}>
+                    Suggest a River
                   </Link>
                 )}
               </div>

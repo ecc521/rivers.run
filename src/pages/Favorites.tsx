@@ -4,9 +4,40 @@ import { useFavorites } from "../context/FavoritesContext";
 import { NotificationSettings } from "../components/NotificationSettings";
 import { Link } from "react-router-dom";
 import { PromptModal } from "../components/PromptModal";
+const DebouncedNumericInput = ({ value, onChange, placeholder }: { value: number | null, onChange: (val: string) => void, placeholder?: string }) => {
+  const [localVal, setLocalVal] = React.useState<string>(value !== null ? String(value) : "");
+
+  React.useEffect(() => {
+    setLocalVal(value !== null ? String(value) : "");
+  }, [value]);
+
+  return (
+    <input
+      type="number"
+      value={localVal}
+      onChange={(e) => setLocalVal(e.target.value)}
+      onBlur={() => {
+        const newVal = localVal === "" ? null : Number(localVal);
+        if (newVal !== value) {
+          onChange(localVal);
+        }
+      }}
+      style={{
+        width: "60px",
+        padding: "4px",
+        border: "1px solid var(--border)",
+        backgroundColor: "var(--surface)",
+        color: "inherit",
+        borderRadius: "4px",
+      }}
+      placeholder={placeholder}
+    />
+  );
+};
+
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();
-  const { favorites, updateFavoriteConfig, toggleFavorite } = useFavorites();
+  const { favorites, updateFavoriteConfig, toggleFavorite, clearAllFavorites } = useFavorites();
   
   const [promptConfig, setPromptConfig] = React.useState<{
     title: string;
@@ -53,9 +84,8 @@ const FavoritesPage: React.FC = () => {
       title: "Delete All Favorites",
       message: "Are you sure you want to permanently delete all your favorites? This action cannot be undone.",
       onConfirm: async () => {
-        const { persistentStorage } = await import("../utils/persistentStorage");
-        await persistentStorage.remove("rivers_favorites");
-        window.location.reload();
+        await clearAllFavorites();
+        setPromptConfig(null);
       }
     });
   };
@@ -231,38 +261,16 @@ const FavoritesPage: React.FC = () => {
                     </Link>
                   </td>
                   <td style={{ padding: "12px 16px" }}>
-                    <input
-                      type="number"
-                      value={fav.minimum ?? ""}
-                      onChange={(e) => {
-                        handleMinChange(fav.id, e.target.value);
-                      }}
-                      style={{
-                        width: "60px",
-                        padding: "4px",
-                        border: "1px solid var(--border)",
-                        backgroundColor: "var(--surface)",
-                        color: "inherit",
-                        borderRadius: "4px",
-                      }}
+                    <DebouncedNumericInput
+                      value={fav.minimum ?? null}
+                      onChange={(val) => handleMinChange(fav.id, val)}
                       placeholder="---"
                     />
                   </td>
                   <td style={{ padding: "12px 16px" }}>
-                    <input
-                      type="number"
-                      value={fav.maximum ?? ""}
-                      onChange={(e) => {
-                        handleMaxChange(fav.id, e.target.value);
-                      }}
-                      style={{
-                        width: "60px",
-                        padding: "4px",
-                        border: "1px solid var(--border)",
-                        backgroundColor: "var(--surface)",
-                        color: "inherit",
-                        borderRadius: "4px",
-                      }}
+                    <DebouncedNumericInput
+                      value={fav.maximum ?? null}
+                      onChange={(val) => handleMaxChange(fav.id, val)}
                       placeholder="---"
                     />
                   </td>

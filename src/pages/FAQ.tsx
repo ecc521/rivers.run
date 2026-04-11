@@ -94,46 +94,19 @@ const FAQ: React.FC = () => {
       </h3>
 
       <FAQItem question="How do I add a new river?">
-        <p style={{ margin: "0 0 10px 0" }}>
-          <a
-            href="https://youtu.be/yHNZf0sg_Fo"
-            target="_blank"
-            rel="noreferrer"
-          >
-            YouTube Tutorial
-          </a>
-        </p>
         <p>
-          If you would like to add a new river, please fill out the{" "}
-          <a href="/resources/writeupmaker.html">writeup maker</a> to the best
-          of your ability, then press the button "Submit As New River
-          Suggestion".
+          To add a new river, click <strong>Suggest a River</strong> in the top navigation menu. Fill out the form with the river's details and click "Submit River Proposal". Our administrators will review your suggestion before it is published.
         </p>
+        <br/>
         <ContactSupport />
         <ContactAdmin />
-        <p>
-          If you are already an editor, follow the directions{" "}
-          <a
-            href="https://docs.google.com/document/d/1tk0O3W7lAdzLmUsy4n-iaqJokA25nmmHL_16-oHZdKE/edit"
-            target="_blank"
-            rel="noreferrer"
-          >
-            here
-          </a>
-          .
-        </p>
       </FAQItem>
 
       <FAQItem question="How do I improve an existing river?">
-        <p style={{ margin: "0 0 10px 0" }}>
-          <a
-            href="https://youtu.be/wFuaHJ3fc9M?t=196"
-            target="_blank"
-            rel="noreferrer"
-          >
-            YouTube Tutorial
-          </a>
+        <p>
+          Click any river in the list to expand its details, then click the <strong>Suggest an Edit</strong> button at the top. Make your changes and submit them for admin review.
         </p>
+        <br/>
         <ContactSupport />
         <ContactAdmin />
       </FAQItem>
@@ -180,9 +153,7 @@ const FAQ: React.FC = () => {
 
       <FAQItem question="What are virtual gauges?">
         <p style={{ margin: 0 }}>
-          Virtual gauges are gauges that are calculated based on other gauges.
-          Virtual gauges are identified by the prefix "virtual:" in the name. If
-          you would like to add a virtual gauge, please contact{" "}
+          Virtual gauges combine mathematical data from multiple real physical gauges to calculate a more accurate flow for a specific river section. They are automatically flagged with "virtual:" in their name. If you would like to suggest a new virtual gauge formula, please contact{" "}
           <a href="mailto:admin@rivers.run" target="_blank" rel="noreferrer">
             admin@rivers.run
           </a>
@@ -244,13 +215,13 @@ const FAQ: React.FC = () => {
         <p style={{ margin: 0 }}>
           You can use the{" "}
           <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSfH9IEWMWGE13m5BEEuTqcFKd85qtVRGnPX5GB2kVyM3IFKnA/viewform?usp=sf_link"
+            href="https://forms.gle/4iNq9y92y9bzzV"
             target="_blank"
             rel="noreferrer"
           >
             Feedback Form
           </a>
-          , or you can email administrator at{" "}
+          , or you can email the administrator at{" "}
           <a href="mailto:contact@rivers.run">contact@rivers.run</a>
         </p>
       </FAQItem>
