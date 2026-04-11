@@ -63,7 +63,7 @@ export default function AdminQueue() {
     setSyncingGauges(true);
     try {
       const functions = getFunctions();
-      const fn = httpsCallable(functions, "manualSyncRivers");
+      const fn = httpsCallable(functions, "manualSyncRivers", { timeout: 300000 });
       const res = await fn();
       alert(`Success: ${(res.data as any)?.message}`);
     } catch (e: any) {
@@ -77,7 +77,7 @@ export default function AdminQueue() {
     setSyncingRegistry(true);
     try {
       const functions = getFunctions();
-      const fn = httpsCallable(functions, "manualSyncGaugeRegistry");
+      const fn = httpsCallable(functions, "manualSyncGaugeRegistry", { timeout: 540000 });
       await fn();
       alert("Gauge Registry dynamically synthesized!");
     } catch (e: any) {

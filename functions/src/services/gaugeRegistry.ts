@@ -51,30 +51,56 @@ function parseUSGSLine(line: string, headers: string[], gaugeRegistry: Record<st
 
 async function scrapeUSGS(gaugeRegistry: Record<string, any>) {
     console.log("1. Pulling USGS Native Metadata...");
-    for (const state of states) {
-        const url = `https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=${state}&siteStatus=active&siteType=ST&hasDataTypeCd=iv&siteOutput=expanded`;
-        try {
-            const res = await fetch(url);
-            const text = await res.text();
-            const lines = text.split('\n');
-            let headers: string[] = [];
+    
+    let stateIndex = 0;
+    const CONCURRENCY_LIMIT = 4;
+    
+    const worker = async () => {
+        while (stateIndex < states.length) {
+            const state = states[stateIndex++];
+            const url = `https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=${state}&siteStatus=active&siteType=ST&hasDataTypeCd=iv&siteOutput=expanded`;
             
-            for (let line of lines) {
-                line = line.trimEnd();
-                if (!line || line.startsWith('#') || line.includes('5s') || line.includes('15s')) continue;
-                
-                if (line.includes('agency_cd')) {
-                    headers = line.split('\t');
-                    continue;
+            let success = false;
+            let attempts = 0;
+            const MAX_RETRIES = 2;
+            
+            while (!success && attempts <= MAX_RETRIES) {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error(`USGS HTTP Error: ${res.status}`);
+                    const text = await res.text();
+                    const lines = text.split('\n');
+                    let headers: string[] = [];
+                    
+                    for (let line of lines) {
+                        line = line.trimEnd();
+                        if (!line || line.startsWith('#') || line.includes('5s') || line.includes('15s')) continue;
+                        
+                        if (line.includes('agency_cd')) {
+                            headers = line.split('\t');
+                            continue;
+                        }
+                        parseUSGSLine(line, headers, gaugeRegistry);
+                    }
+                    console.log(`- Compiled state: ${state} (Total so far: ${Object.keys(gaugeRegistry).length})`);
+                    success = true;
+                    // Maintain a tiny throttle to stay polite
+                    await new Promise(r => setTimeout(r, 200));
+                } catch (e: unknown) {
+                    attempts++;
+                    const msg = e instanceof Error ? e.message : String(e);
+                    if (attempts > MAX_RETRIES) {
+                        console.error(`- Failed to retrieve state ${state} completely after ${attempts} attempts: ${msg}`);
+                    } else {
+                        console.warn(`- Failed to retrieve state ${state} (Attempt ${attempts}/${MAX_RETRIES + 1}), backing off... Error: ${msg}`);
+                        await new Promise(r => setTimeout(r, attempts * 2000));
+                    }
                 }
-                parseUSGSLine(line, headers, gaugeRegistry);
             }
-            console.log(`- Compiled state: ${state} (Total so far: ${Object.keys(gaugeRegistry).length})`);
-            await new Promise(r => setTimeout(r, 600));
-        } catch (e: unknown) {
-            console.error(`- Failed to retrieve state ${state}:`, e instanceof Error ? e.message : e);
         }
-    }
+    };
+
+    await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));
 }
 
 async function scrapeCanada(gaugeRegistry: Record<string, any>) {
