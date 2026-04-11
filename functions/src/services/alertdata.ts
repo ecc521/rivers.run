@@ -64,27 +64,23 @@ export async function syncAlertDataToStorage(db: Firestore, bucket: Bucket): Pro
 
         console.log(`Delta sync successfully identified exactly ${querySnapshot.size} recently modified downstream user records.`);
 
-        // Systematically splice securely into explicit existing memory
+        const alertsMap = new Map(legacyAlerts.map(legacy => [legacy.uid, legacy]));
+
+        // Systematically map securely into explicit existing memory
         querySnapshot.forEach(doc => {
             const data = doc.data();
             const uid = doc.id;
             
-            const index = legacyAlerts.findIndex(legacy => legacy.uid === uid);
-            
             // Re-evaluating if they should still be in the dataset at all!
             if (data.notifications?.enabled) {
-                if (index >= 0) {
-                    legacyAlerts[index] = { uid, ...data }; // Replaces cleanly!
-                } else {
-                    legacyAlerts.push({ uid, ...data }); // Injects completely!
-                }
+                alertsMap.set(uid, { uid, ...data }); // Replaces or injects cleanly in O(1)
             } else {
-                // They explicitly explicitly disabled notifications, purge them cleanly immediately!
-                if (index >= 0) {
-                    legacyAlerts.splice(index, 1);
-                }
+                // They explicitly disabled notifications, purge them cleanly immediately!
+                alertsMap.delete(uid); // Deletes cleanly in O(1) without splice
             }
         });
+
+        legacyAlerts = Array.from(alertsMap.values());
     }
 
     // 3. Construct securely the final concatenated buffer

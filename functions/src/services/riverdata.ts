@@ -97,7 +97,9 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
 
         const invalidRivers: any[] = [];
 
-        // Systematically splice securely into explicit existing memory
+        const riversMap = new Map(legacyRivers.map(legacy => [legacy.id, legacy]));
+
+        // Systematically map securely into explicit existing memory
         querySnapshot.forEach(doc => {
             const data = doc.data();
             const { isValid, errors } = validateRiver(data);
@@ -105,19 +107,13 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
             if (!isValid) {
                 invalidRivers.push({ data, errors });
                 // If it became invalid, ensure it is removed from the public JSON payload
-                const index = legacyRivers.findIndex(legacy => legacy.id === data.id);
-                if (index >= 0) {
-                    legacyRivers.splice(index, 1);
-                }
+                riversMap.delete(data.id);
             } else {
-                const index = legacyRivers.findIndex(legacy => legacy.id === data.id);
-                if (index >= 0) {
-                    legacyRivers[index] = data; // Replaces cleanly!
-                } else {
-                    legacyRivers.push(data); // Injects completely!
-                }
+                riversMap.set(data.id, data); // Replaces or injects cleanly in O(1)
             }
         });
+
+        legacyRivers = Array.from(riversMap.values());
 
         for (const item of invalidRivers) {
             console.warn(`River ${item.data.id || 'UNKNOWN'} is improperly formatted. Moving to reviewQueue. Errors: ${item.errors.join(", ")}`);
