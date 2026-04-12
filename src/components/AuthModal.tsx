@@ -5,9 +5,12 @@ import {
   OAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  signInWithCredential
 } from "firebase/auth";
 import { auth } from "../firebase";
+import { Capacitor } from "@capacitor/core";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -43,13 +46,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       setLoading(true);
       setErrorText(null);
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      
+      if (Capacitor.isNativePlatform()) {
+        // Use Native Firebase Auth Plugin for Capacitor to bypass CORS/iframe issues
+        const result = await FirebaseAuthentication.signInWithGoogle();
+        const idToken = result.credential?.idToken;
+        if (idToken) {
+           const credential = GoogleAuthProvider.credential(idToken);
+           await signInWithCredential(auth, credential);
+        } else {
+           throw new Error("Failed to retrieve Google ID Token.");
+        }
+      } else {
+        // Standard web login
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      }
       onClose();
     } catch (e: unknown) {
       if (e instanceof Error) {
-        console.error("Authentication Error:", e.message);
-        setErrorText("Failed to authenticate: " + e.message);
+        const msg = e.message.toLowerCase();
+        if (msg.includes('cancel') || ('code' in e && (e as any).code === 'auth/popup-closed-by-user')) {
+          console.log("Authentication canceled by user.");
+        } else {
+          console.error("Authentication Error:", e.message);
+          setErrorText("Failed to authenticate: " + e.message);
+        }
       } else {
         setErrorText("Failed to authenticate: An unknown error occurred.");
       }
@@ -61,17 +83,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       setLoading(true);
       setErrorText(null);
-      const provider = new OAuthProvider('apple.com');
-      // Adding scopes usually required for full Apple sign-in payload
-      provider.addScope('email');
-      provider.addScope('name');
       
-      await signInWithPopup(auth, provider);
+      if (Capacitor.isNativePlatform()) {
+        const result = await FirebaseAuthentication.signInWithApple();
+        const idToken = result.credential?.idToken;
+        // Apple provider sometimes needs multiple fields or raw nonces depending on the config, 
+        // but idToken works as the bare minimum.
+        if (idToken) {
+           const provider = new OAuthProvider('apple.com');
+           const credential = provider.credential({
+             idToken: idToken,
+             rawNonce: result.credential?.nonce // Pass nonce to validate token
+           });
+           await signInWithCredential(auth, credential);
+        } else {
+           throw new Error("Failed to retrieve Apple ID Token.");
+        }
+      } else {
+        const provider = new OAuthProvider('apple.com');
+        // Adding scopes usually required for full Apple sign-in payload
+        provider.addScope('email');
+        provider.addScope('name');
+        await signInWithPopup(auth, provider);
+      }
       onClose();
     } catch (e: unknown) {
       if (e instanceof Error) {
-        console.error("Authentication Error:", e.message);
-        setErrorText("Failed to authenticate: " + e.message);
+        const msg = e.message.toLowerCase();
+        if (msg.includes('cancel') || ('code' in e && (e as any).code === 'auth/popup-closed-by-user')) {
+          console.log("Authentication canceled by user.");
+        } else {
+          console.error("Authentication Error:", e.message);
+          setErrorText("Failed to authenticate: " + e.message);
+        }
       } else {
         setErrorText("Failed to authenticate: An unknown error occurred.");
       }
@@ -111,6 +155,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setErrorText("Please enter both email and password.");
       return;
     }
+    if (password.length < 6) {
+      setErrorText("Password should be at least 6 characters.");
+      return;
+    }
     try {
       setLoading(true);
       setErrorText(null);
@@ -119,8 +167,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error("Authentication Error:", e.message);
-        if ('code' in e && e.code === 'auth/email-already-in-use') {
+        if ('code' in e && (e as any).code === 'auth/email-already-in-use') {
           setErrorText("An account with this email already exists.");
+        } else if ('code' in e && (e as any).code === 'auth/weak-password') {
+          setErrorText("Password should be at least 6 characters.");
         } else {
           setErrorText(e.message);
         }

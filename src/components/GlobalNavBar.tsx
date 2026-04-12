@@ -81,6 +81,7 @@ const GlobalNavBar: React.FC = () => {
         className="global-nav"
         style={{
           padding: "0 20px",
+          paddingTop: "env(safe-area-inset-top)",
           minHeight: "64px",
           display: "flex",
           justifyContent: "space-between",

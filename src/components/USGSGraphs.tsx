@@ -266,7 +266,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
               overflow: "hidden"
             }}
           >
-            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={100}>
+            <ResponsiveContainer width="100%" height={300} minWidth={1} debounce={100}>
               <LineChart
                 data={data}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
@@ -441,6 +441,30 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                 )}
               </LineChart>
             </ResponsiveContainer>
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: "15px", fontSize: "0.95em" }}>
+            {(() => {
+                const activeGauge = river.gauges?.find((g: any) => g.id === activeGaugeId);
+                const name = activeGauge?.name || activeGaugeId;
+                
+                let link = undefined;
+                if (activeGaugeId) {
+                  const parts = activeGaugeId.split(':');
+                  if (parts.length >= 2) {
+                      const type = parts[0].toLowerCase();
+                      const id = parts[1];
+                      if (type === 'usgs') link = `https://waterdata.usgs.gov/monitoring-location/${id}/`;
+                      else if (type === 'canada') link = `https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=${id}`;
+                      else if (type === 'nws') link = `https://water.noaa.gov/gauges/${id}`;
+                  }
+                }
+
+                if (link) {
+                  return <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: "bold", textDecoration: "underline" }}>{name}</a>;
+                }
+                return <span style={{ fontWeight: "bold", color: "var(--text)" }}>{name}</span>;
+            })()}
           </div>
 
           {activeTab === "precip" && precipSummary && (

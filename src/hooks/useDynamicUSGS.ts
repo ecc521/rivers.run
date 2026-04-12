@@ -46,9 +46,6 @@ export function useDynamicUSGS(river: RiverData) {
         
         const json = await res.json();
         const timeSeries = json.value?.timeSeries || [];
-        
-        const gaugeDataMap: Record<string, Map<number, any>> = {};
-        const siteNameMap: Record<string, string> = {};
 
         for (const seriesItem of timeSeries) {
             const sc = seriesItem.sourceInfo?.siteCode?.[0]?.value;

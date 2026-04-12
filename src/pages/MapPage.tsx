@@ -37,7 +37,7 @@ const MapPage: React.FC = () => {
       </div>
     );
 
-  return <SharedMap height="calc(100vh - 60px)" />;
+  return <SharedMap height="calc(100vh - 64px - env(safe-area-inset-top))" />;
 };
 
 export default MapPage;
