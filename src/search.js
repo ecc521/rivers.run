@@ -171,12 +171,12 @@ function normalSearch(list, query, options = {}) {
 
 function stringQuery(parameters) {
 
-    let content = parameters.content
-    let query = parameters.query
+    let content = parameters.content || ""
+    let query = parameters.query || ""
 
     //Ignore case by default
     if (!parameters.matchCase) {
-        content = content?.toLowerCase() || ""
+        content = content.toLowerCase()
         query = query.toLowerCase()
     }
 
@@ -533,5 +533,6 @@ function advancedSearch(list, query) {
 
 module.exports = {
     normalSearch,
-    advancedSearch
+    advancedSearch,
+    stringQuery
 }
