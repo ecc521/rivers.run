@@ -16,6 +16,9 @@
       "insetsHandling": "css"
     }
   },
-  "cordova": {},
-  "server": {}
+  "server": {
+    "hostname": "app.rivers.run",
+    "androidScheme": "https",
+    "iosScheme": "https"
+  }
 }
