@@ -11,6 +11,9 @@
     },
     "SplashScreen": {
       "launchAutoHide": true
+    },
+    "SystemBars": {
+      "insetsHandling": "css"
     }
   },
   "cordova": {},

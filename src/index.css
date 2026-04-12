@@ -1,7 +1,8 @@
 html, body {
     margin:0;
-    border:0;
+    box-sizing: border-box;
     background-color:#dffaff;
+    min-height: 100dvh;
     max-width: 100vw;
     overflow-x: hidden;
 }
@@ -712,7 +713,7 @@ Those include name,section,skill,quality, and flow info*/
 /*We don't want to force rectangular though - we just want to avoid the status bar. */
 @media (orientation: portrait) {
   #legend {
-    top: env(safe-area-inset-top);
+    top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
   }
 }
 

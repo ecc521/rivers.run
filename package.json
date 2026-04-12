@@ -23,7 +23,6 @@
     "@capacitor/keyboard": "^8.0.3",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
-    "@capacitor/status-bar": "^8.0.2",
     "@types/dompurify": "^3.2.0",
     "dompurify": "^3.3.3",
     "firebase": "^12.12.0",
