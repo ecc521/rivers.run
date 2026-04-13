@@ -9,7 +9,21 @@ import App from "./App.tsx";
 window.addEventListener('vite:preloadError', () => {
   if (!sessionStorage.getItem('vite-preload-error-shown')) {
     sessionStorage.setItem('vite-preload-error-shown', 'true');
-    alert("Network Error: Could not load this section. Please check your connection.");
+    
+    // Create a non-blocking toast notification instead of a native alert
+    const toast = document.createElement("div");
+    toast.className = "ReloadPromptToast";
+    toast.style.backgroundColor = "var(--danger-bg)";
+    toast.style.borderColor = "var(--danger)";
+    toast.innerHTML = `
+      <div class="ReloadPromptMessage">
+        <span style="color: var(--danger-text)">Network Error: Could not load this section. Please check your connection.</span>
+      </div>
+      <div class="ReloadPromptButtons">
+        <button class="ReloadPromptDismiss" onclick="this.closest('.ReloadPromptToast').remove()">Dismiss</button>
+      </div>
+    `;
+    document.body.appendChild(toast);
   }
 });
 

@@ -9,7 +9,7 @@ import { useSEO } from "../hooks/useSEO";
 import { ListEditorModal } from "../components/ListEditorModal";
 
 const ListsPage: React.FC = () => {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isModerator, loading: authLoading } = useAuth();
   const { myLists, subscribedListIds, createList, updateList, deleteList, toggleSubscription, isSubscribed } = useLists();
   const { homePageDefaultSearch, updateSetting } = useSettings();
   const { confirm, alert } = useModal();
@@ -50,9 +50,9 @@ const ListsPage: React.FC = () => {
       return titleMatch || descMatch || authMatch;
   });
 
-  const handleCreateList = () => {
-    if (!isAdmin && myLists.length >= 5) {
-      alert("You have reached the limit of 5 custom lists.");
+  const handleCreateList = async () => {
+    if (!isModerator && myLists.length >= 5) {
+      await alert("You have reached the limit of 5 custom lists.");
       return;
     }
     setEditorModal({
@@ -73,9 +73,9 @@ const ListsPage: React.FC = () => {
     });
   };
 
-  const handleCopyList = (list: UserList) => {
-    if (!isAdmin && myLists.length >= 5) {
-      alert("You have reached the limit of 5 custom lists. You cannot copy another list until you delete one of your own.");
+  const handleCopyList = async (list: UserList) => {
+    if (!isModerator && myLists.length >= 5) {
+      await alert("You have reached the limit of 5 custom lists. You cannot copy another list until you delete one of your own.");
       return;
     }
     setEditorModal({

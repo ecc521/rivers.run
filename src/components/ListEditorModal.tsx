@@ -64,8 +64,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const handleCopyLink = () => {
      if (targetList) {
         const url = `${window.location.origin}/?list=${targetList.id}`;
-        navigator.clipboard.writeText(url).then(() => {
-           alert("Link copied to clipboard!");
+        navigator.clipboard.writeText(url).then(async () => {
+           await alert("Link copied to clipboard!");
         });
      }
   };
@@ -75,10 +75,10 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
       try {
         await updateList(targetList.id, { isPublished: !targetList.isPublished });
         if (!targetList.isPublished) {
-          alert("List marked for publishing to community feed.");
+          await alert("List marked for publishing to community feed.");
         }
       } catch (e: any) {
-        alert("Failed to update status: " + e.message);
+        await alert("Failed to update status: " + e.message);
       }
     }
   };

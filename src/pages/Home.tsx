@@ -20,6 +20,7 @@ import {
 } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useSettings } from "../context/SettingsContext";
+import { useModal } from "../context/ModalContext";
 import { triggerReviewIfEligible } from "../utils/appReview";
 
 
@@ -27,6 +28,7 @@ const LazyRiverPage = React.lazy(() => import("./RiverPage"));
 
 const Home: React.FC = () => {
   const { isDarkMode, isColorBlindMode } = useSettings();
+  const { alert } = useModal();
   const { id } = useParams<{ id: string }>();
   const routeLocation = useRouterLocation();
   const navigate = useNavigate();
@@ -47,7 +49,7 @@ const Home: React.FC = () => {
                  setSharedList({ id: docSnap.id, ...docSnap.data() } as UserList);
                  setShowListModal(true);
               } else {
-                 alert("This list could not be found. It may have been deleted.");
+                 await alert("This list could not be found. It may have been deleted.");
                  navigate("/");
               }
            } catch (e) {
@@ -482,12 +484,12 @@ const Home: React.FC = () => {
                try {
                   const newId = await createList(`Copy of ${list.title}`, list.description || "", false, list.rivers);
                   if (newId) {
-                      alert("Successfully imported list to your lists!");
+                      await alert("Successfully imported list to your lists!");
                       setShowListModal(false);
                       navigate(`/lists`);
                   }
                } catch (e: any) {
-                  alert(e.message);
+                  await alert(e.message);
                }
             }}
          />

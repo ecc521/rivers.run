@@ -4,6 +4,7 @@ import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useSettings } from "../context/SettingsContext";
 import { useLists } from "../context/ListsContext";
 import { useAuth } from "../context/AuthContext";
+import { useModal } from "../context/ModalContext";
 
 interface TopBarProps {
   query: AdvancedSearchQuery;
@@ -15,6 +16,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
   const { quickActionPref, updateSetting } = useSettings();
   const { myLists, addMultipleRiversToList } = useLists();
   const { user } = useAuth();
+  const { alert } = useModal();
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -206,10 +208,10 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
                      
                      if (targetId) {
                         await addMultipleRiversToList(targetId, filteredRivers);
-                        alert(`Successfully added ${filteredRivers.length} river(s) to your target list!`);
+                        await alert(`Successfully added ${filteredRivers.length} river(s) to your target list!`);
                         setMenuOpen(false);
                      } else {
-                        alert("No target list found. Please select a specific list as your target first.");
+                        await alert("No target list found. Please select a specific list as your target first.");
                      }
                   }}
                 >
