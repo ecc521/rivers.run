@@ -131,6 +131,33 @@ describe("SearchFilters", () => {
       expect(results[1].id).toBe("r1");
     });
 
+    it("prioritizes prefix name matches over section word matches", () => {
+      const searchMockRivers: RiverData[] = [
+        {
+          id: "swan",
+          name: "Swan River",
+          section: "Yarkin to Yough",
+          isGauge: false,
+        } as RiverData,
+        {
+          id: "yough",
+          name: "Youghiogheny River",
+          section: "Middle",
+          isGauge: false,
+        } as RiverData,
+      ];
+
+      const query: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        normalSearch: "yough",
+      };
+
+      const results = filterRivers(searchMockRivers, query);
+      expect(results.length).toBe(2);
+      expect(results[0].id).toBe("yough"); // Name prefix match (+80) > section word match (+30)
+      expect(results[1].id).toBe("swan");
+    });
+
     it("prioritizes full word matches over partial matches in search results sorting", () => {
       const searchMockRivers: RiverData[] = [
         {

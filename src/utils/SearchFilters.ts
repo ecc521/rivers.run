@@ -18,6 +18,7 @@ export interface AdvancedSearchQuery {
   userLon?: number;
   sortBy?: "none" | "alphabetical" | "skill" | "class" | "running" | "state";
   sortReverse?: boolean;
+  listId?: string;
   listData?: { id: string; order: number }[];
   mapRadiusMode?: "current" | "center" | "custom";
 }
@@ -37,6 +38,7 @@ export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
 
 export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
   if (query.favoritesOnly) return true;
+  if (query.listId) return true;
   if (query.listData && query.listData.length > 0) return true;
   if (query.distanceMax !== undefined) return true;
   if (query.name) return true;
@@ -133,23 +135,42 @@ function getSortKey(r: RiverData, sortBy: string): any {
 
 function getSearchRelevanceScore(r: RiverData, terms: string[]): number {
   if (terms.length === 0) return 0;
+  let score = 0;
   
-  const searchStr = [
-    r.name || "",
-    r.section || "",
+  const name = (r.name || "").toLowerCase();
+  const section = (r.section || "").toLowerCase();
+  
+  const tagsStr = [
     ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : [])),
     r.isGauge ? "gauge" : "",
     ...(r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [])
   ].join(" ").toLowerCase();
 
-  let score = 0;
   for (const term of terms) {
-    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(^|[^a-z0-9])${escapedTerm}([^a-z0-9]|$)`, 'i');
-    if (regex.test(searchStr)) {
+    const t = term.toLowerCase();
+    const escapedTerm = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const prefixRegex = new RegExp(`(^|[^a-z0-9])${escapedTerm}`, 'i'); 
+
+    if (name === t) {
+      score += 100;
+    } else if (name.startsWith(t)) {
+      score += 80;
+    } else if (prefixRegex.test(name)) {
+      score += 60;
+    } else if (name.includes(t)) {
+      score += 30;
+    } else if (section === t) {
+      score += 50; 
+    } else if (section.startsWith(t)) {
+      score += 40;
+    } else if (prefixRegex.test(section)) {
+      score += 30;
+    } else if (section.includes(t)) {
+      score += 15;
+    } else if (prefixRegex.test(tagsStr)) {
+      score += 10;
+    } else if (tagsStr.includes(t)) {
       score += 2;
-    } else {
-      score += 1;
     }
   }
   return score;
