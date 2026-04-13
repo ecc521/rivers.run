@@ -1,15 +1,29 @@
+/* eslint-disable sonarjs/no-nested-functions */
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { RiverData } from "../types/River";
 import { skillTranslations } from "../utils/skillTranslations";
 import { calculateColor } from "../utils/flowInfoCalculations";
-import { RiverExpansion } from "./RiverExpansion";
-import { useFavorites } from "../context/FavoritesContext";
+
+import { useLists } from "../context/ListsContext";
+import { useSettings } from "../context/SettingsContext";
+import { ListSelectModal } from "./ListSelectModal";
 
 interface RiverItemProps {
   river: RiverData;
   index: number;
   isDarkMode?: boolean;
   isColorBlindMode?: boolean;
+  initiallyExpanded?: boolean; // legacy prop, preserved for safety
+
+}
+
+function slugify(text: string) {
+  if (!text) return '';
+  const cleaned = text.toString().toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '');
+  return cleaned.split('-').filter(Boolean).join('-');
 }
 
 export const RiverItem: React.FC<RiverItemProps> = ({
@@ -17,11 +31,11 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   index,
   isDarkMode = false,
   isColorBlindMode = false,
+
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const navigate = useNavigate();
   const baseId = `b${index}`;
 
-  // Format class string with zero-width space for wrapping
   const riverClass = river.class ? river.class.split("(").join("\u200b(") : "";
   const translatedSkill = skillTranslations[river.skill] || "Unknown";
 
@@ -38,18 +52,57 @@ export const RiverItem: React.FC<RiverItemProps> = ({
     isDarkMode,
     isColorBlindMode,
   );
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const isFav = isFavorite(river.id);
+  
+  const { myLists, addRiverToList, removeRiverFromList, toggleRiverInQuickList, isRiverInQuickList } = useLists();
+  const { quickActionPref } = useSettings();
+  const [isModalOpen, setModalOpen] = useState(false);
+  
+  let isActive = isRiverInQuickList(river.id, quickActionPref);
+  let displayIcon = isActive ? "★" : "☆";
+  let displayColor = isActive ? "#ffd700" : "inherit";
+  
+  if (quickActionPref.startsWith("list:")) {
+    const targetListId = quickActionPref.split(":")[1];
+    const list = myLists.find(l => l.id === targetListId);
+    if (list) {
+      isActive = list.rivers.some(r => r.id === river.id);
+      displayIcon = isActive ? "✓" : "+";
+      displayColor = isActive ? "#ffd700" : "inherit";
+    }
+  }
+
+  const handleActionClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (quickActionPref.startsWith("list:")) {
+      const targetListId = quickActionPref.split(":")[1];
+      if (isActive) {
+        await removeRiverFromList(targetListId, river.id);
+      } else {
+        await addRiverToList(targetListId, river);
+      }
+    } else if (quickActionPref === "favorites" || myLists.length === 0) {
+      toggleRiverInQuickList(river, quickActionPref);
+    } else {
+      setModalOpen(true);
+    }
+  };
+
+  const handleCloseModal = () => setModalOpen(false);
+
+  const handleNavigate = () => {
+     let slug = slugify(river.name);
+     if (river.section) slug += '-' + slugify(river.section);
+     navigate(`/river/${river.id}/${slug}`);
+  };
 
   return (
-    <>
+    <React.Fragment>
       <button
         id={`${baseId}1`}
         className={buttonClassNames}
         style={bgColor ? { backgroundColor: bgColor } : {}}
-        onClick={() => {
-          setIsExpanded(!isExpanded);
-        }}
+        onClick={handleNavigate}
       >
         <span className="riverspan">{river.name}</span>
         <span className="riverspan">{river.section}</span>
@@ -78,29 +131,41 @@ export const RiverItem: React.FC<RiverItemProps> = ({
 
         {/* State Span */}
         <span 
-          className="riverspan statespan"
-          title={river.states?.includes(',') ? river.states.split(',').map((s: string)=>s.trim()).join(', ') : ""}
+          className={`riverspan statespan ${river.states?.includes(',') ? "tooltip tooltip-bottom" : ""}`}
+          style={river.states?.includes(',') ? { borderBottom: "none", cursor: "pointer" } : {}}
         >
           {river.states?.includes(',') ? `${river.states.split(',')[0].trim()}+` : (river.states || "")}
+          {river.states?.includes(',') && (
+             <span className="tooltiptext" style={{ fontWeight: "normal", fontSize: "0.95em", padding: "6px 10px" }}>
+                 {river.states.split(',').map((s: string)=>s.trim()).join(', ')}
+             </span>
+          )}
         </span>
 
         {/* Favorite Span (Moved to Right) */}
         <span
           className="riverspan favspan"
-          title={isFav ? "Remove River from Favorites" : "Add River to Favorites"}
+          title={quickActionPref.startsWith("list:") ? (isActive ? "Remove from List" : "Add to List") : (quickActionPref === "ask" && myLists.length > 0 ? "Save River to Lists" : (isActive ? "Remove River from Lists" : "Add River to Lists"))}
           style={{
-            color: isFav ? "#ffd700" : "inherit",
+            color: displayColor,
+            fontWeight: quickActionPref.startsWith("list:") ? "bold" : "normal",
+            fontSize: quickActionPref.startsWith("list:") ? "1.3em" : "1.2em"
           }}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFavorite(river);
-          }}
+          onClick={handleActionClick}
         >
-          {isFav ? "★" : "☆"}
+          {displayIcon}
         </span>
+
+        {isModalOpen && (
+           <ListSelectModal 
+              isOpen={isModalOpen} 
+              onClose={handleCloseModal} 
+              riverId={river.id} 
+           />
+        )}
       </button>
 
-      {isExpanded && <RiverExpansion river={river} />}
-    </>
+    </React.Fragment>
   );
 };
+

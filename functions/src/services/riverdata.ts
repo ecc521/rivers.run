@@ -6,7 +6,7 @@ import { validateRiver } from "./riverValidation";
 const JSON_REMOTE_PATH = "public/rivers.json";
 const FULL_SYNC_HEURISTIC_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Promise<any[]> {
+export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Promise<{ activeRivers: any[], runSitemap: boolean }> {
     console.log("Starting RiverData Storage Synchronization...");
     const file = bucket.file(JSON_REMOTE_PATH);
 
@@ -140,7 +140,7 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
     // 3. Construct securely the final concatenated buffer
     if (modifiedCount === 0 && !needsFullSync) {
         console.log("Identical state confirmed strictly natively. Synchronization smoothly terminating safely without explicitly writing to Firebase storage.");
-        return legacyRivers;
+        return { activeRivers: legacyRivers, runSitemap: false };
     }
 
     // 4. Force upload precisely securely 
@@ -163,5 +163,5 @@ export async function syncRiverDataToStorage(db: Firestore, bucket: Bucket): Pro
     }
 
     console.log("River Configuration Baseline safely fully synchronized!");
-    return legacyRivers;
+    return { activeRivers: legacyRivers, runSitemap: true };
 }

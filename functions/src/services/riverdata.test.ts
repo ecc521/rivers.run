@@ -69,21 +69,21 @@ describe("syncRiverDataToStorage Delta Merge", () => {
     });
 
     it("securely mimics merging and successfully moves invalid edits into the review queue database", async () => {
-        const result = await syncRiverDataToStorage(mockDb as unknown as Firestore, mockBucket as unknown as Bucket);
+        const { activeRivers: result } = await syncRiverDataToStorage(mockDb as unknown as Firestore, mockBucket as unknown as Bucket);
 
         expect(result.length).toBe(2);
         
         // 1. river_new should natively exist
-        const rNew = result.find(r => r.id === "river_new");
+        const rNew = result.find((r: any) => r.id === "river_new");
         expect(rNew).toBeDefined();
         
         // 2. river_valid_old should be totally overridden
-        const rOld = result.find(r => r.id === "river_valid_old");
+        const rOld = result.find((r: any) => r.id === "river_valid_old");
         expect(rOld).toBeDefined();
         expect(rOld.name).toBe("Renamed River");
 
         // 3. river_invalid_soon should be universally purged!
-        expect(result.find(r => r.id === "river_invalid_soon")).toBeUndefined();
+        expect(result.find((r: any) => r.id === "river_invalid_soon")).toBeUndefined();
 
         // 4. Validate that reviewQueue doc was set and rivers doc deleted explicitly in DB
         expect(mockReviewQueueDocSet).toHaveBeenCalledWith(

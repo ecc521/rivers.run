@@ -4,7 +4,7 @@ import { Bucket } from "@google-cloud/storage";
 const JSON_REMOTE_PATH = "private/alertdata.json";
 const FULL_SYNC_HEURISTIC_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export async function syncAlertDataToStorage(db: Firestore, bucket: Bucket): Promise<any[]> {
+export async function syncAlertDataToStorage(db: Firestore, bucket: Bucket, activeRivers: any[]): Promise<any[]> {
     console.log("Starting AlertData Storage Synchronization...");
     const file = bucket.file(JSON_REMOTE_PATH);
 
@@ -84,6 +84,61 @@ export async function syncAlertDataToStorage(db: Firestore, bucket: Bucket): Pro
     }
 
     // 3. Construct securely the final concatenated buffer
+    // Before saving, we now map `community_lists` into the `favorites` architecture!
+    if (activeRivers && activeRivers.length > 0) {
+        console.log("Fetching community_lists to dynamically inject river flow configurations...");
+        // Even if we are doing a user delta sync, we fetch all active lists to ensure flow limits are up to date!
+        const listsSnapshot = await db.collection("community_lists").where("notificationsEnabled", "==", true).get();
+        const listsByOwner = new Map<string, any[]>();
+        listsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (!listsByOwner.has(data.ownerId)) listsByOwner.set(data.ownerId, []);
+            listsByOwner.get(data.ownerId)?.push(data);
+        });
+
+        const riversMap = new Map<string, any>();
+        activeRivers.forEach(r => riversMap.set(r.id, r));
+
+        for (const legacy of legacyAlerts) {
+            const lists = listsByOwner.get(legacy.uid);
+            if (!lists || lists.length === 0) {
+                legacy.favorites = [];
+                continue;
+            }
+
+            const mergedFavoritesMap = new Map<string, any>();
+            
+            for (const list of lists) {
+                 if (!list.rivers) continue;
+                 for (const r of list.rivers) {
+                      const masterRiver = riversMap.get(r.id);
+                      if (!masterRiver) continue;
+                                           // Alert Pinning Alignment: Use pinned sensor/thresholds if available, otherwise fallback to global defaults
+                      const primaryGauge = r.gaugeId || masterRiver.gauges?.find((g: any) => g.isPrimary)?.id || masterRiver.gauges?.[0]?.id || "none";
+                      
+                      const minFlow = r.min !== undefined && r.min !== null ? r.min : 
+                                      (r.customMin !== undefined && r.customMin !== null ? r.customMin : masterRiver.flow?.min);
+                                      
+                      const maxFlow = r.max !== undefined && r.max !== null ? r.max : 
+                                      (r.customMax !== undefined && r.customMax !== null ? r.customMax : masterRiver.flow?.max);
+                                      
+                      const units = r.units || r.customUnits || masterRiver.flow?.unit || "cfs";
+
+                      mergedFavoritesMap.set(r.id, {
+                          id: r.id,
+                          name: masterRiver.name,
+                          section: masterRiver.section || "",
+                          gauge: primaryGauge,
+                          minimum: minFlow,
+                          maximum: maxFlow,
+                          units: units
+                      });
+                 }
+            }
+            legacy.favorites = Array.from(mergedFavoritesMap.values());
+        }
+    }
+
     if (querySnapshot.size === 0 && !needsFullSync) {
         console.log("Identical state confirmed strictly natively. Synchronization smoothly terminating safely without explicitly writing to Firebase storage.");
         return legacyAlerts;

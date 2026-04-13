@@ -1,19 +1,22 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth";
-import { auth, db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { auth } from "../firebase";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  isModerator: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   isAdmin: false,
+  isSuperAdmin: false,
+  isModerator: false,
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -22,6 +25,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
 
   useEffect(() => {
     try {
@@ -29,18 +34,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(u);
         if (u) {
             try {
-                const roleDoc = await getDoc(doc(db, "user", u.uid));
-                if (roleDoc.exists() && roleDoc.data().isAdmin === true) {
-                    setIsAdmin(true);
-                } else {
-                    setIsAdmin(false);
-                }
+                // Fetch ID Token Result to get custom claims (ZERO READ COST)
+                const idTokenResult = await u.getIdTokenResult();
+                const claims = idTokenResult.claims;
+                
+                const sAdmin = claims.superAdmin === true;
+                const admin = claims.admin === true || sAdmin;
+                const mod = claims.moderator === true || admin;
+
+                setIsSuperAdmin(sAdmin);
+                setIsAdmin(admin);
+                setIsModerator(mod);
             } catch (err: unknown) {
-                if (err instanceof Error) console.error("Failed to fetch user roles", err.message);
+                if (err instanceof Error) console.error("Failed to fetch user roles from claims", err.message);
                 setIsAdmin(false);
+                setIsSuperAdmin(false);
+                setIsModerator(false);
             }
         } else {
             setIsAdmin(false);
+            setIsSuperAdmin(false);
+            setIsModerator(false);
         }
         setLoading(false);
       });
@@ -54,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, isSuperAdmin, isModerator }}>
       {children}
     </AuthContext.Provider>
   );

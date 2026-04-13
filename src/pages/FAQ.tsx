@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ContactSupport, ContactAdmin } from "../components/ContactInfo";
+import { useSEO } from "../hooks/useSEO";
+import { useSettings } from "../context/SettingsContext";
 
 const FAQItem: React.FC<{ question: string; children: React.ReactNode }> = ({
   question,
@@ -63,6 +64,8 @@ const FAQItem: React.FC<{ question: string; children: React.ReactNode }> = ({
 };
 
 const FAQ: React.FC = () => {
+  const { isDarkMode } = useSettings();
+  useSEO({ title: "FAQ", description: "Frequently Asked Questions about Rivers.run" });
   return (
     <div
       className="page-content"
@@ -90,98 +93,61 @@ const FAQ: React.FC = () => {
         <a target="_blank" rel="noreferrer" href="https://youtu.be/7KCTWCkYllI">
           Rivers.run Tutorial
         </a>{" "}
-        for an overview of Rivers.run features
+        for an overview of Rivers.run features!
       </h3>
 
+      <FAQItem question="How does the app work offline?">
+        <p style={{ margin: 0 }}>
+          For the best experience, download the native app from the App Store or Google Play. 
+          The app (and the website itself!) is built "offline-first". This means it automatically downloads map tiles, river coordinates, and 
+          flow data in the background. 
+        </p>
+        <p>
+          <strong>Pro Tip:</strong> Simply open the app or website while you still have an internet connection (like on the drive to the put-in). It will silently fetch the latest flow limits so you can view accurately colored rivers later on when you lose cell service!
+        </p>
+      </FAQItem>
+
+      <FAQItem question="What do the different colors on the rivers mean?">
+        <p style={{ margin: 0 }}>
+          We use a standardized color scale based on community-sourced threshold data to instantly show river runnability:
+        </p>
+        <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
+          <li><strong style={{ color: "var(--danger)" }}>Too Low (Red):</strong> Below the minimum recommended flow.</li>
+          <li><strong style={{ color: "hsl(60, 100%, 40%)" }}>Low (Yellow):</strong> Scrappy or low water, but navigable.</li>
+          <li><strong style={{ color: "#10b981" }}>Runnable (Green):</strong> Optimal, standard flow.</li>
+          <li><strong style={{ color: "#00AAFF" }}>High (Light Blue):</strong> Fast, elevated flow.</li>
+          <li><strong style={{ color: isDarkMode ? "#818cf8" : "#000080" }}>Too High (Dark Blue):</strong> Flood levels or generally unsafe/blown out.</li>
+        </ul>
+      </FAQItem>
+
       <FAQItem question="How do I add a new river?">
-        <p>
-          To add a new river, click <strong>Suggest a River</strong> in the top navigation menu. Fill out the form with the river's details and click "Submit River Proposal". Our administrators will review your suggestion before it is published.
-        </p>
-        <br />
-        <ContactSupport />
-        <ContactAdmin />
-      </FAQItem>
-
-      <FAQItem question="How do I improve an existing river?">
-        <p>
-          Click any river in the list to expand its details, then click the <strong>Suggest an Edit</strong> button at the top. Make your changes and submit them for admin review.
-        </p>
-        <br />
-        <ContactSupport />
-        <ContactAdmin />
-      </FAQItem>
-
-      <FAQItem question="How do I use the search box?">
         <p style={{ margin: 0 }}>
-          Just type in what you are looking for. The website will update results
-          as you type.
+          Click the <strong>Suggest a River</strong> button in the navigation menu (or the [+] icon). Fill out the form with the river's basic details and click Submit. Our administrators will review your suggestion before it's published to the global map.
         </p>
       </FAQItem>
 
-      <FAQItem question="How can I sort the rivers?">
-        <p style={{ margin: 0 }}>
-          Click the parameters on the advanced search interface or the sort
-          options atop the river feed. Currently, you may sort by Name, Flow,
-          Skill Category, etc.
-        </p>
-      </FAQItem>
-
-      <FAQItem question="What do stripes on a river mean?">
-        <p style={{ margin: 0 }}>
-          Stripes on a river mean that the river has dam releases. A link to the
-          release schedule should be included along with the stripes, although
-          you will want to check to make sure that the release schedule is for
-          the current year.
-        </p>
-      </FAQItem>
-
-      <FAQItem question="How does the shading and sort by flow work?">
+      <FAQItem question="A river's flow limits or access markers are wrong. How do I fix it?">
         <p>
-          Relative flows (Too low, low, too high, etc) are calculated using a
-          logarithmic scale based off of a given minimum, maximum, and other
-          optional values.
-        </p>
-        <p>
-          The values being used to calculate relative flows are shown below the
-          graph.
+          Rivers.run relies on crowdsourced data! Click on any river in the list to expand its details window, then click the <strong>Suggest an Edit</strong> button at the very top. 
         </p>
         <p style={{ margin: 0 }}>
-          If you would like to contribute flow range information, refer to "How
-          do I improve an existing river?".
+          Make your changes and submit them. They will go directly into the admin queue for review.
         </p>
       </FAQItem>
 
+      <FAQItem question="I found a bug or need administrative help. Who do I contact?">
+        <p style={{ margin: 0 }}>
+          Please email us directly at <a href="mailto:support@rivers.run" target="_blank" rel="noreferrer">support@rivers.run</a>. This is our only monitored support inbox for technical features or administrative requests.
+        </p>
+      </FAQItem>
+      
       <FAQItem question="I would like to help build rivers.run">
         <p style={{ margin: 0 }}>
-          You can access the repository on{" "}
-          <a
-            href="https://github.com/ecc521/rivers.run"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub
+          Assistance is always welcome! Please direct your inquiries to{" "}
+          <a href="mailto:support@rivers.run" target="_blank" rel="noreferrer">
+            support@rivers.run
           </a>
-          .
-        </p>
-      </FAQItem>
-
-      <FAQItem question="How does rivers.run work offline?">
-        <p>
-          Rivers.run utilizes your browsers Service Worker to store the contents
-          of this site - So whenever it is cached, you can visit it fully
-          offline.
-        </p>
-        <p>
-          <em>
-            If for any reason your cache is cleared, then you will be unable to
-            visit rivers.run without internet until the cache is refilled on the
-            next visit.
-          </em>
-        </p>
-        <p style={{ margin: 0 }}>
-          Don't worry about old content though - If rivers.run is using data
-          more than a few hours old, the site will automatically update the
-          cached data seamlessly once it detects a network connection.
+          . Please be clear that Rivers.run is independently developed and compensation will not be offered for contributions.
         </p>
       </FAQItem>
     </div>

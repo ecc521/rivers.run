@@ -41,7 +41,7 @@ describe("syncAlertDataToStorage Delta Merge", () => {
     });
 
     it("securely mimics merging and mapping O(1) properties correctly", async () => {
-        const result = await syncAlertDataToStorage(mockDb as unknown as Firestore, mockBucket as unknown as Bucket);
+        const result = await syncAlertDataToStorage(mockDb as unknown as Firestore, mockBucket as unknown as Bucket, []);
 
         expect(result.length).toBe(2);
         

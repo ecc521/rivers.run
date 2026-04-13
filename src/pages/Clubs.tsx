@@ -158,7 +158,7 @@ const Clubs: React.FC = () => {
       <p style={{ marginBottom: "20px" }}>
         Paddlers in the WV/VA/MD and surrounding areas have drawn from Ed's
         knowledge of the rivers for decades. Here are some of Ed's curated
-        favorites lists:
+        lists:
       </p>
 
       <ClubSection

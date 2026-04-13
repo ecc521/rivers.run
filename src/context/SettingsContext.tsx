@@ -5,6 +5,7 @@ interface SettingsContextType {
   isDarkMode: boolean;
   isColorBlindMode: boolean;
   homePageDefaultSearch: string | null;
+  quickActionPref: string;
   updateSetting: (key: string, value: string | null) => void;
   loading: boolean;
   themePref: string | null;
@@ -15,6 +16,7 @@ const SettingsContext = createContext<SettingsContextType>({
   isDarkMode: false,
   isColorBlindMode: false,
   homePageDefaultSearch: null,
+  quickActionPref: "ask",
   updateSetting: () => {},
   loading: true,
   themePref: null,
@@ -28,6 +30,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [themePref, setThemePref] = useState<string | null>(null);
   const [colorBlindPref, setColorBlindPref] = useState<string | null>(null);
   const [defaultSearchPref, setDefaultSearchPref] = useState<string | null>(null);
+  const [quickActionState, setQuickActionState] = useState<string>("ask");
 
   const [systemDark, setSystemDark] = useState(() => {
     if (typeof window !== "undefined")
@@ -40,13 +43,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       // Documentation: TEMPORARY_CODE.md
       await persistentStorage.migrate();
       
-      const theme = await persistentStorage.get("userTheme");
-      const cb = await persistentStorage.get("colorBlindMode");
-      const ds = await persistentStorage.get("homePageDefaultSearch");
-      
-      setThemePref(theme);
-      setColorBlindPref(cb);
-      setDefaultSearchPref(ds);
+      const qap = await persistentStorage.get("quickActionPref") || await persistentStorage.get("starActionPref");
+      setQuickActionState(qap || "ask");
       setLoading(false);
     }
     init();
@@ -73,6 +71,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       setColorBlindPref(value === "null" ? null : value);
     if (key === "homePageDefaultSearch")
       setDefaultSearchPref(value === "null" ? null : value);
+    if (key === "quickActionPref" || key === "starActionPref")
+      setQuickActionState(value === "null" ? "ask" : (value || "ask"));
   };
 
   let isDarkMode = systemDark;
@@ -80,6 +80,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   else if (themePref === "false") isDarkMode = false;
   const isColorBlindMode = colorBlindPref === "true";
   const homePageDefaultSearch = defaultSearchPref;
+  const quickActionPref = quickActionState;
 
   // Inject theme into root
   useEffect(() => {
@@ -99,6 +100,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
         isDarkMode,
         isColorBlindMode,
         homePageDefaultSearch,
+        quickActionPref,
         updateSetting,
         loading,
         themePref,

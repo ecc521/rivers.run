@@ -11,28 +11,8 @@ import {
 import { useModal } from "../context/ModalContext";
 
 const SettingsPage: React.FC = () => {
-  const { isDarkMode, homePageDefaultSearch, updateSetting, loading, themePref, colorBlindPref } = useSettings();
-  const [communityLists, setCommunityLists] = useState<{id: string, title: string}[]>([]);
+  const { isDarkMode, updateSetting, loading, themePref, colorBlindPref } = useSettings();
 
-  useEffect(() => {
-    // Optionally dynamically fetch community lists here to seed the dropdown
-    const fetchLists = async () => {
-      try {
-        const { collection, getDocs, orderBy, query } = await import("firebase/firestore");
-        const { db } = await import("../firebase");
-        const q = query(collection(db, "community_lists"), orderBy("subscribes", "desc"));
-        const snapshot = await getDocs(q);
-        const loaded: {id: string, title: string}[] = [];
-        snapshot.forEach((doc) => {
-           loaded.push({id: doc.id, title: doc.data().title});
-        });
-        setCommunityLists(loaded);
-      } catch (e: unknown) {
-        if (e instanceof Error) console.error("Could not fetch lists for settings dropdown", e.message);
-      }
-    };
-    fetchLists();
-  }, []);
 
   const themeStatusText = (!themePref || themePref === "null") 
     ? `Currently utilizing System Default theme: ${isDarkMode ? "Dark" : "Light"}` 
@@ -76,35 +56,7 @@ const SettingsPage: React.FC = () => {
           )}
         </div>
 
-        <div className="settings-card">
-          <h3 style={{ marginTop: 0 }}>Startup View (Default Sort)</h3>
-          <select
-            value={homePageDefaultSearch || "null"}
-            onChange={(e) => {
-              updateSetting("homePageDefaultSearch", e.target.value);
-            }}
-            style={{
-              padding: "8px",
-              fontSize: "16px",
-              width: "100%",
-              maxWidth: "350px",
-              marginBottom: "10px",
-            }}
-          >
-            <option value="null">None (Display All Rivers)</option>
-            <option value="favorites">My Favorites</option>
-            <optgroup label="Community Lists">
-              {communityLists.map(list => (
-                 <option key={list.id} value={`list:${list.id}`}>
-                    List: {list.title}
-                 </option>
-              ))}
-            </optgroup>
-          </select>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.9em", margin: 0 }}>
-            Determines what loads by default when you open the app. Selecting a Community List will also automatically enforce its custom curated sorting order.
-          </p>
-        </div>
+
 
         <div className="settings-card">
           <h3 style={{ marginTop: 0 }}>Color Blind Mode</h3>
@@ -234,60 +186,34 @@ const OfflineMapManager: React.FC = () => {
 
       <div className="settings-nested-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', borderRadius: '8px' }}>
         
-        {/* World Maps Configuration */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '0.9em', fontWeight: 'bold' }}>
-            Global Scope (World Map)
-          </label>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <select 
-              value={worldZoom} 
-              onChange={e => setWorldZoom(Number(e.target.value))}
-              disabled={isDownloading}
-              style={{ padding: '10px', borderRadius: '6px', border: "1px solid var(--border)", flex: 1, backgroundColor: "var(--surface)" }}
-            >
-              <option value={2}>Vague (Zoom 2) - Default</option>
-              <option value={3}>Basic (Zoom 3)</option>
-              <option value={4}>Detailed (Zoom 4)</option>
-              <option value={5}>Maximum (Zoom 5)</option>
-            </select>
-            <button 
-              onClick={() => handleDownload('world', worldZoom)}
-              disabled={isDownloading}
-              style={{ padding: '10px 16px', backgroundColor: isDownloading ? '#cbd5e1' : "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', minWidth: '160px' }}
-            >
-              Download
-            </button>
-          </div>
-        </div>
+        <MapDownloadItem
+          label="Global Scope (World Map)"
+          value={worldZoom}
+          onChange={setWorldZoom}
+          disabled={isDownloading}
+          onDownload={() => handleDownload('world', worldZoom)}
+          options={[
+            { value: 2, label: "Vague (Zoom 2) - Default" },
+            { value: 3, label: "Basic (Zoom 3)" },
+            { value: 4, label: "Detailed (Zoom 4)" },
+            { value: 5, label: "Maximum (Zoom 5)" }
+          ]}
+        />
 
-        {/* US Maps Configuration */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '0.9em', fontWeight: 'bold' }}>
-            Regional Scope (North America)
-          </label>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <select 
-              value={usZoom} 
-              onChange={e => setUsZoom(Number(e.target.value))}
-              disabled={isDownloading}
-              style={{ padding: '10px', borderRadius: '6px', border: "1px solid var(--border)", flex: 1, backgroundColor: "var(--surface)" }}
-            >
-              <option value={4}>Basic (Zoom 4) - Default</option>
-              <option value={5}>Standard (Zoom 5)</option>
-              <option value={6}>Detailed (Zoom 6)</option>
-              <option value={7}>High Res (Zoom 7)</option>
-              <option value={8}>Maximum (Zoom 8)</option>
-            </select>
-            <button 
-              onClick={() => handleDownload('us', usZoom)}
-              disabled={isDownloading}
-              style={{ padding: '10px 16px', backgroundColor: isDownloading ? '#cbd5e1' : "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', minWidth: '160px' }}
-            >
-              Download
-            </button>
-          </div>
-        </div>
+        <MapDownloadItem
+          label="Regional Scope (North America)"
+          value={usZoom}
+          onChange={setUsZoom}
+          disabled={isDownloading}
+          onDownload={() => handleDownload('us', usZoom)}
+          options={[
+            { value: 4, label: "Basic (Zoom 4) - Default" },
+            { value: 5, label: "Standard (Zoom 5)" },
+            { value: 6, label: "Detailed (Zoom 6)" },
+            { value: 7, label: "High Res (Zoom 7)" },
+            { value: 8, label: "Maximum (Zoom 8)" }
+          ]}
+        />
         
         <div style={{ height: '1px', backgroundColor: "var(--border)", margin: '8px 0' }} />
 
@@ -303,5 +229,37 @@ const OfflineMapManager: React.FC = () => {
     </div>
   );
 };
+
+const MapDownloadItem: React.FC<{
+  label: string;
+  value: number;
+  onChange: (val: number) => void;
+  disabled: boolean;
+  onDownload: () => void;
+  options: { value: number; label: string }[];
+}> = ({ label, value, onChange, disabled, onDownload, options }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <label style={{ fontSize: '0.9em', fontWeight: 'bold' }}>{label}</label>
+    <div style={{ display: 'flex', gap: '10px' }}>
+      <select 
+        value={value} 
+        onChange={e => onChange(Number(e.target.value))}
+        disabled={disabled}
+        style={{ padding: '10px', borderRadius: '6px', border: "1px solid var(--border)", flex: 1, backgroundColor: "var(--surface)" }}
+      >
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+      <button 
+        onClick={onDownload}
+        disabled={disabled}
+        style={{ padding: '10px 16px', backgroundColor: disabled ? '#cbd5e1' : "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '6px', cursor: disabled ? 'not-allowed' : 'pointer', minWidth: '160px' }}
+      >
+        Download
+      </button>
+    </div>
+  </div>
+);
 
 export default SettingsPage;

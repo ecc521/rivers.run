@@ -34,7 +34,8 @@ export default defineConfig([
       'react-hooks/purity': 'off',
       'no-empty': 'off',
       'sonarjs/cognitive-complexity': 'warn',
-      'sonarjs/no-nested-conditional': 'warn'
+      'sonarjs/no-nested-conditional': 'warn',
+      'sonarjs/no-nested-functions': 'warn'
     }
   },
 ])

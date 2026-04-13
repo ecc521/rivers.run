@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rivers.run/sitemap.xml

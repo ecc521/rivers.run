@@ -2,44 +2,58 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Server-Side Verification Native Logic: 
-    // Checks if logged in, AND the user document has isAdmin == true
+    // Auth Custom Claims helper functions (ZERO READ COST)
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.token.superAdmin == true;
+    }
+    
     function isAdmin() {
-      return request.auth != null && exists(/databases/$(database)/documents/user/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/user/$(request.auth.uid)).data.isAdmin == true;
+      return (isSuperAdmin() || (request.auth != null && request.auth.token.admin == true)) && !isBanned();
+    }
+
+    function isModerator() {
+      return request.auth != null && (request.auth.token.moderator == true || isAdmin()) && !isBanned();
+    }
+
+    function isBanned() {
+      return request.auth != null && request.auth.token.banned == true;
     }
     
     match /user/{userId} {
-      // Users can read/write their own user profile, but ONLY admins can write 'isAdmin' flags
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId && !request.resource.data.keys().hasAny(['isAdmin']);
+      // Writing allowed only if not banned. isAdmin/superAdmin can write to any user doc.
+      allow write: if request.auth != null && request.auth.uid == userId && !isBanned();
       allow write: if isAdmin();
     }
     
     match /users/{userId} {
-      // Legacy support block (no admin access required for old data)
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId && !request.resource.data.keys().hasAny(['isAdmin']);
+      allow write: if request.auth != null && request.auth.uid == userId && !isBanned();
     }
 
     match /rivers/{riverId} {
-      allow read: if true; // Public access for the frontend catalog
-      // Only strictly-verified admins can write to the live production database
-      allow create, update, delete: if isAdmin();
+      allow read: if true; 
+      allow create, update, delete: if isAdmin() && !isBanned();
     }
 
     match /reviewQueue/{queueId} {
-      allow read: if isAdmin(); // Queue is invisible to the public
-      allow create: if true; // Open submissions for anonymous crowdsourcing
-      allow update, delete: if isAdmin(); // Only admins can delete/edit from the queue
+      allow read: if isModerator(); 
+      allow create: if !isBanned(); // Anonymous allowed unless banned (if we implemented anon banning)
+      allow update, delete: if isModerator() && !isBanned();
     }
 
     match /community_lists/{listId} {
-      allow read: if true; // Public access for viewing the lists feature
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow create: if request.auth != null && !isBanned();
+      allow update, delete: if request.auth != null && !isBanned() && (request.auth.uid == resource.data.ownerId || isAdmin());
+    }
+
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && !isBanned(); // Frontend writes directly
+      allow update, delete: if false; // Append-only audit log
     }
     
-    // Fallback for any other existing collections
     match /{document=**} {
       allow read, write: if false; 
     }

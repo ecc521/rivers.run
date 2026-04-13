@@ -1,17 +1,15 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import { FavoritesProvider } from "./context/FavoritesContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ModalProvider } from "./context/ModalContext";
+import { ListsProvider } from "./context/ListsContext";
 import GlobalNavBar from "./components/GlobalNavBar";
 import Home from "./pages/Home";
-import FavoritesPage from "./pages/Favorites";
 import MapPage from "./pages/MapPage";
 import SettingsPage from "./pages/Settings";
 
 import Clubs from "./pages/Clubs";
 import FAQ from "./pages/FAQ";
-import About from "./pages/About";
 import TermsOfService from "./pages/legal/TermsOfService";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import Disclaimer from "./pages/legal/Disclaimer";
@@ -20,18 +18,23 @@ import { useEffect, Suspense, lazy } from "react";
 
 const RiverEditor = lazy(() => import("./pages/RiverEditor"));
 import AdminQueue from "./pages/AdminQueue";
-import CommunityLists from "./pages/CommunityLists";
+import ListsPage from "./pages/ListsPage";
 import { autoDownloadBaseMaps } from "./utils/offlineMapEngine";
+import { ReloadPrompt } from "./components/ReloadPrompt";
+import Footer from "./components/Footer";
+
+import { recordAppOpen } from "./utils/appReview";
 
 function App() {
   useEffect(() => {
     autoDownloadBaseMaps();
+    recordAppOpen();
   }, []);
 
   return (
     <AuthProvider>
       <SettingsProvider>
-        <FavoritesProvider>
+        <ListsProvider>
           <ModalProvider>
             <Router>
               <div
@@ -42,15 +45,17 @@ function App() {
                 }}
               >
                 <GlobalNavBar />
+                <ReloadPrompt />
                 <main style={{ flex: 1 }}>
                   <Routes>
                     <Route path="/" element={<Home />} />
+                    <Route path="/river/:id/:slug?" element={<Home />} />
                     <Route path="/map" element={<MapPage />} />
-                    <Route path="/favorites" element={<FavoritesPage />} />
+                    <Route path="/lists" element={<ListsPage />} />
+                    <Route path="/lists/:id" element={<Home />} />
                     <Route path="/clubs" element={<Clubs />} />
-                    <Route path="/lists" element={<CommunityLists />} />
+                    <Route path="/favorites" element={<ListsPage />} />
                     <Route path="/faq" element={<FAQ />} />
-                    <Route path="/about" element={<About />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/create" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
                     <Route path="/edit/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
@@ -62,14 +67,14 @@ function App() {
                     <Route path="/disclaimer" element={<Disclaimer />} />
                   </Routes>
                 </main>
+                <Footer />
               </div>
             </Router>
           </ModalProvider>
-        </FavoritesProvider>
+        </ListsProvider>
       </SettingsProvider>
     </AuthProvider>
   );
 }
-
 
 export default App;

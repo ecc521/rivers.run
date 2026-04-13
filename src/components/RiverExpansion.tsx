@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { RiverData } from "../types/River";
 import { skillTranslations } from "../utils/skillTranslations";
 import { USGSGraphs } from "./USGSGraphs";
@@ -17,6 +17,15 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
   const [showMap, setShowMap] = useState(false);
   const { isAdmin } = useAuth();
   
+  useEffect(() => {
+     // We intentionally default to false and defer the map initialization by ~50ms. 
+     // Leaflet calculates synchronous bounding box sizes during DOM insertion, 
+     // which blocks the main thread thread and makes navigation feel "janky".
+     // This allows the River UI overlay to paint instantly first.
+     const timer = setTimeout(() => setShowMap(true), 50);
+     return () => clearTimeout(timer);
+  }, []);
+
   // The hook directly yields a fully cloned, flow-hydrated RiverData precisely compiled
   const displayRiver = useDynamicUSGS(river) || river;
 

@@ -41,7 +41,7 @@ export default function RiverEditor() {
   const [riverData, setRiverData] = useState<any>({
     id: targetId,
     name: "",
-    state: "MD",
+    states: "MD",
     class: "",
     skill: "FW",
     dam: false,
@@ -50,6 +50,7 @@ export default function RiverEditor() {
     gauges: [],
     accessPoints: [],
     writeup: "",
+    rawTags: "",
     imageUrls: [],
     flow: { unit: "cfs", min: null, low: null, mid: null, high: null, max: null }
   });
@@ -76,6 +77,7 @@ export default function RiverEditor() {
         gauges: data.gauges || [],
         accessPoints: safeAccess,
         writeup: data.writeup || "",
+        rawTags: (data.tags || []).join(", "),
         imageUrls: data.imageUrls || [],
         flow: data.flow || { unit: "cfs", min: null, low: null, mid: null, high: null, max: null }
       });
@@ -195,6 +197,7 @@ export default function RiverEditor() {
         ...riverData,
         id: idToSave,
         gauges: parsedGauges,
+        tags: (riverData.rawTags || "").split(',').map((t: string) => t.trim()).filter(Boolean),
         accessPoints: newAccessPoints,
         flow: hasPrimary ? riverData.flow : { unit: riverData.flow?.unit || "cfs", min: null, low: null, mid: null, high: null, max: null },
         updatedAt: new Date(),
@@ -371,7 +374,17 @@ export default function RiverEditor() {
     <div className="page-content" style={{ maxWidth: 800, margin: "0 auto", paddingBottom: "250px" }}>
       {isReviewMode && !liveData && (
           <div style={{ backgroundColor: "var(--warning-bg)", color: "var(--warning-text)", padding: '15px', borderRadius: '5px', marginBottom: '20px', fontWeight: 'bold' }}>
-            🌟 Completely New River Submission! No existing live data to diff against.
+            {proposedData?._moveReason ? (
+                <>
+                    ⚠️ Removed from live database: Validation Failed!
+                    <br/>
+                    <span style={{ fontWeight: 'normal', fontSize: '14px', marginTop: '5px', display: 'block' }}>
+                        This river was automatically evicted from the live database because it is no longer formatted correctly. Please fix the validation errors below to republish it.
+                    </span>
+                </>
+            ) : (
+                <>🌟 Completely New River Submission! No existing live data to diff against.</>
+            )}
           </div>
       )}
 
@@ -482,6 +495,16 @@ export default function RiverEditor() {
                   onChange={e => setRiverData({...riverData, aw: e.target.value})} 
                 />
              </div>
+             <div style={{ flex: 1 }}>
+                <label style={{fontWeight: 'bold', display: 'block'}}>Tags</label>
+                <input 
+                  type="text" 
+                  style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+                  placeholder="e.g. classic, roadside (comma separated)"
+                  value={riverData.rawTags || ""} 
+                  onChange={e => setRiverData({...riverData, rawTags: e.target.value})} 
+                />
+             </div>
              <div style={{ display: 'flex', alignItems: 'center', marginTop: '20px' }}>
                 <label style={{fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer'}}>
                    <input 
@@ -496,58 +519,24 @@ export default function RiverEditor() {
 
         <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
           <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Gauges</label>
-          {(riverData.gauges || []).map((g: any, i: number) => {
-             const agency = g.id?.includes(":") ? g.id.split(":")[0].toUpperCase() : "USGS";
-             const code = g.id?.includes(":") ? g.id.substring(g.id.indexOf(":")+1) : (g.id || "");
-             return (
-             <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-                <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', flexShrink: 0 }}>
-                   <input type="checkbox" checked={g.isPrimary || false} onChange={(e) => {
-                      const newG = [...riverData.gauges];
-                      const wasChecked = e.target.checked;
-                      newG.forEach(gObj => gObj.isPrimary = false);
-                      if (wasChecked) {
-                          newG[i].isPrimary = true;
-                      }
-                      setRiverData({...riverData, gauges: newG});
-                   }} />
-                   Primary?
-                </label>
-                
-                <select 
-                   style={{ padding: '8px', boxSizing: 'border-box' }}
-                   value={agency}
-                   onChange={(e) => {
-                      const newG = [...riverData.gauges];
-                      newG[i].id = `${e.target.value}:${code}`;
-                      setRiverData({...riverData, gauges: newG});
-                   }}
-                >
-                   <option value="USGS">USGS</option>
-                   <option value="EC">Environment Canada (EC)</option>
-                   <option value="NWS">NWS / Weather.gov</option>
-                </select>
-
-                <input 
-                   type="text" 
-                   style={{ flex: 1, padding: '8px', boxSizing: 'border-box' }} 
-                   placeholder={agency === "USGS" ? "e.g., 01646500" : (agency === "EC" ? "e.g., 08MA002" : "e.g., LINC2")} 
-                   value={code} 
-                   onChange={(e) => {
-                      const newG = [...riverData.gauges];
-                      newG[i].id = `${agency}:${e.target.value}`;
-                      setRiverData({...riverData, gauges: newG});
-                   }}
-                />
-                <button 
-                  onClick={() => {
-                      const newG = riverData.gauges.filter((_:any, index:number) => index !== i);
-                      setRiverData({...riverData, gauges: newG});
-                  }} 
-                  style={{ backgroundColor: 'var(--danger)', color: 'white', border: 'none', padding: '8px', cursor: 'pointer' }}>Delete</button>
-             </div>
-             );
-          })}
+          {(riverData.gauges || []).map((g: any, i: number) => (
+            <GaugeItem 
+              key={i} 
+              gauge={g} 
+              onUpdate={(updates) => {
+                const newG = [...riverData.gauges];
+                newG[i] = { ...newG[i], ...updates };
+                if (updates.isPrimary) {
+                  newG.forEach((gObj, idx) => { if (idx !== i) gObj.isPrimary = false; });
+                }
+                setRiverData({ ...riverData, gauges: newG });
+              }}
+              onDelete={() => {
+                const newG = riverData.gauges.filter((_:any, index:number) => index !== i);
+                setRiverData({ ...riverData, gauges: newG });
+              }}
+            />
+          ))}
           <button onClick={() => {
               const newG = [...(riverData.gauges || [])];
               newG.push({ id: "USGS:", isPrimary: newG.length === 0 });
@@ -557,7 +546,19 @@ export default function RiverEditor() {
 
         {hasPrimaryGauge && (
           <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
-            <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Flow Thresholds (Used for Color Coding)</label>
+            <label style={{fontWeight: 'bold', display: 'flex', alignItems: 'center', marginBottom: '10px'}}>
+              Flow Thresholds (Used for Color Coding)
+              <span className="tooltip tooltip-bottom" style={{marginLeft: "10px", cursor: "help", color: "var(--primary)"}}>
+                ⓘ
+                <div className="tooltiptext" style={{ fontWeight: "normal", fontSize: "0.9em", width: "200px", lineHeight: "1.4", whiteSpace: "normal" }}>
+                  Minimum: Barely runnable<br />
+                  Low: Scrappy or low flow<br />
+                  Runnable: Optimal flow<br />
+                  High: Fast or pushy flow<br />
+                  Maximum: Flood levels (Too High)
+                </div>
+              </span>
+            </label>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <div style={{ width: '80px' }}>
                 <label style={{fontSize: '12px', display: 'block'}}>Unit</label>
@@ -573,14 +574,20 @@ export default function RiverEditor() {
                 </select>
               </div>
               
-              {["Min", "Low", "Mid", "High", "Max"].map((field) => (
+              {[
+                  { field: "min", label: "Minimum" },
+                  { field: "low", label: "Low" },
+                  { field: "mid", label: "Runnable" },
+                  { field: "high", label: "High" },
+                  { field: "max", label: "Maximum" }
+                ].map(({ field, label }) => (
                  <div key={field} style={{ flex: 1, minWidth: '80px' }}>
-                  <label style={{fontSize: '12px', display: 'block'}}>{field}</label>
+                  <label style={{fontSize: '12px', display: 'block', whiteSpace: 'nowrap'}}>{label}</label>
                   <input 
                     type="number" 
                     style={{ width: '100%', padding: '6px', height: '34px', boxSizing: 'border-box' }} 
-                    value={riverData.flow?.[field.toLowerCase()] ?? ""} 
-                    onChange={e => setRiverData({...riverData, flow: {...riverData.flow, [field.toLowerCase()]: e.target.value ? parseFloat(e.target.value) : null}})} 
+                    value={riverData.flow?.[field] ?? ""} 
+                    onChange={e => setRiverData({...riverData, flow: {...riverData.flow, [field]: e.target.value ? parseFloat(e.target.value) : null}})} 
                   />
                 </div>
               ))}
@@ -591,66 +598,25 @@ export default function RiverEditor() {
         <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
           <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Access Points</label>
           {(riverData.accessPoints || []).map((ap: any, i: number) => (
-             <div key={i} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '15px', backgroundColor: 'var(--surface)', padding: '10px', borderRadius: '5px' }}>
-                <select 
-                  style={{ padding: '8px', minWidth: '130px', boxSizing: 'border-box' }} 
-                  value={ap.type || "put-in"} 
-                  onChange={(e) => {
-                      const newA = [...riverData.accessPoints];
-                      newA[i].type = e.target.value;
-                      
-                      const defaultNames = ["Put-In", "Midpoint", "Access", "Take-Out", "Access Point"];
-                      if (!newA[i].name || defaultNames.includes(newA[i].name)) {
-                          newA[i].name = {"put-in": "Put-In", "access": "Access", "take-out": "Take-Out"}[e.target.value] || "Access";
-                      }
-                      
-                      setRiverData({...riverData, accessPoints: newA});
-                  }}
-                >
-                   <option value="put-in">Put-In</option>
-                   <option value="access">Access</option>
-                   <option value="take-out">Take-Out</option>
-                </select>
-                <input 
-                   type="text" 
-                   style={{ flex: 1, padding: '8px', minWidth: '150px', boxSizing: 'border-box' }} 
-                   placeholder="Name (e.g. Pattons)" 
-                   value={ap.name ?? ""} 
-                   onChange={(e) => {
-                      const newA = [...riverData.accessPoints];
-                      newA[i].name = e.target.value;
-                      setRiverData({...riverData, accessPoints: newA});
-                   }}
-                />
-                <input 
-                   type="text" 
-                   style={{ flex: 1, padding: '8px', minWidth: '150px', boxSizing: 'border-box' }} 
-                   placeholder="Latitude (e.g. 38° 50' 11.2 N)" 
-                   value={ap.rawLat ?? ap.lat ?? ""} 
-                   onChange={(e) => {
-                      const newA = [...riverData.accessPoints];
-                      newA[i].rawLat = e.target.value;
-                      setRiverData({...riverData, accessPoints: newA});
-                   }}
-                />
-                <input 
-                   type="text" 
-                   style={{ flex: 1, padding: '8px', minWidth: '150px', boxSizing: 'border-box' }} 
-                   placeholder="Longitude (e.g. W 77° 12' 3.4&quot;)" 
-                   value={ap.rawLon ?? ap.lon ?? ""} 
-                   onChange={(e) => {
-                      const newA = [...riverData.accessPoints];
-                      newA[i].rawLon = e.target.value;
-                      setRiverData({...riverData, accessPoints: newA});
-                   }}
-                />
-                <button 
-                  onClick={() => {
-                      const newA = riverData.accessPoints.filter((_:any, index:number) => index !== i);
-                      setRiverData({...riverData, accessPoints: newA});
-                  }} 
-                  style={{ backgroundColor: 'var(--danger)', color: 'white', border: 'none', padding: '8px', cursor: 'pointer' }}>Delete</button>
-             </div>
+            <AccessPointItem
+               key={i}
+               ap={ap}
+               onUpdate={(updates) => {
+                  const newA = [...riverData.accessPoints];
+                  newA[i] = { ...newA[i], ...updates };
+                  
+                  const defaultNames = ["Put-In", "Midpoint", "Access", "Take-Out", "Access Point"];
+                  if (updates.type && (!newA[i].name || defaultNames.includes(newA[i].name))) {
+                      newA[i].name = ({"put-in": "Put-In", "access": "Access", "take-out": "Take-Out"} as Record<string, string>)[updates.type] || "Access";
+                  }
+                  
+                  setRiverData({ ...riverData, accessPoints: newA });
+               }}
+               onDelete={() => {
+                  const newA = riverData.accessPoints.filter((_:any, index:number) => index !== i);
+                  setRiverData({ ...riverData, accessPoints: newA });
+               }}
+            />
           ))}
           <button onClick={() => {
               const newA = [...(riverData.accessPoints || [])];
@@ -716,8 +682,8 @@ export default function RiverEditor() {
                     </button>
                  </div>
               ) : (
-                  <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '15px', color: 'var(--primary)' }}>
-                      📝 New River Suggestion
+                  <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '15px', color: proposedData?._moveReason ? 'var(--danger)' : 'var(--primary)' }}>
+                      {proposedData?._moveReason ? "🛠 Fix Validation Errors to Republish" : "📝 New River Suggestion"}
                   </div>
               )}
 
@@ -764,3 +730,84 @@ export default function RiverEditor() {
     </>
   );
 }
+
+const GaugeItem: React.FC<{
+  gauge: any;
+  onUpdate: (updates: any) => void;
+  onDelete: () => void;
+}> = ({ gauge, onUpdate, onDelete }) => {
+  const agency = gauge.id?.includes(":") ? gauge.id.split(":")[0].toUpperCase() : "USGS";
+  const code = gauge.id?.includes(":") ? gauge.id.substring(gauge.id.indexOf(":")+1) : (gauge.id || "");
+
+  return (
+    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+      <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', flexShrink: 0 }}>
+        <input type="checkbox" checked={gauge.isPrimary || false} onChange={(e) => onUpdate({ isPrimary: e.target.checked })} />
+        Primary?
+      </label>
+      
+      <select 
+        style={{ padding: '8px', boxSizing: 'border-box' }}
+        value={agency}
+        onChange={(e) => onUpdate({ id: `${e.target.value}:${code}` })}
+      >
+        <option value="USGS">USGS</option>
+        <option value="EC">Environment Canada (EC)</option>
+        <option value="NWS">NWS / Weather.gov</option>
+      </select>
+
+      <input 
+        type="text" 
+        style={{ flex: 1, padding: '8px', boxSizing: 'border-box' }} 
+        placeholder={agency === "USGS" ? "e.g., 01646500" : (agency === "EC" ? "e.g., 08MA002" : "e.g., LINC2")} 
+        value={code} 
+        onChange={(e) => onUpdate({ id: `${agency}:${e.target.value}` })}
+      />
+      <button 
+        onClick={onDelete} 
+        style={{ backgroundColor: 'var(--danger)', color: 'white', border: 'none', padding: '8px', cursor: 'pointer' }}>Delete</button>
+    </div>
+  );
+};
+
+const AccessPointItem: React.FC<{
+  ap: any;
+  onUpdate: (updates: any) => void;
+  onDelete: () => void;
+}> = ({ ap, onUpdate, onDelete }) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '15px', backgroundColor: 'var(--surface)', padding: '10px', borderRadius: '5px' }}>
+    <select 
+      style={{ padding: '8px', minWidth: '130px', boxSizing: 'border-box' }} 
+      value={ap.type || "put-in"} 
+      onChange={(e) => onUpdate({ type: e.target.value })}
+    >
+      <option value="put-in">Put-In</option>
+      <option value="access">Access</option>
+      <option value="take-out">Take-Out</option>
+    </select>
+    <input 
+      type="text" 
+      style={{ flex: 1, padding: '8px', minWidth: '150px', boxSizing: 'border-box' }} 
+      placeholder="Name (e.g. Pattons)" 
+      value={ap.name ?? ""} 
+      onChange={(e) => onUpdate({ name: e.target.value })}
+    />
+    <input 
+      type="text" 
+      style={{ flex: 1, padding: '8px', minWidth: (ap.rawLat || ap.lat) ? '120px' : '150px', boxSizing: 'border-box' }} 
+      placeholder="Latitude" 
+      value={ap.rawLat ?? ap.lat ?? ""} 
+      onChange={(e) => onUpdate({ rawLat: e.target.value })}
+    />
+    <input 
+      type="text" 
+      style={{ flex: 1, padding: '8px', minWidth: (ap.rawLon || ap.lon) ? '120px' : '150px', boxSizing: 'border-box' }} 
+      placeholder="Longitude" 
+      value={ap.rawLon ?? ap.lon ?? ""} 
+      onChange={(e) => onUpdate({ rawLon: e.target.value })}
+    />
+    <button 
+      onClick={onDelete} 
+      style={{ backgroundColor: 'var(--danger)', color: 'white', border: 'none', padding: '8px', cursor: 'pointer' }}>Delete</button>
+  </div>
+);

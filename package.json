@@ -14,6 +14,7 @@
     "test:rules": "npx firebase-tools emulators:exec --only firestore \"node --experimental-vm-modules node_modules/jest/bin/jest.js\""
   },
   "dependencies": {
+    "@capacitor-community/in-app-review": "^8.0.0",
     "@capacitor-firebase/analytics": "^8.2.0",
     "@capacitor-firebase/authentication": "^8.2.0",
     "@capacitor/app": "^8.1.0",

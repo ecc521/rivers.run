@@ -2,7 +2,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { getAuth } from "firebase-admin/auth";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
@@ -15,6 +15,8 @@ import { loadCanadianProvince, CanadianProvinceData } from "./services/canada";
 import { processNotifications } from "./services/notifications";
 import { syncRiverDataToStorage } from "./services/riverdata";
 import { compileGaugeRegistryToStorage } from "./services/gaugeRegistry";
+import { syncListsToStorage } from "./services/lists";
+import { generateSitemapToStorage } from "./services/sitemap";
 import * as zlib from "zlib";
 import * as nodemailer from "nodemailer";
 
@@ -36,6 +38,39 @@ export const pullGaugeDataPeriodic = onSchedule({
 });
 
 /**
+ * Helper to verify Admin or SuperAdmin status from claims
+ */
+function verifyAdmin(auth: any) {
+    if (!auth) throw new HttpsError("unauthenticated", "Auth required.");
+    if (auth.token.banned === true) throw new HttpsError("permission-denied", "User is banned.");
+    if (auth.token.admin !== true && auth.token.superAdmin !== true) {
+        throw new HttpsError("permission-denied", "Admin or SuperAdmin role required.");
+    }
+}
+
+/**
+ * Helper to verify SuperAdmin status from claims
+ */
+function verifySuperAdmin(auth: any) {
+    if (!auth) throw new HttpsError("unauthenticated", "Auth required.");
+    if (auth.token.banned === true) throw new HttpsError("permission-denied", "User is banned.");
+    if (auth.token.superAdmin !== true) {
+        throw new HttpsError("permission-denied", "SuperAdmin role required.");
+    }
+}
+
+async function logAdminAction(adminUid: string, adminEmail: string, action: string, targetUid: string, details?: any) {
+    await db.collection("admin_logs").add({
+        timestamp: Date.now(),
+        adminUid,
+        adminEmail,
+        action,
+        targetUid,
+        details: details || {}
+    });
+}
+
+/**
  * DEVELOPMENT UTILITY: manualSyncRivers
  * Bypasses scheduling restrictions to sync riverdata manually.
  */
@@ -43,17 +78,14 @@ export const manualSyncRivers = onCall({
     timeoutSeconds: 300,
     memory: "256MiB"
 }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError("unauthenticated", "You must be logged in to trigger this function.");
-    }
-    const userDoc = await db.collection("user").doc(request.auth.uid).get();
-    if (!userDoc.exists || userDoc.data()?.isAdmin !== true) {
-        throw new HttpsError("permission-denied", "You must be an admin to trigger this function.");
-    }
+    verifyAdmin(request.auth);
 
     try {
-        await syncRiverDataToStorage(db, bucket);
-        return { success: true, message: "River database natively synchronized.", timestamp: Date.now() };
+        const { activeRivers, runSitemap } = await syncRiverDataToStorage(db, bucket);
+        if (runSitemap) await generateSitemapToStorage(activeRivers, bucket);
+        await syncListsToStorage(db, bucket);
+        await logAdminAction(request.auth!.uid, request.auth!.token.email || "unknown", "manualSyncRivers", "system");
+        return { success: true, message: "Databases natively synchronized.", timestamp: Date.now() };
     } catch (e: unknown) {
         console.error("Crucial manual synchronization explicit pipeline crashed:", e instanceof Error ? e.message : e);
         throw new HttpsError("internal", "Sync fundamentally failed.");
@@ -63,8 +95,9 @@ export const manualSyncRivers = onCall({
 async function executeGaugeSync() {
     console.log("Starting gauge sync protocol...");
 
-    // 1. Sync riverdata.json using the exact Delta scheme to avoid unnecesssary reads!
-    const activeRivers = await syncRiverDataToStorage(db, bucket);
+    // 1. Sync riverdata.json and lists.json using the exact Delta scheme to avoid unnecesssary reads!
+    const { activeRivers, runSitemap } = await syncRiverDataToStorage(db, bucket);
+    await syncListsToStorage(db, bucket);
     
     // 2. Fetch all unique gauges natively from the explicitly merged baseline memory 
     const usgsSet = new Set<string>();
@@ -215,13 +248,35 @@ async function executeGaugeSync() {
     // 7. Process legacy email notifications using the natively synthesized payload map
     console.log("Analyzing configured alerts exclusively against newly tracked limits...");
     try {
-        await processNotifications(flowData);
+        await processNotifications(flowData, activeRivers);
     } catch (e: unknown) {
         console.error("Non-fatal evaluation crash inside notification dispatcher", e instanceof Error ? e.message : e);
     }
 
+    if (runSitemap) {
+        await generateSitemapToStorage(activeRivers, bucket);
+    }
+
     console.log("Gauge synchronization successfully terminated.");
 }
+
+export const serveSitemap = onRequest({ timeoutSeconds: 30, memory: "256MiB" }, async (req, res) => {
+    res.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+    try {
+        const file = bucket.file("public/sitemap.xml");
+        const [exists] = await file.exists();
+        if (!exists) {
+            res.status(404).send("Sitemap not generated yet.");
+            return;
+        }
+        const [buffer] = await file.download();
+        res.set('Content-Type', 'application/xml');
+        res.send(buffer);
+    } catch (e: unknown) {
+        console.error("Failed to proxy sitemap", e instanceof Error ? e.message : e);
+        res.status(500).send("Proxy error");
+    }
+});
 
 export const notifyAdminsOnReviewQueue = onDocumentCreated("reviewQueue/{docId}", async (event) => {
     const queueData = event.data?.data();
@@ -230,56 +285,222 @@ export const notifyAdminsOnReviewQueue = onDocumentCreated("reviewQueue/{docId}"
     console.log(`Intercepted natively new Review Queue submission: ${queueData.name}`);
 
     const db = getFirestore();
-    const adminQuery = await db.collection("user")
-        .where("isAdmin", "==", true)
+    try {
+    const userQuery = await db.collection("user")
         .where("notifications.reviewQueueAlerts", "==", true)
         .get();
 
-    if (adminQuery.empty) return;
+    if (userQuery.empty) return;
 
-    const userIDs = adminQuery.docs.map(doc => ({ uid: doc.id }));
+    const userIDs = userQuery.docs.map(doc => ({ uid: doc.id }));
     const authResult = await getAuth().getUsers(userIDs);
-    const emails = authResult.users.map(u => u.email).filter((e): e is string => !!e);
+    
+    // Filter to ensure only authorized staff receive the alert
+    const emails = authResult.users
+        .filter(u => 
+            u.customClaims?.admin === true || 
+            u.customClaims?.superAdmin === true || 
+            u.customClaims?.moderator === true
+        )
+        .map(u => u.email)
+        .filter((e): e is string => !!e);
 
     if (emails.length === 0) return;
 
-    try {
-        const password = gmailPassword.value();
-        if (password) {
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                secure: true,
-                auth: { user: 'email.rivers.run@gmail.com', pass: password }
-            });
-
-            await transporter.sendMail({
-                from: 'email.rivers.run@gmail.com',
-                to: emails,
-                subject: `New rivers.run Edit Submission: ${queueData.name}`,
-                text: `A paddler has submitted an edit or new river mapping for: ${queueData.name}.\n\nYou can review the changes and deploy them to the live map here:\nhttps://rivers.run/admin`
-            });
-        }
-        console.log(`Successfully dispatched Queue Alerts to ${emails.length} admins.`);
     } catch (e: unknown) {
         console.error("Non-fatal: Failed mapping queue alerts dynamically", e instanceof Error ? e.message : e);
     }
 });
 
+// --- ADMIN MANAGEMENT FUNCTIONS ---
+
+export const adminLookupUser = onCall(async (request) => {
+    verifyAdmin(request.auth);
+    const { email, uid } = request.data;
+    
+    try {
+        let user: any;
+        if (email) user = await getAuth().getUserByEmail(email);
+        else if (uid) user = await getAuth().getUser(uid);
+        else throw new HttpsError("invalid-argument", "Email or UID required.");
+
+        return {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            customClaims: user.customClaims || {},
+            disabled: user.disabled,
+            metadata: user.metadata
+        };
+    } catch (e: any) {
+        throw new HttpsError("not-found", e.message);
+    }
+});
+
+export const adminSetRole = onCall(async (request) => {
+    const { targetUid, role } = request.data;
+    if (!targetUid || !role) throw new HttpsError("invalid-argument", "Missing UID or role.");
+    
+    const validRoles = ["superAdmin", "admin", "moderator", "none"];
+    if (!validRoles.includes(role)) throw new HttpsError("invalid-argument", "Invalid role type.");
+
+    const auth = getAuth();
+    
+    // 1. Fetch target user to check current permissions (Hierarchy Protection)
+    const targetUser = await auth.getUser(targetUid);
+    const targetClaims = targetUser.customClaims || {};
+
+    // 2. Enforce Hierarchy: Admins cannot touch SuperAdmins or other Admins
+    if (targetClaims.superAdmin || targetClaims.admin) {
+        verifySuperAdmin(request.auth);
+    } else {
+        verifyAdmin(request.auth);
+    }
+
+    // 3. Prevent promoting to SuperAdmin/Admin unless caller is SuperAdmin
+    if (role === "superAdmin" || role === "admin") {
+        verifySuperAdmin(request.auth);
+    }
+
+    // 4. Determine new claims
+    const newClaims = { ...(targetClaims) };
+    
+    // Clear all existing admin roles first to ensure "drop to nothing" or clean swap
+    delete newClaims.superAdmin;
+    delete newClaims.admin;
+    delete newClaims.moderator;
+
+    if (role === "superAdmin") {
+        newClaims.superAdmin = true;
+        newClaims.admin = true;
+        newClaims.moderator = true;
+    } else if (role === "admin") {
+        newClaims.admin = true;
+        newClaims.moderator = true;
+    } else if (role === "moderator") {
+        newClaims.moderator = true;
+    }
+    // "none" leaves them all deleted
+
+    await auth.setCustomUserClaims(targetUid, newClaims);
+    
+    await logAdminAction(request.auth!.uid, request.auth!.token.email || "unknown", `setRole:${role}`, targetUid);
+    
+    return { success: true, role };
+});
+
+export const adminBanUser = onCall(async (request) => {
+    const { targetUid, banned } = request.data;
+    if (!targetUid) throw new HttpsError("invalid-argument", "UID required.");
+
+    const auth = getAuth();
+    const user = await auth.getUser(targetUid);
+    const targetClaims = user.customClaims || {};
+
+    // Permission context check
+    if (targetClaims.superAdmin || targetClaims.admin) {
+        verifySuperAdmin(request.auth);
+    } else {
+        verifyAdmin(request.auth);
+    }
+
+    // 1. Safeguard: NO ONE can ban a superAdmin directly (must demote first)
+    if (targetClaims.superAdmin && banned) {
+        throw new HttpsError("permission-denied", "Cannot ban a superAdmin directly. Demote them first.");
+    }
+
+    // 2. Atomic Ban & Strip: Banning an admin/moderator clears their roles
+    const newClaims: Record<string, any> = { ...targetClaims, banned };
+    if (banned) {
+        delete newClaims.superAdmin;
+        delete newClaims.admin;
+        delete newClaims.moderator;
+    }
+
+    await auth.setCustomUserClaims(targetUid, newClaims);
+
+    await logAdminAction(request.auth!.uid, request.auth!.token.email || "unknown", banned ? "banUser" : "unbanUser", targetUid);
+
+    return { success: true };
+});
+
+export const adminDeleteUser = onCall(async (request) => {
+    verifyAdmin(request.auth);
+    const { targetUid } = request.data;
+    if (!targetUid) throw new HttpsError("invalid-argument", "UID required.");
+
+    const auth = getAuth();
+    const user = await auth.getUser(targetUid);
+
+    // Safeguard
+    if (user.customClaims?.admin || user.customClaims?.superAdmin) {
+        verifySuperAdmin(request.auth);
+    }
+
+    console.log(`Admin ${request.auth!.uid} initiating cascade delete for ${targetUid}`);
+
+    // 1. Wipe community lists
+    const lists = await db.collection("community_lists").where("ownerId", "==", targetUid).get();
+    const batch = db.batch();
+    lists.forEach(doc => batch.delete(doc.ref));
+    
+    // 2. Wipe review queue submissions
+    const queue = await db.collection("reviewQueue").where("submittedBy", "==", targetUid).get();
+    queue.forEach(doc => batch.delete(doc.ref));
+
+    // 3. Delete profile
+    batch.delete(db.collection("user").doc(targetUid));
+    
+    await batch.commit();
+
+    // 4. Delete Auth record
+    await auth.deleteUser(targetUid);
+    
+    await logAdminAction(request.auth!.uid, request.auth!.token.email || "unknown", "deleteUserCascade", targetUid);
+    
+    return { success: true, message: "User wiped and deleted." };
+});
+
+export const adminSendEmail = onCall({
+    secrets: [gmailPassword]
+}, async (request) => {
+    verifyAdmin(request.auth);
+    const { to, subject, body } = request.data;
+    if (!to || !subject || !body) throw new HttpsError("invalid-argument", "Missing fields.");
+
+    const password = gmailPassword.value();
+    if (!password) throw new HttpsError("failed-precondition", "Mail system not configured.");
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        secure: true,
+        auth: { user: 'email.rivers.run@gmail.com', pass: password }
+    });
+
+    await transporter.sendMail({
+        from: '"Rivers.run Admin" <email.rivers.run@gmail.com>',
+        to,
+        subject,
+        text: body
+    });
+
+    await logAdminAction(request.auth!.uid, request.auth!.token.email || "unknown", "sendAdminEmail", "multiple", { to, subject });
+
+    return { success: true };
+});
+
+
+
 export const manualSyncGaugeRegistry = onCall({
     timeoutSeconds: 540,
     memory: "512MiB"
 }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError("unauthenticated", "You must be logged in to trigger this function.");
-    }
-    const userDoc = await db.collection("user").doc(request.auth.uid).get();
-    if (!userDoc.exists || userDoc.data()?.isAdmin !== true) {
-        throw new HttpsError("permission-denied", "You must be an admin to trigger this function.");
-    }
+    verifyAdmin(request.auth);
 
     console.log("Starting manual USGS/Canada static gauge compilation...");
     const bucket = getStorage().bucket();
     await compileGaugeRegistryToStorage(bucket);
+    await logAdminAction(request.auth!.uid, request.auth!.token.email || "unknown", "manualSyncGaugeRegistry", "system");
     console.log("Manual compilation completed securely.");
     return { success: true };
 });
@@ -288,13 +509,7 @@ export const deleteLiveRiver = onCall({
     timeoutSeconds: 60,
     memory: "256MiB"
 }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError("unauthenticated", "You must be logged in to trigger this function.");
-    }
-    const userDoc = await db.collection("user").doc(request.auth.uid).get();
-    if (!userDoc.exists || userDoc.data()?.isAdmin !== true) {
-        throw new HttpsError("permission-denied", "You must be an admin to trigger this function.");
-    }
+    verifyAdmin(request.auth);
 
     const { riverId } = request.data;
     if (!riverId || typeof riverId !== "string") {
@@ -309,7 +524,7 @@ export const deleteLiveRiver = onCall({
     }
 
     const riverData = riverDoc.data();
-    const adminEmail = request.auth.token?.email || "Unknown Admin";
+    const adminEmail = request.auth!.token?.email || "Unknown Admin";
 
     try {
         const password = gmailPassword.value();
@@ -332,6 +547,7 @@ export const deleteLiveRiver = onCall({
     }
 
     await riverRef.delete();
+    await logAdminAction(request.auth!.uid, adminEmail, "deleteLiveRiver", riverId, { name: riverData?.name });
     console.log(`Explicitly deleted river natively: ${riverId} by admin ${adminEmail}`);
 
     return { success: true, message: "River permanently destroyed." };

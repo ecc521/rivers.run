@@ -4,7 +4,7 @@ html, body {
     background-color:#dffaff;
     min-height: 100dvh;
     max-width: 100vw;
-    overflow-x: hidden;
+    overflow-x: clip;
 }
 
 button, select {
@@ -221,6 +221,15 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 	border: none;
 	border-radius: 5px;
 	padding: 4px;
+}
+
+.riverWriteup {
+	overflow-wrap: anywhere;
+	word-break: break-word; /* For compatibility */
+}
+
+.riverWriteup pre {
+	white-space: pre-wrap;
 }
 
 .riverWriteup img {
@@ -541,6 +550,24 @@ Those include name,section,skill,quality, and flow info*/
   visibility: visible;
 }
 
+.tooltip-bottom .tooltiptext {
+  top: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip-bottom .tooltiptext::after {
+  top: auto;
+  bottom: 100%;
+  left: 50%;
+  right: auto;
+  margin-top: 0;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent black transparent;
+}
+
 
 
 
@@ -845,4 +872,84 @@ Those include name,section,skill,quality, and flow info*/
 /* OpenStreetMap Dark Mode Tile Inversion */
 .dark-theme .leaflet-tile-pane {
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%);
+}
+
+/* PWA Reload Prompt Toast */
+.ReloadPromptToast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 300px;
+  font-family: sans-serif;
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.ReloadPromptMessage {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.ReloadPromptButtons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ReloadPromptButtons button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.ReloadPromptUpdate {
+  background-color: var(--primary);
+  color: white;
+}
+
+.ReloadPromptUpdate:hover {
+  filter: brightness(0.9);
+}
+
+.ReloadPromptDismiss {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border) !important;
+}
+
+.ReloadPromptDismiss:hover {
+  background-color: var(--surface-hover);
+}
+
+@media screen and (max-width: 600px) {
+  .ReloadPromptToast {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    max-width: none;
+  }
 }

@@ -105,7 +105,16 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
 
 export const USGSGraphs: React.FC<Props> = ({ river }) => {
   const [activeGaugeId, setActiveGaugeId] = useState<string | undefined>(river.gauges?.[0]?.id);
-  const data = activeGaugeId && river.gaugeData ? river.gaugeData[activeGaugeId] || [] : [];
+  const rawData = activeGaugeId && river.gaugeData ? river.gaugeData[activeGaugeId] || [] : [];
+
+  const [timeRange, setTimeRange] = useState<number>(3);
+  const data = useMemo(() => {
+     if (rawData.length === 0) return [];
+     const maxTime = rawData[rawData.length - 1].dateTime;
+     const minTime = maxTime - (timeRange * 24 * 60 * 60 * 1000);
+     return rawData.filter(d => d.dateTime >= minTime);
+  }, [rawData, timeRange]);
+
   const { isDarkMode, isColorBlindMode } = useSettings();
 
   // Detect available datasets
@@ -172,82 +181,114 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
 
   const metricOptionsCount = (hasFlow ? 1 : 0) + (hasTemp ? 1 : 0) + (hasPrecip ? 1 : 0);
 
+  const titleElement = (() => {
+      const activeGauge = river.gauges?.find((g: any) => g.id === activeGaugeId);
+      const name = activeGauge?.name || activeGaugeId;
+      
+      let link = undefined;
+      if (activeGaugeId) {
+        const parts = activeGaugeId.split(':');
+        if (parts.length >= 2) {
+            const type = parts[0].toLowerCase();
+            const id = parts[1];
+            if (type === 'usgs') link = `https://waterdata.usgs.gov/monitoring-location/${id}/#parameterCode=00060,00065,00010,00011,00045&period=P7D`;
+            else if (type === 'canada') link = `https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=${id}`;
+            else if (type === 'nws') link = `https://water.noaa.gov/gauges/${id}`;
+        }
+      }
+
+      if (link) {
+        return <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: "bold", color: "var(--text)", textDecoration: "none" }}>{name} <span style={{ fontSize: "0.8em" }}>↗</span></a>;
+      }
+      return <span style={{ fontWeight: "bold", color: "var(--text)" }}>{name}</span>;
+  })();
+
   return (
     <div className="usgs-graphs-container" style={{ marginTop: "20px" }}>
-      {/* Tab Switcher */}
-      <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: "10px", marginBottom: "15px" }}>
-        
-        {/* Gauge Dropdown (if multiple gauges exist) */}
+      {/* Title (Centered on top if multiple gauges exist) */}
+      {(!river.gauges || river.gauges.length > 1) && (
+        <div style={{ textAlign: "center", marginBottom: "15px", fontSize: "1.25em" }}>
+          {titleElement}
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "15px", alignItems: "center" }}>
+        {/* Gauge Dropdown (if multiple gauges exist), else inline Title */}
         {river.gauges && river.gauges.length > 1 ? (
           <select
             value={activeGaugeId}
             onChange={(e) => setActiveGaugeId(e.target.value)}
             style={{
               padding: "8px 12px",
-              borderRadius: "6px",
+              borderRadius: "8px",
               border: "1px solid var(--border)",
               backgroundColor: "var(--surface)",
               color: "var(--text)",
               cursor: "pointer",
               fontWeight: "bold",
-              flex: "1 1 auto",
-              maxWidth: "100%"
+              flexShrink: 1,
+              maxWidth: "40vw",
+              textOverflow: "ellipsis"
             }}
           >
-            {river.gauges.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name ? `${g.name}` : g.id} {g.section ? `(${g.section})` : ""} {g.isPrimary ? "(Primary)" : ""}
-              </option>
-            ))}
+            {river.gauges.map((g) => {
+              const label = g.section ? g.section : (g.name ? g.name : g.id);
+              return (
+                <option key={g.id} value={g.id}>
+                  {label} {g.isPrimary ? "(Primary)" : ""}
+                </option>
+              );
+            })}
           </select>
         ) : (
-          river.gauges && river.gauges.length === 1 && (
-            <select
-              disabled
-              style={{
-                padding: "8px 12px",
-                borderRadius: "6px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--surface)",
-                color: "var(--text)",
-                fontWeight: "bold",
-                flex: "1 1 auto",
-                maxWidth: "100%",
-                appearance: "none",
-                MozAppearance: "none",
-                WebkitAppearance: "none",
-                opacity: 1 // prevent browser from dimming disabled selects
-              }}
-            >
-              <option>
-                {river.gauges[0].name ? `${river.gauges[0].name}` : river.gauges[0].id} {river.gauges[0].section ? `(${river.gauges[0].section})` : ""} {river.gauges[0].isPrimary ? "(Primary)" : ""}
-              </option>
-            </select>
-          )
+          <div style={{ fontSize: "1.15em", flexShrink: 1, textOverflow: "ellipsis", whiteSpace: "nowrap", overflow: "hidden" }}>
+             {titleElement}
+          </div>
         )}
 
-        {/* Metric Dropdown */}
-        {!hasNoData && metricOptionsCount > 1 && (
-        <select
-          value={activeTab}
-          onChange={(e) => setUserTab(e.target.value as TabType)}
-          style={{
-            padding: "8px 12px",
-            borderRadius: "6px",
-            border: "1px solid var(--border)",
-            backgroundColor: "var(--surface)",
-            color: "var(--text)",
-            cursor: "pointer",
-            fontWeight: "bold",
-            flex: "1 1 auto",
-            maxWidth: "100%"
-          }}
-        >
-          {hasFlow && <option value="flow">Flow Info</option>}
-          {hasTemp && <option value="temp">Temperature</option>}
-          {hasPrecip && <option value="precip">Precipitation</option>}
-        </select>
-        )}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", flex: "1 1 auto", justifyContent: river.gauges && river.gauges.length > 1 ? "flex-end" : "space-between" }}>
+            {/* Metric Switch */}
+            {!hasNoData && metricOptionsCount > 1 && (
+                <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", backgroundColor: "var(--surface-hover)" }}>
+                    {hasFlow && (
+                        <button 
+                            onClick={() => setUserTab("flow")}
+                            style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: activeTab === "flow" ? "var(--primary)" : "transparent", color: activeTab === "flow" ? "#fff" : "var(--text)" }}
+                        >Flow</button>
+                    )}
+                    {hasTemp && (
+                        <button 
+                            onClick={() => setUserTab("temp")}
+                            style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: activeTab === "temp" ? "var(--primary)" : "transparent", color: activeTab === "temp" ? "#fff" : "var(--text)" }}
+                        >Temp</button>
+                    )}
+                    {hasPrecip && (
+                        <button 
+                            onClick={() => setUserTab("precip")}
+                            style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: activeTab === "precip" ? "var(--primary)" : "transparent", color: activeTab === "precip" ? "#fff" : "var(--text)" }}
+                        >Precip</button>
+                    )}
+                </div>
+            )}
+
+            {/* Time Range Switch */}
+            {!hasNoData && (
+                <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", backgroundColor: "var(--surface-hover)", marginLeft: "auto" }}>
+                    <button 
+                        onClick={() => setTimeRange(1)}
+                        style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: timeRange === 1 ? "var(--primary)" : "transparent", color: timeRange === 1 ? "#fff" : "var(--text)" }}
+                    >1D</button>
+                    <button 
+                        onClick={() => setTimeRange(3)}
+                        style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: timeRange === 3 ? "var(--primary)" : "transparent", color: timeRange === 3 ? "#fff" : "var(--text)" }}
+                    >3D</button>
+                    <button 
+                        onClick={() => setTimeRange(7)}
+                        style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: timeRange === 7 ? "var(--primary)" : "transparent", color: timeRange === 7 ? "#fff" : "var(--text)" }}
+                    >7D</button>
+                </div>
+            )}
+        </div>
       </div>
 
       {hasNoData ? (
@@ -373,7 +414,8 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                       
                       // Match the HSL logic from calculateColor in flowInfoCalculations.ts
                       // min=0, low=1, mid=2, high=3, max=4
-                      const lightness = isDarkMode ? 35 : 60;
+                      let lightness = isDarkMode ? 35 : 50;
+                      if (!isDarkMode && i === 1) lightness = 40; // Specifically darken yellow for contrast
                       const strokeColor = `hsl(${i * 60}, 100%, ${lightness}%)`;
 
                       return (
@@ -443,29 +485,7 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
             </ResponsiveContainer>
           </div>
 
-          <div style={{ textAlign: "center", marginTop: "15px", fontSize: "0.95em" }}>
-            {(() => {
-                const activeGauge = river.gauges?.find((g: any) => g.id === activeGaugeId);
-                const name = activeGauge?.name || activeGaugeId;
-                
-                let link = undefined;
-                if (activeGaugeId) {
-                  const parts = activeGaugeId.split(':');
-                  if (parts.length >= 2) {
-                      const type = parts[0].toLowerCase();
-                      const id = parts[1];
-                      if (type === 'usgs') link = `https://waterdata.usgs.gov/monitoring-location/${id}/`;
-                      else if (type === 'canada') link = `https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=${id}`;
-                      else if (type === 'nws') link = `https://water.noaa.gov/gauges/${id}`;
-                  }
-                }
 
-                if (link) {
-                  return <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: "bold", textDecoration: "underline" }}>{name}</a>;
-                }
-                return <span style={{ fontWeight: "bold", color: "var(--text)" }}>{name}</span>;
-            })()}
-          </div>
 
           {activeTab === "precip" && precipSummary && (
             <p

@@ -61,8 +61,21 @@ describe("formatGaugeName", () => {
         expect(formatGaugeName("S. FORK COAL RIVER AT ASHFORD, WV")).toEqual({ name: "S. Fork Coal River", section: "At Ashford, WV" });
     });
 
+    it("should expand abbreviations like nr, blw, abv, br, cr with proper casing", () => {
+        expect(formatGaugeName("ANACONTIA RIVER NR COLESVILLE, MD")).toEqual({ name: "Anacontia River", section: "Near Colesville, MD" });
+        expect(formatGaugeName("RIVER BLW DAM")).toEqual({ name: "River", section: "Below Dam" });
+        expect(formatGaugeName("RIVER ABV FALLS")).toEqual({ name: "River", section: "Above Falls" });
+        expect(formatGaugeName("NORTHWEST BR ANACOSTIA RIVER")).toEqual({ name: "Northwest Branch Anacostia River" });
+        expect(formatGaugeName("SALINE RIVER CR")).toEqual({ name: "Saline River Creek" });
+    });
+
+    it("should not expand abbreviations when they are part of a larger word", () => {
+        expect(formatGaugeName("BRADLEY CREEK NR TOWN")).toEqual({ name: "Bradley Creek", section: "Near Town" });
+        expect(formatGaugeName("ABVVILLE RIVER")).toEqual({ name: "Abvville River" });
+    });
+
     it("should keep state codes capitalized when they appear at the end", () => {
         expect(formatGaugeName("WHITE RIVER AT ANDERSON IN")).toEqual({ name: "White River", section: "At Anderson IN" });
-        expect(formatGaugeName("COLUMBIA RIVER AT THE DALLES OR")).toEqual({ name: "Columbia River", section: "At The Dalles OR" });
+        expect(formatGaugeName("COLUMBIA RIVER AT THE DALLES OR")).toEqual({ name: "Columbia River", section: "At the Dalles OR" });
     });
 });

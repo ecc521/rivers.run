@@ -1,17 +1,19 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap, GeoJSON } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup, useMap, GeoJSON } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RiverData } from "../types/River";
 import { calculateColor } from "../utils/flowInfoCalculations";
 import { useSettings } from "../context/SettingsContext";
+import { useLists } from "../context/ListsContext";
 import { useRivers } from "../hooks/useRivers";
 import { useLocation } from "../hooks/useLocation";
 import { WeatherRadarLayer } from "./WeatherRadarLayer";
 import { RiverExpansion } from "./RiverExpansion";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { filterRivers, defaultAdvancedSearchQuery } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
+
 import { SearchOverlay } from "./SearchOverlay";
 import { ShareMapModal } from "./ShareMapModal";
 import { Circle } from "react-leaflet";
@@ -39,7 +41,12 @@ const MapController = ({ isFullScreen }: { isFullScreen: boolean }) => {
     const map = useMap();
     useEffect(() => {
         // Invalidate map size so Leaflet recalculates dimensions when fullscreen toggles
-        setTimeout(() => map.invalidateSize(), 300);
+        const timer = setTimeout(() => {
+            if (map && map.getContainer && map.getContainer()) {
+                map.invalidateSize();
+            }
+        }, 300);
+        return () => clearTimeout(timer);
     }, [isFullScreen, map]);
     return null;
 };
@@ -150,12 +157,12 @@ const getCachedCanvasImage = (letter: string, fillColor: string, opacity: number
 
 const MapMarkers = React.memo(({ 
     markers, 
-    setSelectedRiver, 
+    handleMarkerClick, 
     isDarkMode, 
     isColorBlindMode 
 }: { 
     markers: any[], 
-    setSelectedRiver: (r: RiverData | null) => void, 
+    handleMarkerClick: (river: RiverData, point: any, lat: number, lon: number) => void,
     isDarkMode: boolean, 
     isColorBlindMode: boolean 
 }) => {
@@ -182,7 +189,7 @@ const MapMarkers = React.memo(({
 
     const onEachFeature = (feature: any, layer: any) => {
         const pt = feature.properties;
-        layer.on('click', () => setSelectedRiver(pt.river));
+        layer.on('click', () => handleMarkerClick(pt.river, pt.point, pt.point.lat, pt.point.lon));
 
         const isPutIn = pt.point && pt.point.type === "put-in";
         const isTakeOut = pt.point && pt.point.type === "take-out";
@@ -200,6 +207,7 @@ const MapMarkers = React.memo(({
                 <strong>${accessName}</strong><br/>
                 ${pt.river.name} ${sectionHtml}<br/>
                 ${flowHtml}
+                <div style="font-size: 0.85em; color: #6b7280; margin-top: 4px;">(Click marker for more info)</div>
             </div>
         `, { direction: 'auto' });
     };
@@ -255,13 +263,14 @@ const MapMarkers = React.memo(({
                             fill: false
                         } as any}
                         eventHandlers={{
-                            click: () => setSelectedRiver(pt.river)
+                            click: () => handleMarkerClick(pt.river, pt.point, pt.lat, pt.lon)
                         }}
                     >
                        <Tooltip offset={[0, -38]} direction="top">
                           <strong>{accessName}</strong><br/>
                           {pt.river.name} {pt.river.section ? `(${pt.river.section})` : ""}<br/>
                           {pt.river.flowInfo ? <span>{pt.river.flowInfo}</span> : null}
+                          <div style={{ fontSize: "0.85em", color: "var(--text-muted, #6b7280)", marginTop: "4px" }}>(Click marker for more info)</div>
                        </Tooltip>
                     </CircleMarker>
                 );
@@ -269,6 +278,24 @@ const MapMarkers = React.memo(({
         </>
     );
 });
+
+const MapFocusController = ({ focusRiver }: { focusRiver?: RiverData }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (focusRiver && focusRiver.accessPoints && focusRiver.accessPoints.length > 0) {
+            const pt = focusRiver.accessPoints[0];
+            if (pt.lat && pt.lon) {
+                // Smoothly pan without remounting the entire MapContainer!
+                try {
+                    map.flyTo([pt.lat, pt.lon], 12, { duration: 0.5 });
+                } catch (err) {
+                    console.warn("Leaflet flyTo safely caught during transition", err);
+                }
+            }
+        }
+    }, [focusRiver?.id, map]);
+    return null;
+};
 
 interface SharedMapProps {
     initialCenter?: [number, number];
@@ -280,17 +307,22 @@ interface SharedMapProps {
 export const SharedMap: React.FC<SharedMapProps> = ({ 
     initialCenter = [39.8283, -98.5795], 
     initialZoom = 4, 
-    height = "calc(100vh - 60px)" 
+    height = "calc(100vh - 60px)",
+    focusRiver
 }) => {
     const { isColorBlindMode, isDarkMode } = useSettings();
     const { rivers } = useRivers();
+    const { isRiverInQuickList } = useLists();
     const location = useLocation();
     
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [selectedRiver, setSelectedRiver] = useState<RiverData | null>(null);
+    const [selectedAccessPoint, setSelectedAccessPoint] = useState<any>(null);
+    const [activePopupData, setActivePopupData] = useState<{ river: RiverData, point: any, lat: number, lon: number } | null>(null);
     const [radarMode, setRadarMode] = useState<"off" | "live" | "60min">("off");
     
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
 
     // Pull initial map state from URL or use defaults
     const urlLat = searchParams.get("lat");
@@ -304,6 +336,25 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     const [mapCenter, setMapCenter] = useState<[number, number]>(mapInitialCenter);
     const [mapZoom, setMapZoom] = useState<number>(mapInitialZoom);
+
+    // Stable references for the click handler to prevent Re-rendering 10k markers!
+    const focusRiverRef = React.useRef(focusRiver);
+    React.useEffect(() => { focusRiverRef.current = focusRiver; }, [focusRiver]);
+    
+    const isFullScreenRef = React.useRef(false);
+    React.useEffect(() => { isFullScreenRef.current = isFullScreen; }, [isFullScreen]);
+
+    const handleStableMarkerClick = React.useCallback((river: RiverData, point: any, lat: number, lon: number) => {
+        if (!focusRiverRef.current || isFullScreenRef.current) {
+            setSelectedRiver(river);
+            setSelectedAccessPoint(point);
+        } else {
+            if (river.id !== focusRiverRef.current.id) {
+                navigate(`/river/${river.id}`, { replace: true });
+            }
+            setActivePopupData({ river, point, lat, lon });
+        }
+    }, [navigate]);
 
     const [searchQuery, setSearchQuery] = useState<AdvancedSearchQuery>(() => {
         const q: AdvancedSearchQuery = { ...defaultAdvancedSearchQuery };
@@ -394,7 +445,11 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const globalMarkers = useMemo(() => {
         // Strip out distanceMax so markers aren't filtered out by distance on the map!
         const filterQuery = { ...searchQuery, distanceMax: undefined };
-        const filtered = filterRivers(rivers, filterQuery);
+        let filtered = filterRivers(rivers, filterQuery);
+
+        if (filterQuery.favoritesOnly) {
+            filtered = filtered.filter(r => isRiverInQuickList(r.id, "favorites"));
+        }
 
         const rawPoints: any[] = [];
         filtered.forEach(river => {
@@ -440,7 +495,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         });
         
         return finalPoints;
-    }, [rivers, searchQuery]);
+    }, [rivers, searchQuery, isRiverInQuickList]);
 
     // Using true HTML5 Native Fullscreen where supported! 
     return (
@@ -590,6 +645,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             >
                 <MapStateObserver setCenter={setMapCenter} setZoom={setMapZoom} />
                 <MapController isFullScreen={isFullScreen} />
+                <MapFocusController focusRiver={focusRiver} />
                 
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -602,10 +658,34 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 {/* Global River Markers */}
                 <MapMarkers 
                     markers={globalMarkers}
-                    setSelectedRiver={setSelectedRiver}
+                    handleMarkerClick={handleStableMarkerClick}
                     isDarkMode={isDarkMode}
                     isColorBlindMode={isColorBlindMode}
                 />
+
+                {/* Mini-Map specific contextual Popup */}
+                {activePopupData && (
+                    <Popup 
+                        position={[activePopupData.lat, activePopupData.lon]} 
+                        eventHandlers={{
+                            remove: () => setActivePopupData(null)
+                        }}
+                        offset={[0, -20]}
+                    >
+                        <div style={{ textAlign: "center", fontSize: "1.1em" }}>
+                            <strong>{activePopupData.point?.name || (activePopupData.point?.type === "put-in" ? "Put-In" : "Take-Out")}</strong>
+                            <br />
+                            <a 
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${activePopupData.lat},${activePopupData.lon}`} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                style={{ display: "inline-block", marginTop: "8px", fontWeight: "bold" }}
+                            >
+                                Open in Google Maps
+                            </a>
+                        </div>
+                    </Popup>
+                )}
 
 
 
@@ -676,11 +756,19 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         }}
                     >
                         <h2 style={{ margin: 0, color: "var(--text)" }}>
+                            {selectedAccessPoint && selectedAccessPoint.name && (
+                                <span style={{ display: "block", fontSize: "0.85em", color: "var(--primary)", marginBottom: "4px" }}>
+                                    {selectedAccessPoint.type === 'put-in' ? 'Put-In: ' : selectedAccessPoint.type === 'take-out' ? 'Take-Out: ' : 'Access: '}{selectedAccessPoint.name}
+                                </span>
+                            )}
                             {selectedRiver.name}{" "}
                             {selectedRiver.section ? `(${selectedRiver.section})` : ""}
                         </h2>
                         <button
-                            onClick={() => setSelectedRiver(null)}
+                            onClick={() => {
+                                setSelectedRiver(null);
+                                setSelectedAccessPoint(null);
+                            }}
                             style={{
                                 border: "none",
                                 background: "transparent",
@@ -695,6 +783,19 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     </div>
                     
                     <div style={{ padding: "0 20px 20px 20px", color: "var(--text-secondary)" }}>
+                            {selectedAccessPoint && selectedAccessPoint.lat && (
+                                <div style={{ marginBottom: "15px" }}>
+                                    <a 
+                                        href={`https://www.google.com/maps/dir/?api=1&destination=${selectedAccessPoint.lat},${selectedAccessPoint.lon}`} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        style={{ display: "inline-block", backgroundColor: "var(--primary)", color: "#fff", padding: "8px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}
+                                    >
+                                        📍 Navigate in Google Maps
+                                    </a>
+                                </div>
+                            )}
+
                             <RiverExpansion 
                                  key={selectedRiver.id}
                                  river={selectedRiver} 

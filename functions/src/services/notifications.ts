@@ -66,12 +66,12 @@ function addFlowDataToFavorites(favorites: any[], gauges: any = {}) {
     }
 }
 
-export async function processNotifications(flowDataGlob: any) {
+export async function processNotifications(flowDataGlob: any, activeRivers: any[]) {
     const db = getFirestore();
     const bucket = getStorage().bucket();
     const auth = getAuth();
 
-	const synchronizedUsers = await syncAlertDataToStorage(db, bucket);
+	const synchronizedUsers = await syncAlertDataToStorage(db, bucket, activeRivers);
 
 	const usersMap = new Map<string, any>();
 

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useLocation } from "../hooks/useLocation";
 import { FilterCheckbox } from "./FilterCheckbox";
+import { useLists } from "../context/ListsContext";
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 
@@ -24,6 +25,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const [localQuery, setLocalQuery] = useState<AdvancedSearchQuery>(query);
   const [copied, setCopied] = useState(false);
   const location = useLocation();
+  const { myLists } = useLists();
   useEffect(() => {
     setLocalQuery(query);
   }, [query, isOpen]);
@@ -68,6 +70,9 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       userLat: undefined,
       userLon: undefined,
       mapRadiusMode: undefined,
+      listId: undefined,
+      favoritesOnly: false,
+      listData: undefined,
     };
     setLocalQuery(resetQ);
     setQuery(resetQ);
@@ -436,12 +441,38 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 checked={localQuery.includeDams || false}
                 onChange={(checked) => setLocalQuery({ ...localQuery, includeDams: checked })}
               />
-              <FilterCheckbox
-                label="My Favorites Only"
-                checked={localQuery.favoritesOnly || false}
-                onChange={(checked) => setLocalQuery({ ...localQuery, favoritesOnly: checked })}
-                style={{ color: "var(--primary)", fontWeight: "bold" }}
-              />
+              
+              <div style={{...getSectionStyle(), marginTop: '10px'}}>
+                <label style={{...getLabelStyle(), color: "var(--primary)"}}>Limit to Specific Lists</label>
+                <select
+                  style={{...getInputStyle(), padding: "8px 12px", width: "100%", maxWidth: "300px"}}
+                  value={localQuery.favoritesOnly ? "favorites" : (localQuery.listId || "none")}
+                  onChange={(e) => {
+                     const val = e.target.value;
+                     if (val === "none") {
+                         setLocalQuery({ ...localQuery, favoritesOnly: false, listId: undefined, listData: undefined });
+                     } else if (val === "favorites") {
+                         setLocalQuery({ ...localQuery, favoritesOnly: true, listId: undefined, listData: undefined });
+                     } else {
+                         const list = myLists.find(l => l.id === val);
+                         if (list) {
+                            setLocalQuery({ 
+                                ...localQuery, 
+                                favoritesOnly: false, 
+                                listId: list.id,
+                                listData: list.rivers.map((r, i) => ({ id: r.id, order: i })) 
+                            });
+                         }
+                     }
+                  }}
+                >
+                  <option value="none">All Available Rivers</option>
+                  <option value="favorites">Favorites</option>
+                  {myLists.map(l => (
+                     <option key={l.id} value={l.id}>[+] {l.title}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>

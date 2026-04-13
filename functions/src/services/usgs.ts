@@ -1,5 +1,12 @@
 export function formatGaugeName(name: string): { name: string; section?: string } {
     const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr']);
+    const expansions: Record<string, string> = {
+        nr: 'near',
+        blw: 'below',
+        abv: 'above',
+        br: 'branch',
+        cr: 'creek'
+    };
     const stateCodes = new Set([
         'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC', 'PR', 'VI', 'GU'
     ]);
@@ -26,7 +33,15 @@ export function formatGaugeName(name: string): { name: string; section?: string 
             const prevToken = i > 0 ? matches[i - 1] : "";
             const followsComma = prevToken.includes(',');
 
-            if (acronyms.has(upperToken)) {
+            const expansion = expansions[lowerToken];
+            if (expansion) {
+                const isLowercaseExpandedWord = lowercaseWords.has(expansion);
+                if (!isFirst && isLowercaseExpandedWord) {
+                    formatted += expansion;
+                } else {
+                    formatted += expansion.charAt(0).toUpperCase() + expansion.slice(1);
+                }
+            } else if (acronyms.has(upperToken)) {
                 formatted += upperToken;
             } else if (stateCodes.has(upperToken) && (isLast || followsComma)) {
                 formatted += upperToken;
@@ -42,7 +57,7 @@ export function formatGaugeName(name: string): { name: string; section?: string 
 
     const formattedString = formatted.replace(/\s+/g, ' ').trim();
 
-    const delimiters = [' at ', ' near ', ' above ', ' below ', ' nr ', ' blw ', ' abv '];
+    const delimiters = [' at ', ' near ', ' above ', ' below '];
     let splitIndex = -1;
     
     const lowerFormatted = formattedString.toLowerCase();

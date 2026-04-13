@@ -110,12 +110,10 @@ const GlobalNavBar: React.FC = () => {
         >
           <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
             <Link to="/map" style={{ color: "#cbd5e1", textDecoration: "none" }}>Map</Link>
-            {windowWidth > 450 && <Link to="/favorites" style={{ color: "#cbd5e1", textDecoration: "none" }}>Favorites</Link>}
+            {windowWidth > 450 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none" }}>Lists</Link>}
             {windowWidth > 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }}>Clubs</Link>}
-            {windowWidth > 580 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: "bold" }}>Lists</Link>}
-            {windowWidth > 650 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>FAQ</Link>}
-            {windowWidth > 720 && <Link to="/about" style={{ color: "#cbd5e1", textDecoration: "none" }}>About</Link>}
-            {windowWidth > 790 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>Settings</Link>}
+            {windowWidth > 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>FAQ</Link>}
+            {windowWidth > 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>Settings</Link>}
           </div>
 
           <div style={{ display: "flex", gap: "20px", alignItems: "center", marginLeft: "auto", marginRight: "10px" }}>
@@ -159,12 +157,10 @@ const GlobalNavBar: React.FC = () => {
                      boxShadow: "0 4px 12px rgba(0,0,0,0.5)", 
                      width: "160px" 
                    }}>
-                     {windowWidth <= 450 && <Link to="/favorites" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Favorites</Link>}
+                     {windowWidth <= 450 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Lists</Link>}
                      {windowWidth <= 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Clubs</Link>}
-                     {windowWidth <= 580 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: "bold" }} onClick={() => setIsNavMoreOpen(false)}>Lists</Link>}
-                     {windowWidth <= 650 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>FAQ</Link>}
-                     {windowWidth <= 720 && <Link to="/about" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>About</Link>}
-                     {windowWidth <= 790 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Settings</Link>}
+                     {windowWidth <= 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>FAQ</Link>}
+                     {windowWidth <= 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Settings</Link>}
                      
                      {windowWidth <= 860 && (
                         <hr style={{ borderColor: "#334155", width: "100%", margin: 0 }} />
@@ -242,8 +238,8 @@ const GlobalNavBar: React.FC = () => {
                     <p style={{ margin: "5px 0 0 0", fontSize: "0.75rem", color: "#999", fontFamily: "monospace" }}>ID: {user.uid}</p>
                   </div>
                   
-                  <Link to="/favorites" onClick={() => setIsDropdownOpen(false)} style={{ textDecoration: "none", color: "#317EFB", padding: "5px 0", fontWeight: "500" }}>
-                    My Favorites
+                  <Link to="/lists" onClick={() => setIsDropdownOpen(false)} style={{ textDecoration: "none", color: "#317EFB", padding: "5px 0", fontWeight: "500" }}>
+                    My Lists
                   </Link>
 
                   <button

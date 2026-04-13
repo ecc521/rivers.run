@@ -1,13 +1,15 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { RiverItem } from "../components/RiverItem";
 import { TopBar } from "../components/TopBar";
 import { SearchOverlay } from "../components/SearchOverlay";
-import { useFavorites } from "../context/FavoritesContext";
+
 import { useLocation } from "../hooks/useLocation";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useParams, useLocation as useRouterLocation, useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useRivers } from "../hooks/useRivers";
+import { useLists, type UserList } from "../context/ListsContext";
+import { ListEditorModal } from "../components/ListEditorModal";
 import {
   calculateColor,
 } from "../utils/flowInfoCalculations";
@@ -18,9 +20,48 @@ import {
 } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useSettings } from "../context/SettingsContext";
+import { triggerReviewIfEligible } from "../utils/appReview";
+
+
+const LazyRiverPage = React.lazy(() => import("./RiverPage"));
 
 const Home: React.FC = () => {
   const { isDarkMode, isColorBlindMode } = useSettings();
+  const { id } = useParams<{ id: string }>();
+  const routeLocation = useRouterLocation();
+  const navigate = useNavigate();
+  
+  const isListOverlay = routeLocation.pathname.startsWith("/lists/") && !!id;
+  const isRiverOverlay = !isListOverlay && !!id;
+
+  const [sharedList, setSharedList] = useState<UserList | null>(null);
+  const [showListModal, setShowListModal] = useState(false);
+  const { createList } = useLists();
+
+  useEffect(() => {
+     if (isListOverlay && id) {
+        const fetchSharedList = async () => {
+           try {
+              const docSnap = await getDoc(doc(db, "community_lists", id));
+              if (docSnap.exists()) {
+                 setSharedList({ id: docSnap.id, ...docSnap.data() } as UserList);
+                 setShowListModal(true);
+              } else {
+                 alert("This list could not be found. It may have been deleted.");
+                 navigate("/");
+              }
+           } catch (e) {
+              console.error(e);
+              navigate("/");
+           }
+        };
+        fetchSharedList();
+     } else {
+        setShowListModal(false);
+        setSharedList(null);
+     }
+  }, [isListOverlay, id, navigate]);
+
   const { rivers, loading: riversLoading, error: riversError } = useRivers();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +157,7 @@ const Home: React.FC = () => {
         if (cachedListStr) {
             try {
                 const cachedData = JSON.parse(cachedListStr);
-                setSearchQuery((prev) => ({ ...prev, listData: cachedData.rivers || [] }));
+                setSearchQuery((prev) => ({ ...prev, listId: targetListId, listData: cachedData.rivers || [] }));
                 setListTitle(cachedData.title);
             } catch {
                // Silently catch json parse err
@@ -127,12 +168,25 @@ const Home: React.FC = () => {
             const snapshot = await getDoc(doc(db, "community_lists", targetListId));
             if (snapshot.exists()) {
                const data = snapshot.data();
-               setSearchQuery((prev) => ({ ...prev, listData: data.rivers || [] }));
+               setSearchQuery((prev) => ({ ...prev, listId: targetListId, listData: data.rivers || [] }));
                setListTitle(data.title);
                // Save it for offline
                await persistentStorage.set(`saved_list_${targetListId}`, JSON.stringify(data));
             } else if (!cachedListStr) {
-               setError("Requested list does not exist.");
+               let foundOffline = false;
+               const customListsCache = await persistentStorage.get("my_custom_lists");
+               if (customListsCache) {
+                 try {
+                   const lists = JSON.parse(customListsCache);
+                   const found = lists.find((l: any) => l.id === targetListId);
+                   if (found) {
+                     setSearchQuery((prev) => ({ ...prev, listId: targetListId, listData: found.rivers || [] }));
+                     setListTitle(found.title);
+                     foundOffline = true;
+                   }
+                 } catch {}
+               }
+               if (!foundOffline) setError("Requested list does not exist.");
             }
         } catch (err: unknown) {
             if (err instanceof Error) console.error("Failed to load list from network, trying to rely on cache", err.message);
@@ -158,28 +212,58 @@ const Home: React.FC = () => {
   }, [searchQuery.distanceMax, searchQuery.mapRadiusMode, searchQuery.userLat, location.latitude, location.longitude, location.loading, location.error]);
 
 
-  const { isFavorite } = useFavorites();
+  const { isRiverInQuickList } = useLists();
 
   const filteredRivers = useMemo(() => {
     let result = filterRivers(rivers, searchQuery);
     if (searchQuery.favoritesOnly) {
-      result = result.filter((r) => isFavorite(r.id));
+      result = result.filter((r) => isRiverInQuickList(r.id, "favorites"));
     }
     return result;
-  }, [rivers, searchQuery, isFavorite]);
+  }, [rivers, searchQuery, isRiverInQuickList]);
 
-  // Infinite Scroll State
+  // Infinite Scroll State - Purely internal, no session storage needed because we never unmount!
   const [displayCount, setDisplayCount] = useState(100);
 
-  // Reset display count when the filter changes
+  const isInitialFilterRef = useRef(true);
+
+  // Reset display count when the filter actually changes, avoiding initial mount overrides
   useEffect(() => {
+    if (isInitialFilterRef.current) {
+        isInitialFilterRef.current = false;
+        return;
+    }
     setDisplayCount(100);
-  }, [filteredRivers]);
+  }, [searchQuery, isRiverInQuickList]);
+
+  // Keep track of scroll position manually when switching to river view
+  const scrollPositionRef = useRef(0);
+  const prevIsRiverOverlay = useRef(isRiverOverlay);
+
+  useEffect(() => {
+    if (isRiverOverlay) {
+       // Save position precisely when mounting overlay
+       scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
+       window.scrollTo(0, 0);
+    } else {
+       // Instantly restore when closing overlay
+       window.scrollTo(0, scrollPositionRef.current);
+       // Trigger review prompt option when navigating back from a river view
+       if (prevIsRiverOverlay.current) {
+         triggerReviewIfEligible();
+       }
+    }
+    prevIsRiverOverlay.current = isRiverOverlay;
+  }, [isRiverOverlay]);
 
   useEffect(() => {
     const handleScroll = () => {
+      // Don't trigger infinite load expansion if we are currently looking at single river
+      if (isRiverOverlay) return;
+
       const scrollY = window.scrollY || document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+
       
       // If we are within 1200px of the bottom of the page
       if (
@@ -193,13 +277,26 @@ const Home: React.FC = () => {
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [filteredRivers.length]);
+  }, [filteredRivers.length, isRiverOverlay]);
 
   useEffect(() => {
+
     // Debugging only
     const gaugeCount = rivers.filter(r => r.isGauge).length;
     console.log("TOTAL GAUGES IN RIVERS:", gaugeCount, "TOTAL RIVERS:", rivers.length);
   }, [rivers]);
+
+  const renderedRiverItems = useMemo(() => {
+    return filteredRivers.slice(0, displayCount).map((river, index) => (
+      <RiverItem
+        key={river.id || `${river.name}-${index}`}
+        river={river}
+        index={index}
+        isDarkMode={isDarkMode}
+        isColorBlindMode={isColorBlindMode}
+      />
+    ));
+  }, [filteredRivers, displayCount, isDarkMode, isColorBlindMode]);
 
   if (loading)
     return (
@@ -214,11 +311,14 @@ const Home: React.FC = () => {
       </div>
     );
 
+  // We use the globally defined LazyRiverPage to inject the UI seamlessly without breaking Suspense
+
   return (
     <div className="page-content">
-      {/* Search Header Area */}
-      <h1 className="center">{listTitle ? listTitle : "River Information"}</h1>
-      <div 
+      {/* Search List Overlay Toggle */}
+      <div style={{ display: isRiverOverlay ? "none" : "block" }}>
+        <h1 className="center">{listTitle ? listTitle : "River Information"}</h1>
+        <div 
         className="searchcontain"
         style={{
           display: "flex",
@@ -355,17 +455,43 @@ const Home: React.FC = () => {
 
       {/* Rivers List */}
       <div id="Rivers">
-        <TopBar query={searchQuery} setQuery={setSearchQuery} />
-        {filteredRivers.slice(0, displayCount).map((river, index) => (
-          <RiverItem
-            key={river.id || `${river.name}-${index}`}
-            river={river}
-            index={index}
-            isDarkMode={isDarkMode}
-            isColorBlindMode={isColorBlindMode}
-          />
-        ))}
+        <TopBar query={searchQuery} setQuery={setSearchQuery} filteredRivers={filteredRivers} />
+        {renderedRiverItems}
+        </div>
       </div>
+
+      {isRiverOverlay && (
+        <React.Suspense fallback={<div className="page-content center"><h2>Loading River...</h2></div>}>
+           <LazyRiverPage />
+        </React.Suspense>
+      )}
+
+      {showListModal && sharedList && (
+         <ListEditorModal
+            isOpen={showListModal}
+            mode="shared"
+            initialTitle={sharedList.title}
+            initialDescription={sharedList.description}
+            targetList={sharedList}
+            onClose={() => {
+              setShowListModal(false);
+              navigate(`/?list=${sharedList.id}`);
+            }}
+            onSave={async () => {}}
+            onCopySharedList={async (list) => {
+               try {
+                  const newId = await createList(`Copy of ${list.title}`, list.description || "", false, list.rivers);
+                  if (newId) {
+                      alert("Successfully imported list to your lists!");
+                      setShowListModal(false);
+                      navigate(`/lists`);
+                  }
+               } catch (e: any) {
+                  alert(e.message);
+               }
+            }}
+         />
+      )}
     </div>
   );
 };

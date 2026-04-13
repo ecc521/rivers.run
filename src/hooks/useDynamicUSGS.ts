@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { RiverData, GaugeReading } from "../types/River";
 import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
+import { formatGaugeName } from "../utils/usgsNames";
 
 const dynamicUSGSCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> }>();
 
@@ -21,13 +22,13 @@ export function useDynamicUSGS(river: RiverData) {
     const existingFirstTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[0]?.dateTime ? river.gaugeData[primaryGaugeID][0].dateTime : 0;
     const existingLastTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[existingDatasetLength - 1]?.dateTime ? river.gaugeData[primaryGaugeID][existingDatasetLength - 1].dateTime : 0;
 
-    const hasThreeDays = existingDatasetLength > 0 && 
-       (existingLastTime - existingFirstTime >= 2.5 * 24 * 60 * 60 * 1000);
+    const hasSevenDays = existingDatasetLength > 0 && 
+       (existingLastTime - existingFirstTime >= 6.5 * 24 * 60 * 60 * 1000);
     
     // Fall back tightly to a 15 minute fetch constraint
     const newlyFetched = cached && (Date.now() - cached.lastFetchedMs < 15 * 60 * 1000);
 
-    if (hasThreeDays && newlyFetched && cached) {
+    if (hasSevenDays && newlyFetched && cached) {
        setDynamicPayload({ gaugeData: cached.gaugeData, gaugeNames: cached.gaugeNames });
        return;
     }
@@ -40,7 +41,7 @@ export function useDynamicUSGS(river: RiverData) {
         const siteNameMap: Record<string, string> = {};
 
         if (usgsIDs.length > 0) {
-            const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${usgsIDs.join(",")}&period=P3D&parameterCd=00060,00065,00010,00011,00045`;
+            const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${usgsIDs.join(",")}&period=P7D&parameterCd=00060,00065,00010,00011,00045`;
         const res = await fetch(url);
         if (!res.ok) throw new Error("USGS server error");
         
@@ -56,7 +57,8 @@ export function useDynamicUSGS(river: RiverData) {
 
             const sn = seriesItem.sourceInfo?.siteName;
             if (sn && !siteNameMap[gaugeId]) {
-                siteNameMap[gaugeId] = sn;
+                const formatted = formatGaugeName(sn);
+                siteNameMap[gaugeId] = formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name;
             }
 
             const noDataValue = seriesItem.variable.noDataValue;
