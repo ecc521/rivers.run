@@ -53,20 +53,35 @@ export const RiverItem: React.FC<RiverItemProps> = ({
     isColorBlindMode,
   );
   
-  const { myLists, addRiverToList, removeRiverFromList, toggleRiverInQuickList, isRiverInQuickList } = useLists();
+  const { myLists, addRiverToList, removeRiverFromList, toggleRiverInQuickList } = useLists();
   const { quickActionPref } = useSettings();
   const [isModalOpen, setModalOpen] = useState(false);
   
-  let isActive = isRiverInQuickList(river.id, quickActionPref);
-  let displayIcon = isActive ? "★" : "☆";
-  let displayColor = isActive ? "#ffd700" : "inherit";
+  let targetListId: string | null = null;
   
-  if (quickActionPref.startsWith("list:")) {
-    const targetListId = quickActionPref.split(":")[1];
+  if (myLists.length === 1) {
+    targetListId = myLists[0].id;
+  } else if (quickActionPref.startsWith("list:")) {
+    targetListId = quickActionPref.split(":")[1];
+  } else if (quickActionPref === "favorites") {
+    const favList = myLists.find(l => l.title === "Favorites");
+    if (favList) targetListId = favList.id;
+  }
+
+  let isActive = false;
+  let displayIcon = "☆";
+  let displayColor = "inherit";
+
+  if (targetListId) {
     const list = myLists.find(l => l.id === targetListId);
     if (list) {
       isActive = list.rivers.some(r => r.id === river.id);
-      displayIcon = isActive ? "✓" : "+";
+      
+      if (myLists.length === 1 || quickActionPref === "favorites") {
+        displayIcon = isActive ? "★" : "☆";
+      } else {
+        displayIcon = isActive ? "✓" : "+";
+      }
       displayColor = isActive ? "#ffd700" : "inherit";
     }
   }
@@ -74,17 +89,16 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   const handleActionClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (quickActionPref.startsWith("list:")) {
-      const targetListId = quickActionPref.split(":")[1];
-      if (isActive) {
-        await removeRiverFromList(targetListId, river.id);
-      } else {
-        await addRiverToList(targetListId, river);
-      }
-    } else if (quickActionPref === "favorites" || myLists.length === 0) {
-      toggleRiverInQuickList(river, quickActionPref);
+    if (targetListId) {
+       if (isActive) {
+          await removeRiverFromList(targetListId, river.id);
+       } else {
+          await addRiverToList(targetListId, river);
+       }
+    } else if (myLists.length === 0) {
+       toggleRiverInQuickList(river, "favorites");
     } else {
-      setModalOpen(true);
+       setModalOpen(true);
     }
   };
 

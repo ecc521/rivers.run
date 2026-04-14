@@ -410,6 +410,11 @@ Those include name,section,skill,quality, and flow info*/
     min-width: 30px;
     max-width: var(--riverStateWidth);
     text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 4px;
+    box-sizing: border-box;
 }
 
 @media screen and (min-width: 550px) {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where, deleteDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, deleteDoc, updateDoc, deleteField } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "./AuthContext";
 import { persistentStorage } from "../utils/persistentStorage";
@@ -136,7 +136,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         persistentStorage.set("my_subscribed_lists", JSON.stringify(subs));
         
         // Detect and trigger one-time migration for legacy `favorites`
-        if (data.favorites && Array.isArray(data.favorites) && !handledMigration) {
+        if (data.favorites && Array.isArray(data.favorites) && data.favorites.length > 0 && !handledMigration) {
             handledMigration = true;
             // The lists fetch might be slightly deferred, but we can check myLists eventually.
             // Better yet, just wait 1 second to ensure myLists snapshot fired, then check.
@@ -159,7 +159,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                              const updateDocRef = doc(db, "community_lists", listId);
                              await updateDoc(updateDocRef, { notificationsEnabled: true });
                              // Strip out the old array to complete migration!
-                             await updateDoc(userRef, { favorites: [] });
+                             await updateDoc(userRef, { favorites: deleteField() });
                          }
                      } catch(e) {
                          console.error("Migration failed:", e);

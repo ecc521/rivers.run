@@ -244,11 +244,11 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                             
                             {isShared ? (
                                 <span style={{ fontSize: "0.85em", color: "var(--text-muted)" }}>
-                                    Alert Pin: {r.min || '0'} - {r.max || '∞'} {r.units || 'cfs'}
+                                    Target Flow: {r.min || '0'} - {r.max || '∞'} {r.units || 'cfs'}
                                 </span>
                             ) : (
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px", overflowX: "auto" }}>
-                                    <span style={{ fontSize: "0.8em", color: "var(--text-muted)", textTransform: "uppercase" }}>Alert Pin:</span>
+                                    <span style={{ fontSize: "0.8em", color: "var(--text-muted)", textTransform: "uppercase" }}>Target Flow:</span>
                                     <input 
                                         type="number" 
                                         placeholder="Min" 
