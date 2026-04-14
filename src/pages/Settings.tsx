@@ -12,7 +12,6 @@ import { useModal } from "../context/ModalContext";
 
 const SettingsPage: React.FC = () => {
   const { isDarkMode, updateSetting, loading, themePref, colorBlindPref } = useSettings();
-  const { confirm } = useModal();
 
 
   const themeStatusText = (!themePref || themePref === "null") 
