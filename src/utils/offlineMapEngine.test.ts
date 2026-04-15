@@ -1,4 +1,4 @@
-import { describe, it, expect } from "@jest/globals";
+import { describe, it, expect } from "vitest";
 import { generateTileQueue, lon2tile, lat2tile, WORLD_BOUNDS, NORTH_AMERICA_BOUNDS } from "./offlineMapEngine";
 import { lambert } from "./distance";
 

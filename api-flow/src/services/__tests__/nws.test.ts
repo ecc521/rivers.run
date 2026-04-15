@@ -1,0 +1,77 @@
+import { describe, it, expect } from 'vitest';
+import { parseNWSeries } from '../nws';
+
+describe('NWS Service', () => {
+    describe('parseNWSeries', () => {
+        it('should parse NWS JSON correctly', () => {
+            const now = Date.now();
+            const data = {
+                primaryUnits: "ft",
+                secondaryUnits: "kcfs"
+            };
+            const obsData = [
+                {
+                    validTime: new Date(now - 1000 * 60 * 10).toISOString(), // 10 mins ago
+                    primary: 2.5,
+                    secondary: 1.2
+                },
+                {
+                    validTime: new Date(now - 1000 * 60 * 5).toISOString(), // 5 mins ago
+                    primary: 2.6,
+                    secondary: 1.3
+                }
+            ];
+
+            const result = parseNWSeries(data, obsData, now - 1000 * 60 * 60, now, false); 
+            const readings = Array.from(result.values());
+            
+            expect(readings).toHaveLength(2);
+            expect(readings[0].ft).toBe(2.5);
+            expect(readings[0].cfs).toBe(1200); // 1.2 kcfs -> 1200 cfs
+            expect(readings[1].ft).toBe(2.6);
+            expect(readings[1].cfs).toBe(1300);
+        });
+
+        it('should handle primary flow and secondary stage', () => {
+            const now = Date.now();
+            const data = {
+                primaryUnits: "cfs",
+                secondaryUnits: "ft"
+            };
+            const obsData = [
+                {
+                    validTime: new Date(now - 1000 * 60 * 10).toISOString(),
+                    primary: 500,
+                    secondary: 3.1
+                }
+            ];
+            const result = parseNWSeries(data, obsData, now - 1000 * 60 * 60, now, false);
+            const readings = Array.from(result.values());
+            expect(readings[0].cfs).toBe(500);
+            expect(readings[0].ft).toBe(3.1);
+        });
+
+        it('should filter old readings', () => {
+             const now = Date.now();
+             const data = {
+                primaryUnits: "ft"
+             };
+             const obsData = [
+                {
+                    validTime: new Date(now - 1000 * 60 * 120).toISOString(), // 2 hours ago
+                    primary: 1.0
+                },
+                {
+                    validTime: new Date(now - 1000 * 60 * 30).toISOString(), // 30 mins ago
+                    primary: 2.0
+                }
+            ];
+            
+            // 1 hour threshold -> maxTime=now, minTime=now-1h
+            const result = parseNWSeries(data, obsData, now - 1000 * 60 * 60, now, false); 
+            const readings = Array.from(result.values());
+            expect(readings).toHaveLength(1);
+            expect(readings[0].ft).toBe(2.0);
+        });
+    });
+});

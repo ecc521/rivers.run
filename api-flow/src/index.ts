@@ -1,20 +1,42 @@
-import { loadSitesFromUSGS } from "./services/usgs";
-import { loadSitesFromNWS } from "./services/nws";
-import { loadCanadianProvince } from "./services/canada";
+import { usgsProvider } from "./services/usgs";
+import { nwsProvider } from "./services/nws";
+import { canadaProvider } from "./services/canada";
+import { ukProvider } from "./services/uk";
+import { irelandProvider } from "./services/ireland";
+import { GaugeProvider, GaugeHistory, GaugeReading, GaugeSite } from "./services/provider";
 
 export interface Env {
     FLOW_STORAGE: R2Bucket;
     DB: D1Database;
 }
 
+const providers: Record<string, GaugeProvider> = {
+    "USGS": usgsProvider,
+    "NWS": nwsProvider,
+    "canada": canadaProvider,
+    "UK": ukProvider,
+    "ireland": irelandProvider
+};
+
+function parseGaugesParam(param: string | null): Record<string, string[]> {
+    const list = (param || "").split(",").filter(Boolean);
+    const parsed: Record<string, string[]> = {};
+    for (const item of list) {
+        const colonIdx = item.indexOf(":");
+        if (colonIdx > 0) {
+            const prefix = item.substring(0, colonIdx);
+            const id = item.substring(colonIdx + 1);
+            if (!parsed[prefix]) parsed[prefix] = [];
+            parsed[prefix].push(id);
+        }
+    }
+    return parsed;
+}
+
 export default {
-    /**
-     * STANDARD PROXY ROUTES (GET /recent, GET /history)
-     */
     async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
         const url = new URL(request.url);
 
-        // CORS Headers universally allow access for graphing tools or 3rd party domains
         const headers = new Headers();
         headers.set("Access-Control-Allow-Origin", "*");
         headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -27,20 +49,113 @@ export default {
             const object = await env.FLOW_STORAGE.get("flowdata.json");
             if (!object) return new Response("404 Not Found", { status: 404, headers });
             
-            // Native pass-through routing directly from R2 to the client
             headers.set("Content-Type", "application/json");
-            // NOTE: Brotli is handled seamlessly by Cloudflare automatically on txt/json responses!
             return new Response(object.body, { headers });
         }
 
-        if (url.pathname === "/history") {
-            const gauge = url.searchParams.get("gauge");
-            if (!gauge) return new Response("Missing gauge parameter", { status: 400, headers });
-
-            // Example integration wrapper mimicking historical proxy for Canada / NWS
-            // (Expanding on this later based on CORS mitigation needs)
+        if (url.pathname === "/latest") {
+            const object = await env.FLOW_STORAGE.get("latestdata.json");
+            if (!object) return new Response("404 Not Found", { status: 404, headers });
+            
+            const gaugesParam = url.searchParams.get("gauges");
+            let responseBody: BodyInit = object.body;
+            
+            if (gaugesParam) {
+                 const allLatest = await object.json() as Record<string, any>;
+                 const grouping = parseGaugesParam(gaugesParam);
+                 const filtered: Record<string, any> = {};
+                 
+                 for (const [prefix, ids] of Object.entries(grouping)) {
+                     for (const id of ids) {
+                          const key = `${prefix}:${id}`;
+                          if (allLatest[key]) {
+                               filtered[key] = allLatest[key];
+                          }
+                     }
+                 }
+                 if (allLatest.generatedAt) filtered.generatedAt = allLatest.generatedAt;
+                 responseBody = JSON.stringify(filtered);
+            }
+            
             headers.set("Content-Type", "application/json");
-            return new Response(JSON.stringify({ error: "Proxy interface scaffolded for " + gauge }), { headers });
+            headers.set("Cache-Control", "public, max-age=300");
+            return new Response(responseBody, { headers });
+        }
+
+        if (url.pathname === "/history") {
+            const grouping = parseGaugesParam(url.searchParams.get("gauges"));
+            
+            // Allow startTs / endTs params
+            const endTsParam = url.searchParams.get("endTs");
+            const endTs = endTsParam ? parseInt(endTsParam, 10) : Date.now();
+            
+            const startTsParam = url.searchParams.get("startTs");
+            const startTs = startTsParam ? parseInt(startTsParam, 10) : endTs - (7 * 24 * 60 * 60 * 1000); // default 7 days
+            
+            const forecastParam = url.searchParams.get("forecast") === "true";
+
+            const mergedData: Record<string, GaugeHistory> = {};
+
+            const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
+                const provider = providers[prefix];
+                if (provider) {
+                    const data = await provider.getHistory(ids, startTs, endTs, forecastParam);
+                    for (const [id, history] of Object.entries(data)) {
+                        mergedData[`${prefix}:${id}`] = history;
+                    }
+                }
+            });
+
+            try {
+                await Promise.all(promises);
+                headers.set("Content-Type", "application/json");
+                headers.set("Cache-Control", "public, max-age=300");
+                return new Response(JSON.stringify(mergedData), { headers });
+            } catch (err: any) {
+                console.error("History Fetch Error:", err);
+                return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
+            }
+        }
+
+        if (url.pathname === "/sites") {
+            // Allows fetching site listing directly, or hitting cache
+            const refresh = url.searchParams.get("refresh") === "true";
+            
+            if (!refresh) {
+                 const cached = await env.FLOW_STORAGE.get("sitedata.json");
+                 if (cached) {
+                     headers.set("Content-Type", "application/json");
+                     return new Response(cached.body, { headers });
+                 }
+            }
+
+            // Sync from D1
+            const { results } = await env.DB.prepare("SELECT gauge_id FROM river_gauges").all();
+            if (!results) return new Response("{}", { status: 200, headers });
+            
+            const siteParam = results.map((r: any) => r.gauge_id).join(",");
+            const grouping = parseGaugesParam(siteParam);
+            const mergedData: Record<string, GaugeSite> = {};
+
+            const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
+                const provider = providers[prefix];
+                if (provider && provider.capabilities.hasSiteListing) {
+                    const data = await provider.getSiteListing(ids);
+                    for (const site of data) {
+                        mergedData[`${prefix}:${site.id}`] = site;
+                    }
+                }
+            });
+
+            await Promise.all(promises);
+            
+            // Cache to R2
+            await env.FLOW_STORAGE.put("sitedata.json", JSON.stringify(mergedData), {
+                 httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=86400" }
+            });
+
+            headers.set("Content-Type", "application/json");
+            return new Response(JSON.stringify(mergedData), { headers });
         }
 
         return new Response("Flow Sync API Online.", { status: 200, headers });
@@ -52,76 +167,56 @@ export default {
     async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
         console.log("Starting 15-minute gauge background sync protocol...");
 
-        // 1. Fetch exactly what gauges are explicitly cared about natively from the DB
         const { results } = await env.DB.prepare("SELECT gauge_id FROM river_gauges").all();
-        if (!results || results.length === 0) {
-             console.log("No active gauges found in D1, terminating sync cleanly.");
-             return;
-        }
+        if (!results || results.length === 0) return;
 
-        const usgsSet = new Set<string>();
-        const canadaSet = new Set<string>();
-        const nwsSet = new Set<string>();
+        const allGauges = results.map((r: any) => r.gauge_id).join(",");
+        const grouping = parseGaugesParam(allGauges);
 
-        for (const row of results as { gauge_id: string }[]) {
-             if (!row.gauge_id) continue;
-             if (row.gauge_id.startsWith("USGS:")) usgsSet.add(row.gauge_id.replace("USGS:", ""));
-             else if (row.gauge_id.startsWith("canada:")) canadaSet.add(row.gauge_id.replace("canada:", ""));
-             else if (row.gauge_id.startsWith("NWS:")) nwsSet.add(row.gauge_id.replace("NWS:", ""));
-        }
-
-        const activeUsgsGauges = Array.from(usgsSet);
-        const activeCanadaGauges = Array.from(canadaSet);
-        const activeNwsGauges = Array.from(nwsSet);
-
-        // Extrapolate canada provinces
-        const provinces = new Set<string>();
-        const validProvinces = new Set(["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"]);
-        activeCanadaGauges.forEach(code => {
-             if (code.length > 2) {
-                  const prov = code.substring(0, 2).toUpperCase();
-                  if (validProvinces.has(prov)) provinces.add(prov);
-             }
-        });
-
-        console.log(`Discovered ${activeUsgsGauges.length} USGS, ${activeNwsGauges.length} NWS, ${activeCanadaGauges.length} Canada targets.`);
-
-        // 3. Kick off async network pulls concurrently
         const flowData: Record<string, any> = {};
+        const endTs = Date.now();
+        const startTs = endTs - (3 * 60 * 60 * 1000); // 3 hours
 
-        const [usgsData, nwsData, ...canadaProvinceData] = await Promise.all([
-             loadSitesFromUSGS(activeUsgsGauges, 1000 * 60 * 60 * 3), 
-             loadSitesFromNWS(activeNwsGauges, 1000 * 60 * 60 * 3),
-             ...Array.from(provinces).map(prov => loadCanadianProvince(prov))
-        ]);
-
-        // 4. Merge results deeply
-        for (const [key, value] of Object.entries(usgsData)) {
-             flowData["USGS:" + key] = value;
-        }
-        for (const [key, value] of Object.entries(nwsData)) {
-             flowData["NWS:" + key] = value;
-        }
-        canadaProvinceData.forEach((provData: any) => {
-             for (const [key, value] of Object.entries(provData)) {
-                  if (canadaSet.has(key)) flowData["canada:" + key] = value;
-             }
+        const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
+            const provider = providers[prefix];
+            if (provider) {
+                const data = await provider.getHistory(ids, startTs, endTs, false);
+                for (const [id, history] of Object.entries(data)) {
+                    flowData[`${prefix}:${id}`] = history;
+                }
+            }
         });
 
+        await Promise.all(promises);
         flowData.generatedAt = Date.now();
+        
         console.log(`Assembly complete. Pushing ${Object.keys(flowData).length} combined gauges to R2...`);
 
-        // 5. Write Payload directly into R2 Storage
-        const payloadJson = JSON.stringify(flowData);
-
-        // Put the json physically into the bucket
-        await env.FLOW_STORAGE.put("flowdata.json", payloadJson, {
+        await env.FLOW_STORAGE.put("flowdata.json", JSON.stringify(flowData), {
             httpMetadata: {
                 contentType: "application/json",
                 cacheControl: "public, max-age=900, s-maxage=900"
             }
         });
 
-        console.log("Cron execution terminated successfully.");
+        // Compute minimal latestData payload for fast polling
+        const latestData: Record<string, any> = {};
+        for (const [key, history] of Object.entries(flowData)) {
+             if (key === "generatedAt") {
+                 latestData.generatedAt = history;
+                 continue;
+             }
+             const readings = (history as GaugeHistory).readings;
+             if (readings && readings.length > 0) {
+                 latestData[key] = readings[readings.length - 1]; // grab absolute latest reading
+             }
+        }
+
+        await env.FLOW_STORAGE.put("latestdata.json", JSON.stringify(latestData), {
+            httpMetadata: {
+                contentType: "application/json",
+                cacheControl: "public, max-age=900, s-maxage=900"
+            }
+        });
     }
 };

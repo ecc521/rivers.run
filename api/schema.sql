@@ -1,5 +1,16 @@
 -- SQLite Schema for Rivers.run (Cloudflare D1)
 
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS user_subscriptions;
+DROP TABLE IF EXISTS community_list_rivers;
+DROP TABLE IF EXISTS community_lists;
+DROP TABLE IF EXISTS river_suggestions;
+DROP TABLE IF EXISTS river_audit_log;
+DROP TABLE IF EXISTS river_access_points;
+DROP TABLE IF EXISTS river_gauges;
+DROP TABLE IF EXISTS rivers;
+
+
 -- ==========================================
 -- 1. RIVERS CORE
 -- ==========================================
@@ -9,7 +20,7 @@ CREATE TABLE rivers (
     section TEXT NOT NULL,
     states TEXT,                 -- Comma separated (e.g. "VA, MD")
     class TEXT NOT NULL,         -- e.g. "III-IV"
-    skill INTEGER NOT NULL CHECK (skill >= 1 AND skill <= 8), -- Mapping to the 8 finite skill levels
+    skill INTEGER CHECK (skill >= 1 AND skill <= 8), -- Mapping to the 8 finite skill levels
     writeup TEXT,                -- HTML/Markdown blob
     tags TEXT,                   -- JSON Array (e.g. '["creeking", "playboating"]')
     
@@ -127,6 +138,10 @@ CREATE TABLE users (
     user_id TEXT PRIMARY KEY,        -- Firebase Auth UID
     display_name TEXT,
     email TEXT,
-    settings_json JSON,              -- Stores notification prefs, theme, etc.
+    settings_json JSON,              -- Additional settings (for frontend)
+    notifications_enabled INTEGER DEFAULT 1,
+    notifications_none_until INTEGER DEFAULT 0,
+    notifications_time_of_day TEXT DEFAULT '08:00',
+    alerts_review_queue INTEGER DEFAULT 0,
     updated_at INTEGER NOT NULL
 );

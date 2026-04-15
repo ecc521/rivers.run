@@ -1,16 +1,13 @@
 name = "rivers-run-api"
 main = "src/index.ts"
-compatibility_date = "2024-04-15"
+compatibility_date = "2026-04-15"
 compatibility_flags = ["nodejs_compat"]
 
-# 10 Million Requests / month
-# Unbound allows long wall-clock time limit for cron fetch loops
-usage_model = "unbound"
 
 # D1 Database Binding
 [[d1_databases]]
 binding = "DB" # Available in your Worker as env.DB
 database_name = "rivers-db"
-database_id = "42a7cf9b-9797-4529-ac4f-ecf83f4b2e3c"
+database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
 
 

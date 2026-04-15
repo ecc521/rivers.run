@@ -2,7 +2,11 @@ import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
 import { swaggerUI } from '@hono/swagger-ui';
 import { cors } from "hono/cors";
 import { z } from "zod";
-import { RiverEditorPayload, checkPayloadSize } from "./schema";
+import { 
+    RiverEditorPayload, checkPayloadSize, 
+    UserSettingsSchema, CommunityListSchema, 
+    SubscriptionPayloadSchema, AdminResolutionSchema 
+} from "./schema";
 import { firebaseAuthMiddleware, requireModerator, requireAdmin } from "./auth";
 
 type Bindings = {
@@ -180,12 +184,11 @@ app.get("/admin/logs", firebaseAuthMiddleware, requireAdmin, async (c) => {
 });
 
 // 5. Admin Resolution of Suggestions
-app.post("/admin/queue/:id/resolve", firebaseAuthMiddleware, requireModerator, async (c) => {
+app.post("/admin/queue/:id/resolve", firebaseAuthMiddleware, requireModerator, checkPayloadSize, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
-    const { action, admin_overrides, admin_notes } = await c.req.json();
-
-    if (action !== "approve" && action !== "reject") return c.json({ error: "Invalid action" }, 400);
+    const body = await c.req.json();
+    const { action, admin_overrides, admin_notes } = AdminResolutionSchema.parse(body);
 
     const suggestion = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE suggestion_id = ? AND status = 'pending'").bind(id).first();
     if (!suggestion) return c.json({ error: "Suggestion not found or already resolved." }, 404);
@@ -204,7 +207,7 @@ app.post("/admin/queue/:id/resolve", firebaseAuthMiddleware, requireModerator, a
     const batch = [];
     batch.push(c.env.DB.prepare("UPDATE river_suggestions SET status = 'resolved' WHERE suggestion_id = ?").bind(id));
     
-    // For simplicity, we assume an UPDATE here. (In production, if river doesn't exist, it should INSERT)
+    // For simplicity, we assume an UPDATE here
     const tagsStr = JSON.stringify(validated.tags || []);
     const gaugesStr = JSON.stringify(validated.gauges || []);
     const accessStr = JSON.stringify(validated.accessPoints || []);
@@ -228,35 +231,87 @@ app.post("/admin/queue/:id/resolve", firebaseAuthMiddleware, requireModerator, a
 // 6. User Profiles & Settings
 app.get("/user/settings", firebaseAuthMiddleware, async (c) => {
     const user = c.get("user");
-    const result = await c.env.DB.prepare("SELECT settings_json FROM users WHERE user_id = ?").bind(user.user_id).first();
+    const result = await c.env.DB.prepare(`
+        SELECT display_name, email, notifications_enabled, notifications_none_until, notifications_time_of_day, alerts_review_queue, settings_json
+        FROM users WHERE user_id = ?
+    `).bind(user.user_id).first();
     
     if (!result) {
         // Auto-provision user record on first hit
-        const defaultSettings = JSON.stringify({ notifications: { reviewQueueAlerts: false } });
-        await c.env.DB.prepare("INSERT INTO users (user_id, display_name, email, settings_json, updated_at) VALUES (?, ?, ?, ?, ?)")
-            .bind(user.user_id, user.name || "", user.email || "", defaultSettings, Math.floor(Date.now() / 1000)).run();
-        return c.json({ notifications: { reviewQueueAlerts: false } });
+        await c.env.DB.prepare(`
+            INSERT INTO users (user_id, display_name, email, updated_at) 
+            VALUES (?, ?, ?, ?)
+        `).bind(user.user_id, user.name || "Unknown Paddler", user.email || "", Math.floor(Date.now() / 1000)).run();
+        
+        return c.json({
+            notifications: {
+                enabled: true,
+                noneUntil: 0,
+                timeOfDay: "08:00",
+                reviewQueueAlerts: false
+            },
+            settings_json: {}
+        });
     }
     
-    return c.json(typeof result.settings_json === 'string' ? JSON.parse(result.settings_json) : result.settings_json);
+    return c.json({
+        notifications: {
+            enabled: result.notifications_enabled === 1,
+            noneUntil: result.notifications_none_until || 0,
+            timeOfDay: result.notifications_time_of_day || "08:00",
+            reviewQueueAlerts: result.alerts_review_queue === 1
+        },
+        settings_json: typeof result.settings_json === 'string' ? JSON.parse(result.settings_json) : (result.settings_json || {})
+    });
 });
 
-app.patch("/user/settings", firebaseAuthMiddleware, async (c) => {
+app.patch("/user/settings", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     const user = c.get("user");
-    const updates = await c.req.json();
+    const body = await c.req.json();
+    const validated = UserSettingsSchema.parse(body);
     
-    // Merge logic
-    const existing = await c.env.DB.prepare("SELECT settings_json FROM users WHERE user_id = ?").bind(user.user_id).first();
-    let settings = {};
-    if (existing) {
-        settings = typeof existing.settings_json === 'string' ? JSON.parse(existing.settings_json) : existing.settings_json;
+    const updateFields: string[] = ["updated_at = ?"];
+    const params: any[] = [Math.floor(Date.now() / 1000)];
+
+    if (validated.notifications) {
+        const n = validated.notifications;
+        if (n.enabled !== undefined) {
+             updateFields.push("notifications_enabled = ?");
+             params.push(n.enabled ? 1 : 0);
+        }
+        if (n.noneUntil !== undefined) {
+             updateFields.push("notifications_none_until = ?");
+             params.push(n.noneUntil);
+        }
+        if (n.timeOfDay !== undefined) {
+             updateFields.push("notifications_time_of_day = ?");
+             params.push(n.timeOfDay);
+        }
+        if (n.reviewQueueAlerts !== undefined) {
+             updateFields.push("alerts_review_queue = ?");
+             params.push(n.reviewQueueAlerts ? 1 : 0);
+        }
+    }
+
+    if (validated.settings_json !== undefined) {
+        // We do a merge based on existing state to be safe, or just overwrite if that's the intent
+        // For settings_json we typically overwrite the whole blob or merge. Let's merge for flexibility.
+        const existing = await c.env.DB.prepare("SELECT settings_json FROM users WHERE user_id = ?").bind(user.user_id).first();
+        let currentSettings = {};
+        if (existing && existing.settings_json) {
+            currentSettings = typeof existing.settings_json === 'string' ? JSON.parse(existing.settings_json) : existing.settings_json;
+        }
+        const merged = { ...currentSettings, ...validated.settings_json };
+        updateFields.push("settings_json = ?");
+        params.push(JSON.stringify(merged));
     }
     
-    const newSettings = { ...settings, ...updates };
+    if (updateFields.length > 1) {
+        params.push(user.user_id);
+        await c.env.DB.prepare(`UPDATE users SET ${updateFields.join(", ")} WHERE user_id = ?`)
+            .bind(...params).run();
+    }
     
-    await c.env.DB.prepare("UPDATE users SET settings_json = ?, updated_at = ? WHERE user_id = ?")
-        .bind(JSON.stringify(newSettings), Math.floor(Date.now() / 1000), user.user_id).run();
-        
     return c.json({ success: true });
 });
 
@@ -273,31 +328,32 @@ app.get("/lists", firebaseAuthMiddleware, async (c) => {
     return c.json(results);
 });
 
-app.post("/lists", firebaseAuthMiddleware, async (c) => {
+app.post("/lists", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     const user = c.get("user");
-    const list = await c.req.json();
+    const body = await c.req.json();
+    const validated = CommunityListSchema.parse(body);
     
     await c.env.DB.prepare(`
         INSERT INTO community_lists (id, title, description, author, owner_id, is_published, subscribes)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).bind(list.id, list.title, list.description, list.author, user.user_id, list.isPublished ? 1 : 0, 0).run();
+    `).bind(validated.id || crypto.randomUUID(), validated.title, validated.description, validated.author, user.user_id, validated.isPublished ? 1 : 0, 0).run();
     
     return c.json({ success: true });
 });
 
-app.put("/lists/:id", firebaseAuthMiddleware, async (c) => {
+app.put("/lists/:id", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
-    const updates = await c.req.json();
+    const body = await c.req.json();
+    const validated = CommunityListSchema.parse(body);
     
     // Simple verification
     const existing = await c.env.DB.prepare("SELECT owner_id FROM community_lists WHERE id = ?").bind(id).first();
     if (!existing || existing.owner_id !== user.user_id) return c.json({ error: "Forbidden" }, 403);
     
-    // Construct UPDATE dynamically or just pick common fields
     await c.env.DB.prepare(`
         UPDATE community_lists SET title = ?, description = ?, is_published = ? WHERE id = ?
-    `).bind(updates.title, updates.description, updates.isPublished ? 1 : 0, id).run();
+    `).bind(validated.title, validated.description, validated.isPublished ? 1 : 0, id).run();
     
     return c.json({ success: true });
 });
@@ -331,9 +387,10 @@ app.get("/user/subscriptions", firebaseAuthMiddleware, async (c) => {
     return c.json({ subscriptions: results.map(r => r.list_id) });
 });
 
-app.post("/user/subscriptions", firebaseAuthMiddleware, async (c) => {
+app.post("/user/subscriptions", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     const user = c.get("user");
-    const { subscriptions } = await c.req.json();
+    const body = await c.req.json();
+    const { subscriptions } = SubscriptionPayloadSchema.parse(body);
     
     const batch = [];
     batch.push(c.env.DB.prepare("DELETE FROM user_subscriptions WHERE user_id = ?").bind(user.user_id));

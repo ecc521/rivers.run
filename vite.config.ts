@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -106,8 +106,13 @@ export default defineConfig({
         }
       ]
     }
-  }), cloudflare()],
+  }), process.env.VITEST ? null : cloudflare()],
   build: {
     target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+  },
+  test: {
+    globals: true,
+    environment: 'happy-dom', // Better for React/DOM testing than plain node
+    exclude: ['node_modules', 'dist', '.git', 'api', 'api-flow', 'functions'],
   },
 })

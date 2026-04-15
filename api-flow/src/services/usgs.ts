@@ -1,3 +1,5 @@
+import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite } from './provider';
+
 export function formatGaugeName(name: string): { name: string; section?: string } {
     const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr']);
     const expansions: Record<string, string> = {
@@ -79,24 +81,29 @@ export function formatGaugeName(name: string): { name: string; section?: string 
     return { name: formattedString };
 }
 
-// Parses the USGS output back into legacy formatting
-export function processUSGSResponse(obj: any): any {
+// Parses the USGS output back into legacy formatting/GaugeHistory
+export function processUSGSResponse(obj: any): Record<string, GaugeHistory> {
   const timeSeries = obj.value.timeSeries || [];
-  const usgsSites: any = {};
+  const usgsSites: Record<string, GaugeHistory> = {};
 
   for (let i = 0; i < timeSeries.length; i++) {
     const seriesItem = timeSeries[i];
-    const siteCode = seriesItem.sourceInfo.siteCode[0].value;
+    const sourceInfo = seriesItem.sourceInfo;
+    const siteCode = sourceInfo.siteCode[0].value;
 
     if (!usgsSites[siteCode]) {
-      const formatted = formatGaugeName(seriesItem.sourceInfo.siteName);
+      const formatted = formatGaugeName(sourceInfo.siteName);
       usgsSites[siteCode] = {
+        id: siteCode,
         name: formatted.name,
         section: formatted.section,
-        readings: new Map()
+        readings: [],
       };
-      if (!usgsSites[siteCode].section) {
-          delete usgsSites[siteCode].section;
+      
+      // Attempt to populate lat/lon if present
+      if (sourceInfo.geoLocation?.geogLocation) {
+        usgsSites[siteCode].lat = sourceInfo.geoLocation.geogLocation.latitude;
+        usgsSites[siteCode].lon = sourceInfo.geoLocation.geogLocation.longitude;
       }
     }
     const siteObj = usgsSites[siteCode];
@@ -105,7 +112,7 @@ export function processUSGSResponse(obj: any): any {
     const noDataValue = Number(seriesItem.variable.noDataValue);
     values = values.filter((val: any) => Number(val.value) !== noDataValue);
 
-    let property: string | undefined;
+    let property: keyof GaugeReading | undefined;
     const unitCode = seriesItem.variable.unit.unitCode;
     
     switch (unitCode) {
@@ -128,22 +135,27 @@ export function processUSGSResponse(obj: any): any {
         property = "precip";
         break;
       default:
-        console.warn(`Unknown Unit ${unitCode}`);
         continue;
     }
 
     if (property) {
+      // Build a map of dateTime matched to values
+      // Note: we'll augment readings array efficiently.
+      // But we need to group by time (snapped to 5 mins).
+      // Let's use a temporary map per site.
+      (siteObj as any)._readingMap = (siteObj as any)._readingMap || new Map<number, GaugeReading>();
+      const readingMap = (siteObj as any)._readingMap;
+
       values.forEach((val: any) => {
-        // Snap to nearest 5 minutes (300,000 ms) to align disparate parameter timestamps
         const rawTime = new Date(val.dateTime).getTime();
         const snappedTime = Math.round(rawTime / 300000) * 300000;
         
-        let currentReading = siteObj.readings.get(snappedTime);
+        let currentReading = readingMap.get(snappedTime);
         if (!currentReading) {
-          currentReading = {};
-          siteObj.readings.set(snappedTime, currentReading);
+          currentReading = { dateTime: snappedTime };
+          readingMap.set(snappedTime, currentReading);
         }
-        currentReading[property] = Number(val.value);
+        (currentReading as any)[property] = Number(val.value);
       });
     }
   }
@@ -151,28 +163,20 @@ export function processUSGSResponse(obj: any): any {
   // Combine and sort timestamps
   for (const gaugeID in usgsSites) {
     const site = usgsSites[gaugeID];
-    const timestamps = Array.from(site.readings.keys()).sort((a: any, b: any) => a - b);
-    const newReadings: any[] = [];
-
-    timestamps.forEach((timestamp) => {
-      const newReading = site.readings.get(timestamp);
-      newReading.dateTime = timestamp;
-      newReadings.push(newReading);
-    });
-
-    site.readings = newReadings;
+    if ((site as any)._readingMap) {
+        const timestamps = Array.from(((site as any)._readingMap as Map<number, GaugeReading>).keys()).sort((a, b) => a - b);
+        site.readings = timestamps.map(ts => ((site as any)._readingMap as Map<number, GaugeReading>).get(ts)!);
+        delete (site as any)._readingMap;
+    }
   }
 
   return usgsSites;
 }
 
-// Fetch loop function supporting chunking
-export async function loadSitesFromUSGS(siteCodes: string[], timeInPastMs = 1000 * 60 * 60 * 3): Promise<any> {
-    const periodHours = Math.round(timeInPastMs / (1000 * 60 * 60));
-    const periodStr = `&period=PT${periodHours}H`;
-    
+// Reusable batch fetcher
+async function fetchUSGSBatch(siteCodes: string[], timeQuery: string): Promise<Record<string, GaugeHistory>> {
     const BATCH_SIZE = 150;
-    const allSites = {};
+    const allSites: Record<string, GaugeHistory> = {};
 
     const batches: string[][] = [];
     for (let i = 0; i < siteCodes.length; i += BATCH_SIZE) {
@@ -185,11 +189,11 @@ export async function loadSitesFromUSGS(siteCodes: string[], timeInPastMs = 1000
     const worker = async () => {
         while (batchIndex < batches.length) {
             const batch = batches[batchIndex++];
-            const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${batch.join(",")}${periodStr}&parameterCd=00060,00065,00010,00011,00045&siteStatus=all`;
+            const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${batch.join(",")}${timeQuery}&parameterCd=00060,00065,00010,00011,00045&siteStatus=all`;
             
             let success = false;
             let attempts = 0;
-            const MAX_RETRIES = 2; // Up to 3 total attempts
+            const MAX_RETRIES = 2;
 
             while (!success && attempts <= MAX_RETRIES) {
                 try {
@@ -207,7 +211,6 @@ export async function loadSitesFromUSGS(siteCodes: string[], timeInPastMs = 1000
                         console.error(`USGS Fetch failed completely for batch after ${attempts} attempts, skipping: ${msg}`);
                     } else {
                         console.warn(`USGS Fetch failed (Attempt ${attempts}/${MAX_RETRIES + 1}), backing off... Error: ${msg}`);
-                        // 3 seconds backoff, then 6 seconds
                         await new Promise(r => setTimeout(r, attempts * 3000));
                     }
                 }
@@ -216,6 +219,56 @@ export async function loadSitesFromUSGS(siteCodes: string[], timeInPastMs = 1000
     };
 
     await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));
-
     return allSites;
 }
+
+export const usgsProvider: GaugeProvider = {
+    id: "USGS",
+    capabilities: {
+        hasForecast: false,
+        hasSiteListing: true
+    },
+
+    async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
+        const histories = await fetchUSGSBatch(siteCodes, "&period=PT4H"); // fetch recent 4 hours
+        const latest: Record<string, GaugeReading> = {};
+        for (const [id, history] of Object.entries(histories)) {
+            if (history.readings.length > 0) {
+                // Return the last element
+                latest[id] = history.readings[history.readings.length - 1];
+            }
+        }
+        return latest;
+    },
+
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
+        const startIso = new Date(startTs).toISOString();
+        const timeQuery = endTs 
+            ? `&startDT=${startIso}&endDT=${new Date(endTs).toISOString()}`
+            : `&startDT=${startIso}`;
+            
+        return fetchUSGSBatch(siteCodes, timeQuery);
+    },
+
+    async getSiteListing(siteCodes: string[]): Promise<GaugeSite[]> {
+        if (siteCodes.length === 0) return [];
+        // The IV endpoint returns geoLocation in the timeSeries sourceInfo payload if recent data exists.
+        // Even if water data is missing, we grab a tiny timeframe just to get site metadata
+        const histories = await fetchUSGSBatch(siteCodes, "&period=PT1H");
+        const sites: GaugeSite[] = [];
+        
+        for (const id of siteCodes) {
+            const hist = histories[id];
+            if (hist && (hist as any).lat !== undefined) {
+                sites.push({
+                    id,
+                    name: hist.name, // optionally format name
+                    lat: (hist as any).lat,
+                    lon: (hist as any).lon
+                });
+            }
+        }
+        return sites;
+    }
+};
+

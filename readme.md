@@ -60,25 +60,20 @@ npm run build
 
 ## Deployment & CI/CD
 
-### Firebase Hosting (Web)
-The frontend web application is automatically deployed via GitHub Actions:
-- **Pull Requests**: Creating or pushing to a PR automatically generates an isolated preview URL for testing and review.
-- **Main Branch**: Merging code into the `main` branch permanently deploys the production build to the live `rivers.run` Firebase domain.
+## Deployment & CI/CD
 
-### Firebase Cloud Functions
-Deployments to the Cloud Functions architecture are currently handled manually via the Firebase CLI to ensure controlled rollouts.
+The entire application stack is automatically deployed via GitHub Actions to Cloudflare:
 
-```bash
-# Move into the functions directory
-cd functions/
+### Cloudflare Pages (Frontend)
+The frontend web application is automatically built and deployed as a Cloudflare Pages project (using static assets) on every push to the `main` branch. 
+- **Main Branch**: Merges to `main` trigger a full production build (`npm run build`) and deployment to the primary `rivers.run` domain.
 
-# Compile the TypeScript functions
-npm run build
+### Cloudflare Workers (API)
+The serverless backend services are also automatically deployed via the same CI/CD pipeline:
+- **`rivers-run-api`**: The core API service located in the `/api` directory.
+- **`api-flow`**: The gauge data polling and processing service located in the `/api-flow` directory.
 
-# Return to root and deploy to production
-cd ..
-npx firebase-tools deploy --only functions
-```
+Deployments are managed via Wrangler and the `cloudflare/wrangler-action` in GitHub Actions.
 
 ## Community Administration
 User submissions, edits, and gauge curation updates are directed to a `reviewQueue` in Firestore. 

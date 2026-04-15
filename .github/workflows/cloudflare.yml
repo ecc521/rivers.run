@@ -1,11 +1,9 @@
-name: Deploy Cloudflare API
+name: Deploy Cloudflare Services
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'api/**'
 
 jobs:
   deploy:
@@ -13,7 +11,26 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 1. Deploy Frontend (Cloudflare Pages/Assets)
+      - name: Install Frontend dependencies
+        run: npm ci
+      - name: Build Frontend
+        run: npm run build
+      - name: Deploy Frontend to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+
+      # 2. Deploy API Worker
+      - name: Install API dependencies
         run: npm ci
         working-directory: api
       - name: Deploy API to Cloudflare
@@ -22,4 +39,16 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: api
+          command: deploy
+
+      # 3. Deploy API Flow Worker
+      - name: Install API Flow dependencies
+        run: npm ci
+        working-directory: api-flow
+      - name: Deploy API Flow to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: api-flow
           command: deploy
