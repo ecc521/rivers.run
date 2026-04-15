@@ -40,7 +40,7 @@ app.get('/docs', apiReference({
 // Generous CORS to permit both rivers.run, apps, and dev variants
 app.use("*", cors({
     origin: "*",
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"]
 }));
 
@@ -71,16 +71,32 @@ const getRiversRoute = createRoute({
 });
 
 app.openapi(getRiversRoute, async (c) => {
-    const { results } = await c.env.DB.prepare("SELECT * FROM rivers").all();
+    const { results } = await c.env.DB.prepare(`
+        SELECT 
+            r.*,
+            (SELECT json_group_array(json_object(
+                'id', rg.gauge_id,
+                'isPrimary', CASE WHEN rg.is_primary = 1 THEN json('true') ELSE json('false') END,
+                'name', rg.name,
+                'section', rg.section
+            )) FROM river_gauges rg WHERE rg.river_id = r.id) as gauges,
+            (SELECT json_group_array(json_object(
+                'lat', ra.lat,
+                'lon', ra.lon,
+                'type', ra.type,
+                'name', ra.name
+            )) FROM river_access_points ra WHERE ra.river_id = r.id) as accessPoints
+        FROM rivers r
+    `).all();
     
     // Explicit aggressive caching header to push the massive load physically onto Cloudflare Edge Nodes
-    c.header("Cache-Control", "public, max-age=300, s-maxage=300");
+    c.header("Cache-Control", "public, max-age=3600, s-maxage=3600");
     
     const rivers = results.map(row => ({
           ...row,
           tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : [],
-          gauges: typeof row.gauges === 'string' ? JSON.parse(row.gauges) : [],
-          accessPoints: typeof row.accessPoints === 'string' ? JSON.parse(row.accessPoints) : []
+          gauges: typeof row.gauges === 'string' ? JSON.parse(row.gauges) : (row.gauges || []),
+          accessPoints: typeof row.accessPoints === 'string' ? JSON.parse(row.accessPoints) : (row.accessPoints || [])
     }));
     return c.json(rivers);
 });
@@ -98,15 +114,32 @@ const getRiverRoute = createRoute({
 
 app.openapi(getRiverRoute, async (c) => {
     const id = c.req.param("id");
-    const result = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(id).first();
+    const result = await c.env.DB.prepare(`
+        SELECT 
+            r.*,
+            (SELECT json_group_array(json_object(
+                'id', rg.gauge_id,
+                'isPrimary', CASE WHEN rg.is_primary = 1 THEN json('true') ELSE json('false') END,
+                'name', rg.name,
+                'section', rg.section
+            )) FROM river_gauges rg WHERE rg.river_id = r.id) as gauges,
+            (SELECT json_group_array(json_object(
+                'lat', ra.lat,
+                'lon', ra.lon,
+                'type', ra.type,
+                'name', ra.name
+            )) FROM river_access_points ra WHERE ra.river_id = r.id) as accessPoints
+        FROM rivers r
+        WHERE r.id = ?
+    `).bind(id).first();
     
     if (!result) return c.json({ error: "River not found" }, 404);
     
     return c.json({
         ...result,
         tags: typeof result.tags === 'string' ? JSON.parse(result.tags) : [],
-        gauges: typeof result.gauges === 'string' ? JSON.parse(result.gauges) : [],
-        accessPoints: typeof result.accessPoints === 'string' ? JSON.parse(result.accessPoints) : []
+        gauges: typeof result.gauges === 'string' ? JSON.parse(result.gauges) : (result.gauges || []),
+        accessPoints: typeof result.accessPoints === 'string' ? JSON.parse(result.accessPoints) : (result.accessPoints || [])
     });
 });
 
@@ -737,7 +770,7 @@ app.openapi(getSubscriptionsRoute, async (c) => {
 
 const updateSubscriptionsRoute = createRoute({
     middleware: [firebaseAuthMiddleware, checkPayloadSize],
-    method: 'post',
+    method: 'put',
     path: '/user/subscriptions',
     summary: 'Bulk update subscriptions',
     security: [{ bearerAuth: [] }],

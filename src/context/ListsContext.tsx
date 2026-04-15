@@ -158,7 +158,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setSubscribedListIds(newSubs);
     persistentStorage.set("my_subscribed_lists", JSON.stringify(newSubs));
-    await fetchAPI(`/user/subscriptions`, { method: "POST", body: JSON.stringify({ subscriptions: newSubs }) }, user);
+    await fetchAPI(`/user/subscriptions`, { method: "PUT", body: JSON.stringify({ subscriptions: newSubs }) }, user);
   };
 
   const isSubscribed = (listId: string) => subscribedListIds.includes(listId);

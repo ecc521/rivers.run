@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS river_audit_log;
 DROP TABLE IF EXISTS river_access_points;
 DROP TABLE IF EXISTS river_gauges;
 DROP TABLE IF EXISTS rivers;
+DROP TABLE IF EXISTS admin_audit_log;
 
 
 -- ==========================================
