@@ -40,9 +40,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     async function init() {
-      // Documentation: TEMPORARY_CODE.md
-      await persistentStorage.migrate();
-      
       const qap = await persistentStorage.get("quickActionPref") || await persistentStorage.get("starActionPref");
       setQuickActionState(qap || "ask");
       setLoading(false);
