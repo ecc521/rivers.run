@@ -107,10 +107,12 @@ export const firebaseAuthMiddleware = async (c: Context, next: Next) => {
 
          // Passed! Attach to request context
          // Dynamically drop Firebase Custom Claims and poll pure D1 SQL Live State
-         const dbUser: any = await (c.env as any).DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(payload.user_id).first();
+         const uid = payload.sub || payload.user_id;
+         const dbUser: any = await (c.env as any).DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(uid).first();
          
          c.set("user", {
               ...payload, 
+              user_id: uid,
               d1Role: (dbUser && dbUser.role) ? dbUser.role : "user"
          });
          

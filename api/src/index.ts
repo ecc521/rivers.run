@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
-import { swaggerUI } from '@hono/swagger-ui';
+import { apiReference } from '@scalar/hono-api-reference';
 import { cors } from "hono/cors";
 import { z } from "zod";
 import { 
@@ -27,8 +27,15 @@ app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
     scheme: 'bearer',
     bearerFormat: 'JWT',
 });
-// Generate auto-updating Swagger interface dynamically
-app.get('/docs', swaggerUI({ url: '/openapi.json' }));
+// Generate auto-updating Scalar interface dynamically
+app.get('/docs', apiReference({
+    spec: { url: '/openapi.json' },
+    theme: 'purple',
+    layout: 'modern',
+    defaultContext: {
+        baseUrl: 'https://api.rivers.run',
+    }
+}));
 
 // Generous CORS to permit both rivers.run and dev variants
 app.use("*", cors({
@@ -483,8 +490,30 @@ const getListsRoute = createRoute({
 // 7. Lists (Favorites & Community)
 app.openapi(getListsRoute, firebaseAuthMiddleware, async (c) => {
     const user = c.get("user");
-    const { results } = await c.env.DB.prepare("SELECT * FROM community_lists WHERE owner_id = ?").bind(user.user_id).all();
-    return c.json(results);
+    const { results } = await c.env.DB.prepare(`
+        SELECT l.*, json_group_array(
+            json_object(
+                'id', lr.river_id,
+                'order', lr.sort_order,
+                'gaugeId', lr.gauge_id,
+                'min', lr.min_val,
+                'max', lr.max_val,
+                'units', lr.units,
+                'customMin', lr.custom_min,
+                'customMax', lr.custom_max,
+                'customUnits', lr.custom_units
+            )
+        ) as rivers
+        FROM community_lists l
+        LEFT JOIN community_list_rivers lr ON l.id = lr.list_id
+        WHERE l.owner_id = ?
+        GROUP BY l.id
+    `).bind(user.user_id).all();
+
+    return c.json(results.map((r: any) => ({
+        ...r,
+        rivers: JSON.parse(r.rivers).filter((rv: any) => rv.id !== null)
+    })));
 });
 
 const createListRoute = createRoute({
@@ -502,13 +531,32 @@ app.openapi(createListRoute, firebaseAuthMiddleware, checkPayloadSize, async (c)
     const user = c.get("user");
     const body = await c.req.json();
     const validated = CommunityListSchema.parse(body);
+    const listId = validated.id || crypto.randomUUID();
     
-    await c.env.DB.prepare(`
-        INSERT INTO community_lists (id, title, description, author, owner_id, is_published, subscribes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).bind(validated.id || crypto.randomUUID(), validated.title, validated.description, validated.author, user.user_id, validated.isPublished ? 1 : 0, 0).run();
-    
-    return c.json({ success: true });
+    const queries = [
+        c.env.DB.prepare(`
+            INSERT INTO community_lists (id, title, description, author, owner_id, is_published, subscribes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).bind(listId, validated.title, validated.description, validated.author, user.user_id, validated.isPublished ? 1 : 0, 0)
+    ];
+
+    if (validated.rivers && validated.rivers.length > 0) {
+        validated.rivers.forEach(river => {
+            queries.push(
+                c.env.DB.prepare(`
+                    INSERT INTO community_list_rivers (list_id, river_id, sort_order, gauge_id, min_val, max_val, units, custom_min, custom_max, custom_units)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(
+                    listId, river.id, river.order, river.gaugeId || null, 
+                    river.min || null, river.max || null, river.units || null, 
+                    river.customMin || null, river.customMax || null, river.customUnits || null
+                )
+            );
+        });
+    }
+
+    await c.env.DB.batch(queries);
+    return c.json({ success: true, id: listId });
 });
 
 const updateListRoute = createRoute({
@@ -531,13 +579,36 @@ app.openapi(updateListRoute, firebaseAuthMiddleware, checkPayloadSize, async (c)
     const body = await c.req.json();
     const validated = CommunityListSchema.parse(body);
     
+    // Check ownership
     const existing = await c.env.DB.prepare("SELECT owner_id FROM community_lists WHERE id = ?").bind(id).first();
     if (!existing || existing.owner_id !== user.user_id) return c.json({ error: "Forbidden" }, 403);
-    
-    await c.env.DB.prepare(`
-        UPDATE community_lists SET title = ?, description = ?, is_published = ? WHERE id = ?
-    `).bind(validated.title, validated.description, validated.isPublished ? 1 : 0, id).run();
-    
+
+    const queries = [
+        c.env.DB.prepare(`
+            UPDATE community_lists 
+            SET title = ?, description = ?, author = ?, is_published = ?
+            WHERE id = ?
+        `).bind(validated.title, validated.description, validated.author, validated.isPublished ? 1 : 0, id),
+        // Delete all existing rivers for this list
+        c.env.DB.prepare("DELETE FROM community_list_rivers WHERE list_id = ?").bind(id)
+    ];
+
+    if (validated.rivers && validated.rivers.length > 0) {
+        validated.rivers.forEach(river => {
+            queries.push(
+                c.env.DB.prepare(`
+                    INSERT INTO community_list_rivers (list_id, river_id, sort_order, gauge_id, min_val, max_val, units, custom_min, custom_max, custom_units)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(
+                    id, river.id, river.order, river.gaugeId || null, 
+                    river.min || null, river.max || null, river.units || null, 
+                    river.customMin || null, river.customMax || null, river.customUnits || null
+                )
+            );
+        });
+    }
+
+    await c.env.DB.batch(queries);
     return c.json({ success: true });
 });
 
@@ -576,13 +647,31 @@ const getListByIdRoute = createRoute({
 
 app.openapi(getListByIdRoute, async (c) => {
     const id = c.req.param("id");
-    const result = await c.env.DB.prepare("SELECT * FROM community_lists WHERE id = ?").bind(id).first();
+    const result = await c.env.DB.prepare(`
+        SELECT l.*, json_group_array(
+            json_object(
+                'id', lr.river_id,
+                'order', lr.sort_order,
+                'gaugeId', lr.gauge_id,
+                'min', lr.min_val,
+                'max', lr.max_val,
+                'units', lr.units,
+                'customMin', lr.custom_min,
+                'customMax', lr.custom_max,
+                'customUnits', lr.custom_units
+            )
+        ) as rivers
+        FROM community_lists l
+        LEFT JOIN community_list_rivers lr ON l.id = lr.list_id
+        WHERE l.id = ?
+        GROUP BY l.id
+    `).bind(id).first();
     
     if (!result) return c.json({ error: "List not found" }, 404);
     
     return c.json({
         ...result,
-        rivers: typeof result.rivers === 'string' ? JSON.parse(result.rivers) : (result.rivers || [])
+        rivers: JSON.parse(result.rivers as string).filter((rv: any) => rv.id !== null)
     });
 });
 

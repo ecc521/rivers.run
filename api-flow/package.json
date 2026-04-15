@@ -3,21 +3,21 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "start": "wrangler dev",
+    "deploy": "wrangler deploy -c wrangler.toml",
+    "dev": "wrangler dev -c wrangler.toml",
+    "start": "wrangler dev -c wrangler.toml",
     "test": "vitest run"
   },
   "dependencies": {
-    "hono": "^4.2.4",
     "@hono/zod-openapi": "^0.13.0",
-    "@hono/swagger-ui": "^0.2.1",
+    "@scalar/hono-api-reference": "^0.10.7",
+    "hono": "^4.2.4",
     "zod": "^3.23.4"
   },
   "devDependencies": {
-    "wrangler": "^4.83.0",
     "@cloudflare/workers-types": "^4.20260415.1",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.4",
+    "wrangler": "^4.83.0"
   }
 }

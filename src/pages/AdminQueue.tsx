@@ -29,7 +29,7 @@ export default function AdminQueue() {
 
     async function fetchQueue() {
       try {
-        const items = await fetchAPI("/admin/queue");
+        const items = await fetchAPI("/admin/queue", {}, user);
         setQueue(items.map((item: any) => ({ ...item, queueId: item.suggestion_id })));
       } catch (err: unknown) {
         if (err instanceof Error) console.error("Failed to fetch queue", err.message);
@@ -41,7 +41,7 @@ export default function AdminQueue() {
     if (isModerator && user) {
       fetchQueue();
       // Fetch notification preference from Cloudflare API
-      fetchAPI("/user/settings").then(settings => {
+      fetchAPI("/user/settings", {}, user).then(settings => {
         if (settings && settings.notifications) {
           setAdminQueueAlerts(!!settings.notifications.reviewQueueAlerts);
         }
@@ -55,7 +55,7 @@ export default function AdminQueue() {
       await fetchAPI("/user/settings", {
         method: "PATCH",
         body: JSON.stringify({ notifications: { reviewQueueAlerts: val } })
-      }).catch(e => console.error("Could not save admin alert pref:", e));
+      }, user).catch(e => console.error("Could not save admin alert pref:", e));
     }
   };
 

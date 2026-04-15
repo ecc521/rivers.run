@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { swaggerUI } from "@hono/swagger-ui";
+import { apiReference } from '@scalar/hono-api-reference';
 import { usgsProvider } from "./services/usgs";
 import { nwsProvider } from "./services/nws";
 import { canadaProvider } from "./services/canada";
@@ -51,7 +51,14 @@ app.doc('/openapi.json', {
     openapi: '3.1.0',
     info: { title: 'Rivers.run Flow API', version: '1.0.0' }
 });
-app.get('/docs', swaggerUI({ url: '/openapi.json' }));
+app.get('/docs', apiReference({
+    spec: { url: '/openapi.json' },
+    theme: 'purple',
+    layout: 'modern',
+    defaultContext: {
+        baseUrl: 'https://api-flow.rivers.run',
+    }
+}));
 
 // 2. Recent Data (Cached in R2)
 const recentRoute = createRoute({

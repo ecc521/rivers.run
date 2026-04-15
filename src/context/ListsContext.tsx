@@ -88,13 +88,13 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let isMounted = true;
     async function pullCloudState() {
          try {
-             const serverLists = await fetchAPI("/lists");
+             const serverLists = await fetchAPI("/lists", {}, user);
              if (serverLists && isMounted) {
                   setMyLists(serverLists);
                   persistentStorage.set("my_custom_lists", JSON.stringify(serverLists));
              }
 
-             const serverSubs = await fetchAPI("/user/subscriptions");
+             const serverSubs = await fetchAPI("/user/subscriptions", {}, user);
              if (serverSubs && serverSubs.subscriptions && isMounted) {
                   setSubscribedListIds(serverSubs.subscriptions);
                   persistentStorage.set("my_subscribed_lists", JSON.stringify(serverSubs.subscriptions));
@@ -127,7 +127,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     persistentStorage.set("my_custom_lists", JSON.stringify(updated));
 
     // Async physical push 
-    await fetchAPI("/lists", { method: "POST", body: JSON.stringify(newList) });
+    await fetchAPI("/lists", { method: "POST", body: JSON.stringify(newList) }, user);
     return uuid;
   };
 
@@ -138,7 +138,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     persistentStorage.set("my_custom_lists", JSON.stringify(newLists));
     
     // Background sync
-    await fetchAPI(`/lists/${id}`, { method: "PUT", body: JSON.stringify(updates) });
+    await fetchAPI(`/lists/${id}`, { method: "PUT", body: JSON.stringify(updates) }, user);
   };
 
   const deleteList = async (id: string) => {
@@ -146,7 +146,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newLists = myLists.filter(l => l.id !== id);
     setMyLists(newLists);
     persistentStorage.set("my_custom_lists", JSON.stringify(newLists));
-    await fetchAPI(`/lists/${id}`, { method: "DELETE" });
+    await fetchAPI(`/lists/${id}`, { method: "DELETE" }, user);
   };
 
   const toggleSubscription = async (listId: string) => {
@@ -158,7 +158,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setSubscribedListIds(newSubs);
     persistentStorage.set("my_subscribed_lists", JSON.stringify(newSubs));
-    await fetchAPI(`/user/subscriptions`, { method: "POST", body: JSON.stringify({ subscriptions: newSubs }) });
+    await fetchAPI(`/user/subscriptions`, { method: "POST", body: JSON.stringify({ subscriptions: newSubs }) }, user);
   };
 
   const isSubscribed = (listId: string) => subscribedListIds.includes(listId);

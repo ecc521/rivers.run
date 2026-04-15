@@ -6,8 +6,8 @@ export const FLOW_API_URL = import.meta.env.VITE_FLOW_API_URL || "https://flow.r
 /**
  * Authenticated JSON Fetcher for Cloudflare D1 API
  */
-export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-    const user = auth.currentUser;
+export async function fetchAPI(endpoint: string, options: RequestInit = {}, userOverride?: any) {
+    const user = userOverride || auth.currentUser;
     if (!user) {
         // Fallback for public endpoints or if not logged in
         const res = await fetch(`${API_URL}${endpoint}`, options);

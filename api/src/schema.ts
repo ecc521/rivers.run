@@ -51,7 +51,18 @@ export const CommunityListSchema = z.object({
   title: requiredString(100),
   description: limitString(5000),
   author: requiredString(100),
-  isPublished: z.boolean().optional()
+  isPublished: z.boolean().optional(),
+  rivers: z.array(z.object({
+      id: z.string(),
+      order: z.number().int(),
+      gaugeId: z.string().optional().nullable(),
+      min: z.number().optional().nullable(),
+      max: z.number().optional().nullable(),
+      units: z.string().optional().nullable(),
+      customMin: z.number().optional().nullable(),
+      customMax: z.number().optional().nullable(),
+      customUnits: z.enum(["cfs", "ft", "cms", "m"]).optional().nullable()
+  })).optional()
 });
 
 // NEW: Subscriptions validation

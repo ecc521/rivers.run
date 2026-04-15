@@ -89,21 +89,21 @@ export default function RiverEditor() {
       setLoading(true);
       try {
         if (isReviewMode) {
-           const suggestion = await fetchAPI(`/admin/queue/${queueId}`);
+           const suggestion = await fetchAPI(`/admin/queue/${queueId}`, {}, user);
            const proposed = suggestion.proposed_changes;
            proposed.queueId = suggestion.suggestion_id; 
            setProposedData(proposed);
            syncInputs(proposed);
            
            try {
-             const live = await fetchAPI(`/rivers/${proposed.id}`);
+             const live = await fetchAPI(`/rivers/${proposed.id}`, {}, user);
              setLiveData(live);
            } catch {
              console.log("No existing live data for this suggestion.");
            }
          }
          else {
-            const live = await fetchAPI(`/rivers/${riverId}`);
+            const live = await fetchAPI(`/rivers/${riverId}`, {}, user);
             setLiveData(live);
             syncInputs(live);
          }
@@ -250,7 +250,7 @@ export default function RiverEditor() {
       await fetchAPI(endpoint, {
         method,
         body: JSON.stringify(finalObj)
-      });
+      }, user);
       
       await alert(isAdminPublish ? "Saved successfully!" : "Submitted successfully!");
       
@@ -287,7 +287,7 @@ export default function RiverEditor() {
                   admin_overrides: finalObj,
                   admin_notes: "Approved via Web Editor"
               })
-          });
+          }, user);
           
           await alert("Successfully approved!");
           navigate("/admin");
@@ -307,7 +307,7 @@ export default function RiverEditor() {
           await fetchAPI(`/admin/queue/${proposedData.queueId}/resolve`, {
               method: "POST",
               body: JSON.stringify({ action: "reject" })
-          });
+          }, user);
           await alert("Submission completely rejected.");
           navigate("/admin");
       } catch (e: unknown) {
@@ -323,7 +323,7 @@ export default function RiverEditor() {
 
       try {
           setSaving(true);
-          await fetchAPI(`/rivers/${riverData.id}`, { method: "DELETE" });
+          await fetchAPI(`/rivers/${riverData.id}`, { method: "DELETE" }, user);
           await alert("River permanently deleted.");
           navigate("/admin");
       } catch (e: unknown) {
