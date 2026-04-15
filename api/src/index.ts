@@ -8,7 +8,7 @@ import {
     SubscriptionPayloadSchema, AdminResolutionSchema,
     RiverSchema
 } from "./schema";
-import { firebaseAuthMiddleware, requireModerator, requireAdmin } from "./auth";
+import { firebaseAuthMiddleware, requireModerator, requireAdmin, optionalFirebaseAuthMiddleware } from "./auth";
 
 type Bindings = {
   DB: D1Database;
@@ -37,9 +37,9 @@ app.get('/docs', apiReference({
     }
 }));
 
-// Generous CORS to permit both rivers.run and dev variants
+// Generous CORS to permit both rivers.run, apps, and dev variants
 app.use("*", cors({
-    origin: ["https://rivers.run", "https://beta.rivers.run", "http://localhost:5173", "http://localhost:3000"],
+    origin: "*",
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"]
 }));
@@ -111,6 +111,7 @@ app.openapi(getRiverRoute, async (c) => {
 });
 
 const deleteRiverRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
     method: 'delete',
     path: '/rivers/{id}',
     summary: 'Delete a river',
@@ -123,13 +124,14 @@ const deleteRiverRoute = createRoute({
     }
 });
 
-app.openapi(deleteRiverRoute, firebaseAuthMiddleware, requireAdmin, async (c) => {
+app.openapi(deleteRiverRoute, async (c) => {
     const id = c.req.param("id");
     await c.env.DB.prepare("DELETE FROM rivers WHERE id = ?").bind(id).run();
     return c.json({ success: true });
 });
 
 const updateRiverRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireModerator, checkPayloadSize],
     method: 'put',
     path: '/rivers/{id}',
     summary: 'Update or create a river',
@@ -147,7 +149,7 @@ const updateRiverRoute = createRoute({
 });
 
 // 2. Direct Admin Edit Wrapper with Delta Patches
-app.openapi(updateRiverRoute, firebaseAuthMiddleware, requireModerator, checkPayloadSize, async (c) => {
+app.openapi(updateRiverRoute, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
     
@@ -211,36 +213,43 @@ app.openapi(updateRiverRoute, firebaseAuthMiddleware, requireModerator, checkPay
 });
 
 const suggestRiverRoute = createRoute({
+    middleware: [optionalFirebaseAuthMiddleware, checkPayloadSize],
     method: 'post',
     path: '/rivers/{id}/suggest',
     summary: 'Submit a correction suggestion',
-    security: [{ bearerAuth: [] }],
+    security: [{ bearerAuth: [] }, {}],
     request: {
         params: z.object({ id: z.string() }),
         body: { content: { 'application/json': { schema: RiverEditorPayload } } }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Suggestion submitted' },
-        401: { description: 'Unauthorized' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Suggestion submitted' }
     }
 });
 
 // 3. User Suggestions (Review Queue)
-app.openapi(suggestRiverRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+app.openapi(suggestRiverRoute, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
     
+    let authorId = user.user_id;
+    if (authorId === "anonymous") {
+        const ip = c.req.header("CF-Connecting-IP") || "Unknown IP";
+        authorId = `IP: ${ip}`;
+    }
+
     const body = await c.req.json();
     const validated = RiverEditorPayload.parse(body);
 
     await c.env.DB.prepare(`
         INSERT INTO river_suggestions (river_id, suggested_by, proposed_changes, status, created_at) VALUES (?, ?, ?, 'pending', ?)
-    `).bind(id, user.user_id, JSON.stringify(validated), Math.floor(Date.now() / 1000)).run();
+    `).bind(id, authorId, JSON.stringify(validated), Math.floor(Date.now() / 1000)).run();
 
     return c.json({ success: true });
 });
 
 const getAdminQueueRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireModerator],
     method: 'get',
     path: '/admin/queue',
     summary: 'Fetch pending review queue',
@@ -253,12 +262,13 @@ const getAdminQueueRoute = createRoute({
 });
 
 // 4. Admin Queue Fetch
-app.openapi(getAdminQueueRoute, firebaseAuthMiddleware, requireModerator, async (c) => {
+app.openapi(getAdminQueueRoute, async (c) => {
     const { results } = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE status = 'pending' ORDER BY created_at DESC").all();
     return c.json(results);
 });
 
 const getAdminSuggestionRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireModerator],
     method: 'get',
     path: '/admin/queue/{id}',
     summary: 'Get a specific pending suggestion',
@@ -270,7 +280,7 @@ const getAdminSuggestionRoute = createRoute({
     }
 });
 
-app.openapi(getAdminSuggestionRoute, firebaseAuthMiddleware, requireModerator, async (c) => {
+app.openapi(getAdminSuggestionRoute, async (c) => {
     const id = c.req.param("id");
     const result = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE suggestion_id = ?").bind(id).first();
     if (!result) return c.json({ error: "Suggestion not found" }, 404);
@@ -282,6 +292,7 @@ app.openapi(getAdminSuggestionRoute, firebaseAuthMiddleware, requireModerator, a
 });
 
 const getAdminLogsRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
     method: 'get',
     path: '/admin/logs',
     summary: 'Fetch admin audit logs',
@@ -291,12 +302,13 @@ const getAdminLogsRoute = createRoute({
     }
 });
 
-app.openapi(getAdminLogsRoute, firebaseAuthMiddleware, requireAdmin, async (c) => {
+app.openapi(getAdminLogsRoute, async (c) => {
     const { results } = await c.env.DB.prepare("SELECT * FROM river_audit_log ORDER BY changed_at DESC LIMIT 50").all();
     return c.json(results);
 });
 
 const resolveSuggestionRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireModerator, checkPayloadSize],
     method: 'post',
     path: '/admin/queue/{id}/resolve',
     summary: 'Approve or reject a suggestion',
@@ -311,7 +323,7 @@ const resolveSuggestionRoute = createRoute({
 });
 
 // 5. Admin Resolution of Suggestions
-app.openapi(resolveSuggestionRoute, firebaseAuthMiddleware, requireModerator, checkPayloadSize, async (c) => {
+app.openapi(resolveSuggestionRoute, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
     const body = await c.req.json();
@@ -334,7 +346,6 @@ app.openapi(resolveSuggestionRoute, firebaseAuthMiddleware, requireModerator, ch
     const batch = [];
     batch.push(c.env.DB.prepare("UPDATE river_suggestions SET status = 'resolved' WHERE suggestion_id = ?").bind(id));
     
-    // For simplicity, we assume an UPDATE here
     const tagsStr = JSON.stringify(validated.tags || []);
     const gaugesStr = JSON.stringify(validated.gauges || []);
     const accessStr = JSON.stringify(validated.accessPoints || []);
@@ -346,16 +357,40 @@ app.openapi(resolveSuggestionRoute, firebaseAuthMiddleware, requireModerator, ch
          validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr, suggestion.river_id
     ));
 
-    // Log the diff
+    // Calculate strict JSON delta
+    const original = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(suggestion.river_id).first();
+    let oldPayload = {};
+    if (original) {
+         oldPayload = {
+              ...original,
+              tags: typeof original.tags === 'string' ? JSON.parse(original.tags) : [],
+              gauges: typeof original.gauges === 'string' ? JSON.parse(original.gauges) : [],
+              accessPoints: typeof original.accessPoints === 'string' ? JSON.parse(original.accessPoints) : []
+         };
+    }
+
+    const diff_patch: Record<string, { old: any, new: any }> = {};
+    for (const key of Object.keys(validated)) {
+         const k = key as keyof typeof validated;
+         if (JSON.stringify(validated[k]) !== JSON.stringify((oldPayload as any)[k])) {
+              diff_patch[key] = { old: (oldPayload as any)[k], new: validated[k] };
+         }
+    }
+
+    // Scrub IP from the publicly-accessible history record
+    const cleanAuthor = suggestion.suggested_by.startsWith("IP:") ? "Anonymous Paddler" : suggestion.suggested_by;
+
+    // Log the math diff
     batch.push(c.env.DB.prepare(`
         INSERT INTO river_audit_log (river_id, action_type, changed_by, diff_patch, changed_at) VALUES (?, 'UPDATE', ?, ?, ?)
-    `).bind(suggestion.river_id, user.user_id, JSON.stringify({ note: admin_notes, type: "approval", original_author: suggestion.suggested_by }), Math.floor(Date.now() / 1000)));
+    `).bind(suggestion.river_id, user.user_id, JSON.stringify({ diff: diff_patch, note: admin_notes, type: "approval", original_author: cleanAuthor }), Math.floor(Date.now() / 1000)));
 
     await c.env.DB.batch(batch);
     return c.json({ success: true, message: "Suggestion merged successfully." });
 });
 
 const getUserSettingsRoute = createRoute({
+    middleware: [firebaseAuthMiddleware],
     method: 'get',
     path: '/user/settings',
     summary: 'Get user profile and settings',
@@ -366,7 +401,7 @@ const getUserSettingsRoute = createRoute({
 });
 
 // 6. User Profiles & Settings
-app.openapi(getUserSettingsRoute, firebaseAuthMiddleware, async (c) => {
+app.openapi(getUserSettingsRoute, async (c) => {
     const user = c.get("user");
     const result = await c.env.DB.prepare(`
         SELECT display_name, email, notifications_enabled, notifications_none_until, notifications_time_of_day, alerts_review_queue, settings_json
@@ -403,6 +438,7 @@ app.openapi(getUserSettingsRoute, firebaseAuthMiddleware, async (c) => {
 });
 
 const updateUserSettingsRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, checkPayloadSize],
     method: 'patch',
     path: '/user/settings',
     summary: 'Update user settings',
@@ -413,7 +449,7 @@ const updateUserSettingsRoute = createRoute({
     }
 });
 
-app.openapi(updateUserSettingsRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+app.openapi(updateUserSettingsRoute, async (c) => {
     const user = c.get("user");
     const body = await c.req.json();
     const validated = UserSettingsSchema.parse(body);
@@ -462,6 +498,7 @@ app.openapi(updateUserSettingsRoute, firebaseAuthMiddleware, checkPayloadSize, a
 });
 
 const deleteUserRoute = createRoute({
+    middleware: [firebaseAuthMiddleware],
     method: 'delete',
     path: '/user',
     summary: 'Delete your own account',
@@ -471,13 +508,14 @@ const deleteUserRoute = createRoute({
     }
 });
 
-app.openapi(deleteUserRoute, firebaseAuthMiddleware, async (c) => {
+app.openapi(deleteUserRoute, async (c) => {
     const user = c.get("user");
     await c.env.DB.prepare("DELETE FROM users WHERE user_id = ?").bind(user.user_id).run();
     return c.json({ success: true });
 });
 
 const getListsRoute = createRoute({
+    middleware: [firebaseAuthMiddleware],
     method: 'get',
     path: '/lists',
     summary: 'Get your community lists',
@@ -488,7 +526,7 @@ const getListsRoute = createRoute({
 });
 
 // 7. Lists (Favorites & Community)
-app.openapi(getListsRoute, firebaseAuthMiddleware, async (c) => {
+app.openapi(getListsRoute, async (c) => {
     const user = c.get("user");
     const { results } = await c.env.DB.prepare(`
         SELECT l.*, json_group_array(
@@ -517,6 +555,7 @@ app.openapi(getListsRoute, firebaseAuthMiddleware, async (c) => {
 });
 
 const createListRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, checkPayloadSize],
     method: 'post',
     path: '/lists',
     summary: 'Create a new list',
@@ -527,7 +566,7 @@ const createListRoute = createRoute({
     }
 });
 
-app.openapi(createListRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+app.openapi(createListRoute, async (c) => {
     const user = c.get("user");
     const body = await c.req.json();
     const validated = CommunityListSchema.parse(body);
@@ -560,6 +599,7 @@ app.openapi(createListRoute, firebaseAuthMiddleware, checkPayloadSize, async (c)
 });
 
 const updateListRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, checkPayloadSize],
     method: 'put',
     path: '/lists/{id}',
     summary: 'Update an existing list',
@@ -573,7 +613,7 @@ const updateListRoute = createRoute({
     }
 });
 
-app.openapi(updateListRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+app.openapi(updateListRoute, async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
     const body = await c.req.json();
@@ -581,7 +621,8 @@ app.openapi(updateListRoute, firebaseAuthMiddleware, checkPayloadSize, async (c)
     
     // Check ownership
     const existing = await c.env.DB.prepare("SELECT owner_id FROM community_lists WHERE id = ?").bind(id).first();
-    if (!existing || existing.owner_id !== user.user_id) return c.json({ error: "Forbidden" }, 403);
+    if (!existing) return c.json({ error: "Not Found" }, 404);
+    if (existing.owner_id !== user.user_id && user.d1Role !== 'admin') return c.json({ error: "Forbidden" }, 403);
 
     const queries = [
         c.env.DB.prepare(`
@@ -613,6 +654,7 @@ app.openapi(updateListRoute, firebaseAuthMiddleware, checkPayloadSize, async (c)
 });
 
 const deleteListRoute = createRoute({
+    middleware: [firebaseAuthMiddleware],
     method: 'delete',
     path: '/lists/{id}',
     summary: 'Delete a list',
@@ -623,12 +665,13 @@ const deleteListRoute = createRoute({
     }
 });
 
-app.openapi(deleteListRoute, firebaseAuthMiddleware, async (c) => {
+app.openapi(deleteListRoute, async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
     
     const existing = await c.env.DB.prepare("SELECT owner_id FROM community_lists WHERE id = ?").bind(id).first();
-    if (!existing || existing.owner_id !== user.user_id) return c.json({ error: "Forbidden" }, 403);
+    if (!existing) return c.json({ error: "Not Found" }, 404);
+    if (existing.owner_id !== user.user_id && user.d1Role !== 'admin') return c.json({ error: "Forbidden" }, 403);
     
     await c.env.DB.prepare("DELETE FROM community_lists WHERE id = ?").bind(id).run();
     return c.json({ success: true });
@@ -676,6 +719,7 @@ app.openapi(getListByIdRoute, async (c) => {
 });
 
 const getSubscriptionsRoute = createRoute({
+    middleware: [firebaseAuthMiddleware],
     method: 'get',
     path: '/user/subscriptions',
     summary: 'Get your active list subscriptions',
@@ -685,13 +729,14 @@ const getSubscriptionsRoute = createRoute({
     }
 });
 
-app.openapi(getSubscriptionsRoute, firebaseAuthMiddleware, async (c) => {
+app.openapi(getSubscriptionsRoute, async (c) => {
     const user = c.get("user");
     const { results } = await c.env.DB.prepare("SELECT list_id FROM user_subscriptions WHERE user_id = ?").bind(user.user_id).all();
     return c.json({ subscriptions: results.map(r => r.list_id) });
 });
 
 const updateSubscriptionsRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, checkPayloadSize],
     method: 'post',
     path: '/user/subscriptions',
     summary: 'Bulk update subscriptions',
@@ -702,7 +747,7 @@ const updateSubscriptionsRoute = createRoute({
     }
 });
 
-app.openapi(updateSubscriptionsRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+app.openapi(updateSubscriptionsRoute, async (c) => {
     const user = c.get("user");
     const body = await c.req.json();
     const { subscriptions } = SubscriptionPayloadSchema.parse(body);
@@ -714,6 +759,43 @@ app.openapi(updateSubscriptionsRoute, firebaseAuthMiddleware, checkPayloadSize, 
     }
     
     await c.env.DB.batch(batch);
+    return c.json({ success: true });
+});
+
+// 8. Admin Controls (Bans)
+const banUserRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
+    method: 'put',
+    path: '/admin/users/{id}/ban',
+    summary: 'Ban a user',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string() }) },
+    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Banned' } }
+});
+
+app.openapi(banUserRoute, async (c) => {
+    const id = c.req.param("id");
+    const admin = c.get("user");
+    await c.env.DB.prepare("UPDATE users SET role = 'banned' WHERE user_id = ?").bind(id).run();
+    await c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('BAN_USER', admin.user_id, id, 'Banned by admin panel', Math.floor(Date.now() / 1000)).run();
+    return c.json({ success: true });
+});
+
+const unbanUserRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
+    method: 'put',
+    path: '/admin/users/{id}/unban',
+    summary: 'Unban a user',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string() }) },
+    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Unbanned' } }
+});
+
+app.openapi(unbanUserRoute, async (c) => {
+    const id = c.req.param("id");
+    const admin = c.get("user");
+    await c.env.DB.prepare("UPDATE users SET role = 'user' WHERE user_id = ?").bind(id).run();
+    await c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('UNBAN_USER', admin.user_id, id, 'Unbanned by admin panel', Math.floor(Date.now() / 1000)).run();
     return c.json({ success: true });
 });
 

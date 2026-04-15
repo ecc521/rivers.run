@@ -13,10 +13,12 @@
     "@scalar/hono-api-reference": "^0.10.7",
     "firebase-admin": "^13.8.0",
     "hono": "^4.12.14",
+    "nodemailer": "^8.0.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260415.1",
+    "@types/nodemailer": "^8.0.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.4",
     "wrangler": "^4.83.0"

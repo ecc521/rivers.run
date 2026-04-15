@@ -1,5 +1,6 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { apiReference } from '@scalar/hono-api-reference';
+import { cors } from "hono/cors";
 import { usgsProvider } from "./services/usgs";
 import { nwsProvider } from "./services/nws";
 import { canadaProvider } from "./services/canada";
@@ -23,6 +24,12 @@ const providers: Record<string, GaugeProvider> = {
 };
 
 const app = new OpenAPIHono<{ Bindings: Env }>();
+
+app.use("*", cors({
+    origin: "*",
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"]
+}));
 
 /**
  * PARSERS
@@ -75,7 +82,7 @@ const recentRoute = createRoute({
 app.openapi(recentRoute, async (c) => {
     const object = await c.env.FLOW_STORAGE.get("flowdata.json");
     if (!object) return c.json({ error: "Data not found" }, 404);
-    return new Response(object.body, { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    return new Response(object.body, { headers: { "Content-Type": "application/json" } });
 });
 
 // 3. Latest Readings (Single latest for each gauge)

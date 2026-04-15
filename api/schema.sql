@@ -146,3 +146,15 @@ CREATE TABLE users (
     alerts_review_queue INTEGER DEFAULT 0,
     updated_at INTEGER NOT NULL
 );
+
+-- ==========================================
+-- 7. ADMIN AUDIT TRAIL
+-- ==========================================
+CREATE TABLE admin_audit_log (
+    log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action_type TEXT NOT NULL,   -- e.g., 'BAN_USER', 'UNBAN_USER'
+    admin_id TEXT NOT NULL,      -- Auth UID of admin
+    target_id TEXT,              -- Auth UID of the affected user
+    reason TEXT,
+    created_at INTEGER NOT NULL
+);

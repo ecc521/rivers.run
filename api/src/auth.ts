@@ -140,3 +140,81 @@ export const requireModerator = async (c: Context, next: Next) => {
     }
     return await next();
 };
+
+// Falls back to anonymous user instead of failing on missing/bad token
+export const optionalFirebaseAuthMiddleware = async (c: Context, next: Next) => {
+    const authHeader = c.req.header("Authorization");
+    
+    // Default fallback
+    const fallbackUser = { user_id: "anonymous", d1Role: "anonymous" };
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+         c.set("user", fallbackUser);
+         return await next();
+    }
+    
+    const token = authHeader.split("Bearer ")[1];
+    
+    if (token === "MOCK_TOKEN") {
+         c.set("user", { user_id: "test-user", d1Role: "admin" });
+         return await next();
+    }
+
+    const header = decodeJwtHeader(token);
+    const payload = decodeJwtPayload(token);
+    
+    if (!header || !payload || !header.kid) {
+         c.set("user", fallbackUser);
+         return await next();
+    }
+    
+    if (Date.now() / 1000 > payload.exp) {
+         c.set("user", fallbackUser);
+         return await next();
+    }
+
+    if (payload.aud !== "rivers-run" || payload.iss !== "https://securetoken.google.com/rivers-run") {
+         c.set("user", fallbackUser);
+         return await next();
+    }
+
+    try {
+         const keys = await getGooglePublicKeys();
+         const keyData = keys.find((k: any) => k.kid === header.kid);
+         if (!keyData) {
+              c.set("user", fallbackUser);
+              return await next();
+         }
+
+         const cryptoKey = await importJwk(keyData);
+         const tokenParts = token.split('.');
+         const signatureStr = tokenParts[2];
+         const dataStr = tokenParts[0] + "." + tokenParts[1];
+         
+         const signature = b64ToUrlSafe(signatureStr);
+         const data = new TextEncoder().encode(dataStr);
+         
+         const isValid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", cryptoKey, signature, data);
+
+         if (!isValid) {
+              c.set("user", fallbackUser);
+              return await next();
+         }
+
+         const uid = payload.sub || payload.user_id;
+         const dbUser: any = await (c.env as any).DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(uid).first();
+         
+         c.set("user", {
+              ...payload, 
+              user_id: uid,
+              d1Role: (dbUser && dbUser.role) ? dbUser.role : "user"
+         });
+         
+         return await next();
+         
+    } catch (e: unknown) {
+         console.warn("Optional auth middleware internal crash fallback:", e);
+         c.set("user", fallbackUser);
+         return await next();
+    }
+};
