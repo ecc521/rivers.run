@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { fetchAPI } from '../../services/api';
 import { useModal } from '../../context/ModalContext';
 
 export default function SystemAdminTab() {
-  const { alert, confirm } = useModal();
-  const [syncingGauges, setSyncingGauges] = useState(false);
-  const [syncingRegistry, setSyncingRegistry] = useState(false);
+  const { alert } = useModal();
   const [logs, setLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
 
   async function fetchLogs() {
     setLoadingLogs(true);
     try {
-      const q = query(collection(db, "admin_logs"), orderBy("timestamp", "desc"), limit(50));
-      const snap = await getDocs(q);
-      setLogs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const results = await fetchAPI("/admin/logs");
+      setLogs(results.map((log: any) => ({
+          id: log.log_id,
+          adminUid: log.changed_by,
+          action: log.action_type,
+          targetUid: log.river_id,
+          timestamp: log.changed_at * 1000
+      })));
     } catch (e: any) {
       console.error("Failed to fetch logs", e.message);
     }
@@ -24,33 +25,11 @@ export default function SystemAdminTab() {
   }
 
   const handleManualPull = async () => {
-    if (!(await confirm("Force immediate resync of Gauge flows and River data DB snapshot? Use this if you just edited or deleted a river and want to bypass the 15 minute delay. This is safe and non-destructive."))) return;
-    setSyncingGauges(true);
-    try {
-      const functions = getFunctions();
-      const fn = httpsCallable(functions, "manualSyncRivers", { timeout: 300000 });
-      const res = await fn();
-      await alert(`Success: ${(res.data as any)?.message}`);
-      fetchLogs();
-    } catch (e: any) {
-      await alert(`Error: ${e.message}`);
-    }
-    setSyncingGauges(false);
+    await alert("Manual DB Refresh is currently automated via Cloudflare Cron and D1 Live Fetching. Manual trigger temporarily disabled.");
   };
 
   const handleManualRegistry = async () => {
-    if (!(await confirm("Warning: Recompiling the US/Canada gauge registry takes several minutes and should only be explicitly invoked to restore missing standalone gauges. Proceed?"))) return;
-    setSyncingRegistry(true);
-    try {
-      const functions = getFunctions();
-      const fn = httpsCallable(functions, "manualSyncGaugeRegistry", { timeout: 540000 });
-      await fn();
-      await alert("Gauge Registry updated!");
-      fetchLogs();
-    } catch (e: any) {
-      await alert(`Error: ${e.message}`);
-    }
-    setSyncingRegistry(false);
+    await alert("Gauge Registry recompilation is currently handled via the api-flow Worker Cron. Manual trigger temporarily disabled.");
   };
 
   useEffect(() => {
@@ -68,17 +47,17 @@ export default function SystemAdminTab() {
           <ResyncActionCard
             title="Database Refresh"
             description="Updates the processed JSON snapshots for rivers and lists."
-            buttonText={syncingGauges ? "Synchronizing..." : "Full Database Resync"}
+            buttonText="Full Database Resync"
             onClick={handleManualPull}
-            disabled={syncingGauges}
+            disabled={false}
             color="var(--primary)"
           />
           <ResyncActionCard
             title="Search Registry"
             description="Recompiles the master list of all ~6.7k search-ready gauges."
-            buttonText={syncingRegistry ? "Processing..." : "Compile Gauge Registry"}
+            buttonText="Compile Gauge Registry"
             onClick={handleManualRegistry}
-            disabled={syncingRegistry}
+            disabled={false}
             color="var(--danger)"
           />
         </div>

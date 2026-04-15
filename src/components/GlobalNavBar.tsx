@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { signOut, deleteUser } from "firebase/auth";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { AuthModal } from "./AuthModal";
-import { doc, deleteDoc } from "firebase/firestore";
+import { fetchAPI } from "../services/api";
 import { useModal } from "../context/ModalContext";
 
 const GlobalNavBar: React.FC = () => {
@@ -54,7 +54,7 @@ const GlobalNavBar: React.FC = () => {
       // Second confirmation
       if (await confirm("FINAL WARNING: Click OK to permanently delete your account and all associated data.")) {
         try {
-          await deleteDoc(doc(db, "user", user.uid));
+          await fetchAPI("/user", { method: "DELETE" });
           
           await deleteUser(user);
           await alert("Account deleted.");

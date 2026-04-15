@@ -2,8 +2,6 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, initializeAuth, indexedDBLocalPersistence } from "firebase/auth";
 import { Capacitor } from "@capacitor/core";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
-import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 export const firebaseConfig = {
   apiKey: "AIzaSyA8hvftc7idpGNcj5I9gvOqk-DQrTrkQco",
@@ -28,13 +26,4 @@ export const auth = Capacitor.isNativePlatform()
   ? initializeAuth(app, { persistence: indexedDBLocalPersistence }) 
   : getAuth(app);
 
-// Explcitly override standard getFirestore to enforce Multi-Tab offline IndexedDb persistence!
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-});
-export const functions = getFunctions(app, "us-central1");
 
-if (import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true') {
-  console.info("Firebase Emulator mode natively detected! Intercepting Cloud Functions offline.");
-  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
-}

@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { fetchAPI } from "../services/api";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css"; 
 import { useAuth } from "../context/AuthContext";
@@ -90,33 +89,27 @@ export default function RiverEditor() {
       setLoading(true);
       try {
         if (isReviewMode) {
-           const d = await getDoc(doc(db, "reviewQueue", queueId as string));
-           if (d.exists()) {
-              const proposed = d.data();
-              proposed.queueId = d.id; 
-              setProposedData(proposed);
-              syncInputs(proposed);
-              
-               const liveD = await getDoc(doc(db, "rivers", proposed.id));
-               if (liveD.exists()) {
-                  setLiveData(liveD.data());
-               }
-            } else {
-               await alert("That review queue item no longer exists or was already processed.");
-               navigate("/admin");
-            }
+           const suggestion = await fetchAPI(`/admin/queue/${queueId}`);
+           const proposed = suggestion.proposed_changes;
+           proposed.queueId = suggestion.suggestion_id; 
+           setProposedData(proposed);
+           syncInputs(proposed);
+           
+           try {
+             const live = await fetchAPI(`/rivers/${proposed.id}`);
+             setLiveData(live);
+           } catch {
+             console.log("No existing live data for this suggestion.");
+           }
          }
          else {
-            const d = await getDoc(doc(db, "rivers", riverId as string));
-            if (d.exists()) {
-               const live = d.data();
-               setLiveData(live);
-               syncInputs(live);
-            }
+            const live = await fetchAPI(`/rivers/${riverId}`);
+            setLiveData(live);
+            syncInputs(live);
          }
        } catch (e: unknown) {
          if (e instanceof Error) console.error("Error loading river", e.message);
-         await alert("Failed to load river data");
+         // 404 is fine for new rivers or missing suggestions
        }
        setLoading(false);
      }
@@ -250,15 +243,18 @@ export default function RiverEditor() {
           return;
       }
 
-      const targetCollection = (isAdmin && !forceQueue) ? "rivers" : "reviewQueue";
-      // By appending the stable random ID, we bypass Firebase permission blocks where users overwrite each other's queue drafts!
-      const documentId = (!isAdmin || forceQueue) && !isNew ? `${finalObj.id}-${stableRandomId}` : finalObj.id;
+      const isAdminPublish = isAdmin && !forceQueue;
+      const endpoint = isAdminPublish ? `/rivers/${finalObj.id}` : `/rivers/${finalObj.id}/suggest`;
+      const method = isAdminPublish ? "PUT" : "POST";
 
-      await setDoc(doc(db, targetCollection, documentId), finalObj);
+      await fetchAPI(endpoint, {
+        method,
+        body: JSON.stringify(finalObj)
+      });
       
-      await alert((isAdmin && !forceQueue) ? "Saved successfully!" : "Submitted successfully!");
+      await alert(isAdminPublish ? "Saved successfully!" : "Submitted successfully!");
       
-      if (targetCollection === "reviewQueue") {
+      if (!isAdminPublish) {
          if (isAdmin) navigate("/admin");
          else navigate("/");
       } else {
@@ -284,8 +280,14 @@ export default function RiverEditor() {
               return;
           }
           
-          await setDoc(doc(db, "rivers", finalObj.id), finalObj);
-          await deleteDoc(doc(db, "reviewQueue", proposedData.queueId));
+          await fetchAPI(`/admin/queue/${proposedData.queueId}/resolve`, {
+              method: "POST",
+              body: JSON.stringify({ 
+                  action: "approve", 
+                  admin_overrides: finalObj,
+                  admin_notes: "Approved via Web Editor"
+              })
+          });
           
           await alert("Successfully approved!");
           navigate("/admin");
@@ -302,7 +304,10 @@ export default function RiverEditor() {
       
       try {
           setSaving(true);
-          await deleteDoc(doc(db, "reviewQueue", proposedData.queueId));
+          await fetchAPI(`/admin/queue/${proposedData.queueId}/resolve`, {
+              method: "POST",
+              body: JSON.stringify({ action: "reject" })
+          });
           await alert("Submission completely rejected.");
           navigate("/admin");
       } catch (e: unknown) {
@@ -318,10 +323,7 @@ export default function RiverEditor() {
 
       try {
           setSaving(true);
-          const { getFunctions, httpsCallable } = await import("firebase/functions");
-          const functions = getFunctions();
-          const fn = httpsCallable(functions, "deleteLiveRiver");
-          await fn({ riverId: riverData.id });
+          await fetchAPI(`/rivers/${riverData.id}`, { method: "DELETE" });
           await alert("River permanently deleted.");
           navigate("/admin");
       } catch (e: unknown) {

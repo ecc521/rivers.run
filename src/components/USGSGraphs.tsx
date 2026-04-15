@@ -107,13 +107,30 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
   const [activeGaugeId, setActiveGaugeId] = useState<string | undefined>(river.gauges?.[0]?.id);
   const rawData = activeGaugeId && river.gaugeData ? river.gaugeData[activeGaugeId] || [] : [];
 
+  const hasForecastData = useMemo(() => {
+    return rawData.some((d: any) => d.cfsForecast != null || d.ftForecast != null || d.forecast === true);
+  }, [rawData]);
+
+  const [showForecast, setShowForecast] = useState<boolean>(true);
+
   const [timeRange, setTimeRange] = useState<number>(3);
   const data = useMemo(() => {
      if (rawData.length === 0) return [];
-     const maxTime = rawData[rawData.length - 1].dateTime;
-     const minTime = maxTime - (timeRange * 24 * 60 * 60 * 1000);
-     return rawData.filter(d => d.dateTime >= minTime);
-  }, [rawData, timeRange]);
+
+     // Find the latest actual reading to use as our "present time" anchor.
+     // This prevents future forecasted points from shifting the historical window forward.
+     let anchorTime = rawData[rawData.length - 1].dateTime;
+     for (let i = rawData.length - 1; i >= 0; i--) {
+       const d = rawData[i];
+       if (d.cfs != null || d.ft != null || d.cms != null || d.m != null || d.temp != null || d.precip != null) {
+         anchorTime = d.dateTime;
+         break;
+       }
+     }
+
+     const minTime = anchorTime - (timeRange * 24 * 60 * 60 * 1000);
+     return rawData.filter(d => d.dateTime >= minTime && (showForecast || d.dateTime <= anchorTime));
+  }, [rawData, timeRange, showForecast]);
 
   const { isDarkMode, isColorBlindMode } = useSettings();
 
@@ -271,9 +288,19 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
                 </div>
             )}
 
+            {/* Forecast Switch */}
+            {!hasNoData && hasForecastData && (
+                <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", backgroundColor: "var(--surface-hover)", marginLeft: "auto" }}>
+                    <button 
+                        onClick={() => setShowForecast(!showForecast)}
+                        style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: showForecast ? "var(--primary)" : "transparent", color: showForecast ? "#fff" : "var(--text)" }}
+                    >Forecast: {showForecast ? "ON" : "OFF"}</button>
+                </div>
+            )}
+
             {/* Time Range Switch */}
             {!hasNoData && (
-                <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", backgroundColor: "var(--surface-hover)", marginLeft: "auto" }}>
+                <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", backgroundColor: "var(--surface-hover)", marginLeft: (!hasNoData && hasForecastData) ? "0" : "auto" }}>
                     <button 
                         onClick={() => setTimeRange(1)}
                         style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: timeRange === 1 ? "var(--primary)" : "transparent", color: timeRange === 1 ? "#fff" : "var(--text)" }}

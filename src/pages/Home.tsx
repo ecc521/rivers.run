@@ -5,8 +5,7 @@ import { SearchOverlay } from "../components/SearchOverlay";
 
 import { useLocation } from "../hooks/useLocation";
 import { useSearchParams, useParams, useLocation as useRouterLocation, useNavigate } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { fetchAPI } from "../services/api";
 import { useRivers } from "../hooks/useRivers";
 import { useLists, type UserList } from "../context/ListsContext";
 import { ListEditorModal } from "../components/ListEditorModal";
@@ -43,15 +42,15 @@ const Home: React.FC = () => {
   useEffect(() => {
      if (isListOverlay && id) {
         const fetchSharedList = async () => {
-           try {
-              const docSnap = await getDoc(doc(db, "community_lists", id));
-              if (docSnap.exists()) {
-                 setSharedList({ id: docSnap.id, ...docSnap.data() } as UserList);
-                 setShowListModal(true);
-              } else {
-                 await alert("This list could not be found. It may have been deleted.");
-                 navigate("/");
-              }
+            try {
+               const data = await fetchAPI(`/lists/${id}`);
+               if (data) {
+                  setSharedList(data as UserList);
+                  setShowListModal(true);
+               } else {
+                  await alert("This list could not be found. It may have been deleted.");
+                  navigate("/");
+               }
            } catch (e) {
               console.error(e);
               navigate("/");
@@ -167,9 +166,8 @@ const Home: React.FC = () => {
         }
 
         try {
-            const snapshot = await getDoc(doc(db, "community_lists", targetListId));
-            if (snapshot.exists()) {
-               const data = snapshot.data();
+            const data = await fetchAPI(`/lists/${targetListId}`);
+            if (data) {
                setSearchQuery((prev) => ({ ...prev, listId: targetListId, listData: data.rivers || [] }));
                setListTitle(data.title);
                // Save it for offline

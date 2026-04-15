@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { RiverData } from "../types/River";
-import { getStorageUrl } from "../utils/storageUrls";
 import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
+import { fetchAPI, fetchFlowData } from "../services/api";
 
 interface UseRiversResult {
   rivers: RiverData[];
@@ -133,38 +133,32 @@ export const useRivers = (): UseRiversResult => {
       }, 15000);
 
       try {
-        const riverDataUrl = getStorageUrl("public/rivers.json");
-        const flowDataUrl = getStorageUrl("public/gauges.json");
-
-        const [riverRes, flowRes] = await Promise.all([
-          fetch(riverDataUrl),
-          fetch(flowDataUrl),
+        const [data, flowData] = await Promise.all([
+          fetchAPI("/rivers"),
+          fetchFlowData()
         ]);
+        
+        let processedData = data;
 
-        if (!riverRes.ok || !riverRes.headers.get("content-type")?.includes("json")) {
-           throw new Error("Failed to fetch valid river data JSON");
-        }
-        let data: RiverData[] = await riverRes.json();
+        // Enrich the rivers with flow data
+        if (flowData) {
+          processedData = data.map((river: any, index: number) => enrichRiver(river, index, flowData));
 
-        // If flow data is ok, enrich the rivers
-        if (flowRes.ok && flowRes.headers.get("content-type")?.includes("json")) {
-          const flowData = await flowRes.json();
-          data = data.map((river: any, index: number) => enrichRiver(river, index, flowData));
-
-          // Create standalone gauges for any gauge present in gauges.json
+          // Create standalone gauges for any gauge present in flow data
           const standaloneGauges: RiverData[] = [];
 
           for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
+              if (gaugeId === "generatedAt") continue;
               const standaloneGauge = buildStandaloneGauge(gaugeId, gaugeData);
               if (standaloneGauge) {
                  standaloneGauges.push(standaloneGauge);
               }
           }
           
-          data = [...data, ...standaloneGauges];
+          processedData = [...processedData, ...standaloneGauges];
         }
 
-        globalRiversCache = data;
+        globalRiversCache = processedData;
         globalLoading = false;
         clearTimeout(timeoutId);
         notifySubscribers();

@@ -82,7 +82,7 @@ export interface RiverData {
   /** Flag used by the map to identify instances that natively just represent standalone gauge sensors instead of actual valid river runs */
   isGauge?: boolean;
   
-  updatedAt?: any; // firestore timestamp
+  updatedAt?: number; // Unix timestamp
 }
 
 // ------ Gauge Payload Formats ------

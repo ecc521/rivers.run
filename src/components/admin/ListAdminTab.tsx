@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { fetchAPI } from '../../services/api';
 import { useModal } from '../../context/ModalContext';
 
 export default function ListAdminTab() {
@@ -13,9 +12,9 @@ export default function ListAdminTab() {
     if (!adminListId.trim()) return;
     setAdminListLoad(true);
     try {
-      const snap = await getDoc(doc(db, "community_lists", adminListId.trim()));
-      if (snap.exists()) {
-        setAdminListObj({ id: snap.id, ...snap.data() });
+      const data = await fetchAPI(`/lists/${adminListId.trim()}`);
+      if (data) {
+        setAdminListObj(data);
       } else {
         await alert("No list found with that ID.");
         setAdminListObj(null);
@@ -29,10 +28,13 @@ export default function ListAdminTab() {
   const handleUpdateListAdmin = async () => {
     if (!adminListObj) return;
     try {
-      await updateDoc(doc(db, "community_lists", adminListObj.id), {
-        title: adminListObj.title,
-        description: adminListObj.description,
-        isPublished: adminListObj.isPublished
+      await fetchAPI(`/lists/${adminListObj.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          title: adminListObj.title,
+          description: adminListObj.description,
+          isPublished: adminListObj.isPublished
+        })
       });
       await alert("List updated!");
     } catch (e: any) {
@@ -44,7 +46,7 @@ export default function ListAdminTab() {
     if (!adminListObj) return;
     if (await confirm("Delete this list entirely? Cannot be undone.")) {
       try {
-        await deleteDoc(doc(db, "community_lists", adminListObj.id));
+        await fetchAPI(`/lists/${adminListObj.id}`, { method: "DELETE" });
         setAdminListObj(null);
         setAdminListId("");
         await alert("List deleted.");

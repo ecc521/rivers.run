@@ -1,0 +1,23 @@
+name = "api-flow"
+main = "src/index.ts"
+compatibility_date = "2024-04-15"
+compatibility_flags = ["nodejs_compat"]
+
+# 10 Million Requests / month
+# Unbound allows long wall-clock time limit for cron fetch loops
+usage_model = "unbound"
+
+# We strictly bind R2 here isolated from the DB app for clean separation
+[[r2_buckets]]
+binding = "FLOW_STORAGE"
+bucket_name = "flowdata"
+
+# Optional: Bind D1 dynamically if we need to query rivers mapping 
+[[d1_databases]]
+binding = "DB"
+database_name = "rivers-db"
+database_id = "42a7cf9b-9797-4529-ac4f-ecf83f4b2e3c"
+
+# Cron trigger for 15-minute background gauge polling
+[triggers]
+crons = ["*/15 * * * *"]

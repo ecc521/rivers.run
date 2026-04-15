@@ -7,7 +7,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import sonarjs from 'eslint-plugin-sonarjs'
 
 export default defineConfig([
-  globalIgnores(['dist', 'android', 'ios']),
+  globalIgnores(['dist', 'android', 'ios', 'api', 'api-flow', 'functions']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

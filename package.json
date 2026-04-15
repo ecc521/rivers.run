@@ -5,13 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:emulators": "cd functions && npm run build && cd .. && npx firebase-tools emulators:start",
     "build": "tsc -b && vite build",
     "lint": "tsc -b && eslint . && npm run lint:duplication",
     "lint:duplication": "jscpd src",
     "preview": "vite preview",
-    "test": "npm run lint && npm run test:rules",
-    "test:rules": "npx firebase-tools emulators:exec --only firestore \"node --experimental-vm-modules node_modules/jest/bin/jest.js\""
+    "test": "npm run lint"
   },
   "dependencies": {
     "@capacitor-community/in-app-review": "^8.0.0",
@@ -36,16 +34,13 @@
     "react-leaflet": "^5.0.0",
     "react-quill-new": "^3.8.3",
     "react-router-dom": "^7.14.0",
-    "recharts": "^3.8.1",
-    "ui-for-firebase-authentication": "^3.0.0"
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@capacitor/android": "^8.3.0",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/ios": "^8.3.0",
-    "@eslint/js": "^10.0.1",
-    "@firebase/rules-unit-testing": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^25.6.0",
@@ -57,10 +52,8 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "eslint-plugin-sonarjs": "^4.0.2",
     "globals": "^17.4.0",
-    "jest": "^30.3.0",
     "jscpd": "^4.0.9",
     "prettier": "^3.8.2",
-    "ts-jest": "^29.4.9",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.1",
     "vite": "^8.0.8",

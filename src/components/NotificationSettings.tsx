@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../firebase";
+import { fetchAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
 interface NotificationConfig {
   enabled?: boolean;
   noneUntil?: number;
   timeOfDay?: string;
+  reviewQueueAlerts?: boolean;
 }
 
 export const NotificationSettings: React.FC = () => {
@@ -22,36 +22,40 @@ export const NotificationSettings: React.FC = () => {
     if (!user) return;
     const merged = { ...config, ...newProps };
     setConfig(merged);
-    await setDoc(
-      doc(db, "user", user.uid),
-      { notifications: merged, updatedAt: serverTimestamp() },
-      { merge: true },
-    );
+    await fetchAPI("/user/settings", {
+      method: "PATCH",
+      body: JSON.stringify({ notifications: merged })
+    });
   };
 
   useEffect(() => {
     if (!user) return;
     const fetchConfig = async () => {
-      const d = await getDoc(doc(db, "user", user.uid));
-      if (d.exists() && d.data().notifications) {
-        const n = d.data().notifications as NotificationConfig;
-        setConfig(n);
+      try {
+        const settings = await fetchAPI("/user/settings");
+        if (settings && settings.notifications) {
+          const n = settings.notifications as NotificationConfig;
+          setConfig(n);
 
-        // Transform UTC timeOfDay to Local Time Input
-        if (n.timeOfDay) {
-          const [h, m] = n.timeOfDay.split(":").map(Number);
-          const d = new Date();
-          d.setUTCHours(h, m, 0, 0);
-          const localH = String(d.getHours()).padStart(2, "0");
-          const localM = String(d.getMinutes()).padStart(2, "0");
-          setLocalTime(`${localH}:${localM}`);
-        }
+          // Transform UTC timeOfDay to Local Time Input
+          if (n.timeOfDay) {
+            const [h, m] = n.timeOfDay.split(":").map(Number);
+            const d = new Date();
+            d.setUTCHours(h, m, 0, 0);
+            const localH = String(d.getHours()).padStart(2, "0");
+            const localM = String(d.getMinutes()).padStart(2, "0");
+            setLocalTime(`${localH}:${localM}`);
+          }
 
-        if (n.noneUntil && n.noneUntil > Date.now()) {
-          setLocalDate(new Date(n.noneUntil).toISOString().split("T")[0]);
+          if (n.noneUntil && n.noneUntil > Date.now()) {
+            setLocalDate(new Date(n.noneUntil).toISOString().split("T")[0]);
+          }
         }
+      } catch (e) {
+        console.error("Failed to fetch notification settings:", e);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchConfig();
   }, [user]);

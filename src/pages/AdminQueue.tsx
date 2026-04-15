@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, doc, setDoc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { fetchAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useModal } from "../context/ModalContext";
@@ -30,9 +29,8 @@ export default function AdminQueue() {
 
     async function fetchQueue() {
       try {
-        const snap = await getDocs(collection(db, "reviewQueue"));
-        const items = snap.docs.map(doc => ({ ...doc.data(), queueId: doc.id }));
-        setQueue(items);
+        const items = await fetchAPI("/admin/queue");
+        setQueue(items.map((item: any) => ({ ...item, queueId: item.suggestion_id })));
       } catch (err: unknown) {
         if (err instanceof Error) console.error("Failed to fetch queue", err.message);
         await alert("Failed to load review queue. Ensure you have permissions.");
@@ -42,21 +40,22 @@ export default function AdminQueue() {
 
     if (isModerator && user) {
       fetchQueue();
-      // Fetch notification preference from 'user' doc (still stored there for now)
-      getDoc(doc(db, "user", user.uid)).then(d => {
-        if (d.exists()) {
-          setAdminQueueAlerts(!!d.data().notifications?.reviewQueueAlerts);
+      // Fetch notification preference from Cloudflare API
+      fetchAPI("/user/settings").then(settings => {
+        if (settings && settings.notifications) {
+          setAdminQueueAlerts(!!settings.notifications.reviewQueueAlerts);
         }
-      });
+      }).catch(e => console.error("Could not fetch user settings:", e));
     }
   }, [isModerator, user, authLoading, navigate, alert]);
 
   const toggleAdminAlerts = async (val: boolean) => {
     setAdminQueueAlerts(val);
     if (user) {
-      await setDoc(doc(db, "user", user.uid), {
-        notifications: { reviewQueueAlerts: val }
-      }, { merge: true }).catch(e => console.error("Could not explicitly save admin alert pref:", e));
+      await fetchAPI("/user/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ notifications: { reviewQueueAlerts: val } })
+      }).catch(e => console.error("Could not save admin alert pref:", e));
     }
   };
 
