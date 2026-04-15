@@ -9,9 +9,10 @@
     "build": "tsc -b && vite build",
     "lint": "tsc -b && eslint . && npm run lint:duplication",
     "lint:duplication": "jscpd src",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "test": "npm run lint && npm run test:rules",
-    "test:rules": "npx firebase-tools emulators:exec --only firestore \"node --experimental-vm-modules node_modules/jest/bin/jest.js\""
+    "test:rules": "npx firebase-tools emulators:exec --only firestore \"node --experimental-vm-modules node_modules/jest/bin/jest.js\"",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@capacitor-community/in-app-review": "^8.0.0",
@@ -44,6 +45,7 @@
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/ios": "^8.3.0",
+    "@cloudflare/vite-plugin": "^1.32.3",
     "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^5.0.0",
     "@types/jest": "^30.0.0",
@@ -64,6 +66,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.1",
     "vite": "^8.0.8",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "wrangler": "^4.83.0"
   }
 }
