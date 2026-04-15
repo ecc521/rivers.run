@@ -116,32 +116,38 @@ export const ukProvider: GaugeProvider = {
     },
 
     async getSiteListing(siteCodes: string[]): Promise<GaugeSite[]> {
-        const results: GaugeSite[] = [];
-        const CONCURRENCY_LIMIT = 5;
-        let index = 0;
+        const fullListing = await this.getFullSiteListing();
+        const siteSet = new Set(siteCodes);
+        return fullListing.filter(s => siteSet.has(s.id));
+    },
 
-        const worker = async () => {
-            while (index < siteCodes.length) {
-                const stationId = siteCodes[index++];
-                // EA has a specific station JSON
-                const url = `https://environment.data.gov.uk/flood-monitoring/id/stations/${stationId}`;
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok) continue;
-                    const data: any = await res.json();
-                    const item = data.items;
-                    if (item && item.lat && item.long) {
-                        results.push({
-                            id: stationId,
-                            name: item.label || `UK Station ${stationId}`,
-                            lat: item.lat,
-                            lon: item.long
-                        });
-                    }
-                } catch (e) {}
+    async getFullSiteListing(): Promise<GaugeSite[]> {
+        console.log("UK Provider: Fetching full site listing...");
+        const url = "https://environment.data.gov.uk/flood-monitoring/id/stations?parameter=level&parameter=flow";
+        const results: GaugeSite[] = [];
+        
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`UK EA API Error: ${res.status}`);
+            
+            const data: any = await res.json();
+            const items = data.items || [];
+            
+            for (const item of items) {
+                if (item.notation && item.lat && item.long) {
+                    results.push({
+                        id: item.notation,
+                        name: item.label || `UK Station ${item.notation}`,
+                        lat: item.lat,
+                        lon: item.long
+                    });
+                }
             }
-        };
-        await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));
+        } catch (e) {
+            console.error("UK Provider: Full site listing failed", e);
+            throw e; // Bubble up to orchestrator
+        }
+        
         return results;
     }
 };

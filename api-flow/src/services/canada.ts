@@ -176,6 +176,33 @@ export const canadaProvider: GaugeProvider = {
         };
         await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));
         return results;
+    },
+
+    async getFullSiteListing(): Promise<GaugeSite[]> {
+        console.log("Canada Provider: Fetching full site metadata...");
+        const results: GaugeSite[] = [];
+        try {
+            const res = await fetch("https://wateroffice.ec.gc.ca/services/map_data");
+            const data = await res.json() as Record<string, any>;
+            
+            for (const [key, site] of Object.entries(data)) {
+                if (site.real_time !== true) continue;
+                
+                const lat = parseFloat(site.lat || site.latitude);
+                const lon = parseFloat(site.lon || site.longitude);
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    results.push({
+                        id: key,
+                        name: site.name || `Canada Gauge ${key}`,
+                        lat,
+                        lon
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Canada Provider: Failed to fetch site listing", e);
+        }
+        return results;
     }
 };
 

@@ -72,4 +72,10 @@ export interface GaugeProvider {
      * Get a listing of available gauge sites and their coordinates for the given site codes.
      */
     getSiteListing(siteCodes: string[]): Promise<GaugeSite[]>;
+
+    /**
+     * Optional: Get a listing of ALL available gauge sites for this provider.
+     * This is used for periodic registry compilation.
+     */
+    getFullSiteListing?(): Promise<GaugeSite[]>;
 }

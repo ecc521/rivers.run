@@ -9,6 +9,7 @@ import { irelandProvider } from "./services/ireland";
 import { GaugeProvider, GaugeHistory, GaugeReading, GaugeSite, Units } from "./services/provider";
 import { HistorySchema, ReadingSchema, SiteSchema } from "./schema";
 import { toUnitSystem } from "./utils/units";
+import { compileGaugeRegistry } from "./services/gaugeRegistry";
 
 export interface Env {
     FLOW_STORAGE: R2Bucket;
@@ -244,44 +245,6 @@ const gaugeRoute = createRoute({
     }
 });
 
-app.openapi(gaugeRoute, async (c) => {
-    const { prefix, id } = c.req.valid("params");
-    const provider = providers[prefix];
-    if (!provider) return c.json({ error: "Unknown provider" }, 404);
-
-    // Fetch site
-    let site: GaugeSite | null = null;
-    if (provider.capabilities.hasSiteListing) {
-        try {
-            const sites = await provider.getSiteListing([id]);
-            if (sites.length > 0) site = sites[0];
-        } catch (e) {
-            console.error("Failed to fetch site listing", e);
-        }
-    }
-
-    // Fetch history
-    const { units } = c.req.valid("query");
-    let history: GaugeHistory | null = null;
-    try {
-        const endTs = Date.now();
-        const startTs = endTs - (7 * 24 * 60 * 60 * 1000); // Default to past 7 days
-        const historyData = await provider.getHistory([id], startTs, endTs, true);
-        history = historyData[id] || null;
-        if (history) {
-            history.readings = history.readings.map(r => toUnitSystem(r, provider.preferredUnits, units as Units) as GaugeReading);
-        }
-    } catch (e) {
-        console.error("Failed to fetch gauge history", e);
-    }
-
-    if (!site && !history) {
-        return c.json({ error: "Gauge not found or no data available" }, 404);
-    }
-
-    return c.json({ site, history }, { headers: { "Cache-Control": "public, max-age=300" } });
-});
-
 export default {
     fetch: app.fetch,
 
@@ -289,13 +252,57 @@ export default {
      * THE 15-MINUTE GAUGE SCRAPER (CRON)
      */
     async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-        console.log("Starting 15-minute gauge background sync protocol...");
+        console.log(`Starting background sync (Cron: ${event.cron})...`);
 
-        const { results } = await env.DB.prepare("SELECT gauge_id FROM river_gauges").all();
-        if (!results || results.length === 0) return;
+        // Check if we need to recompile the registry (Monthly or if missing)
+        let registryMetadata: Record<string, any> = {};
+        let needsRecompile = event.cron === "0 0 1 * *"; // Monthly trigger
 
-        const allGauges = results.map((r: any) => r.gauge_id).join(",");
-        const grouping = parseGaugesParam(allGauges);
+        try {
+            const registryObject = await env.FLOW_STORAGE.get("gauge_registry.json");
+            if (registryObject) {
+                registryMetadata = await registryObject.json();
+            } else {
+                console.log("Registry missing from R2. Forcing immediate compilation.");
+                needsRecompile = true;
+            }
+        } catch (e) {
+            console.warn("Registry load failed, attempting recompile.", e);
+            needsRecompile = true;
+        }
+
+        if (needsRecompile) {
+            console.log("Triggering Gauge Registry Recompilation (USGS + Canada)...");
+            try {
+                registryMetadata = await compileGaugeRegistry(registryMetadata);
+                await env.FLOW_STORAGE.put("gauge_registry.json", JSON.stringify(registryMetadata), {
+                    httpMetadata: { contentType: "application/json" }
+                });
+                console.log(`Registry recompiled successfully with ${Object.keys(registryMetadata).length} gauges.`);
+            } catch (e) {
+                console.error("CRITICAL: Registry compilation failed.", e);
+            }
+        }
+
+        // 1. Pull gauges from DB (Linked to rivers)
+        const { results: dbResults } = await env.DB.prepare("SELECT gauge_id FROM river_gauges").all();
+        const dbGauges = (dbResults || []).map((r: any) => r.gauge_id);
+
+        // 2. Pull gauges from Static Registry (Searchable discovery gauges)
+        let registryGauges: string[] = [];
+        // registryMetadata is already populated from the compilation check above
+        if (registryMetadata) {
+            registryGauges = Object.keys(registryMetadata);
+        }
+
+        // 3. Merge and Deduplicate
+        const uniqueGauges = Array.from(new Set([...dbGauges, ...registryGauges]));
+        if (uniqueGauges.length === 0) return;
+
+        console.log(`Synchronizing ${uniqueGauges.length} total gauges (${dbGauges.length} DB, ${registryGauges.length} Registry)...`);
+
+        const allGaugesParam = uniqueGauges.join(",");
+        const grouping = parseGaugesParam(allGaugesParam);
 
         const flowData: Record<string, any> = {};
         const endTs = Date.now();
@@ -304,9 +311,21 @@ export default {
         const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
             const provider = providers[prefix];
             if (provider) {
-                const data = await provider.getHistory(ids, startTs, endTs, false);
-                for (const [id, history] of Object.entries(data)) {
-                    flowData[`${prefix}:${id}`] = history;
+                try {
+                    const data = await provider.getHistory(ids, startTs, endTs, false);
+                    for (const [id, history] of Object.entries(data)) {
+                        const fullId = `${prefix}:${id}`;
+                        const h = history as any;
+                        // Inject metadata from registry if available
+                        if (registryMetadata[fullId]) {
+                            h.name = registryMetadata[fullId].name;
+                            h.lat = registryMetadata[fullId].lat;
+                            h.lon = registryMetadata[fullId].lon;
+                        }
+                        flowData[fullId] = h;
+                    }
+                } catch (e) {
+                    console.error(`Fetch failed for provider ${prefix}:`, e);
                 }
             }
         });

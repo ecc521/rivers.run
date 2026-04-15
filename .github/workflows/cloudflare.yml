@@ -18,11 +18,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # 1. Deploy Frontend (Cloudflare Pages/Assets)
+      # --- 1. FRONTEND DEPLOYMENT ---
       - name: Install Frontend dependencies
         run: npm ci
+
+      - name: Lint Frontend
+        run: npm run lint
+
+      - name: Test Frontend
+        run: npm test
+
       - name: Build Frontend
         run: npm run build
+
       - name: Deploy Frontend to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
@@ -30,10 +38,15 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
 
-      # 2. Deploy API Worker
+      # --- 2. API WORKER DEPLOYMENT ---
       - name: Install API dependencies
         run: npm ci
         working-directory: api
+
+      - name: Test API
+        run: npm test
+        working-directory: api
+
       - name: Deploy API to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
@@ -42,10 +55,15 @@ jobs:
           workingDirectory: api
           command: deploy
 
-      # 3. Deploy API Flow Worker
+      # --- 3. API FLOW WORKER DEPLOYMENT ---
       - name: Install API Flow dependencies
         run: npm ci
         working-directory: api-flow
+
+      - name: Test API Flow
+        run: npm test
+        working-directory: api-flow
+
       - name: Deploy API Flow to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:

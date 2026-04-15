@@ -22,6 +22,8 @@ database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
 pattern = "flow.rivers.run"
 custom_domain = true
 
-# Cron trigger for 15-minute background gauge polling
+# Cron triggers for background polling
+# 1. 15-minute gauge polling
+# 2. Monthly full registry recompilation
 [triggers]
-crons = ["*/15 * * * *"]
+crons = ["*/15 * * * *", "0 0 1 * *"]

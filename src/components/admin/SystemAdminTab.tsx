@@ -28,10 +28,6 @@ export default function SystemAdminTab() {
     await alert("Manual DB Refresh is currently automated via Cloudflare Cron and D1 Live Fetching. Manual trigger temporarily disabled.");
   };
 
-  const handleManualRegistry = async () => {
-    await alert("Gauge Registry recompilation is currently handled via the api-flow Worker Cron. Manual trigger temporarily disabled.");
-  };
-
   useEffect(() => {
     fetchLogs();
   }, []);
@@ -43,7 +39,6 @@ export default function SystemAdminTab() {
         <p style={{ marginTop: 0, fontSize: "14px", color: "var(--text-secondary)", marginBottom: '20px' }}>
           These operations force the backend to bypass its cache. They are safe to run but consume server execution time.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: '1fr 1fr', gap: "16px" }}>
           <ResyncActionCard
             title="Database Refresh"
             description="Updates the processed JSON snapshots for rivers and lists."
@@ -51,14 +46,6 @@ export default function SystemAdminTab() {
             onClick={handleManualPull}
             disabled={false}
             color="var(--primary)"
-          />
-          <ResyncActionCard
-            title="Search Registry"
-            description="Recompiles the master list of all ~6.7k search-ready gauges."
-            buttonText="Compile Gauge Registry"
-            onClick={handleManualRegistry}
-            disabled={false}
-            color="var(--danger)"
           />
         </div>
       </div>

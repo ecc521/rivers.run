@@ -100,25 +100,29 @@ export const irelandProvider: GaugeProvider = {
     },
 
     async getSiteListing(siteCodes: string[]): Promise<GaugeSite[]> {
+        const fullListing = await this.getFullSiteListing();
+        const siteSet = new Set(siteCodes);
+        return fullListing.filter(s => siteSet.has(s.id));
+    },
+
+    async getFullSiteListing(): Promise<GaugeSite[]> {
+        console.log("Ireland Provider: Fetching full site listing...");
         const url = "https://waterlevel.ie/geojson/latest/";
         const results: GaugeSite[] = [];
         
         try {
             const res = await fetch(url);
-            if (!res.ok) return results;
+            if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status}`);
             
             const data: any = await res.json();
             const features = data.features || [];
-            
-            const siteSet = new Set(siteCodes);
-            const wantAll = siteCodes.length === 0; // if empty, map all? Optionally.
             
             for (const f of features) {
                 const props = f.properties || {};
                 const id = props.station_ref;
                 const coords = f.geometry?.coordinates || [0, 0];
                 
-                if (id && (wantAll || siteSet.has(id))) {
+                if (id && props.value !== undefined) {
                     results.push({
                         id: id,
                         name: props.station_name || `Ireland Station ${id}`,
@@ -127,7 +131,10 @@ export const irelandProvider: GaugeProvider = {
                     });
                 }
             }
-        } catch (e: unknown) {}
+        } catch (e: unknown) {
+            console.error("Ireland Provider: Full site listing failed", e);
+            throw e;
+        }
         
         return results;
     }

@@ -1,5 +1,13 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite } from './provider';
 
+const states = [
+  "al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl", "ga",
+  "hi", "id", "il", "in", "ia", "ks", "ky", "la", "me", "md", "ma",
+  "mi", "mn", "ms", "mo", "mt", "ne", "nv", "nh", "nj", "nm", "ny",
+  "nc", "nd", "oh", "ok", "or", "pa", "ri", "sc", "sd", "tn", "tx",
+  "ut", "vt", "va", "wa", "wv", "wi", "wy", "pr", "vi"
+];
+
 export function formatGaugeName(name: string): { name: string; section?: string } {
     const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr']);
     const expansions: Record<string, string> = {
@@ -270,6 +278,74 @@ export const usgsProvider: GaugeProvider = {
             }
         }
         return sites;
+    },
+
+    async getFullSiteListing(): Promise<GaugeSite[]> {
+        console.log("USGS Provider: Starting full site discovery crawl...");
+        const gaugeRegistry: Record<string, GaugeSite> = {};
+        
+        let stateIndex = 0;
+        const CONCURRENCY_LIMIT = 5;
+        
+        const worker = async () => {
+            while (stateIndex < states.length) {
+                const state = states[stateIndex++];
+                const url = `https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=${state}&siteStatus=active&siteType=ST&hasDataTypeCd=iv&siteOutput=expanded`;
+                
+                let success = false;
+                let attempts = 0;
+                const MAX_RETRIES = 2;
+                
+                while (!success && attempts <= MAX_RETRIES) {
+                    try {
+                        const res = await fetch(url);
+                        if (!res.ok) throw new Error(`USGS HTTP Error: ${res.status}`);
+                        const text = await res.text();
+                        const lines = text.split('\n');
+                        let headers: string[] = [];
+                        
+                        for (let line of lines) {
+                            line = line.trimEnd();
+                            if (!line || line.startsWith('#') || line.includes('5s') || line.includes('15s')) continue;
+                            
+                            if (line.includes('agency_cd')) {
+                                headers = line.split('\t');
+                                continue;
+                            }
+
+                            const tokens = line.split('\t');
+                            if (tokens.length >= headers.length && headers.length > 0) {
+                                const idIndex = headers.indexOf('site_no');
+                                const nameIndex = headers.indexOf('station_nm');
+                                const latIndex = headers.indexOf('dec_lat_va');
+                                const lonIndex = headers.indexOf('dec_long_va');
+                                
+                                if (idIndex > -1 && nameIndex > -1 && latIndex > -1 && lonIndex > -1) {
+                                    const rawId = tokens[idIndex];
+                                    const fullName = formatGaugeName(tokens[nameIndex]);
+                                    const lat = parseFloat(tokens[latIndex]);
+                                    const lon = parseFloat(tokens[lonIndex]);
+                                    if (!isNaN(lat) && !isNaN(lon)) {
+                                        gaugeRegistry[rawId] = { id: rawId, name: fullName.name, lat, lon };
+                                    }
+                                }
+                            }
+                        }
+                        success = true;
+                    } catch (e: unknown) {
+                        attempts++;
+                        if (attempts > MAX_RETRIES) {
+                            console.error(`- Failed USGS discovery for state ${state}`);
+                        } else {
+                            await new Promise(r => setTimeout(r, attempts * 1000));
+                        }
+                    }
+                }
+            }
+        };
+
+        await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));
+        return Object.values(gaugeRegistry);
     }
 };
 
