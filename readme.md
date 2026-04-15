@@ -15,9 +15,12 @@ The project has recently undergone a massive migration to a modern, fully server
 - **PWA Service Workers:** Robust resource caching for offline gorge accessibility.
 
 ### Backend (Serverless)
-- **Firebase Firestore:** Synchronizes the 464+ natively curated river descriptions seamlessly. Security rules guarantee pristine datasets protected from unauthorized overrides.
-- **Firebase Functions (Gen 2):** Pure TypeScript Edge-Cached polling structures perfectly throttle memory. Utilizing a strict 15-minute PubSub Chron scheduler mapped tightly to 128MiB containers, Rivers.run streams, chunks, and serializes massive CSV/JSON API blobs from the USGS and Canada entirely async in the background. 
-- **Google Cloud Storage (CDN):** The parsed gauge telemetry (`flowdata3.json`) is deposited to an exposed Cloud CDN edge bucket, fully divorcing the Frontend's load times from external API limits or legacy Express Node restrictions. Computation cost drops essentially to $0.00.
+- **Cloudflare D1 (SQLite):** Harmonizes the 464+ natively curated river descriptions and user-generated lists with SQL-backed integrity and edge-optimized latency.
+- **Cloudflare Workers (Hono):** High-performance TypeScript API services built on Hono.
+    - **`rivers-run-api`**: Handles core CRUD operations, user lists, and administrative data review.
+    - **`api-flow`**: An isolated, unbound worker that polls and cleanses global gauge telemetry from agency APIs (USGS, Canada, UK, OPW) on a 15-minute `CronTrigger`.
+- **Cloudflare R2 (Storage):** Processed gauge telemetry and historical datasets are persisted to R2 buckets, serving as a highly-available, low-cost origin for the global CDN.
+- **Firebase Auth:** Persisted as the primary identity provider. Authentication tokens are verified purely offline at the edge using Web Crypto within the Cloudflare Workers.
 
 ## Development
 
@@ -48,15 +51,21 @@ npx cap open ios
 ```
 
 ### Local Serverless Backend
-To run and debug the serverless pipeline (Cloud Functions) locally:
+To run and debug the serverless API workers locally:
 ```bash
-# Install backend dependencies
-cd functions
+# Core API (D1 + Auth)
+cd api
 npm install
+npm run dev
 
-# Build Typescript functions
-npm run build
+# Flow/Gauge Polling API
+cd api-flow
+npm install
+npm run dev
 ```
+
+> [!TIP]
+> Use `npx wrangler d1 execute rivers-run-db --local --file=./schema.sql` within the `api` directory to initialize a local SQLite instance for development.
 
 ## Deployment & CI/CD
 
@@ -76,7 +85,7 @@ The serverless backend services are also automatically deployed via the same CI/
 Deployments are managed via Wrangler and the `cloudflare/wrangler-action` in GitHub Actions.
 
 ## Community Administration
-User submissions, edits, and gauge curation updates are directed to a `reviewQueue` in Firestore. 
-Registered Admins can authenticate and access the `Admin Tools` navigation portal securely natively within the SPA to seamlessly merge/reject incoming community topological datasets.
+User submissions, edits, and gauge curation updates are directed to a `reviewQueue` within the Cloudflare D1 database. 
+Registered Admins can authenticate via Firebase and access the `Admin Tools` navigation portal securely within the SPA to seamlessly merge or reject incoming community datasets via the `rivers-run-api`.
 
 **Note:** _All legacy Node Express `server/` cron scripts and Google Drive filesystem parsing routines have been strictly permanently completely retired._

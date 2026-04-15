@@ -6,6 +6,7 @@ import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite } from './provider
 
 export const irelandProvider: GaugeProvider = {
     id: "ireland",
+    preferredUnits: 'metric',
     capabilities: {
         hasForecast: false,
         hasSiteListing: true

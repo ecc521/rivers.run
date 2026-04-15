@@ -38,7 +38,7 @@ export interface RiverData {
   writeup?: string;
   tags?: string[];
   class: string;
-  skill: string;
+  skill: string | number;
   
   accessPoints?: AccessPoint[];
 

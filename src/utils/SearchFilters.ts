@@ -53,7 +53,8 @@ export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
   return false;
 }
 
-function skillToNumber(skill: string): number {
+function skillToNumber(skill: string | number): number {
+  if (typeof skill === "number") return skill;
   const map: Record<string, number> = {
     FW: 1,
     B: 2,

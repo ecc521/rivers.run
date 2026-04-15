@@ -19,6 +19,15 @@ export interface GaugeHistory {
     units?: string; 
 }
 
+export const canadaProvider: GaugeProvider = {
+    id: "canada", 
+    preferredUnits: 'metric',
+    capabilities: {
+        hasForecast: false,
+        hasSiteListing: true,
+    }
+};
+
 export interface GaugeSite {
     id: string; // The bare ID
     name: string;
@@ -26,13 +35,25 @@ export interface GaugeSite {
     lon: number;
 }
 
+export type Units = 'default' | 'imperial' | 'metric';
+
 export interface ProviderCapabilities {
     hasForecast: boolean;
-    hasSiteListing: boolean; // Whether the API supports batch or single listing easily
+    hasSiteListing: boolean; 
 }
 
+export const usgsProvider: GaugeProvider = {
+    id: "USGS",
+    preferredUnits: 'imperial',
+    capabilities: {
+        hasForecast: false,
+        hasSiteListing: true,
+    }
+};
+
 export interface GaugeProvider {
-    readonly id: string; // Prefix identifier (e.g. "USGS", "NWS", "canada")
+    readonly id: string;
+    readonly preferredUnits: 'imperial' | 'metric';
     readonly capabilities: ProviderCapabilities;
 
     /** 

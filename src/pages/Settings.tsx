@@ -11,7 +11,16 @@ import {
 import { useModal } from "../context/ModalContext";
 
 const SettingsPage: React.FC = () => {
-  const { isDarkMode, updateSetting, loading, themePref, colorBlindPref } = useSettings();
+  const { 
+    isDarkMode, 
+    updateSetting, 
+    loading, 
+    themePref, 
+    colorBlindPref,
+    flowUnits,
+    tempUnits,
+    precipUnits
+  } = useSettings();
 
 
   const themeStatusText = (!themePref || themePref === "null") 
@@ -83,6 +92,69 @@ const SettingsPage: React.FC = () => {
             Color blind mode alters the primary flow color indicators natively
             embedded everywhere, as well as line-colors on Flow charts.
           </p>
+        </div>
+        
+        <div className="settings-card">
+          <h3 style={{ marginTop: 0 }}>Units</h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9em", marginBottom: "20px" }}>
+            Configure how flow, temperature, and rainfall units are displayed across the site.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "0.9em", fontWeight: "bold" }}>Flow & Volume</label>
+              <select
+                value={flowUnits}
+                onChange={(e) => updateSetting("flowUnits", e.target.value)}
+                style={{
+                  padding: "8px",
+                  fontSize: "16px",
+                  width: "100%",
+                  maxWidth: "300px",
+                }}
+              >
+                <option value="default">Use Site Units (Gauge Default)</option>
+                <option value="imperial">Imperial (CFS / FT)</option>
+                <option value="metric">Metric (CMS / M)</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "0.9em", fontWeight: "bold" }}>Temperature</label>
+              <select
+                value={tempUnits}
+                onChange={(e) => updateSetting("tempUnits", e.target.value)}
+                style={{
+                  padding: "8px",
+                  fontSize: "16px",
+                  width: "100%",
+                  maxWidth: "300px",
+                }}
+              >
+                <option value="default">Use Site Units (Gauge Default)</option>
+                <option value="imperial">Imperial (Fahrenheit)</option>
+                <option value="metric">Metric (Celsius)</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "0.9em", fontWeight: "bold" }}>Rainfall (Precipitation)</label>
+              <select
+                value={precipUnits}
+                onChange={(e) => updateSetting("precipUnits", e.target.value)}
+                style={{
+                  padding: "8px",
+                  fontSize: "16px",
+                  width: "100%",
+                  maxWidth: "300px",
+                }}
+              >
+                <option value="default">Use Site Units (Gauge Default)</option>
+                <option value="imperial">Imperial (Inches)</option>
+                <option value="metric">Metric (Millimeters)</option>
+              </select>
+            </div>
+          </div>
         </div>
 
       </div>

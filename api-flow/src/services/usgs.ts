@@ -123,7 +123,7 @@ export function processUSGSResponse(obj: any): Record<string, GaugeHistory> {
         });
       // Fall through intentional (legacy logic mapped deg C -> F and logged as temp)
       case "deg F":
-        property = "temp";
+        property = "temp_f";
         break;
       case "ft3/s":
         property = "cfs";
@@ -132,7 +132,7 @@ export function processUSGSResponse(obj: any): Record<string, GaugeHistory> {
         property = "ft";
         break;
       case "in":
-        property = "precip";
+        property = "precip_in";
         break;
       default:
         continue;
@@ -224,6 +224,7 @@ async function fetchUSGSBatch(siteCodes: string[], timeQuery: string): Promise<R
 
 export const usgsProvider: GaugeProvider = {
     id: "USGS",
+    preferredUnits: 'imperial',
     capabilities: {
         hasForecast: false,
         hasSiteListing: true

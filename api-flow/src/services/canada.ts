@@ -82,7 +82,8 @@ async function fetchCanadianProvince(province: string, startTs: number, endTs: n
 }
 
 export const canadaProvider: GaugeProvider = {
-    id: "canada", // using the existing prefix
+    id: "canada", 
+    preferredUnits: 'metric',
     capabilities: {
         hasForecast: false,
         hasSiteListing: true

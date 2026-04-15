@@ -107,17 +107,18 @@ export const firebaseAuthMiddleware = async (c: Context, next: Next) => {
 
          // Passed! Attach to request context
          // Dynamically drop Firebase Custom Claims and poll pure D1 SQL Live State
-         const dbUser = await (c.env as any).DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(payload.user_id).first();
+         const dbUser: any = await (c.env as any).DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(payload.user_id).first();
          
          c.set("user", {
               ...payload, 
-              d1Role: dbUser ? dbUser.role : "user"
+              d1Role: (dbUser && dbUser.role) ? dbUser.role : "user"
          });
          
          return await next();
          
     } catch (e: unknown) {
-         return c.json({ error: "Auth execution failure." }, 500);
+         console.error("Auth middleware internal crash:", e);
+         return c.json({ error: "Auth execution failure.", details: String(e) }, 500);
     }
 };
 

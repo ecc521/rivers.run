@@ -10,6 +10,9 @@ interface SettingsContextType {
   loading: boolean;
   themePref: string | null;
   colorBlindPref: string | null;
+  flowUnits: string;
+  tempUnits: string;
+  precipUnits: string;
 }
 
 const SettingsContext = createContext<SettingsContextType>({
@@ -21,6 +24,9 @@ const SettingsContext = createContext<SettingsContextType>({
   loading: true,
   themePref: null,
   colorBlindPref: null,
+  flowUnits: "default",
+  tempUnits: "imperial",
+  precipUnits: "imperial",
 });
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -31,6 +37,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [colorBlindPref, setColorBlindPref] = useState<string | null>(null);
   const [defaultSearchPref, setDefaultSearchPref] = useState<string | null>(null);
   const [quickActionState, setQuickActionState] = useState<string>("ask");
+  const [flowUnits, setFlowUnits] = useState<string>("default");
+  const [tempUnits, setTempUnits] = useState<string>("imperial");
+  const [precipUnits, setPrecipUnits] = useState<string>("imperial");
 
   const [systemDark, setSystemDark] = useState(() => {
     if (typeof window !== "undefined")
@@ -42,6 +51,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     async function init() {
       const qap = await persistentStorage.get("quickActionPref") || await persistentStorage.get("starActionPref");
       setQuickActionState(qap || "ask");
+      setFlowUnits(await persistentStorage.get("flowUnits") || "default");
+      setTempUnits(await persistentStorage.get("tempUnits") || "imperial");
+      setPrecipUnits(await persistentStorage.get("precipUnits") || "imperial");
       setLoading(false);
     }
     init();
@@ -70,6 +82,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       setDefaultSearchPref(value === "null" ? null : value);
     if (key === "quickActionPref" || key === "starActionPref")
       setQuickActionState(value === "null" ? "ask" : (value || "ask"));
+    if (key === "flowUnits") setFlowUnits(value || "default");
+    if (key === "tempUnits") setTempUnits(value || "imperial");
+    if (key === "precipUnits") setPrecipUnits(value || "imperial");
   };
 
   let isDarkMode = systemDark;
@@ -102,6 +117,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
         loading,
         themePref,
         colorBlindPref,
+        flowUnits,
+        tempUnits,
+        precipUnits,
       }}
     >
       {children}

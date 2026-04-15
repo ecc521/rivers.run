@@ -7,7 +7,7 @@ const mockRivers: RiverData[] = [
     id: "r1",
     name: "Lower Green River",
     section: "Tuxedo to Fish Top",
-    skill: "I", // Intermediate
+    skill: 5, // Intermediate (Numeric)
     running: 2.5, // Between mid and high (flow max is 4 usually in UI terms, assume running is a normalized value 0-4 or raw CFS)
     accessPoints: [{ lat: 35.2443, lon: -82.3524 }], // random coordinates roughly in NC
     tags: ["dam release", "classic"],
@@ -17,7 +17,7 @@ const mockRivers: RiverData[] = [
     id: "r2",
     name: "Ocoee River",
     section: "Middle",
-    skill: "A", // Advanced
+    skill: 7, // Advanced (Numeric)
     running: 3, 
     accessPoints: [{ lat: 35.088, lon: -84.508 }],
     class: "III-IV"
@@ -79,7 +79,7 @@ describe("SearchFilters", () => {
       expect(results[0].id).toBe("r2");
     });
 
-    it("filters by skill range", () => {
+    it("filters by skill range (numeric)", () => {
       const query: AdvancedSearchQuery = {
         ...defaultAdvancedSearchQuery,
         skillMin: 1, // FW
@@ -90,6 +90,24 @@ describe("SearchFilters", () => {
       // Only r4 (Novice, which is 3) should match
       expect(results.length).toBe(1);
       expect(results[0].id).toBe("r4");
+    });
+
+    it("filters by skill range (mixed strings and numbers)", () => {
+      const mixedRivers: RiverData[] = [
+        { id: "s1", skill: "I" } as RiverData, // 5
+        { id: "s2", skill: 5 } as RiverData,   // 5
+        { id: "s3", skill: "E" } as RiverData, // 8
+        { id: "s4", skill: 8 } as RiverData,   // 8
+      ];
+      const query: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        skillMin: 5,
+        skillMax: 5
+      };
+      const results = filterRivers(mixedRivers, query);
+      expect(results.length).toBe(2);
+      expect(results.some(r => r.id === "s1")).toBe(true);
+      expect(results.some(r => r.id === "s2")).toBe(true);
     });
 
     it("filters by distance (lambert projection approximation)", () => {

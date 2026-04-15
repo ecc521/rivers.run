@@ -5,8 +5,9 @@ import { nwsProvider } from "./services/nws";
 import { canadaProvider } from "./services/canada";
 import { ukProvider } from "./services/uk";
 import { irelandProvider } from "./services/ireland";
-import { GaugeProvider, GaugeHistory, GaugeSite } from "./services/provider";
+import { GaugeProvider, GaugeHistory, GaugeReading, GaugeSite, Units } from "./services/provider";
 import { HistorySchema, ReadingSchema, SiteSchema } from "./schema";
+import { toUnitSystem } from "./utils/units";
 
 export interface Env {
     FLOW_STORAGE: R2Bucket;
@@ -77,7 +78,8 @@ const latestRoute = createRoute({
     summary: 'Get latest points for specific gauges',
     request: {
         query: z.object({
-            gauges: z.string().optional().openapi({ description: 'Comma separated list of prefix:id, e.g. USGS:03451500,ireland:25134' })
+            gauges: z.string().optional().openapi({ description: 'Comma separated list of prefix:id, e.g. USGS:03451500,ireland:25134' }),
+            units: z.enum(['default', 'imperial', 'metric']).optional().default('default').openapi({ description: 'Unit system to return' })
         })
     },
     responses: {
@@ -90,10 +92,12 @@ app.openapi(latestRoute, async (c) => {
     const object = await c.env.FLOW_STORAGE.get("latestdata.json");
     if (!object) return c.json({ error: "Data not found" }, 404);
     
-    const { gauges } = c.req.valid("query");
+    const { gauges, units } = c.req.valid("query");
     const allLatest = await object.json() as Record<string, any>;
 
     if (!gauges) {
+        // We can't easily normalize the whole bulk blob here without knowing each prefix's native system
+        // But the scraper already caches normalized values or we handle it per-key
         return c.json(allLatest, { headers: { "Cache-Control": "public, max-age=300" } });
     }
 
@@ -101,10 +105,13 @@ app.openapi(latestRoute, async (c) => {
     const filtered: Record<string, any> = {};
     
     for (const [prefix, ids] of Object.entries(grouping)) {
+        const provider = providers[prefix];
         for (const id of ids) {
              const key = `${prefix}:${id}`;
              if (allLatest[key]) {
-                  filtered[key] = allLatest[key];
+                  filtered[key] = provider 
+                    ? toUnitSystem(allLatest[key], provider.preferredUnits, units as Units)
+                    : allLatest[key];
              }
         }
     }
@@ -122,7 +129,8 @@ const historyRoute = createRoute({
             gauges: z.string().openapi({ description: 'Prefix:ID list' }),
             startTs: z.string().optional().openapi({ description: 'Start timestamp (ms)' }),
             endTs: z.string().optional().openapi({ description: 'End timestamp (ms)' }),
-            forecast: z.string().optional().openapi({ description: 'Include forecast data if available' })
+            forecast: z.string().optional().openapi({ description: 'Include forecast data if available' }),
+            units: z.enum(['default', 'imperial', 'metric']).optional().default('default').openapi({ description: 'Unit system to return' })
         })
     },
     responses: {
@@ -131,7 +139,7 @@ const historyRoute = createRoute({
 });
 
 app.openapi(historyRoute, async (c) => {
-    const { gauges, startTs: startTsParam, endTs: endTsParam, forecast: forecastParam } = c.req.valid("query");
+    const { gauges, startTs: startTsParam, endTs: endTsParam, forecast: forecastParam, units } = c.req.valid("query");
     const grouping = parseGaugesParam(gauges);
     
     const endTs = endTsParam ? parseInt(endTsParam, 10) : Date.now();
@@ -144,6 +152,8 @@ app.openapi(historyRoute, async (c) => {
         if (provider) {
             const data = await provider.getHistory(ids, startTs, endTs, forecast);
             for (const [id, history] of Object.entries(data)) {
+                // Normalize and filter based on requested units
+                history.readings = history.readings.map(r => toUnitSystem(r, provider.preferredUnits, units as Units) as GaugeReading);
                 mergedData[`${prefix}:${id}`] = history;
             }
         }
@@ -209,6 +219,9 @@ const gaugeRoute = createRoute({
         params: z.object({
             prefix: z.string().openapi({ description: 'Provider prefix (e.g. USGS, NWS)' }),
             id: z.string().openapi({ description: 'Gauge ID' })
+        }),
+        query: z.object({
+            units: z.enum(['default', 'imperial', 'metric']).optional().default('default').openapi({ description: 'Unit system to return' })
         })
     },
     responses: {
@@ -234,12 +247,16 @@ app.openapi(gaugeRoute, async (c) => {
     }
 
     // Fetch history
+    const { units } = c.req.valid("query");
     let history: GaugeHistory | null = null;
     try {
         const endTs = Date.now();
         const startTs = endTs - (7 * 24 * 60 * 60 * 1000); // Default to past 7 days
         const historyData = await provider.getHistory([id], startTs, endTs, true);
         history = historyData[id] || null;
+        if (history) {
+            history.readings = history.readings.map(r => toUnitSystem(r, provider.preferredUnits, units as Units) as GaugeReading);
+        }
     } catch (e) {
         console.error("Failed to fetch gauge history", e);
     }
@@ -275,8 +292,6 @@ export default {
             if (provider) {
                 const data = await provider.getHistory(ids, startTs, endTs, false);
                 for (const [id, history] of Object.entries(data)) {
-                    // Normalize units for consistency
-                    history.readings = normalizeReadings(history.readings);
                     flowData[`${prefix}:${id}`] = history;
                 }
             }

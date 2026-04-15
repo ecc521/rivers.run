@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import type { RiverData } from "../types/River";
 import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { fetchAPI, fetchFlowData } from "../services/api";
+import { useSettings } from "../context/SettingsContext";
+import { applyUnitSettings, applyUnitSettingsToReadings } from "../utils/unitConversions";
 
 interface UseRiversResult {
   rivers: RiverData[];
@@ -19,10 +21,11 @@ const notifySubscribers = () => {
     fetchSubscribers.forEach(fn => fn());
 };
 
-const enrichRiver = (river: any, _index: number, flowData: any) => {
+const enrichRiver = (river: any, _index: number, flowData: any, settings: any) => {
   const activeGaugeId = river.gauges?.[0]?.id;
-
   const gaugeRecord = activeGaugeId ? flowData[activeGaugeId] : null;
+
+  const { flowUnits } = settings;
 
   river.gaugeData = {};
 
@@ -32,57 +35,61 @@ const enrichRiver = (river: any, _index: number, flowData: any) => {
               if (flowData[g.id].name) g.name = flowData[g.id].name;
               if (flowData[g.id].section) g.section = flowData[g.id].section;
               if (flowData[g.id].readings) {
-                  river.gaugeData![g.id] = flowData[g.id].readings;
+                  river.gaugeData![g.id] = applyUnitSettingsToReadings(flowData[g.id].readings, settings);
               }
           }
       });
   }
 
   if (gaugeRecord && gaugeRecord.readings && gaugeRecord.readings.length > 0) {
-    const latest = gaugeRecord.readings[gaugeRecord.readings.length - 1];
+    const rawLatest = gaugeRecord.readings[gaugeRecord.readings.length - 1];
+    const latest = applyUnitSettings(rawLatest, settings);
+    
     river.cfs = latest.cfs;
-    river.ft = latest.ft || latest.feet; // Bridge during transition if needed, though plan says drop
+    river.ft = latest.ft;
 
     river.m = latest.m;
     river.cms = latest.cms;
 
     river.running = calculateRelativeFlow(river) ?? undefined;
 
-    const mValue = latest.m;
-    const cmsValue = latest.cms;
-    const ftValue = latest.ft || latest.feet;
-    const cfsValue = latest.cfs;
-
-    if (cmsValue !== undefined && mValue !== undefined)
-      river.flowInfo = `${Math.round(cmsValue)}cms, ${Math.round(mValue * 100) / 100}m`;
-    else if (cmsValue !== undefined) river.flowInfo = `${Math.round(cmsValue)}cms`;
-    else if (mValue !== undefined) river.flowInfo = `${Math.round(mValue * 100) / 100}m`;
-    else if (cfsValue !== undefined && ftValue !== undefined)
-      river.flowInfo = `${Math.round(cfsValue)}cfs, ${Math.round(ftValue * 100) / 100}ft`;
-    else if (cfsValue !== undefined) river.flowInfo = `${Math.round(cfsValue)}cfs`;
-    else if (ftValue !== undefined)
-      river.flowInfo = `${Math.round(ftValue * 100) / 100}ft`;
+    // Build specialized flowInfo based on user preferences
+    const showMetric = flowUnits === "metric" || (flowUnits === "default" && latest.cms !== undefined && latest.cfs === undefined);
+    
+    if (showMetric) {
+        if (latest.cms !== undefined && latest.m !== undefined)
+            river.flowInfo = `${Math.round(latest.cms)}cms, ${Math.round(latest.m * 100) / 100}m`;
+        else if (latest.cms !== undefined) river.flowInfo = `${Math.round(latest.cms)}cms`;
+        else if (latest.m !== undefined) river.flowInfo = `${Math.round(latest.m * 100) / 100}m`;
+    } else {
+        if (latest.cfs !== undefined && latest.ft !== undefined)
+            river.flowInfo = `${Math.round(latest.cfs)}cfs, ${Math.round(latest.ft * 100) / 100}ft`;
+        else if (latest.cfs !== undefined) river.flowInfo = `${Math.round(latest.cfs)}cfs`;
+        else if (latest.ft !== undefined) river.flowInfo = `${Math.round(latest.ft * 100) / 100}ft`;
+    }
   }
   return river;
 };
 
-const buildStandaloneGauge = (gaugeId: string, gaugeData: any): RiverData | null => {
+const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): RiverData | null => {
    const gData: any = gaugeData;
    if (!gData.readings || gData.readings.length === 0) return null;
 
-   const latest = gData.readings[gData.readings.length - 1];
-   const mValue = latest.m;
-   const cmsValue = latest.cms;
-   const ftValue = latest.ft || latest.feet;
-   const cfsValue = latest.cfs;
-
+   const rawLatest = gData.readings[gData.readings.length - 1];
+   const latest = applyUnitSettings(rawLatest, settings);
+   const { flowUnits } = settings;
    let flowStr = "";
-   if (cmsValue !== undefined && mValue !== undefined) flowStr = `${Math.round(cmsValue)}cms, ${Math.round(mValue * 100) / 100}m`;
-   else if (cmsValue !== undefined) flowStr = `${Math.round(cmsValue)}cms`;
-   else if (mValue !== undefined) flowStr = `${Math.round(mValue * 100) / 100}m`;
-   else if (cfsValue !== undefined && ftValue !== undefined) flowStr = `${Math.round(cfsValue)}cfs, ${Math.round(ftValue * 100) / 100}ft`;
-   else if (cfsValue !== undefined) flowStr = `${Math.round(cfsValue)}cfs`;
-   else if (ftValue !== undefined) flowStr = `${Math.round(ftValue * 100) / 100}ft`;
+   const showMetric = flowUnits === "metric" || (flowUnits === "default" && latest.cms !== undefined && latest.cfs === undefined);
+   
+   if (showMetric) {
+      if (latest.cms !== undefined && latest.m !== undefined) flowStr = `${Math.round(latest.cms)}cms, ${Math.round(latest.m * 100) / 100}m`;
+      else if (latest.cms !== undefined) flowStr = `${Math.round(latest.cms)}cms`;
+      else if (latest.m !== undefined) flowStr = `${Math.round(latest.m * 100) / 100}m`;
+   } else {
+      if (latest.cfs !== undefined && latest.ft !== undefined) flowStr = `${Math.round(latest.cfs)}cfs, ${Math.round(latest.ft * 100) / 100}ft`;
+      else if (latest.cfs !== undefined) flowStr = `${Math.round(latest.cfs)}cfs`;
+      else if (latest.ft !== undefined) flowStr = `${Math.round(latest.ft * 100) / 100}ft`;
+   }
 
    return {
        id: gaugeId,
@@ -90,13 +97,14 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any): RiverData | null
        section: gData.section || "",
        gauges: [{ id: gaugeId, isPrimary: true, name: gData.name || gaugeId, section: gData.section || "" }],
        isGauge: true,
-       cfs: cfsValue,
-       ft: ftValue,
-       cms: cmsValue,
-       m: mValue,
+       cfs: latest.cfs,
+       ft: latest.ft,
+       cms: latest.cms,
+       m: latest.m,
        gaugeData: { [gaugeId]: gData.readings },
        flowInfo: flowStr,
-       accessPoints: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined
+       accessPoints: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined,
+       skill: "?" // Standalone gauges have no rated skill
    } as unknown as RiverData;
 };
 
@@ -104,6 +112,7 @@ export const useRivers = (): UseRiversResult => {
   const [rivers, setRivers] = useState<RiverData[]>(globalRiversCache || []);
   const [loading, setLoading] = useState(globalRiversCache === null ? true : globalLoading);
   const [error, setError] = useState<string | null>(globalError);
+  const settings = useSettings();
 
   useEffect(() => {
     // Subscribe to global state changes
@@ -135,21 +144,21 @@ export const useRivers = (): UseRiversResult => {
       try {
         const [data, flowData] = await Promise.all([
           fetchAPI("/rivers"),
-          fetchFlowData()
+          fetchFlowData(settings.flowUnits)
         ]);
         
         let processedData = data;
 
         // Enrich the rivers with flow data
         if (flowData) {
-          processedData = data.map((river: any, index: number) => enrichRiver(river, index, flowData));
+          processedData = data.map((river: any, index: number) => enrichRiver(river, index, flowData, settings));
 
           // Create standalone gauges for any gauge present in flow data
           const standaloneGauges: RiverData[] = [];
 
           for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
               if (gaugeId === "generatedAt") continue;
-              const standaloneGauge = buildStandaloneGauge(gaugeId, gaugeData);
+              const standaloneGauge = buildStandaloneGauge(gaugeId, gaugeData, settings);
               if (standaloneGauge) {
                  standaloneGauges.push(standaloneGauge);
               }

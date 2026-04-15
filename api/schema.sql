@@ -138,6 +138,7 @@ CREATE TABLE users (
     user_id TEXT PRIMARY KEY,        -- Firebase Auth UID
     display_name TEXT,
     email TEXT,
+    role TEXT DEFAULT 'user',
     settings_json JSON,              -- Additional settings (for frontend)
     notifications_enabled INTEGER DEFAULT 1,
     notifications_none_until INTEGER DEFAULT 0,

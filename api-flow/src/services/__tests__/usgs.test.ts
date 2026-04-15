@@ -153,7 +153,8 @@ describe('USGS Service', () => {
             };
             const result = processUSGSResponse(mockData);
             // 10C = 50F
-            expect(result['12345'].readings[0].temp).toBe(50);
+            expect(result['12345'].readings[0].temp_f).toBe(50);
+            expect((result['12345'].readings[0] as any).temp).toBeUndefined();
         });
     });
 });

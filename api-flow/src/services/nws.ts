@@ -43,6 +43,7 @@ export function parseNWSeries(data: any, observations: any[], minTime: number, m
 
 export const nwsProvider: GaugeProvider = {
     id: "NWS",
+    preferredUnits: 'imperial',
     capabilities: {
         hasForecast: true,
         hasSiteListing: true

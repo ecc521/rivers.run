@@ -4,6 +4,7 @@
  * Expands common abbreviations like NR, BLW, ABV, BR, and CR.
  */
 export function formatGaugeName(name: string): { name: string; section?: string } {
+    if (typeof name !== 'string') return { name: String(name || "") };
     const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr']);
     const expansions: Record<string, string> = {
         nr: 'near',

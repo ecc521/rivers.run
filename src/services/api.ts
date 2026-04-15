@@ -49,8 +49,9 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
 /**
  * Public Fetcher for Gauge Data
  */
-export async function fetchFlowData() {
-    const res = await fetch(`${FLOW_API_URL}/recent`);
+export async function fetchFlowData(units: string = "default") {
+    const endpoint = units === "default" ? "/recent" : `/latest?units=${units}`;
+    const res = await fetch(`${FLOW_API_URL}${endpoint}`);
     if (!res.ok) throw new Error("Failed to fetch flow data");
     return res.json();
 }

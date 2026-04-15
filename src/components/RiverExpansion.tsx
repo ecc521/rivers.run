@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { RiverData } from "../types/River";
-import { skillTranslations } from "../utils/skillTranslations";
+import { getSkillFull } from "../utils/skillTranslations";
 import { USGSGraphs } from "./USGSGraphs";
 import { useDynamicUSGS } from "../hooks/useDynamicUSGS";
 import { useAuth } from "../context/AuthContext";
@@ -30,12 +30,15 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
   const displayRiver = useDynamicUSGS(river) || river;
 
   const getSkillAndClassText = () => {
-    if (river.class && river.skill) {
-      return `This river is class ${river.class} and is rated ${skillTranslations[river.skill] || "Unknown"}.`;
+    const skillFull = getSkillFull(river.skill);
+    const hasSkill = river.skill && skillFull !== "Skill Unknown";
+
+    if (river.class && hasSkill) {
+      return `This river is class ${river.class} and is rated ${skillFull}.`;
     } else if (river.class) {
       return `This river is rated class ${river.class}.`;
-    } else if (river.skill) {
-      return `This river is rated ${skillTranslations[river.skill] || "Unknown"}.`;
+    } else if (hasSkill) {
+      return `This river is rated ${skillFull}.`;
     }
     return null;
   };

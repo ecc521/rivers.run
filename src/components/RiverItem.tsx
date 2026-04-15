@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { RiverData } from "../types/River";
-import { skillTranslations } from "../utils/skillTranslations";
+import { getSkillAbbreviation, getSkillFull } from "../utils/skillTranslations";
 import { calculateColor } from "../utils/flowInfoCalculations";
 
 import { useLists } from "../context/ListsContext";
@@ -37,7 +37,8 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   const baseId = `b${index}`;
 
   const riverClass = river.class ? river.class.split("(").join("\u200b(") : "";
-  const translatedSkill = skillTranslations[river.skill] || "Unknown";
+  const translatedSkill = getSkillFull(river.skill);
+  const skillAbbr = getSkillAbbreviation(river.skill);
 
   const buttonClassNames = [
     "riverbutton",
@@ -128,7 +129,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
           style={{ borderBottom: "none" }}
         >
           <div className="tooltip">
-            {(!river.skill || river.skill.toLowerCase() === "unknown") ? "?" : river.skill}
+            {skillAbbr}
             <span className="tooltiptext">{translatedSkill}</span>
           </div>
         </span>
