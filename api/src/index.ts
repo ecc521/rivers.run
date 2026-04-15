@@ -5,7 +5,8 @@ import { z } from "zod";
 import { 
     RiverEditorPayload, checkPayloadSize, 
     UserSettingsSchema, CommunityListSchema, 
-    SubscriptionPayloadSchema, AdminResolutionSchema 
+    SubscriptionPayloadSchema, AdminResolutionSchema,
+    RiverSchema
 } from "./schema";
 import { firebaseAuthMiddleware, requireModerator, requireAdmin } from "./auth";
 
@@ -18,7 +19,13 @@ const app = new OpenAPIHono<{ Bindings: Bindings }>();
 // Expose OpenAPI dynamic specification directly
 app.doc('/openapi.json', {
     openapi: '3.1.0',
-    info: { title: 'Rivers.run API', version: '1.0.0' }
+    info: { title: 'Rivers.run API', version: '1.0.0' },
+    security: [{ bearerAuth: [] }]
+});
+app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
+    type: 'http',
+    scheme: 'bearer',
+    bearerFormat: 'JWT',
 });
 // Generate auto-updating Swagger interface dynamically
 app.get('/docs', swaggerUI({ url: '/openapi.json' }));
@@ -43,26 +50,46 @@ app.onError((err, c) => {
  * RIVERS CORE ENDPOINTS
  */
 
-// 1. Unified Fetch for React Context Replacement
-app.get("/rivers", async (c) => {
+const getRiversRoute = createRoute({
+    method: 'get',
+    path: '/rivers',
+    summary: 'Fetch all rivers',
+    description: 'Returns the full list of rivers, including tags and gauges.',
+    responses: {
+        200: {
+            content: { 'application/json': { schema: z.array(RiverSchema) } },
+            description: 'The list of rivers',
+        },
+    },
+});
+
+app.openapi(getRiversRoute, async (c) => {
     const { results } = await c.env.DB.prepare("SELECT * FROM rivers").all();
     
     // Explicit aggressive caching header to push the massive load physically onto Cloudflare Edge Nodes
     c.header("Cache-Control", "public, max-age=300, s-maxage=300");
     
-    // Natively parse the DB JSON strings back into objects perfectly matching useRivers.ts expectations
-    const rivers = results.map(row => {
-         return {
-              ...row,
-              tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : [],
-              gauges: typeof row.gauges === 'string' ? JSON.parse(row.gauges) : [],
-              accessPoints: typeof row.accessPoints === 'string' ? JSON.parse(row.accessPoints) : []
-         };
-    });
+    const rivers = results.map(row => ({
+          ...row,
+          tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : [],
+          gauges: typeof row.gauges === 'string' ? JSON.parse(row.gauges) : [],
+          accessPoints: typeof row.accessPoints === 'string' ? JSON.parse(row.accessPoints) : []
+    }));
     return c.json(rivers);
 });
 
-app.get("/rivers/:id", async (c) => {
+const getRiverRoute = createRoute({
+    method: 'get',
+    path: '/rivers/{id}',
+    summary: 'Get river by ID',
+    request: { params: z.object({ id: z.string() }) },
+    responses: {
+        200: { content: { 'application/json': { schema: RiverSchema } }, description: 'The river object' },
+        404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'River not found' }
+    }
+});
+
+app.openapi(getRiverRoute, async (c) => {
     const id = c.req.param("id");
     const result = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(id).first();
     
@@ -76,14 +103,44 @@ app.get("/rivers/:id", async (c) => {
     });
 });
 
-app.delete("/rivers/:id", firebaseAuthMiddleware, requireAdmin, async (c) => {
+const deleteRiverRoute = createRoute({
+    method: 'delete',
+    path: '/rivers/{id}',
+    summary: 'Delete a river',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string() }) },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' },
+        401: { description: 'Unauthorized' },
+        403: { description: 'Forbidden' }
+    }
+});
+
+app.openapi(deleteRiverRoute, firebaseAuthMiddleware, requireAdmin, async (c) => {
     const id = c.req.param("id");
     await c.env.DB.prepare("DELETE FROM rivers WHERE id = ?").bind(id).run();
     return c.json({ success: true });
 });
 
+const updateRiverRoute = createRoute({
+    method: 'put',
+    path: '/rivers/{id}',
+    summary: 'Update or create a river',
+    security: [{ bearerAuth: [] }],
+    request: { 
+        params: z.object({ id: z.string() }),
+        body: { content: { 'application/json': { schema: RiverEditorPayload } } }
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), timestamp: z.number() }) } }, description: 'Updated' },
+        400: { description: 'Validation Error' },
+        401: { description: 'Unauthorized' },
+        403: { description: 'Forbidden' }
+    }
+});
+
 // 2. Direct Admin Edit Wrapper with Delta Patches
-app.put("/rivers/:id", firebaseAuthMiddleware, requireModerator, checkPayloadSize, async (c) => {
+app.openapi(updateRiverRoute, firebaseAuthMiddleware, requireModerator, checkPayloadSize, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
     
@@ -146,8 +203,23 @@ app.put("/rivers/:id", firebaseAuthMiddleware, requireModerator, checkPayloadSiz
     return c.json({ success: true, timestamp: Date.now() });
 });
 
+const suggestRiverRoute = createRoute({
+    method: 'post',
+    path: '/rivers/{id}/suggest',
+    summary: 'Submit a correction suggestion',
+    security: [{ bearerAuth: [] }],
+    request: {
+        params: z.object({ id: z.string() }),
+        body: { content: { 'application/json': { schema: RiverEditorPayload } } }
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Suggestion submitted' },
+        401: { description: 'Unauthorized' }
+    }
+});
+
 // 3. User Suggestions (Review Queue)
-app.post("/rivers/:id/suggest", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+app.openapi(suggestRiverRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
     
@@ -161,13 +233,37 @@ app.post("/rivers/:id/suggest", firebaseAuthMiddleware, checkPayloadSize, async 
     return c.json({ success: true });
 });
 
+const getAdminQueueRoute = createRoute({
+    method: 'get',
+    path: '/admin/queue',
+    summary: 'Fetch pending review queue',
+    security: [{ bearerAuth: [] }],
+    responses: {
+        200: { content: { 'application/json': { schema: z.array(z.any()) } }, description: 'Admin queue' },
+        401: { description: 'Unauthorized' },
+        403: { description: 'Forbidden' }
+    }
+});
+
 // 4. Admin Queue Fetch
-app.get("/admin/queue", firebaseAuthMiddleware, requireModerator, async (c) => {
+app.openapi(getAdminQueueRoute, firebaseAuthMiddleware, requireModerator, async (c) => {
     const { results } = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE status = 'pending' ORDER BY created_at DESC").all();
     return c.json(results);
 });
 
-app.get("/admin/queue/:id", firebaseAuthMiddleware, requireModerator, async (c) => {
+const getAdminSuggestionRoute = createRoute({
+    method: 'get',
+    path: '/admin/queue/{id}',
+    summary: 'Get a specific pending suggestion',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string() }) },
+    responses: {
+        200: { content: { 'application/json': { schema: z.any() } }, description: 'Suggestion details' },
+        404: { description: 'Not found' }
+    }
+});
+
+app.openapi(getAdminSuggestionRoute, firebaseAuthMiddleware, requireModerator, async (c) => {
     const id = c.req.param("id");
     const result = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE suggestion_id = ?").bind(id).first();
     if (!result) return c.json({ error: "Suggestion not found" }, 404);
@@ -178,13 +274,37 @@ app.get("/admin/queue/:id", firebaseAuthMiddleware, requireModerator, async (c) 
     });
 });
 
-app.get("/admin/logs", firebaseAuthMiddleware, requireAdmin, async (c) => {
+const getAdminLogsRoute = createRoute({
+    method: 'get',
+    path: '/admin/logs',
+    summary: 'Fetch admin audit logs',
+    security: [{ bearerAuth: [] }],
+    responses: {
+        200: { content: { 'application/json': { schema: z.array(z.any()) } }, description: 'Audit logs' }
+    }
+});
+
+app.openapi(getAdminLogsRoute, firebaseAuthMiddleware, requireAdmin, async (c) => {
     const { results } = await c.env.DB.prepare("SELECT * FROM river_audit_log ORDER BY changed_at DESC LIMIT 50").all();
     return c.json(results);
 });
 
+const resolveSuggestionRoute = createRoute({
+    method: 'post',
+    path: '/admin/queue/{id}/resolve',
+    summary: 'Approve or reject a suggestion',
+    security: [{ bearerAuth: [] }],
+    request: {
+        params: z.object({ id: z.string() }),
+        body: { content: { 'application/json': { schema: AdminResolutionSchema } } }
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), message: z.string() }) } }, description: 'Resolved' }
+    }
+});
+
 // 5. Admin Resolution of Suggestions
-app.post("/admin/queue/:id/resolve", firebaseAuthMiddleware, requireModerator, checkPayloadSize, async (c) => {
+app.openapi(resolveSuggestionRoute, firebaseAuthMiddleware, requireModerator, checkPayloadSize, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
     const body = await c.req.json();
@@ -228,8 +348,18 @@ app.post("/admin/queue/:id/resolve", firebaseAuthMiddleware, requireModerator, c
     return c.json({ success: true, message: "Suggestion merged successfully." });
 });
 
+const getUserSettingsRoute = createRoute({
+    method: 'get',
+    path: '/user/settings',
+    summary: 'Get user profile and settings',
+    security: [{ bearerAuth: [] }],
+    responses: {
+        200: { content: { 'application/json': { schema: z.any() } }, description: 'User settings' }
+    }
+});
+
 // 6. User Profiles & Settings
-app.get("/user/settings", firebaseAuthMiddleware, async (c) => {
+app.openapi(getUserSettingsRoute, firebaseAuthMiddleware, async (c) => {
     const user = c.get("user");
     const result = await c.env.DB.prepare(`
         SELECT display_name, email, notifications_enabled, notifications_none_until, notifications_time_of_day, alerts_review_queue, settings_json
@@ -265,7 +395,18 @@ app.get("/user/settings", firebaseAuthMiddleware, async (c) => {
     });
 });
 
-app.patch("/user/settings", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+const updateUserSettingsRoute = createRoute({
+    method: 'patch',
+    path: '/user/settings',
+    summary: 'Update user settings',
+    security: [{ bearerAuth: [] }],
+    request: { body: { content: { 'application/json': { schema: UserSettingsSchema } } } },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' }
+    }
+});
+
+app.openapi(updateUserSettingsRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     const user = c.get("user");
     const body = await c.req.json();
     const validated = UserSettingsSchema.parse(body);
@@ -294,8 +435,6 @@ app.patch("/user/settings", firebaseAuthMiddleware, checkPayloadSize, async (c) 
     }
 
     if (validated.settings_json !== undefined) {
-        // We do a merge based on existing state to be safe, or just overwrite if that's the intent
-        // For settings_json we typically overwrite the whole blob or merge. Let's merge for flexibility.
         const existing = await c.env.DB.prepare("SELECT settings_json FROM users WHERE user_id = ?").bind(user.user_id).first();
         let currentSettings = {};
         if (existing && existing.settings_json) {
@@ -315,20 +454,51 @@ app.patch("/user/settings", firebaseAuthMiddleware, checkPayloadSize, async (c) 
     return c.json({ success: true });
 });
 
-app.delete("/user", firebaseAuthMiddleware, async (c) => {
+const deleteUserRoute = createRoute({
+    method: 'delete',
+    path: '/user',
+    summary: 'Delete your own account',
+    security: [{ bearerAuth: [] }],
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' }
+    }
+});
+
+app.openapi(deleteUserRoute, firebaseAuthMiddleware, async (c) => {
     const user = c.get("user");
     await c.env.DB.prepare("DELETE FROM users WHERE user_id = ?").bind(user.user_id).run();
     return c.json({ success: true });
 });
 
+const getListsRoute = createRoute({
+    method: 'get',
+    path: '/lists',
+    summary: 'Get your community lists',
+    security: [{ bearerAuth: [] }],
+    responses: {
+        200: { content: { 'application/json': { schema: z.array(z.any()) } }, description: 'Your lists' }
+    }
+});
+
 // 7. Lists (Favorites & Community)
-app.get("/lists", firebaseAuthMiddleware, async (c) => {
+app.openapi(getListsRoute, firebaseAuthMiddleware, async (c) => {
     const user = c.get("user");
     const { results } = await c.env.DB.prepare("SELECT * FROM community_lists WHERE owner_id = ?").bind(user.user_id).all();
     return c.json(results);
 });
 
-app.post("/lists", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+const createListRoute = createRoute({
+    method: 'post',
+    path: '/lists',
+    summary: 'Create a new list',
+    security: [{ bearerAuth: [] }],
+    request: { body: { content: { 'application/json': { schema: CommunityListSchema } } } },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Created' }
+    }
+});
+
+app.openapi(createListRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     const user = c.get("user");
     const body = await c.req.json();
     const validated = CommunityListSchema.parse(body);
@@ -341,13 +511,26 @@ app.post("/lists", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     return c.json({ success: true });
 });
 
-app.put("/lists/:id", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+const updateListRoute = createRoute({
+    method: 'put',
+    path: '/lists/{id}',
+    summary: 'Update an existing list',
+    security: [{ bearerAuth: [] }],
+    request: { 
+        params: z.object({ id: z.string() }),
+        body: { content: { 'application/json': { schema: CommunityListSchema } } } 
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' }
+    }
+});
+
+app.openapi(updateListRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
     const body = await c.req.json();
     const validated = CommunityListSchema.parse(body);
     
-    // Simple verification
     const existing = await c.env.DB.prepare("SELECT owner_id FROM community_lists WHERE id = ?").bind(id).first();
     if (!existing || existing.owner_id !== user.user_id) return c.json({ error: "Forbidden" }, 403);
     
@@ -358,7 +541,18 @@ app.put("/lists/:id", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     return c.json({ success: true });
 });
 
-app.delete("/lists/:id", firebaseAuthMiddleware, async (c) => {
+const deleteListRoute = createRoute({
+    method: 'delete',
+    path: '/lists/{id}',
+    summary: 'Delete a list',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string() }) },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' }
+    }
+});
+
+app.openapi(deleteListRoute, firebaseAuthMiddleware, async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
     
@@ -369,25 +563,57 @@ app.delete("/lists/:id", firebaseAuthMiddleware, async (c) => {
     return c.json({ success: true });
 });
 
-app.get("/lists/:id", async (c) => {
+const getListByIdRoute = createRoute({
+    method: 'get',
+    path: '/lists/{id}',
+    summary: 'Get a specific list by ID',
+    request: { params: z.object({ id: z.string() }) },
+    responses: {
+        200: { content: { 'application/json': { schema: z.any() } }, description: 'List object' },
+        404: { description: 'Not found' }
+    }
+});
+
+app.openapi(getListByIdRoute, async (c) => {
     const id = c.req.param("id");
     const result = await c.env.DB.prepare("SELECT * FROM community_lists WHERE id = ?").bind(id).first();
     
     if (!result) return c.json({ error: "List not found" }, 404);
     
-    // For community lists, rivers are also JSON strings
     return c.json({
         ...result,
         rivers: typeof result.rivers === 'string' ? JSON.parse(result.rivers) : (result.rivers || [])
     });
 });
-app.get("/user/subscriptions", firebaseAuthMiddleware, async (c) => {
+
+const getSubscriptionsRoute = createRoute({
+    method: 'get',
+    path: '/user/subscriptions',
+    summary: 'Get your active list subscriptions',
+    security: [{ bearerAuth: [] }],
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ subscriptions: z.array(z.string()) }) } }, description: 'Subscriptions' }
+    }
+});
+
+app.openapi(getSubscriptionsRoute, firebaseAuthMiddleware, async (c) => {
     const user = c.get("user");
     const { results } = await c.env.DB.prepare("SELECT list_id FROM user_subscriptions WHERE user_id = ?").bind(user.user_id).all();
     return c.json({ subscriptions: results.map(r => r.list_id) });
 });
 
-app.post("/user/subscriptions", firebaseAuthMiddleware, checkPayloadSize, async (c) => {
+const updateSubscriptionsRoute = createRoute({
+    method: 'post',
+    path: '/user/subscriptions',
+    summary: 'Bulk update subscriptions',
+    security: [{ bearerAuth: [] }],
+    request: { body: { content: { 'application/json': { schema: SubscriptionPayloadSchema } } } },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' }
+    }
+});
+
+app.openapi(updateSubscriptionsRoute, firebaseAuthMiddleware, checkPayloadSize, async (c) => {
     const user = c.get("user");
     const body = await c.req.json();
     const { subscriptions } = SubscriptionPayloadSchema.parse(body);

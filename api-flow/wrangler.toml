@@ -17,6 +17,10 @@ bucket_name = "flowdata"
 binding = "DB"
 database_name = "rivers-db"
 database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
+  
+[[routes]]
+pattern = "flow.rivers.run"
+custom_domain = true
 
 # Cron trigger for 15-minute background gauge polling
 [triggers]

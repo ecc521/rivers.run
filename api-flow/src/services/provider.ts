@@ -1,3 +1,5 @@
+export type Units = 'default' | 'imperial' | 'metric' | 'all';
+
 export interface GaugeReading {
     dateTime: number; // ms
     cfs?: number;

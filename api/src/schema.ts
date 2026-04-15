@@ -59,11 +59,26 @@ export const SubscriptionPayloadSchema = z.object({
   subscriptions: z.array(z.string().max(100)).max(500, "Cannot exceed 500 subscriptions")
 });
 
-// NEW: Admin approval validation
 export const AdminResolutionSchema = z.object({
   action: z.enum(["approve", "reject"]),
   admin_notes: limitString(5000),
   admin_overrides: RiverEditorPayload.partial().optional()
+});
+
+// Response Schemas for Documentation
+export const RiverSchema = z.object({
+  id: z.string().openapi({ example: "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof" }),
+  name: z.string().openapi({ example: "French Broad" }),
+  section: z.string().openapi({ example: "Section 9" }),
+  altname: z.string().optional().nullable(),
+  states: z.string().optional().nullable(),
+  class: z.string().openapi({ example: "III-IV" }),
+  skill: z.number().optional().nullable().openapi({ example: 5 }),
+  writeup: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional().openapi({ example: ["classic", "busy"] }),
+  gauges: z.array(GaugeMappingSchema).optional(),
+  accessPoints: z.array(AccessPointSchema).optional(),
+  updated_at: z.number().optional().openapi({ example: 1713214540 })
 });
 
 // Reusable payload size middleware checking raw length 

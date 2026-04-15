@@ -1,9 +1,12 @@
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import { swaggerUI } from "@hono/swagger-ui";
 import { usgsProvider } from "./services/usgs";
 import { nwsProvider } from "./services/nws";
 import { canadaProvider } from "./services/canada";
 import { ukProvider } from "./services/uk";
 import { irelandProvider } from "./services/ireland";
-import { GaugeProvider, GaugeHistory, GaugeReading, GaugeSite } from "./services/provider";
+import { GaugeProvider, GaugeHistory, GaugeSite } from "./services/provider";
+import { HistorySchema, ReadingSchema, SiteSchema } from "./schema";
 
 export interface Env {
     FLOW_STORAGE: R2Bucket;
@@ -18,6 +21,11 @@ const providers: Record<string, GaugeProvider> = {
     "ireland": irelandProvider
 };
 
+const app = new OpenAPIHono<{ Bindings: Env }>();
+
+/**
+ * PARSERS
+ */
 function parseGaugesParam(param: string | null): Record<string, string[]> {
     const list = (param || "").split(",").filter(Boolean);
     const parsed: Record<string, string[]> = {};
@@ -33,133 +41,218 @@ function parseGaugesParam(param: string | null): Record<string, string[]> {
     return parsed;
 }
 
-export default {
-    async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-        const url = new URL(request.url);
+/**
+ * ROUTES
+ */
 
-        const headers = new Headers();
-        headers.set("Access-Control-Allow-Origin", "*");
-        headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+// 1. Documentation
+app.doc('/openapi.json', {
+    openapi: '3.1.0',
+    info: { title: 'Rivers.run Flow API', version: '1.0.0' }
+});
+app.get('/docs', swaggerUI({ url: '/openapi.json' }));
 
-        if (request.method === "OPTIONS") {
-             return new Response(null, { headers });
-        }
+// 2. Recent Data (Cached in R2)
+const recentRoute = createRoute({
+    method: 'get',
+    path: '/recent',
+    summary: 'Get all recent gauge data',
+    description: 'Returns the full 15-minute cached payload from R2 storage.',
+    responses: {
+        200: { content: { 'application/json': { schema: z.any() } }, description: 'Recent flow data' },
+        404: { description: 'Data not found' }
+    }
+});
 
-        if (url.pathname === "/recent") {
-            const object = await env.FLOW_STORAGE.get("flowdata.json");
-            if (!object) return new Response("404 Not Found", { status: 404, headers });
-            
-            headers.set("Content-Type", "application/json");
-            return new Response(object.body, { headers });
-        }
+app.openapi(recentRoute, async (c) => {
+    const object = await c.env.FLOW_STORAGE.get("flowdata.json");
+    if (!object) return c.json({ error: "Data not found" }, 404);
+    return new Response(object.body, { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+});
 
-        if (url.pathname === "/latest") {
-            const object = await env.FLOW_STORAGE.get("latestdata.json");
-            if (!object) return new Response("404 Not Found", { status: 404, headers });
-            
-            const gaugesParam = url.searchParams.get("gauges");
-            let responseBody: BodyInit = object.body;
-            
-            if (gaugesParam) {
-                 const allLatest = await object.json() as Record<string, any>;
-                 const grouping = parseGaugesParam(gaugesParam);
-                 const filtered: Record<string, any> = {};
-                 
-                 for (const [prefix, ids] of Object.entries(grouping)) {
-                     for (const id of ids) {
-                          const key = `${prefix}:${id}`;
-                          if (allLatest[key]) {
-                               filtered[key] = allLatest[key];
-                          }
-                     }
-                 }
-                 if (allLatest.generatedAt) filtered.generatedAt = allLatest.generatedAt;
-                 responseBody = JSON.stringify(filtered);
-            }
-            
-            headers.set("Content-Type", "application/json");
-            headers.set("Cache-Control", "public, max-age=300");
-            return new Response(responseBody, { headers });
-        }
-
-        if (url.pathname === "/history") {
-            const grouping = parseGaugesParam(url.searchParams.get("gauges"));
-            
-            // Allow startTs / endTs params
-            const endTsParam = url.searchParams.get("endTs");
-            const endTs = endTsParam ? parseInt(endTsParam, 10) : Date.now();
-            
-            const startTsParam = url.searchParams.get("startTs");
-            const startTs = startTsParam ? parseInt(startTsParam, 10) : endTs - (7 * 24 * 60 * 60 * 1000); // default 7 days
-            
-            const forecastParam = url.searchParams.get("forecast") === "true";
-
-            const mergedData: Record<string, GaugeHistory> = {};
-
-            const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
-                const provider = providers[prefix];
-                if (provider) {
-                    const data = await provider.getHistory(ids, startTs, endTs, forecastParam);
-                    for (const [id, history] of Object.entries(data)) {
-                        mergedData[`${prefix}:${id}`] = history;
-                    }
-                }
-            });
-
-            try {
-                await Promise.all(promises);
-                headers.set("Content-Type", "application/json");
-                headers.set("Cache-Control", "public, max-age=300");
-                return new Response(JSON.stringify(mergedData), { headers });
-            } catch (err: any) {
-                console.error("History Fetch Error:", err);
-                return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
-            }
-        }
-
-        if (url.pathname === "/sites") {
-            // Allows fetching site listing directly, or hitting cache
-            const refresh = url.searchParams.get("refresh") === "true";
-            
-            if (!refresh) {
-                 const cached = await env.FLOW_STORAGE.get("sitedata.json");
-                 if (cached) {
-                     headers.set("Content-Type", "application/json");
-                     return new Response(cached.body, { headers });
-                 }
-            }
-
-            // Sync from D1
-            const { results } = await env.DB.prepare("SELECT gauge_id FROM river_gauges").all();
-            if (!results) return new Response("{}", { status: 200, headers });
-            
-            const siteParam = results.map((r: any) => r.gauge_id).join(",");
-            const grouping = parseGaugesParam(siteParam);
-            const mergedData: Record<string, GaugeSite> = {};
-
-            const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
-                const provider = providers[prefix];
-                if (provider && provider.capabilities.hasSiteListing) {
-                    const data = await provider.getSiteListing(ids);
-                    for (const site of data) {
-                        mergedData[`${prefix}:${site.id}`] = site;
-                    }
-                }
-            });
-
-            await Promise.all(promises);
-            
-            // Cache to R2
-            await env.FLOW_STORAGE.put("sitedata.json", JSON.stringify(mergedData), {
-                 httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=86400" }
-            });
-
-            headers.set("Content-Type", "application/json");
-            return new Response(JSON.stringify(mergedData), { headers });
-        }
-
-        return new Response("Flow Sync API Online.", { status: 200, headers });
+// 3. Latest Readings (Single latest for each gauge)
+const latestRoute = createRoute({
+    method: 'get',
+    path: '/latest',
+    summary: 'Get latest points for specific gauges',
+    request: {
+        query: z.object({
+            gauges: z.string().optional().openapi({ description: 'Comma separated list of prefix:id, e.g. USGS:03451500,ireland:25134' })
+        })
     },
+    responses: {
+        200: { content: { 'application/json': { schema: z.record(ReadingSchema) } }, description: 'Latest readings' },
+        404: { description: 'Data not found' }
+    }
+});
+
+app.openapi(latestRoute, async (c) => {
+    const object = await c.env.FLOW_STORAGE.get("latestdata.json");
+    if (!object) return c.json({ error: "Data not found" }, 404);
+    
+    const { gauges } = c.req.valid("query");
+    const allLatest = await object.json() as Record<string, any>;
+
+    if (!gauges) {
+        return c.json(allLatest, { headers: { "Cache-Control": "public, max-age=300" } });
+    }
+
+    const grouping = parseGaugesParam(gauges);
+    const filtered: Record<string, any> = {};
+    
+    for (const [prefix, ids] of Object.entries(grouping)) {
+        for (const id of ids) {
+             const key = `${prefix}:${id}`;
+             if (allLatest[key]) {
+                  filtered[key] = allLatest[key];
+             }
+        }
+    }
+    if (allLatest.generatedAt) filtered.generatedAt = allLatest.generatedAt;
+    return c.json(filtered, { headers: { "Cache-Control": "public, max-age=300" } });
+});
+
+// 4. Historical Data (Proxy to providers)
+const historyRoute = createRoute({
+    method: 'get',
+    path: '/history',
+    summary: 'Fetch historical gauge data',
+    request: {
+        query: z.object({
+            gauges: z.string().openapi({ description: 'Prefix:ID list' }),
+            startTs: z.string().optional().openapi({ description: 'Start timestamp (ms)' }),
+            endTs: z.string().optional().openapi({ description: 'End timestamp (ms)' }),
+            forecast: z.string().optional().openapi({ description: 'Include forecast data if available' })
+        })
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.record(HistorySchema) } }, description: 'Historical data' }
+    }
+});
+
+app.openapi(historyRoute, async (c) => {
+    const { gauges, startTs: startTsParam, endTs: endTsParam, forecast: forecastParam } = c.req.valid("query");
+    const grouping = parseGaugesParam(gauges);
+    
+    const endTs = endTsParam ? parseInt(endTsParam, 10) : Date.now();
+    const startTs = startTsParam ? parseInt(startTsParam, 10) : endTs - (7 * 24 * 60 * 60 * 1000);
+    const forecast = forecastParam === "true";
+
+    const mergedData: Record<string, GaugeHistory> = {};
+    const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
+        const provider = providers[prefix];
+        if (provider) {
+            const data = await provider.getHistory(ids, startTs, endTs, forecast);
+            for (const [id, history] of Object.entries(data)) {
+                mergedData[`${prefix}:${id}`] = history;
+            }
+        }
+    });
+
+    await Promise.all(promises);
+    return c.json(mergedData, { headers: { "Cache-Control": "public, max-age=300" } });
+});
+
+// 5. Site Metadata
+const sitesRoute = createRoute({
+    method: 'get',
+    path: '/sites',
+    summary: 'Get site metadata (lat/lon/name)',
+    request: {
+        query: z.object({ refresh: z.string().optional().openapi({ description: 'Bypass cache and force sync from D1' }) })
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.record(SiteSchema) } }, description: 'Site metadata' }
+    }
+});
+
+app.openapi(sitesRoute, async (c) => {
+    const { refresh: refreshParam } = c.req.valid("query");
+    const refresh = refreshParam === "true";
+    if (!refresh) {
+         const cached = await c.env.FLOW_STORAGE.get("sitedata.json");
+         if (cached) {
+            return new Response(cached.body, { headers: { "Content-Type": "application/json" } });
+         }
+    }
+
+    const { results } = await c.env.DB.prepare("SELECT gauge_id FROM river_gauges").all();
+    if (!results) return c.json({});
+    
+    const siteParam = results.map((r: any) => r.gauge_id).join(",");
+    const grouping = parseGaugesParam(siteParam);
+    const mergedData: Record<string, GaugeSite> = {};
+
+    const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
+        const provider = providers[prefix];
+        if (provider && provider.capabilities.hasSiteListing) {
+            const data = await provider.getSiteListing(ids);
+            for (const site of data) {
+                mergedData[`${prefix}:${site.id}`] = site;
+            }
+        }
+    });
+
+    await Promise.all(promises);
+    await c.env.FLOW_STORAGE.put("sitedata.json", JSON.stringify(mergedData), {
+         httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=86400" }
+    });
+    return c.json(mergedData);
+});
+
+// 6. Single Gauge (Site + History)
+const gaugeRoute = createRoute({
+    method: 'get',
+    path: '/gauge/{prefix}/{id}',
+    summary: 'Get site metadata and history for a single gauge',
+    request: {
+        params: z.object({
+            prefix: z.string().openapi({ description: 'Provider prefix (e.g. USGS, NWS)' }),
+            id: z.string().openapi({ description: 'Gauge ID' })
+        })
+    },
+    responses: {
+        200: { description: 'Gauge data and metadata', content: { 'application/json': { schema: z.any() } } },
+        404: { description: 'Provider or Gauge not found' }
+    }
+});
+
+app.openapi(gaugeRoute, async (c) => {
+    const { prefix, id } = c.req.valid("params");
+    const provider = providers[prefix];
+    if (!provider) return c.json({ error: "Unknown provider" }, 404);
+
+    // Fetch site
+    let site: GaugeSite | null = null;
+    if (provider.capabilities.hasSiteListing) {
+        try {
+            const sites = await provider.getSiteListing([id]);
+            if (sites.length > 0) site = sites[0];
+        } catch (e) {
+            console.error("Failed to fetch site listing", e);
+        }
+    }
+
+    // Fetch history
+    let history: GaugeHistory | null = null;
+    try {
+        const endTs = Date.now();
+        const startTs = endTs - (7 * 24 * 60 * 60 * 1000); // Default to past 7 days
+        const historyData = await provider.getHistory([id], startTs, endTs, true);
+        history = historyData[id] || null;
+    } catch (e) {
+        console.error("Failed to fetch gauge history", e);
+    }
+
+    if (!site && !history) {
+        return c.json({ error: "Gauge not found or no data available" }, 404);
+    }
+
+    return c.json({ site, history }, { headers: { "Cache-Control": "public, max-age=300" } });
+});
+
+export default {
+    fetch: app.fetch,
 
     /**
      * THE 15-MINUTE GAUGE SCRAPER (CRON)
@@ -182,6 +275,8 @@ export default {
             if (provider) {
                 const data = await provider.getHistory(ids, startTs, endTs, false);
                 for (const [id, history] of Object.entries(data)) {
+                    // Normalize units for consistency
+                    history.readings = normalizeReadings(history.readings);
                     flowData[`${prefix}:${id}`] = history;
                 }
             }
@@ -190,16 +285,10 @@ export default {
         await Promise.all(promises);
         flowData.generatedAt = Date.now();
         
-        console.log(`Assembly complete. Pushing ${Object.keys(flowData).length} combined gauges to R2...`);
-
         await env.FLOW_STORAGE.put("flowdata.json", JSON.stringify(flowData), {
-            httpMetadata: {
-                contentType: "application/json",
-                cacheControl: "public, max-age=900, s-maxage=900"
-            }
+            httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=900, s-maxage=900" }
         });
 
-        // Compute minimal latestData payload for fast polling
         const latestData: Record<string, any> = {};
         for (const [key, history] of Object.entries(flowData)) {
              if (key === "generatedAt") {
@@ -208,15 +297,12 @@ export default {
              }
              const readings = (history as GaugeHistory).readings;
              if (readings && readings.length > 0) {
-                 latestData[key] = readings[readings.length - 1]; // grab absolute latest reading
+                 latestData[key] = readings[readings.length - 1];
              }
         }
 
         await env.FLOW_STORAGE.put("latestdata.json", JSON.stringify(latestData), {
-            httpMetadata: {
-                contentType: "application/json",
-                cacheControl: "public, max-age=900, s-maxage=900"
-            }
+            httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=900, s-maxage=900" }
         });
     }
 };

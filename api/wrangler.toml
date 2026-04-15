@@ -9,5 +9,9 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB" # Available in your Worker as env.DB
 database_name = "rivers-db"
 database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
+  
+[[routes]]
+pattern = "api.rivers.run"
+custom_domain = true
 
 

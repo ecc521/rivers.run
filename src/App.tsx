@@ -50,6 +50,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/river/:id/:slug?" element={<Home />} />
+                    <Route path="/gauge/:id/:slug?" element={<Home />} />
                     <Route path="/map" element={<MapPage />} />
                     <Route path="/lists" element={<ListsPage />} />
                     <Route path="/lists/:id" element={<Home />} />
