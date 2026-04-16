@@ -6,8 +6,7 @@ DROP TABLE IF EXISTS community_list_rivers;
 DROP TABLE IF EXISTS community_lists;
 DROP TABLE IF EXISTS river_suggestions;
 DROP TABLE IF EXISTS river_audit_log;
-DROP TABLE IF EXISTS river_access_points;
-DROP TABLE IF EXISTS river_gauges;
+DROP TABLE IF EXISTS river_audit_log;
 DROP TABLE IF EXISTS rivers;
 DROP TABLE IF EXISTS admin_audit_log;
 
@@ -38,40 +37,22 @@ CREATE TABLE rivers (
     flow_high REAL,
     flow_max REAL,
     
+    gauges TEXT,                 -- JSON Array of GaugeMapping objects
+    accessPoints TEXT,           -- JSON Array of AccessPoint objects
+    
     updated_at INTEGER NOT NULL  -- Unix timestamp
 );
 
 -- ==========================================
--- 2. RIVER DEPENDENCIES (1-to-Many mapping)
+-- 2. AUDIT HISTORY (Strict Diff-Based History)
 -- ==========================================
-CREATE TABLE river_gauges (
+CREATE TABLE river_audit_log (
+    log_id INTEGER PRIMARY KEY AUTOINCREMENT,
     river_id TEXT NOT NULL,
-    gauge_id TEXT NOT NULL,      -- e.g. "USGS:01646500"
-    is_primary BOOLEAN DEFAULT 0,
-    name TEXT,
-    section TEXT,
-    FOREIGN KEY(river_id) REFERENCES rivers(id) ON DELETE CASCADE,
-    PRIMARY KEY(river_id, gauge_id)
-);
-
--- Enforce exactly ONE primary gauge per river
-CREATE UNIQUE INDEX idx_unique_primary_gauge ON river_gauges(river_id) WHERE is_primary = 1;
-
-CREATE TABLE river_access_points (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    river_id TEXT NOT NULL,
-    lat REAL NOT NULL,
-    lon REAL NOT NULL,
-    type TEXT,                   -- e.g. 'put-in', 'take-out'
-    name TEXT,
-    FOREIGN KEY(river_id) REFERENCES rivers(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_access_points_river_id ON river_access_points(river_id);
-
--- ==========================================
--- 3. AUDIT HISTORY (Strict Diff-Based History)
--- ==========================================
-    diff_patch JSON NOT NULL     -- Only tracks the delta/diff of what actually changed (e.g., {"flow_min": [100, 150]}) to save massive storage on long writeups.
+    action_type TEXT NOT NULL,   -- 'INSERT', 'UPDATE', 'DELETE'
+    changed_by TEXT NOT NULL,    -- User Auth UID
+    created_at INTEGER DEFAULT (strftime('%s', 'now')),
+    diff_patch JSON NOT NULL     -- Tracks the delta/diff of what actually changed
 );
 CREATE INDEX idx_audit_log_river_id ON river_audit_log(river_id);
 
