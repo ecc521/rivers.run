@@ -60,6 +60,10 @@ export const firebaseAuthMiddleware = async (c: Context, next: Next) => {
          c.set("user", { user_id: "test-user", d1Role: "admin" });
          return await next();
     }
+    if (authHeader === "Bearer MOCK_SUPER_ADMIN_TOKEN") {
+         c.set("user", { user_id: "test-super-admin", d1Role: "super-admin" });
+         return await next();
+    }
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
          return c.json({ error: "Unauthorized. Include Firebase ID Token." }, 401);
     }
@@ -127,7 +131,7 @@ export const firebaseAuthMiddleware = async (c: Context, next: Next) => {
 // Simple explicit gatekeepers executing natively using D1 role states
 export const requireAdmin = async (c: Context, next: Next) => {
     const user = c.get("user");
-    if (!user || user.d1Role !== 'admin') {
+    if (!user || (user.d1Role !== 'admin' && user.d1Role !== 'super-admin')) {
          return c.json({ error: "Admin role required." }, 403);
     }
     return await next();
@@ -135,7 +139,7 @@ export const requireAdmin = async (c: Context, next: Next) => {
 
 export const requireModerator = async (c: Context, next: Next) => {
     const user = c.get("user");
-    if (!user || (user.d1Role !== 'moderator' && user.d1Role !== 'admin')) {
+    if (!user || (user.d1Role !== 'moderator' && user.d1Role !== 'admin' && user.d1Role !== 'super-admin')) {
          return c.json({ error: "Moderator role required." }, 403);
     }
     return await next();
@@ -157,6 +161,10 @@ export const optionalFirebaseAuthMiddleware = async (c: Context, next: Next) => 
     
     if (token === "MOCK_TOKEN") {
          c.set("user", { user_id: "test-user", d1Role: "admin" });
+         return await next();
+    }
+    if (token === "MOCK_SUPER_ADMIN_TOKEN") {
+         c.set("user", { user_id: "test-super-admin", d1Role: "super-admin" });
          return await next();
     }
 

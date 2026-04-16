@@ -86,6 +86,23 @@ export const AdminResolutionSchema = z.object({
   admin_overrides: RiverEditorPayload.partial().optional().openapi({ type: 'object', description: 'Overrides for the river data' })
 });
 
+export const UserRoleSchema = z.enum(["user", "moderator", "admin", "super-admin", "banned"]);
+
+export const RoleUpdatePayload = z.object({
+  role: UserRoleSchema,
+  reason: limitString(500)
+});
+
+export const UserManagementSchema = z.object({
+  user_id: z.string(),
+  display_name: z.string().nullable(),
+  email: z.string().nullable(),
+  role: UserRoleSchema,
+  updated_at: z.number().optional()
+});
+
+export const UserSearchResponse = z.array(UserManagementSchema);
+
 export const UserReportPayload = z.object({
   target_id: requiredString(50),
   type: z.enum(["river", "list"]),

@@ -6,7 +6,8 @@ import {
     RiverEditorPayload, checkPayloadSize, 
     UserSettingsSchema, CommunityListSchema, 
     SubscriptionPayloadSchema, AdminResolutionSchema,
-    RiverSchema
+    RiverSchema, UserReportPayload, RoleUpdatePayload,
+    UserManagementSchema, UserSearchResponse
 } from "./schema";
 import { firebaseAuthMiddleware, requireModerator, requireAdmin, optionalFirebaseAuthMiddleware } from "./auth";
 
@@ -433,18 +434,19 @@ const getUserSettingsRoute = createRoute({
 app.openapi(getUserSettingsRoute, async (c) => {
     const user = c.get("user");
     const result = await c.env.DB.prepare(`
-        SELECT display_name, email, notifications_enabled, notifications_none_until, notifications_time_of_day, alerts_review_queue, settings_json
+        SELECT display_name, email, role, notifications_enabled, notifications_none_until, notifications_time_of_day, alerts_review_queue, settings_json
         FROM users WHERE user_id = ?
     `).bind(user.user_id).first();
     
     if (!result) {
         // Auto-provision user record on first hit
         await c.env.DB.prepare(`
-            INSERT INTO users (user_id, display_name, email, updated_at) 
-            VALUES (?, ?, ?, ?)
+            INSERT INTO users (user_id, display_name, email, role, updated_at) 
+            VALUES (?, ?, ?, 'user', ?)
         `).bind(user.user_id, user.name || "Unknown Paddler", user.email || "", Math.floor(Date.now() / 1000)).run();
         
         return c.json({
+            role: "user",
             notifications: {
                 enabled: true,
                 noneUntil: 0,
@@ -456,6 +458,7 @@ app.openapi(getUserSettingsRoute, async (c) => {
     }
     
     return c.json({
+        role: result.role || "user",
         notifications: {
             enabled: result.notifications_enabled === 1,
             noneUntil: result.notifications_none_until || 0,
@@ -815,12 +818,107 @@ app.openapi(updateSubscriptionsRoute, async (c) => {
     return c.json({ success: true });
 });
 
-// 8. Admin Controls (Bans)
+// 8. Admin Controls (Role Management & Bans)
+const updateUserRoleRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
+    method: 'patch',
+    path: '/admin/users/{id}/role',
+    summary: 'Change user role (with hierarchy protection)',
+    security: [{ bearerAuth: [] }],
+    request: { 
+        params: z.object({ id: z.string() }),
+        body: { content: { 'application/json': { schema: RoleUpdatePayload } } }
+    },
+    responses: { 
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Role updated' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Hierarchy violation' }
+    }
+});
+
+app.openapi(updateUserRoleRoute, async (c) => {
+    const id = c.req.param("id");
+    const caller = c.get("user");
+    const body = await c.req.json();
+    const { role: newRole, reason } = RoleUpdatePayload.parse(body);
+
+    // Fetch target current state
+    const target = await c.env.DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(id).first() as { role: string } | null;
+    if (!target) return c.json({ error: "User not found" }, 404);
+
+    // Hierarchy Guardrails
+    if (caller.d1Role === 'admin') {
+        // 1. Admins cannot touch fellow Admins or Super-Admins
+        if (target.role === 'admin' || target.role === 'super-admin') {
+            return c.json({ error: "Insufficient permissions: Cannot modify an Admin or Super-Admin." }, 403);
+        }
+        // 2. Admins cannot promote anyone to Admin or Super-Admin
+        if (newRole === 'admin' || newRole === 'super-admin') {
+            return c.json({ error: "Insufficient permissions: Cannot grant Admin or Super-Admin roles." }, 403);
+        }
+    }
+
+    // Atomic Update
+    await c.env.DB.batch([
+        c.env.DB.prepare("UPDATE users SET role = ?, updated_at = ? WHERE user_id = ?").bind(newRole, Math.floor(Date.now() / 1000), id),
+        c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind(
+            'CHANGE_ROLE', caller.user_id, id, `Role changed to ${newRole}. Note: ${reason || 'No reason provided'}`, Math.floor(Date.now() / 1000)
+        )
+    ]);
+
+    return c.json({ success: true });
+});
+
+const getAdminUsersRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
+    method: 'get',
+    path: '/admin/users',
+    summary: 'Search for users in D1',
+    security: [{ bearerAuth: [] }],
+    request: {
+        query: z.object({ q: z.string().optional() })
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: UserSearchResponse } }, description: 'Search results' }
+    }
+});
+
+app.openapi(getAdminUsersRoute, async (c) => {
+    const q = c.req.query("q") || "";
+    const { results } = await c.env.DB.prepare(`
+        SELECT user_id, display_name, email, role, updated_at 
+        FROM users 
+        WHERE email = ? OR user_id = ?
+        LIMIT 50
+    `).bind(q, q).all();
+    
+    return c.json(results);
+});
+
+const getAdminUserByIdRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
+    method: 'get',
+    path: '/admin/users/{id}',
+    summary: 'Get full user record',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string() }) },
+    responses: {
+        200: { content: { 'application/json': { schema: UserManagementSchema } }, description: 'User details' },
+        404: { description: 'User not found' }
+    }
+});
+
+app.openapi(getAdminUserByIdRoute, async (c) => {
+    const id = c.req.param("id");
+    const result = await c.env.DB.prepare("SELECT user_id, display_name, email, role, updated_at FROM users WHERE user_id = ?").bind(id).first();
+    if (!result) return c.json({ error: "User not found" }, 404);
+    return c.json(result);
+});
+
 const banUserRoute = createRoute({
     middleware: [firebaseAuthMiddleware, requireAdmin],
     method: 'put',
     path: '/admin/users/{id}/ban',
-    summary: 'Ban a user',
+    summary: 'Legacy Ban shortcut (uses hierarchy logic)',
     security: [{ bearerAuth: [] }],
     request: { params: z.object({ id: z.string() }) },
     responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Banned' } }
@@ -828,9 +926,17 @@ const banUserRoute = createRoute({
 
 app.openapi(banUserRoute, async (c) => {
     const id = c.req.param("id");
-    const admin = c.get("user");
-    await c.env.DB.prepare("UPDATE users SET role = 'banned' WHERE user_id = ?").bind(id).run();
-    await c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('BAN_USER', admin.user_id, id, 'Banned by admin panel', Math.floor(Date.now() / 1000)).run();
+    const caller = c.get("user");
+    
+    const target = await c.env.DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(id).first() as { role: string } | null;
+    if (target && caller.d1Role === 'admin' && (target.role === 'admin' || target.role === 'super-admin')) {
+         return c.json({ error: "Cannot ban an Admin." }, 403);
+    }
+
+    await c.env.DB.batch([
+        c.env.DB.prepare("UPDATE users SET role = 'banned' WHERE user_id = ?").bind(id),
+        c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('BAN_USER', caller.user_id, id, 'Banned via shortcut', Math.floor(Date.now() / 1000))
+    ]);
     return c.json({ success: true });
 });
 
@@ -838,7 +944,7 @@ const unbanUserRoute = createRoute({
     middleware: [firebaseAuthMiddleware, requireAdmin],
     method: 'put',
     path: '/admin/users/{id}/unban',
-    summary: 'Unban a user',
+    summary: 'Legacy Unban shortcut (uses hierarchy logic)',
     security: [{ bearerAuth: [] }],
     request: { params: z.object({ id: z.string() }) },
     responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Unbanned' } }
@@ -846,9 +952,17 @@ const unbanUserRoute = createRoute({
 
 app.openapi(unbanUserRoute, async (c) => {
     const id = c.req.param("id");
-    const admin = c.get("user");
-    await c.env.DB.prepare("UPDATE users SET role = 'user' WHERE user_id = ?").bind(id).run();
-    await c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('UNBAN_USER', admin.user_id, id, 'Unbanned by admin panel', Math.floor(Date.now() / 1000)).run();
+    const caller = c.get("user");
+
+    const target = await c.env.DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(id).first() as { role: string } | null;
+    if (target && caller.d1Role === 'admin' && (target.role === 'admin' || target.role === 'super-admin')) {
+        return c.json({ error: "Cannot modify an Admin." }, 403);
+    }
+
+    await c.env.DB.batch([
+        c.env.DB.prepare("UPDATE users SET role = 'user' WHERE user_id = ?").bind(id),
+        c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('UNBAN_USER', caller.user_id, id, 'Unbanned via shortcut', Math.floor(Date.now() / 1000))
+    ]);
     return c.json({ success: true });
 });
 
