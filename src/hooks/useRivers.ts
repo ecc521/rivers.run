@@ -38,8 +38,8 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
   if (river.gauges && Array.isArray(river.gauges)) {
       river.gauges.forEach((g: any) => {
           if (flowData[g.id]) {
-              if (flowData[g.id].name) g.name = flowData[g.id].name;
-              if (flowData[g.id].section) g.section = flowData[g.id].section;
+              if (flowData[g.id].name) g.name = String(flowData[g.id].name);
+              if (flowData[g.id].section) g.section = String(flowData[g.id].section);
               if (flowData[g.id].readings) {
                   river.gaugeData![g.id] = applyUnitSettingsToReadings(flowData[g.id].readings, settings);
               }
@@ -111,9 +111,9 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
 
    return {
        id: gaugeId,
-       name: gData.name || gaugeId,
-       section: gData.section || "",
-       gauges: [{ id: gaugeId, isPrimary: true, name: gData.name || gaugeId, section: gData.section || "" }],
+       name: String(gData.name || gaugeId),
+       section: String(gData.section || ""),
+       gauges: [{ id: gaugeId, isPrimary: true, name: String(gData.name || gaugeId), section: String(gData.section || "") }],
        isGauge: true,
        isReadingStale: isStale,
        cfs: latest.cfs,

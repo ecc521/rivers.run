@@ -125,9 +125,10 @@ export const irelandProvider: GaugeProvider = {
                 const coords = f.geometry?.coordinates || [0, 0];
                 
                 if (id && props.value !== undefined) {
+                    const rawName = props.station_name || `Ireland Station ${id}`;
                     results.push({
                         id: id,
-                        name: props.station_name || `Ireland Station ${id}`,
+                        name: Array.isArray(rawName) ? rawName[0] : String(rawName),
                         lat: coords[1],
                         lon: coords[0]
                     });

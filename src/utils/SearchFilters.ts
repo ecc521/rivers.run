@@ -133,11 +133,11 @@ function matchProximity(r: RiverData, query: AdvancedSearchQuery): boolean {
 
 function getSortKey(r: RiverData, sortBy: string): any {
   switch (sortBy) {
-    case "alphabetical": return (r.name || "").toLowerCase();
+    case "alphabetical": return String(r.name || "").toLowerCase();
     case "skill": return skillToNumber(r.skill || "");
     case "class": return r.class || "";
     case "running": return r.running ?? -1;
-    case "state": return (r.states || "").toLowerCase();
+    case "state": return String(r.states || "").toLowerCase();
     default: return 0;
   }
 }
@@ -146,8 +146,8 @@ function getSearchRelevanceScore(r: RiverData, terms: string[]): number {
   if (terms.length === 0) return 0;
   let score = 0;
   
-  const name = (r.name || "").toLowerCase();
-  const section = (r.section || "").toLowerCase();
+  const name = String(r.name || "").toLowerCase();
+  const section = String(r.section || "").toLowerCase();
   
   const tagsStr = [
     ...getTagArray(r.tags),

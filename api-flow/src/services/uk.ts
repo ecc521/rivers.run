@@ -146,9 +146,10 @@ export const ukProvider: GaugeProvider = {
             
             for (const item of items) {
                 if (item.notation && item.lat && item.long) {
+                    const rawName = item.label || `UK Station ${item.notation}`;
                     results.push({
                         id: item.notation,
-                        name: item.label || `UK Station ${item.notation}`,
+                        name: Array.isArray(rawName) ? rawName[0] : String(rawName),
                         lat: item.lat,
                         lon: item.long
                     });
