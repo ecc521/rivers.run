@@ -38,7 +38,17 @@ export const RiverEditorPayload = z.object({
   writeup: limitString(25000), // Our primary protection against massive text bomb bloat
   tags: z.array(strictString(20)).max(10, "Cannot exceed 10 tags").optional(),
   accessPoints: z.array(AccessPointSchema).max(50, "Cannot exceed 50 access points").optional(),
-  gauges: z.array(GaugeMappingSchema).max(10, "Cannot exceed 10 gauges").optional(),
+  gauges: z.array(GaugeMappingSchema).max(10, "Cannot exceed 10 gauges").optional().transform((val) => {
+    if (!val || val.length <= 1) return val;
+    const primaryIndex = val.findIndex(g => g.isPrimary);
+    if (primaryIndex > 0) {
+      const g = [...val];
+      const [primary] = g.splice(primaryIndex, 1);
+      g.unshift(primary);
+      return g;
+    }
+    return val;
+  }),
   flow: FlowThresholdsSchema.optional().nullable()
 });
 
@@ -124,6 +134,8 @@ export const RiverSchema = z.object({
   gauges: z.array(GaugeMappingSchema).optional(),
   accessPoints: z.array(AccessPointSchema).optional(),
   flow: FlowThresholdsSchema.optional().nullable(),
+  averagegradient: z.number().optional().nullable(),
+  maxgradient: z.number().optional().nullable(),
   updated_at: z.number().optional().openapi({ example: 1713214540 })
 });
 

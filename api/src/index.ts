@@ -60,9 +60,27 @@ const getRiversRoute = createRoute({
 });
 
 const formatRiverRow = (row: any) => {
+    let tags: string[] = [];
+    try {
+        if (typeof row.tags === 'string') {
+            const parsed = JSON.parse(row.tags);
+            if (Array.isArray(parsed)) {
+                tags = parsed;
+            } else if (typeof parsed === 'string') {
+                // Handle double-stringified or comma-separated strings inside JSON
+                tags = parsed.split(',').map((t: string) => t.trim()).filter(Boolean);
+            }
+        }
+    } catch (e) {
+        console.warn(`Failed to parse tags for river ${row.id}:`, e);
+        if (typeof row.tags === 'string') {
+            tags = row.tags.split(',').map((t: string) => t.trim()).filter(Boolean);
+        }
+    }
+
     const formatted = {
         ...row,
-        tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : [],
+        tags,
         gauges: typeof row.gauges === 'string' ? JSON.parse(row.gauges) : (row.gauges || []),
         accessPoints: typeof row.accessPoints === 'string' ? JSON.parse(row.accessPoints) : (row.accessPoints || []),
         flow: {
@@ -72,16 +90,20 @@ const formatRiverRow = (row: any) => {
              mid: row.flow_mid,
              high: row.flow_high,
              max: row.flow_max
-        }
+        },
+        averagegradient: row.average_gradient,
+        maxgradient: row.max_gradient
     };
     
-    // Clean up flat database columns since they are nested now
+    // Clean up flat database columns since they are nested or renamed now
     delete formatted.flow_unit;
     delete formatted.flow_min;
     delete formatted.flow_low;
     delete formatted.flow_mid;
     delete formatted.flow_high;
     delete formatted.flow_max;
+    delete formatted.average_gradient;
+    delete formatted.max_gradient;
 
     return formatted;
 };

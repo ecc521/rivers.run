@@ -186,7 +186,6 @@ export default function RiverEditor() {
          return { ...g, id: sanitized };
       }).filter((g: any) => g.id && g.id.includes(":") && g.id.split(":")[1].trim().length > 0);
 
-      const hasPrimary = parsedGauges.some((g: any) => g.isPrimary);
 
       let idToSave: string;
       if (isNew) {
@@ -202,7 +201,7 @@ export default function RiverEditor() {
         gauges: parsedGauges,
         tags: (riverData.rawTags || "").split(',').map((t: string) => t.trim()).filter(Boolean),
         accessPoints: newAccessPoints,
-        flow: hasPrimary ? riverData.flow : { unit: riverData.flow?.unit || "cfs", min: null, low: null, mid: null, high: null, max: null },
+        flow: riverData.flow || { unit: "cfs", min: null, low: null, mid: null, high: null, max: null },
         updatedAt: new Date(),
         submittedBy: isReviewMode ? (proposedData?.submittedBy || user?.uid || "anonymous") : (user?.uid || "anonymous")
       };
