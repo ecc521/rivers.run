@@ -34,15 +34,16 @@ app.use("*", cors({
     maxAge: 86400,
 }));
 
-// Expose OpenAPI dynamic specification directly
-app.doc('/openapi.json', {
+const openApiConfig = {
     openapi: '3.1.0',
     info: { title: 'Rivers.run Flow API', version: '1.0.0' }
-});
+};
+
+// Expose OpenAPI dynamic specification directly
+app.doc('/openapi.json', openApiConfig);
 
 app.get('/docs', apiReference({
-    // @ts-expect-error spec type mismatch in this version
-        content: app.getOpenAPI31(),
+    content: app.getOpenAPI31Document(openApiConfig),
     theme: 'purple',
     layout: 'modern'
 }));

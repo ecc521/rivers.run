@@ -20,12 +20,15 @@ type Variables = {
 
 const app = new OpenAPIHono<{ Bindings: Bindings, Variables: Variables }>();
 
-// Expose OpenAPI dynamic specification directly
-app.doc('/openapi.json', {
+const openApiConfig = {
     openapi: '3.1.0',
     info: { title: 'Rivers.run API', version: '1.0.0' },
     security: [{ bearerAuth: [] }]
-});
+};
+
+// Expose OpenAPI dynamic specification directly
+app.doc('/openapi.json', openApiConfig);
+
 app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
     type: 'http',
     scheme: 'bearer',
@@ -33,13 +36,9 @@ app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
 });
 // Generate auto-updating Scalar interface dynamically
 app.get('/docs', apiReference({
-    // @ts-expect-error spec type mismatch in this version
-    spec: { content: app.getOpenAPI31() },
+    content: app.getOpenAPI31Document(openApiConfig),
     theme: 'purple',
-    layout: 'modern',
-    defaultContext: {
-        baseUrl: 'https://api.rivers.run',
-    }
+    layout: 'modern'
 }));
 
 // Generous CORS to permit both rivers.run, apps, and dev variants
