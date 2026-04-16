@@ -3,56 +3,69 @@
  * Formats a raw USGS site name into a cleaner title-case name and section segment.
  * Expands common abbreviations like NR, BLW, ABV, BR, and CR.
  */
-function formatToken(token: string, state: { wordIndex: number, wordsOnlyCount: number, prevToken: string }) {
-    const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr']);
-    const expansions: Record<string, string> = {
-        nr: 'near', blw: 'below', abv: 'above', br: 'branch', cr: 'creek'
-    };
-    const stateCodes = new Set([
-        'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC', 'PR', 'VI', 'GU'
-    ]);
-    const acronyms = new Set([
-        'USGS', 'USA', 'TVA', 'NWS',
-        'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'
-    ]);
 
-    const index = state.wordIndex;
+const LOWERCASE_WORDS = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr']);
+const EXPANSIONS: Record<string, string> = {
+    nr: 'Near',
+    blw: 'Below',
+    abv: 'Above',
+    br: 'Branch',
+    cr: 'Creek',
+    n: 'North',
+    s: 'South',
+    e: 'East',
+    w: 'West',
+    nf: 'North Fork',
+    sf: 'South Fork',
+    ef: 'East Fork',
+    wf: 'West Fork',
+    mf: 'Middle Fork'
+};
+const STATE_CODES = new Set([
+    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC', 'PR', 'VI', 'GU'
+]);
+const ACRONYMS = new Set([
+    'USGS', 'USA', 'TVA', 'NWS',
+    'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'
+]);
+
+function formatToken(token: string, index: number, totalWords: number, followsComma: boolean): string {
     const isFirst = index === 0;
-    const isLast = index === state.wordsOnlyCount - 1;
+    const isLast = index === totalWords - 1;
     const upperToken = token.toUpperCase();
     const lowerToken = token.toLowerCase();
-    const followsComma = state.prevToken.includes(',');
 
-    const expansion = expansions[lowerToken];
+    const expansion = EXPANSIONS[lowerToken];
     if (expansion) {
-        if (!isFirst && lowercaseWords.has(expansion)) return expansion;
-        return expansion.charAt(0).toUpperCase() + expansion.slice(1);
-    } 
+        const lowerExpansion = expansion.toLowerCase();
+        if (!isFirst && LOWERCASE_WORDS.has(lowerExpansion)) return lowerExpansion;
+        return expansion;
+    }
+
+    if (ACRONYMS.has(upperToken)) return upperToken;
     
-    if (acronyms.has(upperToken)) return upperToken;
-    if (stateCodes.has(upperToken) && (isLast || followsComma)) return upperToken;
-    if (!isFirst && lowercaseWords.has(lowerToken)) return lowerToken;
-    
+    // Always keep 2-letter state codes capitalized (e.g. NC, VA, MD)
+    if (token.length === 2 && STATE_CODES.has(upperToken)) return upperToken;
+
+    if (!isFirst && LOWERCASE_WORDS.has(lowerToken)) return lowerToken;
+
     return token.charAt(0).toUpperCase() + lowerToken.slice(1);
 }
 
 export function formatGaugeName(name: string): { name: string; section?: string } {
     if (typeof name !== 'string') return { name: String(name || "") };
-    
-    const tokens = name.match(/([a-zA-Z0-9]+)|([^a-zA-Z0-9]+)/g) || [];
-    const wordsOnly = tokens.filter(m => /^[a-zA-Z0-9]+$/.test(m));
+
+    const matches = name.match(/([a-zA-Z0-9]+)|([^a-zA-Z0-9]+)/g) || [];
+    const wordsOnly = matches.filter(m => /^[a-zA-Z0-9]+$/.test(m));
 
     let formatted = "";
-    let wordIdx = 0;
+    let wordIndex = 0;
 
-    for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
+    for (let i = 0; i < matches.length; i++) {
+        const token = matches[i];
         if (/^[a-zA-Z0-9]+$/.test(token)) {
-            formatted += formatToken(token, { 
-                wordIndex: wordIdx++, 
-                wordsOnlyCount: wordsOnly.length, 
-                prevToken: i > 0 ? tokens[i - 1] : "" 
-            });
+            const followsComma = i > 0 && matches[i - 1].includes(',');
+            formatted += formatToken(token, wordIndex++, wordsOnly.length, followsComma);
         } else {
             formatted += token;
         }
@@ -60,21 +73,22 @@ export function formatGaugeName(name: string): { name: string; section?: string 
 
     const formattedString = formatted.replace(/\s+/g, ' ').trim();
     const delimiters = [' at ', ' near ', ' above ', ' below '];
-    let splitIdx = -1;
-    const lowerFor = formattedString.toLowerCase();
-
+    const lowerFormatted = formattedString.toLowerCase();
+    
+    let splitIndex = -1;
     for (const d of delimiters) {
-        const idx = lowerFor.indexOf(d);
-        if (idx !== -1 && (splitIdx === -1 || idx < splitIdx)) splitIdx = idx;
+        const idx = lowerFormatted.indexOf(d);
+        if (idx !== -1 && (splitIndex === -1 || idx < splitIndex)) {
+            splitIndex = idx;
+        }
     }
 
-    if (splitIdx !== -1) {
-        const gaugeName = formattedString.substring(0, splitIdx).trim();
-        let section = formattedString.substring(splitIdx).trim();
-        section = section.charAt(0).toUpperCase() + section.slice(1);
+    if (splitIndex !== -1) {
+        const gaugeName = formattedString.substring(0, splitIndex).trim();
+        let section = formattedString.substring(splitIndex).trim();
+        section = section.charAt(0).toUpperCase() + section.slice(1); 
         return { name: gaugeName, section };
     }
 
     return { name: formattedString };
 }
-

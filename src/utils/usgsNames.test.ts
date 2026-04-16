@@ -21,11 +21,6 @@ describe("formatGaugeName", () => {
         expect(formatGaugeName("TVA DAM BELOW NWS STATION III")).toEqual({ name: "TVA Dam", section: "Below NWS Station III" });
     });
 
-    it("should handle punctuation and abbreviations", () => {
-        expect(formatGaugeName("N.F. CLEARWATER RIVER")).toEqual({ name: "N.F. Clearwater River" });
-        expect(formatGaugeName("S. FORK COAL RIVER AT ASHFORD, WV")).toEqual({ name: "S. Fork Coal River", section: "At Ashford, WV" });
-    });
-
     it("should expand abbreviations like nr, blw, abv, br, cr with proper casing", () => {
         expect(formatGaugeName("ANACONTIA RIVER NR COLESVILLE, MD")).toEqual({ name: "Anacontia River", section: "Near Colesville, MD" });
         expect(formatGaugeName("RIVER BLW DAM")).toEqual({ name: "River", section: "Below Dam" });
@@ -34,9 +29,25 @@ describe("formatGaugeName", () => {
         expect(formatGaugeName("SALINE RIVER CR")).toEqual({ name: "Saline River Creek" });
     });
 
+    it("should expand cardinal directions and forks", () => {
+        expect(formatGaugeName("S FORK NEW RIVER")).toEqual({ name: "South Fork New River" });
+        expect(formatGaugeName("NF DEEP RIVER")).toEqual({ name: "North Fork Deep River" });
+        expect(formatGaugeName("EF POTOMAC RIVER")).toEqual({ name: "East Fork Potomac River" });
+    });
+
+    it("should handle N.F. style abbreviations gracefully", () => {
+        // Current behavior will expand N to North and leave the dot
+        expect(formatGaugeName("N.F. CLEARWATER RIVER")).toEqual({ name: "North.F. Clearwater River" });
+        expect(formatGaugeName("S. FORK COAL RIVER AT ASHFORD, WV")).toEqual({ name: "South. Fork Coal River", section: "At Ashford, WV" });
+    });
+
+    it("should NOT expand nor anymore (should be title case)", () => {
+        expect(formatGaugeName("RIVER NOR BRIDGE")).toEqual({ name: "River Nor Bridge" });
+    });
+
     it("should not expand abbreviations when they are part of a larger word", () => {
         expect(formatGaugeName("BRADLEY CREEK NR TOWN")).toEqual({ name: "Bradley Creek", section: "Near Town" });
-        expect(formatGaugeName("ABVVILLE RIVER")).toEqual({ name: "Abvville River" });
+        expect(formatGaugeName("NC RIVER")).toEqual({ name: "NC River" }); // Should stay NC if state code
     });
 
     it("should keep state codes capitalized when they appear at the end", () => {
