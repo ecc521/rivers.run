@@ -20,7 +20,7 @@ export function useDynamicFlow(river: RiverData) {
     const cacheKey = allGauges.toSorted((a, b) => a.localeCompare(b)).join(",");
     const cached = dynamicFlowCache.get(cacheKey);
 
-    const primaryGaugeID = river.gauges?.[0]?.id;
+    const primaryGaugeID = river.gauges?.find((g: any) => g.isPrimary)?.id || river.gauges?.[0]?.id;
     const existingDatasetLength = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.length ? river.gaugeData[primaryGaugeID].length : 0;
     const existingFirstTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[0]?.dateTime ? river.gaugeData[primaryGaugeID][0].dateTime : 0;
     const existingLastTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[existingDatasetLength - 1]?.dateTime ? river.gaugeData[primaryGaugeID][existingDatasetLength - 1].dateTime : 0;
@@ -122,7 +122,7 @@ export function useDynamicFlow(river: RiverData) {
         });
     }
     
-    const primaryGaugeID = enriched.gauges?.[0]?.id;
+    const primaryGaugeID = enriched.gauges?.find((g: any) => g.isPrimary)?.id || enriched.gauges?.[0]?.id;
     const primaryData = primaryGaugeID && enriched.gaugeData[primaryGaugeID] ? enriched.gaugeData[primaryGaugeID] : null;
     
     let latest = null;

@@ -105,7 +105,9 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
 };
 
 export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt }) => {
-  const [activeGaugeId, setActiveGaugeId] = useState<string | undefined>(river.gauges?.[0]?.id);
+  const [activeGaugeId, setActiveGaugeId] = useState<string | undefined>(
+    river.gauges?.find((g: any) => g.isPrimary)?.id || river.gauges?.[0]?.id
+  );
   const rawData = activeGaugeId && river.gaugeData ? river.gaugeData[activeGaugeId] || [] : [];
 
   const isGraphStale = useMemo(() => {

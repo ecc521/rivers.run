@@ -28,7 +28,8 @@ const notifySubscribers = () => {
 };
 
 const enrichRiver = (river: any, _index: number, flowData: any, settings: any) => {
-  const activeGaugeId = river.gauges?.[0]?.id;
+  const primaryGauge = river.gauges?.find((g: any) => g.isPrimary) || river.gauges?.[0];
+  const activeGaugeId = primaryGauge?.id;
   const gaugeRecord = activeGaugeId ? flowData[activeGaugeId] : null;
 
   const { flowUnits } = settings;
