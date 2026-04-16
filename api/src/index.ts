@@ -831,7 +831,8 @@ const updateUserRoleRoute = createRoute({
     },
     responses: { 
         200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Role updated' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Hierarchy violation' }
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Hierarchy violation' },
+        404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'User not found' }
     }
 });
 
@@ -843,17 +844,17 @@ app.openapi(updateUserRoleRoute, async (c) => {
 
     // Fetch target current state
     const target = await c.env.DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(id).first() as { role: string } | null;
-    if (!target) return c.json({ error: "User not found" }, 404);
+    if (!target) return c.json({ error: "User not found" }, 404) as any;
 
     // Hierarchy Guardrails
     if (caller.d1Role === 'admin') {
         // 1. Admins cannot touch fellow Admins or Super-Admins
         if (target.role === 'admin' || target.role === 'super-admin') {
-            return c.json({ error: "Insufficient permissions: Cannot modify an Admin or Super-Admin." }, 403);
+            return c.json({ error: "Insufficient permissions: Cannot modify an Admin or Super-Admin." }, 403) as any;
         }
         // 2. Admins cannot promote anyone to Admin or Super-Admin
         if (newRole === 'admin' || newRole === 'super-admin') {
-            return c.json({ error: "Insufficient permissions: Cannot grant Admin or Super-Admin roles." }, 403);
+            return c.json({ error: "Insufficient permissions: Cannot grant Admin or Super-Admin roles." }, 403) as any;
         }
     }
 
@@ -865,7 +866,7 @@ app.openapi(updateUserRoleRoute, async (c) => {
         )
     ]);
 
-    return c.json({ success: true });
+    return c.json({ success: true }) as any;
 });
 
 const getAdminUsersRoute = createRoute({
@@ -891,7 +892,7 @@ app.openapi(getAdminUsersRoute, async (c) => {
         LIMIT 50
     `).bind(q, q).all();
     
-    return c.json(results);
+    return c.json(results as any);
 });
 
 const getAdminUserByIdRoute = createRoute({
@@ -921,7 +922,10 @@ const banUserRoute = createRoute({
     summary: 'Legacy Ban shortcut (uses hierarchy logic)',
     security: [{ bearerAuth: [] }],
     request: { params: z.object({ id: z.string() }) },
-    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Banned' } }
+    responses: { 
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Banned' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Hierarchy violation' }
+    }
 });
 
 app.openapi(banUserRoute, async (c) => {
@@ -930,14 +934,14 @@ app.openapi(banUserRoute, async (c) => {
     
     const target = await c.env.DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(id).first() as { role: string } | null;
     if (target && caller.d1Role === 'admin' && (target.role === 'admin' || target.role === 'super-admin')) {
-         return c.json({ error: "Cannot ban an Admin." }, 403);
+         return c.json({ error: "Cannot ban an Admin." }, 403) as any;
     }
 
     await c.env.DB.batch([
         c.env.DB.prepare("UPDATE users SET role = 'banned' WHERE user_id = ?").bind(id),
         c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('BAN_USER', caller.user_id, id, 'Banned via shortcut', Math.floor(Date.now() / 1000))
     ]);
-    return c.json({ success: true });
+    return c.json({ success: true }) as any;
 });
 
 const unbanUserRoute = createRoute({
@@ -947,7 +951,10 @@ const unbanUserRoute = createRoute({
     summary: 'Legacy Unban shortcut (uses hierarchy logic)',
     security: [{ bearerAuth: [] }],
     request: { params: z.object({ id: z.string() }) },
-    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Unbanned' } }
+    responses: { 
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Unbanned' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Hierarchy violation' }
+    }
 });
 
 app.openapi(unbanUserRoute, async (c) => {
@@ -956,14 +963,14 @@ app.openapi(unbanUserRoute, async (c) => {
 
     const target = await c.env.DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(id).first() as { role: string } | null;
     if (target && caller.d1Role === 'admin' && (target.role === 'admin' || target.role === 'super-admin')) {
-        return c.json({ error: "Cannot modify an Admin." }, 403);
+        return c.json({ error: "Cannot modify an Admin." }, 403) as any;
     }
 
     await c.env.DB.batch([
         c.env.DB.prepare("UPDATE users SET role = 'user' WHERE user_id = ?").bind(id),
         c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('UNBAN_USER', caller.user_id, id, 'Unbanned via shortcut', Math.floor(Date.now() / 1000))
     ]);
-    return c.json({ success: true });
+    return c.json({ success: true }) as any;
 });
 
 // 9. API Reporting (UGC)

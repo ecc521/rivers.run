@@ -376,8 +376,9 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                 </button>
             )}
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
+  </div>
   );
 };

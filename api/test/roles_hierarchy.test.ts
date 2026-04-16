@@ -26,7 +26,7 @@ describe("Role Hierarchy Protection", () => {
         }, { DB: mockDB } as any);
 
         expect(res.status).toBe(403);
-        const data = await res.json();
+        const data = await res.json() as any;
         expect(data.error).toContain("Cannot grant Admin");
     });
 
@@ -44,7 +44,7 @@ describe("Role Hierarchy Protection", () => {
         }, { DB: mockDB } as any);
 
         expect(res.status).toBe(403);
-        const data = await res.json();
+        const data = await res.json() as any;
         expect(data.error).toContain("Cannot modify an Admin");
     });
 
@@ -93,7 +93,7 @@ describe("Role Hierarchy Protection", () => {
             headers: { Authorization: "Bearer MOCK_TOKEN" }
         }, { DB: mockDB } as any);
 
-        const data = await res.json();
+        const data = await res.json() as any;
         expect(data.role).toBe("moderator");
     });
 
@@ -105,7 +105,7 @@ describe("Role Hierarchy Protection", () => {
             headers: { Authorization: "Bearer MOCK_TOKEN" }
         }, { DB: mockDB } as any);
 
-        const data = await res.json();
+        const data = await res.json() as any;
         expect(data).toHaveLength(1);
         expect(data[0].email).toBe("test@example.com");
         expect(mockDB.bind).toHaveBeenCalledWith("test@example.com", "test@example.com");

@@ -237,7 +237,10 @@ export const useRivers = (): UseRiversResult => {
             const strippedRivers = processedData
                 .filter((r: any) => !r.isGauge)
                 .map((r: any) => {
-                    const { gaugeData: _g, writeup: _w, aw: _a, ...skeletonValues } = r;
+                    const skeletonValues = { ...r };
+                    delete (skeletonValues as any).gaugeData;
+                    delete (skeletonValues as any).writeup;
+                    delete (skeletonValues as any).aw;
                     return skeletonValues;
                 });
             localStorage.setItem(BOOTSTRAP_KEY, JSON.stringify({ rivers: strippedRivers, ts: genTime }));
