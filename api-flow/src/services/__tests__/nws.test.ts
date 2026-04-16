@@ -73,5 +73,38 @@ describe('NWS Service', () => {
             expect(readings).toHaveLength(1);
             expect(readings[0].ft).toBe(2.0);
         });
+        it('should handle null and empty string values correctly', () => {
+            const now = Date.now();
+            const data = {
+                primaryUnits: "ft",
+                secondaryUnits: "kcfs"
+            };
+            const obsData = [
+                {
+                    validTime: new Date(now - 1000 * 60 * 15).toISOString(),
+                    primary: null,
+                    secondary: 1.0
+                },
+                {
+                    validTime: new Date(now - 1000 * 60 * 10).toISOString(),
+                    primary: '',
+                    secondary: 1.1
+                },
+                {
+                    validTime: new Date(now - 1000 * 60 * 5).toISOString(),
+                    primary: 10.5,
+                    secondary: 1.2
+                }
+            ];
+            const result = parseNWSeries(data, obsData, now - 1000 * 60 * 60, now, false);
+            const readings = Array.from(result.values());
+            expect(readings).toHaveLength(3); // Time based map creates entries
+            expect(readings[0].ft).toBeUndefined();
+            expect(readings[0].cfs).toBe(1000);
+            expect(readings[1].ft).toBeUndefined();
+            expect(readings[1].cfs).toBe(1100);
+            expect(readings[2].ft).toBe(10.5);
+            expect(readings[2].cfs).toBe(1200);
+        });
     });
 });

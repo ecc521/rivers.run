@@ -1,4 +1,4 @@
-import { GaugeReading, Units } from "../services/provider";
+import { GaugeHistory, GaugeReading, Units } from "../services/provider";
 
 /**
  * Calculates missing units and returns a reading with ONLY the requested unit set.
@@ -71,4 +71,12 @@ export function toUnitSystem(reading: GaugeReading, nativeSystem: 'imperial' | '
     }
 
     return result as Partial<GaugeReading>;
+}
+
+export function toUnitSystemHistory(history: GaugeHistory, target: Units = 'default'): GaugeHistory {
+    const nativeSystem = history.units === 'm' || history.units === 'cms' ? 'metric' : 'imperial';
+    return {
+        ...history,
+        readings: history.readings.map(r => toUnitSystem(r, nativeSystem, target) as GaugeReading)
+    };
 }

@@ -46,7 +46,7 @@ export type RiverEditInput = z.infer<typeof RiverEditorPayload>;
 
 // NEW: User Settings validation
 export const UserSettingsSchema = z.object({
-  settings_json: z.record(z.any()).refine(v => JSON.stringify(v).length <= 2500, "Settings exceeded 2500 character limit").optional(),
+  settings_json: z.record(z.string(), z.any()).refine(v => JSON.stringify(v).length <= 2500, "Settings exceeded 2500 character limit").optional(),
   notifications: z.object({
     enabled: z.boolean().optional(),
     noneUntil: z.number().int().optional(),

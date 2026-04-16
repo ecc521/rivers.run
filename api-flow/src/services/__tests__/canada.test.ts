@@ -21,6 +21,20 @@ describe('Canada Service', () => {
             expect(result['08MG005'].name).toBe("Canada Gauge 08MG005");
         });
 
+        it('should filter out readings with -999 sentinels', () => {
+             const time1 = new Date('2026-04-15T12:00:00Z').toISOString();
+             const time2 = new Date('2026-04-15T12:05:00Z').toISOString();
+             const mockCsv = `ID,Date,Water Level / Niveau d'eau (m),Discharge / Débit (cms)
+08MG005,${time1},-999,-999
+08MG005,${time2},1.5,50`;
+
+             const result = processCanadaCSV(mockCsv, 0, Date.now() + 1000000);
+             expect(result['08MG005']).toBeDefined();
+             expect(result['08MG005'].readings).toHaveLength(1);
+             expect(result['08MG005'].readings[0].m).toBe(1.5);
+             expect(result['08MG005'].readings[0].cms).toBe(50);
+        });
+
         it('should handle missing columns gracefully', () => {
             const mockCsv = `ID,Date,Water Level / Niveau d'eau (m)
 01AF009,2026-04-15T12:00:00Z,2.000`;
@@ -48,6 +62,18 @@ describe('Canada Service', () => {
 SHORT_ROW`;
             const result = processCanadaCSV(mockCsv, 0, Date.now() + 1000000);
             expect(result['01AF009'].readings).toHaveLength(1);
+        });
+        it('should handle rows with nulls or empty strings', () => {
+             const time1 = new Date('2026-04-15T12:00:00Z').toISOString();
+             const time2 = new Date('2026-04-15T12:10:00Z').toISOString();
+             const mockCsv = `ID,Date,Water Level / Niveau d'eau (m),Discharge / Débit (cms)
+08MG005,${time1},,
+08MG005,${time2},1.5,`;
+
+             const result = processCanadaCSV(mockCsv, 0, Date.now() + 1000000);
+             expect(result['08MG005'].readings).toHaveLength(1);
+             expect(result['08MG005'].readings[0].m).toBe(1.5);
+             expect(result['08MG005'].readings[0].cms).toBeUndefined();
         });
     });
 });

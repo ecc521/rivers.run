@@ -1,4 +1,4 @@
-import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite } from './provider';
+import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 
 const states = [
   "al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl", "ga",
@@ -117,8 +117,11 @@ export function processUSGSResponse(obj: any): Record<string, GaugeHistory> {
     const siteObj = usgsSites[siteCode];
     let values = seriesItem.values[0].value || [];
 
-    const noDataValue = Number(seriesItem.variable.noDataValue);
-    values = values.filter((val: any) => Number(val.value) !== noDataValue);
+    const rawNoDataValue = seriesItem.variable?.noDataValue;
+    if (rawNoDataValue !== null && rawNoDataValue !== undefined && rawNoDataValue !== "") {
+      const noDataValue = Number(rawNoDataValue);
+      values = values.filter((val: any) => Number(val.value) !== noDataValue);
+    }
 
     let property: keyof GaugeReading | undefined;
     const unitCode = seriesItem.variable.unit.unitCode;
@@ -163,7 +166,9 @@ export function processUSGSResponse(obj: any): Record<string, GaugeHistory> {
           currentReading = { dateTime: snappedTime };
           readingMap.set(snappedTime, currentReading);
         }
-        (currentReading as any)[property] = Number(val.value);
+        if (isValidReadingValue(val.value, property)) {
+          (currentReading as any)[property] = Number(val.value);
+        }
       });
     }
   }
@@ -172,8 +177,15 @@ export function processUSGSResponse(obj: any): Record<string, GaugeHistory> {
   for (const gaugeID in usgsSites) {
     const site = usgsSites[gaugeID];
     if ((site as any)._readingMap) {
-        const timestamps = Array.from(((site as any)._readingMap as Map<number, GaugeReading>).keys()).sort((a, b) => a - b);
-        site.readings = timestamps.map(ts => ((site as any)._readingMap as Map<number, GaugeReading>).get(ts)!);
+        const readingMap = (site as any)._readingMap as Map<number, GaugeReading>;
+        const timestamps = Array.from(readingMap.keys()).sort((a, b) => a - b);
+        site.readings = timestamps
+            .map(ts => readingMap.get(ts)!)
+            .filter(r => {
+                // Keep if it has at least one property other than dateTime and isForecast
+                const keys = Object.keys(r);
+                return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
+            });
         delete (site as any)._readingMap;
     }
   }
@@ -250,7 +262,7 @@ export const usgsProvider: GaugeProvider = {
         return latest;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
         const startIso = new Date(startTs).toISOString();
         const timeQuery = endTs 
             ? `&startDT=${startIso}&endDT=${new Date(endTs).toISOString()}`
@@ -332,10 +344,10 @@ export const usgsProvider: GaugeProvider = {
                             }
                         }
                         success = true;
-                    } catch (e: unknown) {
+                    } catch (_e: unknown) {
                         attempts++;
                         if (attempts > MAX_RETRIES) {
-                            console.error(`- Failed USGS discovery for state ${state}`);
+                            console.error(`- Failed USGS discovery for state ${state}`, _e);
                         } else {
                             await new Promise(r => setTimeout(r, attempts * 1000));
                         }

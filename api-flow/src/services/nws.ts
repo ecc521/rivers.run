@@ -1,4 +1,4 @@
-import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite } from './provider';
+import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 
 // Internal helper for mapping NWPS data arrays to GaugeReadings (exported for testing)
 export function parseNWSeries(data: any, observations: any[], minTime: number, maxTime: number, isForecast: boolean): Map<number, GaugeReading> {
@@ -21,19 +21,24 @@ export function parseNWSeries(data: any, observations: any[], minTime: number, m
         
         const reading = readingMap.get(snappedTime)!;
         
-        if (primaryIsStage && obs.primary != null) reading.ft = Number(obs.primary);
-        else if (secondaryIsStage && obs.secondary != null) reading.ft = Number(obs.secondary);
+        if (primaryIsStage && obs.primary != null && isValidReadingValue(obs.primary, "ft")) {
+            reading.ft = Number(obs.primary);
+        } else if (secondaryIsStage && obs.secondary != null && isValidReadingValue(obs.secondary, "ft")) {
+            reading.ft = Number(obs.secondary);
+        }
         
         let flowVal = null;
-        if (primaryIsFlow && obs.primary != null) flowVal = obs.primary;
-        else if (secondaryIsFlow && obs.secondary != null) flowVal = obs.secondary;
+        if (primaryIsFlow && obs.primary != null && obs.primary !== "") flowVal = obs.primary;
+        else if (secondaryIsFlow && obs.secondary != null && obs.secondary !== "") flowVal = obs.secondary;
         
         if (flowVal != null) {
-            // If kcfs, multiply by 1000
+            let finalFlow = Number(flowVal);
             if (data.primaryUnits === "kcfs" || data.secondaryUnits === "kcfs") {
-                reading.cfs = Number(flowVal) * 1000;
-            } else {
-                reading.cfs = Number(flowVal);
+                finalFlow *= 1000;
+            }
+
+            if (isValidReadingValue(finalFlow, "cfs")) {
+                reading.cfs = finalFlow;
             }
         }
     });
@@ -49,7 +54,7 @@ export const nwsProvider: GaugeProvider = {
         hasSiteListing: true
     },
 
-    async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
+    async getLatest(_siteCodes: string[]): Promise<Record<string, GaugeReading>> {
         // NWS NWPS API does not support time-bound filters on stageflow. 
         // Fetching "latest" returns a 1.34MB payload per gauge. 
         // Disabled per user request to prevent excessive bandwidth polling. Use USGS instead.
@@ -98,7 +103,12 @@ export const nwsProvider: GaugeProvider = {
                         }
 
                         const timestamps = Array.from(readingMap.keys()).sort((a, b) => a - b);
-                        const readings = timestamps.map(ts => readingMap.get(ts)!);
+                        const readings = timestamps
+                            .map(ts => readingMap.get(ts)!)
+                            .filter(r => {
+                                const keys = Object.keys(r);
+                                return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
+                            });
 
                         results[site] = {
                             id: site,
@@ -106,10 +116,10 @@ export const nwsProvider: GaugeProvider = {
                             readings
                         };
                         success = true;
-                    } catch (e: unknown) {
+                    } catch (_e: unknown) {
                         attempts++;
                         if (attempts > 2) {
-                            console.error(`NWPS Fetch failed for ${site}`);
+                            console.error(`NWPS Fetch failed for ${site}`, _e);
                         } else {
                             await new Promise(r => setTimeout(r, attempts * 2000));
                         }
@@ -143,7 +153,9 @@ export const nwsProvider: GaugeProvider = {
                              });
                          }
                      }
-                 } catch (e) {}
+                 } catch (_e) {
+                     console.warn(`NWS site listing failed for ${site}`, _e);
+                 }
              }
         };
         await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));

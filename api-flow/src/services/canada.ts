@@ -1,16 +1,26 @@
-import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite } from './provider';
+import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 
 function reformatReadings(readingsArr: any[]) {
     for (let i = 0; i < readingsArr.length; i++) {
         const reading = readingsArr[i];
         reading.dateTime = new Date(reading.dateTime).getTime();
         
-        if (reading.cms !== undefined && !isNaN(parseFloat(reading.cms))) {
-            reading.cms = Number(reading.cms);
+        if (reading.cms !== undefined) {
+            const val = parseFloat(reading.cms);
+            if (!isNaN(val) && val !== -999 && isValidReadingValue(val, "cms")) {
+                reading.cms = val;
+            } else {
+                delete reading.cms;
+            }
         }
 
-        if (reading.m !== undefined && !isNaN(parseFloat(reading.m))) {
-            reading.m = Number(reading.m);
+        if (reading.m !== undefined) {
+            const val = parseFloat(reading.m);
+            if (!isNaN(val) && val !== -999 && isValidReadingValue(val, "m")) {
+                reading.m = val;
+            } else {
+                delete reading.m;
+            }
         }
     }
     readingsArr.sort((a, b) => a.dateTime - b.dateTime);
@@ -52,7 +62,12 @@ export function processCanadaCSV(text: string, startTs: number, endTs: number): 
         const results = gaugeReadingsBySite[gaugeID];
         reformatReadings(results);
 
-        const trimmed = results.filter((r: any) => r.dateTime >= startTs && r.dateTime <= endTs);
+        const trimmed = results.filter((r: any) => {
+            if (r.dateTime < startTs || r.dateTime > endTs) return false;
+            // Keep if it has at least one data property
+            const keys = Object.keys(r);
+            return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
+        });
         
         if (trimmed.length > 0) {
             outputGauges[gaugeID] = {
@@ -121,7 +136,7 @@ export const canadaProvider: GaugeProvider = {
         return results;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
         const maxTime = endTs ?? Date.now();
         const provincesToFetch = new Set<string>();
         
@@ -171,7 +186,9 @@ export const canadaProvider: GaugeProvider = {
                              });
                          }
                      }
-                 } catch (e) {}
+                 } catch (_e) {
+                    console.warn(`Canada history fetch failed for ${site}`, _e);
+                }
              }
         };
         await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));

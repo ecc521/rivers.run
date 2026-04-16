@@ -1,4 +1,4 @@
-import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite } from './provider';
+import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 
 /**
  * UK Environment Agency (EA) Gauge Data Service
@@ -48,8 +48,15 @@ export const ukProvider: GaugeProvider = {
                                 results[stationId].dateTime = ts;
                             }
                             
-                            if (isFlow) results[stationId].cms = val;
-                            else results[stationId].m = val;
+                            if (isFlow) {
+                                if (isValidReadingValue(item.value, "cms")) {
+                                    results[stationId].cms = Number(item.value);
+                                }
+                            } else {
+                                if (isValidReadingValue(item.value, "m")) {
+                                    results[stationId].m = Number(item.value);
+                                }
+                            }
                         }
                     }
                 }
@@ -61,7 +68,7 @@ export const ukProvider: GaugeProvider = {
         return results;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
         const results: Record<string, GaugeHistory> = {};
         const maxTime = endTs ?? Date.now();
         const durationMs = maxTime - startTs;
@@ -93,20 +100,24 @@ export const ukProvider: GaugeProvider = {
                         const isFlow = item.measure?.includes("flow") || item.measure?.includes("m3/s");
                         
                         if (isFlow) {
-                            readings.push({ dateTime: ts, cms: val });
+                            if (isValidReadingValue(item.value, "cms")) {
+                                readings.push({ dateTime: ts, cms: Number(item.value) });
+                            }
                         } else {
-                            readings.push({ dateTime: ts, m: val });
+                            if (isValidReadingValue(item.value, "m")) {
+                                readings.push({ dateTime: ts, m: Number(item.value) });
+                            }
                         }
                     }
                     
                     results[stationId] = {
                         id: stationId,
                         name: `UK Station ${stationId}`,
-                        readings: readings.sort((a, b) => a.dateTime - b.dateTime),
+                        readings: readings.toSorted((a, b) => a.dateTime - b.dateTime),
                         units: "m"
                     };
-                } catch (e) {
-                    console.warn(`UK history fetch failed for ${stationId}`, e);
+                } catch (_e) {
+                    console.warn(`UK history fetch failed for ${stationId}`, _e);
                 }
             }
         };
@@ -116,7 +127,7 @@ export const ukProvider: GaugeProvider = {
     },
 
     async getSiteListing(siteCodes: string[]): Promise<GaugeSite[]> {
-        const fullListing = await this.getFullSiteListing();
+        const fullListing = await this.getFullSiteListing!();
         const siteSet = new Set(siteCodes);
         return fullListing.filter(s => siteSet.has(s.id));
     },

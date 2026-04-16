@@ -7,9 +7,10 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import sonarjs from 'eslint-plugin-sonarjs'
 
 export default defineConfig([
-  globalIgnores(['dist', 'android', 'ios', 'api', 'api-flow', 'functions']),
+  globalIgnores(['dist', 'android', 'ios', 'functions']),
   {
-    files: ['**/*.{ts,tsx}'],
+    // Frontend (React)
+    files: ['src/**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
@@ -35,7 +36,51 @@ export default defineConfig([
       'no-empty': 'off',
       'sonarjs/cognitive-complexity': 'warn',
       'sonarjs/no-nested-conditional': 'warn',
-      'sonarjs/no-nested-functions': 'warn'
+      'sonarjs/no-nested-functions': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    }
+  },
+  {
+    // Backend (Cloudflare Workers)
+    files: ['api/src/**/*.ts', 'api-flow/src/**/*.ts'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      sonarjs.configs.recommended,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: {
+        ...globals.serviceworker,
+        ...globals.node,
+      },
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-empty': 'off',
+      'sonarjs/cognitive-complexity': 'warn',
+      'sonarjs/no-nested-conditional': 'warn',
+      'sonarjs/no-nested-functions': 'warn',
+      'sonarjs/deprecation': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     }
   },
 ])

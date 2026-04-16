@@ -201,7 +201,7 @@ export const useRivers = (): UseRiversResult => {
       try {
         const [data, flowData] = await Promise.all([
           fetchAPI("/rivers"),
-          fetchFlowData(settings.flowUnits)
+          fetchFlowData()
         ]);
         
         let processedData = data;

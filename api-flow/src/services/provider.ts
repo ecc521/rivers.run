@@ -6,8 +6,10 @@ export interface GaugeReading {
     ft?: number;
     cms?: number;
     m?: number;
-    temp?: number;
-    precip?: number;
+    temp_f?: number;
+    temp_c?: number;
+    precip_in?: number;
+    precip_mm?: number;
     isForecast?: boolean;
 }
 
@@ -15,18 +17,12 @@ export interface GaugeHistory {
     id: string; // The bare ID
     name: string;
     section?: string;
+    lat?: number;
+    lon?: number;
     readings: GaugeReading[];
     units?: string; 
 }
 
-export const canadaProvider: GaugeProvider = {
-    id: "canada", 
-    preferredUnits: 'metric',
-    capabilities: {
-        hasForecast: false,
-        hasSiteListing: true,
-    }
-};
 
 export interface GaugeSite {
     id: string; // The bare ID
@@ -35,21 +31,12 @@ export interface GaugeSite {
     lon: number;
 }
 
-export type Units = 'default' | 'imperial' | 'metric';
 
 export interface ProviderCapabilities {
     hasForecast: boolean;
     hasSiteListing: boolean; 
 }
 
-export const usgsProvider: GaugeProvider = {
-    id: "USGS",
-    preferredUnits: 'imperial',
-    capabilities: {
-        hasForecast: false,
-        hasSiteListing: true,
-    }
-};
 
 export interface GaugeProvider {
     readonly id: string;
@@ -78,4 +65,25 @@ export interface GaugeProvider {
      * This is used for periodic registry compilation.
      */
     getFullSiteListing?(): Promise<GaugeSite[]>;
+}
+
+/**
+ * Validates a reading value from a provider.
+ * Filters out common error codes and sentinels:
+ * - Flow (cfs/cms): Filters <= -900,000 (USGS -999,999 or NWS -999kcfs)
+ * - Level/Other (ft/m/temp): Filters <= -900
+ * 
+ * Legitimate negative flows for tidal rivers (e.g. -200,000 cfs) are preserved.
+ */
+export function isValidReadingValue(val: any, property: keyof GaugeReading): boolean {
+    if (val === null || val === undefined || val === "") return false;
+    
+    const num = Number(val);
+    if (isNaN(num) || !Number.isFinite(num)) return false;
+
+    if (property === "cfs" || property === "cms") {
+        return num > -900000;
+    }
+
+    return num > -900;
 }

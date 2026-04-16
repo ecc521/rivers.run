@@ -6,9 +6,9 @@ import { nwsProvider } from "./services/nws";
 import { canadaProvider } from "./services/canada";
 import { ukProvider } from "./services/uk";
 import { irelandProvider } from "./services/ireland";
-import { GaugeProvider, GaugeHistory, GaugeReading, GaugeSite, Units } from "./services/provider";
-import { HistorySchema, ReadingSchema, SiteSchema } from "./schema";
-import { toUnitSystem } from "./utils/units";
+import { GaugeProvider, GaugeHistory, GaugeSite, Units } from "./services/provider";
+import { HistorySchema } from "./schema";
+import { toUnitSystemHistory } from "./utils/units";
 import { compileGaugeRegistry } from "./services/gaugeRegistry";
 
 export interface Env {
@@ -16,7 +16,7 @@ export interface Env {
     DB: D1Database;
 }
 
-const providers: Record<string, GaugeProvider> = {
+export const providers: Record<string, GaugeProvider> = {
     "USGS": usgsProvider,
     "NWS": nwsProvider,
     "canada": canadaProvider,
@@ -28,216 +28,143 @@ const app = new OpenAPIHono<{ Bindings: Env }>();
 
 app.use("*", cors({
     origin: "*",
-    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"]
+    allowMethods: ["GET", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    exposeHeaders: ["Content-Length", "X-Knative-Response-Contained"],
+    maxAge: 86400,
 }));
 
-/**
- * PARSERS
- */
-function parseGaugesParam(param: string | null): Record<string, string[]> {
-    const list = (param || "").split(",").filter(Boolean);
-    const parsed: Record<string, string[]> = {};
-    for (const item of list) {
-        const colonIdx = item.indexOf(":");
-        if (colonIdx > 0) {
-            const prefix = item.substring(0, colonIdx);
-            const id = item.substring(colonIdx + 1);
-            if (!parsed[prefix]) parsed[prefix] = [];
-            parsed[prefix].push(id);
-        }
-    }
-    return parsed;
-}
-
-/**
- * ROUTES
- */
-
-// 1. Documentation
+// Expose OpenAPI dynamic specification directly
 app.doc('/openapi.json', {
     openapi: '3.1.0',
     info: { title: 'Rivers.run Flow API', version: '1.0.0' }
 });
+
 app.get('/docs', apiReference({
-    spec: { url: '/openapi.json' },
+    // @ts-expect-error spec type mismatch in this version
+    spec: {
+        url: '/openapi.json',
+    },
     theme: 'purple',
-    layout: 'modern',
-    defaultContext: {
-        baseUrl: 'https://api-flow.rivers.run',
-    }
+    layout: 'modern'
 }));
 
-// 2. Recent Data (Cached in R2)
-const recentRoute = createRoute({
-    method: 'get',
-    path: '/recent',
-    summary: 'Get all recent gauge data',
-    description: 'Returns the full 15-minute cached payload from R2 storage.',
-    responses: {
-        200: { content: { 'application/json': { schema: z.any() } }, description: 'Recent flow data' },
-        404: { description: 'Data not found' }
+// Endpoints
+// 1. List for specific provider
+app.get('/list/:prefix', async (c) => {
+    const prefix = c.req.param("prefix");
+    const provider = providers[prefix];
+    if (!provider) return c.json({ error: "Provider not found" }, 404);
+    
+    // In-memory or cached?
+    const registry = await c.env.FLOW_STORAGE.get("gauge_registry.json");
+    if (!registry) return c.json({ error: "Registry not initialized" }, 503);
+    
+    const data: Record<string, GaugeSite> = await registry.json();
+    const filtered = Object.values(data).filter(s => s.id.startsWith(prefix + ":"));
+    
+    return c.json(filtered);
+});
+
+// 2. Recent readings for specific provider (Legacy behavior)
+app.get('/recent/:prefix', async (c) => {
+    const prefix = c.req.param("prefix");
+    const provider = providers[prefix];
+    if (!provider) return c.json({ error: "Provider not found" }, 404);
+
+    const guagesString = c.req.query("gauges") || "";
+    const gauges = guagesString.split(",").filter(v => v);
+    
+    try {
+        const data = await provider.getLatest(gauges);
+        return c.json(data);
+    } catch (_e) {
+        console.error("Recent fetch failed", _e);
+        return c.json({ error: "Fetch failed" }, 500);
     }
 });
 
-app.openapi(recentRoute, async (c) => {
-    const object = await c.env.FLOW_STORAGE.get("flowdata.json");
-    if (!object) return c.json({ error: "Data not found" }, 404);
-    
-    // Explicit CORS for raw response
-    return new Response(object.body, { 
-        headers: { 
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-        } 
-    });
-});
+// 3. Historical data for specific provider
+app.get('/history/:prefix', async (c) => {
+    const prefix = c.req.param("prefix");
+    const provider = providers[prefix];
+    if (!provider) return c.json({ error: "Provider not found" }, 404);
 
-// 3. Latest Readings (Single latest for each gauge)
-const latestRoute = createRoute({
-    method: 'get',
-    path: '/latest',
-    summary: 'Get latest points for specific gauges',
-    request: {
-        query: z.object({
-            gauges: z.string().optional().openapi({ description: 'Comma separated list of prefix:id, e.g. USGS:03451500,ireland:25134' }),
-            units: z.enum(['default', 'imperial', 'metric']).optional().default('default').openapi({ description: 'Unit system to return' })
-        })
-    },
-    responses: {
-        200: { content: { 'application/json': { schema: z.record(ReadingSchema) } }, description: 'Latest readings' },
-        404: { description: 'Data not found' }
+    const gauges = (c.req.query("gauges") || "").split(",").filter(v => v);
+    const start = parseInt(c.req.query("start") || "0") || (Date.now() - 86400000);
+    const end = parseInt(c.req.query("end") || "0") || Date.now();
+    const includeForecast = c.req.query("forecast") === "true";
+
+    try {
+        const data = await provider.getHistory(gauges, start, end, includeForecast);
+        return c.json(data);
+    } catch (_e) {
+        console.error("History fetch failed", _e);
+        return c.json({ error: "Fetch failed" }, 500);
     }
-});
-
-app.openapi(latestRoute, async (c) => {
-    const object = await c.env.FLOW_STORAGE.get("latestdata.json");
-    if (!object) return c.json({ error: "Data not found" }, 404);
-    
-    const { gauges, units } = c.req.valid("query");
-    const allLatest = await object.json() as Record<string, any>;
-
-    if (!gauges) {
-        // We can't easily normalize the whole bulk blob here without knowing each prefix's native system
-        // But the scraper already caches normalized values or we handle it per-key
-        return c.json(allLatest, { headers: { "Cache-Control": "public, max-age=300" } });
-    }
-
-    const grouping = parseGaugesParam(gauges);
-    const filtered: Record<string, any> = {};
-    
-    for (const [prefix, ids] of Object.entries(grouping)) {
-        const provider = providers[prefix];
-        for (const id of ids) {
-             const key = `${prefix}:${id}`;
-             if (allLatest[key]) {
-                  filtered[key] = provider 
-                    ? toUnitSystem(allLatest[key], provider.preferredUnits, units as Units)
-                    : allLatest[key];
-             }
-        }
-    }
-    if (allLatest.generatedAt) filtered.generatedAt = allLatest.generatedAt;
-    return c.json(filtered, { headers: { "Cache-Control": "public, max-age=300" } });
 });
 
 // 4. Historical Data (Proxy to providers)
-const historyRoute = createRoute({
+app.openapi(createRoute({
     method: 'get',
-    path: '/history',
-    summary: 'Fetch historical gauge data',
+    path: '/recent',
+    summary: 'Get recent historical data for a set of gauges (multi-provider aware)',
     request: {
         query: z.object({
-            gauges: z.string().openapi({ description: 'Prefix:ID list' }),
-            startTs: z.string().optional().openapi({ description: 'Start timestamp (ms)' }),
-            endTs: z.string().optional().openapi({ description: 'End timestamp (ms)' }),
-            forecast: z.string().optional().openapi({ description: 'Include forecast data if available' }),
-            units: z.enum(['default', 'imperial', 'metric']).optional().default('default').openapi({ description: 'Unit system to return' })
+            gauges: z.string().openapi({ description: 'Comma separated list of Gauge IDs (e.g. USGS:03451500,USGS:03453500)' }),
+            units: z.enum(['default', 'imperial', 'metric']).optional().default('default').openapi({ description: 'Unit system to return' }),
+            duration: z.string().optional().default('24h').openapi({ description: 'Duration (e.g. 24h, 7d)' })
         })
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.record(HistorySchema) } }, description: 'Historical data' }
+        200: { description: 'Gauge history map', content: { 'application/json': { schema: HistorySchema } } }
     }
-});
-
-app.openapi(historyRoute, async (c) => {
-    const { gauges, startTs: startTsParam, endTs: endTsParam, forecast: forecastParam, units } = c.req.valid("query");
-    const grouping = parseGaugesParam(gauges);
+}), async (c) => {
+    const { gauges: gaugeString, units } = c.req.valid('query') as { gauges: string, units: Units };
+    const gauges = gaugeString.split(",").map(g => g.trim()).filter(g => g.includes(":"));
     
-    const endTs = endTsParam ? parseInt(endTsParam, 10) : Date.now();
-    const startTs = startTsParam ? parseInt(startTsParam, 10) : endTs - (7 * 24 * 60 * 60 * 1000);
-    const forecast = forecastParam === "true";
-
-    const mergedData: Record<string, GaugeHistory> = {};
-    const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
-        const provider = providers[prefix];
-        if (provider) {
-            const data = await provider.getHistory(ids, startTs, endTs, forecast);
-            for (const [id, history] of Object.entries(data)) {
-                // Normalize and filter based on requested units
-                history.readings = history.readings.map(r => toUnitSystem(r, provider.preferredUnits, units as Units) as GaugeReading);
-                mergedData[`${prefix}:${id}`] = history;
-            }
-        }
+    // Group by provider
+    const providerGroups: Record<string, string[]> = {};
+    gauges.forEach(g => {
+        const [prefix, id] = g.split(":");
+        if (!providerGroups[prefix]) providerGroups[prefix] = [];
+        providerGroups[prefix].push(id);
     });
 
-    await Promise.all(promises);
-    return c.json(mergedData, { headers: { "Cache-Control": "public, max-age=300" } });
-});
-
-// 5. Site Metadata
-const sitesRoute = createRoute({
-    method: 'get',
-    path: '/sites',
-    summary: 'Get site metadata (lat/lon/name)',
-    request: {
-        query: z.object({ refresh: z.string().optional().openapi({ description: 'Bypass cache and force sync from D1' }) })
-    },
-    responses: {
-        200: { content: { 'application/json': { schema: z.record(SiteSchema) } }, description: 'Site metadata' }
-    }
-});
-
-app.openapi(sitesRoute, async (c) => {
-    const { refresh: refreshParam } = c.req.valid("query");
-    const refresh = refreshParam === "true";
-    if (!refresh) {
-         const cached = await c.env.FLOW_STORAGE.get("sitedata.json");
-         if (cached) {
-            return new Response(cached.body, { 
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                } 
+    const start = Date.now() - 86400000; // Default 24h
+    const promises = Object.entries(providerGroups).map(async ([prefix, ids]) => {
+        const provider = providers[prefix];
+        if (!provider) return {};
+        try {
+            const data = await provider.getHistory(ids, start, Date.now());
+            // Apply units
+            const normalized: Record<string, GaugeHistory> = {};
+            Object.entries(data).forEach(([id, history]) => {
+                normalized[`${prefix}:${id}`] = toUnitSystemHistory(history, units);
             });
-         }
-    }
-
-    const { results } = await c.env.DB.prepare("SELECT gauge_id FROM river_gauges").all();
-    if (!results) return c.json({});
-    
-    const siteParam = results.map((r: any) => r.gauge_id).join(",");
-    const grouping = parseGaugesParam(siteParam);
-    const mergedData: Record<string, GaugeSite> = {};
-
-    const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
-        const provider = providers[prefix];
-        if (provider && provider.capabilities.hasSiteListing) {
-            const data = await provider.getSiteListing(ids);
-            for (const site of data) {
-                mergedData[`${prefix}:${site.id}`] = site;
-            }
+            return normalized;
+        } catch (_e) {
+            console.error(`Provider ${prefix} history fetch failed:`, _e);
+            return {};
         }
     });
 
-    await Promise.all(promises);
-    await c.env.FLOW_STORAGE.put("sitedata.json", JSON.stringify(mergedData), {
-         httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=86400" }
-    });
-    return c.json(mergedData);
+    const results = await Promise.all(promises);
+    const merged = Object.assign({}, ...results);
+    return c.json(merged);
 });
 
-// 6. Single Gauge (Site + History)
+// 5. The full flowdata.json generator (River-aware)
+app.get('/flowdata', async (c) => {
+    const cached = await c.env.FLOW_STORAGE.get("sitedata.json");
+    if (cached) {
+        return c.json(await cached.json(), {
+            headers: { "Cache-Control": "public, max-age=300" }
+        });
+    }
+    return c.json({ error: "Sitedata not yet generated" }, 503);
+});
+
 const gaugeRoute = createRoute({
     method: 'get',
     path: '/gauge/{prefix}/{id}',
@@ -257,13 +184,31 @@ const gaugeRoute = createRoute({
     }
 });
 
+app.openapi(gaugeRoute, async (c) => {
+    const { prefix, id } = c.req.valid('param');
+    const { units } = c.req.valid('query') as { units: Units };
+    const provider = providers[prefix];
+    if (!provider) return c.json({ error: "Provider not found" }, 404);
+
+    try {
+        const historyMap = await provider.getHistory([id], Date.now() - 3600000, Date.now());
+        const history = historyMap[id];
+        if (!history) return c.json({ error: "Gauge not found" }, 404);
+
+        return c.json(toUnitSystemHistory(history, units));
+    } catch (_e) {
+        console.error("Gauge history fetch failed", _e);
+        return c.json({ error: "Fetch failed" }, 500);
+    }
+});
+
 export default {
     fetch: app.fetch,
 
     /**
      * THE 15-MINUTE GAUGE SCRAPER (CRON)
      */
-    async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
         console.log(`Starting background sync (Cron: ${event.cron})...`);
 
         // Check if we need to recompile the registry (Monthly or if missing)
@@ -278,8 +223,8 @@ export default {
                 console.log("Registry missing from R2. Forcing immediate compilation.");
                 needsRecompile = true;
             }
-        } catch (e) {
-            console.warn("Registry load failed, attempting recompile.", e);
+        } catch (_e) {
+            console.warn("Registry load failed, attempting recompile.", _e);
             needsRecompile = true;
         }
 
@@ -291,8 +236,8 @@ export default {
                     httpMetadata: { contentType: "application/json" }
                 });
                 console.log(`Registry recompiled successfully with ${Object.keys(registryMetadata).length} gauges.`);
-            } catch (e) {
-                console.error("CRITICAL: Registry compilation failed.", e);
+            } catch (_e) {
+                console.error("CRITICAL: Registry compilation failed.", _e);
             }
         }
 
@@ -301,96 +246,43 @@ export default {
         const dbGauges = (dbResults || []).map((r: any) => r.gauge_id);
 
         // 2. Pull gauges from Static Registry (Searchable discovery gauges)
-        let registryGauges: string[] = [];
-        // registryMetadata is already populated from the compilation check above
-        if (registryMetadata) {
-            registryGauges = Object.keys(registryMetadata);
-        }
+        const searchableGauges = Object.keys(registryMetadata);
 
-        // 3. Separate Logic: History (DB) vs Latest (Registry)
-        const historyGauges = new Set(dbGauges);
-        const latestOnlyGauges = registryGauges.filter(g => !historyGauges.has(g));
+        // 3. Unique set of ALL gauges we care about
+        const allGauges = [...new Set([...dbGauges, ...searchableGauges])];
+        console.log(`Scraping ${allGauges.length} gauges (${dbGauges.length} active river linked)...`);
 
-        const flowData: Record<string, any> = {};
-        const latestData: Record<string, any> = {};
-        const endTs = Date.now();
-        const startTs = endTs - (3 * 60 * 60 * 1000); // 3 hours trend for sparklines
+        // Group by provider
+        const providerGroups: Record<string, string[]> = {};
+        allGauges.forEach(g => {
+            const [prefix, id] = g.split(":");
+            if (!providerGroups[prefix]) providerGroups[prefix] = [];
+            providerGroups[prefix].push(id);
+        });
 
-        console.log(`Synchronizing ${dbGauges.length} history gauges and ${latestOnlyGauges.length} discovery gauges...`);
+        // Fetch and merge
+        const mergedData: Record<string, GaugeHistory> = {};
+        const startTs = Date.now() - 86400000; // 24h lookup
 
-        // Helper to process and merge results
-        const mergeResult = (prefix: string, result: Record<string, GaugeHistory | GaugeReading>, isHistory: boolean) => {
-            for (const [id, data] of Object.entries(result)) {
-                const fullId = `${prefix}:${id}`;
-                let h: any;
-                
-                if (isHistory) {
-                    h = data;
-                    flowData[fullId] = h;
-                } else {
-                    h = { id, name: "Unknown", readings: [data] };
-                }
-
-                // Inject metadata from registry if available
-                if (registryMetadata[fullId]) {
-                    h.name = registryMetadata[fullId].name;
-                    h.lat = registryMetadata[fullId].lat;
-                    h.lon = registryMetadata[fullId].lon;
-                }
-
-                // Update latestData
-                const readings = (h as GaugeHistory).readings || [];
-                if (readings.length > 0) {
-                    latestData[fullId] = readings[readings.length - 1];
-                }
-            }
-        };
-
-        // 4. Batch Fetching
-        const historyGroup = parseGaugesParam(dbGauges.join(","));
-        const latestGroup = parseGaugesParam(latestOnlyGauges.join(","));
-        const allPrefixes = Array.from(new Set([...Object.keys(historyGroup), ...Object.keys(latestGroup)]));
-
-        const promises = allPrefixes.map(async (prefix) => {
+        const promises = Object.entries(providerGroups).map(async ([prefix, ids]) => {
             const provider = providers[prefix];
             if (!provider) return;
-
-            const hIds = historyGroup[prefix] || [];
-            const lIds = latestGroup[prefix] || [];
-
-            // A. Fetch History (DB Gauges)
-            if (hIds.length > 0) {
-                try {
-                    const data = await provider.getHistory(hIds, startTs, endTs, false);
-                    mergeResult(prefix, data, true);
-                } catch (e) {
-                    console.error(`History fetch failed for ${prefix}:`, e);
-                }
-            }
-
-            // B. Fetch Latest (Registry Gauges)
-            if (lIds.length > 0) {
-                try {
-                    const data = await provider.getLatest(lIds);
-                    mergeResult(prefix, data, false);
-                } catch (e) {
-                    console.error(`Latest fetch failed for ${prefix}:`, e);
-                }
+            
+            console.log(`- Fetching ${ids.length} gauges from ${prefix}...`);
+            try {
+                const data = await provider.getHistory(ids, startTs, Date.now());
+                Object.entries(data).forEach(([id, history]) => {
+                    mergedData[`${prefix}:${id}`] = history;
+                });
+            } catch (_e) {
+                console.error(`- ERROR: provider ${prefix} failed:`, _e);
             }
         });
 
         await Promise.all(promises);
-        
-        flowData.generatedAt = endTs;
-        latestData.generatedAt = endTs;
-
-        // 5. Save to R2
-        await env.FLOW_STORAGE.put("flowdata.json", JSON.stringify(flowData), {
-            httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=900, s-maxage=900" }
+        await env.FLOW_STORAGE.put("sitedata.json", JSON.stringify(mergedData), {
+             httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=86400" }
         });
-
-        await env.FLOW_STORAGE.put("latestdata.json", JSON.stringify(latestData), {
-            httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=900, s-maxage=900" }
-        });
+        console.log(`Background sync complete. Pushed ${Object.keys(mergedData).length} gauges to R2.`);
     }
 };

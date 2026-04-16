@@ -9,7 +9,7 @@ async function getGooglePublicKeys() {
          return cachedKeys;
     }
     const res = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
-    const data = await res.json();
+    const data = await res.json() as { keys: any[] };
     cachedKeys = data.keys;
     cachedKeyTime = Date.now();
     return cachedKeys;

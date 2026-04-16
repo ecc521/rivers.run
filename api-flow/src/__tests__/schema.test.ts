@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { ReadingSchema } from '../schema';
-import { usgsProvider } from '../services/usgs';
-import { nwsProvider } from '../services/nws';
-import { canadaProvider } from '../services/canada';
-import { ukProvider } from '../services/uk';
-import { irelandProvider } from '../services/ireland';
 import { toUnitSystem } from '../utils/units';
 
 describe('Schema Validation Audit', () => {

@@ -1,4 +1,4 @@
-import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite } from './provider';
+import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 
 /**
  * Ireland (WaterLevel.ie / OPW) Gauge Data Service
@@ -30,7 +30,7 @@ export const irelandProvider: GaugeProvider = {
                 const id = props.station_ref;
                 if (!id || !siteSet.has(id)) continue;
                 
-                if (props.value !== undefined) {
+                if (props.value !== undefined && isValidReadingValue(props.value, "m")) {
                     results[id] = {
                         dateTime: new Date(props.datetime).getTime(),
                         m: Number(props.value)
@@ -43,7 +43,7 @@ export const irelandProvider: GaugeProvider = {
         return results;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
         const maxTime = endTs ?? Date.now();
         const durationMs = maxTime - startTs;
         const period = durationMs > 1000 * 60 * 60 * 24 * 7 ? "month" : "week";
@@ -77,16 +77,18 @@ export const irelandProvider: GaugeProvider = {
                         const ts = new Date(dtStr).getTime();
                         if (isNaN(ts) || ts < startTs || ts > maxTime) continue;
                         
-                        readings.push({
-                            dateTime: ts,
-                            m: Number(valStr)
-                        });
+                        if (isValidReadingValue(valStr, "m")) {
+                            readings.push({
+                                dateTime: ts,
+                                m: Number(valStr)
+                            });
+                        }
                     }
                     
                     results[stationId] = {
                         id: stationId,
                         name: `Ireland Station ${stationId}`,
-                        readings: readings.sort((a, b) => a.dateTime - b.dateTime),
+                        readings: readings.toSorted((a, b) => a.dateTime - b.dateTime),
                         units: "m"
                     };
                 } catch (e) {
@@ -100,7 +102,7 @@ export const irelandProvider: GaugeProvider = {
     },
 
     async getSiteListing(siteCodes: string[]): Promise<GaugeSite[]> {
-        const fullListing = await this.getFullSiteListing();
+        const fullListing = await this.getFullSiteListing!();
         const siteSet = new Set(siteCodes);
         return fullListing.filter(s => siteSet.has(s.id));
     },

@@ -9,12 +9,12 @@ describe('UK EA Service', () => {
     describe('ukProvider.getHistory', () => {
         it('should format historical JSON readings correctly', async () => {
             const now = Date.now();
-            global.fetch = vi.fn().mockResolvedValue({
+            globalThis.fetch = vi.fn().mockResolvedValue({
                 ok: true,
                 json: async () => ({
                     items: [
-                        { dateTime: new Date(now - 30 * 60000).toISOString(), value: 1.5, measure: "http://environment.data.gov.uk/flood-monitoring/id/measures/1234-level-m-latest" },
-                        { dateTime: new Date(now - 15 * 60000).toISOString(), value: 25.5, measure: "http://environment.data.gov.uk/flood-monitoring/id/measures/1234-flow-m3/s-latest" }
+                        { dateTime: new Date(now - 30 * 60000).toISOString(), value: 1.5, measure: "https://environment.data.gov.uk/flood-monitoring/id/measures/1234-level-m-latest" },
+                        { dateTime: new Date(now - 15 * 60000).toISOString(), value: 25.5, measure: "https://environment.data.gov.uk/flood-monitoring/id/measures/1234-flow-m3/s-latest" }
                     ]
                 })
             });
@@ -25,11 +25,11 @@ describe('UK EA Service', () => {
             expect(result['1234'].readings).toHaveLength(2);
             expect(result['1234'].readings[0].m).toBe(1.5);
             expect(result['1234'].readings[1].cms).toBe(25.5);
-            expect(global.fetch).toHaveBeenCalledOnce();
+            expect(globalThis.fetch).toHaveBeenCalledOnce();
         });
 
         it('should handle API outages gracefully', async () => {
-            global.fetch = vi.fn().mockRejectedValue(new Error('Network Error'));
+            globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network Error'));
 
             const now = Date.now();
             const result = await ukProvider.getHistory(['1234'], now - 1000 * 60 * 60, now);

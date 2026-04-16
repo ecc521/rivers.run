@@ -14,7 +14,11 @@ type Bindings = {
   DB: D1Database;
 };
 
-const app = new OpenAPIHono<{ Bindings: Bindings }>();
+type Variables = {
+  user: any;
+};
+
+const app = new OpenAPIHono<{ Bindings: Bindings, Variables: Variables }>();
 
 // Expose OpenAPI dynamic specification directly
 app.doc('/openapi.json', {
@@ -29,6 +33,7 @@ app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
 });
 // Generate auto-updating Scalar interface dynamically
 app.get('/docs', apiReference({
+    // @ts-expect-error spec type mismatch in this version
     spec: { url: '/openapi.json' },
     theme: 'purple',
     layout: 'modern',
@@ -47,7 +52,7 @@ app.use("*", cors({
 // Global error handler
 app.onError((err, c) => {
     if (err instanceof z.ZodError) {
-         return c.json({ error: "Validation Failed", details: err.errors }, 400);
+         return c.json({ error: "Validation Failed", details: err.issues }, 400);
     }
     console.error(`Internal crash processing ${c.req.url}:`, err);
     return c.json({ error: "Internal Server Error" }, 500);
@@ -374,7 +379,8 @@ const resolveSuggestionRoute = createRoute({
         body: { content: { 'application/json': { schema: AdminResolutionSchema } } }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), message: z.string() }) } }, description: 'Resolved' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), message: z.string() }) } }, description: 'Resolved' },
+        404: { description: 'Not found' }
     }
 });
 
@@ -437,7 +443,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     }
 
     // Scrub IP from the publicly-accessible history record
-    const cleanAuthor = suggestion.suggested_by.startsWith("IP:") ? "Anonymous Paddler" : suggestion.suggested_by;
+    const cleanAuthor = (suggestion as any).suggested_by.startsWith("IP:") ? "Anonymous Paddler" : (suggestion as any).suggested_by;
 
     // Log the math diff
     batch.push(c.env.DB.prepare(`
@@ -672,6 +678,7 @@ const updateListRoute = createRoute({
     }
 });
 
+// @ts-expect-error Hono OpenAPI TypedResponse mismatch for multiple status codes
 app.openapi(updateListRoute, async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
@@ -724,6 +731,7 @@ const deleteListRoute = createRoute({
     }
 });
 
+// @ts-expect-error Hono OpenAPI TypedResponse mismatch for multiple status codes
 app.openapi(deleteListRoute, async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
@@ -791,7 +799,7 @@ const getSubscriptionsRoute = createRoute({
 app.openapi(getSubscriptionsRoute, async (c) => {
     const user = c.get("user");
     const { results } = await c.env.DB.prepare("SELECT list_id FROM user_subscriptions WHERE user_id = ?").bind(user.user_id).all();
-    return c.json({ subscriptions: results.map(r => r.list_id) });
+    return c.json({ subscriptions: (results || []).map(r => r.list_id as string) });
 });
 
 const updateSubscriptionsRoute = createRoute({

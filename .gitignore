@@ -60,3 +60,7 @@ rivers-run-firebase-adminsdk-wzb5p-843d01551f.json
 .dev.vars*
 !.dev.vars.example
 !.env.example
+
+# TypeScript Build Cache
+*.tsbuildinfo
+ttsconfig.tsbuildinfo

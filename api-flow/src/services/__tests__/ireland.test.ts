@@ -15,7 +15,7 @@ describe('Ireland OPW Service', () => {
 ${time1},1.234
 ${time2},1.250`;
 
-            global.fetch = vi.fn().mockResolvedValue({
+            globalThis.fetch = vi.fn().mockResolvedValue({
                 ok: true,
                 text: () => Promise.resolve(mockCsv)
             });
@@ -27,11 +27,11 @@ ${time2},1.250`;
             expect(result['00001'].readings).toHaveLength(2);
             expect(result['00001'].readings[0].m).toBe(1.234);
             expect(result['00001'].readings[1].m).toBe(1.250);
-            expect(global.fetch).toHaveBeenCalledOnce();
+            expect(globalThis.fetch).toHaveBeenCalledOnce();
         });
 
         it('should handle malformed or missing csv gracefully', async () => {
-            global.fetch = vi.fn().mockResolvedValue({
+            globalThis.fetch = vi.fn().mockResolvedValue({
                 ok: false
             });
 

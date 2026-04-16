@@ -45,7 +45,9 @@ export async function compileGaugeRegistry(existingRegistry: Record<string, Gaug
                 console.log(`- Updated ${provider.id}: ${newSites.length} gauges.`);
             } catch (e) {
                 // 3. FAILURE: Log and KEEP the existing entries for this provider
-                console.error(`- CRITICAL: Failed to refresh ${provider.id}. Preserving ${Object.keys(gaugeRegistry).filter(k => k.startsWith(`${provider.id}:`)).length} existing entries. Error:`, e);
+                const providerPrefix = provider.id + ":";
+                const existingCount = Object.keys(gaugeRegistry).filter(k => k.startsWith(providerPrefix)).length;
+                console.error(`- CRITICAL: Failed to refresh ${provider.id}. Preserving ${existingCount} existing entries. Error:`, e);
             }
         } else {
             console.log(`- Provider ${provider.id} does not support full site listing.`);

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2022",
-    "lib": ["es2023"],
+    "target": "es2021",
+    "lib": ["es2021"],
     "alwaysStrict": true,
     "strict": true,
     "preserveConstEnums": true,
@@ -12,6 +12,6 @@
     "types": ["@cloudflare/workers-types"],
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "src/__tests__/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules"]
 }

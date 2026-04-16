@@ -114,7 +114,8 @@ describe('USGS Service', () => {
                                 {
                                     value: [
                                         { value: '-999999', dateTime: '2026-04-15T12:00:00.000Z' },
-                                        { value: '100', dateTime: '2026-04-15T12:05:00.000Z' }
+                                        { value: '-999000', dateTime: '2026-04-15T12:05:00.000Z' },
+                                        { value: '100', dateTime: '2026-04-15T12:10:00.000Z' }
                                     ]
                                 }
                             ]
@@ -155,6 +156,37 @@ describe('USGS Service', () => {
             // 10C = 50F
             expect(result['12345'].readings[0].temp_f).toBe(50);
             expect((result['12345'].readings[0] as any).temp).toBeUndefined();
+        });
+
+        it('should handle null and empty values correctly', () => {
+            const mockData = {
+                value: {
+                    timeSeries: [
+                        {
+                            sourceInfo: {
+                                siteName: 'TEST GAUGE',
+                                siteCode: [{ value: '12345' }]
+                            },
+                            variable: {
+                                unit: { unitCode: 'ft3/s' },
+                                noDataValue: -999999
+                            },
+                            values: [
+                                {
+                                    value: [
+                                        { value: null, dateTime: '2026-04-15T12:00:00.000Z' },
+                                        { value: '', dateTime: '2026-04-15T12:05:00.000Z' },
+                                        { value: '100', dateTime: '2026-04-15T12:10:00.000Z' }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            };
+            const result = processUSGSResponse(mockData);
+            expect(result['12345'].readings).toHaveLength(1);
+            expect(result['12345'].readings[0].cfs).toBe(100);
         });
     });
 });
