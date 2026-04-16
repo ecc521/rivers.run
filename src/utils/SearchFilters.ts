@@ -37,19 +37,22 @@ export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
 };
 
 export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
-  if (query.favoritesOnly) return true;
-  if (query.listId) return true;
+  if (query.favoritesOnly === true) return true;
+  if (query.listId && query.listId.trim() !== "") return true;
   if (query.listData && query.listData.length > 0) return true;
-  if (query.distanceMax !== undefined) return true;
-  if (query.name) return true;
-  if (query.section) return true;
-  if (query.skillMin !== defaultAdvancedSearchQuery.skillMin) return true;
-  if (query.skillMax !== defaultAdvancedSearchQuery.skillMax) return true;
-  if (query.flowMin !== defaultAdvancedSearchQuery.flowMin) return true;
-  if (query.flowMax !== defaultAdvancedSearchQuery.flowMax) return true;
-  if (query.includeUnknownSkill !== defaultAdvancedSearchQuery.includeUnknownSkill) return true;
-  if (query.includeUnknownFlow !== defaultAdvancedSearchQuery.includeUnknownFlow) return true;
-  if (query.includeDams !== defaultAdvancedSearchQuery.includeDams) return true;
+  if (query.distanceMax != null && query.distanceMax <= 500) return true;
+  if (query.name && query.name.trim() !== "") return true;
+  if (query.section && query.section.trim() !== "") return true;
+  
+  if (query.skillMin !== undefined && query.skillMin !== defaultAdvancedSearchQuery.skillMin) return true;
+  if (query.skillMax !== undefined && query.skillMax !== defaultAdvancedSearchQuery.skillMax) return true;
+  if (query.flowMin !== undefined && query.flowMin !== defaultAdvancedSearchQuery.flowMin) return true;
+  if (query.flowMax !== undefined && query.flowMax !== defaultAdvancedSearchQuery.flowMax) return true;
+  
+  if (query.includeUnknownSkill !== undefined && query.includeUnknownSkill !== defaultAdvancedSearchQuery.includeUnknownSkill) return true;
+  if (query.includeUnknownFlow !== undefined && query.includeUnknownFlow !== defaultAdvancedSearchQuery.includeUnknownFlow) return true;
+  if (query.includeDams !== undefined && query.includeDams !== defaultAdvancedSearchQuery.includeDams) return true;
+  
   return false;
 }
 

@@ -63,19 +63,21 @@ const Home: React.FC = () => {
      }
   }, [isListOverlay, id, navigate]);
 
-  const { rivers, loading: riversLoading, error: riversError, isGlobalStale, dataGeneratedAt, refresh } = useRivers();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Sync internal loading state with rivers data hook
-  useEffect(() => {
-     if (riversLoading) {
-         setLoading(true);
-     } else {
-         setLoading(false);
-         if (riversError) setError(riversError);
-     }
-  }, [riversLoading, riversError]);
+   const { rivers, loading: riversLoading, error: riversError, isGlobalStale, dataGeneratedAt, refresh } = useRivers();
+   const { syncError: listSyncError, refreshCloudState } = useLists();
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+ 
+   // Sync internal loading state with rivers data hook
+   useEffect(() => {
+      // We only want to show the full-page loader if we have NO rivers and are fetching
+      if (riversLoading && rivers.length === 0) {
+          setLoading(true);
+      } else {
+          setLoading(false);
+          if (riversError) setError(riversError);
+      }
+   }, [riversLoading, riversError, rivers.length]);
 
   const [searchParams] = useSearchParams();
 
@@ -186,10 +188,18 @@ const Home: React.FC = () => {
                    }
                  } catch {}
                }
-               if (!foundOffline) setError("Requested list does not exist.");
+               if (!foundOffline) {
+                  setError("Requested list does not exist.");
+                  // Clear the broken list filter so the site remains usable
+                  setSearchQuery((prev) => ({ ...prev, listId: undefined, listData: undefined }));
+               }
             }
         } catch (err: unknown) {
             if (err instanceof Error) console.error("Failed to load list from network, trying to rely on cache", err.message);
+            // If network failed and we have no cache, clear the filter so they see something
+            if (!cachedListStr) {
+               setSearchQuery((prev) => ({ ...prev, listId: undefined, listData: undefined }));
+            }
         } finally {
             setLoading(false);
         }
@@ -317,6 +327,40 @@ const Home: React.FC = () => {
     <div className="page-content">
       {/* Search List Overlay Toggle */}
       <div style={{ display: isRiverOverlay ? "none" : "block" }}>
+        {listSyncError && (
+          <div style={{ 
+            backgroundColor: "var(--surface-hover)", 
+            color: "var(--text)", 
+            padding: "10px", 
+            textAlign: "center", 
+            borderRadius: "8px", 
+            marginBottom: "15px",
+            border: "1px solid var(--border)",
+            fontSize: "0.85em",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "10px"
+          }}>
+            <span>
+              Cloud lists sync failed. Using offline data.
+            </span>
+            <button 
+              onClick={() => refreshCloudState()}
+              style={{
+                backgroundColor: "var(--primary)",
+                color: "white",
+                border: "none",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "0.9em"
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
         {isGlobalStale && (
           <div style={{ 
             backgroundColor: "var(--warning-bg)", 

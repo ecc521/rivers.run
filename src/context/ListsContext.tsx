@@ -40,6 +40,8 @@ interface ListsContextType {
   toggleRiverInQuickList: (river: any, quickActionPref: string) => Promise<void>;
   isRiverInQuickList: (riverId: string, quickActionPref: string) => boolean;
   loading: boolean;
+  syncError: string | null;
+  refreshCloudState: () => Promise<void>;
 }
 
 const ListsContext = createContext<ListsContextType>({
@@ -57,6 +59,8 @@ const ListsContext = createContext<ListsContextType>({
   toggleRiverInQuickList: async () => {},
   isRiverInQuickList: () => false,
   loading: true,
+  syncError: null,
+  refreshCloudState: async () => {},
 });
 
 export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -64,6 +68,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [myLists, setMyLists] = useState<UserList[]>([]);
   const [subscribedListIds, setSubscribedListIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Initialize strictly from local offline cache
   useEffect(() => {
@@ -81,31 +86,31 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     initOffline();
   }, []);
 
+  const pullCloudState = async () => {
+    if (!user) return;
+    setSyncError(null);
+    try {
+        const serverLists = await fetchAPI("/lists", {}, user);
+        if (serverLists) {
+              setMyLists( serverLists);
+              persistentStorage.set("my_custom_lists", JSON.stringify(serverLists));
+        }
+
+        const serverSubs = await fetchAPI("/user/subscriptions", {}, user);
+        if (serverSubs && serverSubs.subscriptions) {
+              setSubscribedListIds(serverSubs.subscriptions);
+              persistentStorage.set("my_subscribed_lists", JSON.stringify(serverSubs.subscriptions));
+        }
+    } catch (e: any) {
+        console.error("Failed to sync cloud state:", e);
+        setSyncError(e.message || "Failed to sync with cloud");
+    }
+  };
+
   // Fetch true state from API natively when network online
   useEffect(() => {
     if (!user || loading) return;
-
-    let isMounted = true;
-    async function pullCloudState() {
-         try {
-             const serverLists = await fetchAPI("/lists", {}, user);
-             if (serverLists && isMounted) {
-                  setMyLists(serverLists);
-                  persistentStorage.set("my_custom_lists", JSON.stringify(serverLists));
-             }
-
-             const serverSubs = await fetchAPI("/user/subscriptions", {}, user);
-             if (serverSubs && serverSubs.subscriptions && isMounted) {
-                  setSubscribedListIds(serverSubs.subscriptions);
-                  persistentStorage.set("my_subscribed_lists", JSON.stringify(serverSubs.subscriptions));
-             }
-         } catch (e) {
-             console.error("Failed to sync cloud state:", e);
-         }
-    }
     pullCloudState();
-
-    return () => { isMounted = false; };
   }, [user, loading]);
 
 
@@ -246,7 +251,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         myLists, subscribedListIds, createList, updateList, deleteList,
         toggleSubscription, isSubscribed, addRiverToList, addMultipleRiversToList,
         removeRiverFromList, updateRiverInList, toggleRiverInQuickList,
-        isRiverInQuickList, loading
+        isRiverInQuickList, loading, syncError, refreshCloudState: pullCloudState
       }}
     >
       {children}
