@@ -40,6 +40,7 @@
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/ios": "^8.3.0",
+    "@cloudflare/workers-types": "^4.20260415.1",
     "@cloudflare/vite-plugin": "^1.32.3",
     "@eslint/js": "^10.0.1",
     "@types/leaflet": "^1.9.21",
