@@ -18,6 +18,15 @@ export const GaugeMappingSchema = z.object({
   name: limitString(100)
 });
 
+export const FlowThresholdsSchema = z.object({
+  unit: z.enum(["cfs", "ft", "cms", "m"]),
+  min: z.number().optional().nullable(),
+  low: z.number().optional().nullable(),
+  mid: z.number().optional().nullable(),
+  high: z.number().optional().nullable(),
+  max: z.number().optional().nullable()
+});
+
 // The strict PUT payload validator mapping exact database column caps
 export const RiverEditorPayload = z.object({
   name: requiredString(100),
@@ -29,7 +38,8 @@ export const RiverEditorPayload = z.object({
   writeup: limitString(25000), // Our primary protection against massive text bomb bloat
   tags: z.array(strictString(20)).max(10, "Cannot exceed 10 tags").optional(),
   accessPoints: z.array(AccessPointSchema).max(50, "Cannot exceed 50 access points").optional(),
-  gauges: z.array(GaugeMappingSchema).max(10, "Cannot exceed 10 gauges").optional()
+  gauges: z.array(GaugeMappingSchema).max(10, "Cannot exceed 10 gauges").optional(),
+  flow: FlowThresholdsSchema.optional().nullable()
 });
 
 export type RiverEditInput = z.infer<typeof RiverEditorPayload>;
@@ -89,6 +99,7 @@ export const RiverSchema = z.object({
   tags: z.array(z.string()).optional().openapi({ example: ["classic", "busy"] }),
   gauges: z.array(GaugeMappingSchema).optional(),
   accessPoints: z.array(AccessPointSchema).optional(),
+  flow: FlowThresholdsSchema.optional().nullable(),
   updated_at: z.number().optional().openapi({ example: 1713214540 })
 });
 

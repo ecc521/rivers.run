@@ -47,6 +47,9 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
       });
   }
 
+  if (gaugeRecord && gaugeRecord.readings && gaugeRecord.readings.length > 0) {
+    const rawLatest = gaugeRecord.readings[gaugeRecord.readings.length - 1];
+    
     // 2-hour relative staleness rule: Reading must be within 2 hours of the sync generation
     const readingAgeFromSync = (flowData.generatedAt || Date.now()) - rawLatest.dateTime;
     if (readingAgeFromSync > 2 * 60 * 60 * 1000) {
@@ -84,6 +87,8 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
 const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): RiverData | null => {
    const gData: any = gaugeData;
    if (!gData.readings || gData.readings.length === 0) return null;
+
+   const rawLatest = gData.readings[gData.readings.length - 1];
 
    // 2-hour relative staleness rule
    const readingAgeFromSync = (gaugeData.generatedAt || Date.now()) - rawLatest.dateTime;
@@ -135,7 +140,6 @@ export const useRivers = (): UseRiversResult => {
 
   const isGlobalStale = useMemo(() => {
     // Re-evaluate on every heartbeat tick
-    void tick; 
     if (!dataGeneratedAt) return false;
     return (Date.now() - dataGeneratedAt) > 60 * 60 * 1000; // 1 hour
   }, [dataGeneratedAt, tick]);
@@ -164,6 +168,16 @@ export const useRivers = (): UseRiversResult => {
     const heartbeatId = setInterval(() => {
         setTick(t => t + 1);
     }, 5 * 60 * 1000);
+
+    // Subscribe to global state changes
+    const handleUpdate = () => {
+        setRivers(globalRiversCache || []);
+        setLoading(globalLoading);
+        setError(globalError);
+        setDataGeneratedAt(globalDataGeneratedAt);
+        setLastFetchTime(globalLastFetchTime);
+    };
+    fetchSubscribers.add(handleUpdate);
 
     const fetchRivers = async (force = false) => {
       // If we already have fresh data (less than 15 mins old), or are already fetching, skip

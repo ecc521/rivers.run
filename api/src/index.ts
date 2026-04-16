@@ -70,6 +70,33 @@ const getRiversRoute = createRoute({
     },
 });
 
+const formatRiverRow = (row: any) => {
+    const formatted = {
+        ...row,
+        tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : [],
+        gauges: typeof row.gauges === 'string' ? JSON.parse(row.gauges) : (row.gauges || []),
+        accessPoints: typeof row.accessPoints === 'string' ? JSON.parse(row.accessPoints) : (row.accessPoints || []),
+        flow: {
+             unit: row.flow_unit || "cfs",
+             min: row.flow_min,
+             low: row.flow_low,
+             mid: row.flow_mid,
+             high: row.flow_high,
+             max: row.flow_max
+        }
+    };
+    
+    // Clean up flat database columns since they are nested now
+    delete formatted.flow_unit;
+    delete formatted.flow_min;
+    delete formatted.flow_low;
+    delete formatted.flow_mid;
+    delete formatted.flow_high;
+    delete formatted.flow_max;
+
+    return formatted;
+};
+
 app.openapi(getRiversRoute, async (c) => {
     const { results } = await c.env.DB.prepare(`
         SELECT 
@@ -93,12 +120,7 @@ app.openapi(getRiversRoute, async (c) => {
     // stale-while-revalidate=86400 allows serving old content while refetching in the background
     c.header("Cache-Control", "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400");
     
-    const rivers = results.map(row => ({
-          ...row,
-          tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : [],
-          gauges: typeof row.gauges === 'string' ? JSON.parse(row.gauges) : (row.gauges || []),
-          accessPoints: typeof row.accessPoints === 'string' ? JSON.parse(row.accessPoints) : (row.accessPoints || [])
-    }));
+    const rivers = results.map(row => formatRiverRow(row));
     return c.json(rivers);
 });
 
@@ -136,12 +158,7 @@ app.openapi(getRiverRoute, async (c) => {
     
     if (!result) return c.json({ error: "River not found" }, 404);
     
-    return c.json({
-        ...result,
-        tags: typeof result.tags === 'string' ? JSON.parse(result.tags) : [],
-        gauges: typeof result.gauges === 'string' ? JSON.parse(result.gauges) : (result.gauges || []),
-        accessPoints: typeof result.accessPoints === 'string' ? JSON.parse(result.accessPoints) : (result.accessPoints || [])
-    });
+    return c.json(formatRiverRow(result));
 });
 
 const deleteRiverRoute = createRoute({
@@ -194,12 +211,7 @@ app.openapi(updateRiverRoute, async (c) => {
     const original = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(id).first();
     let oldPayload = {};
     if (original) {
-         oldPayload = {
-              ...original,
-              tags: typeof original.tags === 'string' ? JSON.parse(original.tags) : [],
-              gauges: typeof original.gauges === 'string' ? JSON.parse(original.gauges) : [],
-              accessPoints: typeof original.accessPoints === 'string' ? JSON.parse(original.accessPoints) : []
-         };
+         oldPayload = formatRiverRow(original);
     }
     
     // Calculate standard JSON delta 
@@ -217,21 +229,31 @@ app.openapi(updateRiverRoute, async (c) => {
     const gaugesStr = JSON.stringify(validated.gauges || []);
     const accessStr = JSON.stringify(validated.accessPoints || []);
 
+    const flowUnit = validated.flow?.unit || "cfs";
+    const flowMin = validated.flow?.min ?? null;
+    const flowLow = validated.flow?.low ?? null;
+    const flowMid = validated.flow?.mid ?? null;
+    const flowHigh = validated.flow?.high ?? null;
+    const flowMax = validated.flow?.max ?? null;
+
     // Atomic Execution
     const batch = [];
     if (original) {
         batch.push(c.env.DB.prepare(`
-             UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, tags=?, gauges=?, accessPoints=? WHERE id=?
+             UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=? WHERE id=?
         `).bind(
              validated.name, validated.section, validated.altname, validated.states, validated.class,
-             validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr, id
+             validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr, 
+             flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, id
         ));
     } else {
         batch.push(c.env.DB.prepare(`
-             INSERT INTO rivers (id, name, section, altname, states, class, skill, writeup, tags, gauges, accessPoints) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             INSERT INTO rivers (id, name, section, altname, states, class, skill, writeup, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
              id, validated.name, validated.section, validated.altname, validated.states, validated.class,
-             validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr
+             validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr,
+             flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax
         ));
     }
 
@@ -384,23 +406,26 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     const gaugesStr = JSON.stringify(validated.gauges || []);
     const accessStr = JSON.stringify(validated.accessPoints || []);
 
+    const flowUnit = validated.flow?.unit || "cfs";
+    const flowMin = validated.flow?.min ?? null;
+    const flowLow = validated.flow?.low ?? null;
+    const flowMid = validated.flow?.mid ?? null;
+    const flowHigh = validated.flow?.high ?? null;
+    const flowMax = validated.flow?.max ?? null;
+
     batch.push(c.env.DB.prepare(`
-         UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, tags=?, gauges=?, accessPoints=? WHERE id=?
+         UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=? WHERE id=?
     `).bind(
          validated.name, validated.section, validated.altname, validated.states, validated.class,
-         validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr, suggestion.river_id
+         validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr, 
+         flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, suggestion.river_id
     ));
 
     // Calculate strict JSON delta
     const original = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(suggestion.river_id).first();
     let oldPayload = {};
     if (original) {
-         oldPayload = {
-              ...original,
-              tags: typeof original.tags === 'string' ? JSON.parse(original.tags) : [],
-              gauges: typeof original.gauges === 'string' ? JSON.parse(original.gauges) : [],
-              accessPoints: typeof original.accessPoints === 'string' ? JSON.parse(original.accessPoints) : []
-         };
+         oldPayload = formatRiverRow(original);
     }
 
     const diff_patch: Record<string, { old: any, new: any }> = {};
