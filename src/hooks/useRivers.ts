@@ -153,7 +153,9 @@ export const useRivers = (): UseRiversResult => {
                     setDataGeneratedAt(globalDataGeneratedAt);
                     setLoading(false);
                 }
-            } catch (e) {}
+            } catch {
+                console.warn("Failed to parse cached bootstrap data. Falling back to live fetch.");
+            }
         }
     }
 
