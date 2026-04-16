@@ -11,9 +11,10 @@ interface RiverExpansionProps {
   river: RiverData;
   isMapOverlay?: boolean;
   onShowAccessPoints?: () => void;
+  dataGeneratedAt?: number | null;
 }
 
-export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay }) => {
+export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, dataGeneratedAt }) => {
   const [showMap, setShowMap] = useState(false);
   const { isAdmin } = useAuth();
   
@@ -123,7 +124,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
         )}
       </p>
 
-      <USGSGraphs river={displayRiver} />
+      <USGSGraphs river={displayRiver} dataGeneratedAt={dataGeneratedAt} />
     </div>
   );
 };

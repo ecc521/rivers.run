@@ -319,13 +319,13 @@ const Home: React.FC = () => {
       <div style={{ display: isRiverOverlay ? "none" : "block" }}>
         {isGlobalStale && (
           <div style={{ 
-            backgroundColor: "var(--danger-bg)", 
-            color: "var(--danger-text)", 
+            backgroundColor: "var(--warning-bg)", 
+            color: "var(--warning-text)", 
             padding: "12px", 
             textAlign: "center", 
             borderRadius: "8px", 
             marginBottom: "15px",
-            border: "1px solid var(--danger)",
+            border: "1px solid var(--warning)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -337,13 +337,13 @@ const Home: React.FC = () => {
             <button 
               onClick={() => refresh()}
               style={{
-                backgroundColor: "var(--danger)",
-                color: "#fff",
-                border: "none",
+                backgroundColor: "var(--warning)",
+                color: "var(--warning-text)",
+                border: "1px solid var(--warning-text)",
                 padding: "4px 12px",
                 borderRadius: "4px",
                 cursor: "pointer",
-                fontWeight: "bold"
+                fontWeight: "900"
               }}
             >
               Update

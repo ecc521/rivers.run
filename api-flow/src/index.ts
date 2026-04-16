@@ -83,7 +83,14 @@ const recentRoute = createRoute({
 app.openapi(recentRoute, async (c) => {
     const object = await c.env.FLOW_STORAGE.get("flowdata.json");
     if (!object) return c.json({ error: "Data not found" }, 404);
-    return new Response(object.body, { headers: { "Content-Type": "application/json" } });
+    
+    // Explicit CORS for raw response
+    return new Response(object.body, { 
+        headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+        } 
+    });
 });
 
 // 3. Latest Readings (Single latest for each gauge)
@@ -197,7 +204,12 @@ app.openapi(sitesRoute, async (c) => {
     if (!refresh) {
          const cached = await c.env.FLOW_STORAGE.get("sitedata.json");
          if (cached) {
-            return new Response(cached.body, { headers: { "Content-Type": "application/json" } });
+            return new Response(cached.body, { 
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                } 
+            });
          }
     }
 

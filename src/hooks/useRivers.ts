@@ -11,12 +11,14 @@ interface UseRiversResult {
   error: string | null;
   isGlobalStale: boolean;
   dataGeneratedAt: number | null;
+  lastFetchTime: number | null;
   refresh: () => Promise<void>;
 }
 
 // Global cache to prevent re-fetching on navigation between Home and Map
 let globalRiversCache: RiverData[] | null = null;
 let globalDataGeneratedAt: number | null = null;
+let globalLastFetchTime: number | null = null;
 let globalLoading = false;
 let globalError: string | null = null;
 const fetchSubscribers: Set<() => void> = new Set();
@@ -45,12 +47,9 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
       });
   }
 
-  if (gaugeRecord && gaugeRecord.readings && gaugeRecord.readings.length > 0) {
-    const rawLatest = gaugeRecord.readings[gaugeRecord.readings.length - 1];
-    
-    // 3-hour staleness rule: Latest non-forecast reading must be brand new
-    const readingAge = Date.now() - rawLatest.dateTime;
-    if (readingAge > 3 * 60 * 60 * 1000) {
+    // 2-hour relative staleness rule: Reading must be within 2 hours of the sync generation
+    const readingAgeFromSync = (flowData.generatedAt || Date.now()) - rawLatest.dateTime;
+    if (readingAgeFromSync > 2 * 60 * 60 * 1000) {
         river.isReadingStale = true;
     }
 
@@ -86,11 +85,9 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
    const gData: any = gaugeData;
    if (!gData.readings || gData.readings.length === 0) return null;
 
-   const rawLatest = gData.readings[gData.readings.length - 1];
-   
-   // 3-hour staleness rule
-   const readingAge = Date.now() - rawLatest.dateTime;
-   const isStale = readingAge > 3 * 60 * 60 * 1000;
+   // 2-hour relative staleness rule
+   const readingAgeFromSync = (gaugeData.generatedAt || Date.now()) - rawLatest.dateTime;
+   const isStale = readingAgeFromSync > 2 * 60 * 60 * 1000;
 
    const latest = applyUnitSettings(rawLatest, settings);
    const { flowUnits } = settings;
@@ -132,12 +129,16 @@ export const useRivers = (): UseRiversResult => {
   const [loading, setLoading] = useState(globalRiversCache === null ? true : globalLoading);
   const [error, setError] = useState<string | null>(globalError);
   const [dataGeneratedAt, setDataGeneratedAt] = useState<number | null>(globalDataGeneratedAt);
+  const [lastFetchTime, setLastFetchTime] = useState<number | null>(globalLastFetchTime);
+  const [tick, setTick] = useState(0); // 5-minute heartbeat trigger
   const settings = useSettings();
 
   const isGlobalStale = useMemo(() => {
+    // Re-evaluate on every heartbeat tick
+    void tick; 
     if (!dataGeneratedAt) return false;
     return (Date.now() - dataGeneratedAt) > 60 * 60 * 1000; // 1 hour
-  }, [dataGeneratedAt]);
+  }, [dataGeneratedAt, tick]);
 
   useEffect(() => {
     // Attempt bootstrap from localStorage if global cache is empty
@@ -159,18 +160,15 @@ export const useRivers = (): UseRiversResult => {
         }
     }
 
-    // Subscribe to global state changes
-    const handleUpdate = () => {
-        setRivers(globalRiversCache || []);
-        setLoading(globalLoading);
-        setError(globalError);
-        setDataGeneratedAt(globalDataGeneratedAt);
-    };
-    fetchSubscribers.add(handleUpdate);
+    // 5-minute heartbeat to re-calculate staleness banners
+    const heartbeatId = setInterval(() => {
+        setTick(t => t + 1);
+    }, 5 * 60 * 1000);
 
     const fetchRivers = async (force = false) => {
-      // If we already have data, or are already fetching, don't duplicate work
-      if (!force && (globalRiversCache || globalLoading)) {
+      // If we already have fresh data (less than 15 mins old), or are already fetching, skip
+      const isFresh = globalLastFetchTime && (Date.now() - globalLastFetchTime < 15 * 60 * 1000);
+      if (!force && isFresh && (globalRiversCache || globalLoading)) {
           return;
       }
       
@@ -216,6 +214,7 @@ export const useRivers = (): UseRiversResult => {
 
         globalRiversCache = processedData;
         globalDataGeneratedAt = genTime;
+        globalLastFetchTime = Date.now();
         globalLoading = false;
 
         // Persist to local storage for future bootstrap
@@ -232,10 +231,20 @@ export const useRivers = (): UseRiversResult => {
       }
     };
 
+    // Auto-fetch on refocus/visibility if data is > 15 mins old
+    const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+            fetchRivers();
+        }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     fetchRivers();
 
     return () => {
         fetchSubscribers.delete(handleUpdate);
+        clearInterval(heartbeatId);
+        document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
@@ -248,5 +257,5 @@ export const useRivers = (): UseRiversResult => {
       window.location.reload(); // Simplest "Update" button implementation for now
   };
 
-  return { rivers, loading, error, isGlobalStale, dataGeneratedAt, refresh };
+  return { rivers, loading, error, isGlobalStale, dataGeneratedAt, lastFetchTime, refresh };
 };

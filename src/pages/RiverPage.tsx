@@ -11,7 +11,7 @@ import { useSettings } from "../context/SettingsContext";
 const RiverPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { rivers, loading, error } = useRivers();
+  const { rivers, loading, error, dataGeneratedAt } = useRivers();
 
 
   const river = rivers.find((r) => r.id === id);
@@ -139,7 +139,8 @@ const RiverPage: React.FC = () => {
                     )}
 
                     {/* Status Badge */}
-                    <div style={{ fontSize: "1rem", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "1rem", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                        {displayRiver.isReadingStale && <span>⚠️</span>}
                         {(() => {
                            if (displayRiver.running === 0) return "Too Low";
                            if (displayRiver.running < 1) return "Low";
@@ -148,7 +149,7 @@ const RiverPage: React.FC = () => {
                            return "Too High";
                         })()}
                     </div>
-
+                    {displayRiver.isReadingStale && <div style={{ fontSize: "0.75rem", color: "var(--warning-text)", fontWeight: "800", letterSpacing: "0.5px" }}>STALE DATA</div>}
                 </div>
                 
                 {/* Min/Max Bar below */}
@@ -218,7 +219,7 @@ const RiverPage: React.FC = () => {
           fontSize: "1.1rem",
           lineHeight: "1.6"
       }}>
-         <RiverExpansion river={displayRiver || river} />
+         <RiverExpansion river={displayRiver || river} dataGeneratedAt={dataGeneratedAt} />
       </div>
     </div>
   );

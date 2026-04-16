@@ -136,6 +136,11 @@ export function useDynamicUSGS(river: RiverData) {
     }
 
     if (latest) {
+        // 2-hour relative staleness rule: (Fetch Time - Reading Time)
+        // Since we just fetched this live, the "sync time" is effectively now.
+        const ageInMs = Date.now() - latest.dateTime;
+        enriched.isReadingStale = ageInMs > 2 * 60 * 60 * 1000;
+
         enriched.cfs = latest.cfs ?? enriched.cfs;
         const ftValue = latest.ft;
         enriched.ft = (ftValue !== undefined && !isNaN(ftValue)) ? ftValue : enriched.ft;

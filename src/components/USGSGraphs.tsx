@@ -14,6 +14,7 @@ import { useSettings } from "../context/SettingsContext";
 
 interface Props {
   river: RiverData;
+  dataGeneratedAt?: number | null;
 }
 
 const formatDate = (timestamp: number) => {
@@ -118,8 +119,11 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
          }
      }
      if (!latestActualReading) return false;
-     return (Date.now() - latestActualReading.dateTime) > 3 * 60 * 60 * 1000;
-  }, [rawData]);
+     
+     // 2-hour relative staleness rule: Reading must be within 2 hours of the sync generation
+     const syncTime = dataGeneratedAt || Date.now();
+     return (syncTime - latestActualReading.dateTime) > 2 * 60 * 60 * 1000;
+  }, [rawData, dataGeneratedAt]);
 
   const hasForecastData = useMemo(() => {
     return rawData.some((d: any) => d.cfsForecast != null || d.ftForecast != null || d.forecast === true);
@@ -344,17 +348,17 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
         <>
           {isGraphStale && (
             <div style={{ 
-              backgroundColor: "var(--danger-bg)", 
-              color: "var(--danger-text)", 
+              backgroundColor: "var(--warning-bg)", 
+              color: "var(--warning-text)", 
               padding: "10px", 
               borderRadius: "8px", 
               marginBottom: "10px", 
               fontSize: "0.9em",
               textAlign: "center",
-              border: "1px solid var(--danger)",
+              border: "1px solid var(--warning)",
               fontWeight: "bold"
             }}>
-              ⚠️ Data is more than 3 hours old. This gauge may be reporting intermittently or is currently offline.
+              ⚠️ Data is more than 2 hours old. This gauge may be reporting intermittently or is currently offline.
             </div>
           )}
           <div
