@@ -284,6 +284,7 @@ export default {
                                 // If the registry had coordinates, ensure they are kept
                                 lat: history.lat ?? registryMetadata[fullId]?.lat,
                                 lon: history.lon ?? registryMetadata[fullId]?.lon,
+                                state: history.state ?? registryMetadata[fullId]?.state,
                             };
                         });
                     } catch (_e) {

@@ -19,7 +19,7 @@ const SettingsContext = createContext<SettingsContextType>({
   isDarkMode: false,
   isColorBlindMode: false,
   homePageDefaultSearch: null,
-  quickActionPref: "ask",
+  quickActionPref: "favorites",
   updateSetting: () => {},
   loading: true,
   themePref: null,
@@ -36,7 +36,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [themePref, setThemePref] = useState<string | null>(null);
   const [colorBlindPref, setColorBlindPref] = useState<string | null>(null);
   const [defaultSearchPref, setDefaultSearchPref] = useState<string | null>(null);
-  const [quickActionState, setQuickActionState] = useState<string>("ask");
+  const [quickActionState, setQuickActionState] = useState<string>("favorites");
   const [flowUnits, setFlowUnits] = useState<string>("default");
   const [tempUnits, setTempUnits] = useState<string>("imperial");
   const [precipUnits, setPrecipUnits] = useState<string>("imperial");
@@ -49,8 +49,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     async function init() {
-      const qap = await persistentStorage.get("quickActionPref") || await persistentStorage.get("starActionPref");
-      setQuickActionState(qap || "ask");
+      let qap = await persistentStorage.get("quickActionPref") || await persistentStorage.get("starActionPref");
+      if (qap === "ask") qap = "favorites";
+      setQuickActionState(qap || "favorites");
       setFlowUnits(await persistentStorage.get("flowUnits") || "default");
       setTempUnits(await persistentStorage.get("tempUnits") || "imperial");
       setPrecipUnits(await persistentStorage.get("precipUnits") || "imperial");
@@ -81,7 +82,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     if (key === "homePageDefaultSearch")
       setDefaultSearchPref(value === "null" ? null : value);
     if (key === "quickActionPref" || key === "starActionPref")
-      setQuickActionState(value === "null" ? "ask" : (value || "ask"));
+      setQuickActionState(value === "null" || value === "ask" ? "favorites" : (value || "favorites"));
     if (key === "flowUnits") setFlowUnits(value || "default");
     if (key === "tempUnits") setTempUnits(value || "imperial");
     if (key === "precipUnits") setPrecipUnits(value || "imperial");

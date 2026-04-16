@@ -97,4 +97,19 @@ describe("riverValidation", () => {
     expect(res.errors).toHaveLength(0);
     expect(res.warnings[0]).toContain("This river profile is abnormally large");
   });
+
+  it("rejects non-array types for tags, gauges, and accessPoints", () => {
+    const malformed = {
+      id: "malformed_types",
+      name: "Malformed Types",
+      tags: "not-an-array",
+      gauges: { id: "not-an-array" },
+      accessPoints: "not-an-array"
+    };
+    const res = validateRiver(malformed);
+    expect(res.isValid).toBe(false);
+    expect(res.errors).toContain("Tags must be an array of strings.");
+    expect(res.errors).toContain("Gauges must be an array.");
+    expect(res.errors).toContain("Access points must be an array.");
+  });
 });

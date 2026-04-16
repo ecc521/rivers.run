@@ -1,5 +1,5 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
-import { formatGaugeName } from '../utils/formatting';
+import { formatStateCode, formatGaugeName } from '../utils/formatting';
 
 /**
  * Ireland (WaterLevel.ie / OPW) Gauge Data Service
@@ -134,7 +134,8 @@ export const irelandProvider: GaugeProvider = {
                         id: id,
                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                         lat: coords[1],
-                        lon: coords[0]
+                        lon: coords[0],
+                        state: formatStateCode(props.region || props.county, "Ireland")
                     });
                 }
             }

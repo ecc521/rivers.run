@@ -63,21 +63,31 @@ export default function RiverEditor() {
       // Rigorously deep clone to completely sever object references
       const data = JSON.parse(JSON.stringify(inputData));
 
-      const safeAccess = (data.accessPoints || []).map((ap: any) => ({ ...ap, rawLat: ap.lat ? String(ap.lat) : "", rawLon: ap.lon ? String(ap.lon) : "" }));
+      const rawAccessPoints = Array.isArray(data.accessPoints) ? data.accessPoints : [];
+      const safeAccess = rawAccessPoints.map((ap: any) => ({ 
+        ...ap, 
+        rawLat: ap.lat ? String(ap.lat) : "", 
+        rawLon: ap.lon ? String(ap.lon) : "" 
+      }));
+
       setRiverData({
         id: data.id || targetId,
         name: data.name || "",
-        states: data.states || "MD",
+        states: typeof data.states === 'string' ? data.states : "MD",
         class: data.class || "I",
         skill: data.skill || "FW",
         dam: data.dam || false,
         aw: data.aw || "",
         section: data.section || "",
-        gauges: data.gauges || [],
+        gauges: Array.isArray(data.gauges) ? data.gauges : [],
         accessPoints: safeAccess,
         writeup: data.writeup || "",
-        rawTags: (data.tags || []).join(", "),
-        imageUrls: data.imageUrls || [],
+        rawTags: (() => {
+          if (Array.isArray(data.tags)) return data.tags.join(", ");
+          if (typeof data.tags === "string") return data.tags;
+          return "";
+        })(),
+        imageUrls: Array.isArray(data.imageUrls) ? data.imageUrls : [],
         flow: data.flow || { unit: "cfs", min: null, low: null, mid: null, high: null, max: null }
       });
   };

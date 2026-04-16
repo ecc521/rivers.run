@@ -6,6 +6,8 @@ import { calculateColor } from "../utils/flowInfoCalculations";
 
 import { useLists } from "../context/ListsContext";
 import { useSettings } from "../context/SettingsContext";
+import { useAuth } from "../context/AuthContext";
+import { useModal } from "../context/ModalContext";
 import { ListSelectModal } from "./ListSelectModal";
 
 interface RiverItemProps {
@@ -55,6 +57,8 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   
   const { myLists, addRiverToList, removeRiverFromList, toggleRiverInQuickList } = useLists();
   const { quickActionPref } = useSettings();
+  const { user, setAuthModalOpen } = useAuth();
+  const { confirm } = useModal();
   const [isModalOpen, setModalOpen] = useState(false);
   
   let targetListId: string | null = null;
@@ -89,16 +93,29 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   const handleActionClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (targetListId) {
-       if (isActive) {
-          await removeRiverFromList(targetListId, river.id);
-       } else {
-          await addRiverToList(targetListId, river);
-       }
-    } else if (myLists.length === 0) {
-       toggleRiverInQuickList(river, "favorites");
-    } else {
-       setModalOpen(true);
+    if (!user) {
+        const shouldSignIn = await confirm("Please sign in to save favorites and sync them across your devices.", "Sign In Required");
+        if (shouldSignIn) {
+            setAuthModalOpen(true);
+        }
+        return;
+    }
+
+    try {
+      if (targetListId) {
+         if (isActive) {
+            await removeRiverFromList(targetListId, river.id);
+         } else {
+            await addRiverToList(targetListId, river);
+         }
+      } else if (myLists.length === 0) {
+         await toggleRiverInQuickList(river, "favorites");
+      } else {
+         setModalOpen(true);
+      }
+    } catch (e: any) {
+      console.error("Failed to perform list action:", e);
+      await confirm(e.message || "Failed to update your list. Please try again.", "Error Updating List");
     }
   };
 

@@ -138,12 +138,25 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateList = async (id: string, updates: Partial<UserList>) => {
     if (!user) return;
-    const newLists = myLists.map(l => l.id === id ? { ...l, ...updates } : l);
+    const list = myLists.find(l => l.id === id);
+    if (!list) return;
+
+    const fullUpdatedList = { ...list, ...updates };
+    const newLists = myLists.map(l => l.id === id ? fullUpdatedList : l);
+    
     setMyLists(newLists);
     persistentStorage.set("my_custom_lists", JSON.stringify(newLists));
     
-    // Background sync
-    await fetchAPI(`/lists/${id}`, { method: "PUT", body: JSON.stringify(updates) }, user);
+    // Background sync - Ensure we send required fields (title, author) to satisfy Zod validation
+    const payload = {
+        title: fullUpdatedList.title,
+        description: fullUpdatedList.description,
+        author: fullUpdatedList.author,
+        isPublished: fullUpdatedList.isPublished,
+        rivers: fullUpdatedList.rivers
+    };
+
+    await fetchAPI(`/lists/${id}`, { method: "PUT", body: JSON.stringify(payload) }, user);
   };
 
   const deleteList = async (id: string) => {
@@ -199,7 +212,14 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         modified = true;
       }
     }
-    if (modified) await updateList(listId, { rivers: newRivers });
+    
+    if (modified) {
+       // Check for massive payload size (rough estimate)
+       if (newRivers.length > 1000) {
+          console.warn(`Bulk adding ${rivers.length} rivers. Total list size now ${newRivers.length}. This may exceed API limits.`);
+       }
+       await updateList(listId, { rivers: newRivers });
+    }
   };
 
   const removeRiverFromList = async (listId: string, riverId: string) => {

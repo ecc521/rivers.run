@@ -49,10 +49,22 @@ export function validateRiver(river: any): RiverValidationResult {
     errors.push("Failed to serialize River data due to circular references or unsupported formats.");
   }
 
-  const gauges = river.gauges || [];
+  if (river.tags && !Array.isArray(river.tags)) {
+    errors.push("Tags must be an array of strings.");
+  }
+
+  const gauges = Array.isArray(river.gauges) ? river.gauges : [];
+  if (river.gauges && !Array.isArray(river.gauges)) {
+    errors.push("Gauges must be an array.");
+  }
+
   const primaryCount = gauges.filter((g: any) => g.isPrimary).length;
   if (gauges.length > 0 && primaryCount > 1) {
     errors.push("At most ONE gauge can be marked as primary.");
+  }
+
+  if (river.accessPoints && !Array.isArray(river.accessPoints)) {
+    errors.push("Access points must be an array.");
   }
 
   if (river.flow) {

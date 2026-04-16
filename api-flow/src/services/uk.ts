@@ -1,5 +1,5 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
-import { formatGaugeName } from '../utils/formatting';
+import { formatStateCode, formatGaugeName } from '../utils/formatting';
 
 /**
  * UK Environment Agency (EA) Gauge Data Service
@@ -153,7 +153,8 @@ export const ukProvider: GaugeProvider = {
                         id: item.notation,
                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                         lat: item.lat,
-                        lon: item.long
+                        lon: item.long,
+                        state: formatStateCode(item.areaName, "UK")
                     });
                 }
             }

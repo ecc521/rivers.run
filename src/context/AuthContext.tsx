@@ -9,6 +9,8 @@ interface AuthContextType {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   isModerator: boolean;
+  isAuthModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +19,8 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isSuperAdmin: false,
   isModerator: false,
+  isAuthModalOpen: false,
+  setAuthModalOpen: () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -27,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -68,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, isSuperAdmin, isModerator }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, isSuperAdmin, isModerator, isAuthModalOpen, setAuthModalOpen }}>
       {children}
     </AuthContext.Provider>
   );

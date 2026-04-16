@@ -48,6 +48,54 @@ export function formatGaugeName(name: string): { name: string; section?: string 
     return formatGaugeNameInner(processedName, lowercaseWords, expansions, stateCodes, acronyms);
 }
 
+/**
+ * Normalizes a region/state name into a 2-3 character code.
+ * Standardizes US/Canada codes and maps UK/Ireland names.
+ */
+export function formatStateCode(state: string | undefined, provider: string): string | undefined {
+    if (!state) return undefined;
+    const s = state.trim();
+    const upper = s.toUpperCase();
+
+    if (provider === 'USGS' || provider === 'NWS' || provider === 'Canada') {
+        // Return 2-letter codes as-is
+        return upper.length <= 3 ? upper : undefined;
+    }
+
+    if (provider === 'Ireland') {
+        const irelandCounties: Record<string, string> = {
+            'CARLOW': 'CW', 'CAVAN': 'CN', 'CLARE': 'CE', 'CORK': 'CO', 'DONEGAL': 'DL',
+            'DUBLIN': 'D', 'GALWAY': 'G', 'KERRY': 'KY', 'KILDARE': 'KE', 'KILKENNY': 'KK',
+            'LAOIS': 'LS', 'LEITRIM': 'LM', 'LIMERICK': 'LK', 'LONGFORD': 'LD', 'LOUTH': 'LH',
+            'MAYO': 'MO', 'MEATH': 'MH', 'MONAGHAN': 'MN', 'OFFALY': 'OY', 'ROSCOMMON': 'RN',
+            'SLIGO': 'SO', 'TIPPERARY': 'T', 'WATERFORD': 'WD', 'WESTMEATH': 'WH', 'WEXFORD': 'WX',
+            'WICKLOW': 'WW'
+        };
+        return irelandCounties[upper] || (s.length <= 3 ? upper : undefined);
+    }
+
+    if (provider === 'UK') {
+        const ukAreas: Record<string, string> = {
+            'DEVON AND CORNWALL': 'DC',
+            'SOLENT AND SOUTH DOWNS': 'SSD',
+            'KENT AND SOUTH LONDON': 'KSL',
+            'HERTFORDSHIRE AND NORTH LONDON': 'HNL',
+            'THAMES': 'THM',
+            'EAST ANGLIA': 'EA',
+            'LINCOLNSHIRE AND NORTHAMPTONSHIRE': 'LN',
+            'EAST MIDLANDS': 'EM',
+            'WEST MIDLANDS': 'WM',
+            'DURHAM, NORTHUMBERLAND AND TEES': 'DNT',
+            'CUMBRIA AND LANCASHIRE': 'CL',
+            'WESSEX': 'WSX',
+            'YORKSHIRE': 'YKS'
+        };
+        return ukAreas[upper] || (s.length <= 3 ? upper : undefined);
+    }
+
+    return s.length <= 3 ? upper : undefined;
+}
+
 function formatGaugeNameInner(name: string, lowercaseWords: Set<string>, expansions: Record<string, string>, stateCodes: Set<string>, acronyms: Set<string>): { name: string; section?: string } {
     const matches = name.match(/([a-zA-Z0-9]+)|([^a-zA-Z0-9]+)/g) || [];
 

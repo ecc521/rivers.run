@@ -5,6 +5,7 @@ import { useSettings } from "../context/SettingsContext";
 import { useLists } from "../context/ListsContext";
 import { useAuth } from "../context/AuthContext";
 import { useModal } from "../context/ModalContext";
+import { ListSelectModal } from "./ListSelectModal";
 
 interface TopBarProps {
   query: AdvancedSearchQuery;
@@ -13,13 +14,14 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
-  const { quickActionPref, updateSetting } = useSettings();
+  const { quickActionPref } = useSettings();
   const { myLists, addMultipleRiversToList } = useLists();
   const { user } = useAuth();
   const { alert } = useModal();
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isListModalOpen, setListModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -136,53 +138,21 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
               style={{
                 textAlign: "left",
                 padding: "10px 16px",
-                backgroundColor: quickActionPref === "ask" ? "var(--surface-hover)" : "transparent",
+                backgroundColor: "transparent",
                 color: "var(--text)",
                 border: "none",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                fontWeight: quickActionPref === "ask" ? "bold" : "normal"
               }}
               onClick={() => {
-                updateSetting("quickActionPref", "ask");
+                setListModalOpen(true);
                 setMenuOpen(false);
               }}
             >
-              <span style={{ color: quickActionPref === "ask" ? "#ffd700" : "inherit" }}>★</span> Ask Each Time (Default)
+              <span style={{ color: "var(--primary)" }}>⚙</span> Configure Quick Save Target...
             </div>
-            
-            {myLists.length > 0 && (
-              <div style={{ padding: "8px 16px 4px", fontSize: "0.8em", color: "var(--text-muted)", marginTop: "4px" }}>
-                My Lists
-              </div>
-            )}
-            
-            {myLists.map(list => (
-              <div
-                role="button"
-                key={list.id}
-                style={{
-                  textAlign: "left",
-                  padding: "10px 16px",
-                  backgroundColor: quickActionPref === `list:${list.id}` ? "var(--surface-hover)" : "transparent",
-                  color: "var(--text)",
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  fontWeight: quickActionPref === `list:${list.id}` ? "bold" : "normal"
-                }}
-                onClick={() => {
-                  updateSetting("quickActionPref", `list:${list.id}`);
-                  setMenuOpen(false);
-                }}
-              >
-                <span style={{ color: quickActionPref === `list:${list.id}` ? "var(--primary)" : "inherit" }}>[+]</span> {list.title}
-              </div>
-            ))}
 
             <div style={{ height: "1px", backgroundColor: "var(--border)", margin: "4px 0" }}></div>
             
@@ -201,15 +171,19 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
                     margin: "5px 10px",
                     borderRadius: "6px"
                   }}
-                  onClick={async () => {
+                   onClick={async () => {
                      const targetId = quickActionPref === "favorites"
                         ? (myLists.find(l => l.title === "Favorites")?.id || null)
                         : (quickActionPref.split(":")[1] || null);
                      
                      if (targetId) {
-                        await addMultipleRiversToList(targetId, filteredRivers);
-                        await alert(`Successfully added ${filteredRivers.length} river(s) to your target list!`);
-                        setMenuOpen(false);
+                        try {
+                           await addMultipleRiversToList(targetId, filteredRivers);
+                           await alert(`Successfully added ${filteredRivers.length} river(s) to your target list!`);
+                           setMenuOpen(false);
+                        } catch (e: any) {
+                           await alert(e.message || "Failed to add rivers to list. The list might be too large.");
+                        }
                      } else {
                         await alert("No target list found. Please select a specific list as your target first.");
                      }
@@ -239,6 +213,14 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
               {user ? "+ Manage extra lists on Lists page" : "Sign in to create lists"}
             </div>
           </div>
+        )}
+
+        {isListModalOpen && (
+          <ListSelectModal 
+             isOpen={isListModalOpen} 
+             onClose={() => setListModalOpen(false)} 
+             riverId={null} 
+          />
         )}
       </span>
     </button>

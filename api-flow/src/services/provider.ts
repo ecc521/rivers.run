@@ -11,12 +11,14 @@ export interface GaugeReading {
     precip_in?: number;
     precip_mm?: number;
     isForecast?: boolean;
+    state?: string;
 }
 
 export interface GaugeHistory {
     id: string; // The bare ID
     name: string;
     section?: string;
+    state?: string;
     lat?: number;
     lon?: number;
     readings: GaugeReading[];
@@ -29,6 +31,7 @@ export interface GaugeSite {
     name: string;
     lat: number;
     lon: number;
+    state?: string;
 }
 
 

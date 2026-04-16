@@ -644,6 +644,8 @@ Those include name,section,skill,quality, and flow info*/
     width:100%;
     padding:10px;
     border:0;
+    position: relative;
+    z-index: 20;
 }
 
 #topbar:hover {

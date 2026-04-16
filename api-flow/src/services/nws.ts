@@ -1,4 +1,5 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
+import { formatStateCode } from '../utils/formatting';
 import { formatGaugeName } from '../utils/formatting';
 
 // Internal helper for mapping NWPS data arrays to GaugeReadings (exported for testing)
@@ -191,7 +192,8 @@ export const nwsProvider: GaugeProvider = {
                          id: item.identifier,
                          name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                          lat: item.latitude,
-                         lon: item.longitude
+                         lon: item.longitude,
+                         state: formatStateCode(item.state?.abbreviation, "NWS")
                      });
                  }
              }

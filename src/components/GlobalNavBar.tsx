@@ -8,9 +8,8 @@ import { fetchAPI } from "../services/api";
 import { useModal } from "../context/ModalContext";
 
 const GlobalNavBar: React.FC = () => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isAuthModalOpen, setAuthModalOpen } = useAuth();
   const { alert, confirm } = useModal();
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNavMoreOpen, setIsNavMoreOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -303,7 +302,7 @@ const GlobalNavBar: React.FC = () => {
           {!loading && !user && (
             <button
               onClick={() => {
-                setIsAuthOpen(true);
+                setAuthModalOpen(true);
               }}
               style={{
                 padding: "8px 16px",
@@ -324,9 +323,9 @@ const GlobalNavBar: React.FC = () => {
       </nav>
 
       <AuthModal
-        isOpen={isAuthOpen}
+        isOpen={isAuthModalOpen}
         onClose={() => {
-          setIsAuthOpen(false);
+          setAuthModalOpen(false);
         }}
       />
     </>

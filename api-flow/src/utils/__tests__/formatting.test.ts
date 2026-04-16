@@ -71,3 +71,40 @@ describe('formatGaugeName', () => {
         expect(result.section).toBe('At Site near Town');
     });
 });
+
+import { formatStateCode } from '../formatting';
+
+describe('formatStateCode', () => {
+    it('should pass through US/Canada codes', () => {
+        expect(formatStateCode('NC', 'USGS')).toBe('NC');
+        expect(formatStateCode('ca', 'USGS')).toBe('CA');
+        expect(formatStateCode('BC', 'Canada')).toBe('BC');
+    });
+
+    it('should return undefined for long US/Canada names', () => {
+        // We only want codes in the state field for US/CA
+        expect(formatStateCode('North Carolina', 'USGS')).toBeUndefined();
+    });
+
+    it('should map Ireland counties to codes', () => {
+        expect(formatStateCode('Wicklow', 'Ireland')).toBe('WW');
+        expect(formatStateCode('Galway', 'Ireland')).toBe('G');
+        expect(formatStateCode('Dublin', 'Ireland')).toBe('D');
+        expect(formatStateCode('Westmeath', 'Ireland')).toBe('WH');
+        expect(formatStateCode('Unknown', 'Ireland')).toBeUndefined();
+    });
+
+    it('should map UK areas to codes', () => {
+        expect(formatStateCode('Devon and Cornwall', 'UK')).toBe('DC');
+        expect(formatStateCode('Thames', 'UK')).toBe('THM');
+        expect(formatStateCode('Wessex', 'UK')).toBe('WSX');
+        expect(formatStateCode('Solent and South Downs', 'UK')).toBe('SSD');
+        expect(formatStateCode('London', 'UK')).toBeUndefined();
+    });
+
+    it('should handle existing 2-3 letter codes for any provider', () => {
+        expect(formatStateCode('WY', 'NWS')).toBe('WY');
+        expect(formatStateCode('DC', 'UK')).toBe('DC');
+        expect(formatStateCode('WH', 'Ireland')).toBe('WH');
+    });
+});

@@ -1,4 +1,5 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
+import { formatStateCode } from '../utils/formatting';
 
 function reformatReadings(readingsArr: any[]) {
     for (let i = 0; i < readingsArr.length; i++) {
@@ -182,7 +183,8 @@ export const canadaProvider: GaugeProvider = {
                                  id: site,
                                  name: feat.properties?.STATION_NAME || site,
                                  lon: feat.geometry?.coordinates?.[0] || 0,
-                                 lat: feat.geometry?.coordinates?.[1] || 0
+                                 lat: feat.geometry?.coordinates?.[1] || 0,
+                                 state: formatStateCode(site.substring(0, 2), "Canada")
                              });
                          }
                      }

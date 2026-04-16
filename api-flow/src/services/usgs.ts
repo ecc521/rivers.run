@@ -259,7 +259,13 @@ export const usgsProvider: GaugeProvider = {
                                     const lat = parseFloat(tokens[latIndex]);
                                     const lon = parseFloat(tokens[lonIndex]);
                                     if (!isNaN(lat) && !isNaN(lon)) {
-                                        gaugeRegistry[rawId] = { id: rawId, name: fullName.name, lat, lon };
+                                        gaugeRegistry[rawId] = { 
+                                            id: rawId, 
+                                            name: fullName.name, 
+                                            lat, 
+                                            lon,
+                                            state: state.toUpperCase()
+                                        };
                                     }
                                 }
                             }
