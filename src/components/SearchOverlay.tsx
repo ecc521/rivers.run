@@ -35,15 +35,18 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const handleApply = async () => {
     const finalQuery = { ...localQuery };
     
-    // If user wants distance filter, we MUST have their location (unless they are doing a center-map search or custom)
-    if (finalQuery.distanceMax && finalQuery.distanceMax > 0 && finalQuery.mapRadiusMode !== "center" && finalQuery.mapRadiusMode !== "custom") {
+    const shouldRequestLocation = finalQuery.distanceMax && 
+                                finalQuery.distanceMax > 0 && 
+                                finalQuery.mapRadiusMode !== "center" && 
+                                finalQuery.mapRadiusMode !== "custom";
+
+    if (shouldRequestLocation) {
       if (!location.latitude || !location.longitude) {
          const coords = await location.requestLocation();
          if (coords) {
             finalQuery.userLat = coords.latitude;
             finalQuery.userLon = coords.longitude;
          } else {
-            // Location denied/failed, clear the distanceMax so it doesn't break
             finalQuery.distanceMax = undefined;
          }
       } else {
@@ -55,6 +58,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
     setQuery(finalQuery);
     onClose();
   };
+
 
   const handleReset = () => {
     const resetQ = {
@@ -80,21 +84,33 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
   const getShareUrl = () => {
       const url = new URL(window.location.origin + window.location.pathname);
-      if (localQuery.normalSearch) url.searchParams.set("search", localQuery.normalSearch);
-      if (localQuery.name) url.searchParams.set("name", localQuery.name);
-      if (localQuery.section) url.searchParams.set("section", localQuery.section);
+      const params = url.searchParams;
+
+      const setIfValid = (key: string, val: any, defaultVal?: any) => {
+          if (val !== undefined && val !== null && val !== defaultVal) {
+              params.set(key, val.toString());
+          }
+      };
+
+      setIfValid("search", localQuery.normalSearch);
+      setIfValid("name", localQuery.name);
+      setIfValid("section", localQuery.section);
+      
       if (localQuery.distanceMax) {
-          url.searchParams.set("distanceMax", localQuery.distanceMax.toString());
-          if (localQuery.mapRadiusMode) url.searchParams.set("radiusMode", localQuery.mapRadiusMode);
-          if (localQuery.userLat !== undefined) url.searchParams.set("userLat", localQuery.userLat.toString());
-          if (localQuery.userLon !== undefined) url.searchParams.set("userLon", localQuery.userLon.toString());
+          params.set("distanceMax", localQuery.distanceMax.toString());
+          setIfValid("radiusMode", localQuery.mapRadiusMode);
+          setIfValid("userLat", localQuery.userLat);
+          setIfValid("userLon", localQuery.userLon);
       }
-      if (localQuery.skillMin !== undefined && localQuery.skillMin !== 1) url.searchParams.set("skillMin", localQuery.skillMin.toString());
-      if (localQuery.skillMax !== undefined && localQuery.skillMax !== 8) url.searchParams.set("skillMax", localQuery.skillMax.toString());
-      if (localQuery.flowMin !== undefined && localQuery.flowMin !== 0) url.searchParams.set("flowMin", localQuery.flowMin.toString());
-      if (localQuery.flowMax !== undefined && localQuery.flowMax !== 4) url.searchParams.set("flowMax", localQuery.flowMax.toString());
-      if (localQuery.sortBy && localQuery.sortBy !== "none") url.searchParams.set("sortBy", localQuery.sortBy);
-      if (localQuery.sortReverse) url.searchParams.set("sortReverse", "true");
+
+      setIfValid("skillMin", localQuery.skillMin, 1);
+      setIfValid("skillMax", localQuery.skillMax, 8);
+      setIfValid("flowMin", localQuery.flowMin, 0);
+      setIfValid("flowMax", localQuery.flowMax, 4);
+      setIfValid("sortBy", localQuery.sortBy, "none");
+      
+      if (localQuery.sortReverse) params.set("sortReverse", "true");
+      
       return url.toString();
   };
   const shareUrl = getShareUrl();
@@ -265,8 +281,14 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
           <div style={getSectionStyle()}>
             <label style={getLabelStyle()}>
-              {isMapMode ? "Draw Radius Circle" : "Search within Radius"}: {!localQuery.distanceMax || localQuery.distanceMax > 500 ? (isMapMode ? 'No Circle' : 'Any Distance') : `${localQuery.distanceMax} Miles`}
+              {isMapMode ? "Draw Radius Circle" : "Search within Radius"}: {(() => {
+                if (!localQuery.distanceMax || localQuery.distanceMax > 500) {
+                  return isMapMode ? 'No Circle' : 'Any Distance';
+                }
+                return `${localQuery.distanceMax} Miles`;
+              })()}
             </label>
+
 
             <div style={{ display: "flex", gap: "10px", marginTop: "5px", marginBottom: "15px", flexWrap: "wrap" }}>
               <label style={{ fontSize: "0.9rem", color: "var(--text)", display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>

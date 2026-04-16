@@ -263,7 +263,11 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
             }}
           >
             {river.gauges.map((g) => {
-              const label = g.section ? g.section : (g.name ? g.name : g.id);
+              const label = (() => {
+                if (g.section) return g.section;
+                if (g.name) return g.name;
+                return g.id;
+              })();
               return (
                 <option key={g.id} value={g.id}>
                   {label} {g.isPrimary ? "(Primary)" : ""}

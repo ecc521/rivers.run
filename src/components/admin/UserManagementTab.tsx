@@ -11,6 +11,15 @@ export default function UserManagementTab() {
   const [loading, setLoading] = useState(false);
   const [userData, setUserData] = useState<any>(null);
 
+  const getUserRole = (data: any) => {
+    if (!data?.customClaims) return "none";
+    if (data.customClaims.superAdmin) return "superAdmin";
+    if (data.customClaims.admin) return "admin";
+    if (data.customClaims.moderator) return "moderator";
+    return "none";
+  };
+
+
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
     setLoading(true);
@@ -28,7 +37,8 @@ export default function UserManagementTab() {
 
   const handleRoleChange = async (newRole: string) => {
     if (!userData) return;
-    const currentRole = userData.customClaims?.superAdmin ? "superAdmin" : userData.customClaims?.admin ? "admin" : userData.customClaims?.moderator ? "moderator" : "none";
+    const currentRole = getUserRole(userData);
+
     if (newRole === currentRole) return;
 
     if (!(await confirm(`Are you sure you want to change ${userData.email}'s role from ${currentRole} to ${newRole}?`))) return;
@@ -192,7 +202,8 @@ export default function UserManagementTab() {
                   Changing a role will clean up any existing administrative permissions.
                 </p>
                 <select 
-                  value={userData.customClaims?.superAdmin ? "superAdmin" : userData.customClaims?.admin ? "admin" : userData.customClaims?.moderator ? "moderator" : "none"}
+                  value={getUserRole(userData)}
+
                   onChange={(e) => handleRoleChange(e.target.value)}
                   disabled={loading}
                   style={{ 

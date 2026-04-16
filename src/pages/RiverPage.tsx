@@ -140,12 +140,15 @@ const RiverPage: React.FC = () => {
 
                     {/* Status Badge */}
                     <div style={{ fontSize: "1rem", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                        {displayRiver.running === 0 ? "Too Low" : 
-                         displayRiver.running < 1 ? "Low" : 
-                         displayRiver.running < 3 ? "Runnable" : 
-                         displayRiver.running < 4 ? "High" : 
-                         "Too High"}
+                        {(() => {
+                           if (displayRiver.running === 0) return "Too Low";
+                           if (displayRiver.running < 1) return "Low";
+                           if (displayRiver.running < 3) return "Runnable";
+                           if (displayRiver.running < 4) return "High";
+                           return "Too High";
+                        })()}
                     </div>
+
                 </div>
                 
                 {/* Min/Max Bar below */}

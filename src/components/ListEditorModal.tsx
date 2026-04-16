@@ -325,7 +325,11 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                     opacity: (saving || !title.trim()) ? 0.7 : 1
                 }}
                 >
-                {saving ? "Saving..." : (mode === "copy" ? "Create Copy" : "Save Settings")}
+                {(() => {
+                  if (saving) return "Saving...";
+                  if (mode === "copy") return "Create Copy";
+                  return "Save Settings";
+                })()}
                 </button>
             )}
           </div>

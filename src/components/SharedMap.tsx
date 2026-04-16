@@ -191,9 +191,13 @@ const MapMarkers = React.memo(({
         const pt = feature.properties;
         layer.on('click', () => handleMarkerClick(pt.river, pt.point, pt.point.lat, pt.point.lon));
 
-        const isPutIn = pt.point && pt.point.type === "put-in";
-        const isTakeOut = pt.point && pt.point.type === "take-out";
-        const typeLabel = isPutIn ? "Put-In" : isTakeOut ? "Take-Out" : "Access";
+        const getAccessLabel = (pt: any) => {
+            if (pt.type === "put-in") return "Put-In";
+            if (pt.type === "take-out") return "Take-Out";
+            return "Access";
+        };
+
+        const typeLabel = getAccessLabel(pt.point);
         let accessName = pt.point?.name || typeLabel;
         if (accessName !== typeLabel && !accessName.startsWith(`${typeLabel}:`)) {
             accessName = `${typeLabel}: ${accessName}`;
@@ -241,15 +245,25 @@ const MapMarkers = React.memo(({
                 const fillColor = colorStr || unknownColor;
                 const opacity = 0.9;
                 
-                const isPutIn = pt.point && pt.point.type === "put-in";
-                const isTakeOut = pt.point && pt.point.type === "take-out";
-                const typeLabel = isPutIn ? "Put-In" : isTakeOut ? "Take-Out" : "Access";
+                const getAccessLabel = (pt: any) => {
+                    if (pt?.type === "put-in") return "Put-In";
+                    if (pt?.type === "take-out") return "Take-Out";
+                    return "Access";
+                };
+
+                const typeLabel = getAccessLabel(pt.point);
                 let accessName = pt.point?.name || typeLabel;
                 if (accessName !== typeLabel && !accessName.startsWith(`${typeLabel}:`)) {
                     accessName = `${typeLabel}: ${accessName}`;
                 }
 
-                const letter = isPutIn ? "P" : isTakeOut ? "T" : "A";
+                const getAccessLetter = (pt: any) => {
+                    if (pt?.type === "put-in") return "P";
+                    if (pt?.type === "take-out") return "T";
+                    return "A";
+                };
+                const letter = getAccessLetter(pt.point);
+
                 const img = getCachedCanvasImage(letter, fillColor, opacity, isDarkMode);
 
                 return (
@@ -385,8 +399,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         if (!location.latitude && !location.longitude && !location.loading && !location.error) {
             location.requestLocation();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
 
     const mapContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -758,9 +772,15 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         <h2 style={{ margin: 0, color: "var(--text)" }}>
                             {selectedAccessPoint && selectedAccessPoint.name && (
                                 <span style={{ display: "block", fontSize: "0.85em", color: "var(--primary)", marginBottom: "4px" }}>
-                                    {selectedAccessPoint.type === 'put-in' ? 'Put-In: ' : selectedAccessPoint.type === 'take-out' ? 'Take-Out: ' : 'Access: '}{selectedAccessPoint.name}
+                                    {(() => {
+                                        if (selectedAccessPoint.type === 'put-in') return 'Put-In: ';
+                                        if (selectedAccessPoint.type === 'take-out') return 'Take-Out: ';
+                                        return 'Access: ';
+                                    })()}
+                                    {selectedAccessPoint.name}
                                 </span>
                             )}
+
                             {selectedRiver.name}{" "}
                             {selectedRiver.section ? `(${selectedRiver.section})` : ""}
                         </h2>

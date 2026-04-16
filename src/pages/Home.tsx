@@ -378,11 +378,21 @@ const Home: React.FC = () => {
             // Preserve explicit sorts only if they manually clicked a sort header. 
             // Since there's no easy way to know if they manually clicked vs just had the default,
             // we will strictly follow: "typing resets any sorting".
-            setSearchQuery({ 
-              ...searchQuery, 
-              normalSearch: e.target.value,
-              sortBy: hasText ? "none" : (searchQuery.sortBy === "none" ? "alphabetical" : searchQuery.sortBy)
+            setSearchQuery((prev) => {
+              let nextSort = prev.sortBy;
+              if (hasText) {
+                nextSort = "none";
+              } else if (prev.sortBy === "none") {
+                nextSort = "alphabetical";
+              }
+              
+              return { 
+                ...prev, 
+                normalSearch: e.target.value,
+                sortBy: nextSort
+              };
             });
+
           }}
           style={{
             flex: 1,

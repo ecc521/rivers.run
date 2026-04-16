@@ -391,7 +391,14 @@ export default function RiverEditor() {
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '25px' }}>
-        <h1 style={{ margin: 0 }}>{isNew ? 'Create New River' : (isReviewMode ? `Review Edit: ${riverData.name}` : `Edit: ${riverData.name}`)}</h1>
+        <h1 style={{ margin: 0 }}>
+          {(() => {
+            if (isNew) return 'Create New River';
+            if (isReviewMode) return `Review Edit: ${riverData.name}`;
+            return `Edit: ${riverData.name}`;
+          })()}
+        </h1>
+
         {(!isNew && !isReviewMode && isAdmin) && (
           <button 
             onClick={handleDeleteRiver} 
@@ -713,7 +720,12 @@ export default function RiverEditor() {
                     disabled={saving || isOriginalView}
                     style={{ flex: isAdmin ? 2 : 1, padding: '15px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
                   >
-                    {saving ? "Saving..." : (isAdmin ? "Publish" : "Submit for Review")}
+                    {(() => {
+                      if (saving) return "Saving...";
+                      if (isAdmin) return "Publish";
+                      return "Submit for Review";
+                    })()}
+
                   </button>
                   {isAdmin && (
                     <button 
@@ -761,7 +773,11 @@ const GaugeItem: React.FC<{
       <input 
         type="text" 
         style={{ flex: 1, padding: '8px', boxSizing: 'border-box' }} 
-        placeholder={agency === "USGS" ? "e.g., 01646500" : (agency === "EC" ? "e.g., 08MA002" : "e.g., LINC2")} 
+        placeholder={(() => {
+          if (agency === "USGS") return "e.g., 01646500";
+          if (agency === "EC") return "e.g., 08MA002";
+          return "e.g., LINC2";
+        })()} 
         value={code} 
         onChange={(e) => onUpdate({ id: `${agency}:${e.target.value}` })}
       />

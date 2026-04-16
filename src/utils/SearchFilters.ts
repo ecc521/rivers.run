@@ -68,15 +68,23 @@ function skillToNumber(skill: string | number): number {
   return map[skill.toUpperCase()] || Infinity;
 }
 
+function getTagArray(tags: any): string[] {
+  if (Array.isArray(tags)) return tags;
+  if (tags) return [tags];
+  return [];
+}
+
+
 function matchNormalSearch(r: RiverData, terms: string[]): boolean {
   if (terms.length === 0) return true;
   const searchStr = [
     r.name || "",
     r.section || "",
-    ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : [])),
+    ...getTagArray(r.tags),
     r.isGauge ? "gauge" : "",
     ...(r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [])
   ].join(" ").toLowerCase();
+
   
   return terms.every(term => searchStr.includes(term));
 }
@@ -142,10 +150,11 @@ function getSearchRelevanceScore(r: RiverData, terms: string[]): number {
   const section = (r.section || "").toLowerCase();
   
   const tagsStr = [
-    ...(Array.isArray(r.tags) ? r.tags : (r.tags ? [r.tags] : [])),
+    ...getTagArray(r.tags),
     r.isGauge ? "gauge" : "",
     ...(r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [])
   ].join(" ").toLowerCase();
+
 
   for (const term of terms) {
     const t = term.toLowerCase();

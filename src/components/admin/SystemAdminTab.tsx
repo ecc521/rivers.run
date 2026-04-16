@@ -61,32 +61,32 @@ export default function SystemAdminTab() {
           border: '1px solid var(--border)',
           fontSize: '13px'
         }}>
-          {loadingLogs ? (
-            <div style={{ padding: '20px', textAlign: 'center' }}>Loading logs...</div>
-          ) : logs.length === 0 ? (
-            <div style={{ padding: '20px', textAlign: 'center' }}>No logs found.</div>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-                <tr>
-                  <th style={{ padding: '12px' }}>Admin</th>
-                  <th style={{ padding: '12px' }}>Action</th>
-                  <th style={{ padding: '12px' }}>Target</th>
-                  <th style={{ padding: '12px' }}>Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map(log => (
-                  <tr key={log.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '10px 12px' }}>{log.adminEmail || log.adminUid.substring(0, 6)}</td>
-                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 'bold' }}>{log.action}</td>
-                    <td style={{ padding: '10px 12px', fontSize: '11px' }}>{log.targetUid}</td>
-                    <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleTimeString()}</td>
+          {(() => {
+            if (loadingLogs) return <div style={{ padding: '20px', textAlign: 'center' }}>Loading logs...</div>;
+            if (logs.length === 0) return <div style={{ padding: '20px', textAlign: 'center' }}>No logs found.</div>;
+            return (
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+                  <tr>
+                    <th style={{ padding: '12px' }}>Admin</th>
+                    <th style={{ padding: '12px' }}>Action</th>
+                    <th style={{ padding: '12px' }}>Target</th>
+                    <th style={{ padding: '12px' }}>Time</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody>
+                  {logs.map(log => (
+                    <tr key={log.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '10px 12px' }}>{log.adminEmail || log.adminUid.substring(0, 6)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 'bold' }}>{log.action}</td>
+                      <td style={{ padding: '10px 12px', fontSize: '11px' }}>{log.targetUid}</td>
+                      <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleTimeString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            );
+          })()}
         </div>
       </div>
     </div>

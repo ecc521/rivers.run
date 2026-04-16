@@ -23,9 +23,13 @@ const SettingsPage: React.FC = () => {
   } = useSettings();
 
 
-  const themeStatusText = (!themePref || themePref === "null") 
-    ? `Currently utilizing System Default theme: ${isDarkMode ? "Dark" : "Light"}` 
-    : "Overriding System Default Theme.";
+  const themeStatusText = (() => {
+    if (!themePref || themePref === "null") {
+      return `Currently utilizing System Default theme: ${isDarkMode ? "Dark" : "Light"}`;
+    }
+    return "Overriding System Default Theme.";
+  })();
+
 
   return (
     <div

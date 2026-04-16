@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-nested-functions */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { RiverData } from "../types/River";
@@ -112,6 +111,31 @@ export const RiverItem: React.FC<RiverItemProps> = ({
      navigate(`${prefix}${river.id}/${slug}`);
   };
 
+  const getFlowDisplay = () => {
+    if ((river.flowInfo || typeof river.flow === "string") && !river.isReadingStale) {
+      return (
+        <span className="riverspan flowspan">
+          {river.flowInfo || (typeof river.flow === "string" ? river.flow : "")}
+        </span>
+      );
+    }
+    if (river.dam) {
+      return <span className="riverspan flowspan">Dam</span>;
+    }
+    return <span className="riverspan flowspan"></span>;
+  };
+
+  const getFavTitle = () => {
+    if (quickActionPref.startsWith("list:")) {
+      return isActive ? "Remove from List" : "Add to List";
+    }
+    if (quickActionPref === "ask" && myLists.length > 0) {
+      return "Save River to Lists";
+    }
+    return isActive ? "Remove River from Lists" : "Add River to Lists";
+  };
+
+
   return (
     <React.Fragment>
       <button
@@ -139,11 +163,8 @@ export const RiverItem: React.FC<RiverItemProps> = ({
 
 
         {/* Flow Span */}
-        {(river.flowInfo || typeof river.flow === "string") && !river.isReadingStale ? (
-          <span className="riverspan flowspan">{river.flowInfo || (typeof river.flow === "string" ? river.flow : "")}</span>
-        ) : (river.dam ? (
-          <span className="riverspan flowspan">Dam</span>
-        ) : <span className="riverspan flowspan"></span>)}
+        {getFlowDisplay()}
+
 
         {/* State Span */}
         <span 
@@ -161,7 +182,8 @@ export const RiverItem: React.FC<RiverItemProps> = ({
         {/* Favorite Span (Moved to Right) */}
         <span
           className="riverspan favspan"
-          title={quickActionPref.startsWith("list:") ? (isActive ? "Remove from List" : "Add to List") : (quickActionPref === "ask" && myLists.length > 0 ? "Save River to Lists" : (isActive ? "Remove River from Lists" : "Add River to Lists"))}
+          title={getFavTitle()}
+
           style={{
             color: displayColor,
             fontWeight: quickActionPref.startsWith("list:") ? "bold" : "normal",
