@@ -100,9 +100,14 @@ CREATE TABLE community_list_rivers (
     
     -- Pinned threshold overrides per list
     gauge_id TEXT,
-    flow_min REAL,
-    flow_max REAL,
-    flow_units TEXT,
+    min_val REAL,
+    max_val REAL,
+    units TEXT,
+
+    -- Custom notification overrides
+    custom_min REAL,
+    custom_max REAL,
+    custom_units TEXT,
     
     FOREIGN KEY(list_id) REFERENCES community_lists(id) ON DELETE CASCADE,
     PRIMARY KEY(list_id, river_id)

@@ -598,6 +598,9 @@ app.openapi(getListsRoute, async (c) => {
 
     return c.json(results.map((r: any) => ({
         ...r,
+        ownerId: r.owner_id,
+        isPublished: r.is_published === 1 || r.is_published === true,
+        notificationsEnabled: r.notifications_enabled === 1 || r.notifications_enabled === true,
         rivers: JSON.parse(r.rivers).filter((rv: any) => rv.id !== null)
     })));
 });
