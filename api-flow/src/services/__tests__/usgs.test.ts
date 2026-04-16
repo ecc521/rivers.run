@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { formatGaugeName, processUSGSResponse } from '../usgs';
+import { processUSGSResponse } from '../usgs';
+import { formatGaugeName } from '../../utils/formatting';
 
 describe('USGS Service', () => {
     describe('formatGaugeName', () => {

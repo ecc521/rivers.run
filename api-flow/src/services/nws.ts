@@ -1,4 +1,5 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
+import { formatGaugeName } from '../utils/formatting';
 
 // Internal helper for mapping NWPS data arrays to GaugeReadings (exported for testing)
 export function parseNWSeries(data: any, observations: any[], minTime: number, maxTime: number, isForecast: boolean): Map<number, GaugeReading> {
@@ -116,9 +117,11 @@ export const nwsProvider: GaugeProvider = {
                                 return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
                             });
 
+                        const formatted = formatGaugeName(site);
                         results[site] = {
                             id: site,
-                            name: `NWS Gauge ${site}`, // Registry typically handles renaming
+                            name: formatted.name,
+                            section: formatted.section,
                             readings
                         };
                         success = true;
@@ -148,24 +151,56 @@ export const nwsProvider: GaugeProvider = {
                  const site = siteCodes[index++];
                  try {
                      const res = await fetch(`https://api.water.noaa.gov/nwps/v1/gauges/${site}`);
-                     if (res.ok) {
-                         const data: any = await res.json();
-                         if (data.latitude !== undefined && data.longitude !== undefined) {
-                             results.push({
-                                 id: site,
-                                 name: data.name || site,
-                                 lat: data.latitude,
-                                 lon: data.longitude
-                             });
+                         if (res.ok) {
+                             const data: any = await res.json();
+                             if (data.latitude !== undefined && data.longitude !== undefined) {
+                                 const formatted = formatGaugeName(data.name || site);
+                                 results.push({
+                                     id: site,
+                                     name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
+                                     lat: data.latitude,
+                                     lon: data.longitude
+                                 });
+                             }
                          }
-                     }
                  } catch (_e) {
                      console.warn(`NWS site listing failed for ${site}`, _e);
                  }
              }
         };
-        await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));
-        return results;
-    }
-};
+         await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));
+         return results;
+     },
+
+     async getFullSiteListing(): Promise<GaugeSite[]> {
+         console.log("NWS Provider: Fetching full site listing...");
+         const url = "https://api.water.noaa.gov/nwps/v1/gauges";
+         const results: GaugeSite[] = [];
+         
+         try {
+             const res = await fetch(url);
+             if (!res.ok) throw new Error(`NWS NWPS API Error: ${res.status}`);
+             
+             const data: any = await res.json();
+             const items = data.gauges || [];
+             
+             for (const item of items) {
+                 if (item.identifier && item.latitude !== undefined && item.longitude !== undefined) {
+                     const formatted = formatGaugeName(item.name || item.identifier);
+                     results.push({
+                         id: item.identifier,
+                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
+                         lat: item.latitude,
+                         lon: item.longitude
+                     });
+                 }
+             }
+         } catch (e) {
+             console.error("NWS Provider: Full site listing failed", e);
+             throw e;
+         }
+         
+         return results;
+     }
+ };
 

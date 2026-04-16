@@ -33,6 +33,10 @@ export default defineConfig({
             expiration: {
               maxEntries: 20,
               maxAgeSeconds: 60 * 60 * 24 // 1 day
+            },
+            broadcastUpdate: {
+              channelName: 'flow-data-updates',
+              options: {}
             }
           }
         },

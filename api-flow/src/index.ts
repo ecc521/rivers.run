@@ -235,8 +235,21 @@ export default {
             // 2. Pull gauges from Static Registry (Searchable discovery gauges)
             const searchableGauges = Object.keys(registryMetadata);
             
-            // 3. Setup Fetch Groups
+            // 3. Setup Fetch Groups and Initialize mergedData with Skeletons
             const linkedGaugesSet = new Set(dbGauges);
+            const mergedData: Record<string, any> = {};
+
+            // Pre-populate mergedData with ALL registry gauges (Searchable discovery gauges)
+            // This ensures they appear on the map even if they have no recent readings (Grey/Purple markers)
+            Object.entries(registryMetadata).forEach(([fullId, meta]) => {
+                mergedData[fullId] = {
+                    id: meta.id.includes(":") ? meta.id.split(":")[1] : meta.id,
+                    name: meta.name,
+                    lat: meta.lat,
+                    lon: meta.lon,
+                    readings: []
+                };
+            });
             
             // Group by provider
             const providerGroups: Record<string, { linked: string[], registry: string[] }> = {};
@@ -251,7 +264,7 @@ export default {
                 }
             });
 
-            const mergedData: Record<string, GaugeHistory> = {};
+            // Keep track of readings separately then merge
             const activeStartTs = Date.now() - 10800000; // 3 hours
 
             const promises = Object.entries(providerGroups).map(async ([prefix, groups]) => {
@@ -263,7 +276,15 @@ export default {
                     try {
                         const data = await provider.getHistory(groups.linked, activeStartTs, Date.now(), true);
                         Object.entries(data).forEach(([id, history]) => {
-                            mergedData[`${prefix}:${id}`] = history;
+                            const fullId = `${prefix}:${id}`;
+                            // Merge history into skeleton, preserving registry coords if provider lacks them
+                            mergedData[fullId] = {
+                                ...mergedData[fullId],
+                                ...history,
+                                // If the registry had coordinates, ensure they are kept
+                                lat: history.lat ?? registryMetadata[fullId]?.lat,
+                                lon: history.lon ?? registryMetadata[fullId]?.lon,
+                            };
                         });
                     } catch (_e) {
                         console.error(`- ERROR: provider ${prefix} linked fetch failed:`, _e);
@@ -275,11 +296,19 @@ export default {
                     try {
                         const data = await provider.getLatest(groups.registry);
                         Object.entries(data).forEach(([id, reading]) => {
-                            mergedData[`${prefix}:${id}`] = {
-                                id,
-                                name: registryMetadata[`${prefix}:${id}`]?.name || id,
-                                readings: [reading]
-                            };
+                            const fullId = `${prefix}:${id}`;
+                            // Merge into existing skeleton (or create if missing)
+                            if (mergedData[fullId]) {
+                                mergedData[fullId].readings = [reading];
+                            } else {
+                                mergedData[fullId] = {
+                                    id,
+                                    name: registryMetadata[fullId]?.name || id,
+                                    lat: registryMetadata[fullId]?.lat,
+                                    lon: registryMetadata[fullId]?.lon,
+                                    readings: [reading]
+                                };
+                            }
                         });
                     } catch (_e) {
                         console.error(`- ERROR: provider ${prefix} registry fetch failed:`, _e);

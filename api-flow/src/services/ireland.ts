@@ -1,4 +1,5 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
+import { formatGaugeName } from '../utils/formatting';
 
 /**
  * Ireland (WaterLevel.ie / OPW) Gauge Data Service
@@ -85,9 +86,11 @@ export const irelandProvider: GaugeProvider = {
                         }
                     }
                     
+                    const formatted = formatGaugeName(stationId);
                     results[stationId] = {
                         id: stationId,
-                        name: `Ireland Station ${stationId}`,
+                        name: formatted.name,
+                        section: formatted.section,
                         readings: readings.toSorted((a, b) => a.dateTime - b.dateTime),
                         units: "m"
                     };
@@ -126,9 +129,10 @@ export const irelandProvider: GaugeProvider = {
                 
                 if (id && props.value !== undefined) {
                     const rawName = props.station_name || `Ireland Station ${id}`;
+                    const formatted = formatGaugeName(rawName);
                     results.push({
                         id: id,
-                        name: Array.isArray(rawName) ? rawName[0] : String(rawName),
+                        name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                         lat: coords[1],
                         lon: coords[0]
                     });

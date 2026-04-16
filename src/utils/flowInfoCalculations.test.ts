@@ -61,6 +61,27 @@ describe("flowInfoCalculations", () => {
         expect(ratio).toBeGreaterThan(2);
         expect(ratio).toBeLessThan(3);
     });
+
+    it("correctly handles null thresholds by treating them as missing, avoiding coercion to 0", () => {
+        // CASE: Little Sandy Bug Regression
+        // Missing thresholds (null) should NOT be coerced to 0. 
+        // If flow is 0 and max is null, it should NOT return 4.
+        const river = {
+            cfs: 0,
+            flow: { unit: "cfs", min: 100, low: null, mid: null, high: null, max: null }
+        } as unknown as RiverData;
+
+        const ratio = calculateRelativeFlow(river);
+        // Previously this returned 4 because max was coerced to 0 and 0 >= 0 was true.
+        // Now it should return 0 (below minrun) or null if minrun was also null.
+        expect(ratio).toBe(0); 
+
+        const riverAllNull = {
+            cfs: 0,
+            flow: { unit: "cfs", min: null, low: null, mid: null, high: null, max: null }
+        } as unknown as RiverData;
+        expect(calculateRelativeFlow(riverAllNull)).toBeNull();
+    });
   });
 
   describe("calculateColor", () => {

@@ -1,4 +1,5 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
+import { formatGaugeName } from '../utils/formatting';
 
 /**
  * UK Environment Agency (EA) Gauge Data Service
@@ -112,7 +113,7 @@ export const ukProvider: GaugeProvider = {
                     
                     results[stationId] = {
                         id: stationId,
-                        name: `UK Station ${stationId}`,
+                        name: formatGaugeName(stationId).name, // Fallback name formatting
                         readings: readings.toSorted((a, b) => a.dateTime - b.dateTime),
                         units: "m"
                     };
@@ -146,10 +147,11 @@ export const ukProvider: GaugeProvider = {
             
             for (const item of items) {
                 if (item.notation && item.lat && item.long) {
-                    const rawName = item.label || `UK Station ${item.notation}`;
+                    const rawLabel = Array.isArray(item.label) ? item.label[0] : String(item.label || "");
+                    const formatted = formatGaugeName(rawLabel || `UK Station ${item.notation}`);
                     results.push({
                         id: item.notation,
-                        name: Array.isArray(rawName) ? rawName[0] : String(rawName),
+                        name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                         lat: item.lat,
                         lon: item.long
                     });

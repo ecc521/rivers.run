@@ -36,4 +36,33 @@ describe('UK EA Service', () => {
             expect(result['1234']).toBeUndefined();
         });
     });
+
+    describe('ukProvider.getFullSiteListing', () => {
+        it('should format station names correctly from label', async () => {
+            globalThis.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    items: [
+                        {
+                            notation: '4321',
+                            label: 'BATH LARKHALL ST SAVIOURS RD',
+                            lat: 51.39,
+                            long: -2.35
+                        },
+                        {
+                            notation: '5678',
+                            label: 'BEACHES MILL SECONDARY GS GSM',
+                            lat: 51.40,
+                            long: -2.36
+                        }
+                    ]
+                })
+            });
+
+            const result = await ukProvider.getFullSiteListing!();
+            expect(result).toHaveLength(2);
+            expect(result[0].name).toBe('Bath Larkhall St Saviours Road');
+            expect(result[1].name).toBe('Beaches Mill Secondary Gauging Station GSM');
+        });
+    });
 });

@@ -64,7 +64,7 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
     river.m = latest.m;
     river.cms = latest.cms;
 
-    river.running = calculateRelativeFlow(river) ?? undefined;
+    river.running = calculateRelativeFlow(river);
 
     // Build specialized flowInfo based on user preferences
     const showMetric = flowUnits === "metric" || (flowUnits === "default" && latest.cms !== undefined && latest.cfs === undefined);
@@ -233,9 +233,9 @@ export const useRivers = (): UseRiversResult => {
 
         // Persist to local storage for future bootstrap
         try {
-            // Strip heavy fields, descriptions, and standalone gauges to keep boot storage ultralight
+            // Strip heavy fields, descriptions to keep boot storage ultralight
+            // We now KEEP standalone gauges but ensure they are minimal skeleton records
             const strippedRivers = processedData
-                .filter((r: any) => !r.isGauge)
                 .map((r: any) => {
                     const skeletonValues = { ...r };
                     delete (skeletonValues as any).gaugeData;
@@ -259,6 +259,16 @@ export const useRivers = (): UseRiversResult => {
       }
     };
 
+    // Service Worker Broadcast Listener
+    // Triggered when StaleWhileRevalidate finds fresh data in the background
+    const updateChannel = new BroadcastChannel('flow-data-updates');
+    updateChannel.onmessage = (_event) => {
+        console.log("Service Worker broadcast: Fresh flow data available. Refreshing UI...");
+        // Re-fetch with force=true to pull fresh data from the updated cache
+        // We add a tiny delay to ensure the SW has finished writing to cache
+        setTimeout(() => fetchRivers(true), 100);
+    };
+
     // Auto-fetch on refocus/visibility if data is > 15 mins old
     const handleVisibility = () => {
         if (document.visibilityState === 'visible') {
@@ -273,6 +283,7 @@ export const useRivers = (): UseRiversResult => {
         fetchSubscribers.delete(handleUpdate);
         clearInterval(heartbeatId);
         document.removeEventListener('visibilitychange', handleVisibility);
+        updateChannel.close();
     };
   }, []);
 

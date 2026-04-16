@@ -47,12 +47,13 @@ function calculateArrayPosition(
 }
 
 // Helper to dynamically calculate descending array configurations
-function calculateParsedThresholds(thresholds: (number | undefined)[]): (number | undefined)[] {
+function calculateParsedThresholds(thresholds: (any)[]): (number | undefined)[] {
   let parsedValues: (number | undefined)[] = thresholds.map(() => undefined);
   let currentMax: number | undefined;
 
   for (let i = 0; i < thresholds.length; i++) {
-    const value = thresholds[i] !== undefined ? Number(thresholds[i]) : undefined;
+    const rawValue = thresholds[i];
+    const value = (rawValue !== undefined && rawValue !== null && rawValue !== "") ? Number(rawValue) : undefined;
     if (value !== undefined && !isNaN(value)) {
       if (currentMax !== undefined && value < currentMax) continue; 
       parsedValues[i] = currentMax = value;

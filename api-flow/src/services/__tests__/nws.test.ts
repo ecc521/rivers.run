@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { parseNWSeries } from '../nws';
+import { describe, it, expect, vi } from 'vitest';
+import { parseNWSeries, nwsProvider } from '../nws';
 
 describe('NWS Service', () => {
     describe('parseNWSeries', () => {
@@ -105,6 +105,35 @@ describe('NWS Service', () => {
             expect(readings[1].cfs).toBe(1100);
             expect(readings[2].ft).toBe(10.5);
             expect(readings[2].cfs).toBe(1200);
+        });
+    });
+
+    describe('nwsProvider.getFullSiteListing', () => {
+        it('should fetch and format NWS gauge list', async () => {
+            globalThis.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    gauges: [
+                        {
+                            identifier: 'clvv2',
+                            name: 'CLEAR LAKE AT LAKEPORT',
+                            latitude: 39.04,
+                            longitude: -122.91
+                        },
+                        {
+                            identifier: 'sumw2',
+                            name: 'Snoqualmie River at Snoqualmie',
+                            latitude: 47.53,
+                            longitude: -121.82
+                        }
+                    ]
+                })
+            });
+
+            const result = await nwsProvider.getFullSiteListing?.();
+            expect(result).toHaveLength(2);
+            expect(result![0].name).toBe('Clear Lake At Lakeport');
+            expect(result![1].name).toBe('Snoqualmie River At Snoqualmie');
         });
     });
 });
