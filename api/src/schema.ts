@@ -46,7 +46,7 @@ export type RiverEditInput = z.infer<typeof RiverEditorPayload>;
 
 // NEW: User Settings validation
 export const UserSettingsSchema = z.object({
-  settings_json: z.record(z.string(), z.any()).refine(v => JSON.stringify(v).length <= 2500, "Settings exceeded 2500 character limit").optional(),
+  settings_json: z.record(z.string(), z.object({}).passthrough().openapi({ type: 'object' })).refine(v => JSON.stringify(v).length <= 2500, "Settings exceeded 2500 character limit").optional(),
   notifications: z.object({
     enabled: z.boolean().optional(),
     noneUntil: z.number().int().optional(),
@@ -83,7 +83,7 @@ export const SubscriptionPayloadSchema = z.object({
 export const AdminResolutionSchema = z.object({
   action: z.enum(["approve", "reject"]),
   admin_notes: limitString(5000),
-  admin_overrides: RiverEditorPayload.partial().optional()
+  admin_overrides: RiverEditorPayload.partial().optional().openapi({ type: 'object', description: 'Overrides for the river data' })
 });
 
 // Response Schemas for Documentation

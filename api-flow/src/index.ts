@@ -6,8 +6,8 @@ import { nwsProvider } from "./services/nws";
 import { canadaProvider } from "./services/canada";
 import { ukProvider } from "./services/uk";
 import { irelandProvider } from "./services/ireland";
-import { GaugeProvider, GaugeHistory, GaugeSite, Units } from "./services/provider";
-import { HistorySchema, ErrorSchema, SiteSchema } from "./schema";
+import { GaugeProvider, GaugeHistory, Units } from "./services/provider";
+import { HistorySchema, ErrorSchema } from "./schema";
 import { toUnitSystemHistory } from "./utils/units";
 import { compileGaugeRegistry } from "./services/gaugeRegistry";
 
@@ -26,6 +26,7 @@ export const providers: Record<string, GaugeProvider> = {
 
 const app = new OpenAPIHono<{ Bindings: Env }>();
 
+// Middlewares
 app.use("*", cors({
     origin: "*",
     allowMethods: ["GET", "OPTIONS"],
@@ -34,152 +35,13 @@ app.use("*", cors({
     maxAge: 86400,
 }));
 
-const openApiConfig = {
-    openapi: '3.1.0',
-    info: { title: 'Rivers.run Flow API', version: '1.0.0' }
-};
-
-// Expose OpenAPI dynamic specification directly
-app.doc('/openapi.json', openApiConfig);
-
-app.get('/docs', apiReference({
-    content: app.getOpenAPI31Document(openApiConfig),
-    theme: 'purple',
-    layout: 'modern'
-}));
-
-// Endpoints
-// 1. List for specific provider
-app.openapi(createRoute({
-    method: 'get',
-    path: '/list/{prefix}',
-    summary: 'List all gauges for a specific provider',
-    request: {
-        params: z.object({
-            prefix: z.string().openapi({ example: 'USGS' })
-        })
-    },
-    responses: {
-        200: { 
-            description: 'List of gauges', 
-            content: { 'application/json': { schema: z.array(SiteSchema) } } 
-        },
-        404: { 
-            description: 'Provider not found',
-            content: { 'application/json': { schema: ErrorSchema } }
-        },
-        503: {
-            description: 'Registry not initialized',
-            content: { 'application/json': { schema: ErrorSchema } }
-        }
-    }
-}), async (c) => {
-    const { prefix } = c.req.valid('param');
-    const provider = providers[prefix];
-    if (!provider) return c.json({ error: "Provider not found" }, 404);
-    
-    const registry = await c.env.FLOW_STORAGE.get("gauge_registry.json");
-    if (!registry) return c.json({ error: "Registry not initialized" }, 503);
-    
-    const data: Record<string, GaugeSite> = await registry.json();
-    const filtered = Object.values(data).filter(s => s.id.startsWith(prefix + ":"));
-    
-    return c.json(filtered, 200);
+// Global error handler
+app.onError((err, c) => {
+    console.error(`Internal crash processing ${c.req.url}:`, err);
+    return c.json({ error: "Internal Server Error" }, 500);
 });
 
-// 2. Recent readings for specific provider (Legacy behavior)
-app.openapi(createRoute({
-    method: 'get',
-    path: '/recent/{prefix}',
-    summary: 'Get latest readings for a set of gauges from a specific provider',
-    request: {
-        params: z.object({
-            prefix: z.string().openapi({ example: 'USGS' })
-        }),
-        query: z.object({
-            gauges: z.string().openapi({ description: 'Comma separated list of Gauge IDs (without prefix)' })
-        })
-    },
-    responses: {
-        200: { 
-            description: 'Gauge reading map', 
-            content: { 'application/json': { schema: z.record(z.string(), z.any().openapi({})) } } 
-        },
-        404: { 
-            description: 'Provider not found',
-            content: { 'application/json': { schema: ErrorSchema } }
-        },
-        500: {
-            description: 'Fetch failed',
-            content: { 'application/json': { schema: ErrorSchema } }
-        }
-    }
-}), async (c) => {
-    const { prefix } = c.req.valid('param');
-    const { gauges: guagesString } = c.req.valid('query');
-    const provider = providers[prefix];
-    if (!provider) return c.json({ error: "Provider not found" }, 404);
 
-    const gauges = guagesString.split(",").filter(v => v);
-    
-    try {
-        const data = await provider.getLatest(gauges);
-        return c.json(data, 200);
-    } catch (_e) {
-        console.error("Recent fetch failed", _e);
-        return c.json({ error: "Fetch failed" }, 500);
-    }
-});
-
-// 3. Historical data for specific provider
-app.openapi(createRoute({
-    method: 'get',
-    path: '/history/{prefix}',
-    summary: 'Get historical data for a set of gauges from a specific provider',
-    request: {
-        params: z.object({
-            prefix: z.string().openapi({ example: 'USGS' })
-        }),
-        query: z.object({
-            gauges: z.string().openapi({ description: 'Comma separated list of Gauge IDs (without prefix)' }),
-            start: z.string().optional().openapi({ description: 'Start timestamp' }),
-            end: z.string().optional().openapi({ description: 'End timestamp' }),
-            forecast: z.string().optional().openapi({ description: 'Include forecast' })
-        })
-    },
-    responses: {
-        200: { 
-            description: 'Gauge history map', 
-            content: { 'application/json': { schema: z.record(z.string(), HistorySchema) } } 
-        },
-        404: { 
-            description: 'Provider not found',
-            content: { 'application/json': { schema: ErrorSchema } }
-        },
-        500: {
-            description: 'Fetch failed',
-            content: { 'application/json': { schema: ErrorSchema } }
-        }
-    }
-}), async (c) => {
-    const { prefix } = c.req.valid('param');
-    const { gauges: gaugeString, start, end, forecast } = c.req.valid('query');
-    const provider = providers[prefix];
-    if (!provider) return c.json({ error: "Provider not found" }, 404);
-
-    const gauges = (gaugeString || "").split(",").filter(v => v);
-    const startTs = parseInt(start || "0") || (Date.now() - 86400000);
-    const endTs = parseInt(end || "0") || Date.now();
-    const includeForecast = forecast === "true";
-
-    try {
-        const data = await provider.getHistory(gauges, startTs, endTs, includeForecast);
-        return c.json(data, 200);
-    } catch (_e) {
-        console.error("History fetch failed", _e);
-        return c.json({ error: "Fetch failed" }, 500);
-    }
-});
 
 // 4. Global Historical Data (Multi-provider)
 app.openapi(createRoute({
@@ -251,20 +113,28 @@ app.openapi(createRoute({
     return c.json(merged, 200);
 });
 
-// Alias /recent to /history for legacy frontend support
-app.get('/recent', async (c) => {
-    const gauges = c.req.query('gauges');
-    if (!gauges) return c.json({ error: "Missing gauges param" }, 400);
-    return c.redirect(`/history?gauges=${gauges}&days=1`);
-});
 
-// 5. The full flowdata.json generator (River-aware)
-app.get('/flowdata', async (c) => {
+
+// 2. Full Flow Data Sync (Sitedata)
+app.openapi(createRoute({
+    method: 'get',
+    path: '/flowdata',
+    summary: 'The full gauge dataset for local sync',
+    responses: {
+        200: { 
+            description: 'Full reading map', 
+            content: { 'application/json': { schema: z.record(z.string(), z.any().openapi({ type: 'object' })) } } 
+        },
+        503: {
+            description: 'Sitedata not ready',
+            content: { 'application/json': { schema: ErrorSchema } }
+        }
+    }
+}), async (c) => {
     const cached = await c.env.FLOW_STORAGE.get("sitedata.json");
     if (cached) {
-        return c.json(await cached.json(), {
-            headers: { "Cache-Control": "public, max-age=300" }
-        });
+        const data = await cached.json() as Record<string, any>;
+        return c.json(data, 200);
     }
     return c.json({ error: "Sitedata not yet generated" }, 503);
 });
@@ -306,6 +176,8 @@ app.openapi(gaugeRoute, async (c) => {
         return c.json({ error: "Fetch failed" }, 500);
     }
 });
+
+
 
 export default {
     fetch: app.fetch,
@@ -415,3 +287,19 @@ export default {
         console.log(`Background sync complete. Pushed ${Object.keys(mergedData).length} gauges to R2.`);
     }
 };
+
+const openApiConfig = {
+    openapi: '3.1.0',
+    info: { title: 'Rivers.run Flow API', version: '1.0.0' }
+};
+
+// Expose OpenAPI dynamic specification directly
+app.doc('/openapi.json', openApiConfig);
+
+app.get('/docs', (c, next) => {
+    return apiReference({
+        content: app.getOpenAPI31Document(openApiConfig),
+        theme: 'purple',
+        layout: 'modern'
+    })(c as any, next as any);
+});

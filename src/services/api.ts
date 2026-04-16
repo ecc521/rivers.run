@@ -50,7 +50,7 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}, user
  * Public Fetcher for Gauge Data
  */
 export async function fetchFlowData() {
-    const endpoint = "/recent"; 
+    const endpoint = "/flowdata"; 
     const res = await fetch(`${FLOW_API_URL}${endpoint}`);
     if (!res.ok) throw new Error("Failed to fetch flow data");
     return res.json();

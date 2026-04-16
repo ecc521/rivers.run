@@ -20,26 +20,10 @@ type Variables = {
 
 const app = new OpenAPIHono<{ Bindings: Bindings, Variables: Variables }>();
 
-const openApiConfig = {
-    openapi: '3.1.0',
-    info: { title: 'Rivers.run API', version: '1.0.0' },
-    security: [{ bearerAuth: [] }]
-};
+const GenericObjectSchema = z.object({}).passthrough().openapi({ type: 'object' });
+const GenericArraySchema = z.array(GenericObjectSchema).openapi({ type: 'array' });
 
-// Expose OpenAPI dynamic specification directly
-app.doc('/openapi.json', openApiConfig);
 
-app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
-    type: 'http',
-    scheme: 'bearer',
-    bearerFormat: 'JWT',
-});
-// Generate auto-updating Scalar interface dynamically
-app.get('/docs', apiReference({
-    content: app.getOpenAPI31Document(openApiConfig),
-    theme: 'purple',
-    layout: 'modern'
-}));
 
 // Generous CORS to permit both rivers.run, apps, and dev variants
 app.use("*", cors({
@@ -315,7 +299,7 @@ const getAdminQueueRoute = createRoute({
     summary: 'Fetch pending review queue',
     security: [{ bearerAuth: [] }],
     responses: {
-        200: { content: { 'application/json': { schema: z.array(z.any()) } }, description: 'Admin queue' },
+        200: { content: { 'application/json': { schema: GenericArraySchema } }, description: 'Admin queue' },
         401: { description: 'Unauthorized' },
         403: { description: 'Forbidden' }
     }
@@ -335,7 +319,7 @@ const getAdminSuggestionRoute = createRoute({
     security: [{ bearerAuth: [] }],
     request: { params: z.object({ id: z.string() }) },
     responses: {
-        200: { content: { 'application/json': { schema: z.any() } }, description: 'Suggestion details' },
+        200: { content: { 'application/json': { schema: GenericObjectSchema } }, description: 'Suggestion details' },
         404: { description: 'Not found' }
     }
 });
@@ -358,7 +342,7 @@ const getAdminLogsRoute = createRoute({
     summary: 'Fetch admin audit logs',
     security: [{ bearerAuth: [] }],
     responses: {
-        200: { content: { 'application/json': { schema: z.array(z.any()) } }, description: 'Audit logs' }
+        200: { content: { 'application/json': { schema: GenericArraySchema } }, description: 'Audit logs' }
     }
 });
 
@@ -460,7 +444,7 @@ const getUserSettingsRoute = createRoute({
     summary: 'Get user profile and settings',
     security: [{ bearerAuth: [] }],
     responses: {
-        200: { content: { 'application/json': { schema: z.any() } }, description: 'User settings' }
+        200: { content: { 'application/json': { schema: GenericObjectSchema } }, description: 'User settings' }
     }
 });
 
@@ -585,7 +569,7 @@ const getListsRoute = createRoute({
     summary: 'Get your community lists',
     security: [{ bearerAuth: [] }],
     responses: {
-        200: { content: { 'application/json': { schema: z.array(z.any()) } }, description: 'Your lists' }
+        200: { content: { 'application/json': { schema: GenericArraySchema } }, description: 'Your lists' }
     }
 });
 
@@ -749,7 +733,7 @@ const getListByIdRoute = createRoute({
     summary: 'Get a specific list by ID',
     request: { params: z.object({ id: z.string() }) },
     responses: {
-        200: { content: { 'application/json': { schema: z.any() } }, description: 'List object' },
+        200: { content: { 'application/json': { schema: GenericObjectSchema } }, description: 'List object' },
         404: { description: 'Not found' }
     }
 });
@@ -863,6 +847,28 @@ app.openapi(unbanUserRoute, async (c) => {
     await c.env.DB.prepare("UPDATE users SET role = 'user' WHERE user_id = ?").bind(id).run();
     await c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('UNBAN_USER', admin.user_id, id, 'Unbanned by admin panel', Math.floor(Date.now() / 1000)).run();
     return c.json({ success: true });
+});
+const openApiConfig = {
+    openapi: '3.1.0',
+    info: { title: 'Rivers.run API', version: '1.0.0' },
+    security: [{ bearerAuth: [] }]
+};
+
+// Expose OpenAPI dynamic specification directly
+app.doc('/openapi.json', openApiConfig);
+
+app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
+    type: 'http',
+    scheme: 'bearer',
+    bearerFormat: 'JWT',
+});
+// Generate auto-updating Scalar interface dynamically
+app.get('/docs', (c, next) => {
+    return apiReference({
+        content: app.getOpenAPI31Document(openApiConfig),
+        theme: 'purple',
+        layout: 'modern'
+    })(c as any, next as any);
 });
 
 export default app;
