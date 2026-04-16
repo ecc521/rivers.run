@@ -8,14 +8,14 @@ const requiredString = (max: number) => z.string().min(1, "This field is require
 export const AccessPointSchema = z.object({
   name: limitString(100),
   description: limitString(500),
-  location: z.object({ lat: z.number(), lon: z.number() }).optional(),
-  type: limitString(50)
+  lat: z.number().min(-90).max(90),
+  lon: z.number().min(-180).max(180),
+  type: z.enum(["put-in", "take-out", "access"]).optional().default("access")
 });
 
 export const GaugeMappingSchema = z.object({
   id: strictString(50), // "USGS:12345"
-  isPrimary: z.boolean().optional(),
-  name: limitString(100)
+  isPrimary: z.boolean().optional().default(false)
 });
 
 export const FlowThresholdsSchema = z.object({

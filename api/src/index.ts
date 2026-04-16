@@ -86,48 +86,9 @@ const formatRiverRow = (row: any) => {
 };
 
 app.openapi(getRiversRoute, async (c) => {
-    // Optimization: Batch retrieve all three tables to eliminate O(N) correlated subqueries.
-    // D1 handles flat batch queries significantly faster than nested JSON aggregation over large tables.
-    const [riversRaw, gaugesRaw, accessRaw] = await c.env.DB.batch([
-        c.env.DB.prepare("SELECT * FROM rivers"),
-        c.env.DB.prepare("SELECT * FROM river_gauges"),
-        c.env.DB.prepare("SELECT * FROM river_access_points")
-    ]);
+    const { results: riversResults } = await c.env.DB.prepare("SELECT * FROM rivers").all();
 
-    const riversResults = riversRaw.results as any[];
-    const gaugesResults = gaugesRaw.results as any[];
-    const accessResults = accessRaw.results as any[];
-
-    // Build lookup maps for O(1) correlation
-    const gaugesMap = new Map<string, any[]>();
-    for (const rg of gaugesResults) {
-        if (!gaugesMap.has(rg.river_id as string)) gaugesMap.set(rg.river_id as string, []);
-        gaugesMap.get(rg.river_id as string)?.push({
-            id: rg.gauge_id,
-            isPrimary: rg.is_primary === 1,
-            name: rg.name,
-            section: rg.section
-        });
-    }
-
-    const accessMap = new Map<string, any[]>();
-    for (const ra of accessResults) {
-        if (!accessMap.has(ra.river_id as string)) accessMap.set(ra.river_id as string, []);
-        accessMap.get(ra.river_id as string)?.push({
-            lat: ra.lat,
-            lon: ra.lon,
-            type: ra.type,
-            name: ra.name
-        });
-    }
-
-    // Merge and format in the high-performance worker runtime
-    const rivers = riversResults.map(row => {
-        const formatted = formatRiverRow(row);
-        formatted.gauges = gaugesMap.get(row.id as string) || [];
-        formatted.accessPoints = accessMap.get(row.id as string) || [];
-        return formatted;
-    });
+    const rivers = (riversResults as any[]).map(row => formatRiverRow(row));
     
     // Explicit aggressive caching header to push the massive load physically onto Cloudflare Edge Nodes
     // stale-while-revalidate=86400 allows serving old content while refetching in the background
@@ -151,33 +112,10 @@ app.openapi(getRiverRoute, async (c) => {
     const id = c.req.param("id");
     
     // Batch retrieve the main river record and its dependencies
-    const [riverRaw, gaugesRaw, accessRaw] = await c.env.DB.batch([
-        c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(id),
-        c.env.DB.prepare("SELECT * FROM river_gauges WHERE river_id = ?").bind(id),
-        c.env.DB.prepare("SELECT * FROM river_access_points WHERE river_id = ?").bind(id)
-    ]);
+    const row = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(id).first();
 
-    const river = riverRaw.results[0] as any;
-    if (!river) return c.json({ error: "River not found" }, 404);
-    
-    const formatted = formatRiverRow(river);
-    
-    // Map the relational data natively in JS
-    formatted.gauges = (gaugesRaw.results as any[]).map(rg => ({
-        id: rg.gauge_id,
-        isPrimary: rg.is_primary === 1,
-        name: rg.name,
-        section: rg.section
-    }));
-
-    formatted.accessPoints = (accessRaw.results as any[]).map(ra => ({
-        lat: ra.lat,
-        lon: ra.lon,
-        type: ra.type,
-        name: ra.name
-    }));
-    
-    return c.json(formatted);
+    if (!row) return c.json({ error: "River not found" }, 404);
+    return c.json(formatRiverRow(row));
 });
 
 const deleteRiverRoute = createRoute({
