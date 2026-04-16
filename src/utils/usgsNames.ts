@@ -29,9 +29,8 @@ const ACRONYMS = new Set([
     'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'
 ]);
 
-function formatToken(token: string, index: number, totalWords: number, followsComma: boolean): string {
+function formatToken(token: string, index: number): string {
     const isFirst = index === 0;
-    const isLast = index === totalWords - 1;
     const upperToken = token.toUpperCase();
     const lowerToken = token.toLowerCase();
 
@@ -56,7 +55,6 @@ export function formatGaugeName(name: string): { name: string; section?: string 
     if (typeof name !== 'string') return { name: String(name || "") };
 
     const matches = name.match(/([a-zA-Z0-9]+)|([^a-zA-Z0-9]+)/g) || [];
-    const wordsOnly = matches.filter(m => /^[a-zA-Z0-9]+$/.test(m));
 
     let formatted = "";
     let wordIndex = 0;
@@ -64,8 +62,7 @@ export function formatGaugeName(name: string): { name: string; section?: string 
     for (let i = 0; i < matches.length; i++) {
         const token = matches[i];
         if (/^[a-zA-Z0-9]+$/.test(token)) {
-            const followsComma = i > 0 && matches[i - 1].includes(',');
-            formatted += formatToken(token, wordIndex++, wordsOnly.length, followsComma);
+            formatted += formatToken(token, wordIndex++);
         } else {
             formatted += token;
         }
