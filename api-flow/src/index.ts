@@ -188,103 +188,119 @@ export default {
     async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
         console.log(`Starting background sync (Cron: ${event.cron})...`);
 
-        // Check if we need to recompile the registry (Monthly or if missing)
-        let registryMetadata: Record<string, any> = {};
-        let needsRecompile = event.cron === "0 0 1 * *"; // Monthly trigger
-
         try {
-            const registryObject = await env.FLOW_STORAGE.get("gauge_registry.json");
-            if (registryObject) {
-                registryMetadata = await registryObject.json();
-            } else {
-                console.log("Registry missing from R2. Forcing immediate compilation.");
+            // Check if we need to recompile the registry (Monthly or if missing)
+            let registryMetadata: Record<string, any> = {};
+            let needsRecompile = event.cron === "0 0 1 * *"; // Monthly trigger
+
+            try {
+                const registryObject = await env.FLOW_STORAGE.get("gauge_registry.json");
+                if (registryObject) {
+                    registryMetadata = await registryObject.json();
+                } else {
+                    console.log("Registry missing from R2. Forcing immediate compilation.");
+                    needsRecompile = true;
+                }
+            } catch (_e) {
+                console.warn("Registry load failed, attempting recompile.", _e);
                 needsRecompile = true;
             }
-        } catch (_e) {
-            console.warn("Registry load failed, attempting recompile.", _e);
-            needsRecompile = true;
-        }
 
-        if (needsRecompile) {
-            console.log("Triggering Gauge Registry Recompilation (USGS + Canada)...");
-            try {
-                registryMetadata = await compileGaugeRegistry(registryMetadata);
-                await env.FLOW_STORAGE.put("gauge_registry.json", JSON.stringify(registryMetadata), {
-                    httpMetadata: { contentType: "application/json" }
-                });
-                console.log(`Registry recompiled successfully with ${Object.keys(registryMetadata).length} gauges.`);
-            } catch (_e) {
-                console.error("CRITICAL: Registry compilation failed.", _e);
+            if (needsRecompile) {
+                console.log("Triggering Gauge Registry Recompilation (USGS + Canada)...");
+                try {
+                    registryMetadata = await compileGaugeRegistry(registryMetadata);
+                    await env.FLOW_STORAGE.put("gauge_registry.json", JSON.stringify(registryMetadata), {
+                        httpMetadata: { contentType: "application/json" }
+                    });
+                    console.log(`Registry recompiled successfully with ${Object.keys(registryMetadata).length} gauges.`);
+                } catch (_e) {
+                    console.error("CRITICAL: Registry compilation failed.", _e);
+                }
             }
-        }
 
-        // 1. Pull gauges from DB (Linked to rivers)
-        const { results: dbResults } = await env.DB.prepare("SELECT gauge_id FROM river_gauges").all();
-        const dbGauges = (dbResults || []).map((r: any) => r.gauge_id);
+            // 1. Pull gauges from DB (Linked to rivers)
+            // Note: We used to use a 'river_gauges' cross-ref table, but migrated to JSON-in-Row in the 'rivers' table.
+            const { results: riverResults } = await env.DB.prepare("SELECT gauges FROM rivers").all();
+            const dbGauges: string[] = (riverResults || []).flatMap((row: any) => {
+                try {
+                    const gauges = typeof row.gauges === "string" ? JSON.parse(row.gauges) : (row.gauges || []);
+                    return gauges.map((g: any) => g.id);
+                } catch (e) {
+                    console.warn("Failed to parse gauges for a river row:", e);
+                    return [];
+                }
+            });
 
-        // 2. Pull gauges from Static Registry (Searchable discovery gauges)
-        const searchableGauges = Object.keys(registryMetadata);
-        
-        // 3. Setup Fetch Groups
-        const linkedGaugesSet = new Set(dbGauges);
-        
-        // Group by provider
-        const providerGroups: Record<string, { linked: string[], registry: string[] }> = {};
-        [...new Set([...dbGauges, ...searchableGauges])].forEach(g => {
-            const [prefix, id] = g.split(":");
-            if (!providerGroups[prefix]) providerGroups[prefix] = { linked: [], registry: [] };
-            if (linkedGaugesSet.has(g)) {
-                providerGroups[prefix].linked.push(id);
-            } else {
-                providerGroups[prefix].registry.push(id);
-            }
-        });
-
-        const mergedData: Record<string, GaugeHistory> = {};
-        const activeStartTs = Date.now() - 10800000; // 3 hours
-
-        const promises = Object.entries(providerGroups).map(async ([prefix, groups]) => {
-            const provider = providers[prefix];
-            if (!provider) return;
+            // 2. Pull gauges from Static Registry (Searchable discovery gauges)
+            const searchableGauges = Object.keys(registryMetadata);
             
-            // A. Fetch Linked (3h History + Forecasts)
-            if (groups.linked.length > 0) {
-                try {
-                    const data = await provider.getHistory(groups.linked, activeStartTs, Date.now(), true);
-                    Object.entries(data).forEach(([id, history]) => {
-                        mergedData[`${prefix}:${id}`] = history;
-                    });
-                } catch (_e) {
-                    console.error(`- ERROR: provider ${prefix} linked fetch failed:`, _e);
+            // 3. Setup Fetch Groups
+            const linkedGaugesSet = new Set(dbGauges);
+            
+            // Group by provider
+            const providerGroups: Record<string, { linked: string[], registry: string[] }> = {};
+            [...new Set([...dbGauges, ...searchableGauges])].forEach(g => {
+                if (!g || !g.includes(":")) return; // skip malformed/missing gauge IDs
+                const [prefix, id] = g.split(":");
+                if (!providerGroups[prefix]) providerGroups[prefix] = { linked: [], registry: [] };
+                if (linkedGaugesSet.has(g)) {
+                    providerGroups[prefix].linked.push(id);
+                } else {
+                    providerGroups[prefix].registry.push(id);
                 }
-            }
+            });
 
-            // B. Fetch Registry (Latest Only)
-            if (groups.registry.length > 0) {
-                try {
-                    const data = await provider.getLatest(groups.registry);
-                    Object.entries(data).forEach(([id, reading]) => {
-                        mergedData[`${prefix}:${id}`] = {
-                            id,
-                            name: registryMetadata[`${prefix}:${id}`]?.name || id,
-                            readings: [reading]
-                        };
-                    });
-                } catch (_e) {
-                    console.error(`- ERROR: provider ${prefix} registry fetch failed:`, _e);
+            const mergedData: Record<string, GaugeHistory> = {};
+            const activeStartTs = Date.now() - 10800000; // 3 hours
+
+            const promises = Object.entries(providerGroups).map(async ([prefix, groups]) => {
+                const provider = providers[prefix];
+                if (!provider) return;
+                
+                // A. Fetch Linked (3h History + Forecasts)
+                if (groups.linked.length > 0) {
+                    try {
+                        const data = await provider.getHistory(groups.linked, activeStartTs, Date.now(), true);
+                        Object.entries(data).forEach(([id, history]) => {
+                            mergedData[`${prefix}:${id}`] = history;
+                        });
+                    } catch (_e) {
+                        console.error(`- ERROR: provider ${prefix} linked fetch failed:`, _e);
+                    }
                 }
-            }
-        });
 
-        await Promise.all(promises);
-        
-        // Add timestamp of generation
-        (mergedData as any).generatedAt = Date.now();
+                // B. Fetch Registry (Latest Only)
+                if (groups.registry.length > 0) {
+                    try {
+                        const data = await provider.getLatest(groups.registry);
+                        Object.entries(data).forEach(([id, reading]) => {
+                            mergedData[`${prefix}:${id}`] = {
+                                id,
+                                name: registryMetadata[`${prefix}:${id}`]?.name || id,
+                                readings: [reading]
+                            };
+                        });
+                    } catch (_e) {
+                        console.error(`- ERROR: provider ${prefix} registry fetch failed:`, _e);
+                    }
+                }
+            });
 
-        await env.FLOW_STORAGE.put("sitedata.json", JSON.stringify(mergedData), {
-             httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=300" }
-        });
-        console.log(`Background sync complete. Pushed ${Object.keys(mergedData).length} gauges to R2.`);
+            await Promise.all(promises);
+            
+            // Add timestamp of generation
+            (mergedData as any).generatedAt = Date.now();
+
+            await env.FLOW_STORAGE.put("sitedata.json", JSON.stringify(mergedData), {
+                httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=300" }
+            });
+            console.log(`Background sync complete. Pushed ${Object.keys(mergedData).length} gauges to R2.`);
+
+        } catch (err: unknown) {
+            console.error("FATAL: Background sync crashed unexpectedly:", err);
+            // We want to at least know it failed in the logs.
+        }
     }
 };
 
