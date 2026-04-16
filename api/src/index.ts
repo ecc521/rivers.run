@@ -149,28 +149,35 @@ const getRiverRoute = createRoute({
 
 app.openapi(getRiverRoute, async (c) => {
     const id = c.req.param("id");
-    const result = await c.env.DB.prepare(`
-        SELECT 
-            r.*,
-            (SELECT json_group_array(json_object(
-                'id', rg.gauge_id,
-                'isPrimary', CASE WHEN rg.is_primary = 1 THEN json('true') ELSE json('false') END,
-                'name', rg.name,
-                'section', rg.section
-            )) FROM river_gauges rg WHERE rg.river_id = r.id) as gauges,
-            (SELECT json_group_array(json_object(
-                'lat', ra.lat,
-                'lon', ra.lon,
-                'type', ra.type,
-                'name', ra.name
-            )) FROM river_access_points ra WHERE ra.river_id = r.id) as accessPoints
-        FROM rivers r
-        WHERE r.id = ?
-    `).bind(id).first();
     
-    if (!result) return c.json({ error: "River not found" }, 404);
+    // Batch retrieve the main river record and its dependencies
+    const [riverRaw, gaugesRaw, accessRaw] = await c.env.DB.batch([
+        c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(id),
+        c.env.DB.prepare("SELECT * FROM river_gauges WHERE river_id = ?").bind(id),
+        c.env.DB.prepare("SELECT * FROM river_access_points WHERE river_id = ?").bind(id)
+    ]);
+
+    const river = riverRaw.results[0] as any;
+    if (!river) return c.json({ error: "River not found" }, 404);
     
-    return c.json(formatRiverRow(result));
+    const formatted = formatRiverRow(river);
+    
+    // Map the relational data natively in JS
+    formatted.gauges = (gaugesRaw.results as any[]).map(rg => ({
+        id: rg.gauge_id,
+        isPrimary: rg.is_primary === 1,
+        name: rg.name,
+        section: rg.section
+    }));
+
+    formatted.accessPoints = (accessRaw.results as any[]).map(ra => ({
+        lat: ra.lat,
+        lon: ra.lon,
+        type: ra.type,
+        name: ra.name
+    }));
+    
+    return c.json(formatted);
 });
 
 const deleteRiverRoute = createRoute({
@@ -600,32 +607,43 @@ const getListsRoute = createRoute({
 // 7. Lists (Favorites & Community)
 app.openapi(getListsRoute, async (c) => {
     const user = c.get("user");
-    const { results } = await c.env.DB.prepare(`
-        SELECT l.*, json_group_array(
-            json_object(
-                'id', lr.river_id,
-                'order', lr.sort_order,
-                'gaugeId', lr.gauge_id,
-                'min', lr.min_val,
-                'max', lr.max_val,
-                'units', lr.units,
-                'customMin', lr.custom_min,
-                'customMax', lr.custom_max,
-                'customUnits', lr.custom_units
-            )
-        ) as rivers
-        FROM community_lists l
-        LEFT JOIN community_list_rivers lr ON l.id = lr.list_id
-        WHERE l.owner_id = ?
-        GROUP BY l.id
-    `).bind(user.user_id).all();
+    
+    // Batch retrieve user's lists and all associated river mappings
+    const [listsRaw, mappingRaw] = await c.env.DB.batch([
+        c.env.DB.prepare("SELECT * FROM community_lists WHERE owner_id = ?").bind(user.user_id),
+        c.env.DB.prepare(`
+            SELECT lr.* FROM community_list_rivers lr
+            JOIN community_lists l ON l.id = lr.list_id
+            WHERE l.owner_id = ?
+        `).bind(user.user_id)
+    ]);
 
-    return c.json(results.map((r: any) => ({
-        ...r,
-        ownerId: r.owner_id,
-        isPublished: r.is_published === 1 || r.is_published === true,
-        notificationsEnabled: r.notifications_enabled === 1 || r.notifications_enabled === true,
-        rivers: JSON.parse(r.rivers).filter((rv: any) => rv.id !== null)
+    const lists = listsRaw.results as any[];
+    const mappings = mappingRaw.results as any[];
+
+    // Group mappings by list_id
+    const mappingMap = new Map<string, any[]>();
+    for (const m of mappings) {
+        if (!mappingMap.has(m.list_id)) mappingMap.set(m.list_id, []);
+        mappingMap.get(m.list_id)?.push({
+            id: m.river_id,
+            order: m.sort_order,
+            gaugeId: m.gauge_id,
+            min: m.min_val,
+            max: m.max_val,
+            units: m.units,
+            customMin: m.custom_min,
+            customMax: m.custom_max,
+            customUnits: m.custom_units
+        });
+    }
+
+    return c.json(lists.map(l => ({
+        ...l,
+        ownerId: l.owner_id,
+        isPublished: l.is_published === 1 || l.is_published === true,
+        notificationsEnabled: l.notifications_enabled === 1 || l.notifications_enabled === true,
+        rivers: mappingMap.get(l.id) || []
     })));
 });
 
@@ -767,31 +785,31 @@ const getListByIdRoute = createRoute({
 
 app.openapi(getListByIdRoute, async (c) => {
     const id = c.req.param("id");
-    const result = await c.env.DB.prepare(`
-        SELECT l.*, json_group_array(
-            json_object(
-                'id', lr.river_id,
-                'order', lr.sort_order,
-                'gaugeId', lr.gauge_id,
-                'min', lr.min_val,
-                'max', lr.max_val,
-                'units', lr.units,
-                'customMin', lr.custom_min,
-                'customMax', lr.custom_max,
-                'customUnits', lr.custom_units
-            )
-        ) as rivers
-        FROM community_lists l
-        LEFT JOIN community_list_rivers lr ON l.id = lr.list_id
-        WHERE l.id = ?
-        GROUP BY l.id
-    `).bind(id).first();
     
-    if (!result) return c.json({ error: "List not found" }, 404);
+    // Batch retrieve list metadata and pinned rivers
+    const [listRaw, riversRaw] = await c.env.DB.batch([
+        c.env.DB.prepare("SELECT * FROM community_lists WHERE id = ?").bind(id),
+        c.env.DB.prepare("SELECT * FROM community_list_rivers WHERE list_id = ?").bind(id)
+    ]);
+
+    const list = listRaw.results[0] as any;
+    if (!list) return c.json({ error: "List not found" }, 404);
+    
+    const rivers = (riversRaw.results as any[]).map(rv => ({
+        id: rv.river_id,
+        order: rv.sort_order,
+        gaugeId: rv.gauge_id,
+        min: rv.min_val,
+        max: rv.max_val,
+        units: rv.units,
+        customMin: rv.custom_min,
+        customMax: rv.custom_max,
+        customUnits: rv.custom_units
+    }));
     
     return c.json({
-        ...result,
-        rivers: JSON.parse(result.rivers as string).filter((rv: any) => rv.id !== null)
+        ...list,
+        rivers
     });
 });
 
