@@ -295,59 +295,87 @@ export default {
             registryGauges = Object.keys(registryMetadata);
         }
 
-        // 3. Merge and Deduplicate
-        const uniqueGauges = Array.from(new Set([...dbGauges, ...registryGauges]));
-        if (uniqueGauges.length === 0) return;
-
-        console.log(`Synchronizing ${uniqueGauges.length} total gauges (${dbGauges.length} DB, ${registryGauges.length} Registry)...`);
-
-        const allGaugesParam = uniqueGauges.join(",");
-        const grouping = parseGaugesParam(allGaugesParam);
+        // 3. Separate Logic: History (DB) vs Latest (Registry)
+        const historyGauges = new Set(dbGauges);
+        const latestOnlyGauges = registryGauges.filter(g => !historyGauges.has(g));
 
         const flowData: Record<string, any> = {};
+        const latestData: Record<string, any> = {};
         const endTs = Date.now();
-        const startTs = endTs - (3 * 60 * 60 * 1000); // 3 hours
+        const startTs = endTs - (3 * 60 * 60 * 1000); // 3 hours trend for sparklines
 
-        const promises = Object.entries(grouping).map(async ([prefix, ids]) => {
+        console.log(`Synchronizing ${dbGauges.length} history gauges and ${latestOnlyGauges.length} discovery gauges...`);
+
+        // Helper to process and merge results
+        const mergeResult = (prefix: string, result: Record<string, GaugeHistory | GaugeReading>, isHistory: boolean) => {
+            for (const [id, data] of Object.entries(result)) {
+                const fullId = `${prefix}:${id}`;
+                let h: any;
+                
+                if (isHistory) {
+                    h = data;
+                    flowData[fullId] = h;
+                } else {
+                    h = { id, name: "Unknown", readings: [data] };
+                }
+
+                // Inject metadata from registry if available
+                if (registryMetadata[fullId]) {
+                    h.name = registryMetadata[fullId].name;
+                    h.lat = registryMetadata[fullId].lat;
+                    h.lon = registryMetadata[fullId].lon;
+                }
+
+                // Update latestData
+                const readings = (h as GaugeHistory).readings || [];
+                if (readings.length > 0) {
+                    latestData[fullId] = readings[readings.length - 1];
+                }
+            }
+        };
+
+        // 4. Batch Fetching
+        const historyGroup = parseGaugesParam(dbGauges.join(","));
+        const latestGroup = parseGaugesParam(latestOnlyGauges.join(","));
+        const allPrefixes = Array.from(new Set([...Object.keys(historyGroup), ...Object.keys(latestGroup)]));
+
+        const promises = allPrefixes.map(async (prefix) => {
             const provider = providers[prefix];
-            if (provider) {
+            if (!provider) return;
+
+            const hIds = historyGroup[prefix] || [];
+            const lIds = latestGroup[prefix] || [];
+
+            // A. Fetch History (DB Gauges)
+            if (hIds.length > 0) {
                 try {
-                    const data = await provider.getHistory(ids, startTs, endTs, false);
-                    for (const [id, history] of Object.entries(data)) {
-                        const fullId = `${prefix}:${id}`;
-                        const h = history as any;
-                        // Inject metadata from registry if available
-                        if (registryMetadata[fullId]) {
-                            h.name = registryMetadata[fullId].name;
-                            h.lat = registryMetadata[fullId].lat;
-                            h.lon = registryMetadata[fullId].lon;
-                        }
-                        flowData[fullId] = h;
-                    }
+                    const data = await provider.getHistory(hIds, startTs, endTs, false);
+                    mergeResult(prefix, data, true);
                 } catch (e) {
-                    console.error(`Fetch failed for provider ${prefix}:`, e);
+                    console.error(`History fetch failed for ${prefix}:`, e);
+                }
+            }
+
+            // B. Fetch Latest (Registry Gauges)
+            if (lIds.length > 0) {
+                try {
+                    const data = await provider.getLatest(lIds);
+                    mergeResult(prefix, data, false);
+                } catch (e) {
+                    console.error(`Latest fetch failed for ${prefix}:`, e);
                 }
             }
         });
 
         await Promise.all(promises);
-        flowData.generatedAt = Date.now();
         
+        flowData.generatedAt = endTs;
+        latestData.generatedAt = endTs;
+
+        // 5. Save to R2
         await env.FLOW_STORAGE.put("flowdata.json", JSON.stringify(flowData), {
             httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=900, s-maxage=900" }
         });
-
-        const latestData: Record<string, any> = {};
-        for (const [key, history] of Object.entries(flowData)) {
-             if (key === "generatedAt") {
-                 latestData.generatedAt = history;
-                 continue;
-             }
-             const readings = (history as GaugeHistory).readings;
-             if (readings && readings.length > 0) {
-                 latestData[key] = readings[readings.length - 1];
-             }
-        }
 
         await env.FLOW_STORAGE.put("latestdata.json", JSON.stringify(latestData), {
             httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=900, s-maxage=900" }

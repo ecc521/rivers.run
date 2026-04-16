@@ -15,6 +15,28 @@ export default defineConfig({
     workbox: {
       runtimeCaching: [
         {
+          urlPattern: /^https:\/\/api\.rivers\.run\/.*/i,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'api-metadata-cache',
+            expiration: {
+              maxEntries: 100,
+              maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+            }
+          }
+        },
+        {
+          urlPattern: /^https:\/\/flow\.rivers\.run\/.*/i,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'flow-data-cache-v2',
+            expiration: {
+              maxEntries: 20,
+              maxAgeSeconds: 60 * 60 * 24 // 1 day
+            }
+          }
+        },
+        {
           urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/rivers-run\.appspot\.com\/o\/public%2F(rivers|gauges)\.json/i,
           handler: 'NetworkFirst',
           options: {

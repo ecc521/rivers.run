@@ -9,10 +9,14 @@ interface UseRiversResult {
   rivers: RiverData[];
   loading: boolean;
   error: string | null;
+  isGlobalStale: boolean;
+  dataGeneratedAt: number | null;
+  refresh: () => Promise<void>;
 }
 
 // Global cache to prevent re-fetching on navigation between Home and Map
 let globalRiversCache: RiverData[] | null = null;
+let globalDataGeneratedAt: number | null = null;
 let globalLoading = false;
 let globalError: string | null = null;
 const fetchSubscribers: Set<() => void> = new Set();
@@ -43,6 +47,13 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
 
   if (gaugeRecord && gaugeRecord.readings && gaugeRecord.readings.length > 0) {
     const rawLatest = gaugeRecord.readings[gaugeRecord.readings.length - 1];
+    
+    // 3-hour staleness rule: Latest non-forecast reading must be brand new
+    const readingAge = Date.now() - rawLatest.dateTime;
+    if (readingAge > 3 * 60 * 60 * 1000) {
+        river.isReadingStale = true;
+    }
+
     const latest = applyUnitSettings(rawLatest, settings);
     
     river.cfs = latest.cfs;
@@ -76,6 +87,11 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
    if (!gData.readings || gData.readings.length === 0) return null;
 
    const rawLatest = gData.readings[gData.readings.length - 1];
+   
+   // 3-hour staleness rule
+   const readingAge = Date.now() - rawLatest.dateTime;
+   const isStale = readingAge > 3 * 60 * 60 * 1000;
+
    const latest = applyUnitSettings(rawLatest, settings);
    const { flowUnits } = settings;
    let flowStr = "";
@@ -97,6 +113,7 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
        section: gData.section || "",
        gauges: [{ id: gaugeId, isPrimary: true, name: gData.name || gaugeId, section: gData.section || "" }],
        isGauge: true,
+       isReadingStale: isStale,
        cfs: latest.cfs,
        ft: latest.ft,
        cms: latest.cms,
@@ -108,24 +125,50 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
    } as unknown as RiverData;
 };
 
+const BOOTSTRAP_KEY = "rivers_bootstrap_v1";
+
 export const useRivers = (): UseRiversResult => {
   const [rivers, setRivers] = useState<RiverData[]>(globalRiversCache || []);
   const [loading, setLoading] = useState(globalRiversCache === null ? true : globalLoading);
   const [error, setError] = useState<string | null>(globalError);
+  const [dataGeneratedAt, setDataGeneratedAt] = useState<number | null>(globalDataGeneratedAt);
   const settings = useSettings();
 
+  const isGlobalStale = useMemo(() => {
+    if (!dataGeneratedAt) return false;
+    return (Date.now() - dataGeneratedAt) > 60 * 60 * 1000; // 1 hour
+  }, [dataGeneratedAt]);
+
   useEffect(() => {
+    // Attempt bootstrap from localStorage if global cache is empty
+    if (!globalRiversCache) {
+        const cached = localStorage.getItem(BOOTSTRAP_KEY);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (parsed.rivers && parsed.ts) {
+                    globalRiversCache = parsed.rivers;
+                    globalDataGeneratedAt = parsed.ts;
+                    setRivers(globalRiversCache!);
+                    setDataGeneratedAt(globalDataGeneratedAt);
+                    setLoading(false);
+                }
+            } catch (e) {}
+        }
+    }
+
     // Subscribe to global state changes
     const handleUpdate = () => {
         setRivers(globalRiversCache || []);
         setLoading(globalLoading);
         setError(globalError);
+        setDataGeneratedAt(globalDataGeneratedAt);
     };
     fetchSubscribers.add(handleUpdate);
 
-    const fetchRivers = async () => {
+    const fetchRivers = async (force = false) => {
       // If we already have data, or are already fetching, don't duplicate work
-      if (globalRiversCache || globalLoading) {
+      if (!force && (globalRiversCache || globalLoading)) {
           return;
       }
       
@@ -134,7 +177,7 @@ export const useRivers = (): UseRiversResult => {
 
       // Safety timeout to prevent permanently stuck loading state
       const timeoutId = setTimeout(() => {
-          if (globalLoading && !globalRiversCache) {
+          if (globalLoading && (!globalRiversCache || force)) {
               globalLoading = false;
               globalError = "Request timed out. Please try again or check your connection.";
               notifySubscribers();
@@ -148,9 +191,11 @@ export const useRivers = (): UseRiversResult => {
         ]);
         
         let processedData = data;
+        let genTime: number | null = null;
 
         // Enrich the rivers with flow data
         if (flowData) {
+          genTime = flowData.generatedAt || Date.now();
           processedData = data.map((river: any, index: number) => enrichRiver(river, index, flowData, settings));
 
           // Create standalone gauges for any gauge present in flow data
@@ -168,7 +213,12 @@ export const useRivers = (): UseRiversResult => {
         }
 
         globalRiversCache = processedData;
+        globalDataGeneratedAt = genTime;
         globalLoading = false;
+
+        // Persist to local storage for future bootstrap
+        localStorage.setItem(BOOTSTRAP_KEY, JSON.stringify({ rivers: processedData, ts: genTime }));
+
         clearTimeout(timeoutId);
         notifySubscribers();
 
@@ -187,5 +237,14 @@ export const useRivers = (): UseRiversResult => {
     };
   }, []);
 
-  return { rivers, loading, error };
+  const refresh = async () => {
+      globalLoading = false;
+      globalError = null;
+      globalRiversCache = null;
+      // We don't use the inner fetchRivers because of useEffect closure, but navigation or mount will trigger it.
+      // Or we can manually trigger it here if we expose it.
+      window.location.reload(); // Simplest "Update" button implementation for now
+  };
+
+  return { rivers, loading, error, isGlobalStale, dataGeneratedAt, refresh };
 };

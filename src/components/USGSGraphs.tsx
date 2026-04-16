@@ -107,6 +107,20 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
   const [activeGaugeId, setActiveGaugeId] = useState<string | undefined>(river.gauges?.[0]?.id);
   const rawData = activeGaugeId && river.gaugeData ? river.gaugeData[activeGaugeId] || [] : [];
 
+  const isGraphStale = useMemo(() => {
+     if (rawData.length === 0) return false;
+     let latestActualReading = null;
+     for (let i = rawData.length - 1; i >= 0; i--) {
+         const d = rawData[i];
+         if (d.cfs != null || d.ft != null || d.cms != null || d.m != null) {
+             latestActualReading = d;
+             break;
+         }
+     }
+     if (!latestActualReading) return false;
+     return (Date.now() - latestActualReading.dateTime) > 3 * 60 * 60 * 1000;
+  }, [rawData]);
+
   const hasForecastData = useMemo(() => {
     return rawData.some((d: any) => d.cfsForecast != null || d.ftForecast != null || d.forecast === true);
   }, [rawData]);
@@ -324,6 +338,21 @@ export const USGSGraphs: React.FC<Props> = ({ river }) => {
         </div>
       ) : (
         <>
+          {isGraphStale && (
+            <div style={{ 
+              backgroundColor: "var(--danger-bg)", 
+              color: "var(--danger-text)", 
+              padding: "10px", 
+              borderRadius: "8px", 
+              marginBottom: "10px", 
+              fontSize: "0.9em",
+              textAlign: "center",
+              border: "1px solid var(--danger)",
+              fontWeight: "bold"
+            }}>
+              ⚠️ Data is more than 3 hours old. This gauge may be reporting intermittently or is currently offline.
+            </div>
+          )}
           <div
             style={{
               width: "100%",

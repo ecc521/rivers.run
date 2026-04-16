@@ -66,18 +66,14 @@ CREATE TABLE river_access_points (
     name TEXT,
     FOREIGN KEY(river_id) REFERENCES rivers(id) ON DELETE CASCADE
 );
+CREATE INDEX idx_access_points_river_id ON river_access_points(river_id);
 
 -- ==========================================
 -- 3. AUDIT HISTORY (Strict Diff-Based History)
 -- ==========================================
-CREATE TABLE river_audit_log (
-    history_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    river_id TEXT NOT NULL,
-    action_type TEXT NOT NULL,   -- 'UPDATE', 'DELETE', 'CREATE'
-    changed_by TEXT,             -- Auth UID of the editor
-    changed_at INTEGER NOT NULL, -- Unix timestamp
     diff_patch JSON NOT NULL     -- Only tracks the delta/diff of what actually changed (e.g., {"flow_min": [100, 150]}) to save massive storage on long writeups.
 );
+CREATE INDEX idx_audit_log_river_id ON river_audit_log(river_id);
 
 -- Note: Because we want strictly minimized DIFFs to save DB Storage limits, 
 -- calculating the delta happens natively at the API/Cloudflare Worker layer rather 
@@ -131,6 +127,7 @@ CREATE TABLE river_suggestions (
     created_at INTEGER NOT NULL,     -- Unix timestamp
     FOREIGN KEY(river_id) REFERENCES rivers(id) ON DELETE CASCADE
 );
+CREATE INDEX idx_suggestions_river_id ON river_suggestions(river_id);
 
 -- ==========================================
 -- 6. USER PROFILES & SETTINGS

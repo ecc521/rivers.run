@@ -63,7 +63,7 @@ const Home: React.FC = () => {
      }
   }, [isListOverlay, id, navigate]);
 
-  const { rivers, loading: riversLoading, error: riversError } = useRivers();
+  const { rivers, loading: riversLoading, error: riversError, isGlobalStale, dataGeneratedAt, refresh } = useRivers();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -317,6 +317,39 @@ const Home: React.FC = () => {
     <div className="page-content">
       {/* Search List Overlay Toggle */}
       <div style={{ display: isRiverOverlay ? "none" : "block" }}>
+        {isGlobalStale && (
+          <div style={{ 
+            backgroundColor: "var(--danger-bg)", 
+            color: "var(--danger-text)", 
+            padding: "12px", 
+            textAlign: "center", 
+            borderRadius: "8px", 
+            marginBottom: "15px",
+            border: "1px solid var(--danger)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "10px"
+          }}>
+            <span>
+              ⚠️ Data was last synced {dataGeneratedAt ? Math.round((Date.now() - dataGeneratedAt) / 60000) : "?"} mins ago.
+            </span>
+            <button 
+              onClick={() => refresh()}
+              style={{
+                backgroundColor: "var(--danger)",
+                color: "#fff",
+                border: "none",
+                padding: "4px 12px",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontWeight: "bold"
+              }}
+            >
+              Update
+            </button>
+          </div>
+        )}
         <h1 className="center">{listTitle ? listTitle : "River Information"}</h1>
         <div 
         className="searchcontain"

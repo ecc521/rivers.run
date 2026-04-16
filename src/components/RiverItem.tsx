@@ -48,7 +48,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
     .filter(Boolean)
     .join(" ");
 
-  const bgColor = calculateColor(
+  const bgColor = river.isReadingStale ? null : calculateColor(
     river.running ?? null,
     isDarkMode,
     isColorBlindMode,
@@ -139,7 +139,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
 
 
         {/* Flow Span */}
-        {(river.flowInfo || typeof river.flow === "string") ? (
+        {(river.flowInfo || typeof river.flow === "string") && !river.isReadingStale ? (
           <span className="riverspan flowspan">{river.flowInfo || (typeof river.flow === "string" ? river.flow : "")}</span>
         ) : (river.dam ? (
           <span className="riverspan flowspan">Dam</span>

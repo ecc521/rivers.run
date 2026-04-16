@@ -48,8 +48,6 @@ export default function SystemAdminTab() {
             color="var(--primary)"
           />
         </div>
-      </div>
-
       <div style={{ backgroundColor: "var(--surface)", padding: '24px', borderRadius: '12px', border: "1px solid var(--border)", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 style={{ margin: 0, fontSize: '18px' }}>Security Audit Log (Last 50)</h3>

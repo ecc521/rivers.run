@@ -90,7 +90,8 @@ app.openapi(getRiversRoute, async (c) => {
     `).all();
     
     // Explicit aggressive caching header to push the massive load physically onto Cloudflare Edge Nodes
-    c.header("Cache-Control", "public, max-age=3600, s-maxage=3600");
+    // stale-while-revalidate=86400 allows serving old content while refetching in the background
+    c.header("Cache-Control", "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400");
     
     const rivers = results.map(row => ({
           ...row,
