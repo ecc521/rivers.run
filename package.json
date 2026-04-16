@@ -31,7 +31,7 @@
     "react-dom": "^19.2.5",
     "react-is": "^19.2.5",
     "react-leaflet": "^5.0.0",
-    "react-quill-new": "^3.7.0",
+    "react-quill-new": "^3.8.3",
     "react-router-dom": "^7.14.1",
     "recharts": "^3.8.1"
   },
@@ -40,7 +40,7 @@
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/ios": "^8.3.0",
-    "@cloudflare/workers-types": "^4.20260415.1",
+    "@cloudflare/workers-types": "^4.20260416.2",
     "@cloudflare/vite-plugin": "^1.32.3",
     "@eslint/js": "^10.0.1",
     "@types/leaflet": "^1.9.21",
@@ -59,7 +59,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.8",
-    "vite-plugin-pwa": "^0.19.8",
+    "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.4",
     "wrangler": "^4.83.0"
   }
