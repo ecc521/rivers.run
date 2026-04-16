@@ -6,9 +6,9 @@ on:
       - main
 
 jobs:
-  deploy-web:
+  deploy:
     runs-on: ubuntu-latest
-    name: Deploy Web (Frontend)
+    name: Consolidated Deployment
     steps:
       - uses: actions/checkout@v4
 
@@ -18,81 +18,40 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install All Dependencies
         run: npm ci
+
+      - name: Global Lint
+        run: npm run lint
+
+      - name: Test Suite
+        run: |
+          npm test
+          (cd api && npm test)
+          (cd api-flow && npm test)
 
       - name: Build Frontend
         run: npm run build
 
-      - name: Deploy to Cloudflare Pages/Assets
+      - name: Deploy Frontend to Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
 
-  deploy-api:
-    runs-on: ubuntu-latest
-    name: Deploy API Worker
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install API dependencies
-        run: npm ci
-        working-directory: api
-
-      - name: Lint API
-        run: npm run lint
-        working-directory: api
-
-      - name: Test API
-        run: npm test
-        working-directory: api
-
-      - name: Deploy API to Cloudflare
+      - name: Deploy API Worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: api
-          # FORCE Wrangler to use the local config file to prevent root redirection
           command: deploy -c wrangler.toml
 
-  deploy-flow:
-    runs-on: ubuntu-latest
-    name: Deploy Flow Worker
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install API Flow dependencies
-        run: npm ci
-        working-directory: api-flow
-
-      - name: Lint API Flow
-        run: npm run lint
-        working-directory: api-flow
-
-      - name: Test API Flow
-        run: npm test
-        working-directory: api-flow
-
-      - name: Deploy API Flow to Cloudflare
+      - name: Deploy Flow Worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: api-flow
-          # FORCE Wrangler to use the local config file to prevent root redirection
           command: deploy -c wrangler.toml
