@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { RiverData } from "../types/River";
 import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { fetchAPI, fetchFlowData } from "../services/api";
