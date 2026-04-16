@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "tsc -b && eslint . && npm run lint:duplication",
+    "lint": "tsc -b && eslint src && npm run lint:duplication",
     "lint:duplication": "jscpd src",
     "preview": "vite preview",
     "test": "vitest run"

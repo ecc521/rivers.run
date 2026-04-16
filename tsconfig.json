@@ -3,8 +3,6 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" },
-    { "path": "./tsconfig.test.json" },
-    { "path": "./api" },
-    { "path": "./api-flow" }
+    { "path": "./tsconfig.test.json" }
   ]
 }

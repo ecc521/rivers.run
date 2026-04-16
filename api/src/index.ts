@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
 import { apiReference } from '@scalar/hono-api-reference';
 import { cors } from "hono/cors";
-import { z } from "zod";
+import { z } from "@hono/zod-openapi";
 import { 
     RiverEditorPayload, checkPayloadSize, 
     UserSettingsSchema, CommunityListSchema, 

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@hono/zod-openapi";
 
 // Shared common components
 const limitString = (max: number) => z.string().max(max, `Must be under ${max} characters`).optional().nullable();

@@ -6,7 +6,8 @@
     "deploy": "wrangler deploy -c wrangler.toml",
     "dev": "wrangler dev -c wrangler.toml",
     "start": "wrangler dev -c wrangler.toml",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "tsc && npx eslint src"
   },
   "dependencies": {
     "@hono/zod-openapi": "^0.13.0",
