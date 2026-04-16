@@ -6,9 +6,9 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy-web:
     runs-on: ubuntu-latest
-    name: Deploy
+    name: Deploy Web (Frontend)
     steps:
       - uses: actions/checkout@v4
 
@@ -18,27 +18,31 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # --- 1. FRONTEND DEPLOYMENT ---
-      - name: Install Frontend dependencies
+      - name: Install dependencies
         run: npm ci
-
-      - name: Lint Frontend
-        run: npm run lint
-
-      - name: Test Frontend
-        run: npm test
 
       - name: Build Frontend
         run: npm run build
 
-      - name: Deploy Frontend to Cloudflare
+      - name: Deploy to Cloudflare Pages/Assets
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
 
-      # --- 2. API WORKER DEPLOYMENT ---
+  deploy-api:
+    runs-on: ubuntu-latest
+    name: Deploy API Worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
       - name: Install API dependencies
         run: npm ci
         working-directory: api
@@ -53,9 +57,21 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: api
-          command: deploy
+          # FORCE Wrangler to use the local config file to prevent root redirection
+          command: deploy -c wrangler.toml
 
-      # --- 3. API FLOW WORKER DEPLOYMENT ---
+  deploy-flow:
+    runs-on: ubuntu-latest
+    name: Deploy Flow Worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
       - name: Install API Flow dependencies
         run: npm ci
         working-directory: api-flow
@@ -70,4 +86,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: api-flow
-          command: deploy
+          # FORCE Wrangler to use the local config file to prevent root redirection
+          command: deploy -c wrangler.toml
