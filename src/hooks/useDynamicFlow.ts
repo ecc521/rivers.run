@@ -3,29 +3,32 @@ import type { RiverData, GaugeReading } from "../types/River";
 import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { FLOW_API_URL } from "../services/api";
 
-const dynamicUSGSCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> }>();
+const dynamicFlowCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> }>();
 
-export function useDynamicUSGS(river: RiverData) {
-  // Store only the dynamic payload, not the whole river
+/**
+ * useDynamicFlow
+ * Fetches 7 days of historical flow data + forecasts on-demand for all gauge providers.
+ * Used primarily for the "Search Discovery" detailed view and River Details page.
+ */
+export function useDynamicFlow(river: RiverData) {
   const [dynamicPayload, setDynamicPayload] = useState<{ gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> } | null>(null);
 
   useEffect(() => {
-    const usgsIDs = river.gauges?.filter(g => g.id.startsWith("USGS:")).map(g => g.id.replace("USGS:", "")) || [];
-    const nwpsIDs = river.gauges?.filter(g => g.id.startsWith("NWS:")).map(g => g.id.replace("NWS:", "")) || [];
-    if (usgsIDs.length === 0 && nwpsIDs.length === 0) return;
+    if (!river.gauges || river.gauges.length === 0) return;
 
-    const cacheKey = usgsIDs.join(",") + "|" + nwpsIDs.join(",");
-    const cached = dynamicUSGSCache.get(cacheKey);
+    const allGauges = river.gauges.map(g => g.id);
+    const cacheKey = allGauges.sort().join(",");
+    const cached = dynamicFlowCache.get(cacheKey);
 
     const primaryGaugeID = river.gauges?.[0]?.id;
     const existingDatasetLength = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.length ? river.gaugeData[primaryGaugeID].length : 0;
     const existingFirstTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[0]?.dateTime ? river.gaugeData[primaryGaugeID][0].dateTime : 0;
     const existingLastTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[existingDatasetLength - 1]?.dateTime ? river.gaugeData[primaryGaugeID][existingDatasetLength - 1].dateTime : 0;
 
+    // We consider the data "fresh enough" if it covers at least 6.5 days and was fetched in the last 15 mins
     const hasSevenDays = existingDatasetLength > 0 && 
        (existingLastTime - existingFirstTime >= 6.5 * 24 * 60 * 60 * 1000);
     
-    // Fall back tightly to a 15 minute fetch constraint
     const newlyFetched = cached && (Date.now() - cached.lastFetchedMs < 15 * 60 * 1000);
 
     if (hasSevenDays && newlyFetched && cached) {
@@ -40,11 +43,10 @@ export function useDynamicUSGS(river: RiverData) {
         const gaugeDataMap: Record<string, Map<number, any>> = {};
         const siteNameMap: Record<string, string> = {};
 
-        const allIds = [...usgsIDs.map(id => `USGS:${id}`), ...nwpsIDs.map(id => `NWS:${id}`)];
-        if (allIds.length === 0) return;
+        if (allGauges.length === 0) return;
 
-        // Fetch from unified flow API
-        const url = `${FLOW_API_URL}/history?gauges=${allIds.join(",")}&days=7`;
+        // Fetch 7 days + Forecasts from unified flow API
+        const url = `${FLOW_API_URL}/history?gauges=${allGauges.join(",")}&days=7&forecast=true`;
         const res = await fetch(url);
         
         if (!res.ok) {
@@ -71,7 +73,7 @@ export function useDynamicUSGS(river: RiverData) {
 
         if (!isMounted) return;
 
-        // Splice seamlessly with our 15-minute cached `gaugeData` from Firebase!
+        // Merge with existing gaugeData
         const mergedGaugeData: Record<string, GaugeReading[]> = {};
         
         for (const [gaugeId, map] of Object.entries(gaugeDataMap)) {
@@ -81,7 +83,6 @@ export function useDynamicUSGS(river: RiverData) {
             for (const liveReading of sortedLive) {
                 const matchIndex = cachedDataset.findIndex(item => item.dateTime === liveReading.dateTime);
                 if (matchIndex >= 0) {
-                   // Update completely precisely inline (e.g. if the cache was missing parameter values)
                    cachedDataset[matchIndex] = { ...cachedDataset[matchIndex], ...liveReading };
                 } else {
                    cachedDataset.push(liveReading as GaugeReading);
@@ -91,7 +92,7 @@ export function useDynamicUSGS(river: RiverData) {
             mergedGaugeData[gaugeId] = cachedDataset;
         }
 
-        dynamicUSGSCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
+        dynamicFlowCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
         setDynamicPayload({ gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
 
       } catch (err: unknown) {
@@ -110,7 +111,6 @@ export function useDynamicUSGS(river: RiverData) {
   const enrichedRiver = useMemo(() => {
     if (!dynamicPayload) return null;
     
-    // Create a fresh clone to apply synchronous enrichment
     const enriched = { ...river };
     enriched.gaugeData = { ...(enriched.gaugeData || {}), ...dynamicPayload.gaugeData };
     
@@ -128,7 +128,8 @@ export function useDynamicUSGS(river: RiverData) {
     let latest = null;
     if (primaryData && primaryData.length > 0) {
         for (let i = primaryData.length - 1; i >= 0; i--) {
-            if (primaryData[i].cfs !== undefined || primaryData[i].ft !== undefined) {
+            // Favor non-forecast points for "latest" display logic if available
+            if (!primaryData[i].isForecast && (primaryData[i].cfs !== undefined || primaryData[i].ft !== undefined)) {
                 latest = primaryData[i];
                 break;
             }
@@ -136,8 +137,6 @@ export function useDynamicUSGS(river: RiverData) {
     }
 
     if (latest) {
-        // 2-hour relative staleness rule: (Fetch Time - Reading Time)
-        // Since we just fetched this live, the "sync time" is effectively now.
         const ageInMs = Date.now() - latest.dateTime;
         enriched.isReadingStale = ageInMs > 2 * 60 * 60 * 1000;
 

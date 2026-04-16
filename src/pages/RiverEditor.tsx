@@ -11,7 +11,7 @@ import { validateRiver } from "../utils/riverValidation";
 import { toDecimalDegrees } from "../utils/toDecimalDegrees";
 import { useSettings } from "../context/SettingsContext";
 import { AuthModal } from "../components/AuthModal";
-import { useDynamicUSGS } from "../hooks/useDynamicUSGS";
+import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { useModal } from "../context/ModalContext";
 
 const STATES_AND_PROVINCES = [
@@ -335,7 +335,7 @@ export default function RiverEditor() {
 
   const previewStateStr = JSON.stringify(riverData);
   const memoizedPreviewBase = useMemo(() => generateFinalObj(), [previewStateStr]);
-  const hydratedPreview = useDynamicUSGS(memoizedPreviewBase) || memoizedPreviewBase;
+  const hydratedPreview = useDynamicFlow(memoizedPreviewBase) || memoizedPreviewBase;
   
   let { errors: liveErrors, warnings: liveWarnings } = validateRiver(memoizedPreviewBase);
 

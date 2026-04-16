@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useRivers } from "../hooks/useRivers";
 import { RiverExpansion } from "../components/RiverExpansion";
 import { useSEO } from "../hooks/useSEO";
-import { useDynamicUSGS } from "../hooks/useDynamicUSGS";
+import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { calculateColor } from "../utils/flowInfoCalculations";
 import { useSettings } from "../context/SettingsContext";
 

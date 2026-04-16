@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { RiverData } from "../types/River";
 import { getSkillFull } from "../utils/skillTranslations";
 import { USGSGraphs } from "./USGSGraphs";
-import { useDynamicUSGS } from "../hooks/useDynamicUSGS";
+import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { useAuth } from "../context/AuthContext";
 import DOMPurify from "dompurify";
 import { SharedMap } from "./SharedMap";
@@ -28,7 +28,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
   }, []);
 
   // The hook directly yields a fully cloned, flow-hydrated RiverData precisely compiled
-  const displayRiver = useDynamicUSGS(river) || river;
+  const displayRiver = useDynamicFlow(river) || river;
 
   const getSkillAndClassText = () => {
     const skillFull = getSkillFull(river.skill);

@@ -54,12 +54,18 @@ export const nwsProvider: GaugeProvider = {
         hasSiteListing: true
     },
 
-    async getLatest(_siteCodes: string[]): Promise<Record<string, GaugeReading>> {
-        // NWS NWPS API does not support time-bound filters on stageflow. 
-        // Fetching "latest" returns a 1.34MB payload per gauge. 
-        // Disabled per user request to prevent excessive bandwidth polling. Use USGS instead.
-        console.warn("NWS /latest is disabled due to excessive API bandwidth. Please use USGS or getHistory.");
-        return {};
+    async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
+        // Fetch 3 hours to ensure we get at least one recent reading
+        const histories = await this.getHistory(siteCodes, Date.now() - 10800000, Date.now(), false);
+        const results: Record<string, GaugeReading> = {};
+        
+        Object.entries(histories).forEach(([id, history]) => {
+            if (history.readings.length > 0) {
+                results[id] = history.readings[history.readings.length - 1];
+            }
+        });
+        
+        return results;
     },
 
     async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {

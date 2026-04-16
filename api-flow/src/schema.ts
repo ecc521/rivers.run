@@ -26,3 +26,7 @@ export const SiteSchema = z.object({
   lon: z.number().openapi({ example: -82.68 }),
   section: z.string().optional().openapi({ example: "Section 9" })
 });
+
+export const ErrorSchema = z.object({
+  error: z.string().openapi({ example: "Invalid Request" })
+});
