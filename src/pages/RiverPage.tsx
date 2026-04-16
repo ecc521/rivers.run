@@ -19,7 +19,7 @@ const RiverPage: React.FC = () => {
   
   // NEVER call hooks conditionally! This caused the infinite HMR crash loop. 
   // We pass an empty object if river isn't loaded yet to preserve the exact hook call order safely.
-  const dynamicRiver = useDynamicUSGS(river || ({} as any));
+  const dynamicRiver = useDynamicFlow(river || ({} as any));
   const displayRiver = river ? (dynamicRiver || river) : null;
 
   useSEO({

@@ -17,7 +17,7 @@ export function useDynamicFlow(river: RiverData) {
     if (!river.gauges || river.gauges.length === 0) return;
 
     const allGauges = river.gauges.map(g => g.id);
-    const cacheKey = allGauges.sort().join(",");
+    const cacheKey = allGauges.toSorted((a, b) => a.localeCompare(b)).join(",");
     const cached = dynamicFlowCache.get(cacheKey);
 
     const primaryGaugeID = river.gauges?.[0]?.id;
@@ -129,7 +129,7 @@ export function useDynamicFlow(river: RiverData) {
     if (primaryData && primaryData.length > 0) {
         for (let i = primaryData.length - 1; i >= 0; i--) {
             // Favor non-forecast points for "latest" display logic if available
-            if (!primaryData[i].isForecast && (primaryData[i].cfs !== undefined || primaryData[i].ft !== undefined)) {
+            if (!primaryData[i].forecast && (primaryData[i].cfs !== undefined || primaryData[i].ft !== undefined)) {
                 latest = primaryData[i];
                 break;
             }

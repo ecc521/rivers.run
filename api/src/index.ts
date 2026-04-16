@@ -34,7 +34,7 @@ app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
 // Generate auto-updating Scalar interface dynamically
 app.get('/docs', apiReference({
     // @ts-expect-error spec type mismatch in this version
-    spec: { url: '/openapi.json' },
+    spec: { content: app.getOpenAPI31() },
     theme: 'purple',
     layout: 'modern',
     defaultContext: {
