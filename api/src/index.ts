@@ -86,29 +86,53 @@ const formatRiverRow = (row: any) => {
 };
 
 app.openapi(getRiversRoute, async (c) => {
-    const { results } = await c.env.DB.prepare(`
-        SELECT 
-            r.*,
-            (SELECT json_group_array(json_object(
-                'id', rg.gauge_id,
-                'isPrimary', CASE WHEN rg.is_primary = 1 THEN json('true') ELSE json('false') END,
-                'name', rg.name,
-                'section', rg.section
-            )) FROM river_gauges rg WHERE rg.river_id = r.id) as gauges,
-            (SELECT json_group_array(json_object(
-                'lat', ra.lat,
-                'lon', ra.lon,
-                'type', ra.type,
-                'name', ra.name
-            )) FROM river_access_points ra WHERE ra.river_id = r.id) as accessPoints
-        FROM rivers r
-    `).all();
+    // Optimization: Batch retrieve all three tables to eliminate O(N) correlated subqueries.
+    // D1 handles flat batch queries significantly faster than nested JSON aggregation over large tables.
+    const [riversRaw, gaugesRaw, accessRaw] = await c.env.DB.batch([
+        c.env.DB.prepare("SELECT * FROM rivers"),
+        c.env.DB.prepare("SELECT * FROM river_gauges"),
+        c.env.DB.prepare("SELECT * FROM river_access_points")
+    ]);
+
+    const riversResults = riversRaw.results as any[];
+    const gaugesResults = gaugesRaw.results as any[];
+    const accessResults = accessRaw.results as any[];
+
+    // Build lookup maps for O(1) correlation
+    const gaugesMap = new Map<string, any[]>();
+    for (const rg of gaugesResults) {
+        if (!gaugesMap.has(rg.river_id as string)) gaugesMap.set(rg.river_id as string, []);
+        gaugesMap.get(rg.river_id as string)?.push({
+            id: rg.gauge_id,
+            isPrimary: rg.is_primary === 1,
+            name: rg.name,
+            section: rg.section
+        });
+    }
+
+    const accessMap = new Map<string, any[]>();
+    for (const ra of accessResults) {
+        if (!accessMap.has(ra.river_id as string)) accessMap.set(ra.river_id as string, []);
+        accessMap.get(ra.river_id as string)?.push({
+            lat: ra.lat,
+            lon: ra.lon,
+            type: ra.type,
+            name: ra.name
+        });
+    }
+
+    // Merge and format in the high-performance worker runtime
+    const rivers = riversResults.map(row => {
+        const formatted = formatRiverRow(row);
+        formatted.gauges = gaugesMap.get(row.id as string) || [];
+        formatted.accessPoints = accessMap.get(row.id as string) || [];
+        return formatted;
+    });
     
     // Explicit aggressive caching header to push the massive load physically onto Cloudflare Edge Nodes
     // stale-while-revalidate=86400 allows serving old content while refetching in the background
     c.header("Cache-Control", "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400");
     
-    const rivers = results.map(row => formatRiverRow(row));
     return c.json(rivers);
 });
 
