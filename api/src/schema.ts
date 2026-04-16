@@ -86,6 +86,13 @@ export const AdminResolutionSchema = z.object({
   admin_overrides: RiverEditorPayload.partial().optional().openapi({ type: 'object', description: 'Overrides for the river data' })
 });
 
+export const UserReportPayload = z.object({
+  target_id: requiredString(50),
+  type: z.enum(["river", "list"]),
+  reason: requiredString(1000),
+  email: limitString(255)
+});
+
 // Response Schemas for Documentation
 export const RiverSchema = z.object({
   id: z.string().openapi({ example: "1L4pDt-EWGv6Z8V1SlOSGG6QIO4l2ZVof" }),

@@ -232,7 +232,18 @@ export const useRivers = (): UseRiversResult => {
         globalLoading = false;
 
         // Persist to local storage for future bootstrap
-        localStorage.setItem(BOOTSTRAP_KEY, JSON.stringify({ rivers: processedData, ts: genTime }));
+        try {
+            // Strip heavy fields, descriptions, and standalone gauges to keep boot storage ultralight
+            const strippedRivers = processedData
+                .filter((r: any) => !r.isGauge)
+                .map((r: any) => {
+                    const { gaugeData: _g, writeup: _w, aw: _a, ...skeletonValues } = r;
+                    return skeletonValues;
+                });
+            localStorage.setItem(BOOTSTRAP_KEY, JSON.stringify({ rivers: strippedRivers, ts: genTime }));
+        } catch (error) {
+            console.warn("Storage quota exceeded or error caching bootstrap data", error);
+        }
 
         clearTimeout(timeoutId);
         notifySubscribers();

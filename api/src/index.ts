@@ -394,8 +394,20 @@ app.openapi(resolveSuggestionRoute, async (c) => {
          }
     }
 
+    const authorSettings = await c.env.DB.prepare("SELECT settings_json FROM users WHERE user_id = ?").bind(suggestion.suggested_by).first();
+    let hideName = false;
+    if (authorSettings && authorSettings.settings_json) {
+        try {
+            const s = typeof authorSettings.settings_json === 'string' ? JSON.parse(authorSettings.settings_json) : authorSettings.settings_json;
+            if (s.hidePublicName) hideName = true;
+        } catch {}
+    }
+    
     // Scrub IP from the publicly-accessible history record
-    const cleanAuthor = (suggestion as any).suggested_by.startsWith("IP:") ? "Anonymous Paddler" : (suggestion as any).suggested_by;
+    let cleanAuthor = (suggestion as any).suggested_by;
+    if (hideName || cleanAuthor.startsWith("IP:")) {
+        cleanAuthor = "Anonymous Paddler";
+    }
 
     // Log the math diff
     batch.push(c.env.DB.prepare(`
@@ -733,6 +745,14 @@ app.openapi(getListByIdRoute, async (c) => {
     const list = listRaw.results[0] as any;
     if (!list) return c.json({ error: "List not found" }, 404);
     
+    const ownerSettings = await c.env.DB.prepare("SELECT settings_json FROM users WHERE user_id = ?").bind(list.owner_id).first();
+    if (ownerSettings && ownerSettings.settings_json) {
+        try {
+            const s = typeof ownerSettings.settings_json === 'string' ? JSON.parse(ownerSettings.settings_json) : ownerSettings.settings_json;
+            if (s.hidePublicName) list.author = "Anonymous Paddler";
+        } catch {}
+    }
+    
     const rivers = (riversRaw.results as any[]).map(rv => ({
         id: rv.river_id,
         order: rv.sort_order,
@@ -829,6 +849,66 @@ app.openapi(unbanUserRoute, async (c) => {
     const admin = c.get("user");
     await c.env.DB.prepare("UPDATE users SET role = 'user' WHERE user_id = ?").bind(id).run();
     await c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('UNBAN_USER', admin.user_id, id, 'Unbanned by admin panel', Math.floor(Date.now() / 1000)).run();
+    return c.json({ success: true });
+});
+
+// 9. API Reporting (UGC)
+const createReportRoute = createRoute({
+    middleware: [optionalFirebaseAuthMiddleware, checkPayloadSize],
+    method: 'post',
+    path: '/reports',
+    summary: 'Submit a UGC report (Flag content)',
+    security: [{ bearerAuth: [] }, {}],
+    request: { body: { content: { 'application/json': { schema: UserReportPayload } } } },
+    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Reported' } }
+});
+
+app.openapi(createReportRoute, async (c) => {
+    const user = c.get("user");
+    const body = await c.req.json();
+    const validated = UserReportPayload.parse(body);
+
+    let authorId = user.user_id;
+    if (authorId === "anonymous") {
+        const ip = c.req.header("CF-Connecting-IP") || "Unknown IP";
+        authorId = `IP: ${ip}`;
+    }
+
+    await c.env.DB.prepare(`
+        INSERT INTO user_reports (target_id, type, reason, reported_by, reporter_email, status, created_at) 
+        VALUES (?, ?, ?, ?, ?, 'pending', ?)
+    `).bind(validated.target_id, validated.type, validated.reason, authorId, validated.email || null, Math.floor(Date.now() / 1000)).run();
+
+    return c.json({ success: true });
+});
+
+const getAdminReportsRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireModerator],
+    method: 'get',
+    path: '/admin/reports',
+    summary: 'Fetch pending UGC reports',
+    security: [{ bearerAuth: [] }],
+    responses: { 200: { content: { 'application/json': { schema: GenericArraySchema } }, description: 'Admin reports queue' } }
+});
+
+app.openapi(getAdminReportsRoute, async (c) => {
+    const { results } = await c.env.DB.prepare("SELECT * FROM user_reports WHERE status = 'pending' ORDER BY created_at DESC").all();
+    return c.json(results);
+});
+
+const resolveReportRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireModerator],
+    method: 'post',
+    path: '/admin/reports/{id}/resolve',
+    summary: 'Resolve a user report',
+    security: [{ bearerAuth: [] }],
+    request: { params: z.object({ id: z.string() }) },
+    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Resolved' } }
+});
+
+app.openapi(resolveReportRoute, async (c) => {
+    const id = c.req.param("id");
+    await c.env.DB.prepare("UPDATE user_reports SET status = 'resolved' WHERE report_id = ?").bind(id).run();
     return c.json({ success: true });
 });
 const openApiConfig = {

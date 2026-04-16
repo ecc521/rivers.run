@@ -9,6 +9,7 @@ import {
   NORTH_AMERICA_BOUNDS 
 } from "../utils/offlineMapEngine";
 import { useModal } from "../context/ModalContext";
+import { AccountSettings } from "../components/AccountSettings";
 
 const SettingsPage: React.FC = () => {
   const { 
@@ -161,6 +162,10 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      <div style={{ marginTop: '30px' }}>
+        <AccountSettings />
       </div>
 
       <div style={{ marginTop: '30px' }}>

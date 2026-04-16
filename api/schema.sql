@@ -142,3 +142,19 @@ CREATE TABLE admin_audit_log (
     reason TEXT,
     created_at INTEGER NOT NULL
 );
+
+-- ==========================================
+-- 8. USER REPORTS (UGC Flagging)
+-- ==========================================
+CREATE TABLE user_reports (
+    report_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    reported_by TEXT,
+    reporter_email TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX idx_user_reports_status ON user_reports(status);
+

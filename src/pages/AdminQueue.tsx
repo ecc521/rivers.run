@@ -10,6 +10,7 @@ import ReviewQueueTab from "../components/admin/ReviewQueueTab";
 import UserManagementTab from "../components/admin/UserManagementTab";
 import ListAdminTab from "../components/admin/ListAdminTab";
 import SystemAdminTab from "../components/admin/SystemAdminTab";
+import ReportsAdminTab from "../components/admin/ReportsAdminTab";
 
 export default function AdminQueue() {
   const { user, isAdmin, isModerator, loading: authLoading } = useAuth();
@@ -74,6 +75,7 @@ export default function AdminQueue() {
   const tabs = [
     { id: "queue", label: "Review Queue", count: queue.length },
     ...(isAdmin ? [
+      { id: "reports", label: "User Reports" },
       { id: "users", label: "User Management" },
       { id: "lists", label: "List Admin" },
       { id: "system", label: "System & Sync" }
@@ -105,6 +107,7 @@ export default function AdminQueue() {
           />
         )}
         
+        {isAdmin && activeTab === "reports" && <ReportsAdminTab />}
         {isAdmin && activeTab === "users" && <UserManagementTab />}
         {isAdmin && activeTab === "lists" && <ListAdminTab />}
         {isAdmin && activeTab === "system" && <SystemAdminTab />}

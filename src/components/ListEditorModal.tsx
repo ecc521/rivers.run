@@ -3,6 +3,7 @@ import { useLists, type UserList } from "../context/ListsContext";
 import { useRivers } from "../hooks/useRivers";
 import { useAuth } from "../context/AuthContext";
 import { useModal } from "../context/ModalContext";
+import { fetchAPI } from "../services/api";
 
 interface ListEditorModalProps {
   isOpen: boolean;
@@ -68,6 +69,29 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
            await alert("Link copied to clipboard!");
         });
      }
+  };
+
+  const handleReport = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!targetList) return;
+    const reason = await prompt("Please explain the problem with this list:", "Report List");
+    if (!reason || !reason.trim()) return;
+
+    try {
+      await fetchAPI("/reports", {
+        method: "POST",
+        body: JSON.stringify({
+          target_id: targetList.id,
+          type: "list",
+          reason: reason.trim(),
+          email: user?.email || ""
+        })
+      });
+      await alert("Report submitted successfully. Our moderators will review it shortly.", "Report Sent");
+      onClose();
+    } catch (e: any) {
+      await alert("Failed to submit report: " + e.message);
+    }
   };
 
   const handleTogglePublish = async () => {
@@ -290,24 +314,43 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
              </div>
           )}
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "10px" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              style={{
-                padding: "10px 20px",
-                backgroundColor: "transparent",
-                border: "1px solid var(--border)",
-                color: "var(--text)",
-                borderRadius: "8px",
-                cursor: saving ? "not-allowed" : "pointer",
-                fontWeight: 600,
-                transition: "all 0.2s",
-              }}
-            >
-              {isShared ? "Close" : "Cancel"}
-            </button>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
+            {isShared && targetList ? (
+                <button
+                    type="button"
+                    onClick={handleReport}
+                    style={{
+                        padding: "4px 8px",
+                        backgroundColor: "transparent",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        textDecoration: "underline"
+                    }}
+                >
+                    🚩 Report a Problem
+                </button>
+            ) : <div></div>}
+            
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "transparent",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                  borderRadius: "8px",
+                  cursor: saving ? "not-allowed" : "pointer",
+                  fontWeight: 600,
+                  transition: "all 0.2s",
+                }}
+              >
+                {isShared ? "Close" : "Cancel"}
+              </button>
             {!isShared && (
                 <button
                 type="submit"

@@ -2,29 +2,43 @@ import React, { useEffect, useState } from "react";
 import { fetchAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-interface NotificationConfig {
+interface AccountConfig {
   enabled?: boolean;
   noneUntil?: number;
   timeOfDay?: string;
   reviewQueueAlerts?: boolean;
+  hidePublicName?: boolean;
 }
 
-export const NotificationSettings: React.FC = () => {
+export const AccountSettings: React.FC = () => {
   const { user } = useAuth();
-  const [config, setConfig] = useState<NotificationConfig>({});
+  const [config, setConfig] = useState<AccountConfig>({});
   const [loading, setLoading] = useState(true);
 
   // For Date Inputs
   const [localTime, setLocalTime] = useState("");
   const [localDate, setLocalDate] = useState("");
 
-  const updateConfig = async (newProps: Partial<NotificationConfig>) => {
+  const updateConfig = async (newProps: Partial<AccountConfig>) => {
     if (!user) return;
     const merged = { ...config, ...newProps };
     setConfig(merged);
+    
+    // Separate out what goes to notifications vs settings_json
+    const payload: any = { notifications: {} };
+    const settingsJson: any = {};
+    
+    if (merged.enabled !== undefined) payload.notifications.enabled = merged.enabled;
+    if (merged.noneUntil !== undefined) payload.notifications.noneUntil = merged.noneUntil;
+    if (merged.timeOfDay !== undefined) payload.notifications.timeOfDay = merged.timeOfDay;
+    if (merged.reviewQueueAlerts !== undefined) payload.notifications.reviewQueueAlerts = merged.reviewQueueAlerts;
+    if (merged.hidePublicName !== undefined) settingsJson.hidePublicName = merged.hidePublicName;
+    
+    if (Object.keys(settingsJson).length > 0) payload.settings_json = settingsJson;
+
     await fetchAPI("/user/settings", {
       method: "PATCH",
-      body: JSON.stringify({ notifications: merged })
+      body: JSON.stringify(payload)
     });
   };
 
@@ -33,9 +47,16 @@ export const NotificationSettings: React.FC = () => {
     const fetchConfig = async () => {
       try {
         const settings = await fetchAPI("/user/settings");
-        if (settings && settings.notifications) {
-          const n = settings.notifications as NotificationConfig;
-          setConfig(n);
+        if (settings) {
+          const n = settings.notifications || {};
+          const sj = settings.settings_json || {};
+          
+          const loadedConfig: AccountConfig = {
+             ...n,
+             hidePublicName: !!sj.hidePublicName
+          };
+          
+          setConfig(loadedConfig);
 
           // Transform UTC timeOfDay to Local Time Input
           if (n.timeOfDay) {
@@ -111,8 +132,20 @@ export const NotificationSettings: React.FC = () => {
           paddingBottom: "10px",
         }}
       >
-        Email Settings
+        Account & Email Settings
       </h2>
+      
+      <div style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
+         <input 
+            type="checkbox" 
+            id="hidePublicNameCheck"
+            checked={!!config.hidePublicName}
+            onChange={(e) => updateConfig({ hidePublicName: e.target.checked })}
+         />
+         <label htmlFor="hidePublicNameCheck" style={{ fontWeight: 'bold' }}>
+            Keep my name private on community lists and river edits
+         </label>
+      </div>
 
       {config.enabled ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>

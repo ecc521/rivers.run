@@ -6,6 +6,8 @@ import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { useAuth } from "../context/AuthContext";
 import DOMPurify from "dompurify";
 import { SharedMap } from "./SharedMap";
+import { useModal } from "../context/ModalContext";
+import { fetchAPI } from "../services/api";
 
 interface RiverExpansionProps {
   river: RiverData;
@@ -16,8 +18,30 @@ interface RiverExpansionProps {
 
 export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, dataGeneratedAt }) => {
   const [showMap, setShowMap] = useState(false);
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const { prompt, alert } = useModal();
   
+  const handleReport = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const reason = await prompt(`Please explain the problem with the data for ${river.name}:`, "Report Content");
+    if (!reason || !reason.trim()) return;
+
+    try {
+      await fetchAPI("/reports", {
+        method: "POST",
+        body: JSON.stringify({
+          target_id: river.id,
+          type: "river",
+          reason: reason.trim(),
+          email: user?.email || ""
+        })
+      });
+      await alert("Report submitted successfully. Our moderators will review it shortly.", "Report Sent");
+    } catch (e: any) {
+      await alert("Failed to submit report: " + e.message);
+    }
+  };
+
   useEffect(() => {
      // We intentionally default to false and defer the map initialization by ~50ms. 
      // Leaflet calculates synchronous bounding box sizes during DOM insertion, 
@@ -104,25 +128,42 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
       </div>
 
 
-      <p style={{ margin: "10px 0" }}>
-        {isAdmin ? (
-          <a
-            href={`/edit/${river.id}`}
-            target="_blank"
-            rel="noreferrer"
-            style={{ fontWeight: 'bold', color: "var(--danger)", marginRight: '10px' }}
-          >
-            [Admin] Edit River Data
-          </a>
-        ) : (
-           <a
-            href={`/suggest/${river.id}`}
-            style={{ fontWeight: 'bold' }}
-          >
-            Suggest an Edit
-          </a>
-        )}
-      </p>
+      <div style={{ margin: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+            {isAdmin ? (
+            <a
+                href={`/edit/${river.id}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ fontWeight: 'bold', color: "var(--danger)", marginRight: '10px' }}
+            >
+                [Admin] Edit River Data
+            </a>
+            ) : (
+            <a
+                href={`/suggest/${river.id}`}
+                style={{ fontWeight: 'bold' }}
+            >
+                Suggest an Edit
+            </a>
+            )}
+        </div>
+        <button
+            type="button"
+            onClick={handleReport}
+            style={{
+                padding: "4px 8px",
+                backgroundColor: "transparent",
+                border: "none",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+                textDecoration: "underline"
+            }}
+        >
+            🚩 Report a Problem
+        </button>
+      </div>
 
       <USGSGraphs river={displayRiver} dataGeneratedAt={dataGeneratedAt} />
     </div>
