@@ -53,7 +53,7 @@ const getRiversRoute = createRoute({
     description: 'Returns the full list of rivers, including tags and gauges.',
     responses: {
         200: {
-            content: { 'application/json': { schema: z.array(RiverSchema) } },
+            content: { 'application/json': { schema: z.array(RiverSchema).openapi({ type: 'array' }) } },
             description: 'The list of rivers',
         },
     },
@@ -124,10 +124,10 @@ const getRiverRoute = createRoute({
     method: 'get',
     path: '/rivers/{id}',
     summary: 'Get river by ID',
-    request: { params: z.object({ id: z.string() }) },
+    request: { params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }) },
     responses: {
         200: { content: { 'application/json': { schema: RiverSchema } }, description: 'The river object' },
-        404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'River not found' }
+        404: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'River not found' }
     }
 });
 
@@ -147,9 +147,9 @@ const deleteRiverRoute = createRoute({
     path: '/rivers/{id}',
     summary: 'Delete a river',
     security: [{ bearerAuth: [] }],
-    request: { params: z.object({ id: z.string() }) },
+    request: { params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }) },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' },
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Deleted' },
         401: { description: 'Unauthorized' },
         403: { description: 'Forbidden' }
     }
@@ -168,11 +168,11 @@ const updateRiverRoute = createRoute({
     summary: 'Update or create a river',
     security: [{ bearerAuth: [] }],
     request: { 
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }),
         body: { content: { 'application/json': { schema: RiverEditorPayload } } }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), timestamp: z.number() }) } }, description: 'Updated' },
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), timestamp: z.number() }).openapi({ type: 'object' }) } }, description: 'Updated' },
         400: { description: 'Validation Error' },
         401: { description: 'Unauthorized' },
         403: { description: 'Forbidden' }
@@ -255,11 +255,11 @@ const suggestRiverRoute = createRoute({
     summary: 'Submit a correction suggestion',
     security: [{ bearerAuth: [] }, {}],
     request: {
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }),
         body: { content: { 'application/json': { schema: RiverEditorPayload } } }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Suggestion submitted' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Suggestion submitted' }
     }
 });
 
@@ -309,7 +309,7 @@ const getAdminSuggestionRoute = createRoute({
     path: '/admin/queue/{id}',
     summary: 'Get a specific pending suggestion',
     security: [{ bearerAuth: [] }],
-    request: { params: z.object({ id: z.string() }) },
+    request: { params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }) },
     responses: {
         200: { content: { 'application/json': { schema: GenericObjectSchema } }, description: 'Suggestion details' },
         404: { description: 'Not found' }
@@ -350,11 +350,11 @@ const resolveSuggestionRoute = createRoute({
     summary: 'Approve or reject a suggestion',
     security: [{ bearerAuth: [] }],
     request: {
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }),
         body: { content: { 'application/json': { schema: AdminResolutionSchema } } }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), message: z.string() }) } }, description: 'Resolved' },
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), message: z.string() }).openapi({ type: 'object' }) } }, description: 'Resolved' },
         404: { description: 'Not found' }
     }
 });
@@ -499,7 +499,7 @@ const updateUserSettingsRoute = createRoute({
     security: [{ bearerAuth: [] }],
     request: { body: { content: { 'application/json': { schema: UserSettingsSchema } } } },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' }
     }
 });
 
@@ -558,7 +558,7 @@ const deleteUserRoute = createRoute({
     summary: 'Delete your own account',
     security: [{ bearerAuth: [] }],
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Deleted' }
     }
 });
 
@@ -630,7 +630,7 @@ const createListRoute = createRoute({
     security: [{ bearerAuth: [] }],
     request: { body: { content: { 'application/json': { schema: CommunityListSchema } } } },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Created' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Created' }
     }
 });
 
@@ -673,11 +673,11 @@ const updateListRoute = createRoute({
     summary: 'Update an existing list',
     security: [{ bearerAuth: [] }],
     request: { 
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }),
         body: { content: { 'application/json': { schema: CommunityListSchema } } } 
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' }
     }
 });
 
@@ -728,9 +728,9 @@ const deleteListRoute = createRoute({
     path: '/lists/{id}',
     summary: 'Delete a list',
     security: [{ bearerAuth: [] }],
-    request: { params: z.object({ id: z.string() }) },
+    request: { params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }) },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Deleted' }
     }
 });
 
@@ -751,7 +751,7 @@ const getListByIdRoute = createRoute({
     method: 'get',
     path: '/lists/{id}',
     summary: 'Get a specific list by ID',
-    request: { params: z.object({ id: z.string() }) },
+    request: { params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }) },
     responses: {
         200: { content: { 'application/json': { schema: GenericObjectSchema } }, description: 'List object' },
         404: { description: 'Not found' }
@@ -803,7 +803,7 @@ const getSubscriptionsRoute = createRoute({
     summary: 'Get your active list subscriptions',
     security: [{ bearerAuth: [] }],
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ subscriptions: z.array(z.string()) }) } }, description: 'Subscriptions' }
+        200: { content: { 'application/json': { schema: z.object({ subscriptions: z.array(z.string()) }).openapi({ type: 'object' }) } }, description: 'Subscriptions' }
     }
 });
 
@@ -821,7 +821,7 @@ const updateSubscriptionsRoute = createRoute({
     security: [{ bearerAuth: [] }],
     request: { body: { content: { 'application/json': { schema: SubscriptionPayloadSchema } } } },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' }
     }
 });
 
@@ -848,13 +848,13 @@ const updateUserRoleRoute = createRoute({
     summary: 'Change user role (with hierarchy protection)',
     security: [{ bearerAuth: [] }],
     request: { 
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }),
         body: { content: { 'application/json': { schema: RoleUpdatePayload } } }
     },
     responses: { 
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Role updated' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Hierarchy violation' },
-        404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'User not found' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Role updated' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Hierarchy violation' },
+        404: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'User not found' }
     }
 });
 
@@ -898,7 +898,7 @@ const getAdminUsersRoute = createRoute({
     summary: 'Search for users in D1',
     security: [{ bearerAuth: [] }],
     request: {
-        query: z.object({ q: z.string().optional() })
+        query: z.object({ q: z.string().optional().openapi({ param: { name: 'q', in: 'query' } }) })
     },
     responses: {
         200: { content: { 'application/json': { schema: UserSearchResponse } }, description: 'Search results' }
@@ -923,7 +923,7 @@ const getAdminUserByIdRoute = createRoute({
     path: '/admin/users/{id}',
     summary: 'Get full user record',
     security: [{ bearerAuth: [] }],
-    request: { params: z.object({ id: z.string() }) },
+    request: { params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }) },
     responses: {
         200: { content: { 'application/json': { schema: UserManagementSchema } }, description: 'User details' },
         404: { description: 'User not found' }
@@ -943,10 +943,10 @@ const banUserRoute = createRoute({
     path: '/admin/users/{id}/ban',
     summary: 'Legacy Ban shortcut (uses hierarchy logic)',
     security: [{ bearerAuth: [] }],
-    request: { params: z.object({ id: z.string() }) },
+    request: { params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }) },
     responses: { 
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Banned' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Hierarchy violation' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Banned' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Hierarchy violation' }
     }
 });
 
@@ -972,10 +972,10 @@ const unbanUserRoute = createRoute({
     path: '/admin/users/{id}/unban',
     summary: 'Legacy Unban shortcut (uses hierarchy logic)',
     security: [{ bearerAuth: [] }],
-    request: { params: z.object({ id: z.string() }) },
+    request: { params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }) },
     responses: { 
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Unbanned' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Hierarchy violation' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Unbanned' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Hierarchy violation' }
     }
 });
 
@@ -1003,7 +1003,7 @@ const createReportRoute = createRoute({
     summary: 'Submit a UGC report (Flag content)',
     security: [{ bearerAuth: [] }, {}],
     request: { body: { content: { 'application/json': { schema: UserReportPayload } } } },
-    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Reported' } }
+    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Reported' } }
 });
 
 app.openapi(createReportRoute, async (c) => {
@@ -1045,8 +1045,8 @@ const resolveReportRoute = createRoute({
     path: '/admin/reports/{id}/resolve',
     summary: 'Resolve a user report',
     security: [{ bearerAuth: [] }],
-    request: { params: z.object({ id: z.string() }) },
-    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Resolved' } }
+    request: { params: z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) }) },
+    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Resolved' } }
 });
 
 app.openapi(resolveReportRoute, async (c) => {
@@ -1055,7 +1055,7 @@ app.openapi(resolveReportRoute, async (c) => {
     return c.json({ success: true });
 });
 const openApiConfig = {
-    openapi: '3.1.0',
+    openapi: '3.0.0',
     info: { title: 'Rivers.run API', version: '1.0.0' },
     security: [{ bearerAuth: [] }]
 };
@@ -1071,7 +1071,7 @@ app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
 // Generate auto-updating Scalar interface dynamically
 app.get('/docs', (c, next) => {
     return apiReference({
-        content: app.getOpenAPI31Document(openApiConfig),
+        content: app.getOpenAPIDocument(openApiConfig),
         theme: 'purple',
         layout: 'modern'
     })(c as any, next as any);
