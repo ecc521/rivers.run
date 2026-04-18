@@ -202,19 +202,29 @@ export const canadaProvider: GaugeProvider = {
         const results: GaugeSite[] = [];
         try {
             const res = await fetch("https://wateroffice.ec.gc.ca/services/map_data");
-            const data = await res.json() as Record<string, any>;
+            if (!res.ok) throw new Error(`Canada WaterOffice API Error: ${res.status}`);
             
-            for (const [key, site] of Object.entries(data)) {
-                if (site.real_time !== true) continue;
+            const data = await res.json() as any[];
+            if (!Array.isArray(data)) {
+                console.error("Canada Provider: Expected array from map_data, got", typeof data);
+                return [];
+            }
+            
+            for (const site of data) {
+                // Use station_id as the primary identifier
+                const id = site.station_id || site.station_number;
+                if (!id) continue;
+
+                const lat = parseFloat(site.latitude || site.lat);
+                const lon = parseFloat(site.longitude || site.lon || site.long);
                 
-                const lat = parseFloat(site.lat || site.latitude);
-                const lon = parseFloat(site.lon || site.longitude);
                 if (!isNaN(lat) && !isNaN(lon)) {
                     results.push({
-                        id: key,
-                        name: site.name || `Canada Gauge ${key}`,
+                        id,
+                        name: site.station_name || site.name || `Canada Gauge ${id}`,
                         lat,
-                        lon
+                        lon,
+                        state: formatStateCode(site.province, "Canada")
                     });
                 }
             }

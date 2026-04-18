@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { processCanadaCSV } from '../canada';
 
 describe('Canada Service', () => {
@@ -74,6 +74,65 @@ SHORT_ROW`;
              expect(result['08MG005'].readings).toHaveLength(1);
              expect(result['08MG005'].readings[0].m).toBe(1.5);
              expect(result['08MG005'].readings[0].cms).toBeUndefined();
+        });
+    });
+
+    describe('canadaProvider.getFullSiteListing', () => {
+        it('should correctly parse array response from WaterOffice map_data API', async () => {
+            const { canadaProvider } = await import('../canada');
+            
+            globalThis.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => [
+                    {
+                        station_id: "08MG005",
+                        station_name: "Test Station Canada",
+                        latitude: "49.123",
+                        longitude: "-122.456",
+                        province: "BC",
+                        data_available: "Y"
+                    },
+                    {
+                        station_id: "01AF009",
+                        station_name: "Another Station",
+                        latitude: "45.000",
+                        longitude: "-66.000",
+                        province: "NB",
+                        data_available: "Y"
+                    }
+                ]
+            });
+
+            const result = await canadaProvider.getFullSiteListing!();
+            expect(result).toHaveLength(2);
+            expect(result[0].id).toBe("08MG005");
+            expect(result[0].name).toBe("Test Station Canada");
+            expect(result[0].lat).toBe(49.123);
+            expect(result[0].lon).toBe(-122.456);
+            expect(result[0].state).toBe("BC");
+            
+            expect(result[1].id).toBe("01AF009");
+            expect(result[1].state).toBe("NB");
+        });
+
+        it('should handle malformed or empty responses gracefully', async () => {
+             const { canadaProvider } = await import('../canada');
+             
+             // Case: Not an array
+             globalThis.fetch = vi.fn().mockResolvedValue({
+                 ok: true,
+                 json: async () => ({ error: "not an array" })
+             });
+             const result1 = await canadaProvider.getFullSiteListing!();
+             expect(result1).toHaveLength(0);
+
+             // Case: Failed fetch
+             globalThis.fetch = vi.fn().mockResolvedValue({
+                 ok: false,
+                 status: 500
+             });
+             const result2 = await canadaProvider.getFullSiteListing!();
+             expect(result2).toHaveLength(0);
         });
     });
 });
