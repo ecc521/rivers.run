@@ -110,6 +110,11 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
       else if (latest.ft !== undefined) flowStr = `${Math.round(latest.ft * 100) / 100}ft`;
    }
 
+   const lat = Array.isArray(gData.lat) ? gData.lat[0] : gData.lat;
+   const lon = Array.isArray(gData.lon) ? gData.lon[0] : gData.lon;
+   const finalLat = typeof lat === 'string' ? parseFloat(lat) : lat;
+   const finalLon = typeof lon === 'string' ? parseFloat(lon) : lon;
+
    return {
        id: gaugeId,
        name: String(gData.name || gaugeId),
@@ -123,7 +128,7 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
        m: latest.m,
        gaugeData: { [gaugeId]: gData.readings },
        flowInfo: flowStr,
-       accessPoints: gData.lat && gData.lon ? [{lat: gData.lat, lon: gData.lon, name: "Gauge Marker", type: "other"}] : undefined,
+       accessPoints: !isNaN(finalLat) && !isNaN(finalLon) ? [{lat: finalLat, lon: finalLon, name: "Gauge Marker", type: "other"}] : undefined,
        skill: "?" // Standalone gauges have no rated skill
    } as unknown as RiverData;
 };

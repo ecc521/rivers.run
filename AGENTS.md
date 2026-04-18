@@ -4,4 +4,4 @@ This is an app primarily targeted at whitewater paddlers. Offline access is crit
 
 ## Preflight Checks
 Agents MUST verify their work by running local static analysis and testing checks before ending a session. 
-Always run `npm run lint` and `npm test` after modifying code to ensure no regressions or code quality warnings were introduced.
+Always run `npm run lint` and `npm test` from the **root directory** of the repository to ensure no regressions or code quality warnings were introduced in ANY of the sub-services (web, api, api-flow).

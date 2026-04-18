@@ -64,5 +64,31 @@ describe('UK EA Service', () => {
             expect(result[0].name).toBe('Bath Larkhall St Saviours Road');
             expect(result[1].name).toBe('Beaches Mill Secondary Gauging Station GSM');
         });
+
+        it('should prioritize Active status when multiple coordinates are present', async () => {
+            globalThis.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    items: [
+                        {
+                            notation: 'E85123',
+                            label: ['Ilfracombe Lambda Upstream', 'Ilfracombe Lambda'],
+                            lat: [51.196412, 51.19557], // Suspended first
+                            long: [-4.120133, -4.119951],
+                            status: [
+                                'https://environment.data.gov.uk/flood-monitoring/def/core/statusSuspended',
+                                'https://environment.data.gov.uk/flood-monitoring/def/core/statusActive'
+                            ]
+                        }
+                    ]
+                })
+            });
+
+            const result = await ukProvider.getFullSiteListing!();
+            expect(result).toHaveLength(1);
+            expect(result[0].lat).toBe(51.19557);
+            expect(result[0].lon).toBe(-4.119951);
+            expect(result[0].name).toBe('Ilfracombe Lambda');
+        });
     });
 });

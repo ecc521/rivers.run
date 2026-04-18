@@ -147,13 +147,42 @@ export const ukProvider: GaugeProvider = {
             
             for (const item of items) {
                 if (item.notation && item.lat && item.long) {
-                    const rawLabel = Array.isArray(item.label) ? item.label[0] : String(item.label || "");
-                    const formatted = formatGaugeName(rawLabel || `UK Station ${item.notation}`);
+                    let lat: number;
+                    let lon: number;
+                    let label: string;
+
+                    // Handle potential array responses for metadata (Common in UK EA API for historical/aggregated stations)
+                    if (Array.isArray(item.lat)) {
+                        const statusArray = Array.isArray(item.status) ? item.status : [item.status];
+                        const activeIndices = statusArray
+                            .map((s: any, i: number) => (String(s).includes("statusActive") ? i : -1))
+                            .filter((i: number) => i !== -1);
+
+                        if (activeIndices.length > 1) {
+                            console.warn(`UK Provider: Multiple active locations found for station ${item.notation}. Picking first.`);
+                        }
+
+                        // Prioritize active index, fallback to first
+                        const targetIndex = activeIndices.length > 0 ? activeIndices[0] : 0;
+                        lat = parseFloat(item.lat[targetIndex]);
+                        lon = parseFloat(item.long[targetIndex]);
+                        
+                        const labels = Array.isArray(item.label) ? item.label : [item.label];
+                        label = String(labels[targetIndex] || labels[0] || "");
+                    } else {
+                        lat = parseFloat(item.lat);
+                        lon = parseFloat(item.long);
+                        label = Array.isArray(item.label) ? item.label[0] : String(item.label || "");
+                    }
+
+                    if (isNaN(lat) || isNaN(lon)) continue;
+
+                    const formatted = formatGaugeName(label || `UK Station ${item.notation}`);
                     results.push({
                         id: item.notation,
                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
-                        lat: item.lat,
-                        lon: item.long,
+                        lat,
+                        lon,
                         state: formatStateCode(item.areaName, "UK")
                     });
                 }

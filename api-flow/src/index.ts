@@ -8,7 +8,7 @@ import { canadaProvider } from "./services/canada";
 import { ukProvider } from "./services/uk";
 import { irelandProvider } from "./services/ireland";
 import { GaugeProvider, GaugeHistory, Units } from "./services/provider";
-import { HistorySchema, ErrorSchema, GenericObjectSchema, GenericArraySchema } from "./schema";
+import { HistorySchema, ErrorSchema, GenericObjectSchema } from "./schema";
 import { toUnitSystemHistory } from "./utils/units";
 import { compileGaugeRegistry } from "./services/gaugeRegistry";
 
@@ -192,6 +192,7 @@ export default {
                     needsRecompile = true;
                 }
             } catch (_e) {
+                console.warn("Registry metadata load failed, forcing recompile.", _e);
                 needsRecompile = true;
             }
 
@@ -212,10 +213,18 @@ export default {
                 try {
                     const gauges = typeof row.gauges === "string" ? JSON.parse(row.gauges) : (row.gauges || []);
                     return gauges.map((g: any) => g.id);
-                } catch (e) {
+                } catch (_e) {
+                    console.error("Failed to parse gauges for river mapping", _e);
                     return [];
                 }
             });
+
+            const sanitizeCoordinate = (val: any): number | undefined => {
+                if (val === undefined || val === null) return undefined;
+                const base = Array.isArray(val) ? val[0] : val;
+                const parsed = parseFloat(base);
+                return isNaN(parsed) ? undefined : parsed;
+            };
 
             const searchableGauges = Object.keys(registryMetadata);
             const linkedGaugesSet = new Set(dbGauges);
@@ -225,8 +234,8 @@ export default {
                 mergedData[fullId] = {
                     id: meta.id.includes(":") ? meta.id.split(":")[1] : meta.id,
                     name: meta.name,
-                    lat: meta.lat,
-                    lon: meta.lon,
+                    lat: sanitizeCoordinate(meta.lat),
+                    lon: sanitizeCoordinate(meta.lon),
                     readings: []
                 };
             });
@@ -257,8 +266,8 @@ export default {
                             mergedData[fullId] = {
                                 ...mergedData[fullId],
                                 ...history,
-                                lat: history.lat ?? registryMetadata[fullId]?.lat,
-                                lon: history.lon ?? registryMetadata[fullId]?.lon,
+                                lat: sanitizeCoordinate(history.lat) ?? sanitizeCoordinate(registryMetadata[fullId]?.lat),
+                                lon: sanitizeCoordinate(history.lon) ?? sanitizeCoordinate(registryMetadata[fullId]?.lon),
                                 state: history.state ?? registryMetadata[fullId]?.state,
                             };
                         });
@@ -278,8 +287,8 @@ export default {
                                 mergedData[fullId] = {
                                     id,
                                     name: registryMetadata[fullId]?.name || id,
-                                    lat: registryMetadata[fullId]?.lat,
-                                    lon: registryMetadata[fullId]?.lon,
+                                    lat: sanitizeCoordinate(registryMetadata[fullId]?.lat),
+                                    lon: sanitizeCoordinate(registryMetadata[fullId]?.lon),
                                     readings: [reading]
                                 };
                             }

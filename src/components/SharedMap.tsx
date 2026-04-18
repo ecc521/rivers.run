@@ -468,8 +468,13 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         const rawPoints: any[] = [];
         filtered.forEach(river => {
             river.accessPoints?.forEach(pt => {
-                if (pt.lat && pt.lon) {
-                    rawPoints.push({ lat: pt.lat, lon: pt.lon, river, point: pt });
+                const lat = Array.isArray(pt.lat) ? pt.lat[0] : pt.lat;
+                const lon = Array.isArray(pt.lon) ? pt.lon[0] : pt.lon;
+                const fLat = typeof lat === 'string' ? parseFloat(lat) : lat;
+                const fLon = typeof lon === 'string' ? parseFloat(lon) : lon;
+
+                if (!isNaN(fLat) && !isNaN(fLon) && fLat !== null && fLon !== null) {
+                    rawPoints.push({ lat: fLat, lon: fLon, river, point: pt });
                 }
             });
         });
