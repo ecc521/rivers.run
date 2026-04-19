@@ -8,19 +8,15 @@ export const FLOW_API_URL = import.meta.env.VITE_FLOW_API_URL || "https://flow.r
  */
 export async function fetchAPI(endpoint: string, options: RequestInit = {}, userOverride?: any) {
     const user = userOverride || auth.currentUser;
-    if (!user) {
-        // Fallback for public endpoints or if not logged in
-        const res = await fetch(`${API_URL}${endpoint}`, options);
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        return res.json();
-    }
-
-    const token = await user.getIdToken();
-    const headers = {
-        ...options.headers,
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...options.headers as any
     };
+
+    if (user) {
+        const token = await user.getIdToken();
+        headers["Authorization"] = `Bearer ${token}`;
+    }
 
     const res = await fetch(`${API_URL}${endpoint}`, {
         ...options,
