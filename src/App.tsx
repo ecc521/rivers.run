@@ -21,6 +21,7 @@ import AdminQueue from "./pages/AdminQueue";
 import ListsPage from "./pages/ListsPage";
 import { autoDownloadBaseMaps } from "./utils/offlineMapEngine";
 import { ReloadPrompt } from "./components/ReloadPrompt";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import Footer from "./components/Footer";
 
 import { recordAppOpen } from "./utils/appReview";
@@ -47,26 +48,28 @@ function App() {
                 <GlobalNavBar />
                 <ReloadPrompt />
                 <main style={{ flex: 1 }}>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/river/:id/:slug?" element={<Home />} />
-                    <Route path="/gauge/:id/:slug?" element={<Home />} />
-                    <Route path="/map" element={<MapPage />} />
-                    <Route path="/lists" element={<ListsPage />} />
-                    <Route path="/lists/:id" element={<Home />} />
-                    <Route path="/clubs" element={<Clubs />} />
-                    <Route path="/favorites" element={<ListsPage />} />
-                    <Route path="/faq" element={<FAQ />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/create" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
-                    <Route path="/edit/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
-                    <Route path="/admin" element={<AdminQueue />} />
-                    <Route path="/suggest/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
-                    <Route path="/review/:queueId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Interface...</h2></div>}><RiverEditor /></Suspense>} />
-                    <Route path="/terms" element={<TermsOfService />} />
-                    <Route path="/privacy" element={<PrivacyPolicy />} />
-                    <Route path="/disclaimer" element={<Disclaimer />} />
-                  </Routes>
+                  <ErrorBoundary>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/river/:id/:slug?" element={<Home />} />
+                      <Route path="/gauge/:id/:slug?" element={<Home />} />
+                      <Route path="/map" element={<MapPage />} />
+                      <Route path="/lists" element={<ListsPage />} />
+                      <Route path="/lists/:id" element={<Home />} />
+                      <Route path="/clubs" element={<Clubs />} />
+                      <Route path="/favorites" element={<ListsPage />} />
+                      <Route path="/faq" element={<FAQ />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/create" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
+                      <Route path="/edit/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
+                      <Route path="/admin" element={<AdminQueue />} />
+                      <Route path="/suggest/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
+                      <Route path="/review/:queueId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Interface...</h2></div>}><RiverEditor /></Suspense>} />
+                      <Route path="/terms" element={<TermsOfService />} />
+                      <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/disclaimer" element={<Disclaimer />} />
+                    </Routes>
+                  </ErrorBoundary>
                 </main>
                 <Footer />
               </div>
