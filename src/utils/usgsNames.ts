@@ -1,32 +1,35 @@
-/**
- * Ported from functions/src/services/usgs.ts
- * Formats a raw USGS site name into a cleaner title-case name and section segment.
- * Expands common abbreviations like NR, BLW, ABV, BR, and CR.
- */
+import { ALL_STATE_CODES } from './regions';
 
-const LOWERCASE_WORDS = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr']);
-const EXPANSIONS: Record<string, string> = {
-    nr: 'Near',
-    blw: 'Below',
-    abv: 'Above',
-    br: 'Branch',
-    cr: 'Creek',
-    n: 'North',
-    s: 'South',
-    e: 'East',
-    w: 'West',
-    nf: 'North Fork',
-    sf: 'South Fork',
-    ef: 'East Fork',
-    wf: 'West Fork',
-    mf: 'Middle Fork'
-};
-const STATE_CODES = new Set([
-    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC', 'PR', 'VI', 'GU'
-]);
+const STATE_CODES = new Set(ALL_STATE_CODES);
 const ACRONYMS = new Set([
     'USGS', 'USA', 'TVA', 'NWS',
     'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'
+]);
+
+const EXPANSIONS: Record<string, string> = {
+    'cr': 'Creek',
+    'crk': 'Creek',
+    'r': 'River',
+    'br': 'Branch',
+    'fk': 'Fork',
+    'nr': 'Near',
+    'abv': 'Above',
+    'blw': 'Below',
+    'mt': 'Mount',
+    'mtn': 'Mountain',
+    'nf': 'North Fork',
+    'sf': 'South Fork',
+    'ef': 'East Fork',
+    'wf': 'West Fork',
+    'st': 'Saint',
+    'pt': 'Point',
+    'lk': 'Lake',
+    'res': 'Reservoir',
+    'rv': 'River'
+};
+
+const LOWERCASE_WORDS = new Set([
+    'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'by', 'of', 'in', 'as', 'near', 'above', 'below'
 ]);
 
 function formatToken(token: string, index: number): string {

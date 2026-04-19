@@ -420,6 +420,15 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
     margin: 8px 0;
 }
 
+.view-dropdown-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 10px 16px 4px 16px;
+}
+
 .dark-theme .view-selector-container {
     background-color: #0f172a;
 }

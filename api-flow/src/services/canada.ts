@@ -1,5 +1,6 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { formatStateCode } from '../utils/formatting';
+import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 
 function reformatReadings(readingsArr: any[]) {
     for (let i = 0; i < readingsArr.length; i++) {
@@ -115,12 +116,12 @@ function getProvincesForSite(siteID: string): string[] {
 async function fetchCanadianProvince(province: string, startTs: number, endTs: number): Promise<Record<string, GaugeHistory>> {
     const url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_hourly_hydrometric.csv`;
     try {
-        const res = await fetch(url, {
+        const res = await fetchWithTimeout(url, {
             headers: {
-                'User-Agent': 'Rivers.run Flow Bot (https://rivers.run)',
+                ...DEFAULT_HEADERS,
                 'Accept': 'text/csv, application/csv'
             }
-        });
+        }, 90000);
         if (!res.ok) return {};
         const text = await res.text();
         return processCanadaCSV(text, startTs, endTs);
@@ -132,12 +133,12 @@ async function fetchCanadianProvince(province: string, startTs: number, endTs: n
 async function fetchIndividualCanadaGauge(stationID: string, province: string, startTs: number, endTs: number): Promise<GaugeHistory | null> {
     const url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_${stationID}_hourly_hydrometric.csv`;
     try {
-        const res = await fetch(url, {
+        const res = await fetchWithTimeout(url, {
             headers: {
-                'User-Agent': 'Rivers.run Flow Bot (https://rivers.run)',
+                ...DEFAULT_HEADERS,
                 'Accept': 'text/csv, application/csv'
             }
-        });
+        }, 60000);
         if (!res.ok) return null;
         const text = await res.text();
         const data = processCanadaCSV(text, startTs, endTs);
@@ -243,12 +244,9 @@ export const canadaProvider: GaugeProvider = {
                  const site = siteCodes[index++];
                  try {
                      const url = `https://api.weather.gc.ca/collections/hydrometric-stations/items?STATION_NUMBER=${site}&f=json`;
-                     const res = await fetch(url, {
-                         headers: {
-                             'User-Agent': 'Rivers.run Flow Bot (https://rivers.run)',
-                             'Accept': 'application/json'
-                         }
-                     });
+                     const res = await fetchWithTimeout(url, {
+                         headers: DEFAULT_HEADERS
+                     }, 60000);
                      if (res.ok) {
                          const data: any = await res.json();
                          if (data.features && data.features.length > 0) {
@@ -272,43 +270,50 @@ export const canadaProvider: GaugeProvider = {
     },
 
     async getFullSiteListing(): Promise<GaugeSite[]> {
-        console.log("Canada Provider: Fetching full site metadata...");
+        console.log("Canada Provider: Fetching real-time site metadata...");
         const results: GaugeSite[] = [];
         try {
-            const res = await fetch("https://wateroffice.ec.gc.ca/services/map_data", {
+            // Using the OGC API with REAL_TIME=1 filter to prune manual/historical stations
+            const url = "https://api.weather.gc.ca/collections/hydrometric-stations/items?REAL_TIME=1&f=json&limit=5000";
+            const res = await fetchWithTimeout(url, {
                 headers: {
                     'User-Agent': 'Rivers.run Flow Bot (https://rivers.run)',
                     'Accept': 'application/json'
                 }
-            });
-            if (!res.ok) throw new Error(`Canada WaterOffice API Error: ${res.status}`);
+            }, 60000);
             
-            const data = await res.json() as any[];
-            if (!Array.isArray(data)) {
-                console.error("Canada Provider: Expected array from map_data, got", typeof data);
+            if (!res.ok) throw new Error(`Canada OGC API Error: ${res.status}`);
+            
+            const data = await res.json() as any;
+            if (!data.features || !Array.isArray(data.features)) {
+                console.error("Canada Provider: Expected features array from OGC API");
                 return [];
             }
             
-            for (const site of data) {
-                // Use station_id as the primary identifier
-                const id = site.station_id || site.station_number;
+            for (const feat of data.features) {
+                const props = feat.properties;
+                const id = props?.STATION_NUMBER;
                 if (!id) continue;
 
-                const lat = parseFloat(site.latitude || site.lat);
-                const lon = parseFloat(site.longitude || site.lon || site.long);
+                const coords = feat.geometry?.coordinates;
+                if (!coords || coords.length < 2) continue;
+
+                const lat = coords[1];
+                const lon = coords[0];
                 
                 if (!isNaN(lat) && !isNaN(lon)) {
                     results.push({
                         id,
-                        name: site.station_name || site.name || `Canada Gauge ${id}`,
+                        name: props.STATION_NAME || `Canada Gauge ${id}`,
                         lat,
                         lon,
-                        state: formatStateCode(site.province, "Canada")
+                        state: formatStateCode(props.PROVINCE_TERRITORY_CODE, "Canada")
                     });
                 }
             }
+            console.log(`Canada Provider: Discovered ${results.length} real-time stations.`);
         } catch (e) {
-            console.error("Canada Provider: Failed to fetch site listing", e);
+            console.error("Canada Provider: Failed to fetch real-time site listing", e);
         }
         return results;
     }

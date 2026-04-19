@@ -1,3 +1,4 @@
+import { getRiverCountries, type CountryCode } from "./regions";
 import type { RiverData } from "../types/River";
 import { lambert } from "./distance";
 
@@ -21,6 +22,8 @@ export interface AdvancedSearchQuery {
   listId?: string;
   listData?: { id: string; order: number }[];
   mapRadiusMode?: "current" | "center" | "custom";
+  country?: string; // Added country filter
+  stateToCountryMap?: Map<string, Set<CountryCode>>; // Injected dynamic map
 }
 
 export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
@@ -205,6 +208,10 @@ export function filterRivers(
     : [];
 
   list = list.filter((r) => {
+    if (query.country && query.country !== "global") {
+       const countries = getRiverCountries(r, query.stateToCountryMap);
+       if (!countries.has(query.country as CountryCode)) return false;
+    }
     if (!matchNormalSearch(r, terms)) return false;
     if (!matchExplicitMatch(r, query)) return false;
     if (!matchSkill(r, query)) return false;

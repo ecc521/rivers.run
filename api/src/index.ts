@@ -1114,27 +1114,31 @@ app.get('/sitemap.xml', async (c) => {
     return c.body(object.body);
 });
 
-const openApiConfig = {
-    openapi: '3.0.0',
-    info: { title: 'Rivers.run API', version: '1.0.0' },
-    security: [{ bearerAuth: [] }]
-};
-
-// Expose OpenAPI dynamic specification directly
-app.doc('/openapi.json', openApiConfig);
-
+// Register Security Schemes
 app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
     type: 'http',
     scheme: 'bearer',
     bearerFormat: 'JWT',
 });
+
+const openApiConfig = {
+    openapi: '3.0.0',
+    info: { title: 'Rivers.run API', version: '1.0.0' },
+    security: [{ bearerAuth: [] }],
+    servers: [
+        { url: 'https://api.rivers.run', description: 'Production' },
+        { url: 'http://localhost:8787', description: 'Local Development' }
+    ]
+};
+
+// Expose OpenAPI dynamic specification directly
+app.doc('/openapi.json', openApiConfig);
+
 // Generate auto-updating Scalar interface dynamically
-app.get('/docs', (c, next) => {
-    return apiReference({
-        content: app.getOpenAPIDocument(openApiConfig),
-        theme: 'purple',
-        layout: 'modern'
-    })(c as any, next as any);
-});
+app.get('/docs', apiReference({
+    content: app.getOpenAPIDocument(openApiConfig),
+    theme: 'purple',
+    layout: 'modern'
+}));
 
 export default app;

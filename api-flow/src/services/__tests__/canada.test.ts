@@ -85,24 +85,30 @@ SHORT_ROW`;
             
             globalThis.fetch = vi.fn().mockResolvedValue({
                 ok: true,
-                json: async () => [
-                    {
-                        station_id: "08MG005",
-                        station_name: "Test Station Canada",
-                        latitude: "49.123",
-                        longitude: "-122.456",
-                        province: "BC",
-                        data_available: "Y"
-                    },
-                    {
-                        station_id: "01AF009",
-                        station_name: "Another Station",
-                        latitude: "45.000",
-                        longitude: "-66.000",
-                        province: "NB",
-                        data_available: "Y"
-                    }
-                ]
+                json: async () => ({
+                    features: [
+                        {
+                            properties: {
+                                STATION_NUMBER: "08MG005",
+                                STATION_NAME: "Test Station Canada",
+                                PROVINCE_TERRITORY_CODE: "BC"
+                            },
+                            geometry: {
+                                coordinates: [-122.456, 49.123]
+                            }
+                        },
+                        {
+                            properties: {
+                                STATION_NUMBER: "01AF009",
+                                STATION_NAME: "Another Station",
+                                PROVINCE_TERRITORY_CODE: "NB"
+                            },
+                            geometry: {
+                                coordinates: [-66.000, 45.000]
+                            }
+                        }
+                    ]
+                })
             });
 
             const result = await canadaProvider.getFullSiteListing!();

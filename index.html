@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="description" content="Flow information, access points, dam releases, and more, featuring over 250 rivers!">
     
+    <!-- Performance Hints -->
+    <link rel="preconnect" href="https://api.rivers.run" crossorigin />
+    <link rel="preconnect" href="https://flow.rivers.run" crossorigin />
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin />
+
+    <!-- Double Preload (Inventory first, Sensors second) -->
+    <link rel="preload" as="fetch" href="https://api.rivers.run/rivers" crossorigin="anonymous" />
+    <link rel="preload" as="fetch" href="https://flow.rivers.run/flowdata" crossorigin="anonymous" />
     <!-- Open Graph Data -->
     <meta property="og:title" content="Rivers.run - Paddling and River Information">
     <meta property="og:description" content="Flow information, access points, dam releases, and more, featuring over 250 rivers!">

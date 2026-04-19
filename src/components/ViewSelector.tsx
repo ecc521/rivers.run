@@ -2,11 +2,18 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface ViewSelectorProps {
-  currentTitle: string;
+  regionLabel: string;
+  viewLabel: string;
+  onSelectRegion: (region: string) => void;
   onSelectView: (view: "all" | "favorites") => void;
 }
 
-export const ViewSelector: React.FC<ViewSelectorProps> = ({ currentTitle, onSelectView }) => {
+export const ViewSelector: React.FC<ViewSelectorProps> = ({ 
+    regionLabel, 
+    viewLabel, 
+    onSelectRegion, 
+    onSelectView 
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -24,10 +31,12 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({ currentTitle, onSele
   return (
     <div className="view-selector-container" ref={dropdownRef}>
       <div className="breadcrumb-path">
-        <span className="breadcrumb-item link" onClick={() => navigate("/")}>Rivers</span>
+        <span className="breadcrumb-item link" onClick={() => onSelectRegion("global")}>
+            {regionLabel} Rivers
+        </span>
         <span className="breadcrumb-separator">/</span>
         <div className={`view-switcher ${isOpen ? "active" : ""}`} onClick={() => setIsOpen(!isOpen)}>
-          <h1 className="breadcrumb-item current">{currentTitle}</h1>
+          <h1 className="breadcrumb-item current">{viewLabel}</h1>
           <span className="dropdown-caret">▼</span>
         </div>
       </div>
@@ -35,18 +44,53 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({ currentTitle, onSele
       {isOpen && (
         <div className="view-dropdownshadow">
           <div className="view-dropdown-menu">
+            <div className="view-dropdown-header">Change View</div>
             <div 
-              className={`view-dropdown-item ${currentTitle === "River Information" || currentTitle === "All Rivers" ? "selected" : ""}`} 
+              className={`view-dropdown-item ${viewLabel === "Full List" || viewLabel === "All Rivers" ? "selected" : ""}`} 
               onClick={() => { onSelectView("all"); setIsOpen(false); }}
             >
-              All Rivers
+              Full List
             </div>
             <div 
-              className={`view-dropdown-item ${currentTitle === "Favorites" ? "selected" : ""}`} 
+              className={`view-dropdown-item ${viewLabel === "Favorites" ? "selected" : ""}`} 
               onClick={() => { onSelectView("favorites"); setIsOpen(false); }}
             >
               Favorites
             </div>
+            
+            <div className="view-dropdown-divider"></div>
+            <div className="view-dropdown-header">Change Region</div>
+            <div 
+              className={`view-dropdown-item ${regionLabel === "Global" ? "selected" : ""}`} 
+              onClick={() => { onSelectRegion("global"); setIsOpen(false); }}
+            >
+              Global
+            </div>
+            <div 
+              className={`view-dropdown-item ${regionLabel === "USA" ? "selected" : ""}`} 
+              onClick={() => { onSelectRegion("usa"); setIsOpen(false); }}
+            >
+              USA
+            </div>
+            <div 
+              className={`view-dropdown-item ${regionLabel === "Canada" ? "selected" : ""}`} 
+              onClick={() => { onSelectRegion("canada"); setIsOpen(false); }}
+            >
+              Canada
+            </div>
+            <div 
+              className={`view-dropdown-item ${regionLabel === "France" ? "selected" : ""}`} 
+              onClick={() => { onSelectRegion("france"); setIsOpen(false); }}
+            >
+              France
+            </div>
+            <div 
+              className={`view-dropdown-item ${regionLabel === "UK/Ireland" ? "selected" : ""}`} 
+              onClick={() => { onSelectRegion("uk_ireland"); setIsOpen(false); }}
+            >
+              UK / Ireland
+            </div>
+
             <div className="view-dropdown-divider"></div>
             <div 
                 className="view-dropdown-item secondary" 

@@ -1,5 +1,6 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { formatGaugeName } from '../utils/formatting';
+import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 
 const states = [
   "al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl", "ga",
@@ -138,7 +139,7 @@ async function fetchUSGSBatch(siteCodes: string[], timeQuery: string): Promise<R
 
             while (!success && attempts <= MAX_RETRIES) {
                 try {
-                    const res = await fetch(url);
+                    const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // Increased to 90s for USGS batch
                     if (!res.ok) throw new Error(`USGS HTTP Error: ${res.status}`);
                     
                     const data = await res.json();
@@ -223,7 +224,7 @@ export const usgsProvider: GaugeProvider = {
         const worker = async () => {
             while (stateIndex < states.length) {
                 const state = states[stateIndex++];
-                const url = `https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=${state}&siteStatus=active&siteType=ST&hasDataTypeCd=iv&siteOutput=expanded`;
+                const url = `https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=${state}&siteStatus=active&siteType=ST&hasDataTypeCd=iv&parameterCd=00060&siteOutput=expanded`;
                 
                 let success = false;
                 let attempts = 0;
@@ -231,7 +232,7 @@ export const usgsProvider: GaugeProvider = {
                 
                 while (!success && attempts <= MAX_RETRIES) {
                     try {
-                        const res = await fetch(url);
+                        const res = await fetchWithTimeout(url, { headers: { ...DEFAULT_HEADERS, 'Accept': 'text/plain' } }, 120000); // Increased to 120s for large USGS site listings
                         if (!res.ok) throw new Error(`USGS HTTP Error: ${res.status}`);
                         const text = await res.text();
                         const lines = text.split('\n');

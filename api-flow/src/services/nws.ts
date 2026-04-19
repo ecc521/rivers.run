@@ -1,6 +1,6 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
-import { formatStateCode } from '../utils/formatting';
-import { formatGaugeName } from '../utils/formatting';
+import { formatStateCode, formatGaugeName } from '../utils/formatting';
+import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 
 // Internal helper for mapping NWPS data arrays to GaugeReadings (exported for testing)
 export function parseNWSeries(data: any, observations: any[], minTime: number, maxTime: number, isForecast: boolean): Map<number, GaugeReading> {
@@ -85,7 +85,7 @@ export const nwsProvider: GaugeProvider = {
                 let success = false;
                 while (!success && attempts <= 2) {
                     try {
-                        const res = await fetch(url);
+                        const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 60000); // 60s timeout per NWS gauge
                         if (!res.ok) {
                             if (res.status === 404) break;
                             throw new Error(`NWPS HTTP Error: ${res.status}`);
@@ -151,7 +151,7 @@ export const nwsProvider: GaugeProvider = {
              while (index < siteCodes.length) {
                  const site = siteCodes[index++];
                  try {
-                     const res = await fetch(`https://api.water.noaa.gov/nwps/v1/gauges/${site}`);
+                     const res = await fetchWithTimeout(`https://api.water.noaa.gov/nwps/v1/gauges/${site}`, { headers: DEFAULT_HEADERS }, 60000);
                          if (res.ok) {
                              const data: any = await res.json();
                              if (data.latitude !== undefined && data.longitude !== undefined) {
@@ -179,7 +179,7 @@ export const nwsProvider: GaugeProvider = {
          const results: GaugeSite[] = [];
          
          try {
-             const res = await fetch(url);
+             const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // 90s timeout for NWS full list
              if (!res.ok) throw new Error(`NWS NWPS API Error: ${res.status}`);
              
              const data: any = await res.json();

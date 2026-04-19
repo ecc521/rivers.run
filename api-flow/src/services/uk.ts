@@ -1,5 +1,6 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
+import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 
 /**
  * UK Environment Agency (EA) Gauge Data Service
@@ -18,7 +19,7 @@ export const ukProvider: GaugeProvider = {
         const url = "https://environment.data.gov.uk/flood-monitoring/data/readings?latest=true";
         
         try {
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // Increased to 90s for large UK latest readings fetch
             if (!res.ok) return results;
             
             const data: any = await res.json();
@@ -84,7 +85,7 @@ export const ukProvider: GaugeProvider = {
                 const url = `https://environment.data.gov.uk/flood-monitoring/id/stations/${stationId}/readings?_sorted&_limit=${limit}`;
                 
                 try {
-                    const res = await fetch(url);
+                    const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 60000); // 60s timeout per UK station history
                     if (!res.ok) continue;
                     
                     const data: any = await res.json();
@@ -139,7 +140,7 @@ export const ukProvider: GaugeProvider = {
         const results: GaugeSite[] = [];
         
         try {
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // 90s timeout for UK full list
             if (!res.ok) throw new Error(`UK EA API Error: ${res.status}`);
             
             const data: any = await res.json();

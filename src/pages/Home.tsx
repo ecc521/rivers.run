@@ -128,6 +128,9 @@ const Home: React.FC = () => {
       q.sortBy = "none";
     }
 
+    const countryVal = searchParams.get("country");
+    if (countryVal) q.country = countryVal;
+
     const sortReverseVal = searchParams.get("sortReverse");
     if (sortReverseVal) q.sortReverse = sortReverseVal === "true";
 
@@ -325,19 +328,53 @@ const Home: React.FC = () => {
   // We use the globally defined LazyRiverPage to inject the UI seamlessly without breaking Suspense
 
   const handleViewChange = (view: "all" | "favorites") => {
+    const params = new URLSearchParams(searchParams);
     if (view === "all") {
-       setSearchQuery(prev => ({ 
-          ...prev, 
-          favoritesOnly: false, 
-          listId: undefined, 
-          listData: undefined,
-       }));
-       setListTitle(null);
-       navigate("/");
+      params.delete("favoritesOnly");
+      params.delete("list");
+      setListTitle(null);
     } else {
-       navigate("/?favoritesOnly=true");
+      params.set("favoritesOnly", "true");
+      params.delete("list");
     }
+    navigate(`/?${params.toString()}`);
   };
+
+  const handleCountryChange = (country: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (country === "global") {
+      params.delete("country");
+    } else {
+      params.set("country", country);
+    }
+    navigate(`/?${params.toString()}`);
+  };
+
+  const regionLabels: Record<string, string> = {
+    global: "Global",
+    usa: "US",
+    canada: "Canadian",
+    france: "French",
+    uk_ireland: "UK & Irish"
+  };
+
+  const regionPrefix = regionLabels[searchQuery.country || "global"] || "Global";
+  const viewLabel = listTitle || (searchQuery.favoritesOnly ? "Favorites" : "Full List");
+
+  let emptyStateTitle = "No Rivers Found";
+  let emptyStateDesc = "Try adjusting your filters or search terms.";
+  let emptyStateIcon = "🔍";
+
+  if (searchQuery.favoritesOnly) {
+    emptyStateTitle = "Your Favorites are Empty";
+    emptyStateDesc = "Star a river from the list to save it here!";
+    emptyStateIcon = "⭐";
+  } else if (searchQuery.listId) {
+    emptyStateTitle = "This List is Empty";
+    emptyStateDesc = "Add rivers to this list using the 'Save to List' menu on any river page.";
+    emptyStateIcon = "📋";
+  }
+
 
   return (
     <div className="page-content">
@@ -411,7 +448,9 @@ const Home: React.FC = () => {
           </div>
         )}
         <ViewSelector 
-          currentTitle={listTitle || (searchQuery.favoritesOnly ? "Favorites" : "All Rivers")} 
+          regionLabel={regionPrefix}
+          viewLabel={viewLabel}
+          onSelectRegion={handleCountryChange}
           onSelectView={handleViewChange}
         />
         <div 
@@ -512,15 +551,7 @@ const Home: React.FC = () => {
                 Custom Filters Active
             </span>
             <button 
-                onClick={() => {
-                   setSearchQuery({
-                     ...defaultAdvancedSearchQuery,
-                     normalSearch: searchQuery.normalSearch,
-                     sortBy: searchQuery.sortBy,
-                     sortReverse: searchQuery.sortReverse
-                   });
-                   setListTitle(null);
-                }}
+                onClick={() => handleViewChange("all")}
                 style={{
                     padding: "4px 10px",
                     backgroundColor: "var(--danger)",
@@ -565,17 +596,13 @@ const Home: React.FC = () => {
         {filteredRivers.length === 0 && (
           <div className="empty-state-view">
             <div className="empty-state-icon">
-                {searchQuery.favoritesOnly ? "⭐" : searchQuery.listId ? "📋" : "🔍"}
+                {emptyStateIcon}
             </div>
             <h2>
-                {searchQuery.favoritesOnly ? "Your Favorites are Empty" : 
-                 searchQuery.listId ? "This List is Empty" : 
-                 "No Rivers Found"}
+                {emptyStateTitle}
             </h2>
             <p>
-                {searchQuery.favoritesOnly ? "Star a river from the list to save it here!" : 
-                 searchQuery.listId ? "Add rivers to this list using the 'Save to List' menu on any river page." : 
-                 "Try adjusting your filters or search terms."}
+                {emptyStateDesc}
             </p>
             <div className="empty-state-actions">
               <button className="clear-filters-btn" onClick={() => handleViewChange("all")}>

@@ -75,9 +75,16 @@ describe('Sitemap Generation Engine', () => {
         const sitemapCall = mockEnv.FLOW_STORAGE.put.mock.calls.find(call => call[0] === "sitemap.xml");
         expect(sitemapCall).toBeDefined();
 
-        const xml = sitemapCall![1] as string;
+        const stream = sitemapCall![1] as ReadableStream;
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+        let xml = '';
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            xml += decoder.decode(value, { stream: true });
+        }
         expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-
         // Verify Curated Rivers (0.7)
         expect(xml).toContain('<loc>https://rivers.run/river/river1/youghiogheny-lower</loc>');
         expect(xml).toContain('<priority>0.7</priority>');
@@ -103,7 +110,7 @@ describe('Sitemap Generation Engine', () => {
 
         await apiFlow.scheduled(syncEvent as any, mockEnv as any, mockCtx as any);
 
-        expect(mockEnv.FLOW_STORAGE.put).not.toHaveBeenCalledWith("sitemap.xml", expect.any(String), expect.any(Object));
+        expect(mockEnv.FLOW_STORAGE.put).not.toHaveBeenCalledWith("sitemap.xml", expect.anything(), expect.any(Object));
     });
 
     it('should generate sitemap on monthly recompile', async () => {
@@ -112,6 +119,6 @@ describe('Sitemap Generation Engine', () => {
 
         await apiFlow.scheduled(monthlyEvent as any, mockEnv as any, mockCtx as any);
 
-        expect(mockEnv.FLOW_STORAGE.put).toHaveBeenCalledWith("sitemap.xml", expect.any(String), expect.any(Object));
+        expect(mockEnv.FLOW_STORAGE.put).toHaveBeenCalledWith("sitemap.xml", expect.anything(), expect.any(Object));
     });
 });

@@ -3,6 +3,7 @@ import { auth } from "../firebase";
 export const API_URL = import.meta.env.VITE_API_BASE_URL || "https://api.rivers.run";
 export const FLOW_API_URL = import.meta.env.VITE_FLOW_API_URL || "https://flow.rivers.run";
 
+
 /**
  * Authenticated JSON Fetcher for Cloudflare D1 API
  */

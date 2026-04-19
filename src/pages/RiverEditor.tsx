@@ -13,10 +13,8 @@ import { useSettings } from "../context/SettingsContext";
 import { AuthModal } from "../components/AuthModal";
 import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { useModal } from "../context/ModalContext";
-
-const STATES_AND_PROVINCES = [
-  "AB", "AK", "AL", "AR", "AZ", "BC", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MB", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NB", "NC", "ND", "NE", "NH", "NJ", "NL", "NM", "NS", "NT", "NU", "NV", "NY", "OH", "OK", "ON", "OR", "PA", "PE", "QC", "RI", "SC", "SD", "SK", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "YT"
-];
+import { useRivers } from "../hooks/useRivers";
+import { ALL_STATE_CODES } from "../utils/regions";
 
 export default function RiverEditor() {
   const { riverId, queueId } = useParams();
@@ -25,6 +23,7 @@ export default function RiverEditor() {
   const { user, isAdmin } = useAuth();
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert, confirm, prompt } = useModal();
+  const { availableStates } = useRivers();
   
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -497,7 +496,14 @@ export default function RiverEditor() {
               }} 
             >
                <option value="" disabled>Add State...</option>
-               {STATES_AND_PROVINCES.filter(st => !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
+               {/* Show states that actually have data first */}
+               {availableStates.filter(st => !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
+               
+               {/* Separator if we have many states */}
+               <option disabled>──────────</option>
+
+               {/* Show all other known states */}
+              {ALL_STATE_CODES.filter(st => !availableStates.includes(st) && !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
             </select>
           </div>
         </div>

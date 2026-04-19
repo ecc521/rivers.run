@@ -1,5 +1,6 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
+import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 
 /**
  * Ireland (WaterLevel.ie / OPW) Gauge Data Service
@@ -18,7 +19,7 @@ export const irelandProvider: GaugeProvider = {
         const url = "https://waterlevel.ie/geojson/latest/";
         
         try {
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // Increased to 90s for Ireland latest readings
             if (!res.ok) return results;
             
             const data: any = await res.json();
@@ -60,7 +61,7 @@ export const irelandProvider: GaugeProvider = {
                 const url = `https://waterlevel.ie/data/${period}/${stationId}_0001.csv`;
                 
                 try {
-                    const res = await fetch(url);
+                    const res = await fetchWithTimeout(url, { headers: { ...DEFAULT_HEADERS, 'Accept': 'text/csv' } }, 60000); // Increased to 60s timeout per Ireland history CSV
                     if (!res.ok) continue;
                     
                     const text = await res.text();
@@ -116,7 +117,7 @@ export const irelandProvider: GaugeProvider = {
         const results: GaugeSite[] = [];
         
         try {
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // Increased to 90s timeout for Ireland site listing
             if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status}`);
             
             const data: any = await res.json();

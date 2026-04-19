@@ -5,6 +5,8 @@ import { fetchAPI, fetchFlowData } from "../services/api";
 import { useSettings } from "../context/SettingsContext";
 import { applyUnitSettings, applyUnitSettingsToReadings } from "../utils/unitConversions";
 
+import { deriveRegionMap, type CountryCode } from "../utils/regions";
+
 interface UseRiversResult {
   rivers: RiverData[];
   loading: boolean;
@@ -12,6 +14,8 @@ interface UseRiversResult {
   isGlobalStale: boolean;
   dataGeneratedAt: number | null;
   lastFetchTime: number | null;
+  stateToCountryMap: Map<string, Set<CountryCode>> | null;
+  availableStates: string[];
   refresh: () => Promise<void>;
 }
 
@@ -21,6 +25,8 @@ let globalDataGeneratedAt: number | null = null;
 let globalLastFetchTime: number | null = null;
 let globalLoading = false;
 let globalError: string | null = null;
+let globalStateToCountryMap: Map<string, Set<CountryCode>> | null = null;
+let globalAvailableStates: string[] = [];
 const fetchSubscribers: Set<() => void> = new Set();
 
 const notifySubscribers = () => {
@@ -141,6 +147,7 @@ export const useRivers = (): UseRiversResult => {
   const [error, setError] = useState<string | null>(globalError);
   const [dataGeneratedAt, setDataGeneratedAt] = useState<number | null>(globalDataGeneratedAt);
   const [lastFetchTime, setLastFetchTime] = useState<number | null>(globalLastFetchTime);
+  const [availableStates, setAvailableStates] = useState<string[]>(globalAvailableStates);
   const [tick, setTick] = useState(0); // 5-minute heartbeat trigger
   const settings = useSettings();
 
@@ -160,8 +167,14 @@ export const useRivers = (): UseRiversResult => {
                 if (parsed.rivers && parsed.ts) {
                     globalRiversCache = parsed.rivers;
                     globalDataGeneratedAt = parsed.ts;
+                    
+                    // Re-calculate derived region data on bootstrap
+                    globalStateToCountryMap = deriveRegionMap(globalRiversCache!);
+                    globalAvailableStates = Array.from(new Set(globalRiversCache!.flatMap(r => (r.states || "").split(/[ ,]+/).filter(Boolean).map(s => s.toUpperCase())))).sort((a, b) => a.localeCompare(b));
+
                     setRivers(globalRiversCache!);
                     setDataGeneratedAt(globalDataGeneratedAt);
+                    setAvailableStates(globalAvailableStates);
                     setLoading(false);
                 }
             } catch {
@@ -182,6 +195,7 @@ export const useRivers = (): UseRiversResult => {
         setError(globalError);
         setDataGeneratedAt(globalDataGeneratedAt);
         setLastFetchTime(globalLastFetchTime);
+        setAvailableStates(globalAvailableStates);
     };
     fetchSubscribers.add(handleUpdate);
 
@@ -235,6 +249,11 @@ export const useRivers = (): UseRiversResult => {
         globalRiversCache = processedData;
         globalDataGeneratedAt = genTime;
         globalLastFetchTime = Date.now();
+        
+        // Re-calculate derived region data
+        globalStateToCountryMap = deriveRegionMap(processedData);
+        globalAvailableStates = (Array.from(new Set(processedData.flatMap((r: any) => (r.states || "").split(/[ ,]+/).filter(Boolean).map((s: string) => s.toUpperCase())))) as string[]).sort((a, b) => a.localeCompare(b));
+
         globalLoading = false;
 
         // Persist to local storage for future bootstrap
@@ -302,5 +321,15 @@ export const useRivers = (): UseRiversResult => {
       window.location.reload(); // Simplest "Update" button implementation for now
   };
 
-  return { rivers, loading, error, isGlobalStale, dataGeneratedAt, lastFetchTime, refresh };
+  return { 
+    rivers, 
+    loading, 
+    error, 
+    isGlobalStale, 
+    dataGeneratedAt, 
+    lastFetchTime, 
+    stateToCountryMap: globalStateToCountryMap,
+    availableStates,
+    refresh 
+  };
 };

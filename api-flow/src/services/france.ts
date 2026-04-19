@@ -1,5 +1,6 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
+import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 
 /**
  * Hub'Eau France (Hydrométrie API) Gauge Data Service
@@ -38,7 +39,7 @@ export const franceProvider: GaugeProvider = {
             }
 
             try {
-                const res = await fetch(url);
+                const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // Increased to 90s for large observations fetch
                 if (!res.ok) return;
                 
                 const data: any = await res.json();
@@ -96,7 +97,7 @@ export const franceProvider: GaugeProvider = {
                 const fetchMetricHistory = async (metric: 'H' | 'Q') => {
                     const url = `https://hubeau.eaufrance.fr/api/v2/hydrometrie/observations_tr?code_entite=${id}&date_obs_min=${isoStart}&grandeur_hydro=${metric}&size=5000&sort=asc`;
                     try {
-                        const res = await fetch(url);
+                        const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 60000); // 60s timeout per station history
                         if (!res.ok) return;
                         const data: any = await res.json();
                         const items = data.data || [];
@@ -156,7 +157,7 @@ export const franceProvider: GaugeProvider = {
                 const id = siteCodes[index++];
                 const url = `https://hubeau.eaufrance.fr/api/v2/hydrometrie/referentiel/stations?code_station=${id}`;
                 try {
-                    const res = await fetch(url);
+                    const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 60000); // 60s timeout per station info
                     if (!res.ok) continue;
                     const data: any = await res.json();
                     const item = data.data?.[0];
@@ -184,10 +185,13 @@ export const franceProvider: GaugeProvider = {
         console.log("France Provider: Fetching full site listing...");
         const results: GaugeSite[] = [];
         let nextUrl: string | null = "https://hubeau.eaufrance.fr/api/v2/hydrometrie/referentiel/stations?en_service=true&size=1000";
+        let pageCount = 0;
+        const MAX_PAGES = 50; // Safety cap to prevent infinite loops
 
         try {
-            while (nextUrl) {
-                const res = await fetch(nextUrl);
+            while (nextUrl && pageCount < MAX_PAGES) {
+                pageCount++;
+                const res = await fetchWithTimeout(nextUrl, { headers: DEFAULT_HEADERS }, 90000); // 90s timeout per directory page
                 if (!res.ok) break;
                 const data: any = await res.json();
                 const items = data.data || [];
@@ -209,6 +213,9 @@ export const franceProvider: GaugeProvider = {
                     }
                 }
                 nextUrl = data.next || null;
+            }
+            if (pageCount >= MAX_PAGES) {
+                console.warn("France Provider: Reached MAX_PAGES limit during full site listing.");
             }
         } catch (e) {
             console.error("France Provider: Full site listing failed", e);
