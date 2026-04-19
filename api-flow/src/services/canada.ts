@@ -4,7 +4,13 @@ import { formatStateCode } from '../utils/formatting';
 function reformatReadings(readingsArr: any[]) {
     for (let i = 0; i < readingsArr.length; i++) {
         const reading = readingsArr[i];
-        reading.dateTime = new Date(reading.dateTime).getTime();
+        const date = new Date(reading.dateTime);
+        reading.dateTime = date.getTime();
+        
+        if (isNaN(reading.dateTime)) {
+            // Defensive fall-back for parsing issues
+            continue;
+        }
         
         if (reading.cms !== undefined) {
             const val = parseFloat(reading.cms);
@@ -64,18 +70,19 @@ export function processCanadaCSV(text: string, startTs: number, endTs: number): 
         reformatReadings(results);
 
         const trimmed = results.filter((r: any) => {
-            if (r.dateTime < startTs || r.dateTime > endTs) return false;
+            if (isNaN(r.dateTime) || r.dateTime < startTs || r.dateTime > endTs) return false;
             // Keep if it has at least one data property
             const keys = Object.keys(r);
             return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
         });
         
         if (trimmed.length > 0) {
+            const hasCms = trimmed.some(r => r.cms !== undefined);
             outputGauges[gaugeID] = {
                 id: gaugeID,
                 name: `Canada Gauge ${gaugeID}`,
                 readings: trimmed,
-                units: "m",
+                units: hasCms ? "cms" : "m",
             };
         }
     }
@@ -84,6 +91,26 @@ export function processCanadaCSV(text: string, startTs: number, endTs: number): 
 }
 
 const ALL_PROVINCES = ["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"];
+
+const PREFIX_TO_PROVINCES: Record<string, string[]> = {
+    "01": ["NB", "NS", "PE"],
+    "02": ["QC", "ON", "NL"],
+    "03": ["NL"],
+    "04": ["ON", "MB"],
+    "05": ["AB", "SK", "MB", "ON"],
+    "06": ["MB", "SK", "AB", "NT", "NU"],
+    "07": ["BC", "AB", "SK", "NT"],
+    "08": ["BC", "YT"],
+    "09": ["BC", "YT"],
+    "10": ["NT", "NU", "BC", "YT"],
+    "11": ["SK", "AB"]
+};
+
+function getProvincesForSite(siteID: string): string[] {
+    const provPrefix = siteID.substring(0, 2).toUpperCase();
+    if (ALL_PROVINCES.includes(provPrefix)) return [provPrefix];
+    return PREFIX_TO_PROVINCES[provPrefix] || ALL_PROVINCES;
+}
 
 async function fetchCanadianProvince(province: string, startTs: number, endTs: number): Promise<Record<string, GaugeHistory>> {
     const url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_hourly_hydrometric.csv`;
@@ -97,6 +124,19 @@ async function fetchCanadianProvince(province: string, startTs: number, endTs: n
     }
 }
 
+async function fetchIndividualCanadaGauge(stationID: string, province: string, startTs: number, endTs: number): Promise<GaugeHistory | null> {
+    const url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_${stationID}_hourly_hydrometric.csv`;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const text = await res.text();
+        const data = processCanadaCSV(text, startTs, endTs);
+        return data[stationID] || null;
+    } catch {
+        return null;
+    }
+}
+
 export const canadaProvider: GaugeProvider = {
     id: "canada", 
     preferredUnits: 'metric',
@@ -107,22 +147,30 @@ export const canadaProvider: GaugeProvider = {
 
     async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
         const results: Record<string, GaugeReading> = {};
-        
-        // Try mapping known province prefixes (e.g. if code is BC08...) otherwise fallback to all
-        const provincesToFetch = new Set<string>();
-        siteCodes.forEach(code => {
-             const prov = code.substring(0, 2).toUpperCase();
-             if (ALL_PROVINCES.includes(prov)) {
-                 provincesToFetch.add(prov);
-             } else {
-                 // Unknown province mapping; will require scanning all
-                 ALL_PROVINCES.forEach(p => provincesToFetch.add(p));
-             }
-        });
-
         const startTs = Date.now() - (1000 * 60 * 60 * 6); // 6 hours
         const endTs = Date.now() + 1000 * 60 * 60 * 24; // buffer
-        
+
+        // If a small number of sites, fetch individually
+        if (siteCodes.length <= 10) {
+            const fetches = siteCodes.flatMap(site => {
+                const provs = getProvincesForSite(site);
+                return provs.map(p => fetchIndividualCanadaGauge(site, p, startTs, endTs));
+            });
+            const arr = await Promise.all(fetches);
+            arr.forEach(hist => {
+                if (hist && hist.readings.length > 0) {
+                    results[hist.id] = hist.readings[hist.readings.length - 1];
+                }
+            });
+            return results;
+        }
+
+        const provincesToFetch = new Set<string>();
+        siteCodes.forEach(code => {
+             const provs = getProvincesForSite(code);
+             provs.forEach(p => provincesToFetch.add(p));
+        });
+
         const fetches = Array.from(provincesToFetch).map(p => fetchCanadianProvince(p, startTs, endTs));
         const arr = await Promise.all(fetches);
 
@@ -139,18 +187,29 @@ export const canadaProvider: GaugeProvider = {
 
     async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
         const maxTime = endTs ?? Date.now();
+        const results: Record<string, GaugeHistory> = {};
+
+        // If a small number of sites, fetch individually
+        if (siteCodes.length <= 5) {
+            const fetches = siteCodes.flatMap(site => {
+                const provs = getProvincesForSite(site);
+                return provs.map(p => fetchIndividualCanadaGauge(site, p, startTs, maxTime));
+            });
+            const arr = await Promise.all(fetches);
+            arr.forEach(hist => {
+                if (hist) {
+                    results[hist.id] = hist;
+                }
+            });
+            return results;
+        }
+
         const provincesToFetch = new Set<string>();
-        
         siteCodes.forEach(code => {
-             const prov = code.substring(0, 2).toUpperCase();
-             if (ALL_PROVINCES.includes(prov)) {
-                 provincesToFetch.add(prov);
-             } else {
-                 ALL_PROVINCES.forEach(p => provincesToFetch.add(p));
-             }
+             const provs = getProvincesForSite(code);
+             provs.forEach(p => provincesToFetch.add(p));
         });
 
-        const results: Record<string, GaugeHistory> = {};
         const fetches = Array.from(provincesToFetch).map(p => fetchCanadianProvince(p, startTs, maxTime));
         const arr = await Promise.all(fetches);
 
@@ -184,7 +243,7 @@ export const canadaProvider: GaugeProvider = {
                                  name: feat.properties?.STATION_NAME || site,
                                  lon: feat.geometry?.coordinates?.[0] || 0,
                                  lat: feat.geometry?.coordinates?.[1] || 0,
-                                 state: formatStateCode(site.substring(0, 2), "Canada")
+                                 state: feat.properties?.PROVINCE_TERRITORY_CODE || getProvincesForSite(site)[0]
                              });
                          }
                      }

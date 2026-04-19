@@ -18,6 +18,7 @@ describe('Canada Service', () => {
             expect(result['08MG005'].readings[0].cms).toBe(45.6);
             expect(result['08MG005'].readings[1].m).toBe(1.250);
             expect(result['08MG005'].readings[1].cms).toBe(47.2);
+            expect(result['08MG005'].units).toBe("cms");
             expect(result['08MG005'].name).toBe("Canada Gauge 08MG005");
         });
 
@@ -41,6 +42,7 @@ describe('Canada Service', () => {
             const result = processCanadaCSV(mockCsv, 0, Date.now() + 1000000);
             expect(result['01AF009'].readings[0].m).toBe(2.000);
             expect(result['01AF009'].readings[0].cms).toBeUndefined();
+            expect(result['01AF009'].units).toBe("m");
         });
 
         it('should filter old readings if startTs is provided', () => {
