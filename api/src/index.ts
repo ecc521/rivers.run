@@ -922,7 +922,7 @@ const getAdminUsersRoute = createRoute({
     summary: 'Search for users in D1',
     security: [{ bearerAuth: [] }],
     request: {
-        query: z.object({ q: z.string().optional().openapi({ param: { name: 'q', in: 'query' } }) })
+        query: z.object({ q: z.string().openapi({ param: { name: 'q', in: 'query' } }).optional() })
     },
     responses: {
         200: { content: { 'application/json': { schema: UserSearchResponse } }, description: 'Search results' }

@@ -10,6 +10,78 @@ interface ShareMapModalProps {
     mapZoom: number;
 }
 
+interface ShareUrlParams {
+    baseUrl: string;
+    linkType: "map" | "list";
+    shareMapState: boolean;
+    shareFilters: boolean;
+    pinCoordinates: boolean;
+    currentQuery: AdvancedSearchQuery;
+    mapCenter: [number, number];
+    mapZoom: number;
+}
+
+function buildShareUrl(params: ShareUrlParams): string {
+    const url = new URL(params.baseUrl);
+    
+    if (params.shareMapState && params.linkType === "map") {
+        url.searchParams.set("lat", params.mapCenter[0].toFixed(5));
+        url.searchParams.set("lng", params.mapCenter[1].toFixed(5));
+        url.searchParams.set("zoom", params.mapZoom.toString());
+    }
+
+    if (params.shareFilters) {
+        if (params.currentQuery.name) url.searchParams.set("name", params.currentQuery.name);
+        if (params.currentQuery.section) url.searchParams.set("section", params.currentQuery.section);
+        if (params.currentQuery.distanceMax) {
+            url.searchParams.set("distanceMax", params.currentQuery.distanceMax.toString());
+            
+            let modeToShare = params.currentQuery.mapRadiusMode || "current";
+            let latToShare = params.currentQuery.userLat;
+            let lonToShare = params.currentQuery.userLon;
+
+            if (params.pinCoordinates) {
+                if (modeToShare === "current") {
+                    modeToShare = "custom";
+                } else if (modeToShare === "center") {
+                    if (params.linkType === "list" || !params.shareMapState) {
+                        modeToShare = "custom";
+                        latToShare = params.mapCenter[0];
+                        lonToShare = params.mapCenter[1];
+                    }
+                }
+            } else {
+                if (modeToShare === "current") {
+                    latToShare = undefined;
+                    lonToShare = undefined;
+                } else if (modeToShare === "center") {
+                    if (params.linkType === "list") {
+                        modeToShare = "current"; 
+                        latToShare = undefined;
+                        lonToShare = undefined;
+                    } else {
+                        latToShare = undefined;
+                        lonToShare = undefined;
+                    }
+                }
+            }
+
+            url.searchParams.set("radiusMode", modeToShare);
+            if (latToShare !== undefined) url.searchParams.set("userLat", typeof latToShare === "number" ? latToShare.toFixed(5) : latToShare);
+            if (lonToShare !== undefined) url.searchParams.set("userLon", typeof lonToShare === "number" ? lonToShare.toFixed(5) : lonToShare);
+        }
+        if (params.currentQuery.favoritesOnly) url.searchParams.set("favoritesOnly", "true");
+        
+        // Only add skill/flow if not default
+        if (params.currentQuery.skillMin !== 1) url.searchParams.set("skillMin", params.currentQuery.skillMin!.toString());
+        if (params.currentQuery.skillMax !== 8) url.searchParams.set("skillMax", params.currentQuery.skillMax!.toString());
+        if (params.currentQuery.flowMin !== 0) url.searchParams.set("flowMin", params.currentQuery.flowMin!.toString());
+        if (params.currentQuery.flowMax !== 4) url.searchParams.set("flowMax", params.currentQuery.flowMax!.toString());
+    }
+
+    return url.toString();
+}
+
 export const ShareMapModal: React.FC<ShareMapModalProps> = ({
     isOpen,
     onClose,
@@ -34,64 +106,12 @@ export const ShareMapModal: React.FC<ShareMapModalProps> = ({
             ? window.location.origin + window.location.pathname
             : window.location.origin + "/";
             
-        const url = new URL(baseUrl);
-        
-        if (shareMapState && linkType === "map") {
-            url.searchParams.set("lat", mapCenter[0].toFixed(5));
-            url.searchParams.set("lng", mapCenter[1].toFixed(5));
-            url.searchParams.set("zoom", mapZoom.toString());
-        }
+        const newUrl = buildShareUrl({
+            baseUrl, linkType, shareMapState, shareFilters,
+            pinCoordinates, currentQuery, mapCenter, mapZoom
+        });
 
-        if (shareFilters) {
-            if (currentQuery.name) url.searchParams.set("name", currentQuery.name);
-            if (currentQuery.section) url.searchParams.set("section", currentQuery.section);
-            if (currentQuery.distanceMax) {
-                url.searchParams.set("distanceMax", currentQuery.distanceMax.toString());
-                
-                let modeToShare = currentQuery.mapRadiusMode || "current";
-                let latToShare = currentQuery.userLat;
-                let lonToShare = currentQuery.userLon;
-
-                if (pinCoordinates) {
-                    if (modeToShare === "current") {
-                        modeToShare = "custom";
-                    } else if (modeToShare === "center") {
-                        if (linkType === "list" || !shareMapState) {
-                            modeToShare = "custom";
-                            latToShare = mapCenter[0];
-                            lonToShare = mapCenter[1];
-                        }
-                    }
-                } else {
-                    if (modeToShare === "current") {
-                        latToShare = undefined;
-                        lonToShare = undefined;
-                    } else if (modeToShare === "center") {
-                        if (linkType === "list") {
-                            modeToShare = "current"; 
-                            latToShare = undefined;
-                            lonToShare = undefined;
-                        } else {
-                            latToShare = undefined;
-                            lonToShare = undefined;
-                        }
-                    }
-                }
-
-                url.searchParams.set("radiusMode", modeToShare);
-                if (latToShare !== undefined) url.searchParams.set("userLat", typeof latToShare === "number" ? latToShare.toFixed(5) : latToShare);
-                if (lonToShare !== undefined) url.searchParams.set("userLon", typeof lonToShare === "number" ? lonToShare.toFixed(5) : lonToShare);
-            }
-            if (currentQuery.favoritesOnly) url.searchParams.set("favoritesOnly", "true");
-            
-            // Only add skill/flow if not default
-            if (currentQuery.skillMin !== 1) url.searchParams.set("skillMin", currentQuery.skillMin!.toString());
-            if (currentQuery.skillMax !== 8) url.searchParams.set("skillMax", currentQuery.skillMax!.toString());
-            if (currentQuery.flowMin !== 0) url.searchParams.set("flowMin", currentQuery.flowMin!.toString());
-            if (currentQuery.flowMax !== 4) url.searchParams.set("flowMax", currentQuery.flowMax!.toString());
-        }
-
-        setGeneratedUrl(url.toString());
+        setGeneratedUrl(newUrl);
     }, [isOpen, shareFilters, shareMapState, currentQuery, mapCenter, mapZoom, linkType, pinCoordinates]);
 
     if (!isOpen) return null;
