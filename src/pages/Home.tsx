@@ -4,6 +4,7 @@ import { TopBar } from "../components/TopBar";
 import { SearchOverlay } from "../components/SearchOverlay";
 
 import { useLocation } from "../hooks/useLocation";
+import { ViewSelector } from "../components/ViewSelector";
 import { useSearchParams, useParams, useLocation as useRouterLocation, useNavigate } from "react-router-dom";
 import { fetchAPI } from "../services/api";
 import { useRivers } from "../hooks/useRivers";
@@ -323,6 +324,21 @@ const Home: React.FC = () => {
 
   // We use the globally defined LazyRiverPage to inject the UI seamlessly without breaking Suspense
 
+  const handleViewChange = (view: "all" | "favorites") => {
+    if (view === "all") {
+       setSearchQuery(prev => ({ 
+          ...prev, 
+          favoritesOnly: false, 
+          listId: undefined, 
+          listData: undefined,
+       }));
+       setListTitle(null);
+       navigate("/");
+    } else {
+       navigate("/?favoritesOnly=true");
+    }
+  };
+
   return (
     <div className="page-content">
       {/* Search List Overlay Toggle */}
@@ -394,7 +410,10 @@ const Home: React.FC = () => {
             </button>
           </div>
         )}
-        <h1 className="center">{listTitle ? listTitle : "River Information"}</h1>
+        <ViewSelector 
+          currentTitle={listTitle || (searchQuery.favoritesOnly ? "Favorites" : "All Rivers")} 
+          onSelectView={handleViewChange}
+        />
         <div 
         className="searchcontain"
         style={{
@@ -543,6 +562,36 @@ const Home: React.FC = () => {
       {/* Rivers List */}
       <div id="Rivers">
         <TopBar query={searchQuery} setQuery={setSearchQuery} filteredRivers={filteredRivers} />
+        {filteredRivers.length === 0 && (
+          <div className="empty-state-view">
+            <div className="empty-state-icon">
+                {searchQuery.favoritesOnly ? "⭐" : searchQuery.listId ? "📋" : "🔍"}
+            </div>
+            <h2>
+                {searchQuery.favoritesOnly ? "Your Favorites are Empty" : 
+                 searchQuery.listId ? "This List is Empty" : 
+                 "No Rivers Found"}
+            </h2>
+            <p>
+                {searchQuery.favoritesOnly ? "Star a river from the list to save it here!" : 
+                 searchQuery.listId ? "Add rivers to this list using the 'Save to List' menu on any river page." : 
+                 "Try adjusting your filters or search terms."}
+            </p>
+            <div className="empty-state-actions">
+              <button className="clear-filters-btn" onClick={() => handleViewChange("all")}>
+                  Show All Rivers
+              </button>
+              {(searchQuery.favoritesOnly || searchQuery.listId) && (
+                <button 
+                  className="secondary-action-btn" 
+                  onClick={() => navigate("/lists")}
+                >
+                  Manage Your Lists
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         {renderedRiverItems}
         </div>
       </div>

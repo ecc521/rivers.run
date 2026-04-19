@@ -33,9 +33,17 @@ export function validateRiver(river: any): RiverValidationResult {
 
   const VALID_SKILLS = new Set(["?", "fw", "b", "n", "n+", "li-", "li", "li+", "i-", "i", "i+", "hi-", "hi", "hi+", "a-", "a", "a+", "e-", "e", "e+"]);
   
-  if (river.skill && typeof river.skill === "string") {
-      if (!VALID_SKILLS.has(river.skill.trim().toLowerCase())) {
-          errors.push(`Skill is invalid. Expected a recognized abbreviation like 'FW', 'B', 'N', etc. Got '${river.skill}'.`);
+  if (river.skill !== undefined && river.skill !== null) {
+      if (typeof river.skill === "string") {
+          if (!VALID_SKILLS.has(river.skill.trim().toLowerCase())) {
+              errors.push(`Skill is invalid. Expected a recognized abbreviation like 'FW', 'B', 'N', etc. Got '${river.skill}'.`);
+          }
+      } else if (typeof river.skill === "number") {
+          if (river.skill < 1 || river.skill > 8) {
+              errors.push(`Skill index is out of range. Expected 1-8, got ${river.skill}.`);
+          }
+      } else {
+          errors.push("Skill must be a string (abbreviation) or a number (index 1-8).");
       }
   }
 

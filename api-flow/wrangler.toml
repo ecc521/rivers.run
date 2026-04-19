@@ -26,4 +26,4 @@ custom_domain = true
 # 1. 15-minute gauge polling
 # 2. Monthly full registry recompilation
 [triggers]
-crons = ["*/15 * * * *", "0 0 1 * *"]
+crons = ["*/15 * * * *", "0 0 * * *", "0 0 1 * *"]

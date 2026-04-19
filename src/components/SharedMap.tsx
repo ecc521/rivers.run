@@ -746,6 +746,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             {/* Universally Injected Selected River Sidebar */}
             {selectedRiver && (
                 <div
+                    className="river-details-sidebar"
                     style={{
                         position: "absolute",
                         top: 0,

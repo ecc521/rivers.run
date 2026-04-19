@@ -195,7 +195,7 @@ export function filterRivers(
 ): RiverData[] {
   let list = [...rivers];
 
-  if (query.listData && query.listData.length > 0) {
+  if (query.listData) {
     const validIds = new Set(query.listData.map(l => l.id));
     list = list.filter((r) => validIds.has(r.id));
   }

@@ -35,12 +35,19 @@ export const RiverEditorPayload = z.object({
   altname: limitString(150),
   states: limitString(50),
   class: requiredString(20),
-  skill: z.number().int().min(1).max(8).optional().nullable().openapi({ type: 'integer' }),
+  skill: z.union([
+    z.number().int().min(1).max(8),
+    z.string().transform((val) => {
+      const SKILL_MAP: Record<string, number> = { "FW": 1, "B": 2, "N": 3, "LI": 4, "I": 5, "HI": 6, "A": 7, "E": 8 };
+      return SKILL_MAP[val.toUpperCase()] || null;
+    })
+  ]).optional().nullable().openapi({ type: 'integer' }),
   writeup: limitString(25000), 
   tags: z.array(z.string().openapi({ type: 'string' })).max(10).optional().openapi({ type: 'array' }),
   accessPoints: z.array(AccessPointSchema).max(50).optional().openapi({ type: 'array' }),
   gauges: z.array(GaugeMappingSchema).max(10).optional().openapi({ type: 'array' }),
-  flow: FlowThresholdsSchema.optional().nullable()
+  flow: FlowThresholdsSchema.optional().nullable(),
+  aw: limitString(50)
 }).openapi({ type: 'object', description: 'Payload for creating or updating a river' });
 
 export type RiverEditInput = z.infer<typeof RiverEditorPayload>;
@@ -123,6 +130,7 @@ export const RiverSchema = z.object({
   flow: FlowThresholdsSchema.optional().nullable(),
   averagegradient: z.number().optional().nullable().openapi({ type: 'number' }),
   maxgradient: z.number().optional().nullable().openapi({ type: 'number' }),
+  aw: z.string().optional().nullable().openapi({ type: 'string', example: "129" }),
   updated_at: z.number().optional().openapi({ type: 'number', example: 1713214540 })
 }).openapi({ type: 'object', description: 'Full river record' });
 

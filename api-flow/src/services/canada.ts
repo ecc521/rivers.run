@@ -115,7 +115,12 @@ function getProvincesForSite(siteID: string): string[] {
 async function fetchCanadianProvince(province: string, startTs: number, endTs: number): Promise<Record<string, GaugeHistory>> {
     const url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_hourly_hydrometric.csv`;
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            headers: {
+                'User-Agent': 'Rivers.run Flow Bot (https://rivers.run)',
+                'Accept': 'text/csv, application/csv'
+            }
+        });
         if (!res.ok) return {};
         const text = await res.text();
         return processCanadaCSV(text, startTs, endTs);
@@ -127,7 +132,12 @@ async function fetchCanadianProvince(province: string, startTs: number, endTs: n
 async function fetchIndividualCanadaGauge(stationID: string, province: string, startTs: number, endTs: number): Promise<GaugeHistory | null> {
     const url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_${stationID}_hourly_hydrometric.csv`;
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            headers: {
+                'User-Agent': 'Rivers.run Flow Bot (https://rivers.run)',
+                'Accept': 'text/csv, application/csv'
+            }
+        });
         if (!res.ok) return null;
         const text = await res.text();
         const data = processCanadaCSV(text, startTs, endTs);
@@ -138,7 +148,7 @@ async function fetchIndividualCanadaGauge(stationID: string, province: string, s
 }
 
 export const canadaProvider: GaugeProvider = {
-    id: "canada", 
+    id: "EC", 
     preferredUnits: 'metric',
     capabilities: {
         hasForecast: false,
@@ -233,7 +243,12 @@ export const canadaProvider: GaugeProvider = {
                  const site = siteCodes[index++];
                  try {
                      const url = `https://api.weather.gc.ca/collections/hydrometric-stations/items?STATION_NUMBER=${site}&f=json`;
-                     const res = await fetch(url);
+                     const res = await fetch(url, {
+                         headers: {
+                             'User-Agent': 'Rivers.run Flow Bot (https://rivers.run)',
+                             'Accept': 'application/json'
+                         }
+                     });
                      if (res.ok) {
                          const data: any = await res.json();
                          if (data.features && data.features.length > 0) {
@@ -260,7 +275,12 @@ export const canadaProvider: GaugeProvider = {
         console.log("Canada Provider: Fetching full site metadata...");
         const results: GaugeSite[] = [];
         try {
-            const res = await fetch("https://wateroffice.ec.gc.ca/services/map_data");
+            const res = await fetch("https://wateroffice.ec.gc.ca/services/map_data", {
+                headers: {
+                    'User-Agent': 'Rivers.run Flow Bot (https://rivers.run)',
+                    'Accept': 'application/json'
+                }
+            });
             if (!res.ok) throw new Error(`Canada WaterOffice API Error: ${res.status}`);
             
             const data = await res.json() as any[];

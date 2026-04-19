@@ -64,3 +64,4 @@ rivers-run-firebase-adminsdk-wzb5p-843d01551f.json
 # TypeScript Build Cache
 *.tsbuildinfo
 ttsconfig.tsbuildinfo
+artifacts/screenshots/

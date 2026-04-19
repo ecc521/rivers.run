@@ -18,10 +18,12 @@ skillLevels.forEach(([abbreviation, expanded]) => {
   reverseSkillTranslations[expanded] = abbreviation;
 });
 
+export type SkillValue = string | number | undefined | null;
+
 /**
  * Returns the short abbreviation (e.g. "I") for a skill level (1-8 or string).
  */
-export function getSkillAbbreviation(skill: string | number | undefined | null): string {
+export function getSkillAbbreviation(skill: SkillValue): string {
     if (skill === undefined || skill === null) return "?";
     if (typeof skill === "number") {
         if (skill >= 1 && skill < skillLevels.length) return skillLevels[skill][0];
@@ -35,7 +37,7 @@ export function getSkillAbbreviation(skill: string | number | undefined | null):
 /**
  * Returns the full description (e.g. "Intermediate") for a skill level.
  */
-export function getSkillFull(skill: string | number | undefined | null): string {
+export function getSkillFull(skill: SkillValue): string {
     if (skill === undefined || skill === null) return "Skill Unknown";
     if (typeof skill === "number") {
         if (skill >= 1 && skill < skillLevels.length) return skillLevels[skill][1];
@@ -44,4 +46,18 @@ export function getSkillFull(skill: string | number | undefined | null): string 
     const s = skill.toString();
     if (skillTranslations[s]) return skillTranslations[s];
     return "Skill Unknown";
+}
+
+/**
+ * Returns the numeric index (1-8) for a skill level (abbreviation or number).
+ */
+export function getSkillIndex(skill: SkillValue): number | null {
+    if (skill === undefined || skill === null) return null;
+    if (typeof skill === "number") {
+        if (skill >= 1 && skill < skillLevels.length) return skill;
+        return null;
+    }
+    const s = skill.toString().toUpperCase();
+    const idx = skillLevels.findIndex(([code]) => code === s);
+    return idx > 0 ? idx : null;
 }

@@ -1,0 +1,117 @@
+
+> rivers-run@0.0.0 lint
+> tsc -b && eslint . && npm run lint:duplication
+
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/.wrangler/tmp/dev-Qz0y2N/index.js
+  14407:7  warning  Unused eslint-disable directive (no problems were reported from 'no-control-regex')
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/.wrangler/tmp/dev-zFNOLH/index.js
+  2551:7  warning  Unused eslint-disable directive (no problems were reported from 'no-control-regex')
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/__tests__/sitemap.test.ts
+   4:13  error  'registry' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   4:13  error  Remove this unused import of 'registry'                                     sonarjs/unused-import
+  31:54  error  'query' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  35:58  error  'prepares' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/index.ts
+  191:11  warning  Refactor this function to reduce its Cognitive Complexity from 82 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/services/canada.ts
+   4:10  warning  Refactor this function to reduce its Cognitive Complexity from 17 to the 15 allowed  sonarjs/cognitive-complexity
+  36:17  warning  Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/services/france.ts
+   26:55  warning  Refactor this function to reduce its Cognitive Complexity from 23 to the 15 allowed  sonarjs/cognitive-complexity
+   96:70  warning  Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed  sonarjs/cognitive-complexity
+  183:11  warning  Refactor this function to reduce its Cognitive Complexity from 18 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/services/ireland.ts
+  56:33  warning  Refactor this function to reduce its Cognitive Complexity from 18 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/services/nws.ts
+  14:37  warning  Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed  sonarjs/cognitive-complexity
+  80:33  warning  Refactor this function to reduce its Cognitive Complexity from 26 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/services/uk.ts
+   16:11  warning  Refactor this function to reduce its Cognitive Complexity from 42 to the 15 allowed  sonarjs/cognitive-complexity
+   81:33  warning  Refactor this function to reduce its Cognitive Complexity from 25 to the 15 allowed  sonarjs/cognitive-complexity
+  136:11  warning  Refactor this function to reduce its Cognitive Complexity from 36 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/services/usgs.ts
+   14:17  warning  Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed  sonarjs/cognitive-complexity
+  130:29  warning  Refactor this function to reduce its Cognitive Complexity from 19 to the 15 allowed  sonarjs/cognitive-complexity
+  223:33  warning  Refactor this function to reduce its Cognitive Complexity from 44 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/utils/formatting.ts
+  99:10  warning  Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api-flow/src/utils/units.ts
+  6:17  warning  Refactor this function to reduce its Cognitive Complexity from 44 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api/.wrangler/tmp/dev-dvEaes/index.js
+  14407:7  warning  Unused eslint-disable directive (no problems were reported from 'no-control-regex')
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/api/src/index.ts
+  530:48  warning  Refactor this function to reduce its Cognitive Complexity from 23 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/components/GlobalNavBar.tsx
+  48:40  warning  Refactor this function to reduce its Cognitive Complexity from 19 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/components/RiverItem.tsx
+  36:4  warning  Refactor this function to reduce its Cognitive Complexity from 34 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/components/ShareMapModal.tsx
+  27:18  warning  Refactor this function to reduce its Cognitive Complexity from 60 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/components/SharedMap.tsx
+  326:4   warning  Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed  sonarjs/cognitive-complexity
+  431:39  warning  Refactor this function to reduce its Cognitive Complexity from 19 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/components/USGSGraphs.tsx
+   34:148  warning  Refactor this function to reduce its Cognitive Complexity from 22 to the 15 allowed  sonarjs/cognitive-complexity
+  107:73   warning  Refactor this function to reduce its Cognitive Complexity from 44 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/context/SettingsContext.tsx
+  72:67  warning  Refactor this function to reduce its Cognitive Complexity from 17 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/hooks/useDynamicFlow.ts
+   41:34  warning  Refactor this function to reduce its Cognitive Complexity from 28 to the 15 allowed  sonarjs/cognitive-complexity
+  111:36  warning  Refactor this function to reduce its Cognitive Complexity from 22 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/hooks/useRivers.ts
+   30:80  warning  Refactor this function to reduce its Cognitive Complexity from 23 to the 15 allowed  sonarjs/cognitive-complexity
+   88:97  warning  Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed  sonarjs/cognitive-complexity
+  188:47  warning  Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/pages/Home.tsx
+   29:27  warning  Refactor this function to reduce its Cognitive Complexity from 22 to the 15 allowed  sonarjs/cognitive-complexity
+   86:74  warning  Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed  sonarjs/cognitive-complexity
+  142:20  warning  Refactor this function to reduce its Cognitive Complexity from 34 to the 15 allowed  sonarjs/cognitive-complexity
+  568:52  warning  Extract this nested ternary operation into an independent statement                  sonarjs/no-nested-conditional
+  572:18  warning  Extract this nested ternary operation into an independent statement                  sonarjs/no-nested-conditional
+  577:18  warning  Extract this nested ternary operation into an independent statement                  sonarjs/no-nested-conditional
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/pages/RiverEditor.tsx
+  21:25  warning  Refactor this function to reduce its Cognitive Complexity from 46 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/utils/SearchFilters.ts
+   39:17  warning  Refactor this function to reduce its Cognitive Complexity from 25 to the 15 allowed  sonarjs/cognitive-complexity
+  225:24  warning  Refactor this function to reduce its Cognitive Complexity from 17 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/utils/flowInfoCalculations.ts
+  71:17  warning  Refactor this function to reduce its Cognitive Complexity from 18 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/utils/offlineMapEngine.ts
+  161:76  warning  Refactor this function to reduce its Cognitive Complexity from 17 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/utils/riverValidation.ts
+  14:17  warning  Refactor this function to reduce its Cognitive Complexity from 40 to the 15 allowed  sonarjs/cognitive-complexity
+
+/Users/tuckerwillenborg/Documents/GitHub/rivers.run/src/utils/toDecimalDegrees.ts
+  1:17  warning  Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed  sonarjs/cognitive-complexity
+
+✖ 51 problems (4 errors, 47 warnings)
+  0 errors and 3 warnings potentially fixable with the `--fix` option.
+

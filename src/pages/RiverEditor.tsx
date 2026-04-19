@@ -5,7 +5,7 @@ import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css"; 
 import { useAuth } from "../context/AuthContext";
 import { firebaseConfig } from "../firebase";
-import { skillLevels } from "../utils/skillTranslations";
+import { skillLevels, getSkillAbbreviation, getSkillIndex } from "../utils/skillTranslations";
 import { RiverItem } from "../components/RiverItem";
 import { validateRiver } from "../utils/riverValidation";
 import { toDecimalDegrees } from "../utils/toDecimalDegrees";
@@ -75,7 +75,7 @@ export default function RiverEditor() {
         name: data.name || "",
         states: typeof data.states === 'string' ? data.states : "MD",
         class: data.class || "I",
-        skill: data.skill || "FW",
+        skill: getSkillAbbreviation(data.skill || "FW"),
         dam: data.dam || false,
         aw: data.aw || "",
         section: data.section || "",
@@ -198,6 +198,7 @@ export default function RiverEditor() {
       return {
         ...riverData,
         id: idToSave,
+        skill: getSkillIndex(riverData.skill),
         gauges: parsedGauges,
         tags: (riverData.rawTags || "").split(',').map((t: string) => t.trim()).filter(Boolean),
         accessPoints: newAccessPoints,

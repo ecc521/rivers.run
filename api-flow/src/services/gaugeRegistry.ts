@@ -4,13 +4,15 @@ import { canadaProvider } from './canada';
 import { nwsProvider } from './nws';
 import { ukProvider } from './uk';
 import { irelandProvider } from './ireland';
+import { franceProvider } from './france';
 
 const providers: GaugeProvider[] = [
     usgsProvider,
     canadaProvider,
     nwsProvider,
     ukProvider,
-    irelandProvider
+    irelandProvider,
+    franceProvider
 ];
 
 /**

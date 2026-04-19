@@ -10,9 +10,12 @@ import {
     UserManagementSchema, UserSearchResponse
 } from "./schema";
 import { firebaseAuthMiddleware, requireModerator, requireAdmin, optionalFirebaseAuthMiddleware } from "./auth";
+import { sendEmail } from "./email";
+
 
 type Bindings = {
   DB: D1Database;
+  FLOW_STORAGE: R2Bucket;
 };
 
 type Variables = {
@@ -92,7 +95,8 @@ const formatRiverRow = (row: any) => {
              max: row.flow_max
         },
         averagegradient: row.average_gradient,
-        maxgradient: row.max_gradient
+        maxgradient: row.max_gradient,
+        aw: row.aw_id
     };
     
     // Clean up flat database columns since they are nested or renamed now
@@ -220,19 +224,19 @@ app.openapi(updateRiverRoute, async (c) => {
     const batch = [];
     if (original) {
         batch.push(c.env.DB.prepare(`
-             UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=? WHERE id=?
+             UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=? WHERE id=?
         `).bind(
              validated.name, validated.section, validated.altname, validated.states, validated.class,
-             validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr, 
+             validated.skill, validated.writeup, validated.aw, tagsStr, gaugesStr, accessStr, 
              flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, id
         ));
     } else {
         batch.push(c.env.DB.prepare(`
-             INSERT INTO rivers (id, name, section, altname, states, class, skill, writeup, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             INSERT INTO rivers (id, name, section, altname, states, class, skill, writeup, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
              id, validated.name, validated.section, validated.altname, validated.states, validated.class,
-             validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr,
+             validated.skill, validated.writeup, validated.aw, tagsStr, gaugesStr, accessStr,
              flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax
         ));
     }
@@ -280,6 +284,26 @@ app.openapi(suggestRiverRoute, async (c) => {
     await c.env.DB.prepare(`
         INSERT INTO river_suggestions (river_id, suggested_by, proposed_changes, status, created_at) VALUES (?, ?, ?, 'pending', ?)
     `).bind(id, authorId, JSON.stringify(validated), Math.floor(Date.now() / 1000)).run();
+
+    const { results: admins } = await c.env.DB.prepare(`
+        SELECT email FROM users 
+        WHERE role IN ('admin', 'moderator') 
+        AND alerts_review_queue = 1 
+        AND email IS NOT NULL 
+        AND email != ''
+    `).all();
+    const adminEmails = admins.map(a => a.email).join(', ');
+
+    if (adminEmails) {
+        c.executionCtx.waitUntil(
+            sendEmail({
+                env: c.env,
+                to: adminEmails,
+                subject: "Rivers.run: New Suggestion Submission",
+                text: "A new river suggestion has been submitted to the queue. Review it here: https://rivers.run/admin",
+            })
+        );
+    }
 
     return c.json({ success: true });
 });
@@ -395,10 +419,10 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     const flowMax = validated.flow?.max ?? null;
 
     batch.push(c.env.DB.prepare(`
-         UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=? WHERE id=?
+         UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=? WHERE id=?
     `).bind(
          validated.name, validated.section, validated.altname, validated.states, validated.class,
-         validated.skill, validated.writeup, tagsStr, gaugesStr, accessStr, 
+         validated.skill, validated.writeup, validated.aw, tagsStr, gaugesStr, accessStr, 
          flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, suggestion.river_id
     ));
 
@@ -1022,6 +1046,26 @@ app.openapi(createReportRoute, async (c) => {
         VALUES (?, ?, ?, ?, ?, 'pending', ?)
     `).bind(validated.target_id, validated.type, validated.reason, authorId, validated.email || null, Math.floor(Date.now() / 1000)).run();
 
+    const { results: admins } = await c.env.DB.prepare(`
+        SELECT email FROM users 
+        WHERE role IN ('admin', 'moderator') 
+        AND alerts_review_queue = 1 
+        AND email IS NOT NULL 
+        AND email != ''
+    `).all();
+    const adminEmails = admins.map(a => a.email).join(', ');
+
+    if (adminEmails) {
+        c.executionCtx.waitUntil(
+            sendEmail({
+                env: c.env,
+                to: adminEmails,
+                subject: "Rivers.run: New User Report",
+                text: "A new user report has been submitted to the queue. Review it here: https://rivers.run/admin",
+            })
+        );
+    }
+
     return c.json({ success: true });
 });
 
@@ -1054,6 +1098,22 @@ app.openapi(resolveReportRoute, async (c) => {
     await c.env.DB.prepare("UPDATE user_reports SET status = 'resolved' WHERE report_id = ?").bind(id).run();
     return c.json({ success: true });
 });
+
+app.get('/sitemap.xml', async (c) => {
+    // Serve the pre-generated sitemap from R2 (generated by api-flow)
+    // 24-hour edge cache for the sitemap
+    c.header("Cache-Control", "public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600");
+
+    const object = await c.env.FLOW_STORAGE.get("sitemap.xml");
+
+    if (!object) {
+        return c.text("Sitemap not found", 404);
+    }
+
+    c.header("Content-Type", "application/xml");
+    return c.body(object.body);
+});
+
 const openApiConfig = {
     openapi: '3.0.0',
     info: { title: 'Rivers.run API', version: '1.0.0' },

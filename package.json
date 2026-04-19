@@ -13,7 +13,9 @@
     "lint": "tsc -b && eslint . && npm run lint:duplication",
     "lint:duplication": "jscpd src",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:rules": "npx firebase-tools emulators:exec --only firestore \"node --experimental-vm-modules node_modules/jest/bin/jest.js\"",
+    "screenshots": "playwright test"
   },
   "dependencies": {
     "@capacitor-community/in-app-review": "^8.0.0",
@@ -44,9 +46,10 @@
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/ios": "^8.3.0",
-    "@cloudflare/workers-types": "^4.20260416.2",
     "@cloudflare/vite-plugin": "^1.32.3",
+    "@cloudflare/workers-types": "^4.20260416.2",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.59.1",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",

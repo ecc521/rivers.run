@@ -316,6 +316,118 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
     font-weight: bold;
 }
 
+/* ViewSelector Styles */
+.view-selector-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 20px 5px 20px;
+    position: relative;
+    user-select: none;
+    background-color: #dffaff; /* Match overall header bg */
+}
+
+.breadcrumb-path {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.breadcrumb-item.link {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.breadcrumb-item.link:hover {
+    color: var(--primary);
+}
+
+.breadcrumb-separator {
+    color: var(--text-muted);
+}
+
+.view-switcher {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.view-switcher:hover, .view-switcher.active {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.breadcrumb-item.current {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.dropdown-caret {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.view-dropdownshadow {
+    position: absolute;
+    top: 100%;
+    z-index: 1000;
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+}
+
+.view-dropdown-menu {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px;
+    min-width: 180px;
+    margin-top: 5px;
+}
+
+.view-dropdown-item {
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.2s;
+}
+
+.view-dropdown-item:hover {
+    background-color: var(--surface-hover);
+}
+
+.view-dropdown-item.selected {
+    background-color: var(--alert-bg);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.view-dropdown-item.secondary {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.view-dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+}
+
+.dark-theme .view-selector-container {
+    background-color: #0f172a;
+}
+
+.dark-theme .breadcrumb-item.current {
+    color: white;
+}
+
 #legend {
 	display: block;
 	z-index: 10;
@@ -947,16 +1059,95 @@ Those include name,section,skill,quality, and flow info*/
   color: var(--text-secondary);
   border: 1px solid var(--border) !important;
 }
-
 .ReloadPromptDismiss:hover {
   background-color: var(--surface-hover);
 }
 
-@media screen and (max-width: 600px) {
-  .ReloadPromptToast {
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
-    max-width: none;
-  }
+/* Landscape-specific compact header */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+    .view-selector-container {
+        padding: 5px 20px 2px 20px;
+    }
+    .breadcrumb-item.current {
+        font-size: 0.95rem;
+    }
+    .searchcontain {
+        margin: 0 auto 10px auto !important;
+    }
+    #legend {
+        font-size: max(10px, calc(var(--defaultFontSize) * 1.1)) !important;
+        line-height: normal !important;
+    }
+    #legend:after {
+        line-height: normal !important;
+    }
+    #topbar {
+        font-size: max(10px, calc(var(--defaultFontSize) * 0.9)) !important;
+    }
+}
+
+/* Empty State View */
+.empty-state-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.empty-state-view h2 {
+    margin: 0 0 10px 0;
+    font-size: 1.5rem;
+    color: var(--text);
+}
+
+.empty-state-view p {
+    margin: 0 0 20px 0;
+    max-width: 400px;
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.empty-state-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.clear-filters-btn, .secondary-action-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.clear-filters-btn {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+}
+
+.secondary-action-btn {
+    background-color: var(--surface);
+    color: var(--primary);
+    border: 2px solid var(--primary);
+}
+
+.clear-filters-btn:hover, .secondary-action-btn:hover {
+    filter: brightness(0.9);
+}
+
+.dark-theme .empty-state-view h2 {
+    color: white;
 }

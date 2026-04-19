@@ -147,6 +147,16 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
                 Suggest an Edit
             </a>
             )}
+            {river.aw && (
+            <a
+                href={`https://www.americanwhitewater.org/content/River/view/river-detail/${river.aw}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ fontWeight: 'bold', marginLeft: '10px' }}
+            >
+                View on American Whitewater
+            </a>
+            )}
         </div>
         <button
             type="button"
