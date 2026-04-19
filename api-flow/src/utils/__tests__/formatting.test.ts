@@ -65,6 +65,42 @@ describe('formatGaugeName', () => {
         expect(formatGaugeName('MAIN ST').name).toBe('Main St');
     });
 
+    it('should handle "Ab" and "Bl" shorthand expansions', () => {
+        expect(formatGaugeName('TALLULAH R AB POWERHOUSE').name).toBe('Tallulah River');
+        expect(formatGaugeName('TALLULAH R AB POWERHOUSE').section).toBe('Above Powerhouse');
+        expect(formatGaugeName('HYCO R BL ABAY D').section).toBe('Below Abay D');
+    });
+
+    it('should handle French keywords for Canada/France', () => {
+        const aval = formatGaugeName('MADAWASKA A 6 KM EN AVAL DU BARRAGE');
+        expect(aval.name).toBe('Madawaska');
+        expect(aval.section).toBe('A 6 km en aval du Barrage');
+
+        const a = formatGaugeName('LA SEINE À PARIS');
+        expect(a.name).toBe('La Seine');
+        expect(a.section).toBe('À Paris');
+    });
+
+    it('should split at the first comma if it follows a river descriptor', () => {
+        const result = formatGaugeName('SWEETWATER CREEK, BROWNSVILLE RD, GA');
+        expect(result.name).toBe('Sweetwater Creek');
+        expect(result.section).toBe(', Brownsville Road, GA');
+
+        const noRiverResult = formatGaugeName('SOMEPLACE, SOME TOWN, GA');
+        expect(noRiverResult.section).toBeUndefined(); // No river word before comma
+    });
+
+    it('should correctly handle Chattahoochee River gauge names with distances', () => {
+        const result = formatGaugeName('Chattahoochee R 0.39 Mi Downstream Ga140, Alpharetta, GA');
+        expect(result.name).toBe('Chattahoochee River');
+        expect(result.section).toBe('0.39 mi Downstream Ga140, Alpharetta, GA');
+    });
+
+    it('should keep state codes capitalized when they appear at the end', () => {
+        expect(formatGaugeName('WHITE RIVER AT ANDERSON IN').section).toBe('At Anderson IN');
+        expect(formatGaugeName('COLUMBIA RIVER AT THE DALLES OR').section).toBe('At the Dalles OR');
+    });
+
     it('should handle multiple delimiters and pick the first', () => {
         const result = formatGaugeName('RIVER AT SITE NEAR TOWN');
         expect(result.name).toBe('River');

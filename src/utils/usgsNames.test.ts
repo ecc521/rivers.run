@@ -54,4 +54,32 @@ describe("formatGaugeName", () => {
         expect(formatGaugeName("WHITE RIVER AT ANDERSON IN")).toEqual({ name: "White River", section: "At Anderson IN" });
         expect(formatGaugeName("COLUMBIA RIVER AT THE DALLES OR")).toEqual({ name: "Columbia River", section: "At the Dalles OR" });
     });
+
+    it("should correctly handle Chattahoochee River gauge names with distances", () => {
+        const result = formatGaugeName("Chattahoochee R 0.39 Mi Downstream Ga140, Alpharetta, GA");
+        expect(result.name).toBe("Chattahoochee River");
+        expect(result.section).toBe("0.39 mi Downstream Ga140, Alpharetta, GA");
+    });
+
+    it("should handle 'Ab' and 'Bl' shorthand expansions", () => {
+        expect(formatGaugeName("TALLULAH R AB POWERHOUSE").name).toBe("Tallulah River");
+        expect(formatGaugeName("TALLULAH R AB POWERHOUSE").section).toBe("Above Powerhouse");
+        expect(formatGaugeName("HYCO R BL ABAY D").section).toBe("Below Abay D");
+    });
+
+    it("should handle French keywords for Canada/France", () => {
+        const aval = formatGaugeName("MADAWASKA A 6 KM EN AVAL DU BARRAGE");
+        expect(aval.name).toBe("Madawaska");
+        expect(aval.section).toBe("A 6 km en aval du Barrage");
+
+        const a = formatGaugeName("LA SEINE À PARIS");
+        expect(a.name).toBe("La Seine");
+        expect(a.section).toBe("À Paris");
+    });
+
+    it("should split at the first comma if it follows a river descriptor", () => {
+        const result = formatGaugeName("SWEETWATER CREEK, BROWNSVILLE RD, GA");
+        expect(result.name).toBe("Sweetwater Creek");
+        expect(result.section).toBe(", Brownsville Road, GA");
+    });
 });

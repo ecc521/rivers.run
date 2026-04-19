@@ -421,234 +421,10 @@ export default function RiverEditor() {
       <hr style={{ borderColor: 'var(--border)', margin: '15px 0 20px 0' }} />
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents, opacity }}>
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <div style={{ flex: 2 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>River Name</label>
-            <input 
-              type="text" 
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
-              value={riverData.name} 
-              placeholder="e.g. Potomac River"
-              onChange={e => setRiverData({...riverData, name: e.target.value})} 
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>Section</label>
-            <input 
-              type="text" 
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
-              value={riverData.section} 
-              placeholder="e.g. Little Falls"
-              onChange={e => setRiverData({...riverData, section: e.target.value})} 
-            />
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>Class</label>
-            <input 
-              type="text" 
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
-              value={riverData.class} 
-              placeholder="e.g. II-III+"
-              onChange={e => setRiverData({...riverData, class: e.target.value})} 
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>Skill Level</label>
-            <select 
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
-              value={riverData.skill} 
-              onChange={e => setRiverData({...riverData, skill: e.target.value})} 
-            >
-               {skillLevels.map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}
-            </select>
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{fontWeight: 'bold', display: 'block'}}>State/Region</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginBottom: riverData.states ? "5px" : "0" }}>
-              {riverData.states?.split(',').map((s: string) => s.trim()).filter(Boolean).map((s: string) => (
-                <span 
-                  key={s} 
-                  style={{ backgroundColor: "var(--primary)", color: "white", padding: "2px 6px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
-                  onClick={() => {
-                    const newState = riverData.states!.split(',').map((st: string) => st.trim()).filter((st: string) => st !== s).join(', ');
-                    setRiverData({...riverData, states: newState});
-                  }}
-                  title="Click to remove"
-                >
-                  {s} &times;
-                </span>
-              ))}
-            </div>
-            <select
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
-              value="" 
-              onChange={e => {
-                 if (e.target.value) {
-                   const curr = riverData.states?.split(',').map((s: string) => s.trim()).filter(Boolean) || [];
-                   if (!curr.includes(e.target.value)) {
-                     curr.push(e.target.value);
-                     setRiverData({...riverData, states: curr.join(', ')});
-                   }
-                 }
-              }} 
-            >
-               <option value="" disabled>Add State...</option>
-               {/* Show states that actually have data first */}
-               {availableStates.filter(st => !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
-               
-               {/* Separator if we have many states */}
-               <option disabled>──────────</option>
-
-               {/* Show all other known states */}
-              {ALL_STATE_CODES.filter(st => !availableStates.includes(st) && !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
-            </select>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '15px' }}>
-
-             <div style={{ flex: 1 }}>
-                <label style={{fontWeight: 'bold', display: 'block'}}>AW River ID (Optional)</label>
-                <input 
-                  type="text" 
-                  style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
-                  placeholder="e.g. 129"
-                  value={riverData.aw} 
-                  onChange={e => setRiverData({...riverData, aw: e.target.value})} 
-                />
-             </div>
-             <div style={{ flex: 1 }}>
-                <label style={{fontWeight: 'bold', display: 'block'}}>Tags</label>
-                <input 
-                  type="text" 
-                  style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
-                  placeholder="e.g. classic, roadside (comma separated)"
-                  value={riverData.rawTags || ""} 
-                  onChange={e => setRiverData({...riverData, rawTags: e.target.value})} 
-                />
-             </div>
-             <div style={{ display: 'flex', alignItems: 'center', marginTop: '20px' }}>
-                <label style={{fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer'}}>
-                   <input 
-                     type="checkbox" 
-                     checked={riverData.dam || false} 
-                     onChange={e => setRiverData({...riverData, dam: e.target.checked})} 
-                   />
-                   Dam Released
-                </label>
-             </div>
-        </div>
-
-        <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
-          <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Gauges</label>
-          {(riverData.gauges || []).map((g: any, i: number) => (
-            <GaugeItem 
-              key={i} 
-              gauge={g} 
-              onUpdate={(updates) => {
-                const newG = [...riverData.gauges];
-                newG[i] = { ...newG[i], ...updates };
-                if (updates.isPrimary) {
-                  newG.forEach((gObj, idx) => { if (idx !== i) gObj.isPrimary = false; });
-                }
-                setRiverData({ ...riverData, gauges: newG });
-              }}
-              onDelete={() => {
-                const newG = riverData.gauges.filter((_:any, index:number) => index !== i);
-                setRiverData({ ...riverData, gauges: newG });
-              }}
-            />
-          ))}
-          <button onClick={() => {
-              const newG = [...(riverData.gauges || [])];
-              newG.push({ id: "USGS:", isPrimary: newG.length === 0 });
-              setRiverData({...riverData, gauges: newG});
-          }} style={{ padding: '8px', cursor: 'pointer' }}>+ Add Gauge</button>
-        </div>
-
-        {hasPrimaryGauge && (
-          <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
-            <label style={{fontWeight: 'bold', display: 'flex', alignItems: 'center', marginBottom: '10px'}}>
-              Flow Thresholds (Used for Color Coding)
-              <span className="tooltip tooltip-bottom" style={{marginLeft: "10px", cursor: "help", color: "var(--primary)"}}>
-                ⓘ
-                <div className="tooltiptext" style={{ fontWeight: "normal", fontSize: "0.9em", width: "200px", lineHeight: "1.4", whiteSpace: "normal" }}>
-                  Minimum: Barely runnable<br />
-                  Low: Scrappy or low flow<br />
-                  Runnable: Optimal flow<br />
-                  High: Fast or pushy flow<br />
-                  Maximum: Flood levels (Too High)
-                </div>
-              </span>
-            </label>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <div style={{ width: '80px' }}>
-                <label style={{fontSize: '12px', display: 'block'}}>Unit</label>
-                <select 
-                  style={{ width: '100%', padding: '6px', height: '34px', boxSizing: 'border-box' }} 
-                  value={riverData.flow?.unit || "cfs"}
-                  onChange={e => setRiverData({...riverData, flow: {...riverData.flow, unit: e.target.value}})}
-                >
-                  <option value="cfs">cfs</option>
-                  <option value="ft">ft</option>
-                  <option value="m">m</option>
-                  <option value="cms">cms</option>
-                </select>
-              </div>
-              
-              {[
-                  { field: "min", label: "Minimum" },
-                  { field: "low", label: "Low" },
-                  { field: "mid", label: "Runnable" },
-                  { field: "high", label: "High" },
-                  { field: "max", label: "Maximum" }
-                ].map(({ field, label }) => (
-                 <div key={field} style={{ flex: 1, minWidth: '80px' }}>
-                  <label style={{fontSize: '12px', display: 'block', whiteSpace: 'nowrap'}}>{label}</label>
-                  <input 
-                    type="number" 
-                    style={{ width: '100%', padding: '6px', height: '34px', boxSizing: 'border-box' }} 
-                    value={riverData.flow?.[field] ?? ""} 
-                    onChange={e => setRiverData({...riverData, flow: {...riverData.flow, [field]: e.target.value ? parseFloat(e.target.value) : null}})} 
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px' }}>
-          <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Access Points</label>
-          {(riverData.accessPoints || []).map((ap: any, i: number) => (
-            <AccessPointItem
-               key={i}
-               ap={ap}
-               onUpdate={(updates) => {
-                  const newA = [...riverData.accessPoints];
-                  newA[i] = { ...newA[i], ...updates };
-                  
-                  const defaultNames = ["Put-In", "Midpoint", "Access", "Take-Out", "Access Point"];
-                  if (updates.type && (!newA[i].name || defaultNames.includes(newA[i].name))) {
-                      newA[i].name = ({"put-in": "Put-In", "access": "Access", "take-out": "Take-Out"} as Record<string, string>)[updates.type] || "Access";
-                  }
-                  
-                  setRiverData({ ...riverData, accessPoints: newA });
-               }}
-               onDelete={() => {
-                  const newA = riverData.accessPoints.filter((_:any, index:number) => index !== i);
-                  setRiverData({ ...riverData, accessPoints: newA });
-               }}
-            />
-          ))}
-          <button onClick={() => {
-              const newA = [...(riverData.accessPoints || [])];
-              newA.push({ type: "put-in", name: "Put-In", lat: null, lon: null, rawLat: "", rawLon: "" });
-              setRiverData({...riverData, accessPoints: newA});
-          }} style={{ padding: '8px', cursor: 'pointer' }}>+ Add Access Point</button>
-        </div>
+        <RiverDetailsEditor riverData={riverData} setRiverData={setRiverData} availableStates={availableStates} />
+        <RiverGaugesEditor riverData={riverData} setRiverData={setRiverData} />
+        {hasPrimaryGauge && <RiverFlowThresholdsEditor riverData={riverData} setRiverData={setRiverData} />}
+        <RiverAccessEditor riverData={riverData} setRiverData={setRiverData} />
 
         <div style={{ marginTop: '20px' }}>
           <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>River Writeup & Description</label>
@@ -760,6 +536,237 @@ export default function RiverEditor() {
     </>
   );
 }
+
+const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any, availableStates: string[] }> = ({ riverData, setRiverData, availableStates }) => (
+  <>
+    <div style={{ display: 'flex', gap: '15px' }}>
+      <div style={{ flex: 2 }}>
+        <label style={{fontWeight: 'bold', display: 'block'}}>River Name</label>
+        <input 
+          type="text" 
+          style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+          value={riverData.name} 
+          placeholder="e.g. Potomac River"
+          onChange={e => setRiverData({...riverData, name: e.target.value})} 
+        />
+      </div>
+      <div style={{ flex: 1 }}>
+        <label style={{fontWeight: 'bold', display: 'block'}}>Section</label>
+        <input 
+          type="text" 
+          style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+          value={riverData.section} 
+          placeholder="e.g. Little Falls"
+          onChange={e => setRiverData({...riverData, section: e.target.value})} 
+        />
+      </div>
+    </div>
+
+    <div style={{ display: 'flex', gap: '15px' }}>
+      <div style={{ flex: 1 }}>
+        <label style={{fontWeight: 'bold', display: 'block'}}>Class</label>
+        <input 
+          type="text" 
+          style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+          value={riverData.class} 
+          placeholder="e.g. II-III+"
+          onChange={e => setRiverData({...riverData, class: e.target.value})} 
+        />
+      </div>
+      <div style={{ flex: 1 }}>
+        <label style={{fontWeight: 'bold', display: 'block'}}>Skill Level</label>
+        <select 
+          style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+          value={riverData.skill} 
+          onChange={e => setRiverData({...riverData, skill: e.target.value})} 
+        >
+           {skillLevels.map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}
+        </select>
+      </div>
+      <div style={{ flex: 1 }}>
+        <label style={{fontWeight: 'bold', display: 'block'}}>State/Region</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginBottom: riverData.states ? "5px" : "0" }}>
+          {riverData.states?.split(',').map((s: string) => s.trim()).filter(Boolean).map((s: string) => (
+            <span 
+              key={s} 
+              style={{ backgroundColor: "var(--primary)", color: "white", padding: "2px 6px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+              onClick={() => {
+                const newState = riverData.states!.split(',').map((st: string) => st.trim()).filter((st: string) => st !== s).join(', ');
+                setRiverData({...riverData, states: newState});
+              }}
+              title="Click to remove"
+            >
+              {s} &times;
+            </span>
+          ))}
+        </div>
+        <select
+          style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+          value="" 
+          onChange={e => {
+             if (e.target.value) {
+               const curr = riverData.states?.split(',').map((s: string) => s.trim()).filter(Boolean) || [];
+               if (!curr.includes(e.target.value)) {
+                 curr.push(e.target.value);
+                 setRiverData({...riverData, states: curr.join(', ')});
+               }
+             }
+          }} 
+        >
+           <option value="" disabled>Add State...</option>
+           {availableStates.filter(st => !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
+           <option disabled>──────────</option>
+          {ALL_STATE_CODES.filter(st => !availableStates.includes(st) && !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
+        </select>
+      </div>
+    </div>
+
+    <div style={{ display: 'flex', gap: '15px' }}>
+         <div style={{ flex: 1 }}>
+            <label style={{fontWeight: 'bold', display: 'block'}}>AW River ID (Optional)</label>
+            <input 
+              type="text" 
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+              placeholder="e.g. 129"
+              value={riverData.aw} 
+              onChange={e => setRiverData({...riverData, aw: e.target.value})} 
+            />
+         </div>
+         <div style={{ flex: 1 }}>
+            <label style={{fontWeight: 'bold', display: 'block'}}>Tags</label>
+            <input 
+              type="text" 
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+              placeholder="e.g. classic, roadside (comma separated)"
+              value={riverData.rawTags || ""} 
+              onChange={e => setRiverData({...riverData, rawTags: e.target.value})} 
+            />
+         </div>
+         <div style={{ display: 'flex', alignItems: 'center', marginTop: '20px' }}>
+            <label style={{fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer'}}>
+               <input 
+                 type="checkbox" 
+                 checked={riverData.dam || false} 
+                 onChange={e => setRiverData({...riverData, dam: e.target.checked})} 
+               />
+               Dam Released
+            </label>
+         </div>
+    </div>
+  </>
+);
+
+const RiverGaugesEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ riverData, setRiverData }) => (
+  <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px', marginTop: '15px' }}>
+    <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Gauges</label>
+    {(riverData.gauges || []).map((g: any, i: number) => (
+      <GaugeItem 
+        key={i} 
+        gauge={g} 
+        onUpdate={(updates) => {
+          const newG = [...riverData.gauges];
+          newG[i] = { ...newG[i], ...updates };
+          if (updates.isPrimary) {
+            newG.forEach((gObj, idx) => { if (idx !== i) gObj.isPrimary = false; });
+          }
+          setRiverData({ ...riverData, gauges: newG });
+        }}
+        onDelete={() => {
+          const newG = riverData.gauges.filter((_:any, index:number) => index !== i);
+          setRiverData({ ...riverData, gauges: newG });
+        }}
+      />
+    ))}
+    <button onClick={() => {
+        const newG = [...(riverData.gauges || [])];
+        newG.push({ id: "USGS:", isPrimary: newG.length === 0 });
+        setRiverData({...riverData, gauges: newG});
+    }} style={{ padding: '8px', cursor: 'pointer' }}>+ Add Gauge</button>
+  </div>
+);
+
+const RiverFlowThresholdsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ riverData, setRiverData }) => (
+  <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px', marginTop: '15px' }}>
+    <label style={{fontWeight: 'bold', display: 'flex', alignItems: 'center', marginBottom: '10px'}}>
+      Flow Thresholds (Used for Color Coding)
+      <span className="tooltip tooltip-bottom" style={{marginLeft: "10px", cursor: "help", color: "var(--primary)"}}>
+        ⓘ
+        <div className="tooltiptext" style={{ fontWeight: "normal", fontSize: "0.9em", width: "200px", lineHeight: "1.4", whiteSpace: "normal" }}>
+          Minimum: Barely runnable<br />
+          Low: Scrappy or low flow<br />
+          Runnable: Optimal flow<br />
+          High: Fast or pushy flow<br />
+          Maximum: Flood levels (Too High)
+        </div>
+      </span>
+    </label>
+    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+      <div style={{ width: '80px' }}>
+        <label style={{fontSize: '12px', display: 'block'}}>Unit</label>
+        <select 
+          style={{ width: '100%', padding: '6px', height: '34px', boxSizing: 'border-box' }} 
+          value={riverData.flow?.unit || "cfs"}
+          onChange={e => setRiverData({...riverData, flow: {...riverData.flow, unit: e.target.value}})}
+        >
+          <option value="cfs">cfs</option>
+          <option value="ft">ft</option>
+          <option value="m">m</option>
+          <option value="cms">cms</option>
+        </select>
+      </div>
+      
+      {[
+          { field: "min", label: "Minimum" },
+          { field: "low", label: "Low" },
+          { field: "mid", label: "Runnable" },
+          { field: "high", label: "High" },
+          { field: "max", label: "Maximum" }
+        ].map(({ field, label }) => (
+         <div key={field} style={{ flex: 1, minWidth: '80px' }}>
+          <label style={{fontSize: '12px', display: 'block', whiteSpace: 'nowrap'}}>{label}</label>
+          <input 
+            type="number" 
+            style={{ width: '100%', padding: '6px', height: '34px', boxSizing: 'border-box' }} 
+            value={riverData.flow?.[field] ?? ""} 
+            onChange={e => setRiverData({...riverData, flow: {...riverData.flow, [field]: e.target.value ? parseFloat(e.target.value) : null}})} 
+          />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const RiverAccessEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ riverData, setRiverData }) => (
+  <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px', marginTop: '15px' }}>
+    <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Access Points</label>
+    {(riverData.accessPoints || []).map((ap: any, i: number) => (
+      <AccessPointItem
+         key={i}
+         ap={ap}
+         onUpdate={(updates) => {
+            const newA = [...riverData.accessPoints];
+            newA[i] = { ...newA[i], ...updates };
+            
+            const defaultNames = ["Put-In", "Midpoint", "Access", "Take-Out", "Access Point"];
+            if (updates.type && (!newA[i].name || defaultNames.includes(newA[i].name))) {
+                newA[i].name = ({"put-in": "Put-In", "access": "Access", "take-out": "Take-Out"} as Record<string, string>)[updates.type] || "Access";
+            }
+            
+            setRiverData({ ...riverData, accessPoints: newA });
+         }}
+         onDelete={() => {
+            const newA = riverData.accessPoints.filter((_:any, index:number) => index !== i);
+            setRiverData({ ...riverData, accessPoints: newA });
+         }}
+      />
+    ))}
+    <button onClick={() => {
+        const newA = [...(riverData.accessPoints || [])];
+        newA.push({ type: "put-in", name: "Put-In", lat: null, lon: null, rawLat: "", rawLon: "" });
+        setRiverData({...riverData, accessPoints: newA});
+    }} style={{ padding: '8px', cursor: 'pointer' }}>+ Add Access Point</button>
+  </div>
+);
 
 const GaugeItem: React.FC<{
   gauge: any;

@@ -25,7 +25,7 @@ describe('USGS Service', () => {
         it('should expand acronyms', () => {
              const result = formatGaugeName('LITTLE R NR TOWNSEND, TN');
              // NR -> near
-             expect(result.name).toBe('Little R');
+             expect(result.name).toBe('Little River');
              expect(result.section).toBe('Near Townsend, TN');
         });
 

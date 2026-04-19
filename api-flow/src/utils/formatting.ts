@@ -1,17 +1,36 @@
 export function formatGaugeName(name: string): { name: string; section?: string } {
-    const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr', 'be']);
+    const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr', 'be', 'mi', 'km', 'en', 'aval', 'amont', 'du', 'barrage', 'la', 'le']);
     
     const expansions: Record<string, string> = {
         nr: 'near',
         blw: 'below',
+        bl: 'below',
         abv: 'above',
+        ab: 'above',
         br: 'branch',
         cr: 'creek',
+        crk: 'Creek',
         rd: 'Road',
         st: 'St',
         gs: 'Gauging Station',
         ds: 'Downstream',
         us: 'Upstream',
+        r: 'River',
+        rv: 'River',
+        fk: 'Fork',
+        nf: 'North Fork',
+        sf: 'South Fork',
+        ef: 'East Fork',
+        wf: 'West Fork',
+        n: 'North',
+        s: 'South',
+        e: 'East',
+        w: 'West',
+        mt: 'Mount',
+        mtn: 'Mountain',
+        pt: 'Point',
+        lk: 'Lake',
+        res: 'Reservoir',
         tof: 'Time of Flight',
         witsd: 'Withdrawn'
     };
@@ -127,7 +146,7 @@ function formatGaugeNameInner(name: string, lowercaseWords: Set<string>, expansi
                 formatted += upperToken;
             } else if (stateCodes.has(upperToken) && (isLast || followsComma)) {
                 formatted += upperToken;
-            } else if (!isFirst && lowercaseWords.has(lowerToken)) {
+            } else if (!isFirst && lowercaseWords.has(lowerToken) && !isLast) {
                 formatted += lowerToken;
             } else {
                 formatted += token.charAt(0).toUpperCase() + lowerToken.slice(1);
@@ -137,12 +156,10 @@ function formatGaugeNameInner(name: string, lowercaseWords: Set<string>, expansi
         }
     }
 
-    const formattedString = formatted.replace(/\s+/g, ' ').trim();
-
-    const delimiters = [' at ', ' near ', ' above ', ' below '];
+    const normalizedName = formatted.replace(/\s+/g, ' ').trim();
+    const delimiters = [' at ', ' near ', ' above ', ' below ', ' upstream ', ' downstream ', ' à ', ' en aval ', ' en amont '];
     let splitIndex = -1;
-    
-    const lowerFormatted = formattedString.toLowerCase();
+    const lowerFormatted = normalizedName.toLowerCase();
 
     for (const d of delimiters) {
         const idx = lowerFormatted.indexOf(d);
@@ -151,12 +168,39 @@ function formatGaugeNameInner(name: string, lowercaseWords: Set<string>, expansi
         }
     }
 
+    // Fallback: splitting at the first comma if it follows a river descriptor
+    if (splitIndex === -1) {
+        const commaIndex = normalizedName.indexOf(',');
+        if (commaIndex !== -1) {
+            const riverWords = new Set(['river', 'creek', 'stream', 'run', 'fork', 'branch', 'brook', 'canal', 'lake', 'reservoir', 'r', 'cr', 'fk', 'br']);
+            const beforeComma = normalizedName.substring(0, commaIndex).trim().toLowerCase();
+            const lastWord = beforeComma.split(' ').pop();
+            if (lastWord && riverWords.has(lastWord)) {
+                splitIndex = commaIndex;
+            }
+        }
+    }
+
     if (splitIndex !== -1) {
-        const gaugeName = formattedString.substring(0, splitIndex).trim();
-        let section = formattedString.substring(splitIndex).trim();
+        let gaugeName = normalizedName.substring(0, splitIndex).trim();
+        let section = normalizedName.substring(splitIndex).trim();
+
+        // Check if the section starts with a direction and if name ends with a distance
+        const lowerSection = section.toLowerCase();
+        if (lowerSection.startsWith('upstream') || lowerSection.startsWith('downstream') || lowerSection.startsWith('en aval') || lowerSection.startsWith('en amont')) {
+            // eslint-disable-next-line sonarjs/slow-regex
+            const distancePattern = /(?:at|à|a)?\s*[\d.]+\s*(?:mi|km|miles|kilometers)\s*$/i;
+            const distanceMatch = distancePattern.exec(gaugeName);
+            if (distanceMatch) {
+                const distance = distanceMatch[0];
+                gaugeName = gaugeName.substring(0, gaugeName.length - distance.length).trim();
+                section = distance.trim() + " " + section;
+            }
+        }
+
         section = section.charAt(0).toUpperCase() + section.slice(1); // Capitalize first letter of section
         return { name: gaugeName, section };
     }
 
-    return { name: formattedString };
+    return { name: normalizedName };
 }

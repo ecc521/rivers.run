@@ -32,7 +32,7 @@ function initializeSiteIfMissing(usgsSites: Record<string, GaugeHistory>, siteCo
 }
 
 function processSiteTimeSeries(seriesItem: any, siteObj: any) {
-  let values = seriesItem.values[0].value || [];
+  let values = seriesItem.values?.[0]?.value || [];
   const rawNoDataValue = seriesItem.variable?.noDataValue;
   
   if (rawNoDataValue !== null && rawNoDataValue !== undefined && rawNoDataValue !== "") {
@@ -157,8 +157,13 @@ async function fetchUSGSBatch(siteCodes: string[], timeQuery: string): Promise<R
     const allSites: Record<string, GaugeHistory> = {};
     const batches: string[][] = [];
     
-    for (let i = 0; i < siteCodes.length; i += BATCH_SIZE) {
-        batches.push(siteCodes.slice(i, i + BATCH_SIZE));
+    // Filter out any IDs that contain non-digits. Valid USGS site IDs are strictly 8-15 digits.
+    // If a non-digit ID is passed to the USGS API, it returns 400 Bad Request for the entire batch,
+    // which completely drops data for all 150 gauges in that bucket.
+    const validSiteCodes = siteCodes.filter(id => /^\d+$/.test(id));
+    
+    for (let i = 0; i < validSiteCodes.length; i += BATCH_SIZE) {
+        batches.push(validSiteCodes.slice(i, i + BATCH_SIZE));
     }
 
     const CONCURRENCY_LIMIT = 3;
