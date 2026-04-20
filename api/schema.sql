@@ -158,3 +158,17 @@ CREATE TABLE user_reports (
 );
 CREATE INDEX idx_user_reports_status ON user_reports(status);
 
+
+-- ==========================================
+-- 9. BACKGROUND WORKER OBSERVABILITY
+-- ==========================================
+CREATE TABLE IF NOT EXISTS worker_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp INTEGER NOT NULL,
+    level TEXT NOT NULL,
+    component TEXT NOT NULL,
+    message TEXT NOT NULL,
+    details TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_worker_logs_timestamp ON worker_logs(timestamp);
+
