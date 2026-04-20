@@ -198,19 +198,6 @@ describe('Notification Helpers (Pure Unit Tests)', () => {
             gauges: [{ id: 'USGS:TEST' }]
         });
 
-        it('should correctly evaluate conditions with both min and max', () => {
-            const rivers = [
-                createRiver('Running', 100, 500),
-                createRiver('Too Low', 100, 500),
-                createRiver('Too High', 100, 500)
-            ];
-
-            const summary = evaluateRiverConditions(rivers, {
-                'USGS:TEST': { readings: [{ value: 250 }] } // 250 sits in the middle for 'Running', will force the other two into edge cases if we mock merged data properly? 
-            });
-            // Actually, evaluateRiverConditions takes one mergedData map. 
-            // We should test one river at a time to be clean, or use different gauges.
-        });
 
         it('identifies running vs low vs high', () => {
             const rivers = [
