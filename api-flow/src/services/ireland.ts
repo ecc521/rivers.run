@@ -6,8 +6,21 @@ import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
  * Ireland (WaterLevel.ie / OPW) Gauge Data Service
  */
 
+const normalizeStationId = (ref: string) => ref.slice(-5);
+
+const REGION_MAP: Record<number, string> = {
+    3: "Donegal",
+    4: "Upper Barrow",
+    5: "Lower Barrow",
+    6: "Nore",
+    9: "Suir",
+    10: "North East",
+    13: "Boyne Central",
+    28: "South West"
+};
+
 export const irelandProvider: GaugeProvider = {
-    id: "ireland",
+    id: "IE",
     preferredUnits: 'metric',
     capabilities: {
         hasForecast: false,
@@ -29,8 +42,11 @@ export const irelandProvider: GaugeProvider = {
             
             for (const f of features) {
                 const props = f.properties || {};
-                const id = props.station_ref;
-                if (!id || !siteSet.has(id)) continue;
+                const rawId = props.station_ref;
+                if (!rawId) continue;
+
+                const id = normalizeStationId(rawId);
+                if (!siteSet.has(id)) continue;
                 
                 if (props.value !== undefined && isValidReadingValue(props.value, "m")) {
                     results[id] = {
@@ -125,18 +141,23 @@ export const irelandProvider: GaugeProvider = {
             
             for (const f of features) {
                 const props = f.properties || {};
-                const id = props.station_ref;
+                const rawId = props.station_ref;
                 const coords = f.geometry?.coordinates || [0, 0];
                 
-                if (id && props.value !== undefined) {
+                if (rawId && props.value !== undefined) {
+                    const id = normalizeStationId(rawId);
                     const rawName = props.station_name || `Ireland Station ${id}`;
                     const formatted = formatGaugeName(rawName);
+                    
+                    // Map region_id or fallback to region/county name if present
+                    const regionName = props.region_id ? REGION_MAP[props.region_id] : (props.region || props.county);
+
                     results.push({
                         id: id,
                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                         lat: coords[1],
                         lon: coords[0],
-                        state: formatStateCode(props.region || props.county, "Ireland")
+                        state: formatStateCode(regionName, "Ireland")
                     });
                 }
             }
