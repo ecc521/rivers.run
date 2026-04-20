@@ -354,7 +354,6 @@ const Home: React.FC = () => {
     global: "Global",
     usa: "US",
     canada: "Canadian",
-    france: "French",
     uk_ireland: "UK & Irish"
   };
 

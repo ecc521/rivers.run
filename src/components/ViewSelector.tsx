@@ -79,12 +79,6 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
               Canada
             </div>
             <div 
-              className={`view-dropdown-item ${regionLabel === "France" ? "selected" : ""}`} 
-              onClick={() => { onSelectRegion("france"); setIsOpen(false); }}
-            >
-              France
-            </div>
-            <div 
               className={`view-dropdown-item ${regionLabel === "UK/Ireland" ? "selected" : ""}`} 
               onClick={() => { onSelectRegion("uk_ireland"); setIsOpen(false); }}
             >

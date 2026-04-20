@@ -8,7 +8,6 @@ import { nwsProvider } from "./services/nws";
 import { canadaProvider } from "./services/canada";
 import { ukProvider } from "./services/uk";
 import { irelandProvider } from "./services/ireland";
-import { franceProvider } from "./services/france";
 import { GaugeProvider, GaugeHistory, Units } from "./services/provider";
 import { HistorySchema, ErrorSchema, GenericObjectSchema } from "./schema";
 import { toUnitSystemHistory } from "./utils/units";
@@ -29,8 +28,7 @@ export const providers: Record<string, GaugeProvider> = {
     "NWS": nwsProvider,
     "EC": canadaProvider,
     "UK": ukProvider,
-    "ireland": irelandProvider,
-    "france": franceProvider
+    "ireland": irelandProvider
 };
 
 const app = new OpenAPIHono<{ Bindings: Env }>();

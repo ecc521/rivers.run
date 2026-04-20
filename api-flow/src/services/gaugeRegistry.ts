@@ -4,7 +4,6 @@ import { canadaProvider } from './canada';
 import { nwsProvider } from './nws';
 import { ukProvider } from './uk';
 import { irelandProvider } from './ireland';
-import { franceProvider } from './france';
 import { logToD1 } from '../utils/logger';
 import type { Env } from '../index';
 
@@ -13,8 +12,7 @@ const providers: GaugeProvider[] = [
     canadaProvider,
     nwsProvider,
     ukProvider,
-    irelandProvider,
-    franceProvider
+    irelandProvider
 ];
 
 /**

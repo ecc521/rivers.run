@@ -1,6 +1,6 @@
 import type { RiverData } from "../types/River";
 
-export type CountryCode = "usa" | "canada" | "france" | "germany" | "uk_ireland" | "global";
+export type CountryCode = "usa" | "canada" | "uk_ireland" | "global";
 
 /**
  * Mapping of state/province abbreviations to their respective countries.
@@ -19,8 +19,7 @@ export const DEFAULT_STATE_MAP: Record<string, CountryCode[]> = {
   "AB": ["canada"], "BC": ["canada"], "MB": ["canada"], "NB": ["canada"], "NL": ["canada"], "NS": ["canada"],
   "ON": ["canada"], "PE": ["canada"], "QC": ["canada"], "SK": ["canada"], "NT": ["canada"], "YT": ["canada"], "NU": ["canada"],
   // Common European / Others
-  "FR": ["france"],
-  "DE": ["usa", "germany"],
+  "DE": ["usa"],
   "IE": ["uk_ireland"],
   "UK": ["uk_ireland"]
 };
@@ -42,9 +41,7 @@ export function getCountryFromPrefix(gaugeId: string): CountryCode | null {
   
   if (prefix === "USGS" || prefix === "NWS") return "usa";
   if (prefix === "EC") return "canada";
-  if (prefix === "FR" || prefix === "VIGI") return "france";
   if (prefix === "EA" || prefix === "IE" || prefix === "UK") return "uk_ireland";
-  if (prefix === "BAVARIA" || prefix === "DE") return "germany";
   
   return null;
 }
@@ -75,8 +72,6 @@ export function getRiverCountries(river: RiverData, stateMap?: Map<string, Set<C
   });
 
   // 2. Fallbacks for full country names in state field
-  if (states.includes("FRANCE")) result.add("france");
-  if (states.includes("GERMANY") || states.includes("BAVARIA")) result.add("germany");
   if (states.includes("IRELAND")) result.add("uk_ireland");
 
   // 3. Gauge Prefix check
