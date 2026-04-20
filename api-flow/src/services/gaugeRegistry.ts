@@ -5,6 +5,8 @@ import { nwsProvider } from './nws';
 import { ukProvider } from './uk';
 import { irelandProvider } from './ireland';
 import { franceProvider } from './france';
+import { logToD1 } from '../utils/logger';
+import type { Env } from '../index';
 
 const providers: GaugeProvider[] = [
     usgsProvider,
@@ -20,10 +22,10 @@ const providers: GaugeProvider[] = [
  * If a provider fails, it will preserve the existing entries for that provider 
  * from the historical registry, preventing data loss during temporary API outages.
  */
-export async function compileGaugeRegistry(existingRegistry: Record<string, GaugeSite> = {}): Promise<Record<string, GaugeSite>> {
+export async function compileGaugeRegistry(env: Env, existingRegistry: Record<string, GaugeSite> = {}): Promise<Record<string, GaugeSite>> {
     const gaugeRegistry: Record<string, GaugeSite> = { ...existingRegistry };
     
-    console.log("Registry: Starting resilient compilation across all providers...");
+    await logToD1(env, "INFO", "registry", "Starting resilient registry compilation across all providers...");
 
     for (const provider of providers) {
         if (provider.getFullSiteListing) {
@@ -44,12 +46,12 @@ export async function compileGaugeRegistry(existingRegistry: Record<string, Gaug
                         id: fullId
                     };
                 }
-                console.log(`- Updated ${provider.id}: ${newSites.length} gauges.`);
-            } catch (e) {
+                await logToD1(env, "INFO", "registry", `Updated ${provider.id}: ${newSites.length} gauges found.`);
+            } catch (e: any) {
                 // 3. FAILURE: Log and KEEP the existing entries for this provider
                 const providerPrefix = provider.id + ":";
                 const existingCount = Object.keys(gaugeRegistry).filter(k => k.startsWith(providerPrefix)).length;
-                console.error(`- CRITICAL: Failed to refresh ${provider.id}. Preserving ${existingCount} existing entries. Error:`, e);
+                await logToD1(env, "WARN", "registry", `Failed to refresh ${provider.id}. Preserving ${existingCount} existing entries. Error: ${e.message || e}`);
             }
         } else {
             console.log(`- Provider ${provider.id} does not support full site listing.`);

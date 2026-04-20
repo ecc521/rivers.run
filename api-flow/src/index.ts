@@ -1,3 +1,4 @@
+import { logToD1, pruneLogs } from "./utils/logger";
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { z } from "@hono/zod-openapi";
 import { apiReference } from '@scalar/hono-api-reference';
@@ -184,7 +185,7 @@ export default {
     fetch: app.fetch,
 
     async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
-        console.log(`Starting background sync (Cron: ${event.cron})...`);
+        await logToD1(env, "INFO", "sync", `Background sync started. Trigger: ${event.cron || "manual"}`);
 
         try {
             let registryMetadata: Record<string, any> = {};
@@ -208,7 +209,7 @@ export default {
                 console.log("Triggering Gauge Registry Recompilation (USGS + Canada)...");
                 try {
                     // Enforce a maximum 10-minute timeout for the entire registry compilation
-                    registryMetadata = await withTimeout(compileGaugeRegistry(registryMetadata), 600000, "Registry compilation timed out");
+                    registryMetadata = await withTimeout(compileGaugeRegistry(env, registryMetadata), 600000, "Registry compilation timed out");
                     
                     // Use streams to avoid stringifying 20k+ gauges entirely into RAM at once
                     const registryStream = streamJSONObject(registryMetadata);
@@ -229,16 +230,24 @@ export default {
             await env.FLOW_STORAGE.put("sitedata.json", readable as any, {
                 httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=300" }
             });
+            await logToD1(env, "INFO", "sync", `Successfully updated sitedata.json (${Object.keys(mergedData).length} gauges).`);
 
             // 2. Process Notifications
             await processNotifications(env, mergedData, _ctx);
 
             // 3. Update Sitemap
             if (isDailyMaintenance) {
+                await logToD1(env, "INFO", "maintenance", "Starting daily maintenance (Sitemap generation)...");
                 await generateSitemap(env, registryMetadata);
             }
 
+            // 4. Cleanup
+            await pruneLogs(env);
+            await logToD1(env, "INFO", "sync", "Background sync completed successfully.");
+
         } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            await logToD1(env, "ERROR", "sync", `Background sync crashed: ${msg}`, err);
             console.error("FATAL: Background sync crashed unexpectedly:", err);
         }
     }

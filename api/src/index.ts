@@ -413,6 +413,22 @@ app.openapi(getAdminLogsRoute, async (c) => {
     return c.json(results);
 });
 
+const getWorkerLogsRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
+    method: 'get',
+    path: '/admin/worker-logs',
+    summary: 'Fetch background worker execution logs',
+    security: [{ bearerAuth: [] }],
+    responses: {
+        200: { content: { 'application/json': { schema: GenericArraySchema } }, description: 'Worker logs' }
+    }
+});
+
+app.openapi(getWorkerLogsRoute, async (c) => {
+    const { results } = await c.env.DB.prepare("SELECT * FROM worker_logs ORDER BY timestamp DESC LIMIT 100").all();
+    return c.json(results || []);
+});
+
 const resolveSuggestionRoute = createRoute({
     middleware: [firebaseAuthMiddleware, requireModerator, checkPayloadSize],
     method: 'post',

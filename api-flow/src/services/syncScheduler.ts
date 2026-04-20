@@ -1,6 +1,7 @@
 import type { Env } from "../index";
 import type { GaugeProvider } from "../services/provider";
 import { withTimeout } from "../utils/timeout";
+import { logToD1 } from '../utils/logger';
 
 const sanitizeCoordinate = (val: any): number | undefined => {
     if (val === undefined || val === null) return undefined;
@@ -12,6 +13,8 @@ const sanitizeCoordinate = (val: any): number | undefined => {
 export async function performDataSync(env: Env, registryMetadata: Record<string, any>, providers: Record<string, GaugeProvider>): Promise<Record<string, any>> {
     let dbGauges: string[] = [];
     
+    await logToD1(env, "INFO", "sync", "Starting main data synchronization...");
+
     try {
         const { results: riverResults } = await env.DB.prepare("SELECT gauges FROM rivers").all();
         dbGauges = (riverResults || []).flatMap((row: any) => {
@@ -69,9 +72,13 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
         // Enforce a 5-minute timeout per provider sync
         try {
             await withTimeout((async () => {
+                let linkedCount = 0;
+                let registryCount = 0;
+
                 if (groups.linked.length > 0) {
                     try {
                         const data = await provider.getHistory(groups.linked, activeStartTs, Date.now(), true);
+                        linkedCount = Object.keys(data).length;
                         Object.entries(data).forEach(([id, history]) => {
                             const fullId = `${prefix}:${id}`;
                             mergedData[fullId] = {
@@ -83,13 +90,14 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
                             };
                         });
                     } catch (_e) {
-                        console.error(`- ERROR: provider ${prefix} linked fetch failed:`, _e);
+                        await logToD1(env, "WARN", "sync", `Provider ${prefix} linked fetch failed.`, _e);
                     }
                 }
 
                 if (groups.registry.length > 0) {
                     try {
                         const data = await provider.getLatest(groups.registry);
+                        registryCount = Object.keys(data).length;
                         Object.entries(data).forEach(([id, reading]) => {
                             const fullId = `${prefix}:${id}`;
                             if (mergedData[fullId]) {
@@ -105,12 +113,14 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
                             }
                         });
                     } catch (_e) {
-                        console.error(`- ERROR: provider ${prefix} registry fetch failed:`, _e);
+                        await logToD1(env, "WARN", "sync", `Provider ${prefix} registry fetch failed.`, _e);
                     }
                 }
+                
+                await logToD1(env, "INFO", "sync", `Provider ${prefix}: Synced ${linkedCount} active and ${registryCount} registry gauges.`);
             })(), 600000, `Provider ${prefix} sync timed out`);
         } catch (e: any) {
-            console.error(`- TIMEOUT/FAIL: Provider ${prefix} failed or exceeded its 5-minute allocation:`, e.message || e);
+            await logToD1(env, "ERROR", "sync", `Provider ${prefix} failed or timed out: ${e.message || e}`);
         }
     });
 
