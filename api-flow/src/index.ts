@@ -13,7 +13,7 @@ import { HistorySchema, ErrorSchema, GenericObjectSchema } from "./schema";
 import { toUnitSystemHistory } from "./utils/units";
 import { compileGaugeRegistry } from "./services/gaugeRegistry";
 import { withTimeout } from "./utils/timeout";
-import { streamJSONObject } from "./utils/stream";
+import { stringifyJSONObject } from "./utils/stream";
 import { generateSitemap } from "./services/sitemap";
 import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
@@ -210,8 +210,8 @@ export default {
                     registryMetadata = await withTimeout(compileGaugeRegistry(env, registryMetadata), 600000, "Registry compilation timed out");
                     
                     // Use streams to avoid stringifying 20k+ gauges entirely into RAM at once
-                    const registryStream = streamJSONObject(registryMetadata);
-                    await env.FLOW_STORAGE.put("gauge_registry.json", registryStream as any, {
+                    const registryBuffer = stringifyJSONObject(registryMetadata);
+                    await env.FLOW_STORAGE.put("gauge_registry.json", registryBuffer, {
                         httpMetadata: { contentType: "application/json" }
                     });
                 } catch (_e) {
@@ -222,10 +222,10 @@ export default {
             // 1. Fetch Gauges
             const mergedData = await performDataSync(env, registryMetadata, providers);
 
-            // Save to storage using streams
-            const readable = streamJSONObject(mergedData, { generatedAt: Date.now() });
+            // Save to storage using buffered construction for R2 compatibility
+            const syncBuffer = stringifyJSONObject(mergedData, { generatedAt: Date.now() });
 
-            await env.FLOW_STORAGE.put("sitedata.json", readable as any, {
+            await env.FLOW_STORAGE.put("sitedata.json", syncBuffer, {
                 httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=300" }
             });
             await logToD1(env, "INFO", "sync", `Successfully updated sitedata.json (${Object.keys(mergedData).length} gauges).`);
