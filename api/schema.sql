@@ -47,14 +47,15 @@ CREATE TABLE rivers (
 -- 2. AUDIT HISTORY (Strict Diff-Based History)
 -- ==========================================
 CREATE TABLE river_audit_log (
-    log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    history_id INTEGER PRIMARY KEY AUTOINCREMENT,
     river_id TEXT NOT NULL,
     action_type TEXT NOT NULL,   -- 'INSERT', 'UPDATE', 'DELETE'
-    changed_by TEXT NOT NULL,    -- User Auth UID
-    created_at INTEGER DEFAULT (strftime('%s', 'now')),
+    changed_by TEXT,             -- User Auth UID
+    changed_at INTEGER NOT NULL, -- Unix timestamp
     diff_patch JSON NOT NULL     -- Tracks the delta/diff of what actually changed
 );
 CREATE INDEX idx_audit_log_river_id ON river_audit_log(river_id);
+CREATE INDEX idx_audit_log_changed_at ON river_audit_log(changed_at);
 
 -- Note: Because we want strictly minimized DIFFs to save DB Storage limits, 
 -- calculating the delta happens natively at the API/Cloudflare Worker layer rather 
@@ -73,6 +74,8 @@ CREATE TABLE community_lists (
     subscribes INTEGER DEFAULT 0,
     notifications_enabled BOOLEAN DEFAULT 0
 );
+CREATE INDEX idx_community_lists_owner_id ON community_lists(owner_id);
+CREATE INDEX idx_community_lists_published ON community_lists(is_published);
 
 CREATE TABLE community_list_rivers (
     list_id TEXT NOT NULL,
@@ -114,6 +117,7 @@ CREATE TABLE river_suggestions (
     FOREIGN KEY(river_id) REFERENCES rivers(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_suggestions_river_id ON river_suggestions(river_id);
+CREATE INDEX idx_suggestions_created_at ON river_suggestions(created_at);
 
 -- ==========================================
 -- 6. USER PROFILES & SETTINGS
@@ -130,6 +134,8 @@ CREATE TABLE users (
     alerts_review_queue INTEGER DEFAULT 0,
     updated_at INTEGER NOT NULL
 );
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
 
 -- ==========================================
 -- 7. ADMIN AUDIT TRAIL
@@ -157,6 +163,7 @@ CREATE TABLE user_reports (
     created_at INTEGER NOT NULL
 );
 CREATE INDEX idx_user_reports_status ON user_reports(status);
+CREATE INDEX idx_user_reports_created_at ON user_reports(created_at);
 
 
 -- ==========================================
