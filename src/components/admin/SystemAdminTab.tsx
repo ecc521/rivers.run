@@ -105,7 +105,12 @@ export default function SystemAdminTab() {
   );
 }
 
-function LogTable({ loading, data, columns, renderRow }: { loading: boolean, data: any[], columns: string[], renderRow: (item: any) => React.ReactNode }) {
+function LogTable({ loading, data, columns, renderRow }: { 
+  readonly loading: boolean;
+  readonly data: readonly any[];
+  readonly columns: readonly string[];
+  readonly renderRow: (item: any) => React.ReactNode;
+}) {
     if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading logs...</div>;
     if (!data || data.length === 0) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No logs recorded.</div>;
     

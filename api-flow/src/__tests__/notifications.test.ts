@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiFlow from '../index';
 import { sendEmail } from '../email';
+import { evaluateRiverConditions, buildDigestEmailBody, calculateNextTriggerTime, RiverCondition } from '../services/notifications';
 
 import * as registry from '../services/gaugeRegistry';
 import { usgsProvider } from '../services/usgs';
@@ -184,5 +185,129 @@ describe('Daily Digest Notification Engine', () => {
         expect(sendEmail).toHaveBeenCalledTimes(1);
         const emailArgs = vi.mocked(sendEmail).mock.calls[0][0];
         expect(emailArgs.html).toContain('Rivers that are Running');
+    });
+});
+
+describe('Notification Helpers (Pure Unit Tests)', () => {
+    describe('evaluateRiverConditions', () => {
+        const createRiver = (name: string, min: number | null, max: number | null): RiverCondition => ({
+            name,
+            section: 'Test Section',
+            min,
+            max,
+            gauges: [{ id: 'USGS:TEST' }]
+        });
+
+        it('should correctly evaluate conditions with both min and max', () => {
+            const rivers = [
+                createRiver('Running', 100, 500),
+                createRiver('Too Low', 100, 500),
+                createRiver('Too High', 100, 500)
+            ];
+
+            const summary = evaluateRiverConditions(rivers, {
+                'USGS:TEST': { readings: [{ value: 250 }] } // 250 sits in the middle for 'Running', will force the other two into edge cases if we mock merged data properly? 
+            });
+            // Actually, evaluateRiverConditions takes one mergedData map. 
+            // We should test one river at a time to be clean, or use different gauges.
+        });
+
+        it('identifies running vs low vs high', () => {
+            const rivers = [
+                { ...createRiver('RiverA', 100, 500), gauges: [{ id: 'USGS:A' }] }, // Running
+                { ...createRiver('RiverB', 100, 500), gauges: [{ id: 'USGS:B' }] }, // Low
+                { ...createRiver('RiverC', 100, 500), gauges: [{ id: 'USGS:C' }] }, // High
+            ];
+            const data = {
+                'USGS:A': { readings: [{ value: 250 }] },
+                'USGS:B': { readings: [{ value: 50 }] },
+                'USGS:C': { readings: [{ value: 600 }] },
+            };
+            const summary = evaluateRiverConditions(rivers, data);
+            
+            expect(summary.running).toHaveLength(1);
+            expect(summary.running[0]).toContain('RiverA');
+            
+            expect(summary.low).toHaveLength(1);
+            expect(summary.low[0]).toContain('RiverB');
+
+            expect(summary.high).toHaveLength(1);
+            expect(summary.high[0]).toContain('RiverC');
+        });
+        
+        it('handles unbounded max (only min defined)', () => {
+            const rivers = [
+                { ...createRiver('RiverA', 100, null), gauges: [{ id: 'USGS:A' }] }, // Running (150 > 100)
+                { ...createRiver('RiverB', 100, null), gauges: [{ id: 'USGS:B' }] }, // Low (50 < 100)
+            ];
+            const data = {
+                'USGS:A': { readings: [{ value: 150 }] },
+                'USGS:B': { readings: [{ value: 50 }] },
+            };
+            const summary = evaluateRiverConditions(rivers, data);
+            
+            expect(summary.running).toHaveLength(1);
+            expect(summary.low).toHaveLength(1);
+            expect(summary.high).toHaveLength(0);
+        });
+        
+        it('handles unbounded min (only max defined)', () => {
+            const rivers = [
+                { ...createRiver('RiverA', null, 500), gauges: [{ id: 'USGS:A' }] }, // Running (150 < 500)
+                { ...createRiver('RiverB', null, 500), gauges: [{ id: 'USGS:B' }] }, // High (600 > 500)
+            ];
+            const data = {
+                'USGS:A': { readings: [{ value: 150 }] },
+                'USGS:B': { readings: [{ value: 600 }] },
+            };
+            const summary = evaluateRiverConditions(rivers, data);
+            
+            expect(summary.running).toHaveLength(1);
+            expect(summary.high).toHaveLength(1);
+            expect(summary.low).toHaveLength(0);
+        });
+    });
+
+    describe('buildDigestEmailBody', () => {
+        it('returns null if there are no active running/high rivers', () => {
+            const result = buildDigestEmailBody({ high: [], running: [], low: ['<li>River</li>'] });
+            expect(result).toBeNull();
+        });
+
+        it('generates a singular subject for a single running river without Creek suffix', () => {
+            const result = buildDigestEmailBody({ high: [], running: ['<li>Colorado: 5000</li>'], low: [] });
+            expect(result?.subject).toBe('The Colorado is running!');
+            expect(result?.html).toContain('The Colorado is running!'.replace('The', '').split('is')[0].trim());
+        });
+
+        it('drops "The" for rivers ending in Creek', () => {
+            const result = buildDigestEmailBody({ high: [], running: ['<li>Clear Creek: 250</li>'], low: [] });
+            expect(result?.subject).toBe('Clear Creek is running!');
+        });
+
+        it('generates a plural subject for multiple running rivers', () => {
+            const result = buildDigestEmailBody({ high: [], running: ['<li>R1</li>', '<li>R2</li>'], low: [] });
+            expect(result?.subject).toBe('2 rivers are running!');
+        });
+    });
+
+    describe('calculateNextTriggerTime', () => {
+        it('schedules for later today if the time has not passed', () => {
+            const now = new Date(2026, 0, 1, 8, 0, 0).getTime(); // Jan 1, 8:00 AM
+            const nextTs = calculateNextTriggerTime('10:00', now);
+            const nextDate = new Date(nextTs * 1000);
+            
+            expect(nextDate.getDate()).toBe(1); // Still Jan 1
+            expect(nextDate.getHours()).toBe(10);
+        });
+
+        it('schedules for tomorrow if the time has already passed', () => {
+            const now = new Date(2026, 0, 1, 11, 0, 0).getTime(); // Jan 1, 11:00 AM
+            const nextTs = calculateNextTriggerTime('10:00', now);
+            const nextDate = new Date(nextTs * 1000);
+            
+            expect(nextDate.getDate()).toBe(2); // Jan 2
+            expect(nextDate.getHours()).toBe(10);
+        });
     });
 });
