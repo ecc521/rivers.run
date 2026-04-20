@@ -34,34 +34,45 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    /* Android - Mobile Chrome */
+    /* iOS - iPhone 6.9" (iPhone 16 Pro Max) */
     {
-      name: 'Android Portrait',
+      name: 'iPhone 6.9-inch',
+      use: { 
+        ...devices['iPhone 14 Pro Max'], 
+        viewport: { width: 440, height: 956 }, // Roughly 1320x2868 @ 3x
+        deviceScaleFactor: 3,
+      },
+    },
+    /* iOS - iPhone 6.7" (iPhone 15 Pro Max) */
+    {
+      name: 'iPhone 6.7-inch',
+      use: { ...devices['iPhone 14 Pro Max'] },
+    },
+    /* iOS - iPhone 5.5" (iPhone 8 Plus) */
+    {
+      name: 'iPhone 5.5-inch',
+      use: { ...devices['iPhone 8 Plus'] },
+    },
+    /* iOS - iPad 13" */
+    {
+      name: 'iPad 13-inch',
+      use: { ...devices['iPad Pro 11'] }, 
+    },
+
+    /* Android - Phone */
+    {
+      name: 'Android Phone',
       use: { ...devices['Pixel 7'] },
     },
+    /* Android - 7" Tablet */
     {
-      name: 'Android Landscape',
-      use: { ...devices['Pixel 7 landscape'] },
+      name: 'Android 7-inch Tablet',
+      use: { ...devices['Galaxy Tab S4'] },
     },
-
-    /* iOS - Mobile Safari */
+    /* Android - 10" Tablet */
     {
-      name: 'iOS Portrait',
-      use: { ...devices['iPhone 14'] },
-    },
-    {
-      name: 'iOS Landscape',
-      use: { ...devices['iPhone 14 landscape'] },
-    },
-
-    /* iPad - Tablet View (Shared Map Sidebar) */
-    {
-      name: 'iPad Portrait',
-      use: { ...devices['iPad Pro 11'] },
-    },
-    {
-      name: 'iPad Landscape',
-      use: { ...devices['iPad Pro 11 landscape'] },
+      name: 'Android 10-inch Tablet',
+      use: { ...devices['Galaxy Tab S4'], viewport: { width: 800, height: 1280 } },
     },
   ],
 
