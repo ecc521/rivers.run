@@ -16,8 +16,7 @@ describe("formatGaugeName", () => {
     });
 
     it("should preserve standard acronyms and Roman numerals", () => {
-        expect(formatGaugeName("SOUTH FORK NEW RIVER NO I")).toEqual({ name: "South Fork New River No I" });
-        expect(formatGaugeName("USGS GAUGE ON THE RIVER")).toEqual({ name: "USGS Gauge on the River" });
+        expect(formatGaugeName("USGS GS ON THE RIVER")).toEqual({ name: "USGS GS on the River" });
         expect(formatGaugeName("TVA DAM BELOW NWS STATION III")).toEqual({ name: "TVA Dam", section: "Below NWS Station III" });
     });
 
@@ -30,15 +29,61 @@ describe("formatGaugeName", () => {
     });
 
     it("should expand cardinal directions and forks", () => {
-        expect(formatGaugeName("S FORK NEW RIVER")).toEqual({ name: "South Fork New River" });
-        expect(formatGaugeName("NF DEEP RIVER")).toEqual({ name: "North Fork Deep River" });
-        expect(formatGaugeName("EF POTOMAC RIVER")).toEqual({ name: "East Fork Potomac River" });
+        expect(formatGaugeName("S FORK NEW RIVER")).toEqual({ name: "S Fork New River" });
+        expect(formatGaugeName("NF DEEP RIVER")).toEqual({ name: "N Fork Deep River" });
+        expect(formatGaugeName("EF POTOMAC RIVER")).toEqual({ name: "E Fork Potomac River" });
     });
 
-    it("should handle N.F. style abbreviations gracefully", () => {
-        // Current behavior will expand N to North and F to Fork and leave the dots
-        expect(formatGaugeName("N.F. CLEARWATER RIVER")).toEqual({ name: "North.Fork. Clearwater River" });
-        expect(formatGaugeName("S. FORK COAL RIVER AT ASHFORD, WV")).toEqual({ name: "South. Fork Coal River", section: "At Ashford, WV" });
+    it("should handle N.F. style abbreviations by expanding waterbody but not direction", () => {
+        expect(formatGaugeName("N.F. CLEARWATER RIVER")).toEqual({ name: "N Fork Clearwater River" });
+        expect(formatGaugeName("S. FORK COAL RIVER AT ASHFORD, WV")).toEqual({ name: "S Fork Coal River", section: "At Ashford, WV" });
+        expect(formatGaugeName("N. F. CLEARWATER")).toEqual({ name: "N Fork Clearwater" });
+        expect(formatGaugeName("ST. CROIX RIVER")).toEqual({ name: "St. Croix River" });
+        expect(formatGaugeName("RD. 100")).toEqual({ name: "Rd. 100" });
+        expect(formatGaugeName("ST. JOHNS RIVER")).toEqual({ name: "St. Johns River" });
+    });
+
+    it("should protect the U.S. acronym and handle US without dots", () => {
+        expect(formatGaugeName("U.S. GAUGE")).toEqual({ name: "U.S. Gauge" });
+        expect(formatGaugeName("US GAUGE")).toEqual({ name: "US Gauge" });
+        expect(formatGaugeName("USGS GAUGE")).toEqual({ name: "USGS Gauge" });
+        expect(formatGaugeName("AT U.S. HWY 1")).toEqual({ name: "At U.S. HWY 1" });
+    });
+
+    it("should not swallow dots in decimal numbers", () => {
+        expect(formatGaugeName("RIVER 1.5 MI ABOVE DAM")).toEqual({ name: "River 1.5 mi", section: "Above Dam" });
+        expect(formatGaugeName("RIVER AT 0.5 MI")).toEqual({ name: "River", section: "At 0.5 MI" });
+    });
+
+    it("should handle multiple single-letter expansions correctly", () => {
+        expect(formatGaugeName("N.F.N.F. POTOMAC")).toEqual({ name: "N Fork N Fork Potomac" });
+        expect(formatGaugeName("S.F. POTOMAC")).toEqual({ name: "S Fork Potomac" });
+        expect(formatGaugeName("W.F. POTOMAC")).toEqual({ name: "W Fork Potomac" });
+        expect(formatGaugeName("E.F. POTOMAC")).toEqual({ name: "E Fork Potomac" });
+        expect(formatGaugeName("YADKIN R BL W KERR SCOTT DAM")).toEqual({ name: "Yadkin River", section: "Below W Kerr Scott Dam" });
+    });
+
+    it("should handle Mouth, Below, and Downstream expansions", () => {
+        expect(formatGaugeName("ROCKY R B MTH OF S PRONG")).toEqual({ name: "Rocky River", section: "Below Mouth of S Prong" });
+        expect(formatGaugeName("RIVER DS DAM")).toEqual({ name: "River", section: "Downstream Dam" });
+    });
+
+    it("should handle contextual US (Upstream) vs US (Acronym)", () => {
+        expect(formatGaugeName("RIVER 0.5 MI US OF DAM")).toEqual({ name: "River", section: "0.5 mi Upstream of Dam" });
+        expect(formatGaugeName("AT US HWY 1")).toEqual({ name: "At US HWY 1" });
+        expect(formatGaugeName("US GAUGE")).toEqual({ name: "US Gauge" });
+    });
+
+    it("should handle slashed abbreviations U/S and D/S", () => {
+        expect(formatGaugeName("RIVER U/S DAM")).toEqual({ name: "River", section: "Upstream Dam" });
+        expect(formatGaugeName("RIVER D/S DAM")).toEqual({ name: "River", section: "Downstream Dam" });
+    });
+
+    it("should handle road types as title-case (not expanded) per user preference", () => {
+        expect(formatGaugeName("RD 100")).toEqual({ name: "Rd 100" });
+        expect(formatGaugeName("ST. JOHNS RIVER")).toEqual({ name: "St. Johns River" });
+        expect(formatGaugeName("HWY 64")).toEqual({ name: "HWY 64" });
+        expect(formatGaugeName("NC SR 1001")).toEqual({ name: "NC SR 1001" });
     });
 
     it("should NOT expand nor anymore (should be title case)", () => {
@@ -80,7 +125,7 @@ describe("formatGaugeName", () => {
     it("should split at the first comma if it follows a river descriptor", () => {
         const result = formatGaugeName("SWEETWATER CREEK, BROWNSVILLE RD, GA");
         expect(result.name).toBe("Sweetwater Creek");
-        expect(result.section).toBe(", Brownsville Road, GA");
+        expect(result.section).toBe(", Brownsville Rd, GA");
     });
 
     it("should handle 'South F' and similar Fork abbreviations separately from directions", () => {
@@ -92,9 +137,9 @@ describe("formatGaugeName", () => {
         expect(nf.name).toBe("North Fork South Branch Potomac River");
 
         const sf_spaced = formatGaugeName("S F SOUTH BRANCH POTOMAC RIVER NEAR MOOREFIELD, WV");
-        expect(sf_spaced.name).toBe("South Fork South Branch Potomac River");
+        expect(sf_spaced.name).toBe("S Fork South Branch Potomac River");
 
         const nf_spaced = formatGaugeName("N F SOUTH BRANCH POTOMAC RIVER NEAR MOOREFIELD, WV");
-        expect(nf_spaced.name).toBe("North Fork South Branch Potomac River");
+        expect(nf_spaced.name).toBe("N Fork South Branch Potomac River");
     });
 });

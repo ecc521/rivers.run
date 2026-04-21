@@ -10,7 +10,7 @@ import { useRivers } from "../hooks/useRivers";
 import { useLocation } from "../hooks/useLocation";
 import { WeatherRadarLayer } from "./WeatherRadarLayer";
 import { RiverExpansion } from "./RiverExpansion";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation as useRouterLocation } from "react-router-dom";
 import { filterRivers, defaultAdvancedSearchQuery } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useModal } from "../context/ModalContext";
@@ -24,6 +24,65 @@ import { ShareMapModal } from "./ShareMapModal";
 import { Circle } from "react-leaflet";
 import { Capacitor } from '@capacitor/core';
 import { SystemBars } from '@capacitor/core';
+
+export const formatAccessName = (point: any) => {
+    if (!point) return "Access";
+    
+    // Default type labels based on the access point type
+    const getTypeLabel = (type?: string) => {
+        if (type === "put-in") return "Put-In";
+        if (type === "take-out") return "Take-Out";
+        return "Access";
+    };
+
+    const typeLabel = getTypeLabel(point.type);
+    const name = point.name?.trim();
+
+    // If there is no custom name, just return the type label
+    if (!name) return typeLabel;
+
+    // Normalize for case-insensitive comparison (ignore spaces, dashes, etc.)
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
+
+    if (normalize(name) === normalize(typeLabel)) {
+        // The name is effectively the same as the type (e.g. "Take-out" == "Take-Out"), just return the properly cased type label
+        return typeLabel;
+    }
+
+    // Otherwise, prepend the type label
+    return `${typeLabel}: ${name}`;
+};
+
+const PopupEventManager = ({ isHoverMode, onEnter, onLeave, children }: { isHoverMode: boolean, onEnter: () => void, onLeave: () => void, children: React.ReactNode }) => {
+    const ref = React.useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!isHoverMode || !ref.current) return;
+        // Listen directly on the parent Leaflet container to eliminate any padding dead zones
+        const popupContainer = ref.current.closest(".leaflet-popup");
+        if (popupContainer) {
+            // Fix Leaflet's massive transparent bounding box issue by pushing interactivity down
+            // to the visible sub-components. This prevents popups from silently swallowing 
+            // interactions for the map canvas directly underneath them!
+            (popupContainer as HTMLElement).style.pointerEvents = "none";
+            const wrapper = popupContainer.querySelector('.leaflet-popup-content-wrapper') as HTMLElement;
+            if (wrapper) wrapper.style.pointerEvents = "auto";
+            const tip = popupContainer.querySelector('.leaflet-popup-tip') as HTMLElement;
+            if (tip) tip.style.pointerEvents = "auto";
+
+            popupContainer.addEventListener("mouseenter", onEnter);
+            popupContainer.addEventListener("mouseleave", onLeave);
+            return () => {
+                popupContainer.removeEventListener("mouseenter", onEnter);
+                popupContainer.removeEventListener("mouseleave", onLeave);
+                // Reset styles on teardown just in case Leaflet recycles DOM nodes internally
+                (popupContainer as HTMLElement).style.pointerEvents = "";
+                if (wrapper) wrapper.style.pointerEvents = "";
+                if (tip) tip.style.pointerEvents = "";
+            };
+        }
+    }, [isHoverMode, onEnter, onLeave]);
+    return <div ref={ref} style={{ textAlign: "center", fontSize: "1.1em" }}>{children}</div>;
+};
 
 const MapStateObserver = ({ setCenter, setZoom }: { setCenter: any, setZoom: any }) => {
     const map = useMap();
@@ -89,16 +148,46 @@ if (typeof window !== "undefined" && L && L.CircleMarker) {
         (L.CircleMarker.prototype as any)._containsPoint = function(p: any) {
             // Apply 15px universal "fat-finger" padding explicitly to counteract
             // the loss of native OS DOM-element touch heuristics on WebGL canvas bounds.
-            const fatFingerPadding = 15;
+            let fatFingerPadding = 15;
             
+            // Prevent massive hitboxes from overlapping adjacent clustered markers on desktop
+            // by disabling artificial fat-finger expansion during precise mouse hover events.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const globalWin = window as any;
+            if (typeof window !== "undefined" && globalWin.event) {
+                const e = globalWin.event;
+                if (e.type === 'mousemove' || e.pointerType === 'mouse') {
+                    fatFingerPadding = 0;
+                }
+            }
+
             if (this.options.img) {
                 const x = this._point.x;
                 const y = this._point.y;
                 const tol = this._clickTolerance() + fatFingerPadding;
-                // True geographic point is at tip (14, 38)
-                // Map the theoretical rect bounds to check for hover/click 
-                return p.x >= x - 14 - tol && p.x <= x + 14 + tol &&
-                       p.y >= y - 38 - tol && p.y <= y + 2 + tol;
+                
+                // 1. Check if inside the top circular bulb of the pin
+                // Our SVG circle is radius 12 at [14, 14], with a 1.5px stroke
+                const cy = y - 24; // Center Y relative to the bottom tip
+                const dx = p.x - x;
+                const dy = p.y - cy;
+                const distToCenter = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distToCenter <= 13.5 + tol) {
+                    return true;
+                }
+                
+                // 2. Check if inside the triangular tail of the pin
+                // Tail linearly tapers from full width at cy down to a point at y
+                if (p.y > cy && p.y <= y + tol) {
+                    const taperRatio = Math.max(0, (y - p.y) / 24);
+                    const halfWidth = 12 * taperRatio + 1.5; // + stroke
+                    if (Math.abs(dx) <= halfWidth + tol) {
+                        return true;
+                    }
+                }
+                
+                return false;
             } else {
                 // Native leaflet distance calculation with our injected padding
                 const tol = this._clickTolerance() + fatFingerPadding;
@@ -163,11 +252,15 @@ const getCachedCanvasImage = (letter: string, fillColor: string, opacity: number
 const MapMarkers = React.memo(({ 
     markers, 
     handleMarkerClick, 
+    handleMarkerMouseOver,
+    handleMarkerMouseOut,
     isDarkMode, 
     isColorBlindMode 
 }: { 
     markers: any[], 
     handleMarkerClick: (river: RiverData, point: any, lat: number, lon: number) => void,
+    handleMarkerMouseOver: (river: RiverData, point: any, lat: number, lon: number) => void,
+    handleMarkerMouseOut: () => void,
     isDarkMode: boolean, 
     isColorBlindMode: boolean 
 }) => {
@@ -195,30 +288,8 @@ const MapMarkers = React.memo(({
     const onEachFeature = (feature: any, layer: any) => {
         const pt = feature.properties;
         layer.on('click', () => handleMarkerClick(pt.river, pt.point, pt.point.lat, pt.point.lon));
-
-        const getAccessLabel = (pt: any) => {
-            if (pt.type === "put-in") return "Put-In";
-            if (pt.type === "take-out") return "Take-Out";
-            return "Access";
-        };
-
-        const typeLabel = getAccessLabel(pt.point);
-        let accessName = pt.point?.name || typeLabel;
-        if (accessName !== typeLabel && !accessName.startsWith(`${typeLabel}:`)) {
-            accessName = `${typeLabel}: ${accessName}`;
-        }
-
-        const sectionHtml = pt.river.section ? `(${pt.river.section})` : "";
-        const flowHtml = pt.river.flowInfo ? `<span>${pt.river.flowInfo}</span>` : "";
-        
-        layer.bindTooltip(`
-            <div style="font-family: sans-serif;">
-                <strong>${accessName}</strong><br/>
-                ${pt.river.name} ${sectionHtml}<br/>
-                ${flowHtml}
-                <div style="font-size: 0.85em; color: #6b7280; margin-top: 4px;">(Click marker for more info)</div>
-            </div>
-        `, { direction: 'auto' });
+        layer.on('mouseover', () => handleMarkerMouseOver(pt.river, pt.point, pt.point.lat, pt.point.lon));
+        layer.on('mouseout', () => handleMarkerMouseOut());
     };
 
     const pointToLayer = (feature: any, latlng: any) => {
@@ -250,18 +321,6 @@ const MapMarkers = React.memo(({
                 const fillColor = colorStr || unknownColor;
                 const opacity = 0.9;
                 
-                const getAccessLabel = (pt: any) => {
-                    if (pt?.type === "put-in") return "Put-In";
-                    if (pt?.type === "take-out") return "Take-Out";
-                    return "Access";
-                };
-
-                const typeLabel = getAccessLabel(pt.point);
-                let accessName = pt.point?.name || typeLabel;
-                if (accessName !== typeLabel && !accessName.startsWith(`${typeLabel}:`)) {
-                    accessName = `${typeLabel}: ${accessName}`;
-                }
-
                 const getAccessLetter = (pt: any) => {
                     if (pt?.type === "put-in") return "P";
                     if (pt?.type === "take-out") return "T";
@@ -282,15 +341,11 @@ const MapMarkers = React.memo(({
                             fill: false
                         } as any}
                         eventHandlers={{
-                            click: () => handleMarkerClick(pt.river, pt.point, pt.lat, pt.lon)
+                            click: () => handleMarkerClick(pt.river, pt.point, pt.lat, pt.lon),
+                            mouseover: () => handleMarkerMouseOver(pt.river, pt.point, pt.lat, pt.lon),
+                            mouseout: () => handleMarkerMouseOut()
                         }}
                     >
-                       <Tooltip offset={[0, -38]} direction="top">
-                          <strong>{accessName}</strong><br/>
-                          {pt.river.name} {pt.river.section ? `(${pt.river.section})` : ""}<br/>
-                          {pt.river.flowInfo ? <span>{pt.river.flowInfo}</span> : null}
-                          <div style={{ fontSize: "0.85em", color: "var(--text-muted, #6b7280)", marginTop: "4px" }}>(Click marker for more info)</div>
-                       </Tooltip>
                     </CircleMarker>
                 );
             })}
@@ -300,19 +355,30 @@ const MapMarkers = React.memo(({
 
 const MapFocusController = ({ focusRiver }: { focusRiver?: RiverData }) => {
     const map = useMap();
+    const mapLocation = useRouterLocation();
+
     useEffect(() => {
         if (focusRiver && focusRiver.accessPoints && focusRiver.accessPoints.length > 0) {
+            
+            // If the user explicitly clicked a map pin (e.g. takeout) to navigate to this river...
+            // Do NOT aggressively override them and snap the map to the put-in!
+            // MapContainer's initialCenter array handles the correct positioning.
+            const routeState = mapLocation.state as { clickedLat?: number, clickedLon?: number } | undefined;
+            if (routeState && routeState.clickedLat && routeState.clickedLon) {
+                return;
+            }
+
             const pt = focusRiver.accessPoints[0];
             if (pt.lat && pt.lon) {
                 // Smoothly pan without remounting the entire MapContainer!
                 try {
-                    map.flyTo([pt.lat, pt.lon], 12, { duration: 0.5 });
+                    map.flyTo([pt.lat, pt.lon], map.getZoom(), { duration: 0.5 });
                 } catch (err) {
                     console.warn("Leaflet flyTo safely caught during transition", err);
                 }
             }
         }
-    }, [focusRiver?.id, map]);
+    }, [focusRiver?.id, map, mapLocation.state]);
     return null;
 };
 
@@ -341,6 +407,17 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const [selectedRiver, setSelectedRiver] = useState<RiverData | null>(null);
     const [selectedAccessPoint, setSelectedAccessPoint] = useState<any>(null);
     const [activePopupData, setActivePopupData] = useState<{ river: RiverData, point: any, lat: number, lon: number } | null>(null);
+    const [hoverPopupData, setHoverPopupData] = useState<{ river: RiverData, point: any, lat: number, lon: number } | null>(null);
+    
+    // Memoize the popup position to prevent react-leaflet from thrashing setLatLng on every render
+    const popupPosition = useMemo(
+        () => {
+            const current = activePopupData || hoverPopupData;
+            return current ? [current.lat, current.lon] as [number, number] : undefined;
+        },
+        [activePopupData, hoverPopupData]
+    );
+
     const [radarMode, setRadarMode] = useState<"off" | "live" | "60min">("off");
     const [copiedRiverId, setCopiedRiverId] = useState<string | null>(null);
 
@@ -374,11 +451,38 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             setSelectedAccessPoint(point);
         } else {
             if (river.id !== focusRiverRef.current.id) {
-                navigate(`/river/${river.id}`, { replace: true });
+                navigate(`/river/${river.id}`, { replace: true, state: { clickedLat: lat, clickedLon: lon } });
             }
             setActivePopupData({ river, point, lat, lon });
         }
     }, [navigate]);
+
+    const hoverTimeoutRef = React.useRef<any>(null);
+
+    const handleStableMarkerMouseOver = React.useCallback((river: RiverData, point: any, lat: number, lon: number) => {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        if (!activePopupData) {
+            setHoverPopupData({ river, point, lat, lon });
+        }
+    }, [activePopupData]);
+
+    const handleStableMarkerMouseOut = React.useCallback(() => {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = setTimeout(() => {
+            setHoverPopupData(null);
+        }, 100);
+    }, []);
+
+    const handlePopupMouseEnter = React.useCallback(() => {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    }, []);
+
+    const handlePopupMouseLeave = React.useCallback(() => {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = setTimeout(() => {
+            setHoverPopupData(null);
+        }, 100);
+    }, []);
     const handleShare = async (e: React.MouseEvent, river: RiverData) => {
         e.preventDefault();
         const url = getRiverShareUrl(river);
@@ -475,7 +579,12 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     }, [rivers, searchParams]);
 
 
-    const mapContainerRef = React.useRef<HTMLDivElement>(null);
+    const [portalTargetNode, setPortalTargetNode] = useState<HTMLDivElement | null>(null);
+    const mapContainerRef = React.useRef<HTMLDivElement | null>(null);
+    const mapContainerCallbackRef = React.useCallback((node: HTMLDivElement | null) => {
+        mapContainerRef.current = node;
+        setPortalTargetNode(node);
+    }, []);
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -592,7 +701,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     // Using true HTML5 Native Fullscreen where supported! 
     return (
         <div 
-            ref={mapContainerRef}
+            ref={mapContainerCallbackRef}
             className={isFullScreen ? "map-fullscreen-container" : ""}
             style={{ 
                 height: isFullScreen ? "100vh" : height, 
@@ -687,6 +796,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 query={searchQuery} 
                 setQuery={setSearchQuery} 
                 isMapMode={true}
+                portalTarget={portalTargetNode}
             />
 
             <ShareMapModal 
@@ -695,6 +805,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 currentQuery={searchQuery}
                 mapCenter={mapCenter}
                 mapZoom={mapZoom}
+                portalTarget={portalTargetNode}
             />
 
             {/* Radar Controls */}
@@ -751,52 +862,78 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 <MapMarkers 
                     markers={globalMarkers}
                     handleMarkerClick={handleStableMarkerClick}
+                    handleMarkerMouseOver={handleStableMarkerMouseOver}
+                    handleMarkerMouseOut={handleStableMarkerMouseOut}
                     isDarkMode={isDarkMode}
                     isColorBlindMode={isColorBlindMode}
                 />
 
                 {/* Mini-Map specific contextual Popup */}
-                {activePopupData && (
-                    <Popup 
-                        position={[activePopupData.lat, activePopupData.lon]} 
-                        eventHandlers={{
-                            remove: () => setActivePopupData(null)
-                        }}
-                        offset={[0, -20]}
-                    >
-                        <div style={{ textAlign: "center", fontSize: "1.1em" }}>
-                            <strong>{activePopupData.point?.name || (activePopupData.point?.type === "put-in" ? "Put-In" : "Take-Out")}</strong>
-                            <br />
-                            <a 
-                                href={`https://www.google.com/maps/dir/?api=1&destination=${activePopupData.lat},${activePopupData.lon}`} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                style={{ display: "inline-block", marginTop: "8px", fontWeight: "bold" }}
-                            >
-                                Open in Google Maps
-                            </a>
-                            <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
-                            <button 
-                                onClick={(e) => handleShare(e, activePopupData.river)}
-                                style={{ 
-                                    display: "inline-block", 
-                                    marginTop: "8px", 
-                                    fontWeight: "bold", 
-                                    background: "none", 
-                                    border: "none", 
-                                    color: "var(--primary)", 
-                                    cursor: "pointer",
-                                    padding: 0,
-                                    fontSize: "inherit"
-                                }}
-                            >
-                                {copiedRiverId === activePopupData.river.id ? "Copied!" : "Share River"}
-                            </button>
+                {popupPosition && (activePopupData || hoverPopupData) && (() => {
+                    const thePopupData = activePopupData || hoverPopupData;
+                    const isHoverMode = !activePopupData && !!hoverPopupData;
+                    
+                    const accessName = formatAccessName(thePopupData!.point);
 
+                    return (
+                        <Popup 
+                            position={popupPosition} 
+                            eventHandlers={{
+                                remove: () => {
+                                    setActivePopupData(null);
+                                    setHoverPopupData(null);
+                                }
+                            }}
+                            // Dynamically pull the popup down so the arrow physically touches the circles
+                            // Gauges have ~6.75px radius, Rivers have 14px radius
+                            offset={[0, thePopupData!.river.isGauge ? -6 : -13]}
+                            autoPan={!isHoverMode}
+                        >
+                            <PopupEventManager 
+                                isHoverMode={isHoverMode}
+                                onEnter={handlePopupMouseEnter}
+                                onLeave={handlePopupMouseLeave}
+                            >
+                                <strong>{accessName}</strong>
+                                <br />
+                                {thePopupData!.river.name} {thePopupData!.river.section ? `(${thePopupData!.river.section})` : ""}<br/>
+                                {thePopupData!.river.flowInfo ? <span>{thePopupData!.river.flowInfo}</span> : null}
 
-                        </div>
-                    </Popup>
-                )}
+                                
+                                <div style={{ marginTop: "8px" }}>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleStableMarkerClick(thePopupData!.river, thePopupData!.point, thePopupData!.lat, thePopupData!.lon);
+                                        }}
+                                        style={{ 
+                                            display: "inline-block", 
+                                            fontWeight: "bold", 
+                                            background: "none", 
+                                            border: "none", 
+                                            color: "var(--primary)", 
+                                            cursor: "pointer",
+                                            padding: 0,
+                                            fontSize: "inherit"
+                                        }}
+                                    >
+                                        View River Details
+                                    </button>
+                                    <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
+                                    <a 
+                                        href={`https://www.google.com/maps/dir/?api=1&destination=${thePopupData!.lat},${thePopupData!.lon}`} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        style={{ display: "inline-block", fontWeight: "bold" }}
+                                    >
+                                        Google Maps <span style={{ fontSize: "0.8em" }}>↗</span>
+                                    </a>
+                                </div>
+                            </PopupEventManager>
+                        </Popup>
+                    );
+                })()}
 
 
 
@@ -862,42 +999,57 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                             backgroundColor: "var(--surface)",
                             borderBottom: "1px solid var(--border)",
                             zIndex: 10,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
                         }}
                     >
-                        <h2 style={{ margin: 0, color: "var(--text)" }}>
+                        <div style={{ position: "absolute", top: "12px", right: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                            <button
+                                onClick={(e) => handleReport(e, selectedRiver)}
+                                style={{
+                                    border: "1px solid var(--border)",
+                                    background: "var(--surface)",
+                                    padding: "4px 10px",
+                                    borderRadius: "6px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "bold",
+                                    cursor: "pointer",
+                                    color: "var(--text-muted)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    opacity: 0.8
+                                }}
+                            >
+                                🚩 Report
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setSelectedRiver(null);
+                                    setSelectedAccessPoint(null);
+                                }}
+                                style={{
+                                    border: "none",
+                                    background: "transparent",
+                                    fontSize: "2em",
+                                    cursor: "pointer",
+                                    color: "var(--text-muted)",
+                                    lineHeight: 1,
+                                    padding: "0 4px"
+                                }}
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <h2 style={{ margin: 0, color: "var(--text)", paddingRight: "110px", width: "100%" }}>
                             {selectedAccessPoint && selectedAccessPoint.name && (
                                 <span style={{ display: "block", fontSize: "0.85em", color: "var(--primary)", marginBottom: "4px" }}>
-                                    {(() => {
-                                        if (selectedAccessPoint.type === 'put-in') return 'Put-In: ';
-                                        if (selectedAccessPoint.type === 'take-out') return 'Take-Out: ';
-                                        return 'Access: ';
-                                    })()}
-                                    {selectedAccessPoint.name}
+                                    {formatAccessName(selectedAccessPoint)}
                                 </span>
                             )}
 
                             {selectedRiver.name}{" "}
                             {selectedRiver.section ? `(${selectedRiver.section})` : ""}
                         </h2>
-                        <button
-                            onClick={() => {
-                                setSelectedRiver(null);
-                                setSelectedAccessPoint(null);
-                            }}
-                            style={{
-                                border: "none",
-                                background: "transparent",
-                                fontSize: "2em",
-                                cursor: "pointer",
-                                color: "var(--text-muted)",
-                                lineHeight: 1,
-                            }}
-                        >
-                            &times;
-                        </button>
                     </div>
                     
                     <div style={{ padding: "0 20px 20px 20px", color: "var(--text-secondary)" }}>
@@ -950,23 +1102,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                         </a>
                                     )}
 
-                                    <button 
-                                        onClick={(e) => handleReport(e, selectedRiver)}
-                                        style={{ 
-                                            display: "inline-block", 
-                                            backgroundColor: "transparent", 
-                                            color: "var(--text-muted)", 
-                                            border: "1px solid var(--border)", 
-                                            padding: "7px 12px", 
-                                            borderRadius: "8px", 
-                                            fontWeight: "bold", 
-                                            marginLeft: "10px", 
-                                            cursor: "pointer",
-                                            fontSize: "0.9rem"
-                                        }}
-                                    >
-                                        🚩 Report
-                                    </button>
+
 
 
                                 </div>

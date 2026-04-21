@@ -1,7 +1,7 @@
 html, body {
     margin:0;
     box-sizing: border-box;
-    background-color:#dffaff;
+    background-color: #eaf1f8; /* Soft slate/sky blue to avoid harsh whites */
     min-height: 100dvh;
     max-width: 100vw;
     overflow-x: clip;
@@ -324,7 +324,7 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
     padding: 15px 20px 5px 20px;
     position: relative;
     user-select: none;
-    background-color: #dffaff; /* Match overall header bg */
+    background-color: #eaf1f8; /* Match overall header bg */
 }
 
 .breadcrumb-path {
@@ -443,7 +443,7 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 	position: sticky;
 	top: 0;
 	color: black;
-	background-color: #dffaff;
+	background-color: #eaf1f8;
 	width: 100%;
 	font-size: calc(var(--defaultFontSize) * 1.15);
 	line-height: calc(var(--defaultFontSize) * 1.55);
@@ -796,6 +796,35 @@ Those include name,section,skill,quality, and flow info*/
 .gaugesBelow {
 	text-align: center !important;
 	background-color: #e06af4 !important; /*A lightish purple.*/
+}
+
+/* River Page Layout */
+.river-page-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.river-page-card {
+    background-color: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+/* On mobile, remove outer padding and card borders to maximize screen real estate */
+@media screen and (max-width: 600px) {
+    .river-page-container {
+        padding: 0;
+    }
+    
+    .river-page-card {
+        border-radius: 0;
+        box-shadow: none;
+        border-bottom: 15px solid #eaf1f8; /* Maintain visual separation under the card using the background color */
+        margin-bottom: 0;
+    }
 }
 
 .mapButton {

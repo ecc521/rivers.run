@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useRivers } from "../hooks/useRivers";
 import { RiverExpansion } from "../components/RiverExpansion";
 import { useSEO } from "../hooks/useSEO";
@@ -17,6 +17,7 @@ import { Capacitor } from "@capacitor/core";
 const RiverPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const routeLocation = useLocation();
   const { rivers, loading, error, dataGeneratedAt } = useRivers();
 
 
@@ -139,27 +140,42 @@ const RiverPage: React.FC = () => {
   };
 
   return (
-    <div className="page-content" style={{ maxWidth: "800px", margin: "0 auto", padding: "10px 20px" }}>
-      <button 
-        onClick={handleBack}
-        style={{
-           background: "none",
-           border: "none",
-           color: "var(--primary)",
-           cursor: "pointer",
-           fontWeight: "bold",
-           fontSize: "1.05rem",
-           padding: "0",
-           marginBottom: "20px",
-           display: "flex",
-           alignItems: "center",
-           gap: "5px"
-        }}
-      >
-         &#8592; {window.history.state && window.history.state.idx > 0 ? "Back to Results" : "See All Rivers"}
-      </button>
+    <div className="page-content river-page-container">
+      <div className="river-page-card">
+        <div style={{ 
+            position: "relative",
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            gap: "clamp(40px, 10vw, 120px)", 
+            flexWrap: "wrap", 
+            width: "100%",
+            boxSizing: "border-box",
+            padding: "50px 20px 20px 20px",
+            borderBottom: "1px solid var(--border)"
+        }}>
+        {/* Absolute-positioned Back Button */}
+        <button 
+          onClick={handleBack}
+          style={{
+             position: "absolute",
+             top: "16px",
+             left: "20px",
+             background: "none",
+             border: "none",
+             color: "var(--primary)",
+             cursor: "pointer",
+             fontWeight: "bold",
+             fontSize: "0.95rem",
+             padding: "0",
+             display: "flex",
+             alignItems: "center",
+             gap: "5px"
+          }}
+        >
+           &#8592; {window.history.state && window.history.state.idx > 0 ? "Back to Results" : "See All Rivers"}
+        </button>
 
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "clamp(40px, 10vw, 120px)", flexWrap: "wrap", marginBottom: "30px" }}>
         <div style={{ flex: "0 1 auto", minWidth: "200px", textAlign: "center" }}>
           <h1 style={{ margin: 0 }}>{river.name}</h1>
           <h2 style={{ marginTop: "5px", marginBottom: 0, color: "var(--text-muted)", fontWeight: "normal" }}>{river.section}</h2>
@@ -178,7 +194,7 @@ const RiverPage: React.FC = () => {
             onMouseOver={(e) => e.currentTarget.style.opacity = "1"}
             onMouseOut={(e) => e.currentTarget.style.opacity = "0.8"}
           >
-            Edit This River
+            Edit River
           </Link>
           <span style={{ margin: "0 8px", opacity: 0.3, fontSize: "0.85rem" }}>|</span>
           <button 
@@ -198,7 +214,7 @@ const RiverPage: React.FC = () => {
             onMouseOver={(e) => e.currentTarget.style.opacity = "1"}
             onMouseOut={(e) => e.currentTarget.style.opacity = "0.8"}
           >
-            {isCopied ? "Link Copied!" : "Share River"}
+            {isCopied ? "Link Copied!" : "Share"}
           </button>
 
           {river.aw && (
@@ -357,19 +373,25 @@ const RiverPage: React.FC = () => {
                 </div>
             </div>
         )}
-      </div>
-
-      {/* Wrapping the expansion in a styled container for professional typography padding */}
+        </div>
+      {/* Container for professional typography padding below header */}
       <div style={{
-          backgroundColor: "var(--surface)",
           padding: "20px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
           fontSize: "1.1rem",
           lineHeight: "1.6"
       }}>
-         <RiverExpansion river={displayRiver || river} dataGeneratedAt={dataGeneratedAt} onScrub={setScrubbedReading} />
+         <RiverExpansion 
+            river={displayRiver || river} 
+            dataGeneratedAt={dataGeneratedAt} 
+            onScrub={setScrubbedReading} 
+            clickedPoint={
+               routeLocation.state && (routeLocation.state as any).clickedLat 
+                  ? [(routeLocation.state as any).clickedLat, (routeLocation.state as any).clickedLon]
+                  : undefined
+            }
+         />
       </div>
+     </div>
     </div>
   );
 };

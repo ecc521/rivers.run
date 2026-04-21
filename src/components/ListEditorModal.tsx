@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLists, type UserList } from "../context/ListsContext";
 import { useRivers } from "../hooks/useRivers";
 import { useAuth } from "../context/AuthContext";
@@ -31,10 +31,18 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [saving, setSaving] = useState(false);
+  const [showConfirmOverlay, setShowConfirmOverlay] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  
   const { user } = useAuth();
-  const { updateRiverInList, removeRiverFromList, updateList, toggleSubscription, isSubscribed } = useLists();
+  const { myLists, updateRiverInList, removeRiverFromList, updateList, toggleSubscription, isSubscribed } = useLists();
   const { rivers } = useRivers();
   const { alert } = useModal();
+
+  const activeList = useMemo(() => {
+    if (!targetList) return null;
+    return myLists.find(l => l.id === targetList.id) || targetList;
+  }, [myLists, targetList]);
 
   useEffect(() => {
     if (isOpen) {
@@ -97,16 +105,29 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     }
   };
 
-  const handleTogglePublish = async () => {
-    if (targetList && isEdit) {
-      try {
-        await updateList(targetList.id, { isPublished: !targetList.isPublished });
-        if (!targetList.isPublished) {
-          await alert("List marked for publishing to community feed.");
-        }
-      } catch (e: any) {
-        await alert("Failed to update status: " + e.message);
-      }
+  const handleTogglePublish = () => {
+    if (activeList && isEdit) {
+      setShowConfirmOverlay(true);
+    }
+  };
+
+  const confirmTogglePublish = async () => {
+    if (!activeList) return;
+    setToggling(true);
+    try {
+      const newState = !activeList.isPublished;
+      await updateList(activeList.id, { isPublished: newState });
+      setShowConfirmOverlay(false);
+      await alert(
+        newState 
+          ? "List is now Public! It will appear in the community feed for others to discover." 
+          : "List is now Unlisted. It has been removed from the public community feed.",
+        "Status Updated"
+      );
+    } catch (e: any) {
+      await alert("Failed to update status: " + (e?.message || "Unknown error"));
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -150,6 +171,55 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {showConfirmOverlay && activeList && (
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "var(--surface)",
+            borderRadius: "12px",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "40px",
+            boxSizing: "border-box",
+            textAlign: "center",
+            animation: "fadeIn 0.2s ease"
+          }}>
+            <div style={{ fontSize: "3rem", marginBottom: "20px" }}>
+              {activeList.isPublished ? "🔒" : "🌍"}
+            </div>
+            <h3 style={{ margin: "0 0 10px 0", color: "var(--text)" }}>
+              {activeList.isPublished ? "Make List Unlisted?" : "Make List Public?"}
+            </h3>
+            <p style={{ margin: "0 0 30px 0", color: "var(--text-secondary)", lineHeight: "1.5" }}>
+              {activeList.isPublished 
+                ? "This will remove the list from the community feed. Only people with the direct link will be able to see it." 
+                : "This list will be visible to everyone on the Rivers.run Community feed."}
+            </p>
+            <div style={{ display: "flex", gap: "15px", width: "100%" }}>
+              <button 
+                onClick={() => setShowConfirmOverlay(false)}
+                disabled={toggling}
+                style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: "bold" }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmTogglePublish}
+                disabled={toggling}
+                style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "none", backgroundColor: activeList.isPublished ? "var(--danger)" : "var(--primary)", color: "white", cursor: "pointer", fontWeight: "bold" }}
+              >
+                {toggling ? "Updating..." : (activeList.isPublished ? "Make Unlisted" : "Make Public")}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "1.5rem" }}>
             {modalTitle}
@@ -159,8 +229,21 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                  <button onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
                    🔗 Share Link
                  </button>
-                 <button onClick={handleTogglePublish} style={{ padding: "6px 12px", backgroundColor: targetList.isPublished ? "var(--primary)" : "var(--surface-hover)", border: "1px solid var(--border)", color: targetList.isPublished ? "white" : "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
-                   {targetList.isPublished ? "🌍 Public" : "🔒 Unlisted"}
+                 <button 
+                  onClick={handleTogglePublish} 
+                  disabled={toggling}
+                  style={{ 
+                    padding: "6px 12px", 
+                    backgroundColor: activeList.isPublished ? "var(--primary)" : "var(--surface-hover)", 
+                    border: "1px solid var(--border)", 
+                    color: activeList.isPublished ? "white" : "var(--text)", 
+                    borderRadius: "6px", 
+                    cursor: toggling ? "not-allowed" : "pointer", 
+                    fontWeight: "bold",
+                    transition: "all 0.2s ease"
+                  }}
+                 >
+                   {activeList.isPublished ? "🌍 Public" : "🔒 Unlisted"}
                  </button>
                </div>
             )}
@@ -382,6 +465,12 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
         </div>
       </form>
     </div>
+    <style>{`
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    `}</style>
   </div>
   );
 };

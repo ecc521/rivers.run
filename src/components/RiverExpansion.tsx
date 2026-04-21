@@ -12,9 +12,10 @@ interface RiverExpansionProps {
   onShowAccessPoints?: () => void;
   dataGeneratedAt?: number | null;
   onScrub?: (reading: any | null) => void;
+  clickedPoint?: [number, number];
 }
 
-export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, dataGeneratedAt, onScrub }) => {
+export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, dataGeneratedAt, onScrub, clickedPoint }) => {
   const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
@@ -72,9 +73,9 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
                    <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", marginBottom: "15px" }}>
                      <SharedMap 
                         focusRiver={displayRiver}
-                        initialCenter={[displayRiver.accessPoints[0].lat, displayRiver.accessPoints[0].lon]}
+                        initialCenter={clickedPoint || [displayRiver.accessPoints[0].lat, displayRiver.accessPoints[0].lon]}
                         initialZoom={12}
-                        height="250px"
+                        height="350px"
                      />
                    </div>
                  ) : (

@@ -10,6 +10,7 @@ interface ShareMapModalProps {
     currentQuery: AdvancedSearchQuery;
     mapCenter: [number, number];
     mapZoom: number;
+    portalTarget?: HTMLElement | null;
 }
 
 interface ShareUrlParams {
@@ -89,7 +90,8 @@ export const ShareMapModal: React.FC<ShareMapModalProps> = ({
     onClose,
     currentQuery,
     mapCenter,
-    mapZoom
+    mapZoom,
+    portalTarget
 }) => {
     const [shareFilters, setShareFilters] = useState(true);
     const [shareMapState, setShareMapState] = useState(true);
@@ -287,6 +289,6 @@ export const ShareMapModal: React.FC<ShareMapModalProps> = ({
                 </div>
             </div>
         </div>,
-        document.body
+        portalTarget || document.body
     );
 };

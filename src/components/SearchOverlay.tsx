@@ -15,6 +15,7 @@ interface SearchOverlayProps {
   query: AdvancedSearchQuery;
   setQuery: (q: AdvancedSearchQuery) => void;
   isMapMode?: boolean;
+  portalTarget?: HTMLElement | null;
 }
 
 export const SearchOverlay: React.FC<SearchOverlayProps> = ({
@@ -23,6 +24,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   query,
   setQuery,
   isMapMode = false,
+  portalTarget
 }) => {
   const [localQuery, setLocalQuery] = useState<AdvancedSearchQuery>(query);
   const [copied, setCopied] = useState(false);
@@ -549,7 +551,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
         </div>
       </div>
     </div>,
-    document.body
+    portalTarget || document.body
   );
 };
 

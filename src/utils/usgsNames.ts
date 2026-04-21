@@ -2,8 +2,7 @@ import { ALL_STATE_CODES } from './regions';
 
 const STATE_CODES = new Set(ALL_STATE_CODES);
 const ACRONYMS = new Set([
-    'USGS', 'USA', 'TVA', 'NWS',
-    'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'
+    'USGS', 'USA', 'TVA', 'NWS', 'US', 'HWY', 'SR', 'GS', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'
 ]);
 
 const EXPANSIONS: Record<string, string> = {
@@ -20,17 +19,17 @@ const EXPANSIONS: Record<string, string> = {
     ab: 'Above',
     blw: 'Below',
     bl: 'Below',
-    rd: 'Road',
-    st: 'St',
-    gs: 'Gauging Station',
-    nf: 'North Fork',
-    sf: 'South Fork',
-    ef: 'East Fork',
-    wf: 'West Fork',
-    n: 'North',
-    s: 'South',
-    e: 'East',
-    w: 'West',
+    b: 'Below',
+    mth: 'Mouth',
+    ds: 'Downstream',
+    nf: 'N Fork',
+    sf: 'S Fork',
+    ef: 'E Fork',
+    wf: 'W Fork',
+    n: 'N',
+    s: 'S',
+    e: 'E',
+    w: 'W',
     mt: 'Mount',
     mtn: 'Mountain',
     pt: 'Point',
@@ -83,9 +82,54 @@ export function formatGaugeName(name: string): { name: string; section?: string 
 
     for (let i = 0; i < matches.length; i++) {
         const token = matches[i];
+        const lowerToken = token.toLowerCase();
+
         if (/^[a-zA-Z0-9]+$/.test(token)) {
             const isLastWord = matches.slice(i + 1).every(t => !/^[a-zA-Z0-9]+$/.test(t));
-            formatted += formatToken(token, wordIndex++, isLastWord);
+
+            // Special Case: detect slashed abbreviations like U/S or D/S
+            if (i + 2 < matches.length && matches[i+1] === '/' && matches[i+2].toUpperCase() === 'S') {
+                if (lowerToken === 'u') {
+                    formatted += 'Upstream';
+                    i += 2;
+                    wordIndex++;
+                    continue;
+                } else if (lowerToken === 'd') {
+                    formatted += 'Downstream';
+                    i += 2;
+                    wordIndex++;
+                    continue;
+                }
+            }
+
+            // Special Case: detect "US" meaning "Upstream" instead of "United States"
+            let overrideExpansion: string | null = null;
+            if (lowerToken === 'us' && i + 2 < matches.length && matches[i+2].toLowerCase() === 'of') {
+                overrideExpansion = 'Upstream';
+            }
+
+            // Special Case: "S" in "U.S." should stay "S"
+            const isPartOfUS = lowerToken === 's' && i >= 2 && matches[i-1].startsWith('.') && matches[i-2].toLowerCase() === 'u';
+            const willExpand = (!!EXPANSIONS[lowerToken] || !!overrideExpansion) && !isPartOfUS;
+
+            if (overrideExpansion) {
+                formatted += overrideExpansion;
+                wordIndex++;
+            } else if (isPartOfUS) {
+                formatted += token.toUpperCase();
+                wordIndex++;
+            } else {
+                formatted += formatToken(token, wordIndex++, isLastWord);
+            }
+
+            if (willExpand && i + 1 < matches.length && matches[i+1].startsWith('.')) {
+                const nextToken = matches[i+1];
+                matches[i+1] = nextToken.slice(1);
+                // If the remainder of the next token doesn't start with a space, add one
+                if (matches[i+1] === "" || !/^\s/.test(matches[i+1])) {
+                    formatted += ' ';
+                }
+            }
         } else {
             formatted += token;
         }

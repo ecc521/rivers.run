@@ -2,37 +2,7 @@ import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingVal
 import { formatStateCode } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 
-function reformatReadings(readingsArr: any[]) {
-    for (let i = 0; i < readingsArr.length; i++) {
-        const reading = readingsArr[i];
-        const date = new Date(reading.dateTime);
-        reading.dateTime = date.getTime();
-        
-        if (isNaN(reading.dateTime)) {
-            // Defensive fall-back for parsing issues
-            continue;
-        }
-        
-        if (reading.cms !== undefined) {
-            const val = parseFloat(reading.cms);
-            if (!isNaN(val) && val !== -999 && isValidReadingValue(val, "cms")) {
-                reading.cms = val;
-            } else {
-                delete reading.cms;
-            }
-        }
 
-        if (reading.m !== undefined) {
-            const val = parseFloat(reading.m);
-            if (!isNaN(val) && val !== -999 && isValidReadingValue(val, "m")) {
-                reading.m = val;
-            } else {
-                delete reading.m;
-            }
-        }
-    }
-    readingsArr.sort((a, b) => a.dateTime - b.dateTime);
-}
 
 export function processCanadaCSV(text: string, startTs: number, endTs: number): Record<string, GaugeHistory> {
     if (!text || text.length < 10) return {};
@@ -43,7 +13,6 @@ export function processCanadaCSV(text: string, startTs: number, endTs: number): 
     const endPos = text.length;
     let lineCount = 0;
     
-    let headers: string[] = [];
     let idIdx = -1;
     let dateIdx = -1;
     let levelIdx = -1;
@@ -63,7 +32,7 @@ export function processCanadaCSV(text: string, startTs: number, endTs: number): 
         const row = line.split(',').map(c => c.replace(/["\r]/g, '').trim());
         
         if (lineCount === 1) {
-            headers = row;
+            const headers = row;
             idIdx = headers.indexOf('ID') !== -1 ? headers.indexOf('ID') : 0;
             dateIdx = headers.indexOf('Date');
             levelIdx = headers.indexOf("Water Level / Niveau d'eau (m)");
