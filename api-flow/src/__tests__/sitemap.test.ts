@@ -24,15 +24,16 @@ describe('Sitemap Generation Engine', () => {
     };
 
     function createMockEnv(dbRivers: any[], dbLists: any[], registryData: Record<string, any>) {
+        let capturedXml = '';
         return {
+            getCapturedXml: () => capturedXml,
             DB: {
                 prepare: vi.fn().mockImplementation((_query: string) => ({
-                    bind: vi.fn().mockReturnThis(), // Added bind to match D1 API
-                    all: vi.fn().mockResolvedValue({ results: [] })
+                    bind: vi.fn().mockReturnThis(),
+                    all: vi.fn().mockResolvedValue({ results: [] }),
+                    run: vi.fn().mockResolvedValue({ success: true })
                 })),
                 batch: vi.fn().mockImplementation(async (_prepares: any[]) => {
-                    // Simulating the batch call in index.ts:
-                    // batch([ rivers_query, lists_query ])
                     return [
                         { results: dbRivers },
                         { results: dbLists }
@@ -48,7 +49,18 @@ describe('Sitemap Generation Engine', () => {
                     }
                     return Promise.resolve(null);
                 }),
-                put: vi.fn().mockResolvedValue({ success: true })
+                put: vi.fn().mockImplementation(async (_key: string, value: any) => {
+                    if (value && typeof value.getReader === 'function') {
+                        const reader = value.getReader();
+                        const decoder = new TextEncoder().encoding === 'utf-8' ? new TextDecoder() : new TextDecoder();
+                        while (true) {
+                            const { done, value: chunk } = await reader.read();
+                            if (done) break;
+                            capturedXml += decoder.decode(chunk, { stream: true });
+                        }
+                    }
+                    return { success: true };
+                })
             }
         };
     }
@@ -75,15 +87,7 @@ describe('Sitemap Generation Engine', () => {
         const sitemapCall = mockEnv.FLOW_STORAGE.put.mock.calls.find(call => call[0] === "sitemap.xml");
         expect(sitemapCall).toBeDefined();
 
-        const stream = sitemapCall![1] as ReadableStream;
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-        let xml = '';
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            xml += decoder.decode(value, { stream: true });
-        }
+        const xml = mockEnv.getCapturedXml();
         expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
         // Verify Curated Rivers (0.7)
         expect(xml).toContain('<loc>https://rivers.run/river/river1/youghiogheny-lower</loc>');

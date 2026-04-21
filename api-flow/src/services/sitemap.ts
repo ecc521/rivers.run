@@ -1,4 +1,5 @@
 import type { Env } from "../index";
+import { logToD1 } from "../utils/logger";
 
 function slugify(text: string) {
   if (!text) return '';
@@ -29,8 +30,8 @@ export async function generateSitemap(env: Env, registryMetadata: Record<string,
         const writer = writable.getWriter();
         const encoder = new TextEncoder();
 
-        // Start stream in background
-        (async () => {
+        // Coordinate the streaming writer and the R2 put
+        const streamErrorPromise = (async () => {
             try {
                 await writer.write(encoder.encode(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`));
 
@@ -41,7 +42,7 @@ export async function generateSitemap(env: Env, registryMetadata: Record<string,
                     await writer.write(encoder.encode(`  <url>\n    <loc>${SITE_URL}${route}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${p}</priority>\n  </url>\n`));
                 }
 
-                // Curated Rivers (Priority 0.7 as requested)
+                // Curated Rivers (Priority 0.7)
                 for (const river of curatedRivers) {
                     let slug = slugify(river.name);
                     if (river.section) slug += '-' + slugify(river.section);
@@ -49,9 +50,9 @@ export async function generateSitemap(env: Env, registryMetadata: Record<string,
                     await writer.write(encoder.encode(`  <url>\n    <loc>${SITE_URL}${prefix}/${river.id}/${slug}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`));
                 }
 
-                // Standalone Gauges (Priority 0.4 as requested)
+                // Standalone Gauges (Priority 0.4)
                 for (const [fullId, meta] of Object.entries(registryMetadata)) {
-                    if (curatedRiverIdsSet.has(fullId)) continue; // Skip if already covered by curation
+                    if (curatedRiverIdsSet.has(fullId)) continue; 
                     const slug = slugify(meta.name || fullId);
                     await writer.write(encoder.encode(`  <url>\n    <loc>${SITE_URL}/gauge/${fullId}/${slug}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.4</priority>\n  </url>\n`));
                 }
@@ -63,19 +64,30 @@ export async function generateSitemap(env: Env, registryMetadata: Record<string,
                 }
 
                 await writer.write(encoder.encode(`</urlset>`));
+                return null;
             } catch (err) {
-                console.error("Sitemap stream writer encountered an error:", err);
+                console.error("Sitemap stream writer error:", err);
+                return err;
             } finally {
                 await writer.close();
             }
         })();
 
+        // Start the R2 put
         await env.FLOW_STORAGE.put("sitemap.xml", readable as any, {
             httpMetadata: { contentType: "application/xml" }
         });
         
-        console.log("Sitemap streaming generation successful.");
+        // Wait for the stream source to finish and check for errors
+        const streamError = await streamErrorPromise;
+        if (streamError) {
+            throw streamError;
+        }
+
+        await logToD1(env, "INFO", "maintenance", "Sitemap streaming generation successful.");
     } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        await logToD1(env, "ERROR", "maintenance", `Sitemap generation failed: ${msg}`, e);
         console.error("Sitemap generation failed:", e);
     }
 }
