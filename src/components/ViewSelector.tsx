@@ -36,7 +36,7 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
         </span>
         <span className="breadcrumb-separator">/</span>
         <div className={`view-switcher ${isOpen ? "active" : ""}`} onClick={() => setIsOpen(!isOpen)}>
-          <h1 className="breadcrumb-item current">{viewLabel}</h1>
+          <h2 className="breadcrumb-item current">{viewLabel}</h2>
           <span className="dropdown-caret">▼</span>
         </div>
       </div>

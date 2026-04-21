@@ -38,10 +38,10 @@ describe("regions", () => {
     it("uses dynamic map override", () => {
       const river = { states: "XX" } as RiverData;
       const dynamicMap = new Map<string, Set<CountryCode>>([
-        ["XX", new Set(["france"])]
+        ["XX", new Set(["canada"])]
       ]);
       const countries = getRiverCountries(river, dynamicMap);
-      expect(countries.has("france")).toBe(true);
+      expect(countries.has("canada")).toBe(true);
     });
 
     it("fallbacks to global if unknown", () => {

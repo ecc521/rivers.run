@@ -22,11 +22,16 @@ import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useSettings } from "../context/SettingsContext";
 import { useModal } from "../context/ModalContext";
 import { triggerReviewIfEligible } from "../utils/appReview";
+import { useSEO } from "../hooks/useSEO";
 
 
 const LazyRiverPage = React.lazy(() => import("./RiverPage"));
 
 const Home: React.FC = () => {
+  useSEO({
+    title: "Whitewater Gauge Maps & Flow Data",
+    description: "Real-time whitewater flow data, gauge maps, and river running status for over 250 rivers in the US, UK, Ireland, and Canada."
+  });
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert } = useModal();
   const { id } = useParams<{ id: string }>();
@@ -377,6 +382,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="page-content">
+      <h1 className="visually-hidden">Whitewater Gauge Maps & River Flow Data</h1>
       {/* Search List Overlay Toggle */}
       <div style={{ display: isRiverOverlay ? "none" : "block" }}>
         {listSyncError && (

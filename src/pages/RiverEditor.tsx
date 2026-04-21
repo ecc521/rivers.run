@@ -15,6 +15,10 @@ import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { useModal } from "../context/ModalContext";
 import { useRivers } from "../hooks/useRivers";
 import { ALL_STATE_CODES } from "../utils/regions";
+import { RiverHistoryPanel } from "../components/RiverHistoryPanel";
+import { RiverHistoryComparison } from "../components/RiverHistoryComparison";
+import { reconstructHistoricalState } from "../utils/historyUtils";
+import type { RiverData } from "../types/River";
 
 export default function RiverEditor() {
   const { riverId, queueId } = useParams();
@@ -56,6 +60,8 @@ export default function RiverEditor() {
   const [liveData, setLiveData] = useState<any>(null);
   const [proposedData, setProposedData] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"draft" | "original">("draft");
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [comparisonData, setComparisonData] = useState<{ historical: RiverData, logIndex: number, allLogs: any[] } | null>(null);
 
   const syncInputs = (inputData: any) => {
       if (!inputData) return;
@@ -327,19 +333,33 @@ export default function RiverEditor() {
   };
 
   const handleDeleteRiver = async () => {
-      if (!isAdmin || isNew || isReviewMode) return;
-      if (!(await confirm("Are you sure you want to delete this river? This action cannot be reversed."))) return;
+    if (!isAdmin || isNew || isReviewMode) return;
+    if (!(await confirm("Are you sure you want to delete this river? This action cannot be reversed."))) return;
 
-      try {
-          setSaving(true);
-          await fetchAPI(`/rivers/${riverData.id}`, { method: "DELETE" }, user);
-          await alert("River permanently deleted.");
-          navigate("/admin");
-      } catch (e: unknown) {
-          if (e instanceof Error) await alert(`Failed to delete river natively: ${e.message}`);
-          else await alert('Failed to delete river natively');
-          setSaving(false);
-      }
+    try {
+        setSaving(true);
+        await fetchAPI(`/rivers/${riverData.id}`, { method: "DELETE" }, user);
+        await alert("River permanently deleted.");
+        navigate("/admin");
+    } catch (e: unknown) {
+        if (e instanceof Error) await alert(`Failed to delete river natively: ${e.message}`);
+        else await alert('Failed to delete river natively');
+        setSaving(false);
+    }
+  };
+
+  const handleSelectVersion = (_log: any, index: number, allLogs: any[]) => {
+    if (!liveData) return;
+    const historical = reconstructHistoricalState(liveData, allLogs, index);
+    setComparisonData({ historical, logIndex: index, allLogs });
+  };
+
+  const handleRestoreVersion = async (historical: RiverData) => {
+    if (await confirm("Restore this historical version into your current editor draft? You will still need to click Publish to save it.")) {
+        syncInputs(historical);
+        setComparisonData(null);
+        setShowHistoryPanel(false);
+    }
   };
 
   const previewStateStr = JSON.stringify(riverData);
@@ -408,14 +428,24 @@ export default function RiverEditor() {
           })()}
         </h1>
 
-        {(!isNew && !isReviewMode && isAdmin) && (
-          <button 
-            onClick={handleDeleteRiver} 
-            disabled={saving}
-            style={{ padding: '8px 15px', backgroundColor: "transparent", color: "var(--danger)", border: '1px solid var(--danger)', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold', cursor: saving ? 'not-allowed' : 'pointer', flexShrink: 0 }}
-          >
-            Delete River
-          </button>
+        {(!isNew && !isReviewMode) && (
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              onClick={() => setShowHistoryPanel(true)} 
+              style={{ padding: '8px 15px', backgroundColor: "transparent", color: "var(--primary)", border: '1px solid var(--primary)', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              History
+            </button>
+            {isAdmin && (
+              <button 
+                onClick={handleDeleteRiver} 
+                disabled={saving}
+                style={{ padding: '8px 15px', backgroundColor: "transparent", color: "var(--danger)", border: '1px solid var(--danger)', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold', cursor: saving ? 'not-allowed' : 'pointer' }}
+              >
+                Delete River
+              </button>
+            )}
+          </div>
         )}
       </div>
       <hr style={{ borderColor: 'var(--border)', margin: '15px 0 20px 0' }} />
@@ -533,6 +563,23 @@ export default function RiverEditor() {
           </div>
       </div>
     </div>
+    
+    {showHistoryPanel && (
+      <RiverHistoryPanel 
+        riverId={targetId}
+        onClose={() => setShowHistoryPanel(false)}
+        onSelectVersion={handleSelectVersion}
+      />
+    )}
+
+    {comparisonData && (
+      <RiverHistoryComparison 
+        historicalState={comparisonData.historical}
+        currentState={liveData}
+        onRestore={handleRestoreVersion}
+        onClose={() => setComparisonData(null)}
+      />
+    )}
     </>
   );
 }

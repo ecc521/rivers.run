@@ -134,6 +134,22 @@ export const RiverSchema = z.object({
   updated_at: z.number().optional().openapi({ type: 'number', example: 1713214540 })
 }).openapi({ type: 'object', description: 'Full river record' });
 
+export const RiverHistoryRecordSchema = z.object({
+    history_id: z.number().openapi({ type: 'integer' }),
+    river_id: z.string().openapi({ type: 'string' }),
+    action_type: z.string().openapi({ type: 'string' }),
+    changed_by: z.string().optional().nullable().openapi({ type: 'string' }),
+    editor_name: z.string().openapi({ type: 'string' }),
+    email: z.string().optional().nullable().openapi({ type: 'string' }),
+    changed_at: z.number().openapi({ type: 'integer' }),
+    diff_patch: z.string().openapi({ type: 'string', description: 'JSON stringified diff_patch object' })
+}).openapi({ type: 'object', description: 'A single river edit history record' });
+
+export const RiverHistoryResponseSchema = z.object({
+    logs: z.array(RiverHistoryRecordSchema).openapi({ type: 'array' }),
+    nextOffset: z.number().optional().nullable().openapi({ type: 'integer' })
+}).openapi({ type: 'object', description: 'Paginated history response' });
+
 export const checkPayloadSize = async (c: any, next: any) => {
     const contentLength = Number(c.req.header("content-length") || 0);
     if (contentLength > 50 * 1024) {
