@@ -113,6 +113,7 @@ CREATE TABLE river_suggestions (
     suggested_by TEXT NOT NULL,      -- Auth UID
     proposed_changes JSON NOT NULL,  -- The full River object delta or new state
     status TEXT DEFAULT 'pending',   -- 'pending', 'resolved', 'rejected'
+    resolution_note TEXT,            -- Admin reason/note for approval or rejection
     created_at INTEGER NOT NULL,     -- Unix timestamp
     FOREIGN KEY(river_id) REFERENCES rivers(id) ON DELETE CASCADE
 );

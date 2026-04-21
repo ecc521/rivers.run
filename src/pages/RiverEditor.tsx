@@ -26,7 +26,7 @@ export default function RiverEditor() {
   const location = useLocation();
   const { user, isAdmin } = useAuth();
   const { isDarkMode, isColorBlindMode } = useSettings();
-  const { alert, confirm, prompt } = useModal();
+  const { alert, confirm, prompt, resolveSuggestion } = useModal();
   const { availableStates } = useRivers();
   
   const [loading, setLoading] = useState(false);
@@ -129,7 +129,7 @@ export default function RiverEditor() {
        setLoading(false);
      }
     load();
-  }, [riverId, queueId, isNew, isReviewMode, navigate]);
+  }, [riverId, queueId, isNew, isReviewMode, navigate, user]);
 
   const quillModules = useMemo(() => {
     return {
@@ -287,6 +287,10 @@ export default function RiverEditor() {
 
   const handleApproveReview = async () => {
       if (!isAdmin || !proposedData?.queueId) return;
+      
+      const res = await resolveSuggestion("Are you sure you want to approve and deploy these changes?", "Approve Suggestion");
+      if (!res || !res.confirmed) return;
+
       try {
           setSaving(true);
           const finalObj = generateFinalObj();
@@ -300,34 +304,41 @@ export default function RiverEditor() {
               body: JSON.stringify({ 
                   action: "approve", 
                   admin_overrides: finalObj,
-                  admin_notes: "Approved via Web Editor"
+                  admin_notes: res.reason,
+                  notify_submitter: res.notify
               })
           }, user);
           
           await alert("Successfully approved!");
           navigate("/admin");
       } catch (e: unknown) {
-          if (e instanceof Error) await alert(`Failed to approve natively: ${e.message}`);
-          else await alert('Failed to approve natively');
-          setSaving(false);
+          if (e instanceof Error) await alert(`Failed to approve: ${e.message}`);
+          else await alert('Failed to approve');
+          setSaving(false)
       }
   };
 
   const handleRejectReview = async () => {
       if (!isAdmin || !proposedData?.queueId) return;
-      if (!(await confirm("Reject this submission completely?"))) return;
+      
+      const res = await resolveSuggestion("Are you sure you want to reject this submission completely?", "Reject Suggestion");
+      if (!res || !res.confirmed) return;
       
       try {
           setSaving(true);
           await fetchAPI(`/admin/queue/${proposedData.queueId}/resolve`, {
               method: "POST",
-              body: JSON.stringify({ action: "reject" })
+              body: JSON.stringify({ 
+                action: "reject",
+                admin_notes: res.reason,
+                notify_submitter: res.notify
+              })
           }, user);
           await alert("Submission completely rejected.");
           navigate("/admin");
       } catch (e: unknown) {
-          if (e instanceof Error) await alert(`Failed to reject natively: ${e.message}`);
-          else await alert('Failed to reject natively');
+          if (e instanceof Error) await alert(`Failed to reject: ${e.message}`);
+          else await alert('Failed to reject');
           setSaving(false);
       }
   };

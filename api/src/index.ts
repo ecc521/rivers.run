@@ -531,24 +531,55 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
     const body = await c.req.json();
-    const { action, admin_overrides, admin_notes } = AdminResolutionSchema.parse(body);
+    const { action, admin_overrides, admin_notes, notify_submitter } = AdminResolutionSchema.parse(body);
 
     const suggestion = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE suggestion_id = ? AND status = 'pending'").bind(id).first();
-    if (!suggestion) return c.json({ error: "Suggestion not found or already resolved." }, 404);
+    if (!suggestion || !suggestion.proposed_changes) return c.json({ error: "Suggestion not found or already resolved." }, 404);
+
+    const proposed = JSON.parse(suggestion.proposed_changes as string);
+    const riverName = proposed.name || "Unknown River";
+
+    const notifyUser = async (isAccepted: boolean) => {
+        if (!notify_submitter) return;
+        const suggestedBy = suggestion.suggested_by as string;
+        if (suggestedBy.startsWith("IP:")) return;
+
+        const userRecord = await c.env.DB.prepare("SELECT email FROM users WHERE user_id = ?").bind(suggestedBy).first() as { email: string } | null;
+        if (!userRecord || !userRecord.email) return;
+
+        const statusLabel = isAccepted ? "accepted" : "rejected";
+        const subject = `Rivers.run: Your submission for ${riverName} was ${statusLabel}!`;
+        let text = `Your submission was ${statusLabel}.`;
+        
+        if (admin_notes && admin_notes.trim()) {
+            text += `\n\nThe reviewer left the following note:\n${admin_notes}`;
+        }
+
+        c.executionCtx.waitUntil(
+            sendEmail({
+                env: c.env,
+                to: userRecord.email,
+                subject,
+                text
+            })
+        );
+    };
 
     if (action === "reject") {
-         await c.env.DB.prepare("UPDATE river_suggestions SET status = 'rejected' WHERE suggestion_id = ?").bind(id).run();
+         await c.env.DB.prepare("UPDATE river_suggestions SET status = 'rejected', resolution_note = ? WHERE suggestion_id = ?")
+            .bind(admin_notes || null, id).run();
+         
+         await notifyUser(false);
          return c.json({ success: true, message: "Rejected permanently." });
     }
 
     // Merging logic
-    const proposed = JSON.parse(suggestion.proposed_changes as string);
     const finalPayload = { ...proposed, ...admin_overrides };
     const validated = RiverEditorPayload.parse(finalPayload); // Fails safely if Overrides break caps
 
     // Atomic promotion to rivers DB
     const batch = [];
-    batch.push(c.env.DB.prepare("UPDATE river_suggestions SET status = 'resolved' WHERE suggestion_id = ?").bind(id));
+    batch.push(c.env.DB.prepare("UPDATE river_suggestions SET status = 'resolved', resolution_note = ? WHERE suggestion_id = ?").bind(admin_notes || null, id));
     
     const tagsStr = JSON.stringify(validated.tags || []);
     const gaugesStr = JSON.stringify(validated.gauges || []);
@@ -605,6 +636,8 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     `).bind(suggestion.river_id, user.user_id, JSON.stringify({ diff: diff_patch, note: admin_notes, type: "approval", original_author: cleanAuthor }), Math.floor(Date.now() / 1000)));
 
     await c.env.DB.batch(batch);
+    await notifyUser(true);
+
     return c.json({ success: true, message: "Suggestion merged successfully." });
 });
 

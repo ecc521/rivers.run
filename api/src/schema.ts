@@ -88,7 +88,8 @@ export const SubscriptionPayloadSchema = z.object({
 export const AdminResolutionSchema = z.object({
   action: z.enum(["approve", "reject"]).openapi({ type: 'string' }),
   admin_notes: limitString(5000),
-  admin_overrides: GenericObjectSchema.optional()
+  admin_overrides: GenericObjectSchema.optional(),
+  notify_submitter: z.boolean().optional().default(true).openapi({ type: 'boolean' })
 }).openapi({ type: 'object' });
 
 export const UserRoleSchema = z.enum(["user", "moderator", "admin", "super-admin", "banned"]).openapi({ type: 'string' });
