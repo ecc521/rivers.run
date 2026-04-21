@@ -4,6 +4,8 @@ import { useRivers } from "../hooks/useRivers";
 import { useAuth } from "../context/AuthContext";
 import { useModal } from "../context/ModalContext";
 import { fetchAPI } from "../services/api";
+import { getShareBaseUrl } from "../utils/url";
+
 
 interface ListEditorModalProps {
   isOpen: boolean;
@@ -64,7 +66,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
 
   const handleCopyLink = () => {
      if (targetList) {
-        const url = `${window.location.origin}/?list=${targetList.id}`;
+        const url = `${getShareBaseUrl("/")}?list=${targetList.id}`;
+
         navigator.clipboard.writeText(url).then(async () => {
            await alert("Link copied to clipboard!");
         });

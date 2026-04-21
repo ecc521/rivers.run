@@ -19,7 +19,7 @@ describe('Canada Service', () => {
             expect(result['08MG005'].readings[1].m).toBe(1.250);
             expect(result['08MG005'].readings[1].cms).toBe(47.2);
             expect(result['08MG005'].units).toBe("cms");
-            expect(result['08MG005'].name).toBe("Canada Gauge 08MG005");
+            expect(result['08MG005'].name).toBe("EC Gauge 08MG005");
         });
 
         it('should filter out readings with -999 sentinels', () => {
@@ -81,7 +81,7 @@ SHORT_ROW`;
 
     describe('canadaProvider.getFullSiteListing', () => {
         it('should correctly parse array response from WaterOffice map_data API', async () => {
-            const { canadaProvider } = await import('../canada');
+            const { ecProvider } = await import('../canada');
             
             globalThis.fetch = vi.fn().mockResolvedValue({
                 ok: true,
@@ -111,7 +111,7 @@ SHORT_ROW`;
                 })
             });
 
-            const result = await canadaProvider.getFullSiteListing!();
+            const result = await ecProvider.getFullSiteListing!();
             expect(result).toHaveLength(2);
             expect(result[0].id).toBe("08MG005");
             expect(result[0].name).toBe("Test Station Canada");
@@ -124,14 +124,14 @@ SHORT_ROW`;
         });
 
         it('should handle malformed or empty responses gracefully', async () => {
-             const { canadaProvider } = await import('../canada');
+             const { ecProvider } = await import('../canada');
              
              // Case: Not an array
              globalThis.fetch = vi.fn().mockResolvedValue({
                  ok: true,
                  json: async () => ({ error: "not an array" })
              });
-             const result1 = await canadaProvider.getFullSiteListing!();
+             const result1 = await ecProvider.getFullSiteListing!();
              expect(result1).toHaveLength(0);
 
              // Case: Failed fetch
@@ -139,7 +139,7 @@ SHORT_ROW`;
                  ok: false,
                  status: 500
              });
-             const result2 = await canadaProvider.getFullSiteListing!();
+             const result2 = await ecProvider.getFullSiteListing!();
              expect(result2).toHaveLength(0);
         });
     });

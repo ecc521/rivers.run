@@ -36,8 +36,8 @@ describe("formatGaugeName", () => {
     });
 
     it("should handle N.F. style abbreviations gracefully", () => {
-        // Current behavior will expand N to North and leave the dot
-        expect(formatGaugeName("N.F. CLEARWATER RIVER")).toEqual({ name: "North.F. Clearwater River" });
+        // Current behavior will expand N to North and F to Fork and leave the dots
+        expect(formatGaugeName("N.F. CLEARWATER RIVER")).toEqual({ name: "North.Fork. Clearwater River" });
         expect(formatGaugeName("S. FORK COAL RIVER AT ASHFORD, WV")).toEqual({ name: "South. Fork Coal River", section: "At Ashford, WV" });
     });
 
@@ -81,5 +81,20 @@ describe("formatGaugeName", () => {
         const result = formatGaugeName("SWEETWATER CREEK, BROWNSVILLE RD, GA");
         expect(result.name).toBe("Sweetwater Creek");
         expect(result.section).toBe(", Brownsville Road, GA");
+    });
+
+    it("should handle 'South F' and similar Fork abbreviations separately from directions", () => {
+        const potomac = formatGaugeName("SOUTH F SOUTH BRANCH POTOMAC RIVER NEAR MOOREFIELD, WV");
+        expect(potomac.name).toBe("South Fork South Branch Potomac River");
+        expect(potomac.section).toBe("Near Moorefield, WV");
+
+        const nf = formatGaugeName("NORTH F SOUTH BRANCH POTOMAC RIVER NEAR MOOREFIELD, WV");
+        expect(nf.name).toBe("North Fork South Branch Potomac River");
+
+        const sf_spaced = formatGaugeName("S F SOUTH BRANCH POTOMAC RIVER NEAR MOOREFIELD, WV");
+        expect(sf_spaced.name).toBe("South Fork South Branch Potomac River");
+
+        const nf_spaced = formatGaugeName("N F SOUTH BRANCH POTOMAC RIVER NEAR MOOREFIELD, WV");
+        expect(nf_spaced.name).toBe("North Fork South Branch Potomac River");
     });
 });

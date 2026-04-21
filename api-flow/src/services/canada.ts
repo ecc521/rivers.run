@@ -35,30 +35,59 @@ function reformatReadings(readingsArr: any[]) {
 }
 
 export function processCanadaCSV(text: string, startTs: number, endTs: number): Record<string, GaugeHistory> {
-    const lines = text.split('\n');
-    if (lines.length < 2) return {};
-
-    const headers = lines[0].split(',').map(h => h.replace(/["\r]/g, '').trim());
-    const idIdx = headers.indexOf('ID') !== -1 ? headers.indexOf('ID') : 0;
-    const dateIdx = headers.indexOf('Date');
-    const levelIdx = headers.indexOf("Water Level / Niveau d'eau (m)");
-    const cmsIdx = headers.indexOf("Discharge / Débit (cms)");
-
-    if (dateIdx === -1) return {}; 
+    if (!text || text.length < 10) return {};
 
     const gaugeReadingsBySite: Record<string, any[]> = {};
+    
+    let pos = 0;
+    const endPos = text.length;
+    let lineCount = 0;
+    
+    let headers: string[] = [];
+    let idIdx = -1;
+    let dateIdx = -1;
+    let levelIdx = -1;
+    let cmsIdx = -1;
 
-    for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(',').map(c => c.replace(/["\r]/g, '').trim());
-        if (row.length < headers.length - 1) continue;
+    while (pos < endPos) {
+        let nextNewline = text.indexOf('\n', pos);
+        if (nextNewline === -1) nextNewline = endPos;
+        
+        const line = text.substring(pos, nextNewline).trim();
+        pos = nextNewline + 1;
+        
+        if (!line) continue;
+        lineCount++;
+        
+        // Manual split to avoid creating too many temporary strings
+        const row = line.split(',').map(c => c.replace(/["\r]/g, '').trim());
+        
+        if (lineCount === 1) {
+            headers = row;
+            idIdx = headers.indexOf('ID') !== -1 ? headers.indexOf('ID') : 0;
+            dateIdx = headers.indexOf('Date');
+            levelIdx = headers.indexOf("Water Level / Niveau d'eau (m)");
+            cmsIdx = headers.indexOf("Discharge / Débit (cms)");
+            if (dateIdx === -1) return {}; 
+            continue;
+        }
 
+        if (row.length < 2) continue;
+        
         const id = row[idIdx];
         if (!id) continue;
+        
+        const rawDateStr = row[dateIdx];
+        if (!rawDateStr) continue;
+
+        // Parse date and filter early to save memory
+        const dt = new Date(rawDateStr).getTime();
+        if (isNaN(dt) || dt < startTs || dt > endTs) continue;
 
         if (!gaugeReadingsBySite[id]) gaugeReadingsBySite[id] = [];
         
         gaugeReadingsBySite[id].push({
-            dateTime: row[dateIdx],
+            dateTime: dt,
             m: levelIdx !== -1 ? row[levelIdx] : undefined,
             cms: cmsIdx !== -1 ? row[cmsIdx] : undefined
         });
@@ -68,10 +97,30 @@ export function processCanadaCSV(text: string, startTs: number, endTs: number): 
 
     for (const gaugeID in gaugeReadingsBySite) {
         const results = gaugeReadingsBySite[gaugeID];
-        reformatReadings(results);
+        
+        // Re-use reformat logic but skip the Date parsing part since we did it above
+        for (let i = 0; i < results.length; i++) {
+            const reading = results[i];
+            if (reading.cms !== undefined) {
+                const val = parseFloat(reading.cms);
+                if (!isNaN(val) && val !== -999 && isValidReadingValue(val, "cms")) {
+                    reading.cms = val;
+                } else {
+                    delete reading.cms;
+                }
+            }
+            if (reading.m !== undefined) {
+                const val = parseFloat(reading.m);
+                if (!isNaN(val) && val !== -999 && isValidReadingValue(val, "m")) {
+                    reading.m = val;
+                } else {
+                    delete reading.m;
+                }
+            }
+        }
+        results.sort((a, b) => a.dateTime - b.dateTime);
 
         const trimmed = results.filter((r: any) => {
-            if (isNaN(r.dateTime) || r.dateTime < startTs || r.dateTime > endTs) return false;
             // Keep if it has at least one data property
             const keys = Object.keys(r);
             return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
@@ -81,7 +130,7 @@ export function processCanadaCSV(text: string, startTs: number, endTs: number): 
             const hasCms = trimmed.some(r => r.cms !== undefined);
             outputGauges[gaugeID] = {
                 id: gaugeID,
-                name: `Canada Gauge ${gaugeID}`,
+                name: `EC Gauge ${gaugeID}`,
                 readings: trimmed,
                 units: hasCms ? "cms" : "m",
             };
@@ -148,7 +197,7 @@ async function fetchIndividualCanadaGauge(stationID: string, province: string, s
     }
 }
 
-export const canadaProvider: GaugeProvider = {
+export const ecProvider: GaugeProvider = {
     id: "EC", 
     preferredUnits: 'metric',
     capabilities: {
@@ -304,16 +353,16 @@ export const canadaProvider: GaugeProvider = {
                 if (!isNaN(lat) && !isNaN(lon)) {
                     results.push({
                         id,
-                        name: props.STATION_NAME || `Canada Gauge ${id}`,
+                        name: props.STATION_NAME || `EC Gauge ${id}`,
                         lat,
                         lon,
-                        state: formatStateCode(props.PROVINCE_TERRITORY_CODE, "Canada")
+                        state: formatStateCode(props.PROVINCE_TERRITORY_CODE, "EC")
                     });
                 }
             }
-            console.log(`Canada Provider: Discovered ${results.length} real-time stations.`);
+            console.log(`EC Provider: Discovered ${results.length} real-time stations.`);
         } catch (e) {
-            console.error("Canada Provider: Failed to fetch real-time site listing", e);
+            console.error("EC Provider: Failed to fetch real-time site listing", e);
         }
         return results;
     }

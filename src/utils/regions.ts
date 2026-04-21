@@ -1,6 +1,6 @@
 import type { RiverData } from "../types/River";
 
-export type CountryCode = "usa" | "canada" | "uk_ireland" | "global";
+export type CountryCode = "usa" | "ec" | "uk_ireland" | "global";
 
 /**
  * Mapping of state/province abbreviations to their respective countries.
@@ -15,9 +15,9 @@ export const DEFAULT_STATE_MAP: Record<string, CountryCode[]> = {
   "NV": ["usa"], "NY": ["usa"], "OH": ["usa"], "OK": ["usa"], "OR": ["usa"], "PA": ["usa"], "RI": ["usa"], "SC": ["usa"],
   "SD": ["usa"], "TN": ["usa"], "TX": ["usa"], "UT": ["usa"], "VA": ["usa"], "VT": ["usa"], "WA": ["usa"], "WI": ["usa"],
   "WV": ["usa"], "WY": ["usa"], "DC": ["usa"], "PR": ["usa"], "VI": ["usa"], "GU": ["usa"],
-  // Canada
-  "AB": ["canada"], "BC": ["canada"], "MB": ["canada"], "NB": ["canada"], "NL": ["canada"], "NS": ["canada"],
-  "ON": ["canada"], "PE": ["canada"], "QC": ["canada"], "SK": ["canada"], "NT": ["canada"], "YT": ["canada"], "NU": ["canada"],
+  // EC (Formerly Canada)
+  "AB": ["ec"], "BC": ["ec"], "MB": ["ec"], "NB": ["ec"], "NL": ["ec"], "NS": ["ec"],
+  "ON": ["ec"], "PE": ["ec"], "QC": ["ec"], "SK": ["ec"], "NT": ["ec"], "YT": ["ec"], "NU": ["ec"],
   // Common European / Others
   "DE": ["usa"],
   "IE": ["uk_ireland"],
@@ -40,7 +40,7 @@ export function getCountryFromPrefix(gaugeId: string): CountryCode | null {
   const prefix = gaugeId.split(":")[0].toUpperCase();
   
   if (prefix === "USGS" || prefix === "NWS") return "usa";
-  if (prefix === "EC") return "canada";
+  if (prefix === "EC" || prefix === "CANADA") return "ec";
   if (prefix === "EA" || prefix === "IE" || prefix === "UK") return "uk_ireland";
   
   return null;
@@ -50,7 +50,7 @@ export function getCountryFromPrefix(gaugeId: string): CountryCode | null {
  * Logic to identify all countries a river belongs to.
  * Checks states, provinces, and gauge prefixes.
  */
-export function getRiverCountries(river: RiverData, stateMap?: Map<string, Set<CountryCode>>): Set<CountryCode> {
+export function getRiverCountries(river: RiverData): Set<CountryCode> {
   // Check cache first
   const cached = countryCache.get(river);
   if (cached) return cached;
@@ -61,14 +61,8 @@ export function getRiverCountries(river: RiverData, stateMap?: Map<string, Set<C
 
   // 1. Check state codes against mapping
   stateList.forEach(s => {
-    // Check dynamic map first, then default
-    const mapped = stateMap?.get(s);
-    if (mapped) {
-      mapped.forEach(c => result.add(c));
-    } else {
-      const defaults = DEFAULT_STATE_MAP[s];
-      if (defaults) defaults.forEach(c => result.add(c));
-    }
+    const defaults = DEFAULT_STATE_MAP[s];
+    if (defaults) defaults.forEach(c => result.add(c));
   });
 
   // 2. Fallbacks for full country names in state field
@@ -90,31 +84,21 @@ export function getRiverCountries(river: RiverData, stateMap?: Map<string, Set<C
 }
 
 /**
- * Scans a full river dataset to build a dynamic mapping of states to countries.
- * This handles ambiguous codes and multi-country sets.
+ * Derives a mapping of states to the countries they belong to based on the provided river data.
  */
 export function deriveRegionMap(rivers: RiverData[]): Map<string, Set<CountryCode>> {
-  const map = new Map<string, Set<CountryCode>>();
-
-  rivers.forEach(r => {
-    const states = (r.states || "").toUpperCase().split(/[ ,]+/).filter(Boolean);
-    if (states.length === 0) return;
-
-    // Identify country from gauges on THIS river
-    const gaugeCountries = new Set<CountryCode>();
-    r.gauges?.forEach(g => {
-      const c = getCountryFromPrefix(g.id);
-      if (c) gaugeCountries.add(c);
+  const stateToCountryMap = new Map<string, Set<CountryCode>>();
+  rivers.forEach(river => {
+    const countries = getRiverCountries(river);
+    const states = (river.states || "").toUpperCase().split(/[ ,]+/).filter(Boolean);
+    states.forEach(s => {
+      if (!stateToCountryMap.has(s)) {
+        stateToCountryMap.set(s, new Set<CountryCode>());
+      }
+      const countrySet = stateToCountryMap.get(s)!;
+      countries.forEach(c => countrySet.add(c));
     });
-
-    // If we found a country from gauges, associate it with all states in this river
-    if (gaugeCountries.size > 0) {
-      states.forEach(s => {
-        if (!map.has(s)) map.set(s, new Set());
-        gaugeCountries.forEach(c => map.get(s)!.add(c));
-      });
-    }
   });
-
-  return map;
+  return stateToCountryMap;
 }
+

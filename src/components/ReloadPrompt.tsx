@@ -1,11 +1,14 @@
 import React from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { Capacitor } from "@capacitor/core";
 
 export const ReloadPrompt: React.FC = () => {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({});
+
+  if (Capacitor.isNativePlatform()) return null;
 
   if (!needRefresh) return null;
 

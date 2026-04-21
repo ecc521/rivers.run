@@ -5,7 +5,7 @@ import { apiReference } from '@scalar/hono-api-reference';
 import { cors } from "hono/cors";
 import { usgsProvider } from "./services/usgs";
 import { nwsProvider } from "./services/nws";
-import { canadaProvider } from "./services/canada";
+import { ecProvider } from "./services/canada";
 import { ukProvider } from "./services/uk";
 import { irelandProvider } from "./services/ireland";
 import { GaugeProvider, GaugeHistory, Units } from "./services/provider";
@@ -26,7 +26,7 @@ export interface Env {
 export const providers: Record<string, GaugeProvider> = {
     "USGS": usgsProvider,
     "NWS": nwsProvider,
-    "EC": canadaProvider,
+    "EC": ecProvider,
     "UK": ukProvider,
     "ireland": irelandProvider
 };

@@ -8,7 +8,7 @@ vi.mock('../services/gaugeRegistry', () => ({
 // Mock providers to avoid actual network calls during full sync tests
 vi.mock('../services/usgs', () => ({ usgsProvider: { getHistory: vi.fn(), getLatest: vi.fn(), getFullSiteListing: vi.fn() } }));
 vi.mock('../services/nws', () => ({ nwsProvider: { getLatest: vi.fn() } }));
-vi.mock('../services/canada', () => ({ canadaProvider: { getHistory: vi.fn(), getLatest: vi.fn(), getFullSiteListing: vi.fn() } }));
+vi.mock('../services/canada', () => ({ ecProvider: { getHistory: vi.fn(), getLatest: vi.fn(), getFullSiteListing: vi.fn() } }));
 vi.mock('../services/uk', () => ({ ukProvider: { getLatest: vi.fn(), getFullSiteListing: vi.fn() } }));
 vi.mock('../services/ireland', () => ({ irelandProvider: { getLatest: vi.fn(), getFullSiteListing: vi.fn() } }));
 vi.mock('../services/france', () => ({ franceProvider: { getLatest: vi.fn(), getFullSiteListing: vi.fn() } }));

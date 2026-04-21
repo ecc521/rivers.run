@@ -6,6 +6,8 @@ import { FilterCheckbox } from "./FilterCheckbox";
 import { useLists } from "../context/ListsContext";
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
+import { getShareBaseUrl } from "../utils/url";
+
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -83,7 +85,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   };
 
   const getShareUrl = () => {
-      const url = new URL(window.location.origin + window.location.pathname);
+      const url = new URL(getShareBaseUrl(window.location.pathname));
+
       const params = url.searchParams;
 
       const setIfValid = (key: string, val: any, defaultVal?: any) => {
@@ -491,7 +494,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                   <option value="none">All Available Rivers</option>
                   <option value="favorites">Favorites</option>
                   {myLists.map(l => (
-                     <option key={l.id} value={l.id}>[+] {l.title}</option>
+                     <option key={l.id} value={l.id}>{l.title}</option>
                   ))}
                 </select>
               </div>

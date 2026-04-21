@@ -72,7 +72,7 @@ const Home: React.FC = () => {
 
    const { rivers, loading: riversLoading, error: riversError, isGlobalStale, dataGeneratedAt, refresh } = useRivers();
    const { syncError: listSyncError, refreshCloudState } = useLists();
-   const [loading, setLoading] = useState(true);
+   const [loading, setLoading] = useState(riversLoading && rivers.length === 0);
    const [error, setError] = useState<string | null>(null);
  
    // Sync internal loading state with rivers data hook
@@ -343,8 +343,25 @@ const Home: React.FC = () => {
     );
   if (error)
     return (
-      <div className="page-content center">
-        <h2>Error: {error}</h2>
+      <div className="page-content center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '15px' }}>
+        <h2 style={{ marginBottom: "5px" }}>River data failed to download</h2>
+        <p style={{ color: "var(--text-muted)", marginTop: 0 }}>Please connect to the internet and try again.</p>
+        <button 
+          onClick={() => refresh()}
+          style={{
+            padding: "10px 20px",
+            fontSize: "1rem",
+            fontWeight: "bold",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor: "var(--primary)",
+            color: "#ffffff",
+            cursor: "pointer",
+            marginTop: "10px"
+          }}
+        >
+          Try Again
+        </button>
       </div>
     );
 
@@ -381,7 +398,7 @@ const Home: React.FC = () => {
   const regionLabels: Record<string, string> = {
     global: "Global",
     usa: "US",
-    canada: "Canadian",
+    ec: "EC",
     uk_ireland: "UK & Irish"
   };
 

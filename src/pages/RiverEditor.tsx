@@ -13,7 +13,6 @@ import { useSettings } from "../context/SettingsContext";
 import { AuthModal } from "../components/AuthModal";
 import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { useModal } from "../context/ModalContext";
-import { useRivers } from "../hooks/useRivers";
 import { ALL_STATE_CODES } from "../utils/regions";
 import { RiverHistoryPanel } from "../components/RiverHistoryPanel";
 import { RiverHistoryComparison } from "../components/RiverHistoryComparison";
@@ -27,7 +26,6 @@ export default function RiverEditor() {
   const { user, isAdmin } = useAuth();
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert, confirm, prompt, resolveSuggestion } = useModal();
-  const { availableStates } = useRivers();
   
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -462,7 +460,7 @@ export default function RiverEditor() {
       <hr style={{ borderColor: 'var(--border)', margin: '15px 0 20px 0' }} />
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents, opacity }}>
-        <RiverDetailsEditor riverData={riverData} setRiverData={setRiverData} availableStates={availableStates} />
+        <RiverDetailsEditor riverData={riverData} setRiverData={setRiverData} />
         <RiverGaugesEditor riverData={riverData} setRiverData={setRiverData} />
         {hasPrimaryGauge && <RiverFlowThresholdsEditor riverData={riverData} setRiverData={setRiverData} />}
         <RiverAccessEditor riverData={riverData} setRiverData={setRiverData} />
@@ -595,7 +593,7 @@ export default function RiverEditor() {
   );
 }
 
-const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any, availableStates: string[] }> = ({ riverData, setRiverData, availableStates }) => (
+const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ riverData, setRiverData }) => (
   <>
     <div style={{ display: 'flex', gap: '15px' }}>
       <div style={{ flex: 2 }}>
@@ -672,9 +670,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any, availabl
           }} 
         >
            <option value="" disabled>Add State...</option>
-           {availableStates.filter(st => !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
-           <option disabled>──────────</option>
-          {ALL_STATE_CODES.filter(st => !availableStates.includes(st) && !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
+          {ALL_STATE_CODES.filter(st => !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
         </select>
       </div>
     </div>

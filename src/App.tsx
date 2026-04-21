@@ -25,9 +25,46 @@ import Footer from "./components/Footer";
 
 import { recordAppOpen } from "./utils/appReview";
 
+import { Capacitor } from '@capacitor/core';
+import { CapacitorUpdater } from '@capgo/capacitor-updater';
+
 function App() {
   useEffect(() => {
     recordAppOpen();
+
+    if (Capacitor.isNativePlatform()) {
+      // Notify Capgo the app boots successfully
+      CapacitorUpdater.notifyAppReady();
+
+      // Check for OTA updates
+      const checkUpdate = async () => {
+        try {
+          // Bypass cache to always query the live edge manifest
+          const res = await fetch('https://rivers.run/ota/manifest.json', { cache: 'no-store' });
+          if (res.ok) {
+            const remoteData = await res.json();
+            const current = await CapacitorUpdater.current();
+            const currentVersion = current.bundle?.id || current.native;
+            
+            // If there's a new version available
+            if (remoteData.version && remoteData.version !== currentVersion) {
+               console.log(`Downloading OTA update ${remoteData.version}...`);
+               const downloadedBundle = await CapacitorUpdater.download({
+                  version: remoteData.version,
+                  url: remoteData.url,
+               });
+               
+               // Set it to apply automatically upon next app cold start or backgrounding
+               CapacitorUpdater.next({ id: downloadedBundle.id });
+            }
+          }
+        } catch (error) {
+           console.error("Failed to check for OTA update:", error);
+        }
+      };
+      
+      checkUpdate();
+    }
   }, []);
 
   return (

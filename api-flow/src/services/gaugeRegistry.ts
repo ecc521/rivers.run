@@ -1,6 +1,6 @@
 import { GaugeSite, GaugeProvider } from './provider';
 import { usgsProvider } from './usgs';
-import { canadaProvider } from './canada';
+import { ecProvider } from './canada';
 import { nwsProvider } from './nws';
 import { ukProvider } from './uk';
 import { irelandProvider } from './ireland';
@@ -9,7 +9,7 @@ import type { Env } from '../index';
 
 const providers: GaugeProvider[] = [
     usgsProvider,
-    canadaProvider,
+    ecProvider,
     nwsProvider,
     ukProvider,
     irelandProvider

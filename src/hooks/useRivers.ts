@@ -227,22 +227,18 @@ export const useRivers = (): UseRiversResult => {
         let processedData = data;
         let genTime: number | null = null;
 
-        // Enrich the rivers with flow data
+        // Enrichment
         if (flowData) {
           genTime = flowData.generatedAt || Date.now();
           processedData = data.map((river: any, index: number) => enrichRiver(river, index, flowData, settings));
 
-          // Create standalone gauges for any gauge present in flow data
+          // Standalone gauges
           const standaloneGauges: RiverData[] = [];
-
           for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
               if (gaugeId === "generatedAt") continue;
               const standaloneGauge = buildStandaloneGauge(gaugeId, gaugeData, settings);
-              if (standaloneGauge) {
-                 standaloneGauges.push(standaloneGauge);
-              }
+              if (standaloneGauge) standaloneGauges.push(standaloneGauge);
           }
-          
           processedData = [...processedData, ...standaloneGauges];
         }
 
@@ -258,9 +254,10 @@ export const useRivers = (): UseRiversResult => {
 
         // Persist to local storage for future bootstrap
         try {
-            // Strip heavy fields, descriptions to keep boot storage ultralight
-            // We now KEEP standalone gauges but ensure they are minimal skeleton records
+            // Exclude standalone gauges from the bootstrap cache to stay under localStorage limits.
+            // These aren't needed for the Home list and will be re-fetched/merged during the regular update flow.
             const strippedRivers = processedData
+                .filter((r: any) => !r.isGauge) // Focus on rivers for Home screen performance; gauges load later
                 .map((r: any) => {
                     const skeletonValues = { ...r };
                     delete (skeletonValues as any).gaugeData;
@@ -285,12 +282,9 @@ export const useRivers = (): UseRiversResult => {
     };
 
     // Service Worker Broadcast Listener
-    // Triggered when StaleWhileRevalidate finds fresh data in the background
     const updateChannel = new BroadcastChannel('flow-data-updates');
     updateChannel.onmessage = (_event) => {
         console.log("Service Worker broadcast: Fresh flow data available. Refreshing UI...");
-        // Re-fetch with force=true to pull fresh data from the updated cache
-        // We add a tiny delay to ensure the SW has finished writing to cache
         setTimeout(() => fetchRivers(true), 100);
     };
 
@@ -316,9 +310,7 @@ export const useRivers = (): UseRiversResult => {
       globalLoading = false;
       globalError = null;
       globalRiversCache = null;
-      // We don't use the inner fetchRivers because of useEffect closure, but navigation or mount will trigger it.
-      // Or we can manually trigger it here if we expose it.
-      window.location.reload(); // Simplest "Update" button implementation for now
+      window.location.reload();
   };
 
   return { 

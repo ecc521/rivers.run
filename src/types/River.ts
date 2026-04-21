@@ -86,6 +86,12 @@ export interface RiverData {
   isReadingStale?: boolean;
   
   updatedAt?: number; // Unix timestamp
+
+  // BREADCRUMB INTERNAL UI SEARCH CACHE PROPERTIES (Speed Optimization)
+  _searchString?: string;
+  _lowerName?: string;
+  _lowerSection?: string;
+  _searchTags?: string;
 }
 
 // ------ Gauge Payload Formats ------

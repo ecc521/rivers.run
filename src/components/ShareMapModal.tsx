@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
+import { getShareBaseUrl } from "../utils/url";
+
 
 interface ShareMapModalProps {
     isOpen: boolean;
@@ -103,8 +105,9 @@ export const ShareMapModal: React.FC<ShareMapModalProps> = ({
         }
 
         const baseUrl = linkType === "map" 
-            ? window.location.origin + window.location.pathname
-            : window.location.origin + "/";
+            ? getShareBaseUrl(window.location.pathname)
+            : getShareBaseUrl("/");
+
             
         const newUrl = buildShareUrl({
             baseUrl, linkType, shareMapState, shareFilters,

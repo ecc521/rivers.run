@@ -23,7 +23,6 @@ export interface AdvancedSearchQuery {
   listData?: { id: string; order: number }[];
   mapRadiusMode?: "current" | "center" | "custom";
   country?: string; // Added country filter
-  stateToCountryMap?: Map<string, Set<CountryCode>>; // Injected dynamic map
 }
 
 export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
@@ -74,24 +73,18 @@ function skillToNumber(skill: string | number): number {
   return map[skill.toUpperCase()] || Infinity;
 }
 
-function getTagArray(tags: any): string[] {
-  if (Array.isArray(tags)) return tags;
-  if (tags) return [tags];
-  return [];
-}
+
 
 
 function matchNormalSearch(r: RiverData, terms: string[]): boolean {
   if (terms.length === 0) return true;
-  const searchStr = [
+  const searchStr = r._searchString || [
     r.name || "",
     r.section || "",
-    ...getTagArray(r.tags),
+    ...(Array.isArray(r.tags) ? r.tags : r.tags ? [r.tags] : []),
     r.isGauge ? "gauge" : "",
     ...(r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [])
   ].join(" ").toLowerCase();
-
-  
   return terms.every(term => searchStr.includes(term));
 }
 
@@ -148,46 +141,34 @@ function getSortKey(r: RiverData, sortBy: string): any {
   }
 }
 
-function getSearchRelevanceScore(r: RiverData, terms: string[]): number {
+function getSearchRelevanceScore(r: RiverData, terms: string[], regexes: RegExp[]): number {
   if (terms.length === 0) return 0;
   let score = 0;
   
-  const name = String(r.name || "").toLowerCase();
-  const section = String(r.section || "").toLowerCase();
-  
-  const tagsStr = [
-    ...getTagArray(r.tags),
+  const lowerName = r._lowerName || String(r.name || "").toLowerCase();
+  const lowerSection = r._lowerSection || String(r.section || "").toLowerCase();
+  const searchTags = r._searchTags || [
+    ...(Array.isArray(r.tags) ? r.tags : r.tags ? [r.tags] : []),
     r.isGauge ? "gauge" : "",
     ...(r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [])
   ].join(" ").toLowerCase();
+  
+  for (let i = 0; i < terms.length; i++) {
+    const t = terms[i];
+    const prefixRegex = regexes[i]; 
 
-
-  for (const term of terms) {
-    const t = term.toLowerCase();
-    const escapedTerm = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const prefixRegex = new RegExp(`(^|[^a-z0-9])${escapedTerm}`, 'i'); 
-
-    if (name === t) {
-      score += 100;
-    } else if (name.startsWith(t)) {
-      score += 80;
-    } else if (prefixRegex.test(name)) {
-      score += 60;
-    } else if (name.includes(t)) {
-      score += 30;
-    } else if (section === t) {
-      score += 50; 
-    } else if (section.startsWith(t)) {
-      score += 40;
-    } else if (prefixRegex.test(section)) {
-      score += 30;
-    } else if (section.includes(t)) {
-      score += 15;
-    } else if (prefixRegex.test(tagsStr)) {
-      score += 10;
-    } else if (tagsStr.includes(t)) {
-      score += 2;
-    }
+    if (lowerName === t) score += 100;
+    else if (lowerName.startsWith(t)) score += 80;
+    else if (prefixRegex.test(lowerName)) score += 60;
+    else if (lowerName.includes(t)) score += 30;
+    
+    else if (lowerSection === t) score += 50; 
+    else if (lowerSection.startsWith(t)) score += 40;
+    else if (prefixRegex.test(lowerSection)) score += 30;
+    else if (lowerSection.includes(t)) score += 15;
+    
+    else if (prefixRegex.test(searchTags)) score += 10;
+    else if (searchTags.includes(t)) score += 2;
   }
   return score;
 }
@@ -206,10 +187,12 @@ export function filterRivers(
   const terms = query.normalSearch 
     ? query.normalSearch.toLowerCase().split(/[ ,]+/).filter(t => t.length > 0) 
     : [];
+    
+  const termRegexes = terms.map(t => new RegExp(`(^|[^a-z0-9])${t.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}`, 'i'));
 
   list = list.filter((r) => {
     if (query.country && query.country !== "global") {
-       const countries = getRiverCountries(r, query.stateToCountryMap);
+       const countries = getRiverCountries(r);
        if (!countries.has(query.country as CountryCode)) return false;
     }
     if (!matchNormalSearch(r, terms)) return false;
@@ -240,8 +223,8 @@ export function filterRivers(
 
       // Respect search relevance for alphabetical sort if search terms exist
       if (isAlphabetical && terms.length > 0) {
-        const aScore = getSearchRelevanceScore(a.value, terms);
-        const bScore = getSearchRelevanceScore(b.value, terms);
+        const aScore = getSearchRelevanceScore(a.value, terms, termRegexes);
+        const bScore = getSearchRelevanceScore(b.value, terms, termRegexes);
         if (aScore !== bScore) {
           return bScore - aScore;
         }
@@ -276,7 +259,7 @@ export function filterRivers(
     const mapped = list.map((r, i) => ({ 
       index: i, 
       value: r,
-      score: getSearchRelevanceScore(r, terms)
+      score: getSearchRelevanceScore(r, terms, termRegexes)
     }));
     mapped.sort((a, b) => {
       const aGauge = !!a.value.isGauge;

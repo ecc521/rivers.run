@@ -79,19 +79,22 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
         const mergedGaugeData: Record<string, GaugeReading[]> = {};
         
         for (const [gaugeId, map] of Object.entries(gaugeDataMap)) {
-            const sortedLive = Array.from(map.values()).sort((a, b) => a.dateTime - b.dateTime);
-            const cachedDataset = [...(river.gaugeData?.[gaugeId] || [])];
+            const cachedDataset = river.gaugeData?.[gaugeId] || [];
             
-            for (const liveReading of sortedLive) {
-                const matchIndex = cachedDataset.findIndex(item => item.dateTime === liveReading.dateTime);
-                if (matchIndex >= 0) {
-                   cachedDataset[matchIndex] = { ...cachedDataset[matchIndex], ...liveReading };
+            // Merge backwards so cache doesn't overwrite live flow data
+            for (let i = 0; i < cachedDataset.length; i++) {
+                const cachedItem = cachedDataset[i];
+                const existingLive = map.get(cachedItem.dateTime);
+                
+                if (existingLive) {
+                    map.set(cachedItem.dateTime, { ...cachedItem, ...existingLive });
                 } else {
-                   cachedDataset.push(liveReading as GaugeReading);
+                    map.set(cachedItem.dateTime, cachedItem);
                 }
             }
-            cachedDataset.sort((a, b) => a.dateTime - b.dateTime);
-            mergedGaugeData[gaugeId] = cachedDataset;
+            
+            const mergedSorted = Array.from(map.values()).sort((a, b) => a.dateTime - b.dateTime);
+            mergedGaugeData[gaugeId] = mergedSorted as GaugeReading[];
         }
 
         dynamicFlowCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap });

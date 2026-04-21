@@ -31,7 +31,7 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
   return (
     <div className="view-selector-container" ref={dropdownRef}>
       <div className="breadcrumb-path">
-        <span className="breadcrumb-item link" onClick={() => onSelectRegion("global")}>
+        <span className="breadcrumb-item link" onClick={() => setIsOpen(!isOpen)}>
             {regionLabel} Rivers
         </span>
         <span className="breadcrumb-separator">/</span>
@@ -73,10 +73,10 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
               USA
             </div>
             <div 
-              className={`view-dropdown-item ${regionLabel === "Canada" ? "selected" : ""}`} 
-              onClick={() => { onSelectRegion("canada"); setIsOpen(false); }}
+              className={`view-dropdown-item ${regionLabel === "EC" ? "selected" : ""}`} 
+              onClick={() => { onSelectRegion("ec"); setIsOpen(false); }}
             >
-              Canada
+              EC
             </div>
             <div 
               className={`view-dropdown-item ${regionLabel === "UK/Ireland" ? "selected" : ""}`} 

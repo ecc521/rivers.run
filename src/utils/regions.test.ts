@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getRiverCountries, deriveRegionMap, type CountryCode } from "./regions";
+import { getRiverCountries } from "./regions";
 import type { RiverData } from "../types/River";
 
 describe("regions", () => {
@@ -11,10 +11,10 @@ describe("regions", () => {
       expect(countries.size).toBe(1);
     });
 
-    it("identifies Canada from province code", () => {
+    it("identifies EC from province code", () => {
       const river = { states: "BC" } as RiverData;
       const countries = getRiverCountries(river);
-      expect(countries.has("canada")).toBe(true);
+      expect(countries.has("ec")).toBe(true);
       expect(countries.size).toBe(1);
     });
 
@@ -22,7 +22,7 @@ describe("regions", () => {
       const river = { states: "WA, BC" } as RiverData;
       const countries = getRiverCountries(river);
       expect(countries.has("usa")).toBe(true);
-      expect(countries.has("canada")).toBe(true);
+      expect(countries.has("ec")).toBe(true);
       expect(countries.size).toBe(2);
     });
 
@@ -35,14 +35,7 @@ describe("regions", () => {
       expect(countries.has("usa")).toBe(true);
     });
 
-    it("uses dynamic map override", () => {
-      const river = { states: "XX" } as RiverData;
-      const dynamicMap = new Map<string, Set<CountryCode>>([
-        ["XX", new Set(["canada"])]
-      ]);
-      const countries = getRiverCountries(river, dynamicMap);
-      expect(countries.has("canada")).toBe(true);
-    });
+
 
     it("fallbacks to global if unknown", () => {
       const river = { states: "UNKNOWN" } as RiverData;
@@ -51,22 +44,5 @@ describe("regions", () => {
     });
   });
 
-  describe("deriveRegionMap", () => {
-    it("learns state mapping from gauges", () => {
-      const rivers = [
-        { 
-          states: "WA", 
-          gauges: [{ id: "USGS:1" }] 
-        },
-        {
-          states: "BC",
-          gauges: [{ id: "EC:1" }]
-        }
-      ] as any as RiverData[];
-      
-      const map = deriveRegionMap(rivers);
-      expect(map.get("WA")?.has("usa")).toBe(true);
-      expect(map.get("BC")?.has("canada")).toBe(true);
-    });
-  });
+
 });

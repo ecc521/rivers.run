@@ -13,6 +13,11 @@ import { RiverExpansion } from "./RiverExpansion";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { filterRivers, defaultAdvancedSearchQuery } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
+import { useModal } from "../context/ModalContext";
+import { useAuth } from "../context/AuthContext";
+import { getRiverShareUrl } from "../utils/url";
+import { fetchAPI } from "../services/api";
+
 
 import { SearchOverlay } from "./SearchOverlay";
 import { ShareMapModal } from "./ShareMapModal";
@@ -328,12 +333,17 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const { rivers } = useRivers();
     const { isRiverInQuickList } = useLists();
     const location = useLocation();
+    const { alert, prompt } = useModal();
+    const { user } = useAuth();
     
     const [isFullScreen, setIsFullScreen] = useState(false);
+
     const [selectedRiver, setSelectedRiver] = useState<RiverData | null>(null);
     const [selectedAccessPoint, setSelectedAccessPoint] = useState<any>(null);
     const [activePopupData, setActivePopupData] = useState<{ river: RiverData, point: any, lat: number, lon: number } | null>(null);
     const [radarMode, setRadarMode] = useState<"off" | "live" | "60min">("off");
+    const [copiedRiverId, setCopiedRiverId] = useState<string | null>(null);
+
     
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -369,8 +379,57 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             setActivePopupData({ river, point, lat, lon });
         }
     }, [navigate]);
+    const handleShare = async (e: React.MouseEvent, river: RiverData) => {
+        e.preventDefault();
+        const url = getRiverShareUrl(river);
+        
+        if (Capacitor.isNativePlatform() && navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${river.name} - ${river.section}`,
+                    url: url
+                });
+            } catch (err) {
+                // cancelled or failed
+                console.warn("Share failed or was cancelled", err);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(url);
+                setCopiedRiverId(river.id);
+                setTimeout(() => setCopiedRiverId(null), 2000);
+            } catch (err) {
+                console.error("Clipboard copy failed", err);
+                await alert("Failed to copy link.", "Error");
+            }
+        }
+    };
+
+
+    const handleReport = async (e: React.MouseEvent, river: RiverData) => {
+        e.preventDefault();
+        const reason = await prompt(`Please explain the problem with the data for ${river.name}:`, "Report Content");
+        if (!reason || !reason.trim()) return;
+
+        try {
+            await fetchAPI("/reports", {
+                method: "POST",
+                body: JSON.stringify({
+                    target_id: river.id,
+                    type: "river",
+                    reason: reason.trim(),
+                    email: user?.email || ""
+                })
+            });
+            await alert("Report submitted successfully. Our moderators will review it shortly.", "Report Sent");
+        } catch (e: any) {
+            await alert("Failed to submit report: " + e.message);
+        }
+    };
+
 
     const [searchQuery, setSearchQuery] = useState<AdvancedSearchQuery>(() => {
+
         const q: AdvancedSearchQuery = { ...defaultAdvancedSearchQuery };
         if (searchParams.get("name")) q.name = searchParams.get("name")!;
         if (searchParams.get("section")) q.section = searchParams.get("section")!;
@@ -716,6 +775,25 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                             >
                                 Open in Google Maps
                             </a>
+                            <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
+                            <button 
+                                onClick={(e) => handleShare(e, activePopupData.river)}
+                                style={{ 
+                                    display: "inline-block", 
+                                    marginTop: "8px", 
+                                    fontWeight: "bold", 
+                                    background: "none", 
+                                    border: "none", 
+                                    color: "var(--primary)", 
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    fontSize: "inherit"
+                                }}
+                            >
+                                {copiedRiverId === activePopupData.river.id ? "Copied!" : "Share River"}
+                            </button>
+
+
                         </div>
                     </Popup>
                 )}
@@ -833,6 +911,64 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                     >
                                         📍 Navigate in Google Maps
                                     </a>
+                                    <button 
+                                        onClick={(e) => handleShare(e, selectedRiver)}
+                                        style={{ 
+                                            display: "inline-block", 
+                                            backgroundColor: "transparent", 
+                                            color: "var(--primary)", 
+                                            border: "1px solid var(--primary)", 
+                                            padding: "7px 12px", 
+                                            borderRadius: "8px", 
+                                            fontWeight: "bold", 
+                                            marginLeft: "10px", 
+                                            cursor: "pointer" 
+                                        }}
+                                    >
+                                        {copiedRiverId === selectedRiver.id ? "Copied!" : "📤 Share"}
+                                    </button>
+
+                                    {selectedRiver.aw && (
+                                        <a 
+                                            href={`https://www.americanwhitewater.org/content/River/view/river-detail/${selectedRiver.aw}`} 
+                                            target="_blank" 
+                                            rel="noreferrer"
+                                            style={{ 
+                                                display: "inline-block", 
+                                                backgroundColor: "transparent", 
+                                                color: "var(--primary)", 
+                                                border: "1px solid var(--primary)", 
+                                                padding: "7px 12px", 
+                                                borderRadius: "8px", 
+                                                fontWeight: "bold", 
+                                                marginLeft: "10px", 
+                                                textDecoration: "none",
+                                                fontSize: "0.9rem"
+                                            }}
+                                        >
+                                            AW
+                                        </a>
+                                    )}
+
+                                    <button 
+                                        onClick={(e) => handleReport(e, selectedRiver)}
+                                        style={{ 
+                                            display: "inline-block", 
+                                            backgroundColor: "transparent", 
+                                            color: "var(--text-muted)", 
+                                            border: "1px solid var(--border)", 
+                                            padding: "7px 12px", 
+                                            borderRadius: "8px", 
+                                            fontWeight: "bold", 
+                                            marginLeft: "10px", 
+                                            cursor: "pointer",
+                                            fontSize: "0.9rem"
+                                        }}
+                                    >
+                                        🚩 Report
+                                    </button>
+
+
                                 </div>
                             )}
 

@@ -189,7 +189,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
                      }
                   }}
                 >
-                  [+] Add all ({filteredRivers.length}) to Target
+                  ★ Star all ({filteredRivers.length}) for Target
                 </div>
             )}
             
@@ -210,7 +210,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
                 setMenuOpen(false);
               }}
             >
-              {user ? "+ Manage extra lists on Lists page" : "Sign in to create lists"}
+              {user ? "Manage extra lists on Lists page" : "Sign in to create lists"}
             </div>
           </div>
         )}

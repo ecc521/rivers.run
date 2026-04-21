@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import type { RiverData } from "../types/River";
 import { getSkillAbbreviation, getSkillFull } from "../utils/skillTranslations";
 import { calculateColor } from "../utils/flowInfoCalculations";
+import { slugify } from "../utils/url";
+
 
 import { useLists } from "../context/ListsContext";
 import { useSettings } from "../context/SettingsContext";
@@ -19,13 +21,7 @@ interface RiverItemProps {
 
 }
 
-function slugify(text: string) {
-  if (!text) return '';
-  const cleaned = text.toString().toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '');
-  return cleaned.split('-').filter(Boolean).join('-');
-}
+
 
 export const RiverItem: React.FC<RiverItemProps> = ({
   river,
@@ -49,7 +45,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
     .filter(Boolean)
     .join(" ");
 
-  const bgColor = river.isReadingStale ? null : calculateColor(
+  const bgColor = calculateColor(
     river.running ?? null,
     isDarkMode,
     isColorBlindMode,
@@ -77,16 +73,17 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   let displayColor = "inherit";
 
   if (targetListId) {
+    // Check both My Lists and local cache effectively
     const list = myLists.find(l => l.id === targetListId);
     if (list) {
       isActive = list.rivers.some(r => r.id === river.id);
-      
-      if (myLists.length === 1 || quickActionPref === "favorites") {
-        displayIcon = isActive ? "★" : "☆";
-      } else {
-        displayIcon = isActive ? "✓" : "+";
-      }
+      displayIcon = isActive ? "★" : "☆";
       displayColor = isActive ? "#ffd700" : "inherit";
+    } else {
+       // It's likely a community list we are viewing/targeting
+       // We can still show it as 'active' (starred) if we are currently looking at that list's content
+       // but we won't be able to modify it without the redirect.
+       // For now, if we don't have the list object, we default to outline star.
     }
   }
 
@@ -103,6 +100,16 @@ export const RiverItem: React.FC<RiverItemProps> = ({
 
     try {
       if (targetListId) {
+         const ownedList = myLists.find(l => l.id === targetListId);
+         if (!ownedList) {
+             const goToLists = await confirm(
+                 "You are currently viewing a community list that you don't own. To add or remove rivers, please create a personal copy of this list on the Lists page. Would you like to go there now?",
+                 "List Ownership"
+             );
+             if (goToLists) navigate("/lists");
+             return;
+         }
+
          if (isActive) {
             await removeRiverFromList(targetListId, river.id);
          } else {
@@ -129,7 +136,14 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   };
 
   const getFlowDisplay = () => {
-    if ((river.flowInfo || typeof river.flow === "string") && !river.isReadingStale) {
+    if (river.isReadingStale) {
+      return (
+        <span className="riverspan flowspan" style={{ fontSize: "0.85em", fontStyle: "italic", opacity: 0.8 }}>
+          (stale)
+        </span>
+      );
+    }
+    if (river.flowInfo || typeof river.flow === "string") {
       return (
         <span className="riverspan flowspan">
           {river.flowInfo || (typeof river.flow === "string" ? river.flow : "")}
@@ -203,8 +217,8 @@ export const RiverItem: React.FC<RiverItemProps> = ({
 
           style={{
             color: displayColor,
-            fontWeight: quickActionPref.startsWith("list:") ? "bold" : "normal",
-            fontSize: quickActionPref.startsWith("list:") ? "1.3em" : "1.2em"
+            fontWeight: "bold",
+            fontSize: "1.3em"
           }}
           onClick={handleActionClick}
         >

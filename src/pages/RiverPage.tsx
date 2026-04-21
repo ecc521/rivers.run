@@ -6,6 +6,12 @@ import { useSEO } from "../hooks/useSEO";
 import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { calculateColor, calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { useSettings } from "../context/SettingsContext";
+import { useModal } from "../context/ModalContext";
+import { useAuth } from "../context/AuthContext";
+import { getRiverShareUrl } from "../utils/url";
+import { fetchAPI } from "../services/api";
+import { Capacitor } from "@capacitor/core";
+
 
 
 const RiverPage: React.FC = () => {
@@ -16,7 +22,62 @@ const RiverPage: React.FC = () => {
 
   const river = rivers.find((r) => r.id === id);
   const { isDarkMode, isColorBlindMode } = useSettings();
+  const { alert, prompt } = useModal();
+  const { user } = useAuth();
   const [scrubbedReading, setScrubbedReading] = useState<any | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleReport = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!river) return;
+    const reason = await prompt(`Please explain the problem with the data for ${river.name}:`, "Report Content");
+    if (!reason || !reason.trim()) return;
+
+    try {
+      await fetchAPI("/reports", {
+        method: "POST",
+        body: JSON.stringify({
+          target_id: river.id,
+          type: "river",
+          reason: reason.trim(),
+          email: user?.email || ""
+        })
+      });
+      await alert("Report submitted successfully. Our moderators will review it shortly.", "Report Sent");
+    } catch (e: any) {
+      await alert("Failed to submit report: " + e.message);
+    }
+  };
+
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!river) return;
+    const url = getRiverShareUrl(river);
+    
+    if (Capacitor.isNativePlatform() && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${river.name} - ${river.section}`,
+          url: url
+        });
+      } catch (err) {
+        // user cancelled or share failed - logging for diagnostic purposes
+        console.warn("Share failed or was cancelled", err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      } catch (err) {
+        console.error("Clipboard copy failed", err);
+        await alert("Failed to copy link. Please manually copy the URL.", "Error");
+      }
+    }
+  };
+
+
   
   // NEVER call hooks conditionally! This caused the infinite HMR crash loop. 
   // We pass an empty object if river isn't loaded yet to preserve the exact hook call order safely.
@@ -119,6 +180,73 @@ const RiverPage: React.FC = () => {
           >
             Edit This River
           </Link>
+          <span style={{ margin: "0 8px", opacity: 0.3, fontSize: "0.85rem" }}>|</span>
+          <button 
+            onClick={handleShare}
+            style={{
+              display: "inline-block",
+              background: "none",
+              border: "none",
+              padding: 0,
+              fontSize: "0.85rem",
+              color: "var(--primary)",
+              cursor: "pointer",
+              opacity: 0.8,
+              fontWeight: "600",
+              transition: "opacity 0.2s"
+            }}
+            onMouseOver={(e) => e.currentTarget.style.opacity = "1"}
+            onMouseOut={(e) => e.currentTarget.style.opacity = "0.8"}
+          >
+            {isCopied ? "Link Copied!" : "Share River"}
+          </button>
+
+          {river.aw && (
+            <>
+              <span style={{ margin: "0 8px", opacity: 0.3, fontSize: "0.85rem" }}>|</span>
+              <a 
+                href={`https://www.americanwhitewater.org/content/River/view/river-detail/${river.aw}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "inline-block",
+                  fontSize: "0.85rem",
+                  color: "var(--primary)",
+                  textDecoration: "none",
+                  opacity: 0.8,
+                  fontWeight: "600",
+                  transition: "opacity 0.2s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.opacity = "1"}
+                onMouseOut={(e) => e.currentTarget.style.opacity = "0.8"}
+              >
+                View on AW
+              </a>
+            </>
+          )}
+
+          <span style={{ margin: "0 8px", opacity: 0.3, fontSize: "0.85rem" }}>|</span>
+          <button 
+            onClick={handleReport}
+            style={{
+              display: "inline-block",
+              background: "none",
+              border: "none",
+              padding: 0,
+              fontSize: "0.85rem",
+              color: "var(--primary)",
+              cursor: "pointer",
+              opacity: 0.8,
+              fontWeight: "600",
+              transition: "opacity 0.2s"
+            }}
+            onMouseOver={(e) => e.currentTarget.style.opacity = "1"}
+            onMouseOut={(e) => e.currentTarget.style.opacity = "0.8"}
+          >
+            Report Problem
+          </button>
+
+
         </div>
 
         {pillRiver && pillRiver.running != null && (
