@@ -52,7 +52,7 @@ describe('Sitemap Generation Engine', () => {
                 put: vi.fn().mockImplementation(async (_key: string, value: any) => {
                     if (value && typeof value.getReader === 'function') {
                         const reader = value.getReader();
-                        const decoder = new TextEncoder().encoding === 'utf-8' ? new TextDecoder() : new TextDecoder();
+                        const decoder = new TextDecoder();
                         while (true) {
                             const { done, value: chunk } = await reader.read();
                             if (done) break;
