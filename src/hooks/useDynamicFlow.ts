@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { RiverData, GaugeReading } from "../types/River";
 import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { FLOW_API_URL } from "../services/api";
+import { useSettings } from "../context/SettingsContext";
 
 const dynamicFlowCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> }>();
 
@@ -10,8 +11,9 @@ const dynamicFlowCache = new Map<string, { lastFetchedMs: number; gaugeData: Rec
  * Fetches 7 days of historical flow data + forecasts on-demand for all gauge providers.
  * Used primarily for the "Search Discovery" detailed view and River Details page.
  */
-export function useDynamicFlow(river: RiverData) {
+export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null) {
   const [dynamicPayload, setDynamicPayload] = useState<{ gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> } | null>(null);
+  const settings = useSettings();
 
   useEffect(() => {
     if (!river.gauges || river.gauges.length === 0) return;
@@ -128,8 +130,7 @@ export function useDynamicFlow(river: RiverData) {
     let latest = null;
     if (primaryData && primaryData.length > 0) {
         for (let i = primaryData.length - 1; i >= 0; i--) {
-            // Favor non-forecast points for "latest" display logic if available
-            if (!primaryData[i].forecast && (primaryData[i].cfs !== undefined || primaryData[i].ft !== undefined)) {
+            if (!primaryData[i].forecast && (primaryData[i].cfs !== undefined || primaryData[i].ft !== undefined || primaryData[i].cms !== undefined || primaryData[i].m !== undefined)) {
                 latest = primaryData[i];
                 break;
             }
@@ -137,21 +138,34 @@ export function useDynamicFlow(river: RiverData) {
     }
 
     if (latest) {
-        const ageInMs = Date.now() - latest.dateTime;
+        const ageInMs = (dataGeneratedAt || Date.now()) - latest.dateTime;
         enriched.isReadingStale = ageInMs > 2 * 60 * 60 * 1000;
 
         enriched.cfs = latest.cfs ?? enriched.cfs;
         const ftValue = latest.ft;
         enriched.ft = (ftValue !== undefined && !isNaN(ftValue)) ? ftValue : enriched.ft;
+        
+        enriched.cms = latest.cms ?? enriched.cms;
+        const mValue = latest.m;
+        enriched.m = (mValue !== undefined && !isNaN(mValue)) ? mValue : enriched.m;
+        
         enriched.running = calculateRelativeFlow(enriched) ?? enriched.running;
         
-        if (enriched.cfs && enriched.ft) enriched.flowInfo = `${Math.round(enriched.cfs)}cfs, ${Math.round(enriched.ft * 100) / 100}ft`;
-        else if (enriched.cfs) enriched.flowInfo = `${Math.round(enriched.cfs)}cfs`;
-        else if (enriched.ft) enriched.flowInfo = `${Math.round(enriched.ft * 100) / 100}ft`;
+        const showMetric = settings?.flowUnits === "metric" || (settings?.flowUnits === "default" && latest.cms !== undefined && latest.cfs === undefined);
+        
+        if (showMetric) {
+            if (enriched.cms !== undefined && enriched.m !== undefined) enriched.flowInfo = `${Math.round(enriched.cms)}cms, ${Math.round(enriched.m * 100) / 100}m`;
+            else if (enriched.cms !== undefined) enriched.flowInfo = `${Math.round(enriched.cms)}cms`;
+            else if (enriched.m !== undefined) enriched.flowInfo = `${Math.round(enriched.m * 100) / 100}m`;
+        } else {
+            if (enriched.cfs !== undefined && enriched.ft !== undefined) enriched.flowInfo = `${Math.round(enriched.cfs)}cfs, ${Math.round(enriched.ft * 100) / 100}ft`;
+            else if (enriched.cfs !== undefined) enriched.flowInfo = `${Math.round(enriched.cfs)}cfs`;
+            else if (enriched.ft !== undefined) enriched.flowInfo = `${Math.round(enriched.ft * 100) / 100}ft`;
+        }
     }
     
     return enriched;
-  }, [river, dynamicPayload]);
+  }, [river, dynamicPayload, dataGeneratedAt, settings?.flowUnits]);
 
   return enrichedRiver;
 }

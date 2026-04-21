@@ -14,9 +14,10 @@ interface RiverExpansionProps {
   isMapOverlay?: boolean;
   onShowAccessPoints?: () => void;
   dataGeneratedAt?: number | null;
+  onScrub?: (reading: any | null) => void;
 }
 
-export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, dataGeneratedAt }) => {
+export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, dataGeneratedAt, onScrub }) => {
   const [showMap, setShowMap] = useState(false);
   const { user, isAdmin } = useAuth();
   const { prompt, alert } = useModal();
@@ -52,7 +53,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
   }, []);
 
   // The hook directly yields a fully cloned, flow-hydrated RiverData precisely compiled
-  const displayRiver = useDynamicFlow(river) || river;
+  const displayRiver = useDynamicFlow(river, dataGeneratedAt) || river;
 
   const getSkillAndClassText = () => {
     const skillFull = getSkillFull(river.skill);
@@ -175,7 +176,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
         </button>
       </div>
 
-      <USGSGraphs river={displayRiver} dataGeneratedAt={dataGeneratedAt} />
+      <USGSGraphs river={displayRiver} dataGeneratedAt={dataGeneratedAt} onScrub={onScrub} />
     </div>
   );
 };

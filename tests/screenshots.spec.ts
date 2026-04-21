@@ -25,16 +25,16 @@ const mockFavorites = JSON.stringify([
 ]);
 
 const SHOT_SEQUENCE = [
-  { id: '01', name: 'main_list', url: '/', theme: 'light', orientation: 'portrait' },
-  { id: '02', name: 'map_view', url: '/map', theme: 'light', orientation: 'portrait' },
-  { id: '03', name: 'search_filters', url: '/?searchExpanded=true', theme: 'light', orientation: 'portrait' },
-  { id: '04', name: 'main_list_dark', url: '/', theme: 'dark', orientation: 'portrait' },
-  { id: '05', name: 'map_wide', url: '/map', theme: 'light', orientation: 'landscape' },
-  { id: '06', name: 'river_graph_dark', url: '/river/10xV_iboNh1Ib8bReq8JDIxfkZde7JDjRAQC9Evczf6k/youghiogheny-lower', theme: 'dark', orientation: 'landscape' },
-  { id: '07', name: 'favorites', url: '/?favoritesOnly=true', theme: 'light', orientation: 'portrait' },
-  { id: '08', name: 'map_night', url: '/map', theme: 'dark', orientation: 'portrait' },
-  { id: '09', name: 'search_power', url: '/?searchExpanded=true', theme: 'light', orientation: 'landscape' },
-  { id: '10', name: 'river_details', url: '/river/10xV_iboNh1Ib8bReq8JDIxfkZde7JDjRAQC9Evczf6k/youghiogheny-lower', theme: 'light', orientation: 'portrait' },
+  { id: '01', name: 'main_list', url: '/?country=US', theme: 'light', orientation: 'portrait' },
+  { id: '02', name: 'wide_map', url: '/map?lat=39.0&lng=-80.0&zoom=7&country=US', theme: 'light', orientation: 'portrait' },
+  { id: '03', name: 'river_details', url: '/river/10xV_iboNh1Ib8bReq8JDIxfkZde7JDjRAQC9Evczf6k/youghiogheny-lower', theme: 'light', orientation: 'portrait' },
+  { id: '04', name: 'main_list_sorted_dark', url: '/?country=US&sortBy=running&sortReverse=true', theme: 'dark', orientation: 'portrait' },
+  { id: '05', name: 'river_details_graph', url: '/river/10xV_iboNh1Ib8bReq8JDIxfkZde7JDjRAQC9Evczf6k/youghiogheny-lower', theme: 'light', orientation: 'portrait' },
+  { id: '06', name: 'main_list_search_dark', url: '/?country=US&search=CCCWOR', theme: 'dark', orientation: 'portrait' },
+  { id: '07', name: 'wide_map_radius_dark', url: '/map?lat=39.0&lng=-80.0&zoom=7&distanceMax=200&radiusMode=center&country=US', theme: 'dark', orientation: 'portrait' },
+  { id: '08', name: 'main_list_landscape', url: '/?country=US', theme: 'light', orientation: 'landscape' },
+  { id: '09', name: 'wide_map_landscape', url: '/map?country=US', theme: 'light', orientation: 'landscape' },
+  { id: '10', name: 'river_details_dark', url: '/river/10xV_iboNh1Ib8bReq8JDIxfkZde7JDjRAQC9Evczf6k/youghiogheny-lower', theme: 'dark', orientation: 'portrait' },
 ];
 
 test.describe('App Store Screenshot Automation', () => {

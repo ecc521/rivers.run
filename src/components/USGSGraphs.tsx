@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Legend,
 } from "recharts";
 import type { RiverData } from "../types/River";
 import { useSettings } from "../context/SettingsContext";
@@ -15,6 +16,7 @@ import { useSettings } from "../context/SettingsContext";
 interface Props {
   river: RiverData;
   dataGeneratedAt?: number | null;
+  onScrub?: (reading: any | null) => void;
 }
 
 const formatDate = (timestamp: number) => {
@@ -104,7 +106,7 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
   return null;
 };
 
-export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt }) => {
+export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub }) => {
   const [activeGaugeId, setActiveGaugeId] = useState<string | undefined>(
     river.gauges?.find((g: any) => g.isPrimary)?.id || river.gauges?.[0]?.id
   );
@@ -366,17 +368,25 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt }) => {
           <div
             style={{
               width: "100%",
-              height: "300px",
+              height: "330px",
               backgroundColor: "var(--surface-hover)",
               borderRadius: "8px",
               border: "1px solid #CBD5E1",
               overflow: "hidden"
             }}
           >
-            <ResponsiveContainer width="100%" height={300} minWidth={1} debounce={100}>
+            <ResponsiveContainer width="100%" height={330} minWidth={1} debounce={100}>
               <LineChart
                 data={data}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                onMouseMove={(e: any) => {
+                  if (onScrub && e && e.activePayload && e.activePayload.length) {
+                    onScrub(e.activePayload[0].payload);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (onScrub) onScrub(null);
+                }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -401,6 +411,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt }) => {
                         precipColor={precipColor}
                     />
                 } />
+                <Legend wrapperStyle={{ paddingTop: "20px" }} verticalAlign="bottom" height={36} />
 
                 {activeTab === "flow" && (
                   <>

@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useRivers } from "../hooks/useRivers";
 import { RiverExpansion } from "../components/RiverExpansion";
 import { useSEO } from "../hooks/useSEO";
 import { useDynamicFlow } from "../hooks/useDynamicFlow";
-import { calculateColor } from "../utils/flowInfoCalculations";
+import { calculateColor, calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { useSettings } from "../context/SettingsContext";
 
 
@@ -16,11 +16,32 @@ const RiverPage: React.FC = () => {
 
   const river = rivers.find((r) => r.id === id);
   const { isDarkMode, isColorBlindMode } = useSettings();
+  const [scrubbedReading, setScrubbedReading] = useState<any | null>(null);
   
   // NEVER call hooks conditionally! This caused the infinite HMR crash loop. 
   // We pass an empty object if river isn't loaded yet to preserve the exact hook call order safely.
-  const dynamicRiver = useDynamicFlow(river || ({} as any));
+  const dynamicRiver = useDynamicFlow(river || ({} as any), dataGeneratedAt);
   const displayRiver = river ? (dynamicRiver || river) : null;
+
+  const pillRiver = useMemo(() => {
+    if (!displayRiver) return null;
+    if (!scrubbedReading) return displayRiver;
+    
+    // N.B.: We duplicate displayRiver here and recalculate its live readings 
+    // based on the hovered graph point (scrubbedReading) so the pill and gradient dynamically update on scrub.
+    const temp = { ...displayRiver };
+    if (scrubbedReading.cfs !== undefined) temp.cfs = scrubbedReading.cfs;
+    if (scrubbedReading.ft !== undefined) temp.ft = scrubbedReading.ft;
+    if (scrubbedReading.m !== undefined) temp.m = scrubbedReading.m;
+    if (scrubbedReading.cms !== undefined) temp.cms = scrubbedReading.cms;
+    
+    temp.running = calculateRelativeFlow(temp) ?? temp.running;
+    temp.isReadingStale = false; // Hide stale badge when scrubbing historical data
+    
+    return temp;
+  }, [displayRiver, scrubbedReading]);
+
+  const getFlowValueWithUnit = (val?: number) => val != null ? `${val} ${pillRiver?.flow?.unit ?? ''}` : '?';
 
   useSEO({
     title: river ? `${river.name} - ${river.section}` : undefined,
@@ -100,7 +121,7 @@ const RiverPage: React.FC = () => {
           </Link>
         </div>
 
-        {displayRiver && displayRiver.running != null && (
+        {pillRiver && pillRiver.running != null && (
             <div 
                className="tooltip tooltip-bottom"
                style={{ 
@@ -114,14 +135,14 @@ const RiverPage: React.FC = () => {
                 borderBottom: "none"
             }}>
                 <div className="tooltiptext" style={{ textAlign: "left", lineHeight: "1.4", padding: "10px 15px", whiteSpace: "pre", fontWeight: "normal", zIndex: 10 }}>
-                    {`Minimum: ${displayRiver.flow?.min ?? '(Missing)'}\nLow: ${displayRiver.flow?.low ?? '(Missing)'}\nRunnable: ${displayRiver.flow?.mid ?? '(Missing)'}\nHigh: ${displayRiver.flow?.high ?? '(Missing)'}\nMaximum: ${displayRiver.flow?.max ?? '(Missing)'}`}
+                    {`Minimum: ${getFlowValueWithUnit(pillRiver.flow?.min)}\nLow: ${getFlowValueWithUnit(pillRiver.flow?.low)}\nRunnable: ${getFlowValueWithUnit(pillRiver.flow?.mid)}\nHigh: ${getFlowValueWithUnit(pillRiver.flow?.high)}\nMaximum: ${getFlowValueWithUnit(pillRiver.flow?.max)}`}
                 </div>
                 <div
                     style={{
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      backgroundColor: calculateColor(displayRiver.running, isDarkMode, isColorBlindMode),
+                      backgroundColor: calculateColor(pillRiver.running, isDarkMode, isColorBlindMode),
                       color: isDarkMode ? "#fff" : "#000",
                       padding: "10px 24px",
                       borderRadius: "24px",
@@ -131,32 +152,32 @@ const RiverPage: React.FC = () => {
                     }}
                 >
                     {/* Last Readings Inside Pill */}
-                    {(displayRiver.cfs !== undefined || displayRiver.ft !== undefined) && (
+                    {(pillRiver.cfs !== undefined || pillRiver.ft !== undefined) && (
                         <div style={{ display: "flex", gap: "15px", alignItems: "center", marginBottom: "4px" }}>
-                           {displayRiver.cfs !== undefined && <div style={{ fontSize: "1.4rem", fontWeight: "900" }}>{Math.round(displayRiver.cfs)} <span style={{ fontSize: "0.85rem", fontWeight: "normal", opacity: 0.85 }}>cfs</span></div>}
-                           {displayRiver.ft !== undefined && <div style={{ fontSize: "1.4rem", fontWeight: "900" }}>{Math.round(displayRiver.ft * 100) / 100} <span style={{ fontSize: "0.85rem", fontWeight: "normal", opacity: 0.85 }}>ft</span></div>}
+                           {pillRiver.cfs !== undefined && <div style={{ fontSize: "1.4rem", fontWeight: "900" }}>{Math.round(pillRiver.cfs)} <span style={{ fontSize: "0.85rem", fontWeight: "normal", opacity: 0.85 }}>cfs</span></div>}
+                           {pillRiver.ft !== undefined && <div style={{ fontSize: "1.4rem", fontWeight: "900" }}>{Math.round(pillRiver.ft * 100) / 100} <span style={{ fontSize: "0.85rem", fontWeight: "normal", opacity: 0.85 }}>ft</span></div>}
                         </div>
                     )}
 
                     {/* Status Badge */}
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "1rem", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                        {displayRiver.isReadingStale && <span>⚠️</span>}
+                        {pillRiver.isReadingStale && <span>⚠️</span>}
                         {(() => {
-                           if (displayRiver.running === 0) return "Too Low";
-                           if (displayRiver.running < 1) return "Low";
-                           if (displayRiver.running < 3) return "Runnable";
-                           if (displayRiver.running < 4) return "High";
+                           if (pillRiver.running === 0) return "Too Low";
+                           if (pillRiver.running < 1) return "Low";
+                           if (pillRiver.running < 3) return "Runnable";
+                           if (pillRiver.running < 4) return "High";
                            return "Too High";
                         })()}
                     </div>
-                    {displayRiver.isReadingStale && <div style={{ fontSize: "0.75rem", color: "var(--warning-text)", fontWeight: "800", letterSpacing: "0.5px" }}>STALE DATA</div>}
+                    {pillRiver.isReadingStale && <div style={{ fontSize: "0.75rem", color: "var(--warning-text)", fontWeight: "800", letterSpacing: "0.5px" }}>STALE DATA</div>}
                 </div>
                 
                 {/* Min/Max Bar below */}
                 <div style={{ display: "flex", alignItems: "center", gap: "15px", fontSize: "0.85rem", width: "100%", maxWidth: "200px", marginTop: "15px", marginBottom: "15px" }}>
                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", color: "var(--text-muted)", lineHeight: 1.2 }}>
                       <span style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>Min</span>
-                      <strong style={{ color: "var(--text)" }}>{displayRiver.flow?.min ?? '?'}</strong>
+                      <strong style={{ color: "var(--text)" }}>{pillRiver.flow?.min ?? '?'}</strong>
                    </div>
                    
                    <div style={{ 
@@ -170,25 +191,25 @@ const RiverPage: React.FC = () => {
                       {/* 25% - Low (Top) */}
                       <div style={{ position: "absolute", left: "25%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)", zIndex: 1 }} />
                       <div style={{ position: "absolute", left: "25%", bottom: "100%", transform: "translateX(-50%)", paddingBottom: "5px", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1, whiteSpace: "nowrap" }}>
-                         <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{displayRiver.flow?.low ?? '?'}</strong>
+                         <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{pillRiver.flow?.low ?? '?'}</strong>
                       </div>
 
                       {/* 50% - Mid (Bottom) */}
                       <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)", zIndex: 1 }} />
                       <div style={{ position: "absolute", left: "50%", top: "100%", transform: "translateX(-50%)", paddingTop: "5px", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1, whiteSpace: "nowrap" }}>
-                         <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{displayRiver.flow?.mid ?? '?'}</strong>
+                         <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{pillRiver.flow?.mid ?? '?'}</strong>
                       </div>
 
                       {/* 75% - High (Top) */}
                       <div style={{ position: "absolute", left: "75%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)", zIndex: 1 }} />
                       <div style={{ position: "absolute", left: "75%", bottom: "100%", transform: "translateX(-50%)", paddingBottom: "5px", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1, whiteSpace: "nowrap" }}>
-                         <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{displayRiver.flow?.high ?? '?'}</strong>
+                         <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{pillRiver.flow?.high ?? '?'}</strong>
                       </div>
 
                       <div style={{
                           position: "absolute",
                           top: "50%",
-                          left: `${Math.max(0, Math.min(100, (displayRiver.running / 4) * 100))}%`,
+                          left: `${Math.max(0, Math.min(100, (pillRiver.running / 4) * 100))}%`,
                           transform: "translate(-50%, -50%)",
                           width: "14px",
                           height: "14px",
@@ -203,7 +224,7 @@ const RiverPage: React.FC = () => {
                    
                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", color: "var(--text-muted)", lineHeight: 1.2 }}>
                       <span style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>Max</span>
-                      <strong style={{ color: "var(--text)" }}>{displayRiver.flow?.max ?? '?'}</strong>
+                      <strong style={{ color: "var(--text)" }}>{pillRiver.flow?.max ?? '?'}</strong>
                    </div>
                 </div>
             </div>
@@ -219,7 +240,7 @@ const RiverPage: React.FC = () => {
           fontSize: "1.1rem",
           lineHeight: "1.6"
       }}>
-         <RiverExpansion river={displayRiver || river} dataGeneratedAt={dataGeneratedAt} />
+         <RiverExpansion river={displayRiver || river} dataGeneratedAt={dataGeneratedAt} onScrub={setScrubbedReading} />
       </div>
     </div>
   );

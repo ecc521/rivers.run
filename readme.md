@@ -87,5 +87,3 @@ Deployments are managed via Wrangler and the `cloudflare/wrangler-action` in Git
 ## Community Administration
 User submissions, edits, and gauge curation updates are directed to a `reviewQueue` within the Cloudflare D1 database. 
 Registered Admins can authenticate via Firebase and access the `Admin Tools` navigation portal securely within the SPA to seamlessly merge or reject incoming community datasets via the `rivers-run-api`.
-
-**Note:** _All legacy Node Express `server/` cron scripts and Google Drive filesystem parsing routines have been strictly permanently completely retired._

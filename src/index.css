@@ -430,7 +430,7 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 }
 
 .dark-theme .view-selector-container {
-    background-color: #0f172a;
+    background-color: #090920;
 }
 
 .dark-theme .breadcrumb-item.current {
@@ -1011,8 +1011,11 @@ Those include name,section,skill,quality, and flow info*/
 }
 
 /* OpenStreetMap Dark Mode Tile Inversion */
+.dark-theme .leaflet-container {
+    background-color: #000 !important;
+}
 .dark-theme .leaflet-tile-pane {
-    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%);
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%) !important;
 }
 
 /* PWA Reload Prompt Toast */

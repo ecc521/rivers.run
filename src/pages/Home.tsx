@@ -145,6 +145,12 @@ const Home: React.FC = () => {
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [listTitle, setListTitle] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (searchParams.get("searchExpanded") === "true") {
+      setIsAdvancedSearchOpen(true);
+    }
+  }, [searchParams]);
+
   // Load persistence settings and list data
   useEffect(() => {
     async function loadPersistence() {
@@ -338,9 +344,12 @@ const Home: React.FC = () => {
       params.delete("favoritesOnly");
       params.delete("list");
       setListTitle(null);
+      setSearchQuery(prev => ({ ...prev, favoritesOnly: false, listId: undefined, listData: undefined }));
     } else {
       params.set("favoritesOnly", "true");
       params.delete("list");
+      setListTitle(null);
+      setSearchQuery(prev => ({ ...prev, favoritesOnly: true, listId: undefined, listData: undefined }));
     }
     navigate(`/?${params.toString()}`);
   };
@@ -349,8 +358,10 @@ const Home: React.FC = () => {
     const params = new URLSearchParams(searchParams);
     if (country === "global") {
       params.delete("country");
+      setSearchQuery(prev => ({ ...prev, country: undefined }));
     } else {
       params.set("country", country);
+      setSearchQuery(prev => ({ ...prev, country }));
     }
     navigate(`/?${params.toString()}`);
   };
