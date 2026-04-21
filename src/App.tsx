@@ -19,7 +19,6 @@ import { useEffect, Suspense, lazy } from "react";
 const RiverEditor = lazy(() => import("./pages/RiverEditor"));
 import AdminQueue from "./pages/AdminQueue";
 import ListsPage from "./pages/ListsPage";
-import { autoDownloadBaseMaps } from "./utils/offlineMapEngine";
 import { ReloadPrompt } from "./components/ReloadPrompt";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import Footer from "./components/Footer";
@@ -28,7 +27,6 @@ import { recordAppOpen } from "./utils/appReview";
 
 function App() {
   useEffect(() => {
-    autoDownloadBaseMaps();
     recordAppOpen();
   }, []);
 

@@ -1,0 +1,64 @@
+{
+  "user_id": "qATvqUvUnGg9nJMeBEKa1YdY2PC3",
+  "email": "iostester@rivers.run",
+  "settings": {
+    "notifications": {
+      "enabled": false,
+      "noneUntil": 0,
+      "timeOfDay": "08:00",
+      "reviewQueueAlerts": false
+    },
+    "settings_json": {
+      "unitPreference": "ft",
+      "country": "usa"
+    }
+  },
+  "lists": [
+    {
+      "title": "NC Favorites",
+      "description": "Carolina Canoe Club Week of Rivers (CCCWOR) favorites.",
+      "author": "iOS Tester",
+      "isPublished": false,
+      "rivers": [
+        { "id": "123wVbMbaG0Tb3tn2dwJGaVoTvEDhPQi9KsS2nrceagc", "order": 0, "gaugeId": "USGS:03497300", "min": 2.7, "units": "ft" },
+        { "id": "14hZxrnSy_1Whvun7Pmv9ZzBElQ9H3cutkgO1wX_WKuA", "order": 1, "gaugeId": "USGS:02379500", "min": 1.8, "max": 4.5, "units": "ft" },
+        { "id": "1IryxlT-o6cr4-qief4q_Saq8nrG5CduIqjRMRB-SiMQ", "order": 2, "gaugeId": "USGS:02177000", "min": 0.9, "max": 2.5, "units": "ft" },
+        { "id": "1L6bau_Lx_xOCHAwBXlMX3kZmd7b8MZSeYrR6UzFXMF0", "order": 3, "gaugeId": "USGS:02177000", "min": 1, "max": 5, "units": "ft" },
+        { "id": "1W71fEln5jAxwzyflRzvF5JKK0xFQfpS8VZUaMrqLCvE", "order": 4, "gaugeId": "USGS:02379500", "min": 1.8, "max": 4.5, "units": "ft" },
+        { "id": "1WF2zsZ5ccdlK3MVq8d_XbiQ26UTuEUp_ZaHPdqbKeUI", "order": 5, "gaugeId": "USGS:02177000", "min": 1.6, "max": 3, "units": "ft" },
+        { "id": "1kmVW5fREEOzbk1eJr0omfsap34owsjH1CfHGAGfX_zs", "order": 6, "gaugeId": "USGS:02177000", "min": 2, "max": 7.2, "units": "ft" },
+        { "id": "1v-WhSup1-Wb2rPi2pT8Yixwxp7JbmpxTWOUaxnMUFlU", "order": 7, "gaugeId": "USGS:02177000", "min": 1.2, "max": 3, "units": "ft" },
+        { "id": "1xoPvhGmzvbfeVynCGBpTAM9T8N0UMZv0M2eUa-BVjuA", "order": 8, "gaugeId": "USGS:03512000", "min": 800, "units": "cfs" }
+      ]
+    },
+    {
+      "title": "West Virginia",
+      "description": "West Virginia Week of Rivers (WVWOR) favorites.",
+      "author": "iOS Tester",
+      "isPublished": false,
+      "rivers": [
+        { "id": "15Pt5nx1EVN0P94aWUAZOQ78V_Y0cakXhE7bmzKJA8t8", "order": 0, "gaugeId": "USGS:03070500", "min": 5, "max": 7.3, "units": "ft" },
+        { "id": "16eNLCNM-ji1bKQFzmjUlGm0T8zuPMHktOcXzEXx0I1o", "order": 1, "gaugeId": "USGS:03051000", "min": 3.5, "max": 8.5, "units": "ft" },
+        { "id": "19ZbOUY3_mW6iSFHpK0iTSPw3oby2qBwsbAV1pmdH3mU", "order": 2, "gaugeId": "USGS:03066000", "min": 300, "max": 2000, "units": "cfs" },
+        { "id": "1ET4XN0UoczjgNXjDFYFllxB5u0tpgVYpwPipPMLQD30", "order": 3, "gaugeId": "USGS:03052450", "min": 7, "max": 12, "units": "ft" },
+        { "id": "1IkZ-SXZ3jGMUs0Ju5EhSNUjVfGUqFeU5RkTigU9hTOI", "order": 4, "gaugeId": "USGS:03057000", "min": 3.7, "max": 4.7, "units": "ft" },
+        { "id": "1JPEMtAmhnX0RU2O5HvsPI_SGfhEEHdW7FLIcBB6EMII", "order": 5, "gaugeId": "USGS:03052500", "min": 800, "max": 1200, "units": "cfs" },
+        { "id": "1VwZI4W7xV0gzBHscHb40eV0nkbHRQ1zAOhEAHffMbEU", "order": 6, "gaugeId": "USGS:03068800", "min": 5, "max": 7, "units": "ft" },
+        { "id": "1aOJYDtynhzn5avhmtpZFfWTgX4f_H1c1qV7ymOtkt2I", "order": 7, "gaugeId": "USGS:03075500", "min": 180, "max": 1000, "units": "cfs" },
+        { "id": "1cCHstHUjSRHMD4S_zXyRvx3UR3-KwUNtHFCIyujKBbY", "order": 8, "gaugeId": "USGS:03068800", "min": 5.2, "max": 7, "units": "ft" },
+        { "id": "1cOdOElsEgFaG1XE6H0f2GIOqUrrtPkNvnInUxRV-E3o", "order": 9, "gaugeId": "USGS:03052000", "min": 3.2, "max": 6, "units": "ft" },
+        { "id": "1chT5sIUjRg3eEkSyjNKH8AffDh-V3pVPG7z0OrbDrL4", "order": 10, "gaugeId": "USGS:03052450", "min": 7, "max": 11, "units": "ft" },
+        { "id": "1crfi_EKcQCxdvp4I-UDvSSH-nSPN-F3zNIehL7butxU", "order": 11, "gaugeId": "USGS:03052500", "min": 115, "max": 1500, "units": "cfs" },
+        { "id": "1evDpc0CgduSqb_uCnjQmJiyIOz_B8X6qqsXihTT0nYI", "order": 12, "gaugeId": "USGS:03075500", "min": 180, "max": 1000, "units": "cfs" },
+        { "id": "1huZD_krB8fvQkfLVrMJxHQObHkuViWcyBVD9QPaFrRQ", "order": 13, "gaugeId": "USGS:03065000", "min": 4.5, "max": 7, "units": "ft" },
+        { "id": "1kSyKaoQLAwZcJtDUdWBxkVvoChx8HXjg6E4LHL4rthA", "order": 14, "gaugeId": "USGS:03052500", "min": 100, "max": 1500, "units": "cfs" },
+        { "id": "1mKoyD9uG14kntCsHVIFqpPrEw53wTo0jX70NjLvir0s", "order": 15, "gaugeId": "USGS:03052000", "min": 3, "max": 6.5, "units": "ft" },
+        { "id": "1rG0SYPlKYD3EPRGKFJexAVKAw8SRCXjOY06-Tqeni9k", "order": 16, "gaugeId": "USGS:03076500", "min": 2.9, "max": 4, "units": "ft" },
+        { "id": "1rzq41Vyps7_R6dAHRVUD6tIqCr4_oBB2u3-GbxSy5bM", "order": 17, "gaugeId": "USGS:03065000", "min": 3, "max": 6.6, "units": "ft" },
+        { "id": "1uotVJL3n0MoOxvZ-8xOnHEsrBCXpQbr4V5NHGrWtwEg", "order": 18, "gaugeId": "USGS:03051000", "min": 3.5, "max": 9, "units": "ft" },
+        { "id": "1vOxpSM9_rkr0V6cQwtdQhSQ70Dld4BUZ017obQSdCLY", "order": 19, "gaugeId": "USGS:03065000", "min": 2.8, "max": 6, "units": "ft" },
+        { "id": "1ycDk-NJ1d7Op97OsKdDy7KecJx2sgGVMglMHdg0deds", "order": 20, "gaugeId": "USGS:01605500", "min": 2.5, "max": 5.5, "units": "ft" }
+      ]
+    }
+  ]
+}

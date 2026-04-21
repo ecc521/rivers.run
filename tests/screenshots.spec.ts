@@ -25,15 +25,15 @@ const mockFavorites = JSON.stringify([
 ]);
 
 const SHOT_SEQUENCE = [
-  { id: '01', name: 'main_list', url: '/?country=US', theme: 'light', orientation: 'portrait' },
-  { id: '02', name: 'wide_map', url: '/map?lat=39.0&lng=-80.0&zoom=7&country=US', theme: 'light', orientation: 'portrait' },
+  { id: '01', name: 'main_list', url: '/?country=usa', theme: 'light', orientation: 'portrait' },
+  { id: '02', name: 'wide_map', url: '/map?lat=39.0&lng=-80.0&zoom=7&country=usa', theme: 'light', orientation: 'portrait' },
   { id: '03', name: 'river_details', url: '/river/10xV_iboNh1Ib8bReq8JDIxfkZde7JDjRAQC9Evczf6k/youghiogheny-lower', theme: 'light', orientation: 'portrait' },
-  { id: '04', name: 'main_list_sorted_dark', url: '/?country=US&sortBy=running&sortReverse=true', theme: 'dark', orientation: 'portrait' },
+  { id: '04', name: 'main_list_sorted_dark', url: '/?country=usa&sortBy=running&sortReverse=true', theme: 'dark', orientation: 'portrait' },
   { id: '05', name: 'river_details_graph', url: '/river/10xV_iboNh1Ib8bReq8JDIxfkZde7JDjRAQC9Evczf6k/youghiogheny-lower', theme: 'light', orientation: 'portrait' },
-  { id: '06', name: 'main_list_search_dark', url: '/?country=US&search=CCCWOR', theme: 'dark', orientation: 'portrait' },
-  { id: '07', name: 'wide_map_radius_dark', url: '/map?lat=39.0&lng=-80.0&zoom=7&distanceMax=200&radiusMode=center&country=US', theme: 'dark', orientation: 'portrait' },
-  { id: '08', name: 'main_list_landscape', url: '/?country=US', theme: 'light', orientation: 'landscape' },
-  { id: '09', name: 'wide_map_landscape', url: '/map?country=US', theme: 'light', orientation: 'landscape' },
+  { id: '06', name: 'main_list_search_dark', url: '/?country=usa&search=CCCWOR', theme: 'dark', orientation: 'portrait' },
+  { id: '07', name: 'wide_map_radius_dark', url: '/map?lat=39.0&lng=-80.0&zoom=7&distanceMax=200&radiusMode=center&country=usa', theme: 'dark', orientation: 'portrait' },
+  { id: '08', name: 'main_list_landscape', url: '/?country=usa', theme: 'light', orientation: 'landscape' },
+  { id: '09', name: 'wide_map_landscape', url: '/map?country=usa', theme: 'light', orientation: 'landscape' },
   { id: '10', name: 'river_details_dark', url: '/river/10xV_iboNh1Ib8bReq8JDIxfkZde7JDjRAQC9Evczf6k/youghiogheny-lower', theme: 'dark', orientation: 'portrait' },
 ];
 
@@ -59,8 +59,35 @@ test.describe('App Store Screenshot Automation', () => {
     for (const shot of sequence) {
       console.log(`[${projectName}] Taking shot ${shot.id}: ${shot.name} (${shot.orientation}, ${shot.theme})`);
 
-      // A. Emulate Theme
-      await page.emulateMedia({ colorScheme: shot.theme as 'light' | 'dark' });
+      // A. Handle Theme Persistence & Browser Emulation
+      if (shot.theme === 'dark') {
+          await page.emulateMedia({ colorScheme: 'dark' });
+          await page.addInitScript(() => {
+              window.localStorage.setItem('userTheme', 'true');
+              // Force matchMedia to report dark mode for SettingsContext initialization
+              const originalMatchMedia = window.matchMedia;
+              window.matchMedia = (query) => {
+                  if (query.includes('prefers-color-scheme: dark')) {
+                      return {
+                          matches: true,
+                          media: query,
+                          onchange: null,
+                          addListener: () => {},
+                          removeListener: () => {},
+                          addEventListener: () => {},
+                          removeEventListener: () => {},
+                          dispatchEvent: () => true,
+                      } as any;
+                  }
+                  return originalMatchMedia(query);
+              };
+          });
+      } else {
+          await page.emulateMedia({ colorScheme: 'light' });
+          await page.addInitScript(() => {
+              window.localStorage.setItem('userTheme', 'false');
+          });
+      }
 
       // B. Emulate Orientation
       const viewport = page.viewportSize();
@@ -74,9 +101,15 @@ test.describe('App Store Screenshot Automation', () => {
       }
 
       // C. Navigate and Wait
-      await page.goto(shot.url);
+      let targetUrl = shot.url;
+      if (shot.id === '09' && (projectName.toLowerCase().includes('ipad') || projectName.toLowerCase().includes('tablet'))) {
+        // Lower Yough, Ohiopyle Area for Map + Sidebar demo in Landscape
+        targetUrl = '/map?riverId=10xV_iboNh1Ib8bReq8JDIxfkZde7JDjRAQC9Evczf6k&lat=39.86&lng=-79.35&zoom=11&country=usa';
+      }
       
-      // Handle specific view waits
+      await page.goto(targetUrl);
+      
+      // Handle navigation waits
       if (shot.url.includes('/map')) {
         await page.waitForSelector('.leaflet-container', { timeout: 15000 });
         await page.waitForTimeout(3000); // Wait for map tiles/markers
@@ -93,6 +126,35 @@ test.describe('App Store Screenshot Automation', () => {
 
       // D. Capture
       const fileName = `${shot.id}_${shot.name}_${shot.orientation}_${shot.theme}.png`;
+      if (shot.theme === 'dark') {
+          // Hard-force dark mode classes and inject raw CSS filters to ensure map inversion
+          await page.evaluate(() => {
+              document.body.classList.add('dark-theme');
+              document.documentElement.setAttribute('data-theme', 'dark');
+          });
+          
+          await page.addStyleTag({ content: `
+              /* Nuclear fix for Playwright map inversion */
+              .leaflet-container img {
+                  filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(85%) !important;
+              }
+              .leaflet-container {
+                  background-color: #000 !important;
+              }
+              /* Also fix attribution which was showing up light */
+              .leaflet-control-attribution {
+                  background: rgba(0,0,0,0.7) !important;
+                  color: #ccc !important;
+              }
+              .leaflet-control-attribution a {
+                  color: #60a5fa !important;
+              }
+          `});
+          
+          // mandatory wait for heavy filters to paint
+          await page.waitForTimeout(2000); 
+      }
+
       await page.screenshot({ path: path.join(outputDir, fileName) });
 
       // E. Reset orientation for next shot if needed (optional but good for consistency)

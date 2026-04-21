@@ -22,6 +22,7 @@ import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useSettings } from "../context/SettingsContext";
 import { useModal } from "../context/ModalContext";
 import { triggerReviewIfEligible } from "../utils/appReview";
+import { autoDownloadBaseMaps } from "../utils/offlineMapEngine";
 import { useSEO } from "../hooks/useSEO";
 
 
@@ -84,6 +85,17 @@ const Home: React.FC = () => {
           if (riversError) setError(riversError);
       }
    }, [riversLoading, riversError, rivers.length]);
+
+   // Defer map tile pre-fetching until after primary data load to avoid network saturation
+   useEffect(() => {
+     if (!riversLoading) {
+       // Small 1-second delay to ensure the UI is fully hydrated before network noise starts
+       const t = setTimeout(() => {
+           autoDownloadBaseMaps();
+       }, 1000);
+       return () => clearTimeout(t);
+     }
+   }, [riversLoading]);
 
   const [searchParams] = useSearchParams();
 

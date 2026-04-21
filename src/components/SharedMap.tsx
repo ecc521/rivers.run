@@ -401,6 +401,20 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         }
     }, []);
 
+    // Handle riverId deep-linking: Open sidebar automatically if riverId is in URL
+    useEffect(() => {
+        const riverId = searchParams.get("riverId");
+        if (riverId && rivers.length > 0 && !selectedRiver) {
+            const found = rivers.find(r => r.id === riverId);
+            if (found) {
+                setSelectedRiver(found);
+                if (found.accessPoints && found.accessPoints.length > 0) {
+                    setSelectedAccessPoint(found.accessPoints[0]);
+                }
+            }
+        }
+    }, [rivers, searchParams]);
+
 
     const mapContainerRef = React.useRef<HTMLDivElement>(null);
 

@@ -1014,8 +1014,11 @@ Those include name,section,skill,quality, and flow info*/
 .dark-theme .leaflet-container {
     background-color: #000 !important;
 }
-.dark-theme .leaflet-tile-pane {
+/* Target both the tile pane and general layer panes to catch overlays and different Leaflet versions */
+.dark-theme .leaflet-tile-pane, 
+.dark-theme .leaflet-layer {
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%) !important;
+    will-change: filter; /* Hint to browser to enable hardware acceleration for this filter */
 }
 
 /* PWA Reload Prompt Toast */
