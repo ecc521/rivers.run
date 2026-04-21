@@ -476,14 +476,23 @@ const getAdminLogsRoute = createRoute({
     path: '/admin/logs',
     summary: 'Fetch admin audit logs',
     security: [{ bearerAuth: [] }],
+    request: {
+        query: z.object({
+            limit: z.string().optional().openapi({ param: { name: 'limit', in: 'query' } }),
+            offset: z.string().optional().openapi({ param: { name: 'offset', in: 'query' } })
+        })
+    },
     responses: {
-        200: { content: { 'application/json': { schema: GenericArraySchema } }, description: 'Audit logs' }
+        200: { content: { 'application/json': { schema: z.object({ results: GenericArraySchema, nextOffset: z.number().nullable() }) } }, description: 'Audit logs' }
     }
 });
 
 app.openapi(getAdminLogsRoute, async (c) => {
-    const { results } = await c.env.DB.prepare("SELECT * FROM river_audit_log ORDER BY changed_at DESC LIMIT 50").all();
-    return c.json(results);
+    const limit = Math.min(parseInt(c.req.query("limit") || "50"), 100);
+    const offset = parseInt(c.req.query("offset") || "0");
+    const { results } = await c.env.DB.prepare("SELECT * FROM river_audit_log ORDER BY changed_at DESC LIMIT ? OFFSET ?").bind(limit, offset).all();
+    const nextOffset = results.length === limit ? offset + limit : null;
+    return c.json({ results, nextOffset });
 });
 
 const getWorkerLogsRoute = createRoute({
@@ -492,14 +501,23 @@ const getWorkerLogsRoute = createRoute({
     path: '/admin/worker-logs',
     summary: 'Fetch background worker execution logs',
     security: [{ bearerAuth: [] }],
+    request: {
+        query: z.object({
+            limit: z.string().optional().openapi({ param: { name: 'limit', in: 'query' } }),
+            offset: z.string().optional().openapi({ param: { name: 'offset', in: 'query' } })
+        })
+    },
     responses: {
-        200: { content: { 'application/json': { schema: GenericArraySchema } }, description: 'Worker logs' }
+        200: { content: { 'application/json': { schema: z.object({ results: GenericArraySchema, nextOffset: z.number().nullable() }) } }, description: 'Worker logs' }
     }
 });
 
 app.openapi(getWorkerLogsRoute, async (c) => {
-    const { results } = await c.env.DB.prepare("SELECT * FROM worker_logs ORDER BY timestamp DESC LIMIT 100").all();
-    return c.json(results || []);
+    const limit = Math.min(parseInt(c.req.query("limit") || "100"), 500);
+    const offset = parseInt(c.req.query("offset") || "0");
+    const { results } = await c.env.DB.prepare("SELECT * FROM worker_logs ORDER BY timestamp DESC LIMIT ? OFFSET ?").bind(limit, offset).all();
+    const nextOffset = results.length === limit ? offset + limit : null;
+    return c.json({ results: results || [], nextOffset });
 });
 
 const resolveSuggestionRoute = createRoute({

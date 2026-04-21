@@ -6,29 +6,43 @@ export default function SystemAdminTab() {
   const [workerLogs, setWorkerLogs] = useState<any[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [loadingWorker, setLoadingWorker] = useState(false);
+  const [workerNextOffset, setWorkerNextOffset] = useState<number | null>(null);
+  const [auditNextOffset, setAuditNextOffset] = useState<number | null>(null);
 
-  async function fetchAuditLogs() {
+  async function fetchAuditLogs(offset = 0) {
     setLoadingAudit(true);
     try {
-      const results = await fetchAPI("/admin/logs");
-      setAuditLogs(results.map((log: any) => ({
-          id: log.log_id,
-          adminUid: log.changed_by,
+      const response = await fetchAPI(`/admin/logs?offset=${offset}`);
+      const newLogs = response.results.map((log: any) => ({
+          id: log.log_id || log.history_id, // Normalize ID
+          adminUid: log.changed_by || log.admin_id,
           action: log.action_type,
-          targetUid: log.river_id,
-          timestamp: log.changed_at * 1000
-      })));
+          targetUid: log.river_id || log.target_id,
+          timestamp: (log.changed_at || log.created_at) * 1000
+      }));
+      
+      if (offset === 0) {
+        setAuditLogs(newLogs);
+      } else {
+        setAuditLogs(prev => [...prev, ...newLogs]);
+      }
+      setAuditNextOffset(response.nextOffset);
     } catch (e: any) {
       console.error("Failed to fetch audit logs", e.message);
     }
     setLoadingAudit(false);
   }
 
-  async function fetchWorkerLogs() {
+  async function fetchWorkerLogs(offset = 0) {
     setLoadingWorker(true);
     try {
-      const results = await fetchAPI("/admin/worker-logs");
-      setWorkerLogs(results);
+      const response = await fetchAPI(`/admin/worker-logs?offset=${offset}`);
+      if (offset === 0) {
+        setWorkerLogs(response.results);
+      } else {
+        setWorkerLogs(prev => [...prev, ...response.results]);
+      }
+      setWorkerNextOffset(response.nextOffset);
     } catch (e: any) {
       console.error("Failed to fetch worker logs", e.message);
     }
@@ -51,11 +65,11 @@ export default function SystemAdminTab() {
               Real-time execution history of the data synchronization worker.
             </p>
           </div>
-          <button onClick={fetchWorkerLogs} style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>Refresh</button>
+          <button onClick={() => fetchWorkerLogs(0)} style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>Refresh</button>
         </div>
         
         <LogTable 
-            loading={loadingWorker} 
+            loading={loadingWorker && workerLogs.length === 0} 
             data={workerLogs} 
             columns={['Time', 'Level', 'Component', 'Message']}
             renderRow={(log) => (
@@ -78,28 +92,52 @@ export default function SystemAdminTab() {
                 </tr>
             )}
         />
+        
+        {workerNextOffset !== null && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+            <button 
+              disabled={loadingWorker}
+              onClick={() => fetchWorkerLogs(workerNextOffset)}
+              style={{ padding: '8px 16px', backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text)', cursor: 'pointer', fontSize: '13px' }}
+            >
+              {loadingWorker ? 'Loading...' : 'Load More Worker Logs'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Security Audit Log */}
       <div style={{ backgroundColor: "var(--surface)", padding: '24px', borderRadius: '12px', border: "1px solid var(--border)", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 style={{ margin: 0, fontSize: '18px' }}>Security Audit Log</h3>
-          <button onClick={fetchAuditLogs} style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>Refresh</button>
+          <button onClick={() => fetchAuditLogs(0)} style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>Refresh</button>
         </div>
         
         <LogTable 
-            loading={loadingAudit} 
+            loading={loadingAudit && auditLogs.length === 0} 
             data={auditLogs} 
             columns={['Time', 'Admin', 'Action', 'Target']}
             renderRow={(log) => (
-                <tr key={log.id} style={{ borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
+                <tr key={`${log.id}-${log.timestamp}`} style={{ borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
                     <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td style={{ padding: '8px 12px' }}>{log.adminUid.substring(0, 8)}</td>
+                    <td style={{ padding: '8px 12px' }}>{log.adminUid ? log.adminUid.substring(0, 8) : 'Unknown'}</td>
                     <td style={{ padding: '8px 12px', fontWeight: 'bold' }}>{log.action}</td>
                     <td style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--text-muted)' }}>{log.targetUid}</td>
                 </tr>
             )}
         />
+
+        {auditNextOffset !== null && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+            <button 
+              disabled={loadingAudit}
+              onClick={() => fetchAuditLogs(auditNextOffset)}
+              style={{ padding: '8px 16px', backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text)', cursor: 'pointer', fontSize: '13px' }}
+            >
+              {loadingAudit ? 'Loading...' : 'Load More Audit Logs'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
