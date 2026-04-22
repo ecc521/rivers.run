@@ -1533,15 +1533,15 @@ app.get('/sitemap.xml', async (c) => {
         return c.text("Sitemap not found", 404);
     }
 
+    // 24-hour edge cache for the sitemap only on success
+    c.header("Cache-Control", "public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600");
+    c.header("ETag", object.httpEtag);
+
     // If Cloudflare Edge sends an If-None-Match header matching the R2 object,
     // R2 returns the metadata but no body. We return a lightweight 304 Not Modified.
     if (!('body' in object)) {
         return c.body(null, 304);
     }
-
-    // 24-hour edge cache for the sitemap only on success
-    c.header("Cache-Control", "public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600");
-    c.header("ETag", object.httpEtag);
     c.header("Content-Type", "application/xml");
     return c.body(object.body);
 });

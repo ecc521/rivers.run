@@ -125,6 +125,9 @@ const flowdataRoute = createRoute({
             description: 'Full reading map', 
             content: { 'application/json': { schema: GenericObjectSchema } } 
         },
+        304: {
+            description: 'Not modified'
+        },
         503: {
             description: 'Sitedata not ready',
             content: { 'application/json': { schema: ErrorSchema } }
@@ -142,14 +145,14 @@ app.openapi(flowdataRoute, async (c) => {
         return c.json({ error: "Sitedata not yet generated" }, 503);
     }
 
+    // Cache the flowdata response for 5 minutes at edge, with 10-minute stale revalidate
+    c.header("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=600");
+    c.header("ETag", object.httpEtag);
+
     if (!('body' in object)) {
         return c.body(null, 304);
     }
 
-    // Cache the flowdata response for 5 minutes at edge, with 10-minute stale revalidate
-    c.header("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=600");
-    c.header("ETag", object.httpEtag);
-    
     // Instead of parsing the JSON and re-stringifying it via c.json(),
     // we can serve the raw JSON string directly from R2 for much better performance!
     c.header("Content-Type", "application/json");
