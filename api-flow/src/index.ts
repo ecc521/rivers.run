@@ -240,6 +240,28 @@ export default {
             // 1. Fetch Gauges
             const mergedData = await performDataSync(env, registryMetadata, providers);
 
+            // Resiliency pass: If a gauge failed to fetch readings (e.g. USGS partial outage),
+            // attempt to preserve its previous readings from the existing sitedata.json so the 
+            // frontend can still display stale data instead of wiping it completely.
+            try {
+                const previousObject = await env.FLOW_STORAGE.get("sitedata.json");
+                if (previousObject) {
+                    const previousData = await previousObject.json() as Record<string, any>;
+                    let recoveredCount = 0;
+                    for (const [key, gauge] of Object.entries(mergedData)) {
+                        if (gauge.readings && gauge.readings.length === 0 && previousData[key] && previousData[key].readings?.length > 0) {
+                            gauge.readings = previousData[key].readings;
+                            recoveredCount++;
+                        }
+                    }
+                    if (recoveredCount > 0) {
+                        await logToD1(env, "INFO", "sync", `Recovered stale readings for ${recoveredCount} gauges due to provider API failures.`);
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to merge previous sitedata for outage resilience", e);
+            }
+
             // Save to storage using buffered construction for R2 compatibility
             const syncBuffer = stringifyJSONObject(mergedData, { generatedAt: Date.now() });
 
