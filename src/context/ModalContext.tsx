@@ -5,7 +5,7 @@ type ModalContextType = {
   alert: (message: string, title?: string) => Promise<void>;
   confirm: (message: string, title?: string) => Promise<boolean>;
   prompt: (message: string, title?: string) => Promise<string | null>;
-  resolveSuggestion: (message: string, title?: string) => Promise<{ confirmed: boolean, reason: string, notify: boolean } | null>;
+  resolveSuggestion: (message: string, title?: string, isAnonymous?: boolean) => Promise<{ confirmed: boolean, reason: string, notify: boolean } | null>;
 };
 
 export const ModalContext = createContext<ModalContextType>({} as any);
@@ -18,6 +18,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
     isAlert: boolean;
     isPrompt: boolean;
     isResolution: boolean;
+    isAnonymous?: boolean;
     resolve: (value: any) => void;
   }>({
     isOpen: false,
@@ -26,6 +27,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
     isAlert: false,
     isPrompt: false,
     isResolution: false,
+    isAnonymous: false,
     resolve: () => {},
   });
 
@@ -47,9 +49,9 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const resolveSuggestion = useCallback((message: string, title: string = "Resolve Suggestion") => {
+  const resolveSuggestion = useCallback((message: string, title: string = "Resolve Suggestion", isAnonymous: boolean = false) => {
     return new Promise<{ confirmed: boolean, reason: string, notify: boolean } | null>((resolve) => {
-      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: false, isResolution: true, resolve });
+      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: false, isResolution: true, isAnonymous, resolve });
     });
   }, []);
 
@@ -87,6 +89,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
         isAlert={modalState.isAlert}
         isPrompt={modalState.isPrompt}
         isResolution={modalState.isResolution}
+        isAnonymous={modalState.isAnonymous}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
       />

@@ -60,6 +60,7 @@ export default function RiverEditor() {
   const [viewMode, setViewMode] = useState<"draft" | "original">("draft");
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [comparisonData, setComparisonData] = useState<{ historical: RiverData, logIndex: number, allLogs: any[] } | null>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const syncInputs = (inputData: any) => {
       if (!inputData) return;
@@ -106,6 +107,7 @@ export default function RiverEditor() {
            const proposed = suggestion.proposed_changes;
            proposed.queueId = suggestion.suggestion_id; 
            setProposedData(proposed);
+           setIsAnonymous(suggestion.suggested_by?.startsWith("IP:") || !suggestion.suggested_by);
            syncInputs(proposed);
            
            try {
@@ -286,7 +288,7 @@ export default function RiverEditor() {
   const handleApproveReview = async () => {
       if (!isAdmin || !proposedData?.queueId) return;
       
-      const res = await resolveSuggestion("Are you sure you want to approve and deploy these changes?", "Approve Suggestion");
+      const res = await resolveSuggestion("Review the changes and confirm if you want to push this to the live database.", "Approve Suggestion", isAnonymous);
       if (!res || !res.confirmed) return;
 
       try {
@@ -319,7 +321,7 @@ export default function RiverEditor() {
   const handleRejectReview = async () => {
       if (!isAdmin || !proposedData?.queueId) return;
       
-      const res = await resolveSuggestion("Are you sure you want to reject this submission completely?", "Reject Suggestion");
+      const res = await resolveSuggestion("Are you sure you want to reject this submission completely?", "Reject Suggestion", isAnonymous);
       if (!res || !res.confirmed) return;
       
       try {

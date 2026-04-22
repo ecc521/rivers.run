@@ -7,6 +7,7 @@ interface PromptModalProps {
   isAlert?: boolean;
   isPrompt?: boolean;
   isResolution?: boolean;
+  isAnonymous?: boolean;
   onConfirm: (val?: string, notify?: boolean) => void;
   onCancel: () => void;
 }
@@ -18,6 +19,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({
   isAlert = false,
   isPrompt = false,
   isResolution = false,
+  isAnonymous = false,
   onConfirm,
   onCancel,
 }) => {
@@ -95,39 +97,47 @@ export const PromptModal: React.FC<PromptModalProps> = ({
 
         {isResolution && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text)' }}>Resolution Note / Reason</label>
-            <textarea
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value.slice(0, 2000))}
-              autoFocus
-              placeholder="Leave a note for the submitter or for history..."
-              style={{
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--surface-hover)",
-                color: "var(--text)",
-                width: "100%",
-                boxSizing: "border-box",
-                minHeight: '120px',
-                resize: 'vertical',
-                fontSize: '14px',
-                fontFamily: 'inherit'
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text)' }}>
-                <input 
-                  type="checkbox" 
-                  checked={notify} 
-                  onChange={e => setNotify(e.target.checked)} 
+            {isAnonymous ? (
+              <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.9rem", fontStyle: "italic" }}>
+                This is an anonymous submission, so you cannot leave a note or notify the submitter.
+              </p>
+            ) : (
+              <>
+                <label style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text)' }}>Resolution Note / Reason</label>
+                <textarea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value.slice(0, 2000))}
+                  autoFocus
+                  placeholder="Leave a note for the submitter or for history..."
+                  style={{
+                    padding: "10px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--border)",
+                    backgroundColor: "var(--surface-hover)",
+                    color: "var(--text)",
+                    width: "100%",
+                    boxSizing: "border-box",
+                    minHeight: '120px',
+                    resize: 'vertical',
+                    fontSize: '14px',
+                    fontFamily: 'inherit'
+                  }}
                 />
-                Notify Submitter via Email
-              </label>
-              <span style={{ fontSize: '0.75rem', color: inputValue.length >= 1900 ? 'var(--danger)' : 'var(--text-muted)' }}>
-                {inputValue.length} / 2000
-              </span>
-            </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text)' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={notify} 
+                      onChange={e => setNotify(e.target.checked)} 
+                    />
+                    Notify Submitter via Email
+                  </label>
+                  <span style={{ fontSize: '0.75rem', color: inputValue.length >= 1900 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                    {inputValue.length} / 2000
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -150,7 +160,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({
             </button>
           )}
           <button
-            onClick={() => onConfirm(showInput ? inputValue : undefined, isResolution ? notify : undefined)}
+            onClick={() => onConfirm(showInput && !isAnonymous ? inputValue : undefined, isResolution && !isAnonymous ? notify : undefined)}
             style={{
               padding: "8px 16px",
               backgroundColor: "var(--primary)",
