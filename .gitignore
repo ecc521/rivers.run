@@ -45,9 +45,10 @@ public/flowdata*.json
 temp_*
 scripts/
 
-# Native Mobile Wrappers
+# Native Mobile Wrappers (Capacitor generated)
 ios/
 android/
+applewatch/
 
 # Firebase Cache
 .firebase/

@@ -34,29 +34,31 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    /* iOS - iPhone 6.9" (iPhone 16 Pro Max) */
+    /* iOS - iPhone 6.5" (iPhone XS Max / 11 Pro Max) */
     {
-      name: 'iPhone 6.9-inch',
+      name: 'iPhone 6.5-inch',
       use: { 
-        ...devices['iPhone 14 Pro Max'], 
-        viewport: { width: 440, height: 956 }, // Roughly 1320x2868 @ 3x
+        ...devices['iPhone 11 Pro Max'],
+        viewport: { width: 414, height: 896 }, // 1242 x 2688 @ 3x
         deviceScaleFactor: 3,
       },
     },
-    /* iOS - iPhone 6.7" (iPhone 15 Pro Max) */
-    {
-      name: 'iPhone 6.7-inch',
-      use: { ...devices['iPhone 14 Pro Max'] },
-    },
-    /* iOS - iPhone 5.5" (iPhone 8 Plus) */
-    {
-      name: 'iPhone 5.5-inch',
-      use: { ...devices['iPhone 8 Plus'] },
-    },
-    /* iOS - iPad 13" */
+    /* iOS - iPad 13" (iPad Pro 13-inch M4) */
     {
       name: 'iPad 13-inch',
-      use: { ...devices['iPad Pro 11'] }, 
+      use: { 
+        ...devices['iPad Pro 11'], // Base on iPad Pro 11 for UA and traits
+        viewport: { width: 1032, height: 1376 }, // 2064 x 2752 @ 2x
+        deviceScaleFactor: 2,
+      },
+    },
+    /* Google Play Feature Graphic */
+    {
+      name: 'Google Play Feature Graphic',
+      use: { 
+        viewport: { width: 1024, height: 500 },
+        deviceScaleFactor: 1,
+      },
     },
 
     /* Android - Phone */

@@ -1448,6 +1448,72 @@ app.openapi(resolveReportRoute, async (c) => {
     return c.json({ success: true });
 });
 
+// ==========================================
+// APPLE WATCH SYNC CODES
+// ==========================================
+const generateSyncCodeRoute = createRoute({
+    middleware: [firebaseAuthMiddleware],
+    method: 'post',
+    path: '/sync/generate',
+    summary: 'Generate an Apple Watch sync code',
+    security: [{ bearerAuth: [] }],
+    request: { body: { content: { 'application/json': { schema: z.object({ listId: z.string() }) } } } },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ code: z.string(), expiresAt: z.number() }).openapi({ type: 'object' }) } }, description: 'Generated' },
+        404: { description: 'List not found' }
+    }
+});
+
+app.openapi(generateSyncCodeRoute, async (c) => {
+    const user = c.get("user");
+    const body = await c.req.json();
+    const { listId } = body;
+
+    // Verify user owns the list
+    const list = await c.env.DB.prepare("SELECT id FROM community_lists WHERE id = ? AND owner_id = ?").bind(listId, user.user_id).first();
+    if (!list) return c.json({ error: "List not found or permission denied" }, 404);
+
+    // Generate 5-digit numeric code securely
+    const randomBuffer = new Uint32Array(1);
+    crypto.getRandomValues(randomBuffer);
+    const code = (10000 + (randomBuffer[0] % 90000)).toString();
+    const expiresAt = Math.floor(Date.now() / 1000) + 900; // 15 mins
+
+    // Clear old codes asynchronously
+    c.executionCtx.waitUntil(c.env.DB.prepare("DELETE FROM watch_sync_codes WHERE expires_at < ?").bind(Math.floor(Date.now() / 1000)).run());
+
+    await c.env.DB.prepare("INSERT INTO watch_sync_codes (code, list_id, expires_at) VALUES (?, ?, ?)").bind(code, listId, expiresAt).run();
+
+    return c.json({ code, expiresAt });
+});
+
+const resolveSyncCodeRoute = createRoute({
+    method: 'get',
+    path: '/sync/{code}',
+    summary: 'Resolve an Apple Watch sync code',
+    request: {
+        params: z.object({
+            code: z.string().openapi({ param: { name: 'code', in: 'path', required: true } })
+        })
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ listId: z.string() }).openapi({ type: 'object' }) } }, description: 'Resolved' },
+        404: { description: 'Invalid or expired code' }
+    }
+});
+
+app.openapi(resolveSyncCodeRoute, async (c) => {
+    const code = c.req.param("code");
+    const now = Math.floor(Date.now() / 1000);
+
+    const record = await c.env.DB.prepare("SELECT list_id, expires_at FROM watch_sync_codes WHERE code = ?").bind(code).first();
+    if (!record || (record.expires_at as number) < now) {
+        return c.json({ error: "Invalid or expired code" }, 404);
+    }
+
+    return c.json({ listId: record.list_id as string });
+});
+
 app.get('/robots.txt', async (c) => {
     // Serve a dynamic robots.txt that points to the correct sitemap
     c.header("Content-Type", "text/plain");

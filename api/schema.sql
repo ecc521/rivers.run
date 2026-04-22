@@ -180,3 +180,11 @@ CREATE TABLE IF NOT EXISTS worker_logs (
 );
 CREATE INDEX IF NOT EXISTS idx_worker_logs_timestamp ON worker_logs(timestamp);
 
+-- ==========================================
+-- 10. APPLE WATCH SYNC CODES
+-- ==========================================
+CREATE TABLE IF NOT EXISTS watch_sync_codes (
+    code TEXT PRIMARY KEY,
+    list_id TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+);

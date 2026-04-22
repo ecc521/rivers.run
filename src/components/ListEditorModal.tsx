@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useModal } from "../context/ModalContext";
 import { fetchAPI } from "../services/api";
 import { getShareBaseUrl } from "../utils/url";
+import { WatchSyncModal } from "./WatchSyncModal";
 
 
 interface ListEditorModalProps {
@@ -33,6 +34,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [showConfirmOverlay, setShowConfirmOverlay] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [showWatchSync, setShowWatchSync] = useState(false);
   
   const { user } = useAuth();
   const { myLists, updateRiverInList, removeRiverFromList, updateList, toggleSubscription, isSubscribed } = useLists();
@@ -263,6 +265,9 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                  >
                    {activeList.isPublished ? "🌍 Public" : "🔒 Unlisted"}
                  </button>
+                 <button onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
+                   ⌚️ Sync Watch
+                 </button>
                </div>
             )}
         </div>
@@ -482,6 +487,13 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
           </div>
         </div>
       </form>
+      {activeList && (
+        <WatchSyncModal 
+          isOpen={showWatchSync} 
+          onClose={() => setShowWatchSync(false)} 
+          listId={activeList.id} 
+        />
+      )}
     </div>
     <style>{`
       @keyframes fadeIn {
