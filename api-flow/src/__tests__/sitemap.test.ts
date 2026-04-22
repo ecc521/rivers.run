@@ -58,6 +58,9 @@ describe('Sitemap Generation Engine', () => {
                             if (done) break;
                             capturedXml += decoder.decode(chunk, { stream: true });
                         }
+                    } else if (value instanceof Uint8Array) {
+                        const decoder = new TextDecoder();
+                        capturedXml += decoder.decode(value);
                     }
                     return { success: true };
                 })
@@ -67,8 +70,8 @@ describe('Sitemap Generation Engine', () => {
 
     it('should generate a sitemap on daily cron and include all entities', async () => {
         const dbRivers = [
-            { id: 'river1', name: 'Youghiogheny', section: 'Lower', isGauge: 0 },
-            { id: 'gauge-river', name: 'Ohiopyle Gauge', section: '', isGauge: 1 }
+            { id: 'river1', name: 'Youghiogheny', section: 'Lower' },
+            { id: 'gauge-river', name: 'Ohiopyle Gauge', section: '' }
         ];
         const dbLists = [
             { id: 'list1', title: 'My Favorites Bucket' }
@@ -92,7 +95,7 @@ describe('Sitemap Generation Engine', () => {
         // Verify Curated Rivers (0.7)
         expect(xml).toContain('<loc>https://rivers.run/river/river1/youghiogheny-lower</loc>');
         expect(xml).toContain('<priority>0.7</priority>');
-        expect(xml).toContain('<loc>https://rivers.run/gauge/gauge-river/ohiopyle-gauge</loc>');
+        expect(xml).toContain('<loc>https://rivers.run/river/gauge-river/ohiopyle-gauge</loc>');
 
         // Verify Standalone Gauges (0.4)
         expect(xml).toContain('<loc>https://rivers.run/gauge/USGS:03081500/yough-river-at-ohiopyle</loc>');
