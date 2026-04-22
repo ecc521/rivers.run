@@ -1372,6 +1372,102 @@ app.openapi(unbanUserRoute, async (c) => {
     return c.json({ success: true }) as any;
 });
 
+const deleteAdminUserRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
+    method: 'delete',
+    path: '/admin/users/{id}',
+    summary: 'Permanently delete a user and all their data (Admin only)',
+    security: [{ bearerAuth: [] }],
+    request: {
+        params: z.object({
+            id: z.string().openapi({
+                param: {
+                    name: 'id',
+                    in: 'path',
+                    required: true
+                }
+            })
+        })
+    },
+    responses: { 
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Deleted' },
+        403: { description: 'Hierarchy violation' },
+        404: { description: 'User not found' }
+    }
+});
+
+app.openapi(deleteAdminUserRoute, async (c) => {
+    const id = c.req.param("id");
+    const caller = c.get("user");
+
+    const target = await c.env.DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(id).first() as { role: string } | null;
+    if (!target) return c.json({ error: "User not found" }, 404) as any;
+
+    // Hierarchy Guard
+    if (caller.d1Role === 'admin' && (target.role === 'admin' || target.role === 'super-admin')) {
+        return c.json({ error: "Insufficient permissions: Cannot delete an Admin." }, 403) as any;
+    }
+
+    // Cascade delete via batching for safety (D1 doesn't always handle foreign key cascades as expected in all drivers)
+    await c.env.DB.batch([
+        c.env.DB.prepare("DELETE FROM community_lists WHERE owner_id = ?").bind(id),
+        c.env.DB.prepare("DELETE FROM river_suggestions WHERE suggested_by = ?").bind(id),
+        c.env.DB.prepare("DELETE FROM user_reports WHERE reported_by = ?").bind(id),
+        c.env.DB.prepare("DELETE FROM user_subscriptions WHERE user_id = ?").bind(id),
+        c.env.DB.prepare("DELETE FROM users WHERE user_id = ?").bind(id),
+        c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind(
+            'DELETE_USER', caller.user_id, id, 'User and all associated data purged.', Math.floor(Date.now() / 1000)
+        )
+    ]);
+
+    return c.json({ success: true }) as any;
+});
+
+const adminSendEmailRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
+    method: 'post',
+    path: '/admin/email',
+    summary: 'Send an administrative email to a user',
+    security: [{ bearerAuth: [] }],
+    request: {
+        body: {
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        to: z.string().email(),
+                        subject: z.string().min(1),
+                        body: z.string().min(1)
+                    })
+                }
+            }
+        }
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Email sent' },
+        403: { description: 'Unauthorized' }
+    }
+});
+
+app.openapi(adminSendEmailRoute, async (c) => {
+    const caller = c.get("user");
+    const { to, subject, body } = await c.req.json();
+
+    await sendEmail({
+        env: c.env as any,
+        to,
+        subject,
+        text: body
+    });
+
+    c.executionCtx.waitUntil(
+        c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)")
+            .bind('SEND_EMAIL', caller.user_id, null, `Emailed ${to}: ${subject}`, Math.floor(Date.now() / 1000))
+            .run()
+    );
+
+    return c.json({ success: true });
+});
+
 // 9. API Reporting (UGC)
 const createReportRoute = createRoute({
     middleware: [optionalFirebaseAuthMiddleware, checkPayloadSize],

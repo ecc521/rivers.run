@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../../context/AuthContext';
 import { useModal } from '../../context/ModalContext';
+import { fetchAPI } from '../../services/api';
 
 export default function UserManagementTab() {
   const { isSuperAdmin } = useAuth();
@@ -12,11 +12,8 @@ export default function UserManagementTab() {
   const [userData, setUserData] = useState<any>(null);
 
   const getUserRole = (data: any) => {
-    if (!data?.customClaims) return "none";
-    if (data.customClaims.superAdmin) return "superAdmin";
-    if (data.customClaims.admin) return "admin";
-    if (data.customClaims.moderator) return "moderator";
-    return "none";
+    if (!data?.role) return "none";
+    return data.role;
   };
 
 
@@ -25,12 +22,14 @@ export default function UserManagementTab() {
     setLoading(true);
     setUserData(null);
     try {
-      const functions = getFunctions();
-      const fn = httpsCallable(functions, 'adminLookupUser');
-      const res = await fn({ [searchType]: searchTerm.trim() });
-      setUserData(res.data);
+      const results = await fetchAPI(`/admin/users?q=${encodeURIComponent(searchTerm.trim())}`);
+      if (results && results.length > 0) {
+        setUserData(results[0]);
+      } else {
+        await alert("No user found matching that criteria.");
+      }
     } catch (e: any) {
-      await alert(`User not found: ${e.message}`);
+      await alert(`Error searching: ${e.message}`);
     }
     setLoading(false);
   };
@@ -45,9 +44,10 @@ export default function UserManagementTab() {
     
     setLoading(true);
     try {
-      const functions = getFunctions();
-      const fn = httpsCallable(functions, 'adminSetRole');
-      await fn({ targetUid: userData.uid, role: newRole });
+      await fetchAPI(`/admin/users/${userData.user_id}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role: newRole, reason: `Admin manually changed role via dashboard.` })
+      });
       await alert(`Role changed to ${newRole} successfully!`);
       // Refresh user data
       await handleSearch();
@@ -59,14 +59,13 @@ export default function UserManagementTab() {
 
   const handleBanToggle = async () => {
     if (!userData) return;
-    const currentlyBanned = !!userData.customClaims?.banned;
+    const currentlyBanned = userData.role === 'banned';
     if (!(await confirm(`Are you sure you want to ${currentlyBanned ? 'UNBAN' : 'BAN'} ${userData.email}?`))) return;
     
     setLoading(true);
     try {
-      const functions = getFunctions();
-      const fn = httpsCallable(functions, 'adminBanUser');
-      await fn({ targetUid: userData.uid, banned: !currentlyBanned });
+      const endpoint = currentlyBanned ? `/admin/users/${userData.user_id}/unban` : `/admin/users/${userData.user_id}/ban`;
+      await fetchAPI(endpoint, { method: 'PUT' });
       await alert(`User ${currentlyBanned ? 'unbanned' : 'banned'} successfully.`);
       await handleSearch();
     } catch (e: any) {
@@ -81,9 +80,7 @@ export default function UserManagementTab() {
     
     setLoading(true);
     try {
-      const functions = getFunctions();
-      const fn = httpsCallable(functions, 'adminDeleteUser');
-      await fn({ targetUid: userData.uid });
+      await fetchAPI(`/admin/users/${userData.user_id}`, { method: 'DELETE' });
       await alert("User and all associated data permanently deleted.");
       setUserData(null);
       setSearchTerm('');
@@ -102,12 +99,13 @@ export default function UserManagementTab() {
 
     setLoading(true);
     try {
-      const functions = getFunctions();
-      const fn = httpsCallable(functions, 'adminSendEmail');
-      await fn({ 
-        to: userData.email,
-        subject,
-        body
+      await fetchAPI('/admin/email', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          to: userData.email,
+          subject,
+          body
+        })
       });
       await alert("Email sent successfully!");
     } catch (e: any) {
@@ -157,16 +155,16 @@ export default function UserManagementTab() {
         <div style={{ backgroundColor: 'var(--surface)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
             <div>
-              <h2 style={{ margin: '0 0 4px 0', fontSize: '24px' }}>{userData.displayName || 'Unnamed User'}</h2>
+              <h2 style={{ margin: '0 0 4px 0', fontSize: '24px' }}>{userData.display_name || 'Unnamed User'}</h2>
               <div style={{ color: 'var(--text-secondary)', fontSize: '16px' }}>{userData.email}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>UID: {userData.uid}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>UID: {userData.user_id}</div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              {userData.customClaims?.superAdmin && <span style={{ backgroundColor: 'var(--primary)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>SuperAdmin</span>}
-              {userData.customClaims?.admin && <span style={{ backgroundColor: 'var(--success)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>Admin</span>}
-              {userData.customClaims?.moderator && <span style={{ backgroundColor: 'var(--alert-border)', color: 'var(--text)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>Moderator</span>}
-              {userData.customClaims?.banned && <span style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>BANNED</span>}
-              {!userData.customClaims?.admin && !userData.customClaims?.superAdmin && !userData.customClaims?.moderator && <span style={{ backgroundColor: 'var(--border)', color: 'var(--text-secondary)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>Standard User</span>}
+              {userData.role === 'super-admin' && <span style={{ backgroundColor: 'var(--primary)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>SuperAdmin</span>}
+              {userData.role === 'admin' && <span style={{ backgroundColor: 'var(--success)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>Admin</span>}
+              {userData.role === 'moderator' && <span style={{ backgroundColor: 'var(--alert-border)', color: 'var(--text)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>Moderator</span>}
+              {userData.role === 'banned' && <span style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>BANNED</span>}
+              {userData.role === 'user' && <span style={{ backgroundColor: 'var(--border)', color: 'var(--text-secondary)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>Standard User</span>}
             </div>
           </div>
 
@@ -176,9 +174,9 @@ export default function UserManagementTab() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                 <button 
                   onClick={handleBanToggle}
-                  style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${userData.customClaims?.banned ? 'var(--success)' : 'var(--danger)'}`, backgroundColor: 'transparent', color: userData.customClaims?.banned ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold', cursor: 'pointer', flex: 1 }}
+                  style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${userData.role === 'banned' ? 'var(--success)' : 'var(--danger)'}`, backgroundColor: 'transparent', color: userData.role === 'banned' ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold', cursor: 'pointer', flex: 1 }}
                 >
-                  {userData.customClaims?.banned ? 'Lift Ban' : 'Ban User'}
+                  {userData.role === 'banned' ? 'Lift Ban' : 'Ban User'}
                 </button>
                 <button 
                   onClick={handleSendEmail}
@@ -217,13 +215,13 @@ export default function UserManagementTab() {
                     cursor: 'pointer'
                   }}
                 >
-                  <option value="none">Standard User (No Admin Access)</option>
+                  <option value="user">Standard User (No Admin Access)</option>
                   <option value="moderator">Moderator (Queue Access only)</option>
                   {isSuperAdmin && <option value="admin">Administrator (User & Database tools)</option>}
-                  {isSuperAdmin && <option value="superAdmin">SuperAdmin (Full Control)</option>}
+                  {isSuperAdmin && <option value="super-admin">SuperAdmin (Full Control)</option>}
                 </select>
                 
-                {userData.customClaims?.superAdmin && !isSuperAdmin && (
+                {userData.role === 'super-admin' && !isSuperAdmin && (
                   <p style={{ margin: 0, fontSize: '12px', color: 'var(--danger)', fontWeight: 'bold' }}>
                     Only a SuperAdmin can modify this user.
                   </p>
