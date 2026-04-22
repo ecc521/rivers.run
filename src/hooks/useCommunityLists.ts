@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getStorageUrl } from "../utils/storageUrls";
+import { API_URL } from "../services/api";
 
 export interface CommunityListPayload {
   id: string;
@@ -57,7 +57,7 @@ export const useCommunityLists = (): UseCommunityListsResult => {
       }, 15000);
 
       try {
-        const listsDataUrl = getStorageUrl("public/lists.json");
+        const listsDataUrl = `${API_URL}/community/lists`;
         const res = await fetch(listsDataUrl);
 
         if (!res.ok) {

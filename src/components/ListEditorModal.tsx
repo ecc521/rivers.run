@@ -171,51 +171,69 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {showConfirmOverlay && activeList && (
+        {showConfirmOverlay && !!activeList && (
           <div style={{
             position: "absolute",
             top: 0,
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: "var(--surface)",
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(2px)",
             borderRadius: "12px",
-            zIndex: 10,
+            zIndex: 200,
             display: "flex",
-            flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
-            padding: "40px",
+            padding: "20px",
             boxSizing: "border-box",
-            textAlign: "center",
             animation: "fadeIn 0.2s ease"
-          }}>
-            <div style={{ fontSize: "3rem", marginBottom: "20px" }}>
-              {activeList.isPublished ? "🔒" : "🌍"}
-            </div>
-            <h3 style={{ margin: "0 0 10px 0", color: "var(--text)" }}>
-              {activeList.isPublished ? "Make List Unlisted?" : "Make List Public?"}
-            </h3>
-            <p style={{ margin: "0 0 30px 0", color: "var(--text-secondary)", lineHeight: "1.5" }}>
-              {activeList.isPublished 
-                ? "This will remove the list from the community feed. Only people with the direct link will be able to see it." 
-                : "This list will be visible to everyone on the Rivers.run Community feed."}
-            </p>
-            <div style={{ display: "flex", gap: "15px", width: "100%" }}>
-              <button 
-                onClick={() => setShowConfirmOverlay(false)}
-                disabled={toggling}
-                style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: "bold" }}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmTogglePublish}
-                disabled={toggling}
-                style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "none", backgroundColor: activeList.isPublished ? "var(--danger)" : "var(--primary)", color: "white", cursor: "pointer", fontWeight: "bold" }}
-              >
-                {toggling ? "Updating..." : (activeList.isPublished ? "Make Unlisted" : "Make Public")}
-              </button>
+          }}
+          onClick={(e) => { e.stopPropagation(); setShowConfirmOverlay(false); }}
+          >
+            <div 
+              style={{
+                backgroundColor: "var(--surface)",
+                padding: "24px",
+                borderRadius: "12px",
+                maxWidth: "340px",
+                width: "100%",
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.4)",
+                border: "1px solid var(--border)",
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center"
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ fontSize: "2.5rem", marginBottom: "16px" }}>
+                {activeList.isPublished ? "🔒" : "🌍"}
+              </div>
+              <h3 style={{ margin: "0 0 10px 0", color: "var(--text)", fontSize: "1.2rem" }}>
+                {activeList.isPublished ? "Make List Unlisted?" : "Make List Public?"}
+              </h3>
+              <p style={{ margin: "0 0 24px 0", color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: "1.5" }}>
+                {activeList.isPublished 
+                  ? "This will remove the list from the community feed." 
+                  : "This will make your list visible on the community feed."}
+              </p>
+              <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+                <button 
+                  onClick={() => setShowConfirmOverlay(false)}
+                  disabled={toggling}
+                  style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: "bold", fontSize: "0.9rem" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmTogglePublish}
+                  disabled={toggling}
+                  style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "none", backgroundColor: activeList.isPublished ? "var(--danger)" : "var(--primary)", color: "white", cursor: "pointer", fontWeight: "bold", fontSize: "0.9rem" }}
+                >
+                  {toggling ? "..." : "Confirm"}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -224,7 +242,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "1.5rem" }}>
             {modalTitle}
             </h3>
-            {isEdit && targetList && (
+            {isEdit && !!activeList && (
                <div style={{ display: "flex", gap: "10px" }}>
                  <button onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
                    🔗 Share Link
@@ -249,17 +267,17 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             )}
         </div>
 
-        {isShared && targetList && (
+        {isShared && !!activeList && (
            <div style={{ display: "flex", gap: "10px", paddingBottom: "10px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
              <button
-                onClick={() => { if (targetList) toggleSubscription(targetList.id); }}
+                onClick={() => { if (activeList) toggleSubscription(activeList.id); }}
                 style={{ padding: "10px 16px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--primary)", color: "var(--primary)", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
              >
-                {isSubscribed(targetList.id) ? "Unsubscribe" : "Subscribe for Updates"}
+                {isSubscribed(activeList.id) ? "Unsubscribe" : "Subscribe for Updates"}
              </button>
              {user && onCopySharedList && (
                  <button
-                    onClick={() => { if (targetList) onCopySharedList(targetList); }}
+                    onClick={() => { if (activeList) onCopySharedList(activeList); }}
                     style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
                  >
                     Import to My Lists

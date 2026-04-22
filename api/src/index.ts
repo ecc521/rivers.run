@@ -786,6 +786,77 @@ app.openapi(deleteUserRoute, async (c) => {
     return c.json({ success: true });
 });
 
+const getCommunityListsRoute = createRoute({
+    method: 'get',
+    path: '/community/lists',
+    summary: 'Get all public community lists',
+    responses: {
+        200: { content: { 'application/json': { schema: GenericArraySchema } }, description: 'Public lists feed' }
+    }
+});
+
+app.openapi(getCommunityListsRoute, async (c) => {
+    // 1. Fetch all published lists and their river mappings
+    const [listsRaw, mappingRaw] = await c.env.DB.batch([
+        c.env.DB.prepare("SELECT * FROM community_lists WHERE is_published = 1"),
+        c.env.DB.prepare(`
+            SELECT lr.* FROM community_list_rivers lr
+            JOIN community_lists l ON l.id = lr.list_id
+            WHERE l.is_published = 1
+        `)
+    ]);
+
+    const lists = listsRaw.results as any[];
+    const mappings = mappingRaw.results as any[];
+
+    // 2. Group mapping identically to the personal /lists endpoint
+    const mappingMap = new Map<string, any[]>();
+    for (const m of mappings) {
+        if (!mappingMap.has(m.list_id)) mappingMap.set(m.list_id, []);
+        mappingMap.get(m.list_id)?.push({
+            id: m.river_id,
+            order: m.sort_order,
+            gaugeId: m.gauge_id,
+            min: m.min_val,
+            max: m.max_val,
+            units: m.units,
+            customMin: m.custom_min,
+            customMax: m.custom_max,
+            customUnits: m.custom_units
+        });
+    }
+
+    // 3. User privacy masking
+    const ownerIds = [...new Set(lists.map(l => l.owner_id))];
+    const anonMap = new Map<string, boolean>();
+    
+    if (ownerIds.length > 0) {
+        const { results: ownerSettings } = await c.env.DB.prepare(`
+            SELECT user_id, settings_json FROM users WHERE user_id IN (${ownerIds.map(() => '?').join(',')})
+        `).bind(...ownerIds).all();
+        
+        (ownerSettings as any[]).forEach(s => {
+            try {
+                const settings = typeof s.settings_json === 'string' ? JSON.parse(s.settings_json) : s.settings_json;
+                if (settings?.hidePublicName) anonMap.set(s.user_id, true);
+            } catch {}
+        });
+    }
+
+    const result = lists.map(l => ({
+        ...l,
+        ownerId: l.owner_id,
+        author: anonMap.get(l.owner_id) ? "Anonymous Paddler" : l.author,
+        isPublished: true, 
+        rivers: mappingMap.get(l.id) || []
+    }));
+
+    // 4. Aggressive CDN Cache (10 min browser, 1 hour edge, 24 hour stale)
+    c.header("Cache-Control", "public, max-age=600, s-maxage=3600, stale-while-revalidate=86400");
+    
+    return c.json(result);
+});
+
 const getListsRoute = createRoute({
     middleware: [firebaseAuthMiddleware],
     method: 'get',

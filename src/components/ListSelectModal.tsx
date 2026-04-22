@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { useLists } from "../context/ListsContext";
 import { useRivers } from "../hooks/useRivers";
 import { useSettings } from "../context/SettingsContext";
+import { useNavigate } from "react-router-dom";
 
 interface ListSelectModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ export const ListSelectModal: React.FC<ListSelectModalProps> = ({ isOpen, onClos
   const { myLists, addRiverToList } = useLists();
   const { rivers } = useRivers();
   const { updateSetting, quickActionPref } = useSettings();
+  const navigate = useNavigate();
 
   if (!isOpen) return null;
 
@@ -132,8 +134,28 @@ export const ListSelectModal: React.FC<ListSelectModalProps> = ({ isOpen, onClos
           })}
 
           {myLists.length === 0 && (
-             <div style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)" }}>
-                You don't have any lists yet.
+             <div style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)", display: "flex", flexDirection: "column", gap: "16px", alignItems: "center" }}>
+                <div>You don't have any lists yet.</div>
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate("/lists");
+                  }}
+                  style={{
+                    padding: "10px 20px",
+                    backgroundColor: "var(--primary)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "opacity 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = "0.8"}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                >
+                  Go to Lists Page
+                </button>
              </div>
           )}
         </div>

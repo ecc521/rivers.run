@@ -176,7 +176,9 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
                         ? (myLists.find(l => l.title === "Favorites")?.id || null)
                         : (quickActionPref.split(":")[1] || null);
                      
-                     if (targetId) {
+                     const listExists = targetId && myLists.some(l => l.id === targetId);
+
+                     if (listExists) {
                         try {
                            await addMultipleRiversToList(targetId, filteredRivers);
                            await alert(`Successfully added ${filteredRivers.length} river(s) to your target list!`);
