@@ -11,6 +11,7 @@ import {
 } from "./schema";
 import { firebaseAuthMiddleware, requireModerator, requireAdmin, optionalFirebaseAuthMiddleware } from "./auth";
 import { sendEmail } from "./email";
+import { logToD1 } from "./utils/logger";
 
 
 type Bindings = {
@@ -302,31 +303,33 @@ app.openapi(updateRiverRoute, async (c) => {
     const flowHigh = validated.flow?.high ?? null;
     const flowMax = validated.flow?.max ?? null;
 
+    const now = Math.floor(Date.now() / 1000);
+
     // Atomic Execution
     const batch = [];
     if (original) {
         batch.push(c.env.DB.prepare(`
-             UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=? WHERE id=?
+             UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
         `).bind(
              validated.name, validated.section, validated.altname, validated.states, validated.class,
              validated.skill, validated.writeup, validated.aw, tagsStr, gaugesStr, accessStr, 
-             flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, id
+             flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now, id
         ));
     } else {
         batch.push(c.env.DB.prepare(`
-             INSERT INTO rivers (id, name, section, altname, states, class, skill, writeup, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             INSERT INTO rivers (id, name, section, altname, states, class, skill, writeup, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
              id, validated.name, validated.section, validated.altname, validated.states, validated.class,
              validated.skill, validated.writeup, validated.aw, tagsStr, gaugesStr, accessStr,
-             flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax
+             flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now
         ));
     }
 
     batch.push(c.env.DB.prepare(`
-        INSERT INTO river_audit_log (river_id, action_type, changed_by, diff_patch) VALUES (?, ?, ?, ?)
+        INSERT INTO river_audit_log (river_id, action_type, changed_by, diff_patch, changed_at) VALUES (?, ?, ?, ?, ?)
     `).bind(
-        id, original ? "UPDATE" : "INSERT", user.user_id, JSON.stringify(diff_patch)
+        id, original ? "UPDATE" : "INSERT", user.user_id, JSON.stringify(diff_patch), now
     ));
 
     await c.env.DB.batch(batch);
@@ -602,6 +605,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
             .bind(admin_notes || null, id).run();
          
          await notifyUser(false);
+         await logToD1(c.env, "INFO", "admin", `Rejected suggestion ${id} for ${riverName}. Note: ${admin_notes}`);
          return c.json({ success: true, message: "Rejected permanently." });
     }
 
@@ -624,12 +628,14 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     const flowHigh = validated.flow?.high ?? null;
     const flowMax = validated.flow?.max ?? null;
 
+    const now = Math.floor(Date.now() / 1000);
+
     batch.push(c.env.DB.prepare(`
-         UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=? WHERE id=?
+         UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
     `).bind(
          validated.name, validated.section, validated.altname, validated.states, validated.class,
          validated.skill, validated.writeup, validated.aw, tagsStr, gaugesStr, accessStr, 
-         flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, suggestion.river_id
+         flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now, suggestion.river_id
     ));
 
     // Calculate strict JSON delta

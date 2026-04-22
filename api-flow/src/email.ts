@@ -1,8 +1,9 @@
 import nodemailer from 'nodemailer';
+import { logToD1 } from './utils/logger';
 
 export async function sendEmail({ env, to, subject, html }: { env: any, to: string, subject: string, html: string }) {
     if (!env || !env.GMAIL_APP_PASSWORD) {
-        console.warn("Emails not configured: Missing GMAIL_APP_PASSWORD secret in Cloudflare environment.");
+        await logToD1(env, "WARN", "email", "Emails not configured: Missing GMAIL_APP_PASSWORD secret.");
         return { success: false, error: "Missing config" };
     }
 
@@ -23,9 +24,10 @@ export async function sendEmail({ env, to, subject, html }: { env: any, to: stri
             subject,
             html
         });
-        console.log(`Email sent from NodeMailer to ${to}: ${info.messageId}`);
+        await logToD1(env, "INFO", "email", `Email sent to ${to}: ${info.messageId}`);
         return { success: true, messageId: info.messageId };
     } catch (e: any) {
+        await logToD1(env, "ERROR", "email", `Nodemailer failure to ${to}`, e.message);
         console.error("Nodemailer routing failure on Cloudflare Worker:", e);
         return { success: false, error: e.message };
     }
