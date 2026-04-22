@@ -47,7 +47,7 @@ function calculateArrayPosition(
 }
 
 // Helper to dynamically calculate descending array configurations
-function calculateParsedThresholds(thresholds: (any)[]): (number | undefined)[] {
+export function calculateParsedThresholds(thresholds: (any)[]): (number | undefined)[] {
   let parsedValues: (number | undefined)[] = thresholds.map(() => undefined);
   let currentMax: number | undefined;
 

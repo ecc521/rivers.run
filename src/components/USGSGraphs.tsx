@@ -97,7 +97,7 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
                 opacity: entry.value != null ? 1 : 0.6
             }}
           >
-            {entry.name}: {entry.value != null ? `${entry.value} ${getUnit(entry.dataKey)}` : "(No Reading)"}
+            {entry.name}: {entry.value != null ? `${entry.value} ${getUnit(entry.dataKey)}` : <span style={{ fontStyle: "italic", fontWeight: "normal" }}>(No Reading)</span>}
           </p>
         ))}
       </div>

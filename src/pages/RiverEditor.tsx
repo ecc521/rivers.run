@@ -471,7 +471,7 @@ export default function RiverEditor() {
             <ReactQuill 
               theme="snow" 
               value={riverData.writeup || ""} 
-              onChange={(val) => setRiverData({...riverData, writeup: val})}
+              onChange={(val) => setRiverData((prev: any) => ({...prev, writeup: val}))}
               modules={quillModules}
               style={{ height: '300px', marginBottom: '50px' }}
             />

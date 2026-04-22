@@ -11,6 +11,7 @@ import { useAuth } from "../context/AuthContext";
 import { getRiverShareUrl } from "../utils/url";
 import { fetchAPI } from "../services/api";
 import { Capacitor } from "@capacitor/core";
+import { calculateParsedThresholds } from "../utils/flowInfoCalculations";
 
 
 
@@ -103,7 +104,35 @@ const RiverPage: React.FC = () => {
     return temp;
   }, [displayRiver, scrubbedReading]);
 
-  const getFlowValueWithUnit = (val?: number) => val != null ? `${val} ${pillRiver?.flow?.unit ?? ''}` : '?';
+  const parsedThresholds = useMemo(() => {
+    if (!pillRiver || !pillRiver.flow) return [undefined, undefined, undefined, undefined, undefined];
+    return calculateParsedThresholds([
+      pillRiver.flow.min,
+      pillRiver.flow.low,
+      pillRiver.flow.mid,
+      pillRiver.flow.high,
+      pillRiver.flow.max
+    ]);
+  }, [pillRiver]);
+
+  const formatInterpolated = (val: number) => {
+    return val >= 100 ? Math.round(val) : Math.round(val * 10) / 10;
+  };
+
+  const renderTooltipRow = (label: string, rawVal: any, interpolatedVal: number | undefined) => {
+    const hasRaw = rawVal != null && (rawVal as any) !== "";
+    if (hasRaw) {
+      return <div>{label}: {rawVal} {pillRiver?.flow?.unit ?? ''}</div>;
+    }
+    if (interpolatedVal == null) {
+      return <div>{label}: ?</div>;
+    }
+    return (
+      <div>
+        {label}: <em style={{ fontStyle: "italic", fontWeight: "normal" }}>({formatInterpolated(interpolatedVal)} {pillRiver?.flow?.unit ?? ''})</em>
+      </div>
+    );
+  };
 
   useSEO({
     title: river ? `${river.name} - ${river.section}` : undefined,
@@ -278,8 +307,12 @@ const RiverPage: React.FC = () => {
                 cursor: "pointer",
                 borderBottom: "none"
             }}>
-                <div className="tooltiptext" style={{ textAlign: "left", lineHeight: "1.4", padding: "10px 15px", whiteSpace: "pre", fontWeight: "normal", zIndex: 10 }}>
-                    {`Minimum: ${getFlowValueWithUnit(pillRiver.flow?.min)}\nLow: ${getFlowValueWithUnit(pillRiver.flow?.low)}\nRunnable: ${getFlowValueWithUnit(pillRiver.flow?.mid)}\nHigh: ${getFlowValueWithUnit(pillRiver.flow?.high)}\nMaximum: ${getFlowValueWithUnit(pillRiver.flow?.max)}`}
+                <div className="tooltiptext" style={{ textAlign: "left", lineHeight: "1.4", padding: "10px 15px", whiteSpace: "nowrap", fontWeight: "normal", zIndex: 10 }}>
+                    {renderTooltipRow("Minimum", pillRiver.flow?.min, parsedThresholds[0])}
+                    {renderTooltipRow("Low", pillRiver.flow?.low, parsedThresholds[1])}
+                    {renderTooltipRow("Runnable", pillRiver.flow?.mid, parsedThresholds[2])}
+                    {renderTooltipRow("High", pillRiver.flow?.high, parsedThresholds[3])}
+                    {renderTooltipRow("Maximum", pillRiver.flow?.max, parsedThresholds[4])}
                 </div>
                 <div
                     style={{
@@ -321,7 +354,13 @@ const RiverPage: React.FC = () => {
                 <div style={{ display: "flex", alignItems: "center", gap: "15px", fontSize: "0.85rem", width: "100%", maxWidth: "200px", marginTop: "15px", marginBottom: "15px" }}>
                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", color: "var(--text-muted)", lineHeight: 1.2 }}>
                       <span style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>Min</span>
-                      <strong style={{ color: "var(--text)" }}>{pillRiver.flow?.min ?? '?'}</strong>
+                      {(() => {
+                        const raw = pillRiver.flow?.min;
+                        if (raw != null && (raw as any) !== "") return <strong style={{ color: "var(--text)" }}>{raw}</strong>;
+                        const interpolated = parsedThresholds[0];
+                        if (interpolated == null) return <strong style={{ opacity: 0 }}>?</strong>;
+                        return <strong style={{ color: "var(--text)", fontWeight: "normal", fontStyle: "italic" }}>({formatInterpolated(interpolated)})</strong>;
+                      })()}
                    </div>
                    
                    <div style={{ 
@@ -335,25 +374,43 @@ const RiverPage: React.FC = () => {
                       {/* 25% - Low (Top) */}
                       <div style={{ position: "absolute", left: "25%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)", zIndex: 1 }} />
                       <div style={{ position: "absolute", left: "25%", bottom: "100%", transform: "translateX(-50%)", paddingBottom: "5px", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1, whiteSpace: "nowrap" }}>
-                         <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{pillRiver.flow?.low ?? '?'}</strong>
+                        {(() => {
+                          const raw = pillRiver.flow?.low;
+                          if (raw != null && (raw as any) !== "") return <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{raw}</strong>;
+                          const interpolated = parsedThresholds[1];
+                          if (interpolated == null) return <strong style={{ fontSize: "0.75rem", opacity: 0 }}>?</strong>;
+                          return <strong style={{ fontSize: "0.75rem", color: "var(--text)", fontWeight: "normal", fontStyle: "italic" }}>({formatInterpolated(interpolated)})</strong>;
+                        })()}
                       </div>
 
                       {/* 50% - Mid (Bottom) */}
                       <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)", zIndex: 1 }} />
                       <div style={{ position: "absolute", left: "50%", top: "100%", transform: "translateX(-50%)", paddingTop: "5px", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1, whiteSpace: "nowrap" }}>
-                         <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{pillRiver.flow?.mid ?? '?'}</strong>
+                        {(() => {
+                          const raw = pillRiver.flow?.mid;
+                          if (raw != null && (raw as any) !== "") return <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{raw}</strong>;
+                          const interpolated = parsedThresholds[2];
+                          if (interpolated == null) return <strong style={{ fontSize: "0.75rem", opacity: 0 }}>?</strong>;
+                          return <strong style={{ fontSize: "0.75rem", color: "var(--text)", fontWeight: "normal", fontStyle: "italic" }}>({formatInterpolated(interpolated)})</strong>;
+                        })()}
                       </div>
 
                       {/* 75% - High (Top) */}
                       <div style={{ position: "absolute", left: "75%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)", zIndex: 1 }} />
                       <div style={{ position: "absolute", left: "75%", bottom: "100%", transform: "translateX(-50%)", paddingBottom: "5px", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1, whiteSpace: "nowrap" }}>
-                         <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{pillRiver.flow?.high ?? '?'}</strong>
+                        {(() => {
+                          const raw = pillRiver.flow?.high;
+                          if (raw != null && (raw as any) !== "") return <strong style={{ fontSize: "0.75rem", color: "var(--text)" }}>{raw}</strong>;
+                          const interpolated = parsedThresholds[3];
+                          if (interpolated == null) return <strong style={{ fontSize: "0.75rem", opacity: 0 }}>?</strong>;
+                          return <strong style={{ fontSize: "0.75rem", color: "var(--text)", fontWeight: "normal", fontStyle: "italic" }}>({formatInterpolated(interpolated)})</strong>;
+                        })()}
                       </div>
 
                       <div style={{
                           position: "absolute",
                           top: "50%",
-                          left: `${Math.max(0, Math.min(100, (pillRiver.running / 4) * 100))}%`,
+                          left: `${Math.max(0, Math.min(100, ((pillRiver.running ?? 0) / 4) * 100))}%`,
                           transform: "translate(-50%, -50%)",
                           width: "14px",
                           height: "14px",
@@ -362,13 +419,20 @@ const RiverPage: React.FC = () => {
                           border: "2px solid",
                           borderColor: isDarkMode ? "#000" : "#fff",
                           boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                          zIndex: 2
+                          zIndex: 2,
+                          display: pillRiver.running == null ? 'none' : 'block'
                       }} />
                    </div>
                    
                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", color: "var(--text-muted)", lineHeight: 1.2 }}>
                       <span style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>Max</span>
-                      <strong style={{ color: "var(--text)" }}>{pillRiver.flow?.max ?? '?'}</strong>
+                      {(() => {
+                        const raw = pillRiver.flow?.max;
+                        if (raw != null && (raw as any) !== "") return <strong style={{ color: "var(--text)" }}>{raw}</strong>;
+                        const interpolated = parsedThresholds[4];
+                        if (interpolated == null) return <strong style={{ opacity: 0 }}>?</strong>;
+                        return <strong style={{ color: "var(--text)", fontWeight: "normal", fontStyle: "italic" }}>({formatInterpolated(interpolated)})</strong>;
+                      })()}
                    </div>
                 </div>
             </div>

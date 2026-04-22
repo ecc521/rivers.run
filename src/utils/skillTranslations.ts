@@ -24,12 +24,13 @@ export type SkillValue = string | number | undefined | null;
  * Returns the short abbreviation (e.g. "I") for a skill level (1-8 or string).
  */
 export function getSkillAbbreviation(skill: SkillValue): string {
-    if (skill === undefined || skill === null) return "?";
-    if (typeof skill === "number") {
-        if (skill >= 1 && skill < skillLevels.length) return skillLevels[skill][0];
+    if (skill === undefined || skill === null || skill === "") return "?";
+    const num = typeof skill === "string" ? parseInt(skill, 10) : skill;
+    if (typeof num === "number" && !isNaN(num)) {
+        if (num >= 1 && num < skillLevels.length) return skillLevels[num][0];
         return "?";
     }
-    const s = skill.toString();
+    const s = skill.toString().toUpperCase();
     if (skillTranslations[s]) return s;
     return s || "?";
 }
@@ -38,12 +39,13 @@ export function getSkillAbbreviation(skill: SkillValue): string {
  * Returns the full description (e.g. "Intermediate") for a skill level.
  */
 export function getSkillFull(skill: SkillValue): string {
-    if (skill === undefined || skill === null) return "Skill Unknown";
-    if (typeof skill === "number") {
-        if (skill >= 1 && skill < skillLevels.length) return skillLevels[skill][1];
+    if (skill === undefined || skill === null || skill === "") return "Skill Unknown";
+    const num = typeof skill === "string" ? parseInt(skill, 10) : skill;
+    if (typeof num === "number" && !isNaN(num)) {
+        if (num >= 1 && num < skillLevels.length) return skillLevels[num][1];
         return "Skill Unknown";
     }
-    const s = skill.toString();
+    const s = skill.toString().toUpperCase();
     if (skillTranslations[s]) return skillTranslations[s];
     return "Skill Unknown";
 }
@@ -52,9 +54,10 @@ export function getSkillFull(skill: SkillValue): string {
  * Returns the numeric index (1-8) for a skill level (abbreviation or number).
  */
 export function getSkillIndex(skill: SkillValue): number | null {
-    if (skill === undefined || skill === null) return null;
-    if (typeof skill === "number") {
-        if (skill >= 1 && skill < skillLevels.length) return skill;
+    if (skill === undefined || skill === null || skill === "") return null;
+    const num = typeof skill === "string" ? parseInt(skill, 10) : skill;
+    if (typeof num === "number" && !isNaN(num)) {
+        if (num >= 1 && num < skillLevels.length) return num;
         return null;
     }
     const s = skill.toString().toUpperCase();

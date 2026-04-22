@@ -554,33 +554,47 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     const suggestion = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE suggestion_id = ? AND status = 'pending'").bind(id).first();
     if (!suggestion || !suggestion.proposed_changes) return c.json({ error: "Suggestion not found or already resolved." }, 404);
 
-    const proposed = JSON.parse(suggestion.proposed_changes as string);
+    const proposed = typeof suggestion.proposed_changes === 'string' ? JSON.parse(suggestion.proposed_changes) : suggestion.proposed_changes;
     const riverName = proposed.name || "Unknown River";
 
     const notifyUser = async (isAccepted: boolean) => {
-        if (!notify_submitter) return;
-        const suggestedBy = suggestion.suggested_by as string;
-        if (suggestedBy.startsWith("IP:")) return;
+        try {
+            if (!notify_submitter) return;
+            const suggestedBy = suggestion.suggested_by as string;
+            if (suggestedBy.startsWith("IP:")) return;
 
-        const userRecord = await c.env.DB.prepare("SELECT email FROM users WHERE user_id = ?").bind(suggestedBy).first() as { email: string } | null;
-        if (!userRecord || !userRecord.email) return;
+            const userRecord = await c.env.DB.prepare("SELECT email FROM users WHERE user_id = ?").bind(suggestedBy).first() as { email: string } | null;
+            if (!userRecord || !userRecord.email) return;
 
-        const statusLabel = isAccepted ? "accepted" : "rejected";
-        const subject = `Rivers.run: Your submission for ${riverName} was ${statusLabel}!`;
-        let text = `Your submission was ${statusLabel}.`;
-        
-        if (admin_notes && admin_notes.trim()) {
-            text += `\n\nThe reviewer left the following note:\n${admin_notes}`;
+            const statusLabel = isAccepted ? "accepted" : "rejected";
+            const subject = `Rivers.run: Your submission for ${riverName} was ${statusLabel}!`;
+            let text = `Your submission was ${statusLabel}.`;
+            
+            if (admin_notes && admin_notes.trim()) {
+                text += `\n\nThe reviewer left the following note:\n${admin_notes}`;
+            }
+
+            if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+                c.executionCtx.waitUntil(
+                    sendEmail({
+                        env: c.env,
+                        to: userRecord.email,
+                        subject,
+                        text
+                    })
+                );
+            } else {
+                console.warn("executionCtx.waitUntil not available, sending email synchronously");
+                await sendEmail({
+                    env: c.env,
+                    to: userRecord.email,
+                    subject,
+                    text
+                });
+            }
+        } catch (e) {
+            console.error("Error in notifyUser:", e);
         }
-
-        c.executionCtx.waitUntil(
-            sendEmail({
-                env: c.env,
-                to: userRecord.email,
-                subject,
-                text
-            })
-        );
     };
 
     if (action === "reject") {
