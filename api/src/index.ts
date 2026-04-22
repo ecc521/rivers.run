@@ -439,6 +439,40 @@ app.openapi(getAdminQueueRoute, async (c) => {
     return c.json(mapped);
 });
 
+const getMySuggestionRoute = createRoute({
+    middleware: [firebaseAuthMiddleware],
+    method: 'get',
+    path: '/my-submissions/{id}',
+    summary: 'Get your own suggestion (even if rejected) to restore progress',
+    security: [{ bearerAuth: [] }],
+    request: {
+        params: z.object({
+            id: z.string().openapi({ param: { name: 'id', in: 'path', required: true } })
+        })
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: GenericObjectSchema } }, description: 'Suggestion details' },
+        403: { description: 'Not your submission' },
+        404: { description: 'Not found' }
+    }
+});
+
+app.openapi(getMySuggestionRoute, async (c) => {
+    const id = c.req.param("id");
+    const user = c.get("user");
+    const result = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE suggestion_id = ?").bind(id).first();
+    if (!result) return c.json({ error: "Submission not found" }, 404);
+    
+    if (result.suggested_by !== user.user_id) {
+        return c.json({ error: "Access denied: You can only restore your own submissions." }, 403);
+    }
+    
+    return c.json({
+        ...result,
+        proposed_changes: typeof result.proposed_changes === 'string' ? JSON.parse(result.proposed_changes) : result.proposed_changes
+    });
+});
+
 const getAdminSuggestionRoute = createRoute({
     middleware: [firebaseAuthMiddleware, requireModerator],
     method: 'get',
@@ -571,29 +605,58 @@ app.openapi(resolveSuggestionRoute, async (c) => {
 
             const statusLabel = isAccepted ? "accepted" : "rejected";
             const subject = `Rivers.run: Your submission for ${riverName} was ${statusLabel}!`;
-            let text = `Your submission was ${statusLabel}.`;
             
+            let noteHtml = '';
             if (admin_notes && admin_notes.trim()) {
-                text += `\n\nThe reviewer left the following note:\n${admin_notes}`;
+                noteHtml = `
+                    <div style="margin: 20px 0; padding: 15px; background-color: #f8fafc; border-left: 4px solid ${isAccepted ? '#10b981' : '#ef4444'}; color: #334155;">
+                        <strong style="display: block; margin-bottom: 5px;">Moderator Note:</strong>
+                        ${admin_notes.replace(/\n/g, '<br>')}
+                    </div>
+                `;
             }
 
+            const restoreLink = `https://rivers.run/edit/${suggestion.river_id}?restore=${id}`;
+            const footer = `
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;">
+                <p style="font-size: 12px; color: #64748b; line-height: 1.6;">
+                    <strong>Reference ID:</strong> #${id}<br>
+                    This is an automated notification from Rivers.run. 
+                    ${!isAccepted ? `If you wish to appeal this decision, you may reply to this email directly. Please keep the Reference ID in your message.` : ''}
+                </p>
+            `;
+
+            const html = `
+                <div style="font-family: sans-serif; max-width: 600px; line-height: 1.5; color: #1e293b;">
+                    <h2 style="color: ${isAccepted ? '#059669' : '#b91c1c'};">Submission ${isAccepted ? 'Accepted' : 'Declined'}</h2>
+                    <p>Hello,</p>
+                    <p>Your submission for <strong>${riverName}</strong> has been <strong>${statusLabel}</strong> by our moderation team.</p>
+                    
+                    ${noteHtml}
+
+                    ${!isAccepted ? `
+                        <p><strong>Don't want to lose your progress?</strong></p>
+                        <p>You can re-open your submission with all your previous changes to make the requested fixes and resubmit:</p>
+                        <p><a href="${restoreLink}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Restore & Edit Submission</a></p>
+                    ` : `
+                        <p>Your changes are now live on <a href="https://rivers.run/river/${suggestion.river_id}">rivers.run</a>. Thank you for contributing to the community!</p>
+                    `}
+
+                    ${footer}
+                </div>
+            `;
+
+            const emailPayload = {
+                env: c.env,
+                to: userRecord.email,
+                subject,
+                html
+            };
+
             if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
-                c.executionCtx.waitUntil(
-                    sendEmail({
-                        env: c.env,
-                        to: userRecord.email,
-                        subject,
-                        text
-                    })
-                );
+                c.executionCtx.waitUntil(sendEmail(emailPayload));
             } else {
-                console.warn("executionCtx.waitUntil not available, sending email synchronously");
-                await sendEmail({
-                    env: c.env,
-                    to: userRecord.email,
-                    subject,
-                    text
-                });
+                await sendEmail(emailPayload);
             }
         } catch (e) {
             console.error("Error in notifyUser:", e);
@@ -601,8 +664,12 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     };
 
     if (action === "reject") {
-         await c.env.DB.prepare("UPDATE river_suggestions SET status = 'rejected', resolution_note = ? WHERE suggestion_id = ?")
-            .bind(admin_notes || null, id).run();
+         await c.env.DB.batch([
+            c.env.DB.prepare("UPDATE river_suggestions SET status = 'rejected', resolution_note = ? WHERE suggestion_id = ?").bind(admin_notes || null, id),
+            c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind(
+                'REJECT_SUGGESTION', user.user_id, id, `Rejected suggestion for ${riverName}. Note: ${admin_notes || 'No note provided'}`, Math.floor(Date.now() / 1000)
+            )
+         ]);
          
          await notifyUser(false);
          await logToD1(c.env, "INFO", "admin", `Rejected suggestion ${id} for ${riverName}. Note: ${admin_notes}`);
@@ -672,6 +739,11 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     batch.push(c.env.DB.prepare(`
         INSERT INTO river_audit_log (river_id, action_type, changed_by, diff_patch, changed_at) VALUES (?, 'UPDATE', ?, ?, ?)
     `).bind(suggestion.river_id, user.user_id, JSON.stringify({ diff: diff_patch, note: admin_notes, type: "approval", original_author: cleanAuthor }), Math.floor(Date.now() / 1000)));
+
+    // Formal Admin Audit Log
+    batch.push(c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind(
+        'APPROVE_SUGGESTION', user.user_id, id, `Approved and merged changes for ${riverName}. Note: ${admin_notes || 'No note provided'}`, Math.floor(Date.now() / 1000)
+    ));
 
     await c.env.DB.batch(batch);
     await notifyUser(true);

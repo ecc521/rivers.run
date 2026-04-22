@@ -97,9 +97,15 @@ export default function RiverEditor() {
   };
 
   useEffect(() => {
-    if (isNew) return;
-    
     async function load() {
+      const searchParams = new URLSearchParams(location.search);
+      const restoreId = searchParams.get('restore');
+
+      if (isNew && !restoreId) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       try {
         if (isReviewMode) {
@@ -116,8 +122,15 @@ export default function RiverEditor() {
            } catch {
              console.log("No existing live data for this suggestion.");
            }
-         }
-         else {
+         } else if (restoreId) {
+            const suggestion = await fetchAPI(`/my-submissions/${restoreId}`, {}, user);
+            const proposed = suggestion.proposed_changes;
+            syncInputs(proposed);
+            try {
+              const live = await fetchAPI(`/rivers/${proposed.id || riverId}`, {}, user);
+              setLiveData(live);
+            } catch {}
+         } else {
             const live = await fetchAPI(`/rivers/${riverId}`, {}, user);
             setLiveData(live);
             syncInputs(live);
