@@ -133,12 +133,27 @@ const flowdataRoute = createRoute({
 });
 
 app.openapi(flowdataRoute, async (c) => {
-    const cached = await c.env.FLOW_STORAGE.get("sitedata.json");
-    if (cached) {
-        const data = await cached.json() as Record<string, any>;
-        return c.json(data, 200);
+    const object = await c.env.FLOW_STORAGE.get("sitedata.json", {
+        onlyIf: c.req.raw.headers
+    });
+
+    if (!object) {
+        c.header("Cache-Control", "no-store, max-age=0");
+        return c.json({ error: "Sitedata not yet generated" }, 503);
     }
-    return c.json({ error: "Sitedata not yet generated" }, 503);
+
+    if (!('body' in object)) {
+        return c.body(null, 304);
+    }
+
+    // Cache the flowdata response for 5 minutes at edge, with 10-minute stale revalidate
+    c.header("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=600");
+    c.header("ETag", object.httpEtag);
+    
+    // Instead of parsing the JSON and re-stringifying it via c.json(),
+    // we can serve the raw JSON string directly from R2 for much better performance!
+    c.header("Content-Type", "application/json");
+    return c.body(object.body);
 });
 
 const gaugeRoute = createRoute({
