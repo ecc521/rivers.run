@@ -186,7 +186,8 @@ app.openapi(gaugeRoute, async (c) => {
     if (!provider) return c.json({ error: "Provider not found" }, 404);
 
     try {
-        const historyMap = await provider.getHistory([id], Date.now() - 3600000, Date.now());
+        // Fetch 6 hours (21600000 ms) of history to populate charts/tables adequately
+        const historyMap = await provider.getHistory([id], Date.now() - 21600000, Date.now());
         const history = historyMap[id];
         if (!history) return c.json({ error: "Gauge not found" }, 404);
 
