@@ -23,7 +23,7 @@ export default function RiverEditor() {
   const { riverId, queueId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert, confirm, prompt, resolveSuggestion } = useModal();
   
@@ -67,8 +67,15 @@ export default function RiverEditor() {
 
   const syncInputs = (inputData: any) => {
       if (!inputData) return;
-      // Rigorously deep clone to completely sever object references
-      const data = JSON.parse(JSON.stringify(inputData));
+      
+      // Handle case where input might be a JSON string (e.g. from older API or DB artifacts)
+      let data: any;
+      try {
+        data = typeof inputData === 'string' ? JSON.parse(inputData) : JSON.parse(JSON.stringify(inputData));
+      } catch (e) {
+        console.error("Failed to parse input data", e);
+        data = inputData;
+      }
 
       const rawAccessPoints = Array.isArray(data.accessPoints) ? data.accessPoints : [];
       const safeAccess = rawAccessPoints.map((ap: any) => ({ 
@@ -105,6 +112,7 @@ export default function RiverEditor() {
       const searchParams = new URLSearchParams(location.search);
       const restoreId = searchParams.get('restore');
 
+      if (authLoading) return;
       if (isNew && !restoreId) {
         setLoading(false);
         return;
@@ -144,13 +152,16 @@ export default function RiverEditor() {
             syncInputs(live);
          }
        } catch (e: unknown) {
-         if (e instanceof Error) console.error("Error loading river", e.message);
+         if (e instanceof Error) {
+            console.error("Error loading river", e.message);
+            await alert(`Failed to load data: ${e.message}. Check if your local API is running.`);
+         }
        } finally {
          setLoading(false);
        }
      }
     load();
-  }, [riverId, queueId, isNew, isReviewMode, navigate, user]);
+  }, [riverId, queueId, isNew, isReviewMode, navigate, user, authLoading, alert]);
 
   const quillModules = useMemo(() => {
     return {
@@ -237,7 +248,12 @@ export default function RiverEditor() {
   const toggleView = (mode: "draft" | "original") => {
       if (mode === "original") {
           // Sever references by deep cloning, preserving the draft exactly as-is
-          setProposedData(JSON.parse(JSON.stringify(generateFinalObj())));
+          const draft = generateFinalObj();
+          // CRITICAL: Preserve metadata that isn't part of the core river object but needed for the session
+          draft.queueId = proposedData?.queueId;
+          draft.id = riverData.id; 
+          
+          setProposedData(JSON.parse(JSON.stringify(draft)));
           setViewMode("original");
           syncInputs(liveData);
       } else {
@@ -307,7 +323,8 @@ export default function RiverEditor() {
   };
 
   const handleApproveReview = async () => {
-      if (!isAdmin || !proposedData?.queueId) return;
+      if (!isAdmin) return alert("You must be an administrator to approve submissions.");
+      if (!proposedData?.queueId) return alert("Missing Suggestion ID. Please refresh and try again.");
       
       const res = await resolveSuggestion("Review the changes and confirm if you want to push this to the live database.", "Approve Suggestion", isAnonymous);
       if (!res || !res.confirmed) return;
@@ -340,7 +357,8 @@ export default function RiverEditor() {
   };
 
   const handleRejectReview = async () => {
-      if (!isAdmin || !proposedData?.queueId) return;
+      if (!isAdmin) return alert("You must be an administrator to reject submissions.");
+      if (!proposedData?.queueId) return alert("Missing Suggestion ID. Please refresh and try again.");
       
       const res = await resolveSuggestion("Are you sure you want to reject this submission completely?", "Reject Suggestion", isAnonymous);
       if (!res || !res.confirmed) return;
@@ -411,7 +429,7 @@ export default function RiverEditor() {
       }
   }
 
-  if (loading) return <div className="page-content center"><h2>Loading Editor...</h2></div>;
+  if (loading || authLoading) return <div className="page-content center"><h2>Loading Editor...</h2></div>;
 
   const isOriginalView = viewMode === "original";
   const pointerEvents = isOriginalView ? 'none' : 'auto';
@@ -590,6 +608,25 @@ export default function RiverEditor() {
               )}
           </div>
       </div>
+      
+      {isAdmin && (
+        <div style={{ marginTop: '40px', padding: '20px', backgroundColor: 'var(--surface-hover)', borderRadius: '10px', fontSize: '12px', border: '1px dashed var(--border)' }}>
+          <h4 style={{ margin: '0 0 10px 0' }}>Admin Debug Info</h4>
+          <div style={{ display: 'flex', gap: '20px' }}>
+            <div style={{ flex: 1 }}>
+              <strong>Proposed Data:</strong>
+              <pre>{JSON.stringify(proposedData, null, 2)}</pre>
+            </div>
+            <div style={{ flex: 1 }}>
+              <strong>Live Data:</strong>
+              <pre>{JSON.stringify(liveData, null, 2)}</pre>
+            </div>
+          </div>
+          <div style={{ marginTop: '10px' }}>
+            <strong>Auth State:</strong> {user ? `Logged in as ${user.email}` : "Logged out"} | <strong>IsAdmin:</strong> {String(isAdmin)}
+          </div>
+        </div>
+      )}
     </div>
     
     {showHistoryPanel && (

@@ -321,12 +321,19 @@ const MapDownloadItem: React.FC<{
 }> = ({ label, value, onChange, disabled, onDownload, options }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
     <label style={{ fontSize: '0.9em', fontWeight: 'bold' }}>{label}</label>
-    <div style={{ display: 'flex', gap: '10px' }}>
+    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
       <select 
         value={value} 
         onChange={e => onChange(Number(e.target.value))}
         disabled={disabled}
-        style={{ padding: '10px', borderRadius: '6px', border: "1px solid var(--border)", flex: 1, backgroundColor: "var(--surface)" }}
+        style={{ 
+          padding: '10px', 
+          borderRadius: '6px', 
+          border: "1px solid var(--border)", 
+          flex: '1 1 200px', 
+          backgroundColor: "var(--surface)",
+          minWidth: '0'
+        }}
       >
         {options.map(opt => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -335,7 +342,16 @@ const MapDownloadItem: React.FC<{
       <button 
         onClick={onDownload}
         disabled={disabled}
-        style={{ padding: '10px 16px', backgroundColor: disabled ? '#cbd5e1' : "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '6px', cursor: disabled ? 'not-allowed' : 'pointer', minWidth: '160px' }}
+        style={{ 
+          padding: '10px 16px', 
+          backgroundColor: disabled ? '#cbd5e1' : "var(--primary)", 
+          color: "var(--surface)", 
+          border: 'none', 
+          borderRadius: '6px', 
+          cursor: disabled ? 'not-allowed' : 'pointer', 
+          flex: '1 1 140px',
+          fontWeight: 'bold'
+        }}
       >
         Download
       </button>
