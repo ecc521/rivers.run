@@ -4,100 +4,106 @@ import { Capacitor } from "@capacitor/core";
 
 const Footer: React.FC = () => {
   const location = useLocation();
+  const isNative = Capacitor.isNativePlatform();
 
-  // Hide on map page and main page since they take up the whole screen or have infinite scroll
-  if (location.pathname === "/map" || location.pathname === "/") {
+  // Hide only on map page in native app (takes up too much room)
+  if (isNative && location.pathname === "/map") {
     return null;
   }
 
-  const isNative = Capacitor.isNativePlatform();
+
 
   return (
     <footer
       style={{
-        padding: "30px 20px",
+        padding: "40px 20px",
         marginTop: "auto",
-        backgroundColor: "transparent",
+        backgroundColor: "var(--surface)",
         display: "flex",
-        flexWrap: "wrap",
-        justifyContent: "center",
+        flexDirection: "column",
         alignItems: "center",
-        gap: "40px",
+        gap: "30px",
         borderTop: "1px solid var(--border)",
       }}
     >
-      <div style={{ textAlign: "center" }}>
-        <p style={{ fontWeight: "bold", marginBottom: "10px", color: "var(--text)" }}>
-          Legal Information
-        </p>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "20px",
-            flexWrap: "wrap",
-            fontSize: "0.9rem"
-          }}
-        >
-          <Link
-            to="/terms"
-            style={{ color: "var(--primary)", textDecoration: "none" }}
-          >
-            Terms of Service
-          </Link>
-          <Link
-            to="/privacy"
-            style={{ color: "var(--primary)", textDecoration: "none" }}
-          >
-            Privacy Policy
-          </Link>
-          <Link
-            to="/disclaimer"
-            style={{ color: "var(--primary)", textDecoration: "none" }}
-          >
-            Disclaimer
-          </Link>
-        </div>
-      </div>
-
-      {!isNative && (
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "40px", width: "100%" }}>
         <div style={{ textAlign: "center" }}>
           <p style={{ fontWeight: "bold", marginBottom: "10px", color: "var(--text)" }}>
-            Get the App
+            Legal Information
           </p>
           <div
             style={{
               display: "flex",
               justifyContent: "center",
-              gap: "15px",
+              gap: "20px",
               flexWrap: "wrap",
+              fontSize: "0.9rem"
             }}
           >
-            <a
-              href="https://apps.apple.com/us/app/rivers-run/id1552809249"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/terms"
+              style={{ color: "var(--primary)", textDecoration: "none" }}
             >
-              <img
-                src="/resources/badges/appstore.svg"
-                alt="Get Rivers.run on the App Store"
-                style={{ height: "40px" }}
-              />
-            </a>
-            <a
-              href="https://play.google.com/store/apps/details?id=run.rivers.twa"
-              target="_blank"
-              rel="noopener noreferrer"
+              Terms
+            </Link>
+            <Link
+              to="/privacy"
+              style={{ color: "var(--primary)", textDecoration: "none" }}
             >
-              <img
-                src="/resources/badges/googleplay.svg"
-                alt="Get Rivers.run on Google Play"
-                style={{ height: "40px" }}
-              />
-            </a>
+              Privacy
+            </Link>
+            <Link
+              to="/disclaimer"
+              style={{ color: "var(--primary)", textDecoration: "none" }}
+            >
+              Disclaimer
+            </Link>
           </div>
         </div>
-      )}
+
+        {!isNative && (
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontWeight: "bold", marginBottom: "10px", color: "var(--text)" }}>
+              Get the App
+            </p>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "15px",
+                flexWrap: "wrap",
+              }}
+            >
+              <a
+                href="https://apps.apple.com/us/app/rivers-run/id1552809249"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="/resources/badges/appstore.svg"
+                  alt="App Store"
+                  style={{ height: "32px" }}
+                />
+              </a>
+              <a
+                href="https://play.google.com/store/apps/details?id=run.rivers.twa"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="/resources/badges/googleplay.svg"
+                  alt="Google Play"
+                  style={{ height: "32px" }}
+                />
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "10px" }}>
+        © {new Date().getFullYear()} Rivers.run. All rights reserved.
+      </p>
     </footer>
   );
 };

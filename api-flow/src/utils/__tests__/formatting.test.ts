@@ -42,6 +42,7 @@ describe('formatGaugeName', () => {
         const result = formatGaugeName('HUNTINGFORD BRIDGE TOF TO BE WITSD');
         expect(result.name).toBe('Huntingford Bridge');
         expect(result.section).toBe('(Time of Flight - to be Withdrawn)');
+
     });
 
     it('should handle parentheses splitting (Ireland pattern)', () => {
@@ -79,7 +80,20 @@ describe('formatGaugeName', () => {
         const a = formatGaugeName('LA SEINE À PARIS');
         expect(a.name).toBe('La Seine');
         expect(a.section).toBe('À Paris');
+
+        const aAscii = formatGaugeName('RIVIERE DES OUTAOUAIS A CARILLON');
+        expect(aAscii.name).toBe('Riviere des Outaouais');
+        expect(aAscii.section).toBe('A Carillon');
+
+        const deLa = formatGaugeName('FLEUVE ST-LAURENT A LACHINE');
+        expect(deLa.name).toBe('Fleuve St-Laurent');
+        expect(deLa.section).toBe('A Lachine');
+
+        const aval2 = formatGaugeName('RIVIERE NICOLET EN AVAL DE NICOLET');
+        expect(aval2.name).toBe('Riviere Nicolet');
+        expect(aval2.section).toBe('En aval de Nicolet');
     });
+
 
     it('should split at the first comma if it follows a river descriptor', () => {
         const result = formatGaugeName('SWEETWATER CREEK, BROWNSVILLE RD, GA');
@@ -115,7 +129,9 @@ describe('formatStateCode', () => {
         expect(formatStateCode('NC', 'USGS')).toBe('NC');
         expect(formatStateCode('ca', 'USGS')).toBe('CA');
         expect(formatStateCode('BC', 'Canada')).toBe('BC');
+        expect(formatStateCode('QC', 'EC')).toBe('QC');
     });
+
 
     it('should return undefined for long US/Canada names', () => {
         // We only want codes in the state field for US/CA

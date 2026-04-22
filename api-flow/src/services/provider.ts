@@ -19,6 +19,7 @@ export interface GaugeHistory {
     name: string;
     section?: string;
     state?: string;
+    country?: string;
     lat?: number;
     lon?: number;
     readings: GaugeReading[];
@@ -32,6 +33,7 @@ export interface GaugeSite {
     lat: number;
     lon: number;
     state?: string;
+    country?: string;
 }
 
 

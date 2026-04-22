@@ -1,5 +1,6 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
-import { formatStateCode } from '../utils/formatting';
+import { formatStateCode, formatGaugeName } from '../utils/formatting';
+
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 
 
@@ -102,6 +103,7 @@ export function processCanadaCSV(text: string, startTs: number, endTs: number): 
                 name: `EC Gauge ${gaugeID}`,
                 readings: trimmed,
                 units: hasCms ? "cms" : "m",
+                country: "CA"
             };
         }
     }
@@ -269,9 +271,10 @@ export const ecProvider: GaugeProvider = {
                          const data: any = await res.json();
                          if (data.features && data.features.length > 0) {
                              const feat = data.features[0];
+                             const formatted = formatGaugeName(feat.properties?.STATION_NAME || site);
                              results.push({
                                  id: site,
-                                 name: feat.properties?.STATION_NAME || site,
+                                 name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                                  lon: feat.geometry?.coordinates?.[0] || 0,
                                  lat: feat.geometry?.coordinates?.[1] || 0,
                                  state: feat.properties?.PROVINCE_TERRITORY_CODE || getProvincesForSite(site)[0]
@@ -320,12 +323,14 @@ export const ecProvider: GaugeProvider = {
                 const lon = coords[0];
                 
                 if (!isNaN(lat) && !isNaN(lon)) {
+                    const formatted = formatGaugeName(props.STATION_NAME || `EC Gauge ${id}`);
                     results.push({
                         id,
-                        name: props.STATION_NAME || `EC Gauge ${id}`,
+                        name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                         lat,
                         lon,
-                        state: formatStateCode(props.PROVINCE_TERRITORY_CODE, "EC")
+                        state: formatStateCode(props.PROVINCE_TERRITORY_CODE, "EC"),
+                        country: "CA"
                     });
                 }
             }

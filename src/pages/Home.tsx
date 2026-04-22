@@ -24,6 +24,7 @@ import { useModal } from "../context/ModalContext";
 import { triggerReviewIfEligible } from "../utils/appReview";
 import { autoDownloadBaseMaps } from "../utils/offlineMapEngine";
 import { useSEO } from "../hooks/useSEO";
+import { DEFAULT_STATE_MAP, getCountryName } from "../utils/regions";
 
 
 const LazyRiverPage = React.lazy(() => import("./RiverPage"));
@@ -148,6 +149,9 @@ const Home: React.FC = () => {
     const countryVal = searchParams.get("country");
     if (countryVal) q.country = countryVal;
 
+    const stateVal = searchParams.get("state");
+    if (stateVal) q.state = stateVal;
+
     const sortReverseVal = searchParams.get("sortReverse");
     if (sortReverseVal) q.sortReverse = sortReverseVal === "true";
 
@@ -161,6 +165,16 @@ const Home: React.FC = () => {
     if (searchParams.get("searchExpanded") === "true") {
       setIsAdvancedSearchOpen(true);
     }
+
+    // Sync regional and filter params from URL to state
+    const state = searchParams.get("state") || undefined;
+    const country = searchParams.get("country") || undefined;
+    const favoritesOnly = searchParams.get("favoritesOnly") === "true";
+    
+    setSearchQuery(prev => {
+        if (prev.state === state && prev.country === country && prev.favoritesOnly === favoritesOnly) return prev;
+        return { ...prev, state, country, favoritesOnly };
+    });
   }, [searchParams]);
 
   // Load persistence settings and list data
@@ -372,8 +386,10 @@ const Home: React.FC = () => {
     if (view === "all") {
       params.delete("favoritesOnly");
       params.delete("list");
+      params.delete("state");
+      params.delete("country");
       setListTitle(null);
-      setSearchQuery(prev => ({ ...prev, favoritesOnly: false, listId: undefined, listData: undefined }));
+      setSearchQuery(prev => ({ ...prev, favoritesOnly: false, listId: undefined, listData: undefined, state: undefined, country: undefined }));
     } else {
       params.set("favoritesOnly", "true");
       params.delete("list");
@@ -385,24 +401,42 @@ const Home: React.FC = () => {
 
   const handleCountryChange = (country: string) => {
     const params = new URLSearchParams(searchParams);
+    params.delete("state"); // Clear state when switching country
     if (country === "global") {
       params.delete("country");
-      setSearchQuery(prev => ({ ...prev, country: undefined }));
+      setSearchQuery(prev => ({ ...prev, country: undefined, state: undefined }));
     } else {
       params.set("country", country);
-      setSearchQuery(prev => ({ ...prev, country }));
+      setSearchQuery(prev => ({ ...prev, country, state: undefined }));
     }
     navigate(`/?${params.toString()}`);
   };
 
-  const regionLabels: Record<string, string> = {
-    global: "Global",
-    usa: "US",
-    ec: "EC",
-    uk_ireland: "UK & Irish"
+  const handleStateChange = (state: string | null) => {
+    const params = new URLSearchParams(searchParams);
+    if (!state) {
+      params.delete("state");
+      setSearchQuery(prev => ({ ...prev, state: undefined }));
+    } else {
+      params.set("state", state);
+      
+      // Auto-select country if not already set or mismatched
+      const countries = DEFAULT_STATE_MAP[state.toUpperCase()];
+      if (countries && countries.length > 0) {
+          const firstCountry = countries[0];
+          if (searchQuery.country !== firstCountry) {
+              params.set("country", firstCountry);
+              setSearchQuery(prev => ({ ...prev, state, country: firstCountry }));
+              navigate(`/?${params.toString()}`);
+              return;
+          }
+      }
+      setSearchQuery(prev => ({ ...prev, state }));
+    }
+    navigate(`/?${params.toString()}`);
   };
 
-  const regionPrefix = regionLabels[searchQuery.country || "global"] || "Global";
+  const regionPrefix = getCountryName(searchQuery.country || "global");
   const viewLabel = listTitle || (searchQuery.favoritesOnly ? "Favorites" : "Full List");
 
   let emptyStateTitle = "No Rivers Found";
@@ -494,8 +528,10 @@ const Home: React.FC = () => {
         )}
         <ViewSelector 
           regionLabel={regionPrefix}
+          stateLabel={searchQuery.state}
           viewLabel={viewLabel}
           onSelectRegion={handleCountryChange}
+          onSelectState={handleStateChange}
           onSelectView={handleViewChange}
         />
         <div 

@@ -132,7 +132,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
      let slug = slugify(river.name);
      if (river.section) slug += '-' + slugify(river.section);
      const prefix = river.isGauge ? '/gauge/' : '/river/';
-     navigate(`${prefix}${river.id}/${slug}`);
+     navigate(`${prefix}${river.id}/${slug}${window.location.search}`);
   };
 
   const getFlowDisplay = () => {

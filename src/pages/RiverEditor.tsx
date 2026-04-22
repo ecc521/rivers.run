@@ -27,13 +27,16 @@ export default function RiverEditor() {
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert, confirm, prompt, resolveSuggestion } = useModal();
   
+  const [liveData, setLiveData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [proposedData, setProposedData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   
-  const isNew = !riverId && !queueId;
   const isReviewMode = location.pathname.startsWith('/review') && !!queueId;
+  const isNewFromURL = riverId === "new" || !riverId;
+  const isNew = isReviewMode ? (!loading && !liveData) : isNewFromURL;
   const targetId = riverId || queueId || "";
 
   const stableRandomId = useMemo(() => window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36), []);
@@ -41,9 +44,10 @@ export default function RiverEditor() {
   const [riverData, setRiverData] = useState<any>({
     id: targetId,
     name: "",
-    states: "MD",
+    countries: "US",
+    states: "",
     class: "",
-    skill: "FW",
+    skill: "?",
     dam: false,
     aw: "",
     section: "",
@@ -55,8 +59,7 @@ export default function RiverEditor() {
     flow: { unit: "cfs", min: null, low: null, mid: null, high: null, max: null }
   });
 
-  const [liveData, setLiveData] = useState<any>(null);
-  const [proposedData, setProposedData] = useState<any>(null);
+
   const [viewMode, setViewMode] = useState<"draft" | "original">("draft");
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [comparisonData, setComparisonData] = useState<{ historical: RiverData, logIndex: number, allLogs: any[] } | null>(null);
@@ -77,9 +80,10 @@ export default function RiverEditor() {
       setRiverData({
         id: data.id || targetId,
         name: data.name || "",
-        states: typeof data.states === 'string' ? data.states : "MD",
+        countries: typeof data.countries === 'string' ? data.countries : "US",
+        states: typeof data.states === 'string' ? data.states : "",
         class: data.class || "I",
-        skill: getSkillAbbreviation(data.skill || "FW"),
+        skill: getSkillAbbreviation(data.skill || "?"),
         dam: data.dam || false,
         aw: data.aw || "",
         section: data.section || "",
@@ -112,12 +116,13 @@ export default function RiverEditor() {
            const suggestion = await fetchAPI(`/admin/queue/${queueId}`, {}, user);
            const proposed = suggestion.proposed_changes;
            proposed.queueId = suggestion.suggestion_id; 
+           proposed.id = suggestion.river_id; // CRITICAL: Ensure the proposed object knows its target river ID
            setProposedData(proposed);
            setIsAnonymous(suggestion.suggested_by?.startsWith("IP:") || !suggestion.suggested_by);
            syncInputs(proposed);
            
            try {
-             const live = await fetchAPI(`/rivers/${proposed.id}`, {}, user);
+             const live = await fetchAPI(`/rivers/${suggestion.river_id}`, {}, user);
              setLiveData(live);
            } catch {
              console.log("No existing live data for this suggestion.");
@@ -523,7 +528,7 @@ export default function RiverEditor() {
                   )}
               </div>
 
-              {(!isNew && liveData) ? (
+              {(!isNew && liveData) && (
                  <div style={{ display: 'flex', backgroundColor: "var(--surface-hover)", borderRadius: '5px', padding: '5px', marginBottom: '15px' }}>
                     <button 
                       onClick={() => toggleView("original")} 
@@ -536,10 +541,6 @@ export default function RiverEditor() {
                       Your Current Working Draft
                     </button>
                  </div>
-              ) : (
-                  <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '15px', color: proposedData?._moveReason ? 'var(--danger)' : 'var(--primary)' }}>
-                      {proposedData?._moveReason ? "🛠 Fix Validation Errors to Republish" : "📝 New River Suggestion"}
-                  </div>
               )}
 
               {isReviewMode ? (
@@ -652,6 +653,40 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
           onChange={e => setRiverData({...riverData, skill: e.target.value})} 
         >
            {skillLevels.map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}
+        </select>
+      </div>
+      <div style={{ flex: 1 }}>
+        <label style={{fontWeight: 'bold', display: 'block'}}>Country</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginBottom: riverData.countries ? "5px" : "0" }}>
+          {riverData.countries?.split(',').map((s: string) => s.trim()).filter(Boolean).map((s: string) => (
+            <span 
+              key={s} 
+              style={{ backgroundColor: "var(--primary)", color: "white", padding: "2px 6px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+              onClick={() => {
+                const newCountry = riverData.countries!.split(',').map((st: string) => st.trim()).filter((st: string) => st !== s).join(', ');
+                setRiverData({...riverData, countries: newCountry});
+              }}
+              title="Click to remove"
+            >
+              {s} &times;
+            </span>
+          ))}
+        </div>
+        <select
+          style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+          value="" 
+          onChange={e => {
+             if (e.target.value) {
+               const curr = riverData.countries?.split(',').map((s: string) => s.trim()).filter(Boolean) || [];
+               if (!curr.includes(e.target.value)) {
+                 curr.push(e.target.value);
+                 setRiverData({...riverData, countries: curr.join(', ')});
+               }
+             }
+          }} 
+        >
+           <option value="" disabled>Add Country...</option>
+          {["US", "CA", "GB", "IE", "FR", "DE", "NZ", "AU", "MX", "CR", "CO", "PE", "EC", "CL", "ZA"].filter(st => !(riverData.countries || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
         </select>
       </div>
       <div style={{ flex: 1 }}>

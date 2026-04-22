@@ -26,6 +26,10 @@ export function validateRiver(river: any): RiverValidationResult {
   if (!river.name || typeof river.name !== "string" || river.name.trim() === "") {
     errors.push("Missing or invalid River Name.");
   }
+  
+  if (!river.countries || typeof river.countries !== "string" || river.countries.trim() === "") {
+    errors.push("Missing Country specification. Please select at least one Country.");
+  }
 
   if ((river.writeup || "").match(/<img[^>]+src=["']data:image/i)) {
     errors.push("Raw image structures (base64) are strictly disallowed to maintain fast load times and database space.");

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useRivers } from "../hooks/useRivers";
 import { RiverExpansion } from "../components/RiverExpansion";
@@ -12,6 +12,9 @@ import { getRiverShareUrl } from "../utils/url";
 import { fetchAPI } from "../services/api";
 import { Capacitor } from "@capacitor/core";
 import { calculateParsedThresholds } from "../utils/flowInfoCalculations";
+import { lambert } from "../utils/distance";
+import { getStateName, getCountryName, getRiverCountries } from "../utils/regions";
+import type { RiverData } from "../types/River";
 
 
 
@@ -20,6 +23,11 @@ const RiverPage: React.FC = () => {
   const navigate = useNavigate();
   const routeLocation = useLocation();
   const { rivers, loading, error, dataGeneratedAt } = useRivers();
+
+  // Reset scroll position to top when navigating to a different river
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
 
   const river = rivers.find((r) => r.id === id);
@@ -161,11 +169,7 @@ const RiverPage: React.FC = () => {
   }
 
   const handleBack = () => {
-      if (window.history.state && window.history.state.idx > 0) {
-          navigate(-1);
-      } else {
-          navigate("/");
-      }
+      navigate(`/${routeLocation.search}`);
   };
 
   return (
@@ -183,27 +187,74 @@ const RiverPage: React.FC = () => {
             padding: "50px 20px 20px 20px",
             borderBottom: "1px solid var(--border)"
         }}>
-        {/* Absolute-positioned Back Button */}
-        <button 
-          onClick={handleBack}
-          style={{
-             position: "absolute",
-             top: "16px",
-             left: "20px",
-             background: "none",
-             border: "none",
-             color: "var(--primary)",
-             cursor: "pointer",
-             fontWeight: "bold",
-             fontSize: "0.95rem",
-             padding: "0",
-             display: "flex",
-             alignItems: "center",
-             gap: "5px"
-          }}
-        >
-           &#8592; {window.history.state && window.history.state.idx > 0 ? "Back to Results" : "See All Rivers"}
-        </button>
+         {/* Absolute-positioned Back Button & Breadcrumbs */}
+         <div style={{
+              position: "absolute",
+              top: "16px",
+              left: "20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px"
+         }}>
+          <nav aria-label="Breadcrumb" style={{ 
+              fontSize: "0.85rem", 
+              color: "var(--text-muted)", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "8px",
+              flexWrap: "wrap"
+          }}>
+            <span 
+                onClick={handleBack}
+                style={{ 
+                    color: "var(--primary)", 
+                    cursor: "pointer", 
+                    fontWeight: "600",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "2px 4px",
+                    borderRadius: "4px",
+                    transition: "background-color 0.2s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--surface-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+            >
+                &#8592; Results
+            </span>
+            <span style={{ opacity: 0.5 }}>/</span>
+            <Link to={`/${routeLocation.search}`} style={{ color: "inherit", textDecoration: "none" }}>Rivers.run</Link>
+            {(() => {
+              const countries = Array.from(getRiverCountries(river)).filter(c => c !== "global");
+              if (countries.length === 0) return null;
+              const firstCountry = countries[0];
+              return (
+                <>
+                  <span style={{ opacity: 0.5 }}>/</span>
+                  <Link 
+                    to={`/?country=${firstCountry}${routeLocation.search ? '&' + routeLocation.search.substring(1) : ''}`} 
+                    style={{ color: "inherit", textDecoration: "none" }}
+                  >
+                    {getCountryName(firstCountry)}
+                  </Link>
+                </>
+              );
+            })()}
+            {river.states && (
+              <>
+                <span style={{ opacity: 0.5 }}>/</span>
+                <Link 
+                  to={`/?state=${river.states.split(',')[0].trim()}${routeLocation.search ? '&' + routeLocation.search.substring(1) : ''}`} 
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  {getStateName(river.states.split(',')[0].trim())}
+                </Link>
+              </>
+            )}
+            <span style={{ opacity: 0.5 }}>/</span>
+            <span style={{ fontWeight: "600", color: "var(--text)" }}>{river.name}</span>
+          </nav>
+         </div>
 
         <div style={{ flex: "0 1 auto", minWidth: "200px", textAlign: "center" }}>
           <h1 style={{ margin: 0 }}>{river.name}</h1>
@@ -444,20 +495,160 @@ const RiverPage: React.FC = () => {
           fontSize: "1.1rem",
           lineHeight: "1.6"
       }}>
-         <RiverExpansion 
-            river={displayRiver || river} 
-            dataGeneratedAt={dataGeneratedAt} 
-            onScrub={setScrubbedReading} 
-            clickedPoint={
-               routeLocation.state && (routeLocation.state as any).clickedLat 
-                  ? [(routeLocation.state as any).clickedLat, (routeLocation.state as any).clickedLon]
-                  : undefined
+          <RiverExpansion 
+             river={displayRiver || river} 
+             dataGeneratedAt={dataGeneratedAt} 
+             onScrub={setScrubbedReading} 
+             clickedPoint={
+                routeLocation.state && (routeLocation.state as any).clickedLat 
+                   ? [(routeLocation.state as any).clickedLat, (routeLocation.state as any).clickedLon]
+                   : undefined
+             }
+          />
+ 
+          {/* Internal Linking: Nearby Rivers */}
+          {(() => {
+            const currentSkill = (() => {
+              const s = river.skill || "";
+              if (typeof s === "number") return s;
+              const map: Record<string, number> = { FW: 1, B: 2, N: 3, LI: 4, I: 5, HI: 6, A: 7, E: 8 };
+              return map[s.toUpperCase()] || 0;
+            })();
+
+            const currentLat = river.accessPoints?.[0]?.lat;
+            const currentLon = river.accessPoints?.[0]?.lon;
+
+            const allNearby = rivers
+              .filter(r => {
+                if (r.id === river.id) return false;
+                
+                // Skill filter: +1 / -2
+                const s = r.skill || "";
+                const rSkill = typeof s === "number" ? s : ({ FW: 1, B: 2, N: 3, LI: 4, I: 5, HI: 6, A: 7, E: 8 } as any)[s.toUpperCase()] || 0;
+                if (currentSkill > 0 && rSkill > 0) {
+                    if (rSkill < currentSkill - 2 || rSkill > currentSkill + 1) return false;
+                }
+                (r as any)._rSkill = rSkill;
+
+                // Distance filter: < 200 miles
+                if (currentLat && currentLon && r.accessPoints?.[0]) {
+                    const d = lambert(currentLat, currentLon, r.accessPoints[0].lat, r.accessPoints[0].lon);
+                    (r as any)._dist = d;
+                    if (d > 200) return false;
+                } else {
+                    return false;
+                }
+
+                return true;
+              })
+              .map(r => {
+                const skillDiff = Math.abs((r as any)._rSkill - currentSkill);
+                const skillScore = 1 - (skillDiff / 3);
+                const distScore = 1 - ((r as any)._dist / 200);
+                const flowScore = (r.running || 0) > 0 ? 1 : 0;
+                (r as any)._score = (skillScore * 0.4) + (distScore * 0.4) + (flowScore * 0.2);
+                return r;
+              })
+              .sort((a, b) => (b as any)._score - (a as any)._score);
+
+            const harder = allNearby.find(r => (r as any)._rSkill > currentSkill);
+            const easier = allNearby.find(r => (r as any)._rSkill < currentSkill);
+            
+            const selectedIds = new Set<string>();
+            const finalNearby: RiverData[] = [];
+
+            if (harder) {
+                finalNearby.push(harder);
+                selectedIds.add(harder.id);
             }
-         />
+            if (easier) {
+                finalNearby.push(easier);
+                selectedIds.add(easier.id);
+            }
+
+            // Fill remaining slots
+            for (const r of allNearby) {
+                if (finalNearby.length >= 6) break;
+                if (!selectedIds.has(r.id)) {
+                    finalNearby.push(r);
+                    selectedIds.add(r.id);
+                }
+            }
+
+            finalNearby.sort((a, b) => (b as any)._score - (a as any)._score);
+            const nearby = finalNearby;
+
+            if (nearby.length === 0) return null;
+
+            return (
+              <div style={{ marginTop: "60px", paddingTop: "40px", borderTop: "1px solid var(--border)" }}>
+                <h3 style={{ marginBottom: "20px" }}>Other nearby rivers</h3>
+                <div style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", 
+                  gap: "15px" 
+                }}>
+                  {nearby.map(other => (
+                    <Link 
+                      key={other.id} 
+                      to={`/river/${other.id}${routeLocation.search}`}
+                      style={{ 
+                        display: "flex",
+                        flexDirection: "column",
+                        padding: "15px", 
+                        borderRadius: "12px", 
+                        backgroundColor: "var(--surface-hover)", 
+                        textDecoration: "none",
+                        color: "inherit",
+                        border: "1px solid var(--border)",
+                        transition: "transform 0.2s, border-color 0.2s",
+                        position: "relative"
+                      }}
+                      onMouseOver={(e) => {
+                          e.currentTarget.style.transform = "translateY(-3px)";
+                          e.currentTarget.style.borderColor = "var(--primary)";
+                      }}
+                      onMouseOut={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.borderColor = "var(--border)";
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px", marginBottom: "8px" }}>
+                        <div style={{ fontWeight: "bold", fontSize: "0.95rem", lineHeight: "1.2" }}>{other.name}</div>
+                        {other.running != null && (
+                            <div 
+                                style={{ 
+                                    width: "10px", 
+                                    height: "10px", 
+                                    borderRadius: "50%", 
+                                    backgroundColor: calculateColor(other.running, isDarkMode, isColorBlindMode),
+                                    boxShadow: "0 0 4px rgba(0,0,0,0.2)",
+                                    flexShrink: 0,
+                                    marginTop: "4px"
+                                }} 
+                                title={`Status: ${other.running}`}
+                            />
+                        )}
+                      </div>
+                      <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80px" }}>{other.section}</span>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+                           {other.class && (
+                               <span style={{ fontSize: "0.7rem", opacity: 0.8, backgroundColor: "var(--surface)", padding: "1px 4px", borderRadius: "4px", border: "1px solid var(--border)" }}>{other.class}</span>
+                           )}
+                           <span style={{ fontWeight: "600", color: "var(--primary)" }}>{Math.round((other as any)._dist)} mi</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+       </div>
       </div>
      </div>
-    </div>
-  );
-};
+   );
+ };
 
 export default RiverPage;

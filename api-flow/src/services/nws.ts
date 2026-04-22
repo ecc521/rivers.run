@@ -123,7 +123,8 @@ export const nwsProvider: GaugeProvider = {
                             id: site,
                             name: formatted.name,
                             section: formatted.section,
-                            readings
+                            readings,
+                            country: "US"
                         };
                         success = true;
                     } catch (_e: unknown) {
@@ -193,7 +194,8 @@ export const nwsProvider: GaugeProvider = {
                          name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                          lat: item.latitude,
                          lon: item.longitude,
-                         state: formatStateCode(item.state?.abbreviation, "NWS")
+                         state: formatStateCode(item.state?.abbreviation, "NWS"),
+                         country: "US"
                      });
                  }
              }

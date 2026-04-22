@@ -114,10 +114,12 @@ export const ukProvider: GaugeProvider = {
                     
                     results[stationId] = {
                         id: stationId,
-                        name: formatGaugeName(stationId).name, // Fallback name formatting
+                        name: `UK Gauge ${stationId}`,
                         readings: readings.toSorted((a, b) => a.dateTime - b.dateTime),
-                        units: "m"
+                        units: "m",
+                        country: "GB"
                     };
+
                 } catch (_e) {
                     console.warn(`UK history fetch failed for ${stationId}`, _e);
                 }
@@ -184,7 +186,8 @@ export const ukProvider: GaugeProvider = {
                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                         lat,
                         lon,
-                        state: formatStateCode(item.areaName, "UK")
+                        state: formatStateCode(item.areaName, "UK"),
+                        country: "GB"
                     });
                 }
             }

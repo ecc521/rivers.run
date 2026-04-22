@@ -30,9 +30,11 @@ export const FlowThresholdsSchema = z.object({
 }).openapi({ type: 'object', description: 'Flow thresholds for a river' });
 
 export const RiverEditorPayload = z.object({
+  id: limitString(100),
   name: requiredString(100),
   section: requiredString(100),
   altname: limitString(150),
+  countries: requiredString(50),
   states: limitString(50),
   class: requiredString(20),
   skill: z.union([
@@ -47,6 +49,7 @@ export const RiverEditorPayload = z.object({
   accessPoints: z.array(AccessPointSchema).max(50).optional().openapi({ type: 'array' }),
   gauges: z.array(GaugeMappingSchema).max(10).optional().openapi({ type: 'array' }),
   flow: FlowThresholdsSchema.optional().nullable(),
+  dam: z.boolean().optional().nullable().openapi({ type: 'boolean' }),
   aw: limitString(50)
 }).openapi({ type: 'object', description: 'Payload for creating or updating a river' });
 
@@ -121,6 +124,7 @@ export const RiverSchema = z.object({
   name: z.string().openapi({ type: 'string', example: "French Broad" }),
   section: z.string().openapi({ type: 'string', example: "Section 9" }),
   altname: z.string().optional().nullable().openapi({ type: 'string' }),
+  countries: z.string().openapi({ type: 'string' }),
   states: z.string().optional().nullable().openapi({ type: 'string' }),
   class: z.string().openapi({ type: 'string', example: "III-IV" }),
   skill: z.number().optional().nullable().openapi({ type: 'number', example: 5 }),
@@ -129,6 +133,7 @@ export const RiverSchema = z.object({
   gauges: z.array(GaugeMappingSchema).optional().openapi({ type: 'array' }),
   accessPoints: z.array(AccessPointSchema).optional().openapi({ type: 'array' }),
   flow: FlowThresholdsSchema.optional().nullable(),
+  dam: z.boolean().optional().nullable().openapi({ type: 'boolean' }),
   averagegradient: z.number().optional().nullable().openapi({ type: 'number' }),
   maxgradient: z.number().optional().nullable().openapi({ type: 'number' }),
   aw: z.string().optional().nullable().openapi({ type: 'string', example: "129" }),

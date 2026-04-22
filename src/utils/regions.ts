@@ -23,6 +23,41 @@ export const DEFAULT_STATE_MAP: Record<string, CountryCode[]> = {
   "IE": ["uk_ireland"],
   "UK": ["uk_ireland"]
 };
+export const COUNTRY_NAME_MAP: Record<string, string> = {
+  "global": "All Countries",
+  "usa": "United States",
+  "ec": "Canada",
+  "uk_ireland": "UK / Ireland"
+};
+
+export function getCountryName(code: string): string {
+    if (!code) return COUNTRY_NAME_MAP["global"];
+    return COUNTRY_NAME_MAP[code.toLowerCase()] || code;
+}
+
+export const STATE_NAME_MAP: Record<string, string> = {
+  "AK": "Alaska", "AL": "Alabama", "AR": "Arkansas", "AZ": "Arizona", "CA": "California", "CO": "Colorado", "CT": "Connecticut",
+  "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "IA": "Iowa", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "KS": "Kansas",
+  "KY": "Kentucky", "LA": "Louisiana", "MA": "Massachusetts", "MD": "Maryland", "ME": "Maine", "MI": "Michigan", "MN": "Minnesota", "MO": "Missouri",
+  "MS": "Mississippi", "MT": "Montana", "NC": "North Carolina", "ND": "North Dakota", "NE": "Nebraska", "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico",
+  "NV": "Nevada", "NY": "New York", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
+  "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VA": "Virginia", "VT": "Vermont", "WA": "Washington", "WI": "Wisconsin",
+  "WV": "West Virginia", "WY": "Wyoming", "DC": "District of Columbia",
+  "AB": "Alberta", "BC": "British Columbia", "MB": "Manitoba", "NB": "New Brunswick", "NL": "Newfoundland and Labrador", "NS": "Nova Scotia",
+  "ON": "Ontario", "PE": "Prince Edward Island", "QC": "Quebec", "SK": "Saskatchewan", "NT": "Northwest Territories", "YT": "Yukon", "NU": "Nunavut",
+  "IE": "Ireland", "UK": "United Kingdom", "DE": "Germany"
+};
+
+export function getStateName(code: string): string {
+    if (!code) return "";
+    return STATE_NAME_MAP[code.toUpperCase()] || code;
+}
+
+export function getRegionName(code: string | null | undefined): string {
+    if (!code) return "All Regions";
+    return getStateName(code);
+}
+
 
 export const ALL_STATE_CODES = Object.keys(DEFAULT_STATE_MAP).sort((a, b) => a.localeCompare(b));
 
@@ -58,6 +93,18 @@ export function getRiverCountries(river: RiverData): Set<CountryCode> {
   const result = new Set<CountryCode>();
   const states = (river.states || "").toUpperCase();
   const stateList = states.split(/[ ,]+/).filter(Boolean);
+
+  // 0. Explicit countries check (new schema field)
+  if (river.countries) {
+    const explicitCountries = river.countries.toUpperCase().split(/[ ,]+/).filter(Boolean);
+    explicitCountries.forEach(c => {
+       const mapped = c.toLowerCase();
+       if (mapped === 'usa' || mapped === 'us') result.add('usa');
+       else if (mapped === 'ca' || mapped === 'ec') result.add('ec');
+       else if (mapped === 'gb' || mapped === 'uk' || mapped === 'ie') result.add('uk_ireland');
+       else result.add('global');
+    });
+  }
 
   // 1. Check state codes against mapping
   stateList.forEach(s => {

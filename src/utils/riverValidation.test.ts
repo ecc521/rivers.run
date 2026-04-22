@@ -9,19 +9,26 @@ describe("riverValidation", () => {
   });
 
   it("fails validation for missing or invalid IDs and Names", () => {
-    const res = validateRiver({ id: "123", name: "   " });
+    const res = validateRiver({ id: "123", name: "   ", countries: "United States" });
     expect(res.isValid).toBe(false);
     expect(res.errors).toContain("Missing or invalid River Name.");
     
-    const res2 = validateRiver({ name: "Valid" });
+    const res2 = validateRiver({ name: "Valid", countries: "United States" });
     expect(res2.isValid).toBe(false);
     expect(res2.errors).toContain("Missing or invalid River ID.");
+  });
+
+  it("fails validation for missing countries", () => {
+    const res = validateRiver({ id: "123", name: "Valid River" });
+    expect(res.isValid).toBe(false);
+    expect(res.errors).toContain("Missing Country specification. Please select at least one Country.");
   });
 
   it("rejects rivers containing highly-bloated raw base64 images in their writeups", () => {
     const maliciousRiver = {
       id: "malicious_1",
       name: "Malicious River",
+      countries: "United States",
       writeup: '<p>Look at this map!</p> <img src="data:image/jpeg;base64,/9j/4AAQSk..." alt="Map" /> <p>Beware</p>'
     };
     const res = validateRiver(maliciousRiver);
@@ -33,6 +40,7 @@ describe("riverValidation", () => {
     const res = validateRiver({
       id: "valid_1",
       name: "Valid River",
+      countries: "United States",
       flow: {
         min: 100,
         low: 500,
@@ -48,6 +56,7 @@ describe("riverValidation", () => {
     const res = validateRiver({
       id: "order_test",
       name: "Order Test",
+      countries: "United States",
       gauges: [{ isPrimary: true }],
       flow: {
         unit: "cfs",
@@ -67,6 +76,7 @@ describe("riverValidation", () => {
       const res = validateRiver({
           id: "two_primaries",
           name: "Two Pri",
+          countries: "United States",
           gauges: [
               { isPrimary: true },
               { isPrimary: true }
@@ -82,6 +92,7 @@ describe("riverValidation", () => {
     const validRiver = {
       id: "valid_2",
       name: "Valid Huge River",
+      countries: "United States",
       skill: "FW",
       writeup: largeDesc,
       flow: {

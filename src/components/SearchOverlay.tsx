@@ -81,6 +81,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       listId: undefined,
       favoritesOnly: false,
       listData: undefined,
+      country: undefined,
+      state: undefined,
     };
     setLocalQuery(resetQ);
     setQuery(resetQ);

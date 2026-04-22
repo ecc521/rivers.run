@@ -1,5 +1,5 @@
 export function formatGaugeName(name: string): { name: string; section?: string } {
-    const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr', 'be', 'mi', 'km', 'en', 'aval', 'amont', 'du', 'barrage', 'la', 'le']);
+    const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr', 'be', 'mi', 'km', 'en', 'aval', 'amont', 'du', 'barrage', 'la', 'le', 'de', 'des', 'les', 'aux', 'au', "d'", "l'"]);
     
     const expansions: Record<string, string> = {
         nr: 'near',
@@ -76,10 +76,11 @@ export function formatStateCode(state: string | undefined, provider: string): st
     const s = state.trim();
     const upper = s.toUpperCase();
 
-    if (provider === 'USGS' || provider === 'NWS' || provider === 'Canada') {
+    if (provider === 'USGS' || provider === 'NWS' || provider === 'Canada' || provider === 'EC') {
         // Return 2-letter codes as-is
         return upper.length <= 3 ? upper : undefined;
     }
+
 
     if (provider === 'Ireland') {
         const irelandCounties: Record<string, string> = {
@@ -157,7 +158,8 @@ function formatGaugeNameInner(name: string, lowercaseWords: Set<string>, expansi
     }
 
     const normalizedName = formatted.replace(/\s+/g, ' ').trim();
-    const delimiters = [' at ', ' near ', ' above ', ' below ', ' upstream ', ' downstream ', ' à ', ' en aval ', ' en amont '];
+    const delimiters = [' at ', ' near ', ' above ', ' below ', ' upstream ', ' downstream ', ' à ', ' a ', ' en aval ', ' en amont '];
+
     let splitIndex = -1;
     const lowerFormatted = normalizedName.toLowerCase();
 
@@ -172,7 +174,7 @@ function formatGaugeNameInner(name: string, lowercaseWords: Set<string>, expansi
     if (splitIndex === -1) {
         const commaIndex = normalizedName.indexOf(',');
         if (commaIndex !== -1) {
-            const riverWords = new Set(['river', 'creek', 'stream', 'run', 'fork', 'branch', 'brook', 'canal', 'lake', 'reservoir', 'r', 'cr', 'fk', 'br']);
+            const riverWords = new Set(['river', 'creek', 'stream', 'run', 'fork', 'branch', 'brook', 'canal', 'lake', 'reservoir', 'r', 'cr', 'fk', 'br', 'rivière', 'ruisseau', 'fleuve', 'lac']);
             const beforeComma = normalizedName.substring(0, commaIndex).trim().toLowerCase();
             const lastWord = beforeComma.split(' ').pop();
             if (lastWord && riverWords.has(lastWord)) {
@@ -180,6 +182,7 @@ function formatGaugeNameInner(name: string, lowercaseWords: Set<string>, expansi
             }
         }
     }
+
 
     if (splitIndex !== -1) {
         let gaugeName = normalizedName.substring(0, splitIndex).trim();

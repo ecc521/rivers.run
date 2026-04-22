@@ -85,8 +85,8 @@ const formatRiverRow = (row: any) => {
     const formatted = {
         ...row,
         tags,
-        gauges: typeof row.gauges === 'string' ? JSON.parse(row.gauges) : (row.gauges || []),
-        accessPoints: typeof row.accessPoints === 'string' ? JSON.parse(row.accessPoints) : (row.accessPoints || []),
+        gauges: [],
+        accessPoints: [],
         flow: {
              unit: row.flow_unit || "cfs",
              min: row.flow_min,
@@ -97,8 +97,30 @@ const formatRiverRow = (row: any) => {
         },
         averagegradient: row.average_gradient,
         maxgradient: row.max_gradient,
+        countries: row.countries || "US",
+        dam: !!row.dam_released,
         aw: row.aw_id
     };
+
+    try {
+        if (typeof row.gauges === 'string' && row.gauges.trim()) {
+            formatted.gauges = JSON.parse(row.gauges);
+        } else if (Array.isArray(row.gauges)) {
+            formatted.gauges = row.gauges;
+        }
+    } catch (e) {
+        console.warn(`Failed to parse gauges for river ${row.id}:`, e);
+    }
+
+    try {
+        if (typeof row.accessPoints === 'string' && row.accessPoints.trim()) {
+            formatted.accessPoints = JSON.parse(row.accessPoints);
+        } else if (Array.isArray(row.accessPoints)) {
+            formatted.accessPoints = row.accessPoints;
+        }
+    } catch (e) {
+        console.warn(`Failed to parse accessPoints for river ${row.id}:`, e);
+    }
     
     // Clean up flat database columns since they are nested or renamed now
     delete formatted.flow_unit;
@@ -309,19 +331,19 @@ app.openapi(updateRiverRoute, async (c) => {
     const batch = [];
     if (original) {
         batch.push(c.env.DB.prepare(`
-             UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
+             UPDATE rivers SET name=?, section=?, altname=?, countries=?, states=?, class=?, skill=?, writeup=?, dam_released=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
         `).bind(
-             validated.name, validated.section, validated.altname, validated.states, validated.class,
-             validated.skill, validated.writeup, validated.aw, tagsStr, gaugesStr, accessStr, 
+             validated.name, validated.section, validated.altname, validated.countries, validated.states, validated.class,
+             validated.skill, validated.writeup, validated.dam ? 1 : 0, validated.aw, tagsStr, gaugesStr, accessStr, 
              flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now, id
         ));
     } else {
         batch.push(c.env.DB.prepare(`
-             INSERT INTO rivers (id, name, section, altname, states, class, skill, writeup, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             INSERT INTO rivers (id, name, section, altname, countries, states, class, skill, writeup, dam_released, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
-             id, validated.name, validated.section, validated.altname, validated.states, validated.class,
-             validated.skill, validated.writeup, validated.aw, tagsStr, gaugesStr, accessStr,
+             id, validated.name, validated.section, validated.altname, validated.countries, validated.states, validated.class,
+             validated.skill, validated.writeup, validated.dam ? 1 : 0, validated.aw, tagsStr, gaugesStr, accessStr,
              flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now
         ));
     }
@@ -592,6 +614,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     if (!suggestion || !suggestion.proposed_changes) return c.json({ error: "Suggestion not found or already resolved." }, 404);
 
     const proposed = typeof suggestion.proposed_changes === 'string' ? JSON.parse(suggestion.proposed_changes) : suggestion.proposed_changes;
+    if (!proposed) return c.json({ error: "Proposed changes are empty or malformed." }, 400);
     const riverName = proposed.name || "Unknown River";
 
     const notifyUser = async (isAccepted: boolean) => {
@@ -677,6 +700,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     }
 
     // Merging logic
+    // 6. Merging logic
     const finalPayload = { ...proposed, ...admin_overrides };
     const validated = RiverEditorPayload.parse(finalPayload); // Fails safely if Overrides break caps
 
@@ -697,19 +721,35 @@ app.openapi(resolveSuggestionRoute, async (c) => {
 
     const now = Math.floor(Date.now() / 1000);
 
-    batch.push(c.env.DB.prepare(`
-         UPDATE rivers SET name=?, section=?, altname=?, states=?, class=?, skill=?, writeup=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
-    `).bind(
-         validated.name, validated.section, validated.altname, validated.states, validated.class,
-         validated.skill, validated.writeup, validated.aw, tagsStr, gaugesStr, accessStr, 
-         flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now, suggestion.river_id
-    ));
+    // Check if river already exists to decide between INSERT and UPDATE
+    const existingRiver = await c.env.DB.prepare("SELECT id FROM rivers WHERE id = ?").bind(suggestion.river_id).first();
+    
+    if (existingRiver) {
+        batch.push(c.env.DB.prepare(`
+             UPDATE rivers SET name=?, section=?, altname=?, countries=?, states=?, class=?, skill=?, writeup=?, dam_released=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
+        `).bind(
+             validated.name, validated.section, validated.altname, validated.countries, validated.states, validated.class,
+             validated.skill, validated.writeup, validated.dam ? 1 : 0, validated.aw, tagsStr, gaugesStr, accessStr, 
+             flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now, suggestion.river_id
+        ));
+    } else {
+        // If it doesn't exist, we must use the slug from suggestion.river_id or from the overrides
+        const finalId = validated.id || suggestion.river_id;
+        batch.push(c.env.DB.prepare(`
+             INSERT INTO rivers (id, name, section, altname, countries, states, class, skill, writeup, dam_released, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+             finalId, validated.name, validated.section, validated.altname, validated.countries, validated.states, validated.class,
+             validated.skill, validated.writeup, validated.dam ? 1 : 0, validated.aw, tagsStr, gaugesStr, accessStr,
+             flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now
+        ));
+    }
 
-    // Calculate strict JSON delta
-    const original = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(suggestion.river_id).first();
+    // Calculate strict JSON delta for the audit log
     let oldPayload = {};
-    if (original) {
-         oldPayload = formatRiverRow(original);
+    if (existingRiver) {
+         const fullOriginal = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(suggestion.river_id).first();
+         if (fullOriginal) oldPayload = formatRiverRow(fullOriginal);
     }
 
     const diff_patch: Record<string, { old: any, new: any }> = {};
@@ -730,22 +770,29 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     }
     
     // Scrub IP from the publicly-accessible history record
-    let cleanAuthor = (suggestion as any).suggested_by;
-    if (hideName || cleanAuthor.startsWith("IP:")) {
+    let cleanAuthor = (suggestion as any).suggested_by as string;
+    if (hideName || (cleanAuthor && typeof cleanAuthor === 'string' && cleanAuthor.startsWith("IP:"))) {
         cleanAuthor = "Anonymous Paddler";
     }
 
     // Log the math diff
     batch.push(c.env.DB.prepare(`
-        INSERT INTO river_audit_log (river_id, action_type, changed_by, diff_patch, changed_at) VALUES (?, 'UPDATE', ?, ?, ?)
-    `).bind(suggestion.river_id, user.user_id, JSON.stringify({ diff: diff_patch, note: admin_notes, type: "approval", original_author: cleanAuthor }), Math.floor(Date.now() / 1000)));
+        INSERT INTO river_audit_log (river_id, action_type, changed_by, diff_patch, changed_at) VALUES (?, ?, ?, ?, ?)
+    `).bind(suggestion.river_id, existingRiver ? 'UPDATE' : 'INSERT', user.user_id, JSON.stringify({ diff: diff_patch, note: admin_notes, type: "approval", original_author: cleanAuthor }), now));
 
     // Formal Admin Audit Log
     batch.push(c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind(
-        'APPROVE_SUGGESTION', user.user_id, id, `Approved and merged changes for ${riverName}. Note: ${admin_notes || 'No note provided'}`, Math.floor(Date.now() / 1000)
+        'APPROVE_SUGGESTION', user.user_id, id, `Approved and merged changes for ${riverName}. Note: ${admin_notes || 'No note provided'}`, now
     ));
 
-    await c.env.DB.batch(batch);
+    try {
+        await c.env.DB.batch(batch);
+    } catch (e: any) {
+        console.error("Batch execution failed:", e.message);
+        await logToD1(c.env, "ERROR", "admin", `Failed to resolve suggestion ${id}: ${e.message}`);
+        return c.json({ error: "Database update failed", details: e.message }, 500);
+    }
+    
     await notifyUser(true);
 
     return c.json({ success: true, message: "Suggestion merged successfully." });

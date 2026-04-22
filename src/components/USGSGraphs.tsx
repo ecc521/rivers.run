@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -110,6 +110,11 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   const [activeGaugeId, setActiveGaugeId] = useState<string | undefined>(
     river.gauges?.find((g: any) => g.isPrimary)?.id || river.gauges?.[0]?.id
   );
+
+  // Synchronize active gauge when the river changes (e.g., via navigation)
+  useEffect(() => {
+    setActiveGaugeId(river.gauges?.find((g: any) => g.isPrimary)?.id || river.gauges?.[0]?.id);
+  }, [river.id]);
   const rawData = activeGaugeId && river.gaugeData ? river.gaugeData[activeGaugeId] || [] : [];
 
   const isGraphStale = useMemo(() => {

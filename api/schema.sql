@@ -18,6 +18,7 @@ CREATE TABLE rivers (
     id TEXT PRIMARY KEY, 
     name TEXT NOT NULL,
     section TEXT NOT NULL,
+    countries TEXT,              -- Comma separated (e.g. "US, CA")
     states TEXT,                 -- Comma separated (e.g. "VA, MD")
     class TEXT NOT NULL,         -- e.g. "III-IV"
     skill INTEGER CHECK (skill >= 1 AND skill <= 8), -- Mapping to the 8 finite skill levels

@@ -20,6 +20,7 @@ function initializeSiteIfMissing(usgsSites: Record<string, GaugeHistory>, siteCo
       name: formatted.name,
       section: formatted.section,
       readings: [],
+      country: "US"
     };
     
     // Attempt to populate lat/lon if present
@@ -213,7 +214,8 @@ function parseRDBLines(text: string, state: string, gaugeRegistry: Record<string
                         name: fullName.name, 
                         lat, 
                         lon,
-                        state: state.toUpperCase()
+                        state: state.toUpperCase(),
+                        country: "US"
                     };
                 }
             }

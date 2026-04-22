@@ -103,14 +103,14 @@ export const irelandProvider: GaugeProvider = {
                         }
                     }
                     
-                    const formatted = formatGaugeName(stationId);
                     results[stationId] = {
                         id: stationId,
-                        name: formatted.name,
-                        section: formatted.section,
+                        name: `Ireland Gauge ${stationId}`,
                         readings: readings.toSorted((a, b) => a.dateTime - b.dateTime),
-                        units: "m"
+                        units: "m",
+                        country: "IE"
                     };
+
                 } catch (e) {
                     console.warn(`Ireland history fetch failed for ${stationId}`, e);
                 }
@@ -157,7 +157,8 @@ export const irelandProvider: GaugeProvider = {
                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                         lat: coords[1],
                         lon: coords[0],
-                        state: formatStateCode(regionName, "Ireland")
+                        state: formatStateCode(regionName, "Ireland"),
+                        country: "IE"
                     });
                 }
             }

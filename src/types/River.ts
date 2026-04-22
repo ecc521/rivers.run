@@ -34,6 +34,7 @@ export interface RiverData {
   name: string;
   section: string;
   /** Primary associated area(s). Comma separated string for multiple states: e.g. "VA, MD" */
+  countries?: string;
   states?: string;
   writeup?: string;
   tags?: string[];

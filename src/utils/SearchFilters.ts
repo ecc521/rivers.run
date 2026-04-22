@@ -22,7 +22,8 @@ export interface AdvancedSearchQuery {
   listId?: string;
   listData?: { id: string; order: number }[];
   mapRadiusMode?: "current" | "center" | "custom";
-  country?: string; // Added country filter
+  country?: string; 
+  state?: string;
 }
 
 export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
@@ -45,6 +46,7 @@ export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
   if (query.distanceMax != null && query.distanceMax <= 500) return true;
   if (query.name && query.name.trim() !== "") return true;
   if (query.section && query.section.trim() !== "") return true;
+  if (query.state && query.state.trim() !== "") return true;
   
   if (query.skillMin !== undefined && query.skillMin !== defaultAdvancedSearchQuery.skillMin) return true;
   if (query.skillMax !== undefined && query.skillMax !== defaultAdvancedSearchQuery.skillMax) return true;
@@ -194,6 +196,10 @@ export function filterRivers(
     if (query.country && query.country !== "global") {
        const countries = getRiverCountries(r);
        if (!countries.has(query.country as CountryCode)) return false;
+    }
+    if (query.state) {
+        const rStates = (r.states || "").toUpperCase().split(/[ ,]+/).filter(Boolean);
+        if (!rStates.includes(query.state.toUpperCase())) return false;
     }
     if (!matchNormalSearch(r, terms)) return false;
     if (!matchExplicitMatch(r, query)) return false;
