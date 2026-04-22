@@ -152,7 +152,6 @@ if (typeof window !== "undefined" && L && L.CircleMarker) {
             
             // Prevent massive hitboxes from overlapping adjacent clustered markers on desktop
             // by disabling artificial fat-finger expansion during precise mouse hover events.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const globalWin = window as any;
             if (typeof window !== "undefined" && globalWin.event) {
                 const e = globalWin.event;

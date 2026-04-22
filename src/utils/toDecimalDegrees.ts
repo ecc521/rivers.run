@@ -20,8 +20,8 @@ export function toDecimalDegrees(coordString: string | number | null | undefined
 
     // Try parsing degrees, minutes, seconds using regex
     // Formats: 38° 50' 11.2" | 38 50 11.2 | 38 50.12
-    // eslint-disable-next-line sonarjs/regex-complexity, no-useless-escape
-    const regex = /^\s*(-?\d+)[^\d\.]+(\d+(?:\.\d+)?)(?:[^\d\.]+(\d+(?:\.\d+)?))?[^\d]*$/;
+    // eslint-disable-next-line sonarjs/regex-complexity
+    const regex = /^\s*(-?\d+)[^\d.]+(\d+(?:\.\d+)?)(?:[^\d.]+(\d+(?:\.\d+)?))?[^\d]*$/;
     // eslint-disable-next-line sonarjs/prefer-regexp-exec
     const match = str.match(regex);
     

@@ -5,7 +5,7 @@ import { fetchAPI, fetchFlowData } from "../services/api";
 import { useSettings } from "../context/SettingsContext";
 import { applyUnitSettings, applyUnitSettingsToReadings } from "../utils/unitConversions";
 
-import { deriveRegionMap, type CountryCode } from "../utils/regions";
+import { deriveRegionMap, type CountryCode, getCountryFromPrefix } from "../utils/regions";
 
 interface UseRiversResult {
   rivers: RiverData[];
@@ -73,6 +73,16 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
 
     river.running = calculateRelativeFlow(river);
 
+    // Fallback geographic data for gauges that might be missing it in the DB
+    if (river.isGauge && activeGaugeId && flowData[activeGaugeId]) {
+      if (!river.states && flowData[activeGaugeId].state) {
+        river.states = flowData[activeGaugeId].state;
+      }
+      if (!river.countries) {
+        river.countries = getCountryFromPrefix(activeGaugeId) || undefined;
+      }
+    }
+
     // Build specialized flowInfo based on user preferences
     const showMetric = flowUnits === "metric" || (flowUnits === "default" && latest.cms !== undefined && latest.cfs === undefined);
     
@@ -125,6 +135,8 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
        id: gaugeId,
        name: String(gData.name || gaugeId),
        section: String(gData.section || ""),
+       states: gData.state || "",
+       countries: getCountryFromPrefix(gaugeId) || undefined,
        gauges: [{ id: gaugeId, isPrimary: true, name: String(gData.name || gaugeId), section: String(gData.section || "") }],
        isGauge: true,
        isReadingStale: isStale,

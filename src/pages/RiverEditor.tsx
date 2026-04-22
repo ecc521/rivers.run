@@ -116,9 +116,12 @@ export default function RiverEditor() {
            const suggestion = await fetchAPI(`/admin/queue/${queueId}`, {}, user);
            const proposed = suggestion.proposed_changes;
            proposed.queueId = suggestion.suggestion_id; 
-           proposed.id = suggestion.river_id; // CRITICAL: Ensure the proposed object knows its target river ID
+           proposed.id = suggestion.river_id; 
+           
            setProposedData(proposed);
            setIsAnonymous(suggestion.suggested_by?.startsWith("IP:") || !suggestion.suggested_by);
+           
+           // ALWAYS prioritize proposed changes in the UI state during review
            syncInputs(proposed);
            
            try {
@@ -142,9 +145,9 @@ export default function RiverEditor() {
          }
        } catch (e: unknown) {
          if (e instanceof Error) console.error("Error loading river", e.message);
-         // 404 is fine for new rivers or missing suggestions
+       } finally {
+         setLoading(false);
        }
-       setLoading(false);
      }
     load();
   }, [riverId, queueId, isNew, isReviewMode, navigate, user]);

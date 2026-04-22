@@ -331,18 +331,18 @@ app.openapi(updateRiverRoute, async (c) => {
     const batch = [];
     if (original) {
         batch.push(c.env.DB.prepare(`
-             UPDATE rivers SET name=?, section=?, altname=?, countries=?, states=?, class=?, skill=?, writeup=?, dam_released=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
+             UPDATE rivers SET name=?, section=?, countries=?, states=?, class=?, skill=?, writeup=?, dam_released=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
         `).bind(
-             validated.name, validated.section, validated.altname, validated.countries, validated.states, validated.class,
+             validated.name, validated.section, validated.countries, validated.states, validated.class,
              validated.skill, validated.writeup, validated.dam ? 1 : 0, validated.aw, tagsStr, gaugesStr, accessStr, 
              flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now, id
         ));
     } else {
         batch.push(c.env.DB.prepare(`
-             INSERT INTO rivers (id, name, section, altname, countries, states, class, skill, writeup, dam_released, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             INSERT INTO rivers (id, name, section, countries, states, class, skill, writeup, dam_released, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
-             id, validated.name, validated.section, validated.altname, validated.countries, validated.states, validated.class,
+             id, validated.name, validated.section, validated.countries, validated.states, validated.class,
              validated.skill, validated.writeup, validated.dam ? 1 : 0, validated.aw, tagsStr, gaugesStr, accessStr,
              flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now
         ));
@@ -726,9 +726,9 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     
     if (existingRiver) {
         batch.push(c.env.DB.prepare(`
-             UPDATE rivers SET name=?, section=?, altname=?, countries=?, states=?, class=?, skill=?, writeup=?, dam_released=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
+             UPDATE rivers SET name=?, section=?, countries=?, states=?, class=?, skill=?, writeup=?, dam_released=?, aw_id=?, tags=?, gauges=?, accessPoints=?, flow_unit=?, flow_min=?, flow_low=?, flow_mid=?, flow_high=?, flow_max=?, updated_at=? WHERE id=?
         `).bind(
-             validated.name, validated.section, validated.altname, validated.countries, validated.states, validated.class,
+             validated.name, validated.section, validated.countries, validated.states, validated.class,
              validated.skill, validated.writeup, validated.dam ? 1 : 0, validated.aw, tagsStr, gaugesStr, accessStr, 
              flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now, suggestion.river_id
         ));
@@ -736,10 +736,10 @@ app.openapi(resolveSuggestionRoute, async (c) => {
         // If it doesn't exist, we must use the slug from suggestion.river_id or from the overrides
         const finalId = validated.id || suggestion.river_id;
         batch.push(c.env.DB.prepare(`
-             INSERT INTO rivers (id, name, section, altname, countries, states, class, skill, writeup, dam_released, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             INSERT INTO rivers (id, name, section, countries, states, class, skill, writeup, dam_released, aw_id, tags, gauges, accessPoints, flow_unit, flow_min, flow_low, flow_mid, flow_high, flow_max, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
-             finalId, validated.name, validated.section, validated.altname, validated.countries, validated.states, validated.class,
+             finalId, validated.name, validated.section, validated.countries, validated.states, validated.class,
              validated.skill, validated.writeup, validated.dam ? 1 : 0, validated.aw, tagsStr, gaugesStr, accessStr,
              flowUnit, flowMin, flowLow, flowMid, flowHigh, flowMax, now
         ));

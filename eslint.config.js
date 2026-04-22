@@ -7,7 +7,14 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import sonarjs from 'eslint-plugin-sonarjs'
 
 export default defineConfig([
-  globalIgnores(['dist', 'android', 'ios', 'functions']),
+  {
+    ignores: ['dist/**', 'android/**', 'ios/**', 'functions/**', '**/.wrangler/**'],
+  },
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: 'error',
+    },
+  },
   {
     // Frontend (React)
     files: ['src/**/*.{ts,tsx}'],
