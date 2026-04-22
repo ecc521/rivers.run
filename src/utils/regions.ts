@@ -30,9 +30,17 @@ export const COUNTRY_NAME_MAP: Record<string, string> = {
   "uk_ireland": "UK / Ireland"
 };
 
-export function getCountryName(code: string): string {
-    if (!code) return COUNTRY_NAME_MAP["global"];
-    return COUNTRY_NAME_MAP[code.toLowerCase()] || code;
+export const COUNTRY_SHORT_NAME_MAP: Record<string, string> = {
+  "global": "Global",
+  "usa": "USA",
+  "ec": "CAN",
+  "uk_ireland": "UK / IE"
+};
+
+export function getCountryName(code: string, short = false): string {
+    if (!code) return short ? COUNTRY_SHORT_NAME_MAP["global"] : COUNTRY_NAME_MAP["global"];
+    const map = short ? COUNTRY_SHORT_NAME_MAP : COUNTRY_NAME_MAP;
+    return map[code.toLowerCase()] || code.toUpperCase();
 }
 
 export const STATE_NAME_MAP: Record<string, string> = {

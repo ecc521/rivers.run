@@ -13,7 +13,7 @@ import { fetchAPI } from "../services/api";
 import { Capacitor } from "@capacitor/core";
 import { calculateParsedThresholds } from "../utils/flowInfoCalculations";
 import { lambert } from "../utils/distance";
-import { getStateName, getCountryName, getRiverCountries } from "../utils/regions";
+import { getCountryName, getRiverCountries } from "../utils/regions";
 import type { RiverData } from "../types/River";
 
 
@@ -222,8 +222,6 @@ const RiverPage: React.FC = () => {
             >
                 &#8592; Results
             </span>
-            <span style={{ opacity: 0.5 }}>/</span>
-            <Link to={`/${routeLocation.search}`} style={{ color: "inherit", textDecoration: "none" }}>Rivers.run</Link>
             {(() => {
               const countries = Array.from(getRiverCountries(river)).filter(c => c !== "global");
               if (countries.length === 0) return null;
@@ -235,7 +233,7 @@ const RiverPage: React.FC = () => {
                     to={`/?country=${firstCountry}${routeLocation.search ? '&' + routeLocation.search.substring(1) : ''}`} 
                     style={{ color: "inherit", textDecoration: "none" }}
                   >
-                    {getCountryName(firstCountry)}
+                    {getCountryName(firstCountry, true)}
                   </Link>
                 </>
               );
@@ -247,7 +245,7 @@ const RiverPage: React.FC = () => {
                   to={`/?state=${river.states.split(',')[0].trim()}${routeLocation.search ? '&' + routeLocation.search.substring(1) : ''}`} 
                   style={{ color: "inherit", textDecoration: "none" }}
                 >
-                  {getStateName(river.states.split(',')[0].trim())}
+                  {river.states.split(',')[0].trim().toUpperCase()}
                 </Link>
               </>
             )}
