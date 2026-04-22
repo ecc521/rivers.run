@@ -622,7 +622,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
                 <p style="font-size: 12px; color: #64748b; line-height: 1.6;">
                     <strong>Reference ID:</strong> #${id}<br>
                     This is an automated notification from Rivers.run. 
-                    ${!isAccepted ? `If you wish to appeal this decision, you may reply to this email directly. Please keep the Reference ID in your message.` : ''}
+                    ${!isAccepted ? `Responses to this email will be directed to a website administrator. Please keep the Reference ID in your message.` : ''}
                 </p>
             `;
 
@@ -630,13 +630,13 @@ app.openapi(resolveSuggestionRoute, async (c) => {
                 <div style="font-family: sans-serif; max-width: 600px; line-height: 1.5; color: #1e293b;">
                     <h2 style="color: ${isAccepted ? '#059669' : '#b91c1c'};">Submission ${isAccepted ? 'Accepted' : 'Declined'}</h2>
                     <p>Hello,</p>
-                    <p>Your submission for <strong>${riverName}</strong> has been <strong>${statusLabel}</strong> by our moderation team.</p>
+                    <p>Your submission for <strong>${riverName}</strong> has been <strong>${statusLabel}</strong> by a moderator.</p>
                     
                     ${noteHtml}
 
                     ${!isAccepted ? `
                         <p><strong>Don't want to lose your progress?</strong></p>
-                        <p>You can re-open your submission with all your previous changes to make the requested fixes and resubmit:</p>
+                        <p>You may edit and resubmit your suggestion here:</p>
                         <p><a href="${restoreLink}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Restore & Edit Submission</a></p>
                     ` : `
                         <p>Your changes are now live on <a href="https://rivers.run/river/${suggestion.river_id}">rivers.run</a>. Thank you for contributing to the community!</p>
