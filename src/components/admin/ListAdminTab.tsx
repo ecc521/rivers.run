@@ -63,7 +63,7 @@ export default function ListAdminTab() {
         Lookup a Community Favorite list by its raw Document ID to unpublish or delete it.
       </p>
       
-      <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
+      <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: 'wrap' }}>
         <input 
           type="text" 
           placeholder="List ID (e.g. 5x8a...)" 
@@ -83,7 +83,7 @@ export default function ListAdminTab() {
 
       {adminListObj && (
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{ display: "block", marginBottom: "6px", fontWeight: "bold", fontSize: '14px' }}>Title</label>
@@ -132,7 +132,7 @@ export default function ListAdminTab() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "12px", borderTop: "1px solid var(--border)", paddingTop: "20px" }}>
+          <div style={{ display: "flex", gap: "12px", borderTop: "1px solid var(--border)", paddingTop: "20px", flexWrap: 'wrap' }}>
             <button 
               onClick={handleUpdateListAdmin} 
               style={{ padding: "12px 24px", flex: 1, backgroundColor: "var(--primary)", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", boxShadow: '0 4px 6px rgba(59,130,246,0.2)' }}

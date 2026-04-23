@@ -121,7 +121,7 @@ export default function UserManagementTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ backgroundColor: 'var(--surface)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
         <h3 style={{ margin: '0 0 16px 0', fontSize: '18px' }}>Lookup User</h3>
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', backgroundColor: 'var(--surface-hover)', borderRadius: '8px', padding: '4px', border: '1px solid var(--border)' }}>
             <button 
               onClick={() => setSearchType('email')} 
@@ -142,7 +142,7 @@ export default function UserManagementTab() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            style={{ flex: 1, padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--surface-hover)', color: 'var(--text)', fontSize: '14px' }}
+            style={{ flex: 1, minWidth: 'min(100%, 250px)', padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--surface-hover)', color: 'var(--text)', fontSize: '14px' }}
           />
           <button 
             onClick={handleSearch} 
@@ -171,7 +171,7 @@ export default function UserManagementTab() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
             <div>
               <h4 style={{ margin: '0 0 12px 0', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Administrative Actions</h4>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>

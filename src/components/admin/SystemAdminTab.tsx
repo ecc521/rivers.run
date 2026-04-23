@@ -260,8 +260,8 @@ function LogTable({ loading, data, columns, renderRow }: {
     if (!data || data.length === 0) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No logs recorded.</div>;
     
     return (
-        <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div style={{ maxHeight: '300px', overflowY: 'auto', overflowX: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
                 <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--surface-hover)', borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
                     <tr>
                         {columns.map(col => <th key={col} style={{ padding: '10px 12px', fontWeight: 600 }}>{col}</th>)}
