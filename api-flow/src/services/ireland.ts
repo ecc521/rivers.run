@@ -147,7 +147,7 @@ export const irelandProvider: GaugeProvider = {
                 if (rawId && props.value !== undefined) {
                     const id = normalizeStationId(rawId);
                     const rawName = props.station_name || `Ireland Station ${id}`;
-                    const formatted = formatGaugeName(rawName);
+                    const formatted = formatGaugeName(rawName, "Ireland");
                     
                     // Map region_id or fallback to region/county name if present
                     const regionName = props.region_id ? REGION_MAP[props.region_id] : (props.region || props.county);

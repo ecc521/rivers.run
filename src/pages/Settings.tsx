@@ -228,7 +228,15 @@ const OfflineMapManager: React.FC = () => {
   const handleClearCache = async () => {
     if (await confirm("This will delete the offline maps you manually downloaded to your device. Are you sure?", "Delete Downloaded Maps?")) {
       try {
-        await caches.delete('offline-map-tiles');
+        const MAP_CACHE_NAMES = [
+            'map-tiles-permanent',
+            'map-tiles-regional',
+            'map-tiles-detailed',
+            'offline-map-tiles'
+        ];
+        for (const name of MAP_CACHE_NAMES) {
+            await caches.delete(name);
+        }
         refreshCacheString();
       } catch (e: unknown) {
         if (e instanceof Error) console.error(e.message);

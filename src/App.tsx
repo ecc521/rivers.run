@@ -39,6 +39,7 @@ function App() {
       // Check for OTA updates
       const checkUpdate = async () => {
         try {
+          console.log("Checking for OTA updates...");
           // Bypass cache to always query the live edge manifest
           const res = await fetch('https://rivers.run/ota/manifest.json', { cache: 'no-store' });
           if (res.ok) {
@@ -46,17 +47,24 @@ function App() {
             const current = await CapacitorUpdater.current();
             const currentVersion = current.bundle?.id || current.native;
             
+            console.log(`Current version: ${currentVersion}, Remote version: ${remoteData.version}`);
+
             // If there's a new version available
             if (remoteData.version && remoteData.version !== currentVersion) {
-               console.log(`Downloading OTA update ${remoteData.version}...`);
+               console.log(`Downloading OTA update ${remoteData.version} from ${remoteData.url}...`);
                const downloadedBundle = await CapacitorUpdater.download({
                   version: remoteData.version,
                   url: remoteData.url,
                });
                
+               console.log(`OTA update ${downloadedBundle.id} downloaded successfully. Setting for next boot.`);
                // Set it to apply automatically upon next app cold start or backgrounding
                CapacitorUpdater.next({ id: downloadedBundle.id });
+            } else {
+               console.log("No new OTA update available.");
             }
+          } else {
+            console.warn(`Failed to fetch OTA manifest: ${res.status} ${res.statusText}`);
           }
         } catch (error) {
            console.error("Failed to check for OTA update:", error);

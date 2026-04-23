@@ -206,9 +206,9 @@ export default {
 
         try {
             let registryMetadata: Record<string, any> = {};
-            const isMonthlyRecompile = event.cron === "0 0 1 * *";
-            const isDailyMaintenance = event.cron === "0 0 * * *" || isMonthlyRecompile;
-            let needsRecompile = isMonthlyRecompile;
+            const isWeeklyRecompile = event.cron === "0 0 * * 0"; // Every Sunday
+            const isDailyMaintenance = event.cron === "0 0 * * *" || isWeeklyRecompile;
+            let needsRecompile = isWeeklyRecompile;
 
             try {
                 const registryObject = await env.FLOW_STORAGE.get("gauge_registry.json");

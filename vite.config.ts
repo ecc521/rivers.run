@@ -69,13 +69,46 @@ export default defineConfig({
           }
         },
         {
-          urlPattern: /^https:\/\/tile\.openstreetmap\.org\/.*/i,
-          handler: 'CacheFirst', // Aggressive caching since map tiles rarely change
+          // Tier 1: Permanent Basemaps (Zoom 0-8)
+          // No expiration age, large limit to protect manual downloads.
+          urlPattern: /^https:\/\/tile\.openstreetmap\.org\/([0-8])\//i,
+          handler: 'CacheFirst',
           options: {
-            cacheName: 'offline-map-tiles',
+            cacheName: 'map-tiles-permanent',
             expiration: {
-              maxEntries: 5000, // Very healthy storage for maps
-              maxAgeSeconds: 60 * 60 * 24 * 60 // 60 days
+              maxEntries: 15000,
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        },
+        {
+          // Tier 2: Regional Maps (Zoom 9-12)
+          // 30-day rotation for automated browsing.
+          urlPattern: /^https:\/\/tile\.openstreetmap\.org\/(9|1[0-2])\//i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'map-tiles-regional',
+            expiration: {
+              maxEntries: 2000,
+              maxAgeSeconds: 60 * 60 * 24 * 30
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        },
+        {
+          // Tier 3: Detailed Spots (Zoom 13+)
+          // 7-day aggressive rotation for detailed river spots.
+          urlPattern: /^https:\/\/tile\.openstreetmap\.org\/(1[3-9]|2[0-9])\//i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'map-tiles-detailed',
+            expiration: {
+              maxEntries: 500,
+              maxAgeSeconds: 60 * 60 * 24 * 7
             },
             cacheableResponse: {
               statuses: [0, 200]

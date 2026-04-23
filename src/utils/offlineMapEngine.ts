@@ -69,6 +69,24 @@ export const generateTileQueue = (
     return urls;
 };
 
+const MAP_CACHE_NAMES = [
+    'map-tiles-permanent',
+    'map-tiles-regional',
+    'map-tiles-detailed',
+    'offline-map-tiles' // Legacy support for old cache name
+];
+
+const getCacheNameForUrl = (url: string): string => {
+    const zoomRegex = /\/(\d+)\/(\d+)\/(\d+)\.png$/;
+    const match = zoomRegex.exec(url);
+    if (!match) return 'map-tiles-permanent';
+
+    const z = parseInt(match[1], 10);
+    if (z <= 8) return 'map-tiles-permanent';
+    if (z <= 12) return 'map-tiles-regional';
+    return 'map-tiles-detailed';
+};
+
 export const downloadMapTiles = async (
     urls: string[],
     onProgress: (done: number, total: number) => void
@@ -78,7 +96,12 @@ export const downloadMapTiles = async (
     
     // Process in batches of 10 to avoid suffocating the browser's HTTP queue
     const BATCH_SIZE = 10;
-    const cache = await caches.open('offline-map-tiles');
+    
+    // Pre-open all caches we might need
+    const cachesMap: Record<string, Cache> = {};
+    for (const name of MAP_CACHE_NAMES) {
+        cachesMap[name] = await caches.open(name);
+    }
     
     for (let i = 0; i < urls.length; i += BATCH_SIZE) {
         const batch = urls.slice(i, i + BATCH_SIZE);
@@ -86,8 +109,15 @@ export const downloadMapTiles = async (
         await Promise.all(
             batch.map(async (url) => {
                 try {
-                    // Skip if already cached, preventing network abuse on boots
-                    const existing = await cache.match(url);
+                    const cacheName = getCacheNameForUrl(url);
+                    const cache = cachesMap[cacheName];
+
+                    // Skip if already cached in ANY of our tiers to avoid redundant downloads
+                    let existing = null;
+                    for (const name of MAP_CACHE_NAMES) {
+                        existing = await cachesMap[name].match(url);
+                        if (existing) break;
+                    }
                     if (existing) return;
 
                     // Fetch natively and pump explicitly into the sw-cache bucket
@@ -112,19 +142,22 @@ export const downloadMapTiles = async (
 
 export const getCacheUsageString = async (): Promise<string> => {
     try {
-        let tileCount = 0;
-        try {
-            const cache = await caches.open('offline-map-tiles');
-            const keys = await cache.keys();
-            tileCount = keys.length;
-        } catch {
-            // ignore
+        let totalTileCount = 0;
+        
+        for (const name of MAP_CACHE_NAMES) {
+            try {
+                const cache = await caches.open(name);
+                const keys = await cache.keys();
+                totalTileCount += keys.length;
+            } catch {
+                // ignore
+            }
         }
         
-        if (tileCount > 0) {
+        if (totalTileCount > 0) {
             // Rough average of 15KB per slippy map PNG
-            const estimatedMb = ((tileCount * 15) / 1024).toFixed(1);
-            return `${tileCount.toLocaleString()} Tiles Offline (~${estimatedMb} MB)`;
+            const estimatedMb = ((totalTileCount * 15) / 1024).toFixed(1);
+            return `${totalTileCount.toLocaleString()} Tiles Offline (~${estimatedMb} MB)`;
         }
 
         // Fallback to native hardware if 0 bounds
@@ -160,9 +193,12 @@ export const autoDownloadBaseMaps = async () => {
  */
 export const detectMaxZoom = async (type: 'world' | 'na'): Promise<number> => {
     try {
-        const cache = await caches.open('offline-map-tiles');
-        const keys = await cache.keys();
-        const urls = keys.map(k => k.url);
+        const allUrls: string[] = [];
+        for (const name of MAP_CACHE_NAMES) {
+            const cache = await caches.open(name);
+            const keys = await cache.keys();
+            allUrls.push(...keys.map(k => k.url));
+        }
         
         const bounds = type === 'world' ? WORLD_BOUNDS : NORTH_AMERICA_BOUNDS;
         const tileCountsByZoom: Record<number, number> = {};
@@ -184,7 +220,7 @@ export const detectMaxZoom = async (type: 'world' | 'na'): Promise<number> => {
         }
 
         // Group and count strictly within geographic target bounds
-        for (const url of urls) {
+        for (const url of allUrls) {
             const match = zoomRegex.exec(url);
             if (match) {
                 const z = parseInt(match[1], 10);

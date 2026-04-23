@@ -180,17 +180,19 @@ export const RiverItem: React.FC<RiverItemProps> = ({
 
         {/* Skill Span */}
         <span
-          className="riverspan skillspan tooltip"
+          className="riverspan skillspan"
           style={{ borderBottom: "none" }}
         >
-          <div className="tooltip">
-            {skillAbbr}
-            <span className="tooltiptext">{translatedSkill}</span>
-          </div>
+          {skillAbbr && skillAbbr !== "?" && (
+            <div className="tooltip">
+              {skillAbbr}
+              <span className="tooltiptext">{translatedSkill}</span>
+            </div>
+          )}
         </span>
 
         {/* Class Span */}
-        <span className="riverspan classspan">{(!riverClass || riverClass.trim().toLowerCase() === "unknown") ? "?" : riverClass}</span>
+        <span className="riverspan classspan">{(riverClass && riverClass !== "?") ? riverClass : ""}</span>
 
 
         {/* Flow Span */}

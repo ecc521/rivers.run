@@ -118,7 +118,7 @@ export const nwsProvider: GaugeProvider = {
                                 return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
                             });
 
-                        const formatted = formatGaugeName(site);
+                        const formatted = formatGaugeName(site, "NWS");
                         results[site] = {
                             id: site,
                             name: formatted.name,
@@ -156,7 +156,7 @@ export const nwsProvider: GaugeProvider = {
                          if (res.ok) {
                              const data: any = await res.json();
                              if (data.latitude !== undefined && data.longitude !== undefined) {
-                                 const formatted = formatGaugeName(data.name || site);
+                                 const formatted = formatGaugeName(data.name || site, "NWS");
                                  results.push({
                                      id: site,
                                      name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
@@ -188,7 +188,7 @@ export const nwsProvider: GaugeProvider = {
              
              for (const item of items) {
                  if (item.identifier && item.latitude !== undefined && item.longitude !== undefined) {
-                     const formatted = formatGaugeName(item.name || item.identifier);
+                     const formatted = formatGaugeName(item.name || item.identifier, "NWS");
                      results.push({
                          id: item.identifier,
                          name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,

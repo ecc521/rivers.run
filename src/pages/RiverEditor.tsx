@@ -113,7 +113,7 @@ export default function RiverEditor() {
       const restoreId = searchParams.get('restore');
 
       if (authLoading) return;
-      if (isNew && !restoreId) {
+      if (!isReviewMode && isNewFromURL && !restoreId) {
         setLoading(false);
         return;
       }
@@ -122,8 +122,16 @@ export default function RiverEditor() {
       try {
         if (isReviewMode) {
            const suggestion = await fetchAPI(`/admin/queue/${queueId}`, {}, user);
-           const proposed = suggestion.proposed_changes;
-           proposed.queueId = suggestion.suggestion_id; 
+           let proposed = typeof suggestion.proposed_changes === 'string' 
+               ? JSON.parse(suggestion.proposed_changes) 
+               : suggestion.proposed_changes;
+               
+           // Ensure it's an object before assigning properties to prevent strict-mode TypeError crashes
+           if (typeof proposed !== 'object' || proposed === null) {
+               proposed = {};
+           }
+           
+           proposed.queueId = suggestion.suggestion_id || queueId; 
            proposed.id = suggestion.river_id; 
            
            setProposedData(proposed);

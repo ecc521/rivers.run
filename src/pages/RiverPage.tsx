@@ -14,6 +14,7 @@ import { Capacitor } from "@capacitor/core";
 import { calculateParsedThresholds } from "../utils/flowInfoCalculations";
 import { lambert } from "../utils/distance";
 import { getCountryName, getRiverCountries } from "../utils/regions";
+import { getSkillFull } from "../utils/skillTranslations";
 import type { RiverData } from "../types/River";
 
 
@@ -255,49 +256,112 @@ const RiverPage: React.FC = () => {
          </div>
 
         <div style={{ flex: "0 1 auto", minWidth: "200px", textAlign: "center" }}>
-          <h1 style={{ margin: 0 }}>{river.name}</h1>
-          <h2 style={{ marginTop: "5px", marginBottom: 0, color: "var(--text-muted)", fontWeight: "normal" }}>{river.section}</h2>
-          <Link 
-            to={`/edit/${river.id}`}
-            style={{
-              display: "inline-block",
-              marginTop: "10px",
-              fontSize: "0.85rem",
-              color: "var(--primary)",
-              textDecoration: "none",
-              opacity: 0.8,
-              fontWeight: "600",
-              transition: "opacity 0.2s"
-            }}
-            onMouseOver={(e) => e.currentTarget.style.opacity = "1"}
-            onMouseOut={(e) => e.currentTarget.style.opacity = "0.8"}
-          >
-            Edit River
-          </Link>
-          <span style={{ margin: "0 8px", opacity: 0.3, fontSize: "0.85rem" }}>|</span>
-          <button 
-            onClick={handleShare}
-            style={{
-              display: "inline-block",
-              background: "none",
-              border: "none",
-              padding: 0,
-              fontSize: "0.85rem",
-              color: "var(--primary)",
-              cursor: "pointer",
-              opacity: 0.8,
-              fontWeight: "600",
-              transition: "opacity 0.2s"
-            }}
-            onMouseOver={(e) => e.currentTarget.style.opacity = "1"}
-            onMouseOut={(e) => e.currentTarget.style.opacity = "0.8"}
-          >
-            {isCopied ? "Link Copied!" : "Share"}
-          </button>
+          <h1 style={{ margin: 0, fontSize: "clamp(1.8rem, 5vw, 2.5rem)", letterSpacing: "-0.02em" }}>{river.name}</h1>
+          <h2 style={{ marginTop: "4px", marginBottom: "12px", color: "var(--text-muted)", fontWeight: "500", fontSize: "1.2rem" }}>{river.section}</h2>
+          
+          {/* Class & Skill Level Metadata */}
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            gap: "10px", 
+            marginBottom: "20px",
+            flexWrap: "wrap"
+          }}>
+            {river.class && river.class !== "?" && (
+              <span style={{ 
+                backgroundColor: "var(--surface-hover)", 
+                padding: "4px 12px", 
+                borderRadius: "20px", 
+                fontSize: "0.9rem", 
+                fontWeight: "700",
+                border: "1px solid var(--border)",
+                color: "var(--primary)"
+              }}>
+                Class {river.class}
+              </span>
+            )}
+            {(() => {
+              const skillFull = getSkillFull(river.skill);
+              if (!skillFull || skillFull === "Skill Unknown") return null;
+              return (
+                <span style={{ 
+                  backgroundColor: "var(--surface-hover)", 
+                  padding: "4px 12px", 
+                  borderRadius: "20px", 
+                  fontSize: "0.9rem", 
+                  fontWeight: "600",
+                  border: "1px solid var(--border)",
+                  color: "var(--primary)"
+                }}>
+                  {skillFull}
+                </span>
+              );
+            })()}
+          </div>
 
-          {river.aw && (
-            <>
-              <span style={{ margin: "0 8px", opacity: 0.3, fontSize: "0.85rem" }}>|</span>
+          {/* Action Row */}
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            gap: "12px", 
+            flexWrap: "wrap",
+            opacity: 0.9
+          }}>
+            <Link 
+              to={`/edit/${river.id}`}
+              style={{
+                display: "inline-block",
+                fontSize: "0.85rem",
+                color: "var(--primary)",
+                textDecoration: "none",
+                fontWeight: "600",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                backgroundColor: "var(--surface)",
+                border: "1px solid var(--border)",
+                transition: "all 0.2s"
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--surface-hover)";
+                e.currentTarget.style.borderColor = "var(--primary)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--surface)";
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
+            >
+              Edit River
+            </Link>
+
+            <button 
+              onClick={handleShare}
+              style={{
+                display: "inline-block",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "6px",
+                padding: "6px 12px",
+                fontSize: "0.85rem",
+                color: "var(--primary)",
+                cursor: "pointer",
+                fontWeight: "600",
+                transition: "all 0.2s"
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--surface-hover)";
+                e.currentTarget.style.borderColor = "var(--primary)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--surface)";
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
+            >
+              {isCopied ? "Link Copied!" : "Share"}
+            </button>
+
+            {river.aw && (
               <a 
                 href={`https://www.americanwhitewater.org/content/River/view/river-detail/${river.aw}`}
                 target="_blank"
@@ -307,40 +371,52 @@ const RiverPage: React.FC = () => {
                   fontSize: "0.85rem",
                   color: "var(--primary)",
                   textDecoration: "none",
-                  opacity: 0.8,
                   fontWeight: "600",
-                  transition: "opacity 0.2s"
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  backgroundColor: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  transition: "all 0.2s"
                 }}
-                onMouseOver={(e) => e.currentTarget.style.opacity = "1"}
-                onMouseOut={(e) => e.currentTarget.style.opacity = "0.8"}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--surface-hover)";
+                  e.currentTarget.style.borderColor = "var(--primary)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
+                  e.currentTarget.style.borderColor = "var(--border)";
+                }}
               >
                 View on AW
               </a>
-            </>
-          )}
+            )}
 
-          <span style={{ margin: "0 8px", opacity: 0.3, fontSize: "0.85rem" }}>|</span>
-          <button 
-            onClick={handleReport}
-            style={{
-              display: "inline-block",
-              background: "none",
-              border: "none",
-              padding: 0,
-              fontSize: "0.85rem",
-              color: "var(--primary)",
-              cursor: "pointer",
-              opacity: 0.8,
-              fontWeight: "600",
-              transition: "opacity 0.2s"
-            }}
-            onMouseOver={(e) => e.currentTarget.style.opacity = "1"}
-            onMouseOut={(e) => e.currentTarget.style.opacity = "0.8"}
-          >
-            Report Problem
-          </button>
-
-
+            <button 
+              onClick={handleReport}
+              style={{
+                display: "inline-block",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "6px",
+                padding: "6px 12px",
+                fontSize: "0.85rem",
+                color: "var(--primary)",
+                cursor: "pointer",
+                fontWeight: "600",
+                transition: "all 0.2s"
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--surface-hover)";
+                e.currentTarget.style.borderColor = "var(--primary)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--surface)";
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
+            >
+              Report Problem
+            </button>
+          </div>
         </div>
 
         {pillRiver && pillRiver.running != null && (
@@ -631,7 +707,7 @@ const RiverPage: React.FC = () => {
                       <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80px" }}>{other.section}</span>
                         <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
-                           {other.class && (
+                           {other.class && other.class !== "?" && (
                                <span style={{ fontSize: "0.7rem", opacity: 0.8, backgroundColor: "var(--surface)", padding: "1px 4px", borderRadius: "4px", border: "1px solid var(--border)" }}>{other.class}</span>
                            )}
                            <span style={{ fontWeight: "600", color: "var(--primary)" }}>{Math.round((other as any)._dist)} mi</span>

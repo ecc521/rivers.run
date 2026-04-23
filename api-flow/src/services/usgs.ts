@@ -14,7 +14,7 @@ const states = [
 
 function initializeSiteIfMissing(usgsSites: Record<string, GaugeHistory>, siteCode: string, sourceInfo: any) {
   if (!usgsSites[siteCode]) {
-    const formatted = formatGaugeName(sourceInfo.siteName);
+    const formatted = formatGaugeName(sourceInfo.siteName, "USGS");
     usgsSites[siteCode] = {
       id: siteCode,
       name: formatted.name,
@@ -205,7 +205,7 @@ function parseRDBLines(text: string, state: string, gaugeRegistry: Record<string
             
             if (idIndex > -1 && nameIndex > -1 && latIndex > -1 && lonIndex > -1) {
                 const rawId = tokens[idIndex];
-                const fullName = formatGaugeName(tokens[nameIndex]);
+                const fullName = formatGaugeName(tokens[nameIndex], "USGS");
                 const lat = parseFloat(tokens[latIndex]);
                 const lon = parseFloat(tokens[lonIndex]);
                 if (!isNaN(lat) && !isNaN(lon)) {

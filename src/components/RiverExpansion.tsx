@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import type { RiverData } from "../types/River";
-import { getSkillFull } from "../utils/skillTranslations";
 import { USGSGraphs } from "./USGSGraphs";
 import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import DOMPurify from "dompurify";
@@ -30,29 +29,12 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
   // The hook directly yields a fully cloned, flow-hydrated RiverData precisely compiled
   const displayRiver = useDynamicFlow(river, dataGeneratedAt) || river;
 
-  const getSkillAndClassText = () => {
-    const skillFull = getSkillFull(river.skill);
-    const hasSkill = river.skill && skillFull !== "Skill Unknown";
-
-    if (river.class && hasSkill) {
-      return `This river is class ${river.class} and is rated ${skillFull}.`;
-    } else if (river.class) {
-      return `This river is rated class ${river.class}.`;
-    } else if (hasSkill) {
-      return `This river is rated ${skillFull}.`;
-    }
-    return null;
-  };
-
-
-
   return (
     <div className="riverWriteup" style={{ padding: "6px" }}>
 
       <div className="textInfo">
         <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(river.writeup || "") }} />
         <br />
-        <p>{getSkillAndClassText()}</p>
 
         {river.averagegradient && (
           <p>Average gradient: {river.averagegradient} feet per mile.</p>

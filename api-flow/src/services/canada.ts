@@ -271,7 +271,7 @@ export const ecProvider: GaugeProvider = {
                          const data: any = await res.json();
                          if (data.features && data.features.length > 0) {
                              const feat = data.features[0];
-                             const formatted = formatGaugeName(feat.properties?.STATION_NAME || site);
+                             const formatted = formatGaugeName(feat.properties?.STATION_NAME || site, "EC");
                              results.push({
                                  id: site,
                                  name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
@@ -323,7 +323,7 @@ export const ecProvider: GaugeProvider = {
                 const lon = coords[0];
                 
                 if (!isNaN(lat) && !isNaN(lon)) {
-                    const formatted = formatGaugeName(props.STATION_NAME || `EC Gauge ${id}`);
+                    const formatted = formatGaugeName(props.STATION_NAME || `EC Gauge ${id}`, "EC");
                     results.push({
                         id,
                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,

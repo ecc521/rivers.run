@@ -180,7 +180,7 @@ export const ukProvider: GaugeProvider = {
 
                     if (isNaN(lat) || isNaN(lon)) continue;
 
-                    const formatted = formatGaugeName(label || `UK Station ${item.notation}`);
+                    const formatted = formatGaugeName(label || `UK Station ${item.notation}`, "UK");
                     results.push({
                         id: item.notation,
                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,

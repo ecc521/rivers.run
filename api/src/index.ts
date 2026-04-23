@@ -644,8 +644,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;">
                 <p style="font-size: 12px; color: #64748b; line-height: 1.6;">
                     <strong>Reference ID:</strong> #${id}<br>
-                    This is an automated notification from Rivers.run. 
-                    ${!isAccepted ? `Responses to this email will be directed to a website administrator. Please keep the Reference ID in your message.` : ''}
+                    This is an automated notification from Rivers.run. Responses to this message will be sent to the server administrator. 
                 </p>
             `;
 

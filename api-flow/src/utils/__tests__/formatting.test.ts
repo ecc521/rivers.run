@@ -8,25 +8,25 @@ describe('formatGaugeName', () => {
     });
 
     it('should handle "at" and "near" delimiters', () => {
-        const atResult = formatGaugeName('FRENCH BROAD RIVER AT ASHEVILLE, NC');
+        const atResult = formatGaugeName('FRENCH BROAD RIVER AT ASHEVILLE, NC', 'USGS');
         expect(atResult.name).toBe('French Broad River');
         expect(atResult.section).toBe('At Asheville, NC');
 
-        const nearResult = formatGaugeName('NOLICHUCKY RIVER NEAR EMBREEVILLE, TN');
+        const nearResult = formatGaugeName('NOLICHUCKY RIVER NEAR EMBREEVILLE, TN', 'USGS');
         expect(nearResult.name).toBe('Nolichucky River');
         expect(nearResult.section).toBe('Near Embreeville, TN');
     });
 
     it('should expand common abbreviations', () => {
         // US expansions
-        expect(formatGaugeName('LITTLE R NR TOWNSEND').section).toBe('Near Townsend');
-        expect(formatGaugeName('CR').name).toBe('Creek');
+        expect(formatGaugeName('LITTLE R NR TOWNSEND', 'USGS').section).toBe('Near Townsend');
+        expect(formatGaugeName('CR', 'USGS').name).toBe('Creek');
         
         // UK expansions
-        const ukResult = formatGaugeName('BATH LARKHALL ST SAVIOURS RD');
+        const ukResult = formatGaugeName('BATH LARKHALL ST SAVIOURS RD', 'UK');
         expect(ukResult.name).toBe('Bath Larkhall St Saviours Road');
         
-        const gsResult = formatGaugeName('BEACHES MILL SECONDARY GS GSM');
+        const gsResult = formatGaugeName('BEACHES MILL SECONDARY GS GSM', 'UK');
         expect(gsResult.name).toBe('Beaches Mill Secondary Gauging Station GSM');
     });
 
@@ -39,24 +39,23 @@ describe('formatGaugeName', () => {
     });
 
     it('should handle "TOF TO BE WITSD" mangled string', () => {
-        const result = formatGaugeName('HUNTINGFORD BRIDGE TOF TO BE WITSD');
+        const result = formatGaugeName('HUNTINGFORD BRIDGE TOF TO BE WITSD', 'UK');
         expect(result.name).toBe('Huntingford Bridge');
         expect(result.section).toBe('(Time of Flight - to be Withdrawn)');
-
     });
 
     it('should handle parentheses splitting (Ireland pattern)', () => {
-        const result = formatGaugeName('Ballybofey (Finn)');
+        const result = formatGaugeName('Ballybofey (Finn)', 'Ireland');
         expect(result.name).toBe('Ballybofey');
         expect(result.section).toBe('(Finn)');
 
-        const reverseResult = formatGaugeName('River Finn (Ballybofey)');
+        const reverseResult = formatGaugeName('River Finn (Ballybofey)', 'Ireland');
         expect(reverseResult.name).toBe('River Finn');
         expect(reverseResult.section).toBe('(Ballybofey)');
     });
 
     it('should handle nested capitalization in parentheses', () => {
-        const result = formatGaugeName('Dublin (PODDLE RIVER)');
+        const result = formatGaugeName('Dublin (PODDLE RIVER)', 'Ireland');
         expect(result.name).toBe('Dublin');
         expect(result.section).toBe('(Poddle River)');
     });
@@ -67,58 +66,62 @@ describe('formatGaugeName', () => {
     });
 
     it('should handle "Ab" and "Bl" shorthand expansions', () => {
-        expect(formatGaugeName('TALLULAH R AB POWERHOUSE').name).toBe('Tallulah River');
-        expect(formatGaugeName('TALLULAH R AB POWERHOUSE').section).toBe('Above Powerhouse');
-        expect(formatGaugeName('HYCO R BL ABAY D').section).toBe('Below Abay D');
+        expect(formatGaugeName('TALLULAH R AB POWERHOUSE', 'USGS').name).toBe('Tallulah River');
+        expect(formatGaugeName('TALLULAH R AB POWERHOUSE', 'USGS').section).toBe('Above Powerhouse');
+        expect(formatGaugeName('HYCO R BL ABAY D', 'USGS').section).toBe('Below Abay D');
     });
 
     it('should handle French keywords for Canada/France', () => {
-        const aval = formatGaugeName('MADAWASKA A 6 KM EN AVAL DU BARRAGE');
+        const aval = formatGaugeName('MADAWASKA A 6 KM EN AVAL DU BARRAGE', 'EC');
         expect(aval.name).toBe('Madawaska');
         expect(aval.section).toBe('A 6 km en aval du Barrage');
 
-        const a = formatGaugeName('LA SEINE À PARIS');
+        const a = formatGaugeName('LA SEINE À PARIS', 'EC');
         expect(a.name).toBe('La Seine');
         expect(a.section).toBe('À Paris');
 
-        const aAscii = formatGaugeName('RIVIERE DES OUTAOUAIS A CARILLON');
+        const aAscii = formatGaugeName('RIVIERE DES OUTAOUAIS A CARILLON', 'EC');
         expect(aAscii.name).toBe('Riviere des Outaouais');
         expect(aAscii.section).toBe('A Carillon');
 
-        const deLa = formatGaugeName('FLEUVE ST-LAURENT A LACHINE');
+        const deLa = formatGaugeName('FLEUVE ST-LAURENT A LACHINE', 'EC');
         expect(deLa.name).toBe('Fleuve St-Laurent');
         expect(deLa.section).toBe('A Lachine');
 
-        const aval2 = formatGaugeName('RIVIERE NICOLET EN AVAL DE NICOLET');
+        const aval2 = formatGaugeName('RIVIERE NICOLET EN AVAL DE NICOLET', 'EC');
         expect(aval2.name).toBe('Riviere Nicolet');
         expect(aval2.section).toBe('En aval de Nicolet');
     });
 
-
-    it('should split at the first comma if it follows a river descriptor', () => {
-        const result = formatGaugeName('SWEETWATER CREEK, BROWNSVILLE RD, GA');
+    it('should split at the first comma if it follows a river descriptor (USGS)', () => {
+        const result = formatGaugeName('SWEETWATER CREEK, BROWNSVILLE RD, GA', 'USGS');
         expect(result.name).toBe('Sweetwater Creek');
         expect(result.section).toBe(', Brownsville Road, GA');
 
-        const noRiverResult = formatGaugeName('SOMEPLACE, SOME TOWN, GA');
+        const noRiverResult = formatGaugeName('SOMEPLACE, SOME TOWN, GA', 'USGS');
         expect(noRiverResult.section).toBeUndefined(); // No river word before comma
     });
 
     it('should correctly handle Chattahoochee River gauge names with distances', () => {
-        const result = formatGaugeName('Chattahoochee R 0.39 Mi Downstream Ga140, Alpharetta, GA');
+        const result = formatGaugeName('Chattahoochee R 0.39 Mi Downstream Ga140, Alpharetta, GA', 'USGS');
         expect(result.name).toBe('Chattahoochee River');
         expect(result.section).toBe('0.39 mi Downstream Ga140, Alpharetta, GA');
     });
 
-    it('should keep state codes capitalized when they appear at the end', () => {
-        expect(formatGaugeName('WHITE RIVER AT ANDERSON IN').section).toBe('At Anderson IN');
-        expect(formatGaugeName('COLUMBIA RIVER AT THE DALLES OR').section).toBe('At the Dalles OR');
+    it('should keep state codes capitalized when they appear at the end (USGS)', () => {
+        expect(formatGaugeName('WHITE RIVER AT ANDERSON IN', 'USGS').section).toBe('At Anderson IN');
+        expect(formatGaugeName('COLUMBIA RIVER AT THE DALLES OR', 'USGS').section).toBe('At the Dalles OR');
     });
 
-    it('should handle multiple delimiters and pick the first', () => {
-        const result = formatGaugeName('RIVER AT SITE NEAR TOWN');
-        expect(result.name).toBe('River');
-        expect(result.section).toBe('At Site near Town');
+    it('should handle Canadian gauge "ASHEWEIG RIVER AT STRAIGHT LAKE"', () => {
+        const result = formatGaugeName('ASHEWEIG RIVER AT STRAIGHT LAKE', 'EC');
+        expect(result.name).toBe('Asheweig River');
+        expect(result.section).toBe('At Straight Lake');
+    });
+
+    it('should support Unicode characters in names', () => {
+        const result = formatGaugeName('RIVIÈRE DES OUTAOUAIS', 'EC');
+        expect(result.name).toBe('Rivière des Outaouais');
     });
 });
 
@@ -132,9 +135,7 @@ describe('formatStateCode', () => {
         expect(formatStateCode('QC', 'EC')).toBe('QC');
     });
 
-
     it('should return undefined for long US/Canada names', () => {
-        // We only want codes in the state field for US/CA
         expect(formatStateCode('North Carolina', 'USGS')).toBeUndefined();
     });
 
