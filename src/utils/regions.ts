@@ -78,6 +78,7 @@ export const STATE_NAME_MAP: Record<string, string> = {
   "NV": "Nevada", "NY": "New York", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
   "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VA": "Virginia", "VT": "Vermont", "WA": "Washington", "WI": "Wisconsin",
   "WV": "West Virginia", "WY": "Wyoming", "DC": "District of Columbia", "DE": "Delaware", "PR": "Puerto Rico", "VI": "Virgin Islands", "GU": "Guam",
+  "AB": "Alberta", "BC": "British Columbia", "MB": "Manitoba", "NB": "New Brunswick", "NL": "Newfoundland and Labrador", "NS": "Nova Scotia",
   "ON": "Ontario", "PE": "Prince Edward Island", "QC": "Quebec", "SK": "Saskatchewan", "NT": "Northwest Territories", "YT": "Yukon", "NU": "Nunavut"
 };
 

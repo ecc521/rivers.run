@@ -123,6 +123,49 @@ describe('formatGaugeName', () => {
         const result = formatGaugeName('RIVIÈRE DES OUTAOUAIS', 'EC');
         expect(result.name).toBe('Rivière des Outaouais');
     });
+
+    describe('Regression and Complex Splits', () => {
+        it('should handle Canadian gauge names with "Near"', () => {
+            const result = formatGaugeName('Buffalo Creek Near Rosenfeld', 'EC');
+            expect(result.name).toBe('Buffalo Creek');
+            expect(result.section).toBe('Near Rosenfeld');
+        });
+
+        it('should handle "in" delimiter (USGS)', () => {
+            const result = formatGaugeName('Chippewa Ck in Chippewa Met Pk', 'USGS');
+            expect(result.name).toBe('Chippewa Creek');
+            expect(result.section).toBe('In Chippewa Met Pk');
+        });
+
+        it('should handle "bel" abbreviation (USGS)', () => {
+            const result = formatGaugeName('Ashley Creek Bel Union Canal Div', 'USGS');
+            expect(result.name).toBe('Ashley Creek');
+            expect(result.section).toBe('Below Union Canal Div');
+        });
+
+        it('should handle "btwn" abbreviation correctly', () => {
+            const result = formatGaugeName('Big Sandy R btwn Catlettsburg and Kenova', 'USGS');
+            expect(result.name).toBe('Big Sandy River');
+            expect(result.section).toBe('Between Catlettsburg and Kenova');
+        });
+
+        it('should handle "into" delimiter correctly', () => {
+            const result = formatGaugeName('Big Sandy R into Ohio R', 'USGS');
+            expect(result.name).toBe('Big Sandy River');
+            expect(result.section).toBe('Into Ohio River');
+        });
+
+        it('should handle French "près de" delimiter (Canada)', () => {
+            const result = formatGaugeName('PETITE RIVIÈRE CASCAPÉDIA PRÈS DE NEW RICHMOND', 'EC');
+            expect(result.name).toBe('Petite Rivière Cascapédia');
+            expect(result.section).toBe('Près de New Richmond');
+        });
+
+        it('should handle "stn" abbreviation for station', () => {
+            const result = formatGaugeName('RIVER GAUGE STN 5', 'USGS');
+            expect(result.name).toBe('River Gauge Station 5');
+        });
+    });
 });
 
 import { formatStateCode } from '../formatting';

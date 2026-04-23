@@ -17,7 +17,7 @@ export function formatGaugeName(name: string, provider?: string): { name: string
     return formatGenericName(name);
 }
 
-const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr', 'be', 'mi', 'km', 'en', 'aval', 'amont', 'du', 'barrage', 'la', 'le', 'de', 'des', 'les', 'aux', 'au', "d'", "l'"]);
+const lowercaseWords = new Set(['at', 'near', 'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'in', 'to', 'of', 'by', 'as', 'above', 'below', 'blw', 'abv', 'nr', 'be', 'mi', 'km', 'en', 'aval', 'amont', 'du', 'barrage', 'la', 'le', 'de', 'des', 'les', 'aux', 'au', "d'", "l'", 'into', 'between']);
 
 const expansions: Record<string, string> = {
     nr: 'near',
@@ -27,9 +27,10 @@ const expansions: Record<string, string> = {
     ab: 'above',
     br: 'branch',
     cr: 'creek',
-    crk: 'Creek',
-    rd: 'Road',
-    st: 'St',
+    ck: 'creek',
+    crk: 'creek',
+    rd: 'road',
+    st: 'st',
     gs: 'Gauging Station',
     ds: 'Downstream',
     us: 'Upstream',
@@ -157,7 +158,7 @@ function splitNameAndSection(fullName: string, delimiters: string[]): { name: st
 
 function formatUSGSName(name: string): { name: string; section?: string } {
     const formatted = titleCase(name, true);
-    const delimiters = [' at ', ' near ', ' in ', ' on ', ' above ', ' below ', ' upstream ', ' downstream ', ' into '];
+    const delimiters = [' at ', ' near ', ' in ', ' on ', ' above ', ' below ', ' upstream ', ' downstream ', ' into ', ' between '];
     const result = splitNameAndSection(formatted, delimiters);
 
     // Fallback: splitting at the first comma if it follows a river descriptor
@@ -182,7 +183,7 @@ function formatUSGSName(name: string): { name: string; section?: string } {
 function formatCanadaName(name: string): { name: string; section?: string } {
     const formatted = titleCase(name);
     // Include French delimiters for Canadian sites
-    const delimiters = [' at ', ' near ', ' in ', ' on ', ' à ', ' a ', ' en aval ', ' en amont ', ' près de ', ' pres de '];
+    const delimiters = [' at ', ' near ', ' in ', ' on ', ' près de ', ' en aval de ', ' en amont de ', ' en aval ', ' en amont ', ' à ', ' a ', ' vers ', ' into ', ' between '];
     return splitNameAndSection(formatted, delimiters);
 }
 
@@ -206,13 +207,13 @@ function formatUKIrelandName(name: string): { name: string; section?: string } {
     }
 
     const formatted = titleCase(processedName);
-    const delimiters = [' at ', ' near '];
+    const delimiters = [' at ', ' near ', ' in ', ' on ', ' into ', ' between '];
     return splitNameAndSection(formatted, delimiters);
 }
 
 function formatGenericName(name: string): { name: string; section?: string } {
     const formatted = titleCase(name, true);
-    const delimiters = [' at ', ' near ', ' above ', ' below '];
+    const delimiters = [' at ', ' near ', ' above ', ' below ', ' in ', ' on ', ' into ', ' between '];
     return splitNameAndSection(formatted, delimiters);
 }
 
