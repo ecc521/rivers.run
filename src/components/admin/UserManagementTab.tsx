@@ -5,7 +5,7 @@ import { fetchAPI } from '../../services/api';
 
 export default function UserManagementTab() {
   const { isSuperAdmin } = useAuth();
-  const { alert, confirm, prompt } = useModal();
+  const { alert, confirm, promptEmail } = useModal();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState<'email' | 'uid'>('email');
   const [loading, setLoading] = useState(false);
@@ -92,10 +92,9 @@ export default function UserManagementTab() {
 
   const handleSendEmail = async () => {
     if (!userData) return;
-    const body = await prompt("Enter email message body:");
-    if (!body) return;
-    const subject = await prompt("Enter email subject:", "Message from Rivers.run Admin");
-    if (!subject) return;
+    
+    const emailData = await promptEmail(`Compose an email to ${userData.email}. This will be sent from the rivers.run system address.`);
+    if (!emailData || !emailData.subject || !emailData.body) return;
 
     setLoading(true);
     try {
@@ -103,8 +102,8 @@ export default function UserManagementTab() {
         method: 'POST',
         body: JSON.stringify({ 
           to: userData.email,
-          subject,
-          body
+          subject: emailData.subject,
+          body: emailData.body
         })
       });
       await alert("Email sent successfully!");

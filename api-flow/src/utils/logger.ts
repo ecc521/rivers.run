@@ -25,9 +25,9 @@ export async function logToD1(
 
 /**
  * Prunes old logs to stay within reasonable storage limits.
- * Default cap is 10,000 entries.
+ * Default cap is 30,000 entries.
  */
-export async function pruneLogs(env: Env, cap: number = 10000) {
+export async function pruneLogs(env: Env, cap: number = 30000) {
     try {
         await env.DB.prepare(`
             DELETE FROM worker_logs 

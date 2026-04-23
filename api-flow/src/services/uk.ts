@@ -1,6 +1,7 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
+import { logToD1 } from '../utils/logger';
 
 /**
  * UK Environment Agency (EA) Gauge Data Service
@@ -14,7 +15,7 @@ export const ukProvider: GaugeProvider = {
         hasSiteListing: true
     },
 
-    async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
+    async getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>> {
         const results: Record<string, GaugeReading> = {};
         const url = "https://environment.data.gov.uk/flood-monitoring/data/readings?latest=true";
         
@@ -64,13 +65,18 @@ export const ukProvider: GaugeProvider = {
                 }
             }
         } catch (e: unknown) {
-             console.error("UK getLatest Failed:", e);
+             const errorMsg = "UK getLatest Failed";
+             if (env) {
+                 await logToD1(env, "WARN", "uk", errorMsg, e);
+             } else {
+                 console.error(errorMsg, e);
+             }
         }
         
         return results;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {
         const results: Record<string, GaugeHistory> = {};
         const maxTime = endTs ?? Date.now();
         const durationMs = maxTime - startTs;
@@ -121,7 +127,11 @@ export const ukProvider: GaugeProvider = {
                     };
 
                 } catch (_e) {
-                    console.warn(`UK history fetch failed for ${stationId}`, _e);
+                    if (env) {
+                        await logToD1(env, "WARN", "uk", `UK history fetch failed for ${stationId}`, _e);
+                    } else {
+                        console.warn(`UK history fetch failed for ${stationId}`, _e);
+                    }
                 }
             }
         };

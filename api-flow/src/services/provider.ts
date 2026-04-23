@@ -51,14 +51,14 @@ export interface GaugeProvider {
     /** 
      * Get the latest single reading (and its timestamp) for the given sites. 
      */
-    getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>>;
+    getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>>;
 
     /** 
      * Get historical (or forecast) readings between startTs and endTs.
      * If endTs is not provided, fetch up to the current latest reading.
      * If includeForecast is true, append forecast data where available.
      */
-    getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean): Promise<Record<string, GaugeHistory>>;
+    getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>>;
 
     /** 
      * Get a listing of available gauge sites and their coordinates for the given site codes.

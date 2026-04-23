@@ -1,6 +1,7 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
+import { logToD1 } from '../utils/logger';
 
 /**
  * Ireland (WaterLevel.ie / OPW) Gauge Data Service
@@ -27,7 +28,7 @@ export const irelandProvider: GaugeProvider = {
         hasSiteListing: true
     },
 
-    async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
+    async getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>> {
         const results: Record<string, GaugeReading> = {};
         const url = "https://waterlevel.ie/geojson/latest/";
         
@@ -56,12 +57,17 @@ export const irelandProvider: GaugeProvider = {
                 }
             }
         } catch (e: unknown) {
-            console.error("Ireland getLatest Failed:", e);
+            const errorMsg = "Ireland getLatest Failed";
+            if (env) {
+                await logToD1(env, "WARN", "ireland", errorMsg, e);
+            } else {
+                console.error(errorMsg, e);
+            }
         }
         return results;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {
         const maxTime = endTs ?? Date.now();
         const durationMs = maxTime - startTs;
         const period = durationMs > 1000 * 60 * 60 * 24 * 7 ? "month" : "week";
@@ -112,7 +118,11 @@ export const irelandProvider: GaugeProvider = {
                     };
 
                 } catch (e) {
-                    console.warn(`Ireland history fetch failed for ${stationId}`, e);
+                    if (env) {
+                        await logToD1(env, "WARN", "ireland", `Ireland history fetch failed for ${stationId}`, e);
+                    } else {
+                        console.warn(`Ireland history fetch failed for ${stationId}`, e);
+                    }
                 }
             }
         };

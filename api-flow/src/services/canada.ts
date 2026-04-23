@@ -176,7 +176,7 @@ export const ecProvider: GaugeProvider = {
         hasSiteListing: true
     },
 
-    async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
+    async getLatest(siteCodes: string[], _env?: any): Promise<Record<string, GaugeReading>> {
         const results: Record<string, GaugeReading> = {};
         const startTs = Date.now() - (1000 * 60 * 60 * 6); // 6 hours
         const endTs = Date.now() + 1000 * 60 * 60 * 24; // buffer
@@ -216,7 +216,7 @@ export const ecProvider: GaugeProvider = {
         return results;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, _env?: any): Promise<Record<string, GaugeHistory>> {
         const maxTime = endTs ?? Date.now();
         const results: Record<string, GaugeHistory> = {};
 

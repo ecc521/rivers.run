@@ -17,12 +17,39 @@ export const DEFAULT_STATE_MAP: Record<string, CountryCode[]> = {
   "WV": ["usa"], "WY": ["usa"], "DC": ["usa"], "PR": ["usa"], "VI": ["usa"], "GU": ["usa"],
   // EC (Formerly Canada)
   "AB": ["ec"], "BC": ["ec"], "MB": ["ec"], "NB": ["ec"], "NL": ["ec"], "NS": ["ec"],
-  "ON": ["ec"], "PE": ["ec"], "QC": ["ec"], "SK": ["ec"], "NT": ["ec"], "YT": ["ec"], "NU": ["ec"],
-  // Common European / Others
-  "DE": ["usa"],
-  "IE": ["uk_ireland"],
-  "UK": ["uk_ireland"]
+  "ON": ["ec"], "PE": ["ec"], "QC": ["ec"], "SK": ["ec"], "NT": ["ec"], "YT": ["ec"], "NU": ["ec"]
 };
+
+/**
+ * Static mapping of ISO 3166-1 alpha-2 codes to full country names.
+ */
+export const COUNTRY_ISO_MAP: Record<string, string> = {
+  "US": "United States",
+  "CA": "Canada",
+  "GB": "United Kingdom",
+  "IE": "Ireland",
+  "FR": "France",
+  "DE": "Germany",
+  "NZ": "New Zealand",
+  "AU": "Australia",
+  "MX": "Mexico",
+  "CR": "Costa Rica",
+  "CO": "Colombia",
+  "PE": "Peru",
+  "EC": "Ecuador",
+  "CL": "Chile",
+  "ZA": "South Africa",
+  "IT": "Italy",
+  "CH": "Switzerland",
+  "AT": "Austria",
+  "NO": "Norway",
+  "ES": "Spain"
+};
+
+export function getCountryISOStaticName(code: string): string {
+    return COUNTRY_ISO_MAP[code.toUpperCase()] || code;
+}
+
 export const COUNTRY_NAME_MAP: Record<string, string> = {
   "global": "All Countries",
   "usa": "United States",
@@ -50,10 +77,8 @@ export const STATE_NAME_MAP: Record<string, string> = {
   "MS": "Mississippi", "MT": "Montana", "NC": "North Carolina", "ND": "North Dakota", "NE": "Nebraska", "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico",
   "NV": "Nevada", "NY": "New York", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
   "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VA": "Virginia", "VT": "Vermont", "WA": "Washington", "WI": "Wisconsin",
-  "WV": "West Virginia", "WY": "Wyoming", "DC": "District of Columbia",
-  "AB": "Alberta", "BC": "British Columbia", "MB": "Manitoba", "NB": "New Brunswick", "NL": "Newfoundland and Labrador", "NS": "Nova Scotia",
-  "ON": "Ontario", "PE": "Prince Edward Island", "QC": "Quebec", "SK": "Saskatchewan", "NT": "Northwest Territories", "YT": "Yukon", "NU": "Nunavut",
-  "IE": "Ireland", "UK": "United Kingdom", "DE": "Germany"
+  "WV": "West Virginia", "WY": "Wyoming", "DC": "District of Columbia", "DE": "Delaware", "PR": "Puerto Rico", "VI": "Virgin Islands", "GU": "Guam",
+  "ON": "Ontario", "PE": "Prince Edward Island", "QC": "Quebec", "SK": "Saskatchewan", "NT": "Northwest Territories", "YT": "Yukon", "NU": "Nunavut"
 };
 
 export function getStateName(code: string): string {
@@ -107,9 +132,16 @@ export function getRiverCountries(river: RiverData): Set<CountryCode> {
     const explicitCountries = river.countries.toUpperCase().split(/[ ,]+/).filter(Boolean);
     explicitCountries.forEach(c => {
        const mapped = c.toLowerCase();
-       if (mapped === 'usa' || mapped === 'us') result.add('usa');
-       else if (mapped === 'ca' || mapped === 'ec') result.add('ec');
-       else if (mapped === 'gb' || mapped === 'uk' || mapped === 'ie') result.add('uk_ireland');
+        if (mapped === 'usa' || mapped === 'us') result.add('usa');
+        else if (mapped === 'ca') result.add('ec');
+        else if (mapped === 'gb' || mapped === 'uk' || mapped === 'ie') result.add('uk_ireland');
+        else if (mapped === 'ec') {
+           // 'ec' is ambiguous: ISO for Ecuador but internal code for Canada. 
+           // In the context of the countries field, we treat it as global/other for now 
+           // to avoid mis-identifying Ecuador rivers as Canadian.
+           result.add('global'); 
+        }
+
        else result.add('global');
     });
   }
@@ -118,6 +150,10 @@ export function getRiverCountries(river: RiverData): Set<CountryCode> {
   stateList.forEach(s => {
     const defaults = DEFAULT_STATE_MAP[s];
     if (defaults) defaults.forEach(c => result.add(c));
+    // Explicit handle for country codes accidentally put in states field
+    if (s === "IE" || s === "UK" || s === "GB") result.add("uk_ireland");
+    if (s === "DE") result.add("usa"); // Preserve mapping for Delaware
+
   });
 
   // 2. Fallbacks for full country names in state field

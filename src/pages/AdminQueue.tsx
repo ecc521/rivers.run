@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fetchAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -22,25 +22,26 @@ export default function AdminQueue() {
   const [loading, setLoading] = useState(true);
   const [adminQueueAlerts, setAdminQueueAlerts] = useState<boolean>(false);
 
+  const refreshQueue = useCallback(async (silent = false) => {
+    if (!isModerator || !user) return;
+    try {
+      const items = await fetchAPI("/admin/queue", {}, user);
+      setQueue(items.map((item: any) => ({ ...item, queueId: item.suggestion_id })));
+    } catch (err: unknown) {
+      if (err instanceof Error) console.error("Failed to fetch queue", err.message);
+      if (!silent) await alert("Failed to load review queue. Ensure you have permissions.");
+    }
+    setLoading(false);
+  }, [isModerator, user, alert]);
+
   useEffect(() => {
     if (!authLoading && !isModerator) {
       navigate("/");
       return;
     }
 
-    async function fetchQueue() {
-      try {
-        const items = await fetchAPI("/admin/queue", {}, user);
-        setQueue(items.map((item: any) => ({ ...item, queueId: item.suggestion_id })));
-      } catch (err: unknown) {
-        if (err instanceof Error) console.error("Failed to fetch queue", err.message);
-        await alert("Failed to load review queue. Ensure you have permissions.");
-      }
-      setLoading(false);
-    }
-
     if (isModerator && user) {
-      fetchQueue();
+      refreshQueue(false);
       // Fetch notification preference from Cloudflare API
       fetchAPI("/user/settings", {}, user).then(settings => {
         if (settings && settings.notifications) {
@@ -48,7 +49,24 @@ export default function AdminQueue() {
         }
       }).catch(e => console.error("Could not fetch user settings:", e));
     }
-  }, [isModerator, user, authLoading, navigate, alert]);
+  }, [isModerator, user, authLoading, navigate, activeTab, refreshQueue]);
+
+  useEffect(() => {
+    if (!isModerator || !user) return;
+
+    const handleFocus = () => refreshQueue(true);
+    window.addEventListener("focus", handleFocus);
+
+    const bc = new BroadcastChannel("admin_updates");
+    bc.onmessage = (event) => {
+      if (event.data === "refresh") refreshQueue(true);
+    };
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      bc.close();
+    };
+  }, [isModerator, user, refreshQueue]);
 
   const toggleAdminAlerts = async (val: boolean) => {
     setAdminQueueAlerts(val);

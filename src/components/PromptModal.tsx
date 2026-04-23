@@ -6,6 +6,7 @@ interface PromptModalProps {
   message: string;
   isAlert?: boolean;
   isPrompt?: boolean;
+  isEmail?: boolean;
   isResolution?: boolean;
   isAnonymous?: boolean;
   onConfirm: (val?: string, notify?: boolean) => void;
@@ -18,24 +19,29 @@ export const PromptModal: React.FC<PromptModalProps> = ({
   message,
   isAlert = false,
   isPrompt = false,
+  isEmail = false,
   isResolution = false,
   isAnonymous = false,
   onConfirm,
   onCancel,
 }) => {
   const [inputValue, setInputValue] = useState("");
+  const [subjectValue, setSubjectValue] = useState("");
+  const [bodyValue, setBodyValue] = useState("");
   const [notify, setNotify] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
       setInputValue("");
+      setSubjectValue("Message from Rivers.run Admin");
+      setBodyValue("");
       setNotify(true);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const showInput = isPrompt || isResolution;
+  const showInput = isPrompt || isResolution || isEmail;
 
   return (
     <div
@@ -93,6 +99,50 @@ export const PromptModal: React.FC<PromptModalProps> = ({
               boxSizing: "border-box"
             }}
           />
+        )}
+
+        {isEmail && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Subject</label>
+              <input
+                type="text"
+                value={subjectValue}
+                onChange={(e) => setSubjectValue(e.target.value)}
+                autoFocus
+                style={{
+                  padding: "10px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--surface-hover)",
+                  color: "var(--text)",
+                  width: "100%",
+                  boxSizing: "border-box"
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Message Body</label>
+              <textarea
+                value={bodyValue}
+                onChange={(e) => setBodyValue(e.target.value)}
+                placeholder="Type your message here..."
+                style={{
+                  padding: "10px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--surface-hover)",
+                  color: "var(--text)",
+                  width: "100%",
+                  boxSizing: "border-box",
+                  minHeight: '160px',
+                  resize: 'vertical',
+                  fontSize: '14px',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+          </div>
         )}
 
         {isResolution && (
@@ -160,7 +210,13 @@ export const PromptModal: React.FC<PromptModalProps> = ({
             </button>
           )}
           <button
-            onClick={() => onConfirm(showInput && !isAnonymous ? inputValue : undefined, isResolution && !isAnonymous ? notify : undefined)}
+            onClick={() => {
+              if (isEmail) {
+                onConfirm({ subject: subjectValue, body: bodyValue } as any);
+              } else {
+                onConfirm(showInput && !isAnonymous ? inputValue : undefined, isResolution && !isAnonymous ? notify : undefined);
+              }
+            }}
             style={{
               padding: "8px 16px",
               backgroundColor: "var(--primary)",

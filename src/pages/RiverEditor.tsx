@@ -13,7 +13,7 @@ import { useSettings } from "../context/SettingsContext";
 import { AuthModal } from "../components/AuthModal";
 import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { useModal } from "../context/ModalContext";
-import { ALL_STATE_CODES } from "../utils/regions";
+import { ALL_STATE_CODES, getStateName, getCountryISOStaticName } from "../utils/regions";
 import { RiverHistoryPanel } from "../components/RiverHistoryPanel";
 import { RiverHistoryComparison } from "../components/RiverHistoryComparison";
 import { reconstructHistoricalState } from "../utils/historyUtils";
@@ -356,6 +356,9 @@ export default function RiverEditor() {
           }, user);
           
           await alert("Successfully approved!");
+          const bc = new BroadcastChannel("admin_updates");
+          bc.postMessage("refresh");
+          bc.close();
           navigate("/admin");
       } catch (e: unknown) {
           if (e instanceof Error) await alert(`Failed to approve: ${e.message}`);
@@ -382,6 +385,9 @@ export default function RiverEditor() {
               })
           }, user);
           await alert("Submission completely rejected.");
+          const bc = new BroadcastChannel("admin_updates");
+          bc.postMessage("refresh");
+          bc.close();
           navigate("/admin");
       } catch (e: unknown) {
           if (e instanceof Error) await alert(`Failed to reject: ${e.message}`);
@@ -736,7 +742,11 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
           }} 
         >
            <option value="" disabled>Add Country...</option>
-          {["US", "CA", "GB", "IE", "FR", "DE", "NZ", "AU", "MX", "CR", "CO", "PE", "EC", "CL", "ZA"].filter(st => !(riverData.countries || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
+          {["US", "CA", "GB", "IE", "FR", "DE", "NZ", "AU", "MX", "CR", "CO", "PE", "EC", "CL", "ZA", "IT", "CH", "AT", "NO", "ES"].filter(st => !(riverData.countries || "").includes(st)).map(st => (
+            <option key={st} value={st}>
+              {st} - {getCountryISOStaticName(st)}
+            </option>
+          ))}
         </select>
       </div>
       <div style={{ flex: 1 }}>
@@ -770,7 +780,11 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
           }} 
         >
            <option value="" disabled>Add State...</option>
-          {ALL_STATE_CODES.filter(st => !(riverData.states || "").includes(st)).map(st => <option key={st} value={st}>{st}</option>)}
+          {ALL_STATE_CODES.filter(st => !(riverData.states || "").includes(st)).map(st => (
+            <option key={st} value={st}>
+              {st} - {getStateName(st)}
+            </option>
+          ))}
         </select>
       </div>
     </div>

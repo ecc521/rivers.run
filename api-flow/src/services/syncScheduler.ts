@@ -50,6 +50,19 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
             readings: []
         };
     });
+
+    // Ensure all gauges linked to rivers are also in the map, 
+    // even if they aren't in the registry yet.
+    dbGauges.forEach(fullId => {
+        if (!mergedData[fullId]) {
+            const gid = fullId.includes(":") ? fullId.split(":")[1] : fullId;
+            mergedData[fullId] = {
+                id: gid,
+                name: fullId, // Fallback name
+                readings: []
+            };
+        }
+    });
     
     const providerGroups: Record<string, { linked: string[], registry: string[] }> = {};
     [...new Set([...dbGauges, ...searchableGauges])].forEach(g => {
@@ -77,7 +90,7 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
 
                 if (groups.linked.length > 0) {
                     try {
-                        const data = await provider.getHistory(groups.linked, activeStartTs, Date.now(), true);
+                        const data = await provider.getHistory(groups.linked, activeStartTs, Date.now(), true, env);
                         linkedCount = Object.keys(data).length;
                         Object.entries(data).forEach(([id, history]) => {
                             const fullId = `${prefix}:${id}`;
@@ -96,7 +109,7 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
 
                 if (groups.registry.length > 0) {
                     try {
-                        const data = await provider.getLatest(groups.registry);
+                        const data = await provider.getLatest(groups.registry, env);
                         registryCount = Object.keys(data).length;
                         Object.entries(data).forEach(([id, reading]) => {
                             const fullId = `${prefix}:${id}`;

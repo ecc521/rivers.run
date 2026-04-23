@@ -786,14 +786,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
          }
     }
 
-    const authorSettings = await c.env.DB.prepare("SELECT settings_json FROM users WHERE user_id = ?").bind(suggestion.suggested_by).first();
-    let hideName = false;
-    if (authorSettings && authorSettings.settings_json) {
-        try {
-            const s = typeof authorSettings.settings_json === 'string' ? JSON.parse(authorSettings.settings_json) : authorSettings.settings_json;
-            if (s.hidePublicName) hideName = true;
-        } catch {}
-    }
+
     
     // Preserve Author ID / IP for administrative visibility
     const cleanAuthor = (suggestion as any).suggested_by as string;

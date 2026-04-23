@@ -1,6 +1,7 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
+import { logToD1 } from '../utils/logger';
 
 const states = [
   "al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl", "ga",
@@ -125,7 +126,7 @@ export function processUSGSResponse(obj: any): Record<string, GaugeHistory> {
 
 // --- HELPERS FOR fetchUSGSBatch ---
 
-async function fetchAndProcessSingleBatch(batch: string[], timeQuery: string, allSites: Record<string, GaugeHistory>) {
+async function fetchAndProcessSingleBatch(batch: string[], timeQuery: string, allSites: Record<string, GaugeHistory>, env?: any) {
     const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${batch.join(",")}${timeQuery}&parameterCd=00060,00065,00010,00011,00045&siteStatus=all`;
     let success = false;
     let attempts = 0;
@@ -144,7 +145,12 @@ async function fetchAndProcessSingleBatch(batch: string[], timeQuery: string, al
             attempts++;
             const msg = e instanceof Error ? e.message : String(e);
             if (attempts > MAX_RETRIES) {
-                console.error(`USGS Fetch failed completely for batch after ${attempts} attempts, skipping: ${msg}`);
+                const errorMsg = `USGS Fetch failed completely for batch (${batch.length} sites) after ${attempts} attempts: ${msg}`;
+                if (env) {
+                    await logToD1(env, "WARN", "usgs", errorMsg, { url });
+                } else {
+                    console.warn(errorMsg);
+                }
             } else {
                 console.warn(`USGS Fetch failed (Attempt ${attempts}/${MAX_RETRIES + 1}), backing off... Error: ${msg}`);
                 await new Promise(r => setTimeout(r, attempts * 3000));
@@ -153,7 +159,7 @@ async function fetchAndProcessSingleBatch(batch: string[], timeQuery: string, al
     }
 }
 
-async function fetchUSGSBatch(siteCodes: string[], timeQuery: string): Promise<Record<string, GaugeHistory>> {
+async function fetchUSGSBatch(siteCodes: string[], timeQuery: string, env?: any): Promise<Record<string, GaugeHistory>> {
     const BATCH_SIZE = 150;
     const allSites: Record<string, GaugeHistory> = {};
     const batches: string[][] = [];
@@ -173,7 +179,7 @@ async function fetchUSGSBatch(siteCodes: string[], timeQuery: string): Promise<R
     const worker = async () => {
         while (batchIndex < batches.length) {
             const batch = batches[batchIndex++];
-            await fetchAndProcessSingleBatch(batch, timeQuery, allSites);
+            await fetchAndProcessSingleBatch(batch, timeQuery, allSites, env);
         }
     };
 
@@ -257,8 +263,8 @@ export const usgsProvider: GaugeProvider = {
         hasSiteListing: true
     },
 
-    async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
-        const histories = await fetchUSGSBatch(siteCodes, "&period=PT4H"); // fetch recent 4 hours
+    async getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>> {
+        const histories = await fetchUSGSBatch(siteCodes, "&period=PT4H", env); // fetch recent 4 hours
         const latest: Record<string, GaugeReading> = {};
         for (const [id, history] of Object.entries(histories)) {
             if (history.readings.length > 0) {
@@ -268,13 +274,27 @@ export const usgsProvider: GaugeProvider = {
         return latest;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
-        const startIso = new Date(startTs).toISOString();
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {
+        const now = Date.now();
+        // If the request is for the last 30 days and ends "now" (within 10 mins), use period.
+        // USGS period is much more robust and faster for recent data.
+        const isUntilNow = !endTs || Math.abs(endTs - now) < 600000;
+        const durationMs = (endTs || now) - startTs;
+        
+        if (isUntilNow && durationMs > 0 && durationMs < 30 * 24 * 60 * 60 * 1000) {
+            const hours = Math.ceil(durationMs / 3600000);
+            return fetchUSGSBatch(siteCodes, `&period=PT${hours}H`, env);
+        }
+
+        // Standard formatting for older historical queries. 
+        // USGS NWIS prefers YYYY-MM-DDTHH:mm:ss (no millis, no Z if offset not specified).
+        const toUSGSDate = (ts: number) => new Date(ts).toISOString().split('.')[0];
+        
         const timeQuery = endTs 
-            ? `&startDT=${startIso}&endDT=${new Date(endTs).toISOString()}`
-            : `&startDT=${startIso}`;
+            ? `&startDT=${toUSGSDate(startTs)}&endDT=${toUSGSDate(endTs)}`
+            : `&startDT=${toUSGSDate(startTs)}`;
             
-        return fetchUSGSBatch(siteCodes, timeQuery);
+        return fetchUSGSBatch(siteCodes, timeQuery, env);
     },
 
     async getSiteListing(siteCodes: string[]): Promise<GaugeSite[]> {

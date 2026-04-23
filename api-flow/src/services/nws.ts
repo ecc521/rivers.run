@@ -1,6 +1,7 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
+import { logToD1 } from '../utils/logger';
 
 // Internal helper for mapping NWPS data arrays to GaugeReadings (exported for testing)
 export function parseNWSeries(data: any, observations: any[], minTime: number, maxTime: number, isForecast: boolean): Map<number, GaugeReading> {
@@ -56,9 +57,9 @@ export const nwsProvider: GaugeProvider = {
         hasSiteListing: true
     },
 
-    async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
+    async getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>> {
         // Fetch 3 hours to ensure we get at least one recent reading
-        const histories = await this.getHistory(siteCodes, Date.now() - 10800000, Date.now(), false);
+        const histories = await this.getHistory(siteCodes, Date.now() - 10800000, Date.now(), false, env);
         const results: Record<string, GaugeReading> = {};
         
         Object.entries(histories).forEach(([id, history]) => {
@@ -70,7 +71,7 @@ export const nwsProvider: GaugeProvider = {
         return results;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean): Promise<Record<string, GaugeHistory>> {
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {
         const maxTime = endTs ?? Date.now();
         const results: Record<string, GaugeHistory> = {};
         
@@ -130,7 +131,12 @@ export const nwsProvider: GaugeProvider = {
                     } catch (_e: unknown) {
                         attempts++;
                         if (attempts > 2) {
-                            console.error(`NWPS Fetch failed for ${site}`, _e);
+                            const errorMsg = `NWPS Fetch failed for ${site}`;
+                            if (env) {
+                                await logToD1(env, "WARN", "nws", errorMsg, _e);
+                            } else {
+                                console.error(errorMsg, _e);
+                            }
                         } else {
                             await new Promise(r => setTimeout(r, attempts * 2000));
                         }

@@ -42,6 +42,17 @@ describe("regions", () => {
       const countries = getRiverCountries(river);
       expect(countries.has("global")).toBe(true);
     });
+
+    it("identifies UK/Ireland from country code in states field", () => {
+      const river = { states: "IE" } as RiverData;
+      const countries = getRiverCountries(river);
+      expect(countries.has("uk_ireland")).toBe(true);
+      
+      const riverUK = { states: "UK" } as RiverData;
+      const countriesUK = getRiverCountries(riverUK);
+      expect(countriesUK.has("uk_ireland")).toBe(true);
+    });
+
   });
 
 
