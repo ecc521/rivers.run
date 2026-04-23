@@ -21,8 +21,9 @@ export default function UserManagementTab() {
     if (!searchTerm.trim()) return;
     setLoading(true);
     setUserData(null);
+    const normalizedTerm = searchType === 'email' ? searchTerm.trim().toLowerCase() : searchTerm.trim();
     try {
-      const results = await fetchAPI(`/admin/users?q=${encodeURIComponent(searchTerm.trim())}`);
+      const results = await fetchAPI(`/admin/users?q=${encodeURIComponent(normalizedTerm)}`);
       if (results && results.length > 0) {
         setUserData(results[0]);
       } else {

@@ -863,7 +863,7 @@ app.openapi(getUserSettingsRoute, async (c) => {
         await c.env.DB.prepare(`
             INSERT INTO users (user_id, display_name, email, role, updated_at) 
             VALUES (?, ?, ?, 'user', ?)
-        `).bind(user.user_id, user.name || "Unknown Paddler", user.email || "", Math.floor(Date.now() / 1000)).run();
+        `).bind(user.user_id, user.name || "Unknown Paddler", (user.email || "").toLowerCase(), Math.floor(Date.now() / 1000)).run();
         
         return c.json({
             role: "user",
@@ -1437,7 +1437,7 @@ app.openapi(getAdminUsersRoute, async (c) => {
         FROM users 
         WHERE email = ? OR user_id = ?
         LIMIT 50
-    `).bind(q, q).all();
+    `).bind(q.toLowerCase(), q).all();
     
     return c.json(results as any);
 });
@@ -1684,7 +1684,7 @@ app.openapi(createReportRoute, async (c) => {
     await c.env.DB.prepare(`
         INSERT INTO user_reports (target_id, type, reason, reported_by, reporter_email, status, created_at) 
         VALUES (?, ?, ?, ?, ?, 'pending', ?)
-    `).bind(validated.target_id, validated.type, validated.reason, authorId, validated.email || null, Math.floor(Date.now() / 1000)).run();
+    `).bind(validated.target_id, validated.type, validated.reason, authorId, (validated.email || "").toLowerCase() || null, Math.floor(Date.now() / 1000)).run();
 
     const { results: admins } = await c.env.DB.prepare(`
         SELECT email FROM users 

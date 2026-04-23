@@ -127,7 +127,7 @@ CREATE INDEX idx_suggestions_created_at ON river_suggestions(created_at);
 CREATE TABLE users (
     user_id TEXT PRIMARY KEY,        -- Firebase Auth UID
     display_name TEXT,
-    email TEXT,
+    email TEXT COLLATE NOCASE,
     role TEXT DEFAULT 'user',
     settings_json JSON,              -- Additional settings (for frontend)
     notifications_enabled INTEGER DEFAULT 1,
@@ -160,7 +160,7 @@ CREATE TABLE user_reports (
     type TEXT NOT NULL,
     reason TEXT NOT NULL,
     reported_by TEXT,
-    reporter_email TEXT,
+    reporter_email TEXT COLLATE NOCASE,
     status TEXT DEFAULT 'pending',
     created_at INTEGER NOT NULL
 );

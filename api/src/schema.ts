@@ -104,7 +104,7 @@ export const RoleUpdatePayload = z.object({
 export const UserManagementSchema = z.object({
   user_id: z.string().openapi({ type: 'string' }),
   display_name: z.string().nullable().openapi({ type: 'string' }),
-  email: z.string().nullable().openapi({ type: 'string' }),
+  email: z.string().nullable().transform(v => v?.toLowerCase() || null).openapi({ type: 'string' }),
   role: UserRoleSchema,
   updated_at: z.number().optional().openapi({ type: 'number' })
 }).openapi({ type: 'object' });
@@ -115,7 +115,7 @@ export const UserReportPayload = z.object({
   target_id: requiredString(50),
   type: z.enum(["river", "list"]).openapi({ type: 'string' }),
   reason: requiredString(1000),
-  email: limitString(255)
+  email: limitString(255).transform(v => v?.toLowerCase() || null)
 }).openapi({ type: 'object' });
 
 export const RiverSchema = z.object({
