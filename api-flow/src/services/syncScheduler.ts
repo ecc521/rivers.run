@@ -47,6 +47,8 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
             name: meta.name,
             lat: sanitizeCoordinate(meta.lat),
             lon: sanitizeCoordinate(meta.lon),
+            state: meta.state,
+            country: meta.country,
             readings: []
         };
     });

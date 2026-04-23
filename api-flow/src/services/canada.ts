@@ -277,7 +277,8 @@ export const ecProvider: GaugeProvider = {
                                  name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
                                  lon: feat.geometry?.coordinates?.[0] || 0,
                                  lat: feat.geometry?.coordinates?.[1] || 0,
-                                 state: feat.properties?.PROVINCE_TERRITORY_CODE || getProvincesForSite(site)[0]
+                                 state: feat.properties?.PROVINCE_TERRITORY_CODE || getProvincesForSite(site)[0],
+                                 country: "CA"
                              });
                          }
                      }

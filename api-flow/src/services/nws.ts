@@ -162,13 +162,15 @@ export const nwsProvider: GaugeProvider = {
                          if (res.ok) {
                              const data: any = await res.json();
                              if (data.latitude !== undefined && data.longitude !== undefined) {
-                                 const formatted = formatGaugeName(data.name || site, "NWS");
-                                 results.push({
-                                     id: site,
-                                     name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
-                                     lat: data.latitude,
-                                     lon: data.longitude
-                                 });
+                                  const formatted = formatGaugeName(data.name || site, "NWS");
+                                  results.push({
+                                      id: site,
+                                      name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
+                                      lat: data.latitude,
+                                      lon: data.longitude,
+                                      state: formatStateCode(data.state?.abbreviation, "NWS"),
+                                      country: "US"
+                                  });
                              }
                          }
                  } catch (_e) {
