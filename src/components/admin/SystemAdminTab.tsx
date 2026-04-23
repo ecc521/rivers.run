@@ -8,6 +8,13 @@ export default function SystemAdminTab() {
   const [loadingWorker, setLoadingWorker] = useState(false);
   const [workerNextOffset, setWorkerNextOffset] = useState<number | null>(null);
   const [auditNextOffset, setAuditNextOffset] = useState<number | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (id: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   async function fetchAuditLogs(offset = 0) {
     setLoadingAudit(true);
@@ -120,7 +127,22 @@ export default function SystemAdminTab() {
             renderRow={(log) => (
                 <tr key={`${log.id}-${log.timestamp}`} style={{ borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
                     <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td style={{ padding: '8px 12px' }}>{log.adminUid ? log.adminUid.substring(0, 8) : 'Unknown'}</td>
+                    <td style={{ padding: '8px 12px' }}>
+                        {log.adminUid ? (
+                            <span 
+                                onClick={() => handleCopy(log.adminUid)}
+                                title="Click to copy full ID"
+                                style={{ 
+                                    cursor: 'pointer', 
+                                    textDecoration: 'underline dotted',
+                                    color: copiedId === log.adminUid ? 'var(--primary)' : 'inherit',
+                                    transition: 'color 0.2s'
+                                }}
+                            >
+                                {copiedId === log.adminUid ? 'Copied!' : log.adminUid.substring(0, 8)}
+                            </span>
+                        ) : 'Unknown'}
+                    </td>
                     <td style={{ padding: '8px 12px', fontWeight: 'bold' }}>{log.action}</td>
                     <td style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--text-muted)' }}>{log.targetUid}</td>
                 </tr>

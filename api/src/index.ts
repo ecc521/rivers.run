@@ -1576,12 +1576,22 @@ app.openapi(adminSendEmailRoute, async (c) => {
     const caller = c.get("user");
     const { to, subject, body } = await c.req.json();
 
+    const adminFooterText = `\n\n---\nThis email was sent by a rivers.run admin. Views expressed in this message do not necessarily reflect those of rivers.run. Any contract express or implied is void. Responses to this message will be sent to the server administrator.`;
+    const adminFooterHtml = `
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;">
+        <p style="font-size: 12px; color: #64748b; line-height: 1.6;">
+            This email was sent by a <strong>rivers.run admin</strong>. Views expressed in this message do not necessarily reflect those of rivers.run. Any contract express or implied is void. Responses to this message will be sent to the server administrator.
+        </p>
+    `;
+
     await sendEmail({
         env: c.env as any,
         to,
         subject,
-        text: body
+        text: body + adminFooterText,
+        html: `<div style="font-family: sans-serif; white-space: pre-wrap; color: #1e293b;">${body}</div>` + adminFooterHtml
     });
+
 
     c.executionCtx.waitUntil(
         c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)")

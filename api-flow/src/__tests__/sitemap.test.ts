@@ -120,11 +120,11 @@ describe('Sitemap Generation Engine', () => {
         expect(mockEnv.FLOW_STORAGE.put).not.toHaveBeenCalledWith("sitemap.xml", expect.anything(), expect.any(Object));
     });
 
-    it('should generate sitemap on monthly recompile', async () => {
+    it('should generate sitemap on weekly recompile', async () => {
         const mockEnv = createMockEnv([], [], {});
-        const monthlyEvent = { cron: "0 0 1 * *", type: "scheduled", scheduledTime: Date.now() };
+        const weeklyEvent = { cron: "0 0 * * 0", type: "scheduled", scheduledTime: Date.now() };
 
-        await apiFlow.scheduled(monthlyEvent as any, mockEnv as any, mockCtx as any);
+        await apiFlow.scheduled(weeklyEvent as any, mockEnv as any, mockCtx as any);
 
         expect(mockEnv.FLOW_STORAGE.put).toHaveBeenCalledWith("sitemap.xml", expect.anything(), expect.any(Object));
     });

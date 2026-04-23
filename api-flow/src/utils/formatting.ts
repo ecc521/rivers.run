@@ -81,8 +81,9 @@ function titleCase(name: string, isUS: boolean = false): string {
             const upperToken = token.toUpperCase();
             const lowerToken = token.toLowerCase();
             
-            const prevToken = i > 0 ? tokens[i - 1] : "";
-            const followsComma = prevToken.includes(',');
+            const prevTokens = tokens.slice(0, i).reverse();
+            const lastNonSpace = prevTokens.find(t => /\S/.test(t)) || "";
+            const followsComma = lastNonSpace.includes(',');
 
             const expansion = expansions[lowerToken];
             if (expansion) {
@@ -207,7 +208,7 @@ function formatUKIrelandName(name: string): { name: string; section?: string } {
 }
 
 function formatGenericName(name: string): { name: string; section?: string } {
-    const formatted = titleCase(name);
+    const formatted = titleCase(name, true);
     const delimiters = [' at ', ' near ', ' above ', ' below '];
     return splitNameAndSection(formatted, delimiters);
 }
