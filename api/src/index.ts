@@ -581,6 +581,31 @@ app.openapi(getAdminLogsRoute, async (c) => {
     return c.json({ results, nextOffset });
 });
 
+const getAdminSecurityLogsRoute = createRoute({
+    middleware: [firebaseAuthMiddleware, requireAdmin],
+    method: 'get',
+    path: '/admin/security-logs',
+    summary: 'Fetch administrative security logs (bans, role changes)',
+    security: [{ bearerAuth: [] }],
+    request: {
+        query: z.object({
+            limit: z.string().optional().openapi({ param: { name: 'limit', in: 'query' } }),
+            offset: z.string().optional().openapi({ param: { name: 'offset', in: 'query' } })
+        })
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ results: GenericArraySchema, nextOffset: z.number().nullable() }) } }, description: 'Security logs' }
+    }
+});
+
+app.openapi(getAdminSecurityLogsRoute, async (c) => {
+    const limit = Math.min(parseInt(c.req.query("limit") || "50"), 100);
+    const offset = parseInt(c.req.query("offset") || "0");
+    const { results } = await c.env.DB.prepare("SELECT * FROM admin_audit_log ORDER BY created_at DESC LIMIT ? OFFSET ?").bind(limit, offset).all();
+    const nextOffset = results.length === limit ? offset + limit : null;
+    return c.json({ results, nextOffset });
+});
+
 const getWorkerLogsRoute = createRoute({
     middleware: [firebaseAuthMiddleware, requireAdmin],
     method: 'get',

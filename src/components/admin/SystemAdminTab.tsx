@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchAPI } from '../../services/api';
 
 export default function SystemAdminTab() {
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [riverLogs, setRiverLogs] = useState<any[]>([]);
+  const [securityLogs, setSecurityLogs] = useState<any[]>([]);
   const [workerLogs, setWorkerLogs] = useState<any[]>([]);
-  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [loadingRiver, setLoadingRiver] = useState(false);
+  const [loadingSecurity, setLoadingSecurity] = useState(false);
   const [loadingWorker, setLoadingWorker] = useState(false);
   const [workerNextOffset, setWorkerNextOffset] = useState<number | null>(null);
-  const [auditNextOffset, setAuditNextOffset] = useState<number | null>(null);
+  const [riverNextOffset, setRiverNextOffset] = useState<number | null>(null);
+  const [securityNextOffset, setSecurityNextOffset] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopy = (id: string) => {
@@ -16,28 +20,53 @@ export default function SystemAdminTab() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  async function fetchAuditLogs(offset = 0) {
-    setLoadingAudit(true);
+  async function fetchRiverLogs(offset = 0) {
+    setLoadingRiver(true);
     try {
       const response = await fetchAPI(`/admin/logs?offset=${offset}`);
       const newLogs = response.results.map((log: any) => ({
-          id: log.log_id || log.history_id, // Normalize ID
-          adminUid: log.changed_by || log.admin_id,
+          id: log.history_id,
+          adminUid: log.changed_by,
           action: log.action_type,
-          targetUid: log.river_id || log.target_id,
-          timestamp: (log.changed_at || log.created_at) * 1000
+          targetUid: log.river_id,
+          timestamp: log.changed_at * 1000
       }));
       
       if (offset === 0) {
-        setAuditLogs(newLogs);
+        setRiverLogs(newLogs);
       } else {
-        setAuditLogs(prev => [...prev, ...newLogs]);
+        setRiverLogs(prev => [...prev, ...newLogs]);
       }
-      setAuditNextOffset(response.nextOffset);
+      setRiverNextOffset(response.nextOffset);
     } catch (e: any) {
-      console.error("Failed to fetch audit logs", e.message);
+      console.error("Failed to fetch river logs", e.message);
     }
-    setLoadingAudit(false);
+    setLoadingRiver(false);
+  }
+
+  async function fetchSecurityLogs(offset = 0) {
+    setLoadingSecurity(true);
+    try {
+      const response = await fetchAPI(`/admin/security-logs?offset=${offset}`);
+      const newLogs = response.results.map((log: any) => ({
+          id: log.log_id,
+          adminUid: log.admin_id,
+          action: log.action_type,
+          targetUid: log.target_id,
+          reason: log.reason,
+          timestamp: log.created_at * 1000
+      }));
+      
+      if (offset === 0) {
+        setSecurityLogs(newLogs);
+      } else {
+        setSecurityLogs(prev => [...prev, ...newLogs]);
+      }
+      setSecurityNextOffset(response.nextOffset);
+    } catch (e: any) {
+      console.error("Failed to fetch security logs", e.message);
+    }
+    setLoadingSecurity(false);
   }
 
   async function fetchWorkerLogs(offset = 0) {
@@ -57,7 +86,8 @@ export default function SystemAdminTab() {
   }
 
   useEffect(() => {
-    fetchAuditLogs();
+    fetchRiverLogs();
+    fetchSecurityLogs();
     fetchWorkerLogs();
   }, []);
 
@@ -113,17 +143,17 @@ export default function SystemAdminTab() {
         )}
       </div>
 
-      {/* Security Audit Log */}
+      {/* Recent River Edits */}
       <div style={{ backgroundColor: "var(--surface)", padding: '24px', borderRadius: '12px', border: "1px solid var(--border)", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0, fontSize: '18px' }}>Security Audit Log</h3>
-          <button onClick={() => fetchAuditLogs(0)} style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>Refresh</button>
+          <h3 style={{ margin: 0, fontSize: '18px' }}>Recent River Edits</h3>
+          <button onClick={() => fetchRiverLogs(0)} style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>Refresh</button>
         </div>
         
         <LogTable 
-            loading={loadingAudit && auditLogs.length === 0} 
-            data={auditLogs} 
-            columns={['Time', 'Admin', 'Action', 'Target']}
+            loading={loadingRiver && riverLogs.length === 0} 
+            data={riverLogs} 
+            columns={['Time', 'Editor', 'Action', 'Target River']}
             renderRow={(log) => (
                 <tr key={`${log.id}-${log.timestamp}`} style={{ borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
                     <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
@@ -144,19 +174,74 @@ export default function SystemAdminTab() {
                         ) : 'Unknown'}
                     </td>
                     <td style={{ padding: '8px 12px', fontWeight: 'bold' }}>{log.action}</td>
-                    <td style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--text-muted)' }}>{log.targetUid}</td>
+                    <td style={{ padding: '8px 12px', fontSize: '11px' }}>
+                        <Link to={`/river/${log.targetUid}`} style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>
+                            {log.targetUid.substring(0, 8)}...
+                        </Link>
+                    </td>
                 </tr>
             )}
         />
 
-        {auditNextOffset !== null && (
+        {riverNextOffset !== null && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
             <button 
-              disabled={loadingAudit}
-              onClick={() => fetchAuditLogs(auditNextOffset)}
+              disabled={loadingRiver}
+              onClick={() => fetchRiverLogs(riverNextOffset)}
               style={{ padding: '8px 16px', backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text)', cursor: 'pointer', fontSize: '13px' }}
             >
-              {loadingAudit ? 'Loading...' : 'Load More Audit Logs'}
+              {loadingRiver ? 'Loading...' : 'Load More Edits'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Administrative Action Log */}
+      <div style={{ backgroundColor: "var(--surface)", padding: '24px', borderRadius: '12px', border: "1px solid var(--border)", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '18px' }}>Administrative Action Log</h3>
+          <button onClick={() => fetchSecurityLogs(0)} style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>Refresh</button>
+        </div>
+        
+        <LogTable 
+            loading={loadingSecurity && securityLogs.length === 0} 
+            data={securityLogs} 
+            columns={['Time', 'Admin', 'Action', 'Details']}
+            renderRow={(log) => (
+                <tr key={`${log.id}-${log.timestamp}`} style={{ borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
+                    <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td style={{ padding: '8px 12px' }}>
+                        {log.adminUid ? (
+                            <span 
+                                onClick={() => handleCopy(log.adminUid)}
+                                title="Click to copy full ID"
+                                style={{ 
+                                    cursor: 'pointer', 
+                                    textDecoration: 'underline dotted',
+                                    color: copiedId === log.adminUid ? 'var(--primary)' : 'inherit',
+                                    transition: 'color 0.2s'
+                                }}
+                            >
+                                {copiedId === log.adminUid ? 'Copied!' : log.adminUid.substring(0, 8)}
+                            </span>
+                        ) : 'Unknown'}
+                    </td>
+                    <td style={{ padding: '8px 12px', fontWeight: 'bold' }}>{log.action}</td>
+                    <td style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                        {log.reason || log.targetUid || '-'}
+                    </td>
+                </tr>
+            )}
+        />
+
+        {securityNextOffset !== null && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+            <button 
+              disabled={loadingSecurity}
+              onClick={() => fetchSecurityLogs(securityNextOffset)}
+              style={{ padding: '8px 16px', backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text)', cursor: 'pointer', fontSize: '13px' }}
+            >
+              {loadingSecurity ? 'Loading...' : 'Load More Security Logs'}
             </button>
           </div>
         )}
