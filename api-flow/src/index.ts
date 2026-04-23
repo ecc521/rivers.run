@@ -202,6 +202,7 @@ export default {
     fetch: app.fetch,
 
     async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
+        const startTs = Date.now();
         await logToD1(env, "INFO", "sync", `Background sync started. Trigger: ${event.cron || "manual"}`);
 
         try {
@@ -282,11 +283,14 @@ export default {
 
             // 4. Cleanup
             await pruneLogs(env);
-            await logToD1(env, "INFO", "sync", "Background sync completed successfully.");
+            
+            const totalDuration = (Date.now() - startTs) / 1000;
+            await logToD1(env, "INFO", "sync", `Background sync completed successfully in ${totalDuration.toFixed(1)}s.`);
 
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
-            await logToD1(env, "ERROR", "sync", `Background sync crashed: ${msg}`, err);
+            const stack = err instanceof Error ? err.stack : undefined;
+            await logToD1(env, "ERROR", "sync", `Background sync crashed: ${msg}`, { stack });
             console.error("FATAL: Background sync crashed unexpectedly:", err);
         }
     }

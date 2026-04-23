@@ -160,7 +160,7 @@ async function fetchAndProcessSingleBatch(batch: string[], timeQuery: string, al
 }
 
 async function fetchUSGSBatch(siteCodes: string[], timeQuery: string, env?: any): Promise<Record<string, GaugeHistory>> {
-    const BATCH_SIZE = 150;
+    const BATCH_SIZE = 200;
     const allSites: Record<string, GaugeHistory> = {};
     const batches: string[][] = [];
     
@@ -173,7 +173,7 @@ async function fetchUSGSBatch(siteCodes: string[], timeQuery: string, env?: any)
         batches.push(validSiteCodes.slice(i, i + BATCH_SIZE));
     }
 
-    const CONCURRENCY_LIMIT = 3;
+    const CONCURRENCY_LIMIT = 4;
     let batchIndex = 0;
 
     const worker = async () => {
@@ -264,7 +264,7 @@ export const usgsProvider: GaugeProvider = {
     },
 
     async getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>> {
-        const histories = await fetchUSGSBatch(siteCodes, "&period=PT4H", env); // fetch recent 4 hours
+        const histories = await fetchUSGSBatch(siteCodes, "&period=PT3H", env); // fetch recent 3 hours
         const latest: Record<string, GaugeReading> = {};
         for (const [id, history] of Object.entries(histories)) {
             if (history.readings.length > 0) {
@@ -320,13 +320,21 @@ export const usgsProvider: GaugeProvider = {
         console.log("USGS Provider: Starting full site discovery crawl...");
         const gaugeRegistry: Record<string, GaugeSite> = {};
         
-        let stateIndex = 0;
-        const CONCURRENCY_LIMIT = 5;
+        // USGS allows multiple states in one request. We batch them (5 at a time) 
+        // to reduce the total number of subrequests while avoiding URI length issues.
+        const stateBatches: string[] = [];
+        const STATE_BATCH_SIZE = 5;
+        for (let i = 0; i < states.length; i += STATE_BATCH_SIZE) {
+            stateBatches.push(states.slice(i, i + STATE_BATCH_SIZE).join(","));
+        }
+
+        let batchIndex = 0;
+        const CONCURRENCY_LIMIT = 3; // Keep it modest for registry crawls
         
         const worker = async () => {
-            while (stateIndex < states.length) {
-                const state = states[stateIndex++];
-                await fetchStateSites(state, gaugeRegistry);
+            while (batchIndex < stateBatches.length) {
+                const batch = stateBatches[batchIndex++];
+                await fetchStateSites(batch, gaugeRegistry);
             }
         };
 

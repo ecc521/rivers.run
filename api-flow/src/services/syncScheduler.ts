@@ -82,56 +82,63 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
         const provider = providers[prefix];
         if (!provider) return;
         
-        // Enforce a 5-minute timeout per provider sync
+        // Enforce a 15-minute timeout per provider sync
         try {
             await withTimeout((async () => {
                 let linkedCount = 0;
                 let registryCount = 0;
 
-                if (groups.linked.length > 0) {
-                    try {
-                        const data = await provider.getHistory(groups.linked, activeStartTs, Date.now(), true, env);
-                        linkedCount = Object.keys(data).length;
-                        Object.entries(data).forEach(([id, history]) => {
-                            const fullId = `${prefix}:${id}`;
-                            mergedData[fullId] = {
-                                ...mergedData[fullId],
-                                ...history,
-                                lat: sanitizeCoordinate(history.lat) ?? sanitizeCoordinate(registryMetadata[fullId]?.lat),
-                                lon: sanitizeCoordinate(history.lon) ?? sanitizeCoordinate(registryMetadata[fullId]?.lon),
-                                state: history.state ?? registryMetadata[fullId]?.state,
-                            };
-                        });
-                    } catch (_e) {
-                        await logToD1(env, "WARN", "sync", `Provider ${prefix} linked fetch failed.`, _e);
-                    }
-                }
-
-                if (groups.registry.length > 0) {
-                    try {
-                        const data = await provider.getLatest(groups.registry, env);
-                        registryCount = Object.keys(data).length;
-                        Object.entries(data).forEach(([id, reading]) => {
-                            const fullId = `${prefix}:${id}`;
-                            if (mergedData[fullId]) {
-                                mergedData[fullId].readings = [reading];
-                            } else {
+                const fetchLinked = async () => {
+                    if (groups.linked.length > 0) {
+                        try {
+                            const data = await provider.getHistory(groups.linked, activeStartTs, Date.now(), true, env);
+                            linkedCount = Object.keys(data).length;
+                            Object.entries(data).forEach(([id, history]) => {
+                                const fullId = `${prefix}:${id}`;
                                 mergedData[fullId] = {
-                                    id,
-                                    name: registryMetadata[fullId]?.name || id,
-                                    lat: sanitizeCoordinate(registryMetadata[fullId]?.lat),
-                                    lon: sanitizeCoordinate(registryMetadata[fullId]?.lon),
-                                    readings: [reading]
+                                    ...mergedData[fullId],
+                                    ...history,
+                                    lat: sanitizeCoordinate(history.lat) ?? sanitizeCoordinate(registryMetadata[fullId]?.lat),
+                                    lon: sanitizeCoordinate(history.lon) ?? sanitizeCoordinate(registryMetadata[fullId]?.lon),
+                                    state: history.state ?? registryMetadata[fullId]?.state,
                                 };
-                            }
-                        });
-                    } catch (_e) {
-                        await logToD1(env, "WARN", "sync", `Provider ${prefix} registry fetch failed.`, _e);
+                            });
+                        } catch (_e) {
+                            await logToD1(env, "WARN", "sync", `Provider ${prefix} linked fetch failed.`, _e);
+                        }
                     }
-                }
+                };
+
+                const fetchRegistry = async () => {
+                    if (groups.registry.length > 0) {
+                        try {
+                            const data = await provider.getLatest(groups.registry, env);
+                            registryCount = Object.keys(data).length;
+                            Object.entries(data).forEach(([id, reading]) => {
+                                const fullId = `${prefix}:${id}`;
+                                if (mergedData[fullId]) {
+                                    mergedData[fullId].readings = [reading];
+                                } else {
+                                    mergedData[fullId] = {
+                                        id,
+                                        name: registryMetadata[fullId]?.name || id,
+                                        lat: sanitizeCoordinate(registryMetadata[fullId]?.lat),
+                                        lon: sanitizeCoordinate(registryMetadata[fullId]?.lon),
+                                        readings: [reading]
+                                    };
+                                }
+                            });
+                        } catch (_e) {
+                            await logToD1(env, "WARN", "sync", `Provider ${prefix} registry fetch failed.`, _e);
+                        }
+                    }
+                };
+
+                // Run linked and registry fetches in parallel
+                await Promise.all([fetchLinked(), fetchRegistry()]);
                 
                 await logToD1(env, "INFO", "sync", `Provider ${prefix}: Synced ${linkedCount} active and ${registryCount} registry gauges.`);
-            })(), 600000, `Provider ${prefix} sync timed out`);
+            })(), 900000, `Provider ${prefix} sync timed out`);
         } catch (e: any) {
             await logToD1(env, "ERROR", "sync", `Provider ${prefix} failed or timed out: ${e.message || e}`);
         }
