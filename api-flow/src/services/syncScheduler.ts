@@ -49,6 +49,7 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
             lon: sanitizeCoordinate(meta.lon),
             state: meta.state,
             country: meta.country,
+            section: meta.section,
             readings: []
         };
     });
@@ -103,6 +104,7 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
                                     lat: sanitizeCoordinate(history.lat) ?? sanitizeCoordinate(registryMetadata[fullId]?.lat),
                                     lon: sanitizeCoordinate(history.lon) ?? sanitizeCoordinate(registryMetadata[fullId]?.lon),
                                     state: history.state ?? registryMetadata[fullId]?.state,
+                                    section: history.section ?? registryMetadata[fullId]?.section,
                                 };
                             });
                         } catch (_e) {

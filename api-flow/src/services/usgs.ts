@@ -241,6 +241,7 @@ function parseRDBLines(text: string, _stateHint: string, gaugeRegistry: Record<s
                     gaugeRegistry[rawId] = { 
                         id: rawId, 
                         name: fullName.name, 
+                        section: fullName.section,
                         lat, 
                         lon,
                         state: (stateCd ? FIPS_TO_STATE[stateCd] : undefined) || _stateHint.toUpperCase().split(',')[0],
@@ -331,6 +332,7 @@ export const usgsProvider: GaugeProvider = {
                 sites.push({
                     id,
                     name: hist.name,
+                    section: hist.section,
                     lat: (hist as any).lat,
                     lon: (hist as any).lon,
                     state: hist.state,

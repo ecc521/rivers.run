@@ -30,6 +30,7 @@ export interface GaugeHistory {
 export interface GaugeSite {
     id: string; // The bare ID
     name: string;
+    section?: string;
     lat: number;
     lon: number;
     state?: string;

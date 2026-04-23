@@ -49,6 +49,9 @@ const expansions: Record<string, string> = {
     pt: 'Point',
     lk: 'Lake',
     res: 'Reservoir',
+    bel: 'below',
+    btwn: 'between',
+    stn: 'Station',
     tof: 'Time of Flight',
     witsd: 'Withdrawn'
 };
@@ -154,7 +157,7 @@ function splitNameAndSection(fullName: string, delimiters: string[]): { name: st
 
 function formatUSGSName(name: string): { name: string; section?: string } {
     const formatted = titleCase(name, true);
-    const delimiters = [' at ', ' near ', ' above ', ' below ', ' upstream ', ' downstream '];
+    const delimiters = [' at ', ' near ', ' in ', ' on ', ' above ', ' below ', ' upstream ', ' downstream ', ' into '];
     const result = splitNameAndSection(formatted, delimiters);
 
     // Fallback: splitting at the first comma if it follows a river descriptor
@@ -179,7 +182,7 @@ function formatUSGSName(name: string): { name: string; section?: string } {
 function formatCanadaName(name: string): { name: string; section?: string } {
     const formatted = titleCase(name);
     // Include French delimiters for Canadian sites
-    const delimiters = [' at ', ' near ', ' à ', ' a ', ' en aval ', ' en amont '];
+    const delimiters = [' at ', ' near ', ' in ', ' on ', ' à ', ' a ', ' en aval ', ' en amont ', ' près de ', ' pres de '];
     return splitNameAndSection(formatted, delimiters);
 }
 

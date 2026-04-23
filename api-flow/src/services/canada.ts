@@ -274,7 +274,8 @@ export const ecProvider: GaugeProvider = {
                              const formatted = formatGaugeName(feat.properties?.STATION_NAME || site, "EC");
                              results.push({
                                  id: site,
-                                 name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
+                                 name: formatted.name,
+                                 section: formatted.section,
                                  lon: feat.geometry?.coordinates?.[0] || 0,
                                  lat: feat.geometry?.coordinates?.[1] || 0,
                                  state: feat.properties?.PROVINCE_TERRITORY_CODE || getProvincesForSite(site)[0],
@@ -327,7 +328,8 @@ export const ecProvider: GaugeProvider = {
                     const formatted = formatGaugeName(props.STATION_NAME || `EC Gauge ${id}`, "EC");
                     results.push({
                         id,
-                        name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
+                        name: formatted.name,
+                        section: formatted.section,
                         lat,
                         lon,
                         state: formatStateCode(props.PROVINCE_TERRITORY_CODE, "EC"),

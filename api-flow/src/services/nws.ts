@@ -165,7 +165,8 @@ export const nwsProvider: GaugeProvider = {
                                   const formatted = formatGaugeName(data.name || site, "NWS");
                                   results.push({
                                       id: site,
-                                      name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
+                                      name: formatted.name,
+                                      section: formatted.section,
                                       lat: data.latitude,
                                       lon: data.longitude,
                                       state: formatStateCode(data.state?.abbreviation, "NWS"),
@@ -199,7 +200,8 @@ export const nwsProvider: GaugeProvider = {
                      const formatted = formatGaugeName(item.name || item.identifier, "NWS");
                      results.push({
                          id: item.identifier,
-                         name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
+                         name: formatted.name,
+                         section: formatted.section,
                          lat: item.latitude,
                          lon: item.longitude,
                          state: formatStateCode(item.state?.abbreviation, "NWS"),
