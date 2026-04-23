@@ -14,7 +14,7 @@ This endpoint suddenly stopped working because **USGS completely retired the NWI
 The USGS is officially replacing all legacy services with their modernized **OGC API - Features** (`api.waterdata.usgs.gov`), which provides robust JSON schemas and better performance.
 
 We *attempted* to migrate to this new OGC API. However, we found a critical parity gap in their filtering capabilities:
-1. **The Problem:** The old endpoint allowed us to filter stations by `data_type=rt` and `data_type=peak` (which gave us a highly targeted list of ~14,000 *active* stations).
+1. **The Problem:** The old endpoint allowed us to filter stations by `hasDataTypeCd=iv` and `parameterCd=00060` (which gave us a highly targeted list of ~4,700 active stations after filtering for relevance). The original legacy script incorrectly attempted to use `data_type=rt`, which is now deprecated and unreliable.
 2. **The OGC Flaw:** The modern OGC API `monitoring-locations` collection considers a "location" to be static metadata. It intentionally does not provide a query parameter like `active=true` or `hasRealtimeData=true` because active sensors are considered transient. Filtering purely by `site_type_code=ST` (Stream) without an active flag forces the API to return **hundreds of thousands** of historical or decommissioned stream sensors.
 
 ### The "Future-Proof" Workaround (If we used OGC API today)
@@ -22,7 +22,7 @@ If we were forced to implement the "active" filter strictly using the new OGC AP
 1. We would have to query the USGS `observations/latest-continuous` collection which holds the live water measurements for the entire country.
 2. We would download metadata for millions of observation points.
 3. We would run a distinct/deduplication process locally to extract only the unique `monitoring-location-id` values from sensors that had pushed a reading in the last 24-48 hours.
-4. We would then batch-query the `monitoring-locations` API to get the names and coordinates for those ~14k unique IDs.
+4. We would then batch-query the `monitoring-locations` API to get the names and coordinates for those ~4.7k unique IDs.
 
 ## Our Pragmatic Approach
 Due to immense developer pushback regarding this specific limitation, USGS extended the final deprecation timeline for the legacy `waterservices` REST API (which does natively support active status filtering) into **2027**. 
