@@ -114,11 +114,38 @@ export const RiverHistoryPanel: React.FC<RiverHistoryPanelProps> = ({ riverId, o
                 <span>{new Date(log.changed_at * 1000).toLocaleDateString()}</span>
                 <span>{new Date(log.changed_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
-              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {log.editor_name}
+                {(() => {
+                   const rawId = log.editor_name.startsWith("Contributor: ") 
+                    ? log.editor_name.replace("Contributor: ", "") 
+                    : log.changed_by;
+                   
+                   if (!rawId || rawId === "Anonymous Paddler" || rawId === "User Hidden for Privacy") return null;
+
+                   return (
+                    <span 
+                      title={`Click to copy ${rawId.startsWith("IP:") ? "IP" : "UID"}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(rawId);
+                      }}
+                      style={{ fontSize: '0.65rem', backgroundColor: 'var(--surface-hover)', padding: '2px 6px', borderRadius: '4px', cursor: 'copy', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                    >
+                      {rawId.startsWith("IP:") ? "IP" : "UID"}
+                    </span>
+                   );
+                })()}
               </div>
               {log.email && (
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                <div 
+                  style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', cursor: 'copy' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(log.email);
+                  }}
+                  title="Click to copy email"
+                >
                    {log.email}
                 </div>
               )}

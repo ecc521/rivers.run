@@ -37,7 +37,10 @@ export function reconstructHistoricalState(currentRiver: RiverData, audits: any[
         }
         
         // The diff_patch format is { key: { old: val, new: val } }
-        for (const [key, change] of Object.entries(diff)) {
+        // BUT for approvals, it's { diff: { ... }, note: "...", type: "approval" }
+        const actualDiff = diff.diff || diff;
+        
+        for (const [key, change] of Object.entries(actualDiff)) {
             const c = change as { old: any, new: any };
             // Apply the 'old' value to go back in time
             state[key] = c.old;

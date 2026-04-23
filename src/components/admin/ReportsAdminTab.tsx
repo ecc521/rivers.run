@@ -53,8 +53,15 @@ export default function ReportsAdminTab() {
             <strong>Type:</strong> <span style={{ textTransform: "capitalize" }}>{r.type}</span> &bull; 
             <strong> Target ID:</strong> <code>{r.target_id}</code>
           </div>
-          <div>
-            <strong>Reported By:</strong> {r.reported_by} {r.reporter_email && `(${r.reporter_email})`}
+          <div style={{ display: "flex", gap: "15px", flexWrap: "wrap", fontSize: "0.9rem" }}>
+            <div>
+              <strong>Reported By:</strong> {r.reporter_name || r.reported_by} {r.reporter_email && `(${r.reporter_email})`}
+            </div>
+            {r.created_at && (
+              <div style={{ color: "var(--text-muted)" }}>
+                <strong>Date:</strong> {new Date(r.created_at * 1000).toLocaleDateString()} {new Date(r.created_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
           </div>
           <div style={{ backgroundColor: "var(--surface-hover)", padding: "10px", borderRadius: "6px", borderLeft: "4px solid var(--danger)" }}>
             <p style={{ margin: 0 }}>{r.reason}</p>

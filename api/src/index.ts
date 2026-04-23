@@ -218,12 +218,33 @@ app.openapi(getRiverHistoryRoute, async (c) => {
 
     const logs = (results as any[]).map(log => {
         const entry = { ...log };
-        // Privacy Masking: Hide exact UID/Email if not an admin
+        
+        let diffObj: any = {};
+        try {
+            diffObj = typeof entry.diff_patch === 'string' ? JSON.parse(entry.diff_patch) : entry.diff_patch;
+        } catch {}
+
+        const originalAuthor = diffObj.original_author;
+        const isAnonContributor = (originalAuthor && originalAuthor.startsWith("IP:")) || (!originalAuthor && !entry.editor_name);
+
+        // Privacy Masking
         if (!isAdmin) {
             delete entry.changed_by;
             delete entry.email;
+            
+            if (isAnonContributor) {
+                entry.editor_name = "Anonymous Paddler";
+            } else {
+                entry.editor_name = "User Hidden for Privacy";
+            }
+        } else {
+            // Admin view: provide best available identifier
+            if (originalAuthor) {
+                entry.editor_name = `Contributor: ${originalAuthor}`;
+            } else if (!entry.editor_name) {
+                entry.editor_name = entry.email || (entry.changed_by ? `UID: ${entry.changed_by.slice(0, 10)}...` : "Anonymous Paddler");
+            }
         }
-        if (!entry.editor_name) entry.editor_name = "Anonymous Paddler";
         return entry;
     });
 
@@ -438,7 +459,13 @@ const getAdminQueueRoute = createRoute({
 
 // 4. Admin Queue Fetch
 app.openapi(getAdminQueueRoute, async (c) => {
-    const { results } = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE status = 'pending' ORDER BY created_at DESC").all();
+    const { results } = await c.env.DB.prepare(`
+        SELECT s.*, u.display_name as editor_name, u.email as editor_email
+        FROM river_suggestions s
+        LEFT JOIN users u ON s.suggested_by = u.user_id
+        WHERE s.status = 'pending' 
+        ORDER BY s.created_at DESC
+    `).all();
     
     // Map fields so the frontend dashboard displays correct metadata
     const mapped = results.map((row: any) => {
@@ -454,7 +481,7 @@ app.openapi(getAdminQueueRoute, async (c) => {
             queueId: row.suggestion_id,
             name: (proposed as any).name || "Unknown River",
             states: (proposed as any).states || "N/A",
-            submittedBy: row.suggested_by
+            submittedBy: row.editor_name || row.editor_email || row.suggested_by
         };
     });
 
@@ -768,11 +795,8 @@ app.openapi(resolveSuggestionRoute, async (c) => {
         } catch {}
     }
     
-    // Scrub IP from the publicly-accessible history record
-    let cleanAuthor = (suggestion as any).suggested_by as string;
-    if (hideName || (cleanAuthor && typeof cleanAuthor === 'string' && cleanAuthor.startsWith("IP:"))) {
-        cleanAuthor = "Anonymous Paddler";
-    }
+    // Preserve Author ID / IP for administrative visibility
+    const cleanAuthor = (suggestion as any).suggested_by as string;
 
     // Log the math diff
     batch.push(c.env.DB.prepare(`
@@ -1662,7 +1686,13 @@ const getAdminReportsRoute = createRoute({
 });
 
 app.openapi(getAdminReportsRoute, async (c) => {
-    const { results } = await c.env.DB.prepare("SELECT * FROM user_reports WHERE status = 'pending' ORDER BY created_at DESC").all();
+    const { results } = await c.env.DB.prepare(`
+        SELECT r.*, u.display_name as reporter_name
+        FROM user_reports r
+        LEFT JOIN users u ON r.reported_by = u.user_id
+        WHERE r.status = 'pending' 
+        ORDER BY r.created_at DESC
+    `).all();
     return c.json(results);
 });
 

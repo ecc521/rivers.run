@@ -409,6 +409,8 @@ export default function RiverEditor() {
   const handleSelectVersion = (_log: any, index: number, allLogs: any[]) => {
     if (!liveData) return;
     const historical = reconstructHistoricalState(liveData, allLogs, index);
+    // Injected for UI display consistency
+    (historical as any).updated_at = _log.changed_at;
     setComparisonData({ historical, logIndex: index, allLogs });
   };
 

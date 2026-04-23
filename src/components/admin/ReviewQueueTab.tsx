@@ -104,8 +104,15 @@ export default function ReviewQueueTab({ queue, adminQueueAlerts, onToggleAlerts
                     ({item.states || 'N/A'})
                   </small>
                 </h3>
-                <div style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "6px" }}>
-                  <span style={{ fontWeight: 600 }}>Submitted By:</span> {item.submittedBy || 'Anonymous'}
+                <div style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "6px", display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                  <div>
+                    <span style={{ fontWeight: 600 }}>Submitted By:</span> {item.submittedBy || 'Anonymous'}
+                  </div>
+                  {item.created_at && (
+                    <div>
+                      <span style={{ fontWeight: 600 }}>Date:</span> {new Date(item.created_at * 1000).toLocaleDateString()} {new Date(item.created_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
                 </div>
                 {item._moveReason && (
                   <div style={{ 
