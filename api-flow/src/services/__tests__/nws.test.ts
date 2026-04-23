@@ -132,8 +132,10 @@ describe('NWS Service', () => {
 
             const result = await nwsProvider.getFullSiteListing?.();
             expect(result).toHaveLength(2);
-            expect(result![0].name).toBe('Clear Lake At Lakeport');
-            expect(result![1].name).toBe('Snoqualmie River At Snoqualmie');
+            expect(result![0].name).toBe('Clear Lake');
+            expect(result![0].section).toBe('At Lakeport');
+            expect(result![1].name).toBe('Snoqualmie River');
+            expect(result![1].section).toBe('At Snoqualmie');
         });
     });
 });

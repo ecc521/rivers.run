@@ -91,6 +91,7 @@ describe('USGS Service', () => {
             const result = processUSGSResponse(mockData);
             expect(result['03451500']).toBeDefined();
             expect(result['03451500'].name).toBe('French Broad River');
+            expect(result['03451500'].section).toBe('At Asheville, NC');
             expect(result['03451500'].readings).toHaveLength(2);
             expect(result['03451500'].readings[0].cfs).toBe(1200);
             expect(result['03451500'].readings[0].ft).toBe(2.5);

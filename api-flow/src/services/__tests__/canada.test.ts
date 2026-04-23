@@ -115,6 +115,7 @@ SHORT_ROW`;
             expect(result).toHaveLength(2);
             expect(result[0].id).toBe("08MG005");
             expect(result[0].name).toBe("Test Station Canada");
+            expect(result[0].section).toBeUndefined();
             expect(result[0].lat).toBe(49.123);
             expect(result[0].lon).toBe(-122.456);
             expect(result[0].state).toBe("BC");
