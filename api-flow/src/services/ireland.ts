@@ -30,40 +30,57 @@ export const irelandProvider: GaugeProvider = {
 
     async getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>> {
         const results: Record<string, GaugeReading> = {};
-        const url = "https://waterlevel.ie/geojson/latest/";
         
-        try {
-            const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // Increased to 90s for Ireland latest readings
-            if (!res.ok) return results;
-            
-            const data: any = await res.json();
-            const features = data.features || [];
-            
-            const siteSet = new Set(siteCodes);
-            
-            for (const f of features) {
-                const props = f.properties || {};
-                const rawId = props.station_ref;
-                if (!rawId) continue;
+        let success = false;
+        let attempts = 0;
+        const MAX_RETRIES = 2;
 
-                const id = normalizeStationId(rawId);
-                if (!siteSet.has(id)) continue;
+        while (!success && attempts <= MAX_RETRIES) {
+            try {
+                const res = await fetchWithTimeout("https://waterlevel.ie/geojson/latest/", { headers: DEFAULT_HEADERS }, 30000);
+                if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status}`);
                 
-                if (props.value !== undefined && isValidReadingValue(props.value, "m")) {
-                    results[id] = {
-                        dateTime: new Date(props.datetime).getTime(),
-                        m: Number(props.value)
-                    };
+                const data: any = await res.json();
+                const features = data.features || [];
+                
+                // Map of normalized ID to properties
+                const stationMap = new Map<string, any>();
+                for (const f of features) {
+                    if (f.properties?.station_ref) {
+                        stationMap.set(normalizeStationId(f.properties.station_ref), f.properties);
+                    }
+                }
+
+                for (const code of siteCodes) {
+                    const props = stationMap.get(normalizeStationId(code));
+                    if (props && props.value !== undefined && props.datetime) {
+                        const val = parseFloat(props.value);
+                        if (!isNaN(val)) {
+                            results[code] = {
+                                dateTime: new Date(props.datetime).getTime(),
+                                m: val
+                            };
+                        }
+                    }
+                }
+                success = true;
+            } catch (e: unknown) {
+                attempts++;
+                if (attempts > MAX_RETRIES) {
+                    const errorMsg = "Ireland Provider: getLatest failed after retries";
+                    if (env) {
+                        await logToD1(env, "WARN", "ireland", errorMsg, e);
+                    } else {
+                        console.error(errorMsg, e);
+                    }
+                    // Return empty but don't throw to avoid failing the whole sync cycle
+                    return results;
+                } else {
+                    await new Promise(r => setTimeout(r, attempts * 1000));
                 }
             }
-        } catch (e: unknown) {
-            const errorMsg = "Ireland getLatest Failed";
-            if (env) {
-                await logToD1(env, "WARN", "ireland", errorMsg, e);
-            } else {
-                console.error(errorMsg, e);
-            }
         }
+        
         return results;
     },
 
@@ -142,39 +159,52 @@ export const irelandProvider: GaugeProvider = {
         const url = "https://waterlevel.ie/geojson/latest/";
         const results: GaugeSite[] = [];
         
-        try {
-            const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // Increased to 90s timeout for Ireland site listing
-            if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status}`);
-            
-            const data: any = await res.json();
-            const features = data.features || [];
-            
-            for (const f of features) {
-                const props = f.properties || {};
-                const rawId = props.station_ref;
-                const coords = f.geometry?.coordinates || [0, 0];
-                
-                if (rawId && props.value !== undefined) {
-                    const id = normalizeStationId(rawId);
-                    const rawName = props.station_name || `Ireland Station ${id}`;
-                    const formatted = formatGaugeName(rawName, "Ireland");
-                    
-                    // Map region_id or fallback to region/county name if present
-                    const regionName = props.region_id ? REGION_MAP[props.region_id] : (props.region || props.county);
+        let success = false;
+        let attempts = 0;
+        const MAX_RETRIES = 2;
 
-                    results.push({
-                        id: id,
-                        name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
-                        lat: coords[1],
-                        lon: coords[0],
-                        state: formatStateCode(regionName, "Ireland"),
-                        country: "IE"
-                    });
+        while (!success && attempts <= MAX_RETRIES) {
+            try {
+                const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // Increased to 90s timeout for Ireland site listing
+                if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status}`);
+                
+                const data: any = await res.json();
+                const features = data.features || [];
+                
+                for (const f of features) {
+                    const props = f.properties || {};
+                    const rawId = props.station_ref;
+                    const coords = f.geometry?.coordinates || [0, 0];
+                    
+                    if (rawId && props.value !== undefined) {
+                        const id = normalizeStationId(rawId);
+                        const rawName = props.station_name || `Ireland Station ${id}`;
+                        const formatted = formatGaugeName(rawName, "Ireland");
+                        
+                        // Map region_id or fallback to region/county name if present
+                        const regionName = props.region_id ? REGION_MAP[props.region_id] : (props.region || props.county);
+
+                        results.push({
+                            id: id,
+                            name: formatted.section ? `${formatted.name} ${formatted.section}` : formatted.name,
+                            lat: coords[1],
+                            lon: coords[0],
+                            state: formatStateCode(regionName, "Ireland"),
+                            country: "IE"
+                        });
+                    }
+                }
+                success = true;
+            } catch (e: unknown) {
+                attempts++;
+                if (attempts > MAX_RETRIES) {
+                    console.error("Ireland Provider: Full site listing failed after retries", e);
+                    throw e;
+                } else {
+                    console.warn(`Ireland Provider: Site listing attempt ${attempts} failed, retrying...`);
+                    await new Promise(r => setTimeout(r, attempts * 2000));
                 }
             }
-        } catch (e: unknown) {
-            console.error("Ireland Provider: Full site listing failed", e);
-            throw e;
         }
         
         return results;

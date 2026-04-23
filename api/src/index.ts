@@ -203,7 +203,7 @@ app.openapi(getRiverHistoryRoute, async (c) => {
     const limit = Math.min(parseInt(c.req.query("limit") || "10"), 50);
     const offset = parseInt(c.req.query("offset") || "0");
 
-    const isAdmin = user && user.d1Role === 'admin';
+    const isAdmin = user && (user.d1Role === 'admin' || user.d1Role === 'super-admin');
 
     // Join with users table to get display names and emails (for admins)
     const { results } = await c.env.DB.prepare(`
@@ -423,7 +423,7 @@ app.openapi(suggestRiverRoute, async (c) => {
 
     const { results: admins } = await c.env.DB.prepare(`
         SELECT email FROM users 
-        WHERE role IN ('admin', 'moderator') 
+        WHERE role IN ('admin', 'moderator', 'super-admin') 
         AND alerts_review_queue = 1 
         AND email IS NOT NULL 
         AND email != ''
@@ -1143,7 +1143,7 @@ app.openapi(updateListRoute, async (c) => {
     // Check ownership
     const existing = await c.env.DB.prepare("SELECT owner_id FROM community_lists WHERE id = ?").bind(id).first();
     if (!existing) return c.json({ error: "Not Found" }, 404);
-    if (existing.owner_id !== user.user_id && user.d1Role !== 'admin') return c.json({ error: "Forbidden" }, 403);
+    if (existing.owner_id !== user.user_id && user.d1Role !== 'admin' && user.d1Role !== 'super-admin') return c.json({ error: "Forbidden" }, 403);
 
     const queries = [
         c.env.DB.prepare(`
@@ -1203,7 +1203,7 @@ app.openapi(deleteListRoute, async (c) => {
     
     const existing = await c.env.DB.prepare("SELECT owner_id FROM community_lists WHERE id = ?").bind(id).first();
     if (!existing) return c.json({ error: "Not Found" }, 404);
-    if (existing.owner_id !== user.user_id && user.d1Role !== 'admin') return c.json({ error: "Forbidden" }, 403);
+    if (existing.owner_id !== user.user_id && user.d1Role !== 'admin' && user.d1Role !== 'super-admin') return c.json({ error: "Forbidden" }, 403);
     
     await c.env.DB.prepare("DELETE FROM community_lists WHERE id = ?").bind(id).run();
     return c.json({ success: true });
@@ -1648,7 +1648,7 @@ app.openapi(createReportRoute, async (c) => {
 
     const { results: admins } = await c.env.DB.prepare(`
         SELECT email FROM users 
-        WHERE role IN ('admin', 'moderator') 
+        WHERE role IN ('admin', 'moderator', 'super-admin') 
         AND alerts_review_queue = 1 
         AND email IS NOT NULL 
         AND email != ''
