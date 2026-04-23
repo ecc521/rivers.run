@@ -60,7 +60,11 @@ export default function UserManagementTab() {
   const handleBanToggle = async () => {
     if (!userData) return;
     const currentlyBanned = userData.role === 'banned';
-    if (!(await confirm(`Are you sure you want to ${currentlyBanned ? 'UNBAN' : 'BAN'} ${userData.email}?`))) return;
+    const banMessage = currentlyBanned 
+      ? `Are you sure you want to lift the ban for ${userData.email}? This will restore their ability to publish community lists and submit reports.`
+      : `Are you sure you want to ban ${userData.email}? This prevents them from publishing community lists or reporting other users, while still allowing them to maintain private lists and browse the site.`;
+    
+    if (!(await confirm(banMessage))) return;
     
     setLoading(true);
     try {
@@ -173,6 +177,7 @@ export default function UserManagementTab() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                 <button 
                   onClick={handleBanToggle}
+                  title={userData.role === 'banned' ? 'Restore user permissions' : 'Prevent user from publishing lists or reports'}
                   style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${userData.role === 'banned' ? 'var(--success)' : 'var(--danger)'}`, backgroundColor: 'transparent', color: userData.role === 'banned' ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold', cursor: 'pointer', flex: 1 }}
                 >
                   {userData.role === 'banned' ? 'Lift Ban' : 'Ban User'}

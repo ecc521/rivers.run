@@ -145,6 +145,14 @@ export const requireModerator = async (c: Context, next: Next) => {
     return await next();
 };
 
+export const requireNotBanned = async (c: Context, next: Next) => {
+    const user = c.get("user");
+    if (user && user.d1Role === 'banned') {
+         return c.json({ error: "Your account has been restricted." }, 403);
+    }
+    return await next();
+};
+
 // Falls back to anonymous user instead of failing on missing/bad token
 export const optionalFirebaseAuthMiddleware = async (c: Context, next: Next) => {
     const authHeader = c.req.header("Authorization");

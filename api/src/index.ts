@@ -9,7 +9,7 @@ import {
     RiverSchema, UserReportPayload, RoleUpdatePayload,
     UserManagementSchema, UserSearchResponse, RiverHistoryResponseSchema
 } from "./schema";
-import { firebaseAuthMiddleware, requireModerator, requireAdmin, optionalFirebaseAuthMiddleware } from "./auth";
+import { firebaseAuthMiddleware, requireModerator, requireAdmin, optionalFirebaseAuthMiddleware, requireNotBanned } from "./auth";
 import { sendEmail } from "./email";
 import { logToD1 } from "./utils/logger";
 
@@ -1074,7 +1074,8 @@ const createListRoute = createRoute({
     security: [{ bearerAuth: [] }],
     request: { body: { content: { 'application/json': { schema: CommunityListSchema } } } },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Created' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), id: z.string().optional() }).openapi({ type: 'object' }) } }, description: 'Created' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Forbidden' }
     }
 });
 
@@ -1082,6 +1083,11 @@ app.openapi(createListRoute, async (c) => {
     const user = c.get("user");
     const body = await c.req.json();
     const validated = CommunityListSchema.parse(body);
+
+    if (validated.isPublished && user.d1Role === 'banned') {
+        return c.json({ error: "Banned users cannot create public lists." }, 403);
+    }
+
     const listId = validated.id || crypto.randomUUID();
     
     const queries = [
@@ -1107,7 +1113,7 @@ app.openapi(createListRoute, async (c) => {
     }
 
     await c.env.DB.batch(queries);
-    return c.json({ success: true, id: listId });
+    return c.json({ success: true, id: listId }, 200);
 });
 
 const updateListRoute = createRoute({
@@ -1129,7 +1135,8 @@ const updateListRoute = createRoute({
         body: { content: { 'application/json': { schema: CommunityListSchema } } } 
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Forbidden' }
     }
 });
 
@@ -1141,9 +1148,14 @@ app.openapi(updateListRoute, async (c) => {
     const validated = CommunityListSchema.parse(body);
     
     // Check ownership
-    const existing = await c.env.DB.prepare("SELECT owner_id FROM community_lists WHERE id = ?").bind(id).first();
+    const existing: any = await c.env.DB.prepare("SELECT owner_id, is_published FROM community_lists WHERE id = ?").bind(id).first();
     if (!existing) return c.json({ error: "Not Found" }, 404);
     if (existing.owner_id !== user.user_id && user.d1Role !== 'admin' && user.d1Role !== 'super-admin') return c.json({ error: "Forbidden" }, 403);
+
+    // Banned users cannot make a private list public, but can update existing public ones
+    if (validated.isPublished && !existing.is_published && user.d1Role === 'banned') {
+        return c.json({ error: "Banned users cannot publish lists." }, 403);
+    }
 
     const queries = [
         c.env.DB.prepare(`
@@ -1171,7 +1183,7 @@ app.openapi(updateListRoute, async (c) => {
     }
 
     await c.env.DB.batch(queries);
-    return c.json({ success: true });
+    return c.json({ success: true }, 200);
 });
 
 const deleteListRoute = createRoute({
@@ -1621,13 +1633,16 @@ app.openapi(adminSendEmailRoute, async (c) => {
 
 // 9. API Reporting (UGC)
 const createReportRoute = createRoute({
-    middleware: [optionalFirebaseAuthMiddleware, checkPayloadSize],
+    middleware: [optionalFirebaseAuthMiddleware, requireNotBanned, checkPayloadSize],
     method: 'post',
     path: '/reports',
     summary: 'Submit a UGC report (Flag content)',
     security: [{ bearerAuth: [] }, {}],
     request: { body: { content: { 'application/json': { schema: UserReportPayload } } } },
-    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Reported' } }
+    responses: { 
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Reported' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Forbidden' }
+    }
 });
 
 app.openapi(createReportRoute, async (c) => {
@@ -1666,7 +1681,7 @@ app.openapi(createReportRoute, async (c) => {
         );
     }
 
-    return c.json({ success: true });
+    return c.json({ success: true }, 200);
 });
 
 const getAdminReportsRoute = createRoute({

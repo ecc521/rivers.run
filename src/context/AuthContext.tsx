@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { auth } from "../firebase";
+import { fetchAPI } from "../services/api";
 
 interface AuthContextType {
   user: User | null;
@@ -39,19 +40,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(u);
         if (u) {
             try {
-                // Fetch ID Token Result to get custom claims (ZERO READ COST)
-                const idTokenResult = await u.getIdTokenResult();
-                const claims = idTokenResult.claims;
+                // Fetch the authoritative role from D1 API instead of using stale/insecure Firebase custom claims
+                const settings = await fetchAPI("/user/settings", {}, u);
+                const role = settings?.role || "user";
                 
-                const sAdmin = claims.superAdmin === true;
-                const admin = claims.admin === true || sAdmin;
-                const mod = claims.moderator === true || admin;
+                const sAdmin = role === 'super-admin';
+                const admin = role === 'admin' || sAdmin;
+                const mod = role === 'moderator' || admin;
 
                 setIsSuperAdmin(sAdmin);
                 setIsAdmin(admin);
                 setIsModerator(mod);
             } catch (err: unknown) {
-                if (err instanceof Error) console.error("Failed to fetch user roles from claims", err.message);
+                if (err instanceof Error) console.error("Failed to fetch user roles from API", err.message);
                 setIsAdmin(false);
                 setIsSuperAdmin(false);
                 setIsModerator(false);
