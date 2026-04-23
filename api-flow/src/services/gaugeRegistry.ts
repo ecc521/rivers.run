@@ -16,14 +16,14 @@ const providers: GaugeProvider[] = [
 ];
 
 /**
- * Resiliently compiles the full gauge registry.
+ * Compiles the full gauge registry.
  * If a provider fails, it will preserve the existing entries for that provider 
  * from the historical registry, preventing data loss during temporary API outages.
  */
 export async function compileGaugeRegistry(env: Env, existingRegistry: Record<string, GaugeSite> = {}): Promise<Record<string, GaugeSite>> {
     const gaugeRegistry: Record<string, GaugeSite> = { ...existingRegistry };
     
-    await logToD1(env, "INFO", "registry", "Starting resilient registry compilation across all providers...");
+    await logToD1(env, "INFO", "registry", "Starting registry compilation across all providers...");
 
     for (const provider of providers) {
         if (provider.getFullSiteListing) {
