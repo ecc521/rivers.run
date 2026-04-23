@@ -272,6 +272,25 @@ const Home: React.FC = () => {
     }
     return result;
   }, [rivers, searchQuery, isRiverInQuickList]);
+  
+  const availableStates = useMemo(() => {
+    const states = new Set<string>();
+    rivers.forEach(r => {
+      if (r.states) {
+        r.states.toUpperCase().split(/[ ,]+/).filter(Boolean).forEach(s => {
+          if (searchQuery.country) {
+            const countryCodes = DEFAULT_STATE_MAP[s];
+            if (countryCodes && countryCodes.includes(searchQuery.country as any)) {
+              states.add(s);
+            }
+          } else {
+            states.add(s);
+          }
+        });
+      }
+    });
+    return Array.from(states).sort((a, b) => a.localeCompare(b));
+  }, [rivers, searchQuery.country]);
 
   // Infinite Scroll State - Purely internal, no session storage needed because we never unmount!
   const [displayCount, setDisplayCount] = useState(100);
@@ -530,6 +549,8 @@ const Home: React.FC = () => {
           regionLabel={regionPrefix}
           stateLabel={searchQuery.state}
           viewLabel={viewLabel}
+          currentCountry={searchQuery.country}
+          availableStates={availableStates}
           onSelectRegion={handleCountryChange}
           onSelectState={handleStateChange}
           onSelectView={handleViewChange}

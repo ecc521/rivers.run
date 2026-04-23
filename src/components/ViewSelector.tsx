@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getStateName, getRegionName } from "../utils/regions";
 
@@ -6,6 +6,8 @@ interface ViewSelectorProps {
   regionLabel: string;
   stateLabel?: string;
   viewLabel: string;
+  currentCountry?: string;
+  availableStates?: string[];
   onSelectRegion: (region: string) => void;
   onSelectState: (state: string | null) => void;
   onSelectView: (view: "all" | "favorites") => void;
@@ -15,6 +17,8 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
     regionLabel, 
     stateLabel,
     viewLabel, 
+    currentCountry,
+    availableStates = [],
     onSelectRegion, 
     onSelectState,
     onSelectView 
@@ -35,6 +39,14 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
   }, []);
 
   const popularStates = ["CA", "CO", "WA", "OR", "NC", "WV", "PA", "MD", "VA", "TN"];
+  
+  // Combine popular states (if available) and the rest of the available states
+  const statesToShow = useMemo(() => {
+    if (availableStates.length > 0) {
+        return availableStates;
+    }
+    return popularStates;
+  }, [availableStates]);
 
   const handleToggle = (tab: "view" | "region" | "state") => {
     if (isOpen && activeTab === tab) {
@@ -131,14 +143,14 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
 
             {activeTab === "state" && (
               <>
-                <div className="view-dropdown-header">All Regions</div>
+                <div className="view-dropdown-header">{currentCountry === "ec" ? "Provinces" : "All Regions"}</div>
                 <div 
                   className={`view-dropdown-item ${!stateLabel ? "selected" : ""}`} 
                   onClick={() => { onSelectState(null); setIsOpen(false); }}
                 >
-                  All Regions
+                  {currentCountry === "ec" ? "All Provinces" : "All Regions"}
                 </div>
-                {popularStates.map(st => (
+                {statesToShow.map((st: string) => (
                     <div 
                         key={st}
                         className={`view-dropdown-item ${stateLabel === st ? "selected" : ""}`} 

@@ -389,6 +389,8 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
     padding: 8px;
     min-width: 180px;
     margin-top: 5px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .view-dropdown-item {
