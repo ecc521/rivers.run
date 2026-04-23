@@ -88,12 +88,12 @@ export const RiverHistoryComparison: React.FC<RiverHistoryComparisonProps> = ({
           </div>
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border)' }}>
-              <th style={{ padding: '10px' }}>Field</th>
-              <th style={{ padding: '10px' }}>Was</th>
-              <th style={{ padding: '10px' }}>Is Now</th>
+              <th style={{ padding: '10px', width: '20%' }}>Field</th>
+              <th style={{ padding: '10px', width: '40%' }}>Was</th>
+              <th style={{ padding: '10px', width: '40%' }}>Is Now</th>
             </tr>
           </thead>
           <tbody>
@@ -105,11 +105,11 @@ export const RiverHistoryComparison: React.FC<RiverHistoryComparisonProps> = ({
                 </tr>
             ) : diffKeys.map(key => (
               <tr key={key} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '10px', fontWeight: 'bold', verticalAlign: 'top' }}>{FIELD_LABELS[key]}</td>
-                <td style={{ padding: '10px', backgroundColor: 'rgba(255, 0, 0, 0.1)', verticalAlign: 'top' }}>
+                <td style={{ padding: '10px', fontWeight: 'bold', verticalAlign: 'top', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{FIELD_LABELS[key]}</td>
+                <td style={{ padding: '10px', backgroundColor: 'rgba(255, 0, 0, 0.1)', verticalAlign: 'top', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                   {renderValue((historicalState as any)[key], key)}
                 </td>
-                <td style={{ padding: '10px', backgroundColor: 'rgba(0, 255, 0, 0.1)', verticalAlign: 'top' }}>
+                <td style={{ padding: '10px', backgroundColor: 'rgba(0, 255, 0, 0.1)', verticalAlign: 'top', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                   {renderValue((currentState as any)[key], key)}
                 </td>
               </tr>
