@@ -12,7 +12,7 @@ import { Capacitor } from "@capacitor/core";
 
 const ListsPage: React.FC = () => {
   const { user, isAdmin, isModerator, loading: authLoading } = useAuth();
-  const { myLists, subscribedListIds, createList, updateList, deleteList, toggleSubscription, isSubscribed } = useLists();
+  const { myLists, subscribedListIds, createList, updateList, toggleSubscription, isSubscribed } = useLists();
   const { homePageDefaultSearch, updateSetting } = useSettings();
   const { confirm, alert } = useModal();
   const navigate = useNavigate();
@@ -142,7 +142,74 @@ const ListsPage: React.FC = () => {
           position: "relative"
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ position: "absolute", top: "15px", right: "15px", display: "flex", gap: "8px" }}>
+            {user && (
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const isSub = isSubscribed(list.id);
+                  if (!isSub && !isOwned) {
+                      await alert("You must subscribe to this list before setting it as your default startup view.", "Subscribe First");
+                      return;
+                  }
+                  
+                  const isDefault = homePageDefaultSearch === `list:${list.id}`;
+                  if (isDefault) {
+                      updateSetting("homePageDefaultSearch", null);
+                  } else {
+                      if (await confirm(`Set "${list.title}" as your default startup view? It will load automatically whenever you open Rivers.run.`, "Set Default")) {
+                          updateSetting("homePageDefaultSearch", `list:${list.id}`);
+                      }
+                  }
+                }}
+                title={homePageDefaultSearch === `list:${list.id}` ? "Remove as Default" : "Set as Default"}
+                style={{ 
+                  backgroundColor: homePageDefaultSearch === `list:${list.id}` ? "var(--primary)" : "var(--surface-hover)", 
+                  border: "1px solid var(--border)", 
+                  borderRadius: "50%", 
+                  width: "36px", 
+                  height: "36px", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  cursor: "pointer",
+                  fontSize: "1.2em",
+                  color: homePageDefaultSearch === `list:${list.id}` ? "var(--surface)" : "var(--text-muted)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                }}
+              >
+                {homePageDefaultSearch === `list:${list.id}` ? "★" : "☆"}
+              </button>
+            )}
+
+            {isOwned && (
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  handleToggleNotifications(list);
+                }}
+                title={list.notificationsEnabled ? "Disable Email Alerts" : "Enable Email Alerts"}
+                style={{ 
+                  backgroundColor: list.notificationsEnabled ? "var(--primary)" : "var(--surface-hover)", 
+                  border: "1px solid var(--border)", 
+                  borderRadius: "50%", 
+                  width: "36px", 
+                  height: "36px", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  cursor: "pointer",
+                  fontSize: "1.1em",
+                  color: list.notificationsEnabled ? "var(--surface)" : "var(--text-muted)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                }}
+              >
+                {list.notificationsEnabled ? "🔔" : "🔕"}
+              </button>
+            )}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingRight: "80px" }}>
           <div>
               <h2 style={{ margin: 0, color: "var(--text)", fontSize: "1.4em", display: "flex", alignItems: "center", gap: "10px" }}>
                  {list.title}
@@ -184,15 +251,6 @@ const ListsPage: React.FC = () => {
 
             {user && (
                 <button
-                   onClick={() => handleCopyList(list)}
-                   style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
-                >
-                   Copy
-                </button>
-            )}
-
-            {isOwned && (
-                <button
                    onClick={() => handleEditList(list)}
                    style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
                 >
@@ -225,41 +283,8 @@ const ListsPage: React.FC = () => {
                }}
                style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
             >
-               <span>🔗</span> {Capacitor.isNativePlatform() ? "Share" : "Copy Link"}
+               <span>🔗</span> Share
             </button>
-
-            {isOwned && (
-                <button
-                   onClick={() => handleToggleNotifications(list)}
-                   style={{ padding: "8px 16px", backgroundColor: list.notificationsEnabled ? "var(--primary)" : "var(--surface-hover)", color: list.notificationsEnabled ? "var(--surface)" : "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
-                >
-                   {list.notificationsEnabled ? "🔔 Alerts On" : "🔕 Alerts Off"}
-                </button>
-            )}
-
-            {user && (
-                <button
-                   onClick={async () => {
-                       const isSub = isSubscribed(list.id);
-                       if (!isSub && !isOwned) {
-                           await alert("You must subscribe to this list before setting it as your default startup view.", "Subscribe First");
-                           return;
-                       }
-                       
-                       const isDefault = homePageDefaultSearch === `list:${list.id}`;
-                       if (isDefault) {
-                           updateSetting("homePageDefaultSearch", null);
-                       } else {
-                           if (await confirm(`Set "${list.title}" as your default startup view? It will load automatically whenever you open Rivers.run.`, "Set Default")) {
-                               updateSetting("homePageDefaultSearch", `list:${list.id}`);
-                           }
-                       }
-                   }}
-                   style={{ padding: "8px 16px", backgroundColor: homePageDefaultSearch === `list:${list.id}` ? "var(--primary)" : "var(--surface-hover)", color: homePageDefaultSearch === `list:${list.id}` ? "var(--surface)" : "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
-                >
-                   {homePageDefaultSearch === `list:${list.id}` ? "★ Default List" : "☆ Set as Default"}
-                </button>
-            )}
 
             {user && !isOwned && (
                 <button
@@ -275,19 +300,6 @@ const ListsPage: React.FC = () => {
                    style={{ padding: "8px 16px", backgroundColor: isSubscribed(list.id) ? "var(--primary)" : "var(--surface-hover)", color: isSubscribed(list.id) ? "var(--surface)" : "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
                 >
                    {isSubscribed(list.id) ? "Unsubscribe" : "Subscribe"}
-                </button>
-            )}
-
-            {isOwned && (
-                <button
-                   onClick={async () => {
-                       if (await confirm("Are you sure you want to delete this list? This cannot be undone.", "Delete List")) {
-                           await deleteList(list.id);
-                       }
-                   }}
-                   style={{ padding: "8px 16px", backgroundColor: "transparent", color: "var(--danger)", border: "1px solid var(--danger)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", marginLeft: "auto" }}
-                >
-                   Delete
                 </button>
             )}
         </div>
@@ -430,6 +442,7 @@ const ListsPage: React.FC = () => {
          targetList={editorModal.targetList}
          onClose={() => setEditorModal(prev => ({ ...prev, isOpen: false }))}
          onSave={onSaveList}
+         onCopySharedList={handleCopyList}
       />
     </div>
   );

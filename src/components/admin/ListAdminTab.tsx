@@ -33,7 +33,9 @@ export default function ListAdminTab() {
         body: JSON.stringify({
           title: adminListObj.title,
           description: adminListObj.description,
-          isPublished: adminListObj.isPublished
+          author: adminListObj.author,
+          isPublished: adminListObj.isPublished,
+          rivers: adminListObj.rivers // Keep existing rivers
         })
       });
       await alert("List updated!");
@@ -103,6 +105,10 @@ export default function ListAdminTab() {
               <div style={{ padding: "16px", backgroundColor: "var(--surface-hover)", borderRadius: "12px", fontSize: "14px", border: '1px solid var(--border)' }}>
                 <h4 style={{ margin: '0 0 12px 0', fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Metadata</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>List ID:</span>
+                    <span style={{ fontWeight: 600, fontSize: '12px' }}>{adminListObj.id}</span>
+                  </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Author UID:</span>
                     <span style={{ fontWeight: 600, fontSize: '12px' }}>{adminListObj.ownerId}</span>

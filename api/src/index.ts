@@ -1301,6 +1301,8 @@ app.openapi(getListByIdRoute, async (c) => {
     
     return c.json({
         ...list,
+        ownerId: list.owner_id,
+        isPublished: list.is_published === 1 || list.is_published === true,
         rivers
     });
 });

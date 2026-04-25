@@ -38,9 +38,9 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const [showWatchSync, setShowWatchSync] = useState(false);
   
   const { user } = useAuth();
-  const { myLists, updateRiverInList, removeRiverFromList, updateList, toggleSubscription, isSubscribed } = useLists();
+  const { myLists, updateRiverInList, removeRiverFromList, updateList, deleteList, toggleSubscription, isSubscribed } = useLists();
   const { rivers } = useRivers();
-  const { alert } = useModal();
+  const { alert, confirm, prompt } = useModal();
 
   const activeList = useMemo(() => {
     if (!targetList) return null;
@@ -58,6 +58,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
 
   const isShared = mode === "shared";
   const isEdit = mode === "edit";
+  const isOwner = user && activeList && activeList.ownerId === user.uid;
+  const canEdit = isOwner && (isEdit || mode === "create");
 
   const handleSave = async (e: React.SyntheticEvent | React.MouseEvent) => {
     if ('preventDefault' in e) e.preventDefault();
@@ -125,7 +127,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   };
 
   const handleTogglePublish = () => {
-    if (activeList && isEdit) {
+    if (activeList && isEdit && isOwner) {
       setShowConfirmOverlay(true);
     }
   };
@@ -150,9 +152,26 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     }
   };
 
+  const handleDeleteList = async () => {
+    if (!activeList) return;
+    if (await confirm("Are you sure you want to delete this list? This cannot be undone.", "Delete List")) {
+      try {
+        await deleteList(activeList.id);
+        onClose();
+      } catch (e: any) {
+        await alert("Failed to delete list: " + e.message);
+      }
+    }
+  };
+
+  const handleDuplicateList = async () => {
+    if (!activeList || !onCopySharedList) return;
+    onCopySharedList(activeList);
+  };
+
   const modalTitle = {
     create: "Create New List",
-    edit: "Manage List",
+    edit: isOwner ? "Manage List" : "List Settings",
     copy: "Copy List",
     shared: "Shared List Explorer"
   }[mode];
@@ -266,7 +285,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                  <button onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
                    <span style={{ fontSize: "1.1em" }}>🔗</span> {Capacitor.isNativePlatform() ? "Share List" : "Copy Link"}
                  </button>
-                 {isEdit && (
+                 {isEdit && isOwner && (
                     <>
                       <button 
                         onClick={handleTogglePublish} 
@@ -293,20 +312,22 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             )}
         </div>
 
-        {isShared && !!activeList && (
+        {(isShared || !isOwner) && !!activeList && (
            <div style={{ display: "flex", gap: "10px", paddingBottom: "10px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
-             <button
-                onClick={() => { if (activeList) toggleSubscription(activeList.id); }}
-                style={{ padding: "10px 16px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--primary)", color: "var(--primary)", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
-             >
-                {isSubscribed(activeList.id) ? "Unsubscribe" : "Subscribe for Updates"}
-             </button>
+             {!isOwner && (
+               <button
+                  onClick={() => { if (activeList) toggleSubscription(activeList.id); }}
+                  style={{ padding: "10px 16px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--primary)", color: "var(--primary)", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
+               >
+                  {isSubscribed(activeList.id) ? "Unsubscribe" : "Subscribe for Updates"}
+               </button>
+             )}
              {user && onCopySharedList && (
                  <button
-                    onClick={() => { if (activeList) onCopySharedList(activeList); }}
+                    onClick={handleDuplicateList}
                     style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
                  >
-                    Import to My Lists
+                    {isShared ? "Import to My Lists" : "Duplicate List"}
                  </button>
              )}
              {!user && (
@@ -325,7 +346,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
               List Name
             </label>
-            {isShared ? (
+            {!canEdit ? (
                <h2 style={{ margin: 0, color: "var(--text)" }}>{title}</h2>
             ) : (
                 <input
@@ -354,7 +375,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
               Description {isShared ? "" : "(Optional)"}
             </label>
-            {isShared ? (
+            {!canEdit ? (
                 <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: "1.5" }}>{description || "No description provided."}</p>
             ) : (
                 <textarea
@@ -396,7 +417,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                                 )}
                             </div>
                             
-                            {isShared ? (
+                            {!canEdit ? (
                                 <span style={{ fontSize: "0.85em", color: "var(--text-muted)" }}>
                                     Target Flow: {r.min || '0'} - {r.max || '∞'} {r.units || 'cfs'}
                                 </span>
@@ -445,24 +466,55 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
           )}
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
-            {isShared && targetList ? (
-                <button
+            {(() => {
+              if (isShared && targetList) {
+                return (
+                  <button
                     type="button"
                     onClick={handleReport}
                     style={{
-                        padding: "4px 8px",
-                        backgroundColor: "transparent",
-                        border: "none",
-                        color: "var(--text-muted)",
-                        cursor: "pointer",
-                        fontSize: "0.85rem",
-                        textDecoration: "underline"
+                      padding: "4px 8px",
+                      backgroundColor: "transparent",
+                      border: "none",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                      textDecoration: "underline"
                     }}
-                >
+                  >
                     🚩 Report a Problem
-                </button>
-            ) : <div></div>}
+                  </button>
+                );
+              }
+              if (isOwner) {
+                return (
+                  <button
+                    type="button"
+                    onClick={handleDeleteList}
+                    style={{
+                      padding: "10px 24px",
+                      backgroundColor: "transparent",
+                      color: "var(--danger)",
+                      border: "1px solid var(--danger)",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    Delete List
+                  </button>
+                );
+              }
+              return <div></div>;
+            })()}
             
+            {activeList && (
+              <div style={{ position: "absolute", bottom: "10px", right: "24px", opacity: 0.4, fontSize: "0.7rem", pointerEvents: "none", color: "var(--text-muted)" }}>
+                List ID: {activeList.id}
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: "12px" }}>
               <button
                 type="button"
@@ -479,9 +531,9 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                   transition: "all 0.2s",
                 }}
               >
-                {isShared ? "Close" : "Cancel"}
+                {!canEdit ? "Close" : "Cancel"}
               </button>
-            {!isShared && (
+            {canEdit && (
                 <button
                 type="submit"
                 disabled={saving || !title.trim()}
@@ -498,11 +550,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                     opacity: (saving || !title.trim()) ? 0.7 : 1
                 }}
                 >
-                {(() => {
-                  if (saving) return "Saving...";
-                  if (mode === "copy") return "Create Copy";
-                  return "Save Settings";
-                })()}
+                {saving ? "Saving..." : "Save Settings"}
                 </button>
             )}
           </div>
