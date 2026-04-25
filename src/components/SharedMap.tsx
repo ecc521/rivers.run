@@ -26,6 +26,12 @@ import { ShareMapModal } from "./ShareMapModal";
 import { Capacitor } from '@capacitor/core';
 import { SystemBars } from '@capacitor/core';
 
+// Global protocol state
+let pmtilesProtocolAdded = false;
+let hybridProtocolAdded = false;
+let activeOfflineUrls: string[] = [];
+const pmtilesProtocol = new Protocol();
+
 export const formatAccessName = (point: any) => {
     if (!point) return "Access";
     
@@ -150,7 +156,7 @@ interface SharedMapProps {
 }
 
 // eslint-disable-next-line prefer-const
-let pmtilesProtocolAdded = false;
+
 
 export const SharedMap: React.FC<SharedMapProps> = ({ 
     initialCenter = [39.8283, -98.5795], 
@@ -493,70 +499,87 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     useEffect(() => {
         if (!pmtilesProtocolAdded) {
-            const protocol = new Protocol();
-            maplibregl.addProtocol("pmtiles", protocol.tile);
+            maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
             pmtilesProtocolAdded = true;
+        }
+
+        if (!hybridProtocolAdded) {
+            maplibregl.addProtocol("hybrid", async (params, abortController) => {
+                const match = params.url.match(/hybrid:\/\/(\d+)\/(\d+)\/(\d+)/);
+                if (!match) return { data: null };
+                const z = parseInt(match[1], 10);
+                const x = parseInt(match[2], 10);
+                const y = parseInt(match[3], 10);
+
+                const checkPmtiles = async (pmtilesUrl: string) => {
+                    try {
+                        const fakeUrl = `pmtiles://${pmtilesUrl}/${z}/${x}/${y}`;
+                        const result = await pmtilesProtocol.tile({ ...params, url: fakeUrl }, abortController);
+                        if (result && result.data && (result.data as ArrayBuffer).byteLength > 0) {
+                            return result.data;
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                    return null;
+                };
+
+                // 1. Check bundled basemap (Z0-Z5)
+                if (z <= 5) {
+                    const basemapUrl = `${window.location.origin}/basemap.pmtiles`;
+                    const data = await checkPmtiles(basemapUrl);
+                    if (data) return { data };
+                }
+
+                // 2. Check offline downloaded states
+                for (const url of activeOfflineUrls) {
+                    const data = await checkPmtiles(url);
+                    if (data) return { data };
+                }
+
+                // 3. Fallback to online API
+                try {
+                    const onlineUrl = `https://api.protomaps.com/tiles/v3/${z}/${x}/${y}.mvt?key=08cdd323336ea22b`;
+                    const response = await fetch(onlineUrl, { signal: abortController.signal });
+                    if (response.ok) {
+                        const data = await response.arrayBuffer();
+                        return { data };
+                    }
+                } catch (e) {
+                    // network error
+                }
+
+                return { data: null };
+            });
+            hybridProtocolAdded = true;
         }
 
         async function buildStyle() {
             try {
-                const res = await fetch("/local_style.json");
-                const baseStyle = await res.json();
-                
-                const originalLayers = [...baseStyle.layers];
-                
-                // Set default online source
-                baseStyle.sources.protomaps.url = undefined;
-                baseStyle.sources.protomaps.tiles = ["https://api.protomaps.com/tiles/v3/{z}/{x}/{y}.mvt?key=08cdd323336ea22b"];
-
-                // Rebuild layers in specific z-order
-                baseStyle.layers = [];
-                
-                const bgLayer = originalLayers.find((l: any) => l.type === 'background');
-                if (bgLayer) baseStyle.layers.push(bgLayer);
-
-                const dataLayers = originalLayers.filter((l: any) => l.type !== 'background' && l.source === 'protomaps');
-
-                // 1. Bundled Offline Basemap (Bottom layer, renders Z0-Z5 globally)
-                baseStyle.sources.bundled_basemap = {
-                    type: "vector",
-                    url: `pmtiles://${window.location.origin}/basemap.pmtiles`
-                };
-                const basemapLayers = dataLayers.map((l: any) => ({
-                    ...l,
-                    id: `${l.id}_bundled`,
-                    source: "bundled_basemap"
-                }));
-                baseStyle.layers.push(...basemapLayers);
-
-                // 2. Online Protomaps API (Middle layer)
-                baseStyle.layers.push(...dataLayers);
-
-                // 3. Downloaded Offline States (Top layer)
+                // Fetch downloaded states and populate the global array
                 const downloaded = await getDownloadedRegions();
+                const newUrls: string[] = [];
                 if (downloaded && downloaded.length > 0) {
                     for (const region of downloaded) {
                         const localUrl = await getLocalPmtilesUrl(region);
-                        if (!localUrl) continue;
-                        
-                        const sourceId = `protomaps_${region}`;
-                        baseStyle.sources[sourceId] = {
-                            type: "vector",
-                            url: `pmtiles://${localUrl}`
-                        };
-                        
-                        const newLayers = dataLayers.map((l: any) => ({
-                            ...l,
-                            id: `${l.id}_${region}`,
-                            source: sourceId
-                        }));
-                        baseStyle.layers.push(...newLayers);
+                        if (localUrl) newUrls.push(localUrl);
                     }
                 }
+                activeOfflineUrls = newUrls;
+
+                const res = await fetch("/local_style.json");
+                const baseStyle = await res.json();
+                
+                // Set the monolithic hybrid source
+                baseStyle.sources.protomaps.url = undefined;
+                baseStyle.sources.protomaps.tiles = ["hybrid://{z}/{x}/{y}"];
+                baseStyle.sources.protomaps.minzoom = 0;
+                baseStyle.sources.protomaps.maxzoom = 15;
+
                 setDynamicStyle(baseStyle);
             } catch (e) {
                 console.error("Failed to build dynamic map style:", e);
-                setDynamicStyle("/local_style.json"); // Fallback
+                setDynamicStyle("/local_style.json");
             }
         }
         buildStyle();
