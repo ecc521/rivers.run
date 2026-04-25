@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useSettings } from "../context/SettingsContext";
 import { 
-  getCacheUsageString,
-  generateTileQueue, 
-  downloadMapTiles, 
-  detectMaxZoom,
-  WORLD_BOUNDS, 
-  NORTH_AMERICA_BOUNDS 
+  fetchMapRegions,
+  getDownloadedRegions,
+  downloadMapRegion,
+  deleteMapRegion
 } from "../utils/offlineMapEngine";
+import type { MapRegion } from "../utils/offlineMapEngine";
 import { useModal } from "../context/ModalContext";
 import { AccountSettings } from "../components/AccountSettings";
+import { InteractiveUSMap } from "../components/InteractiveUSMap";
+import { Capacitor } from "@capacitor/core";
 
 const SettingsPage: React.FC = () => {
   const { 
@@ -177,71 +178,109 @@ const SettingsPage: React.FC = () => {
 };
 
 const OfflineMapManager: React.FC = () => {
-  const [storageString, setStorageString] = useState("Loading...");
-  const [downloadProgress, setDownloadProgress] = useState<{done: number, total: number} | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadedRegions, setDownloadedRegions] = useState<string[]>([]);
+  const [downloadingRegionId, setDownloadingRegionId] = useState<string | null>(null);
+  const [regions, setRegions] = useState<MapRegion[]>([]);
   
-  const [worldZoom, setWorldZoom] = useState(2);
-  const [usZoom, setUsZoom] = useState(4);
-  const { confirm } = useModal();
+  const { confirm, alert } = useModal();
 
-  const refreshCacheString = async () => {
-    const mem = await getCacheUsageString();
-    setStorageString(mem);
+  const refreshDownloaded = async () => {
+    const dRegions = await getDownloadedRegions();
+    setDownloadedRegions(dRegions);
   };
 
   useEffect(() => {
-    refreshCacheString();
-    // Detect what's actually on disk on mount
-    detectMaxZoom('world').then(setWorldZoom);
-    detectMaxZoom('na').then(setUsZoom);
+    refreshDownloaded();
+    fetchMapRegions().then(setRegions);
   }, []);
 
-  const handleDownload = async (type: 'world' | 'us', exactZoom: number) => {
-    if (isDownloading) return;
-    setIsDownloading(true);
+  const handleStateClick = async (stateAbbrev: string) => {
+    const regionId = `US-${stateAbbrev.toUpperCase()}`;
+    const region = regions.find(r => r.id === regionId);
+    
+    if (!region) {
+      await alert("This state is not currently available for offline download.");
+      return;
+    }
 
-    const urls = type === 'world' 
-      ? generateTileQueue(WORLD_BOUNDS, 0, exactZoom)
-      : generateTileQueue(NORTH_AMERICA_BOUNDS, 0, exactZoom);
-
-    const estimatedMb = ((urls.length * 15) / 1024).toFixed(1);
-
-    if (await confirm(`This will download ~${estimatedMb} MB to your device so you can view the map without cell service. Continue?`, "Download Offline Map")) {
-      setDownloadProgress({ done: 0, total: urls.length });
-
-      await downloadMapTiles(urls, (done, total) => {
-        setDownloadProgress({ done, total });
-      });
-
-      setDownloadProgress(null);
-      setIsDownloading(false);
-      refreshCacheString();
-      // Force re-detect to update UI after a manual download finishes
-      detectMaxZoom('world').then(setWorldZoom);
-      detectMaxZoom('na').then(setUsZoom);
+    if (downloadedRegions.includes(region.id)) {
+      handleDelete(region);
     } else {
-      setIsDownloading(false);
+      handleDownload(region);
     }
   };
 
-  const handleClearCache = async () => {
-    if (await confirm("This will delete the offline maps you manually downloaded to your device. Are you sure?", "Delete Downloaded Maps?")) {
+  const handleDownload = async (region: MapRegion) => {
+    if (!Capacitor.isNativePlatform()) {
+      await alert("Offline maps are only supported in the native mobile app.");
+      return;
+    }
+    if (downloadingRegionId) return;
+
+    if (await confirm(`Download ${region.name}? This will require ~${region.estimatedSizeMB}MB of storage space.`, "Download Map")) {
+      setDownloadingRegionId(region.id);
       try {
-        const MAP_CACHE_NAMES = [
-            'map-tiles-permanent',
-            'map-tiles-regional',
-            'map-tiles-detailed',
-            'offline-map-tiles'
-        ];
-        for (const name of MAP_CACHE_NAMES) {
-            await caches.delete(name);
-        }
-        refreshCacheString();
-      } catch (e: unknown) {
-        if (e instanceof Error) console.error(e.message);
+        await downloadMapRegion(region, () => {
+           // We can hook this to UI if we write a custom event listener
+        });
+        await refreshDownloaded();
+        await alert(`${region.name} has been downloaded successfully.`, "Download Complete");
+      } catch (err: any) {
+        await alert(err.message, "Download Failed");
+      } finally {
+        setDownloadingRegionId(null);
       }
     }
+  };
+
+  const handleDelete = async (region: MapRegion) => {
+    if (await confirm(`Are you sure you want to delete ${region.name}?`, "Delete Map")) {
+      await deleteMapRegion(region.id);
+      await refreshDownloaded();
+    }
+  };
+
+  const renderRegionList = (title: string) => {
+    return (
+      <div style={{ marginBottom: "20px" }}>
+        <h4 style={{ margin: "0 0 10px 0" }}>{title}</h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {regions.map(region => {
+            const isDownloaded = downloadedRegions.includes(region.id);
+            const isDownloading = downloadingRegionId === region.id;
+            
+            return (
+              <div key={region.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px' }}>
+                <div>
+                  <div style={{ fontWeight: 'bold' }}>{region.name}</div>
+                  <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>~{region.estimatedSizeMB} MB</div>
+                </div>
+                <div>
+                  {isDownloading ? (
+                    <span style={{ color: "var(--primary)", fontWeight: "bold" }}>Downloading...</span>
+                  ) : isDownloaded ? (
+                    <button 
+                      onClick={() => handleDelete(region)}
+                      style={{ padding: '6px 12px', backgroundColor: 'transparent', border: '1px solid #ef4444', color: "var(--danger)", borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      Delete
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => handleDownload(region)}
+                      disabled={downloadingRegionId !== null}
+                      style={{ padding: '6px 12px', backgroundColor: downloadingRegionId ? '#cbd5e1' : "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '4px', cursor: downloadingRegionId ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                    >
+                      Download
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -253,118 +292,28 @@ const OfflineMapManager: React.FC = () => {
     >
       <h3 style={{ marginTop: 0, display: 'flex', justifyContent: 'space-between' }}>
         Offline Maps
-        <span style={{ fontSize: '0.8em', color: "var(--text-muted)", fontWeight: 'normal' }}>
-          {storageString}
-        </span>
       </h3>
       <p style={{ color: "var(--text-secondary)", fontSize: "0.95em", marginBottom: "20px" }}>
-        The app automatically saves the maps you look at. To guarantee you have a map when driving to remote put-ins without cell service, you can manually download entire areas below.
+        Download high-quality vector maps to ensure you can navigate even when driving to remote put-ins without cell service.
       </p>
 
-      {isDownloading && downloadProgress && (
-        <div className="settings-nested-panel" style={{ marginBottom: '20px', padding: '15px', borderRadius: '6px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontWeight: 'bold', color: "var(--primary)" }}>Downloading Map...</span>
-            <span>{downloadProgress.done} / {downloadProgress.total}</span>
+      {regions.length === 0 ? (
+        <p>Loading available regions...</p>
+      ) : (
+        <>
+          <div style={{ marginBottom: "30px" }}>
+             <InteractiveUSMap 
+                downloadedRegions={downloadedRegions}
+                downloadingRegionId={downloadingRegionId}
+                onStateClick={handleStateClick}
+             />
           </div>
-          <div style={{ width: '100%', backgroundColor: "var(--border)", borderRadius: '4px', overflow: 'hidden', height: '8px' }}>
-            <div style={{ width: `${(downloadProgress.done / downloadProgress.total) * 100}%`, backgroundColor: "var(--primary)", height: '100%', transition: 'width 0.2s' }}></div>
-          </div>
-        </div>
+          {renderRegionList('All Available Regions')}
+        </>
       )}
-
-      <div className="settings-nested-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', borderRadius: '8px' }}>
-        
-        <MapDownloadItem
-          label="Global Scope (World Map)"
-          value={worldZoom}
-          onChange={setWorldZoom}
-          disabled={isDownloading}
-          onDownload={() => handleDownload('world', worldZoom)}
-          options={[
-            { value: 2, label: "Vague (Zoom 2) - Default" },
-            { value: 3, label: "Basic (Zoom 3)" },
-            { value: 4, label: "Detailed (Zoom 4)" },
-            { value: 5, label: "Maximum (Zoom 5)" }
-          ]}
-        />
-
-        <MapDownloadItem
-          label="Regional Scope (North America)"
-          value={usZoom}
-          onChange={setUsZoom}
-          disabled={isDownloading}
-          onDownload={() => handleDownload('us', usZoom)}
-          options={[
-            { value: 4, label: "Basic (Zoom 4) - Default" },
-            { value: 5, label: "Standard (Zoom 5)" },
-            { value: 6, label: "Detailed (Zoom 6)" },
-            { value: 7, label: "High Res (Zoom 7)" },
-            { value: 8, label: "Maximum (Zoom 8)" }
-          ]}
-        />
-        
-        <div style={{ height: '1px', backgroundColor: "var(--border)", margin: '8px 0' }} />
-
-        <button 
-          onClick={handleClearCache}
-          disabled={isDownloading}
-          style={{ padding: '12px 16px', backgroundColor: 'transparent', border: '1px solid #ef4444', color: "var(--danger)", borderRadius: '6px', cursor: isDownloading ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-        >
-          Delete All Downloaded Maps
-        </button>
-      </div>
 
     </div>
   );
 };
-
-const MapDownloadItem: React.FC<{
-  label: string;
-  value: number;
-  onChange: (val: number) => void;
-  disabled: boolean;
-  onDownload: () => void;
-  options: { value: number; label: string }[];
-}> = ({ label, value, onChange, disabled, onDownload, options }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-    <label style={{ fontSize: '0.9em', fontWeight: 'bold' }}>{label}</label>
-    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-      <select 
-        value={value} 
-        onChange={e => onChange(Number(e.target.value))}
-        disabled={disabled}
-        style={{ 
-          padding: '10px', 
-          borderRadius: '6px', 
-          border: "1px solid var(--border)", 
-          flex: '1 1 200px', 
-          backgroundColor: "var(--surface)",
-          minWidth: '0'
-        }}
-      >
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-      <button 
-        onClick={onDownload}
-        disabled={disabled}
-        style={{ 
-          padding: '10px 16px', 
-          backgroundColor: disabled ? '#cbd5e1' : "var(--primary)", 
-          color: "var(--surface)", 
-          border: 'none', 
-          borderRadius: '6px', 
-          cursor: disabled ? 'not-allowed' : 'pointer', 
-          flex: '1 1 140px',
-          fontWeight: 'bold'
-        }}
-      >
-        Download
-      </button>
-    </div>
-  </div>
-);
 
 export default SettingsPage;

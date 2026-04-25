@@ -1,0 +1,55 @@
+.interactive-us-map-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px;
+  background-color: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.interactive-us-map-container svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.state-path {
+  stroke: var(--surface);
+  stroke-width: 1.5;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.state-path:hover {
+  filter: brightness(0.9);
+  stroke-width: 2.5;
+}
+
+/* Status Colors */
+.state-path.none {
+  fill: #e2e8f0; /* Gray for not downloaded */
+}
+
+.state-path.downloaded {
+  fill: #10b981; /* Green for ready */
+}
+
+.state-path.downloading {
+  fill: #3b82f6; /* Blue for downloading */
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .state-path.none {
+    fill: #334155;
+  }
+}

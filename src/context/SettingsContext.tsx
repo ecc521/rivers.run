@@ -55,6 +55,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       setFlowUnits(await persistentStorage.get("flowUnits") || "default");
       setTempUnits(await persistentStorage.get("tempUnits") || "imperial");
       setPrecipUnits(await persistentStorage.get("precipUnits") || "imperial");
+      
+      const theme = await persistentStorage.get("userTheme");
+      if (theme) setThemePref(theme);
+      
+      const cbMode = await persistentStorage.get("colorBlindMode");
+      if (cbMode) setColorBlindPref(cbMode);
+
+      const defaultSearch = await persistentStorage.get("homePageDefaultSearch");
+      if (defaultSearch) setDefaultSearchPref(defaultSearch);
+
       setLoading(false);
     }
     init();

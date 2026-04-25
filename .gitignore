@@ -69,3 +69,9 @@ rivers-run-firebase-adminsdk-wzb5p-843d01551f.json
 ttsconfig.tsbuildinfo
 artifacts/screenshots/
 test-results/
+data/
+
+# Map Data
+output/
+*.pmtiles
+

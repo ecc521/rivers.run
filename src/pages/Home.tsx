@@ -22,7 +22,7 @@ import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useSettings } from "../context/SettingsContext";
 import { useModal } from "../context/ModalContext";
 import { triggerReviewIfEligible } from "../utils/appReview";
-import { autoDownloadBaseMaps } from "../utils/offlineMapEngine";
+
 import { useSEO } from "../hooks/useSEO";
 import { DEFAULT_STATE_MAP, getCountryName } from "../utils/regions";
 
@@ -92,7 +92,7 @@ const Home: React.FC = () => {
      if (!riversLoading) {
        // Small 1-second delay to ensure the UI is fully hydrated before network noise starts
        const t = setTimeout(() => {
-           autoDownloadBaseMaps();
+
        }, 1000);
        return () => clearTimeout(t);
      }

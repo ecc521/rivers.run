@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TileLayer } from "react-leaflet";
+import { Source, Layer } from "react-map-gl/maplibre";
 
 export const WeatherRadarLayer: React.FC<{ mode: "off" | "live" | "60min" }> = ({ mode }) => {
     const [frames, setFrames] = useState<string[]>([]);
@@ -23,7 +23,6 @@ export const WeatherRadarLayer: React.FC<{ mode: "off" | "live" | "60min" }> = (
             
             setFrames(paths);
             setActiveIndex(0);
-            
              
             animationInterval = setInterval(() => {
                 setActiveIndex(prev => (prev + 1) % paths.length);
@@ -40,14 +39,13 @@ export const WeatherRadarLayer: React.FC<{ mode: "off" | "live" | "60min" }> = (
     return (
         <>
             {frames.map((url, i) => (
-                <TileLayer 
-                    key={url}
-                    url={url} 
-                    opacity={i === activeIndex ? 0.5 : 0} 
-                    zIndex={10} 
-                    attribution={i === 0 ? "&copy; Iowa Environmental Mesonet" : ""}
-                    maxNativeZoom={8}
-                />
+                <Source key={url} id={`radar-${i}`} type="raster" tiles={[url]} tileSize={256} maxzoom={8}>
+                    <Layer 
+                        id={`radar-layer-${i}`} 
+                        type="raster" 
+                        paint={{ "raster-opacity": i === activeIndex ? 0.5 : 0 }} 
+                    />
+                </Source>
             ))}
         </>
     );

@@ -1042,12 +1042,14 @@ Those include name,section,skill,quality, and flow info*/
 }
 
 /* OpenStreetMap Dark Mode Tile Inversion */
-.dark-theme .leaflet-container {
+.dark-theme .leaflet-container,
+.dark-theme .maplibregl-map {
     background-color: #000 !important;
 }
 /* Target both the tile pane and general layer panes to catch overlays and different Leaflet versions */
 .dark-theme .leaflet-tile-pane, 
-.dark-theme .leaflet-layer {
+.dark-theme .leaflet-layer,
+.dark-theme .maplibregl-canvas {
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%) !important;
     will-change: filter; /* Hint to browser to enable hardware acceleration for this filter */
 }

@@ -497,7 +497,7 @@ const RiverPage: React.FC = () => {
                    }}>
                       {/* Threshold Tick Marks & Labels */}
                       {/* 25% - Low (Top) */}
-                      <div style={{ position: "absolute", left: "25%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)", zIndex: 1 }} />
+                      <div style={{ position: "absolute", left: "25%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)" }} />
                       <div style={{ position: "absolute", left: "25%", bottom: "100%", transform: "translateX(-50%)", paddingBottom: "5px", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1, whiteSpace: "nowrap" }}>
                         {(() => {
                           const raw = pillRiver.flow?.low;
@@ -509,7 +509,7 @@ const RiverPage: React.FC = () => {
                       </div>
 
                       {/* 50% - Mid (Bottom) */}
-                      <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)", zIndex: 1 }} />
+                      <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)" }} />
                       <div style={{ position: "absolute", left: "50%", top: "100%", transform: "translateX(-50%)", paddingTop: "5px", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1, whiteSpace: "nowrap" }}>
                         {(() => {
                           const raw = pillRiver.flow?.mid;
@@ -521,7 +521,7 @@ const RiverPage: React.FC = () => {
                       </div>
 
                       {/* 75% - High (Top) */}
-                      <div style={{ position: "absolute", left: "75%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)", zIndex: 1 }} />
+                      <div style={{ position: "absolute", left: "75%", top: 0, bottom: 0, width: "1px", backgroundColor: isDarkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)" }} />
                       <div style={{ position: "absolute", left: "75%", bottom: "100%", transform: "translateX(-50%)", paddingBottom: "5px", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1, whiteSpace: "nowrap" }}>
                         {(() => {
                           const raw = pillRiver.flow?.high;
@@ -544,7 +544,6 @@ const RiverPage: React.FC = () => {
                           border: "2px solid",
                           borderColor: isDarkMode ? "#000" : "#fff",
                           boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                          zIndex: 2,
                           display: pillRiver.running == null ? 'none' : 'block'
                       }} />
                    </div>

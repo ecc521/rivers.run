@@ -1,262 +1,152 @@
-// Map tile calculation based on standard OSM Slippy Math (EPSG:3857)
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 
-export interface BoundingBox {
-    minLat: number;
-    maxLat: number;
-    minLon: number;
-    maxLon: number;
+export interface MapRegion {
+    id: string; // e.g. "US-CO"
+    name: string;
+    country: string;
+    file: string;
+    estimatedSizeMB: number;
+    url?: string; // computed at runtime
 }
 
-// World Bounds
-export const WORLD_BOUNDS: BoundingBox = {
-    minLat: -85.0511,
-    maxLat: 85.0511,
-    minLon: -180,
-    maxLon: 180
-};
+// The public endpoint configured in Cloudflare R2
+const R2_PUBLIC_URL = 'https://protomaps.rivers.run';
 
-// North America Bounds (Roughly captures Alaska + Hawaii + Lower 48 + Canada)
-export const NORTH_AMERICA_BOUNDS: BoundingBox = {
-    minLat: 15.0,
-    maxLat: 72.0,
-    minLon: -170.0,
-    maxLon: -50.0
-};
+let cachedManifest: MapRegion[] | null = null;
 
-const DEG_TO_RAD = Math.PI / 180;
+export const fetchMapRegions = async (): Promise<MapRegion[]> => {
+    if (cachedManifest) return cachedManifest;
 
-export const lon2tile = (lon: number, zoom: number): number => {
-    return Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
-};
-
-export const lat2tile = (lat: number, zoom: number): number => {
-    const latRad = lat * DEG_TO_RAD;
-    return Math.floor(
-        ((1 -
-            Math.log(
-                Math.tan(latRad) + 1 / Math.cos(latRad)
-            ) /
-                Math.PI) /
-            2) *
-            Math.pow(2, zoom)
-    );
-};
-
-export const generateTileQueue = (
-    bounds: BoundingBox,
-    minZoom: number,
-    maxZoom: number
-): string[] => {
-    const urls: string[] = [];
-
-    for (let z = minZoom; z <= maxZoom; z++) {
-        // Find grid boundaries for this zoom
-        const minX = Math.max(0, lon2tile(bounds.minLon, z));
-        const maxX = Math.min(Math.pow(2, z) - 1, lon2tile(bounds.maxLon, z));
-
-        // Note: latitude goes from + (North) to - (South) in coordinates,
-        // but Y tiles go from 0 (North/Top) to max (South/Bottom).
-        const minY = Math.max(0, lat2tile(bounds.maxLat, z));
-        const maxY = Math.min(Math.pow(2, z) - 1, lat2tile(bounds.minLat, z));
-
-        for (let x = minX; x <= maxX; x++) {
-            for (let y = minY; y <= maxY; y++) {
-                urls.push(`https://tile.openstreetmap.org/${z}/${x}/${y}.png`);
-            }
-        }
-    }
-
-    return urls;
-};
-
-const MAP_CACHE_NAMES = [
-    'map-tiles-permanent',
-    'map-tiles-regional',
-    'map-tiles-detailed',
-    'offline-map-tiles' // Legacy support for old cache name
-];
-
-const getCacheNameForUrl = (url: string): string => {
-    const zoomRegex = /\/(\d+)\/(\d+)\/(\d+)\.png$/;
-    const match = zoomRegex.exec(url);
-    if (!match) return 'map-tiles-permanent';
-
-    const z = parseInt(match[1], 10);
-    if (z <= 8) return 'map-tiles-permanent';
-    if (z <= 12) return 'map-tiles-regional';
-    return 'map-tiles-detailed';
-};
-
-export const downloadMapTiles = async (
-    urls: string[],
-    onProgress: (done: number, total: number) => void
-) => {
-    const total = urls.length;
-    let done = 0;
-    
-    // Process in batches of 10 to avoid suffocating the browser's HTTP queue
-    const BATCH_SIZE = 10;
-    
-    // Pre-open all caches we might need
-    const cachesMap: Record<string, Cache> = {};
-    for (const name of MAP_CACHE_NAMES) {
-        cachesMap[name] = await caches.open(name);
-    }
-    
-    for (let i = 0; i < urls.length; i += BATCH_SIZE) {
-        const batch = urls.slice(i, i + BATCH_SIZE);
-        
-        await Promise.all(
-            batch.map(async (url) => {
-                try {
-                    const cacheName = getCacheNameForUrl(url);
-                    const cache = cachesMap[cacheName];
-
-                    // Skip if already cached in ANY of our tiers to avoid redundant downloads
-                    let existing = null;
-                    for (const name of MAP_CACHE_NAMES) {
-                        existing = await cachesMap[name].match(url);
-                        if (existing) break;
-                    }
-                    if (existing) return;
-
-                    // Fetch natively and pump explicitly into the sw-cache bucket
-                    const res = await fetch(url, { mode: "cors" });
-                    if (res.ok) {
-                        await cache.put(url, res);
-                    }
-                } catch (e: unknown) {
-                    if (e instanceof Error) console.warn("Failed to fetch map tile:", url, e.message);
-                }
-            })
-        );
-        
-        done += batch.length;
-        if (done > total) done = total; // clamp for safety
-        onProgress(done, total);
-        
-        // Let the JS event loop breathe so the UI doesn't freeze
-        await new Promise(resolve => setTimeout(resolve, 10));
-    }
-};
-
-export const getCacheUsageString = async (): Promise<string> => {
     try {
-        let totalTileCount = 0;
+        const response = await fetch(`${R2_PUBLIC_URL}/regions_manifest.json`);
+        if (!response.ok) throw new Error("Failed to fetch regions manifest");
         
-        for (const name of MAP_CACHE_NAMES) {
-            try {
-                const cache = await caches.open(name);
-                const keys = await cache.keys();
-                totalTileCount += keys.length;
-            } catch {
-                // ignore
-            }
-        }
+        const data = await response.json();
         
-        if (totalTileCount > 0) {
-            // Rough average of 15KB per slippy map PNG
-            const estimatedMb = ((totalTileCount * 15) / 1024).toFixed(1);
-            return `${totalTileCount.toLocaleString()} Tiles Offline (~${estimatedMb} MB)`;
-        }
+        // Transform the object into an array of MapRegion objects
+        const regions: MapRegion[] = Object.keys(data).map(abbrev => {
+            const raw = data[abbrev];
+            const id = `US-${abbrev}`;
+            return {
+                id,
+                name: raw.name,
+                country: raw.country,
+                file: raw.file,
+                estimatedSizeMB: raw.sizeMB,
+                url: `${R2_PUBLIC_URL}/${raw.file}`
+            };
+        });
 
-        // Fallback to native hardware if 0 bounds
-        if ('storage' in navigator && 'estimate' in navigator.storage) {
-            const estimate = await navigator.storage.estimate();
-            if (estimate.usage !== undefined && estimate.usage > 0) {
-                const usageMB = (estimate.usage / (1024 * 1024)).toFixed(1);
-                return `0 Tiles Cached (${usageMB} MB System Overhead)`;
-            }
-        }
+        // Sort alphabetically by name
+        regions.sort((a, b) => a.name.localeCompare(b.name));
         
-        return '0 Tiles Cached';
+        cachedManifest = regions;
+        return regions;
+    } catch (e) {
+        console.error("Manifest Fetch Error:", e);
+        return [];
+    }
+};
+
+const MAPS_DIR = 'offline_maps';
+
+// Initialize the directory
+const ensureMapDirectory = async () => {
+    try {
+        await Filesystem.mkdir({
+            path: MAPS_DIR,
+            directory: Directory.Data,
+            recursive: true
+        });
+    } catch (_e) {
+        // eslint-disable-next-line sonarjs/no-ignored-exceptions
+        // Directory likely exists
+    }
+};
+
+export const getDownloadedRegions = async (): Promise<string[]> => {
+    if (!Capacitor.isNativePlatform()) {
+        return []; 
+    }
+    await ensureMapDirectory();
+    try {
+        const result = await Filesystem.readdir({
+            path: MAPS_DIR,
+            directory: Directory.Data
+        });
+        return result.files.map(f => f.name.replace('.pmtiles', ''));
     } catch {
-        return 'Storage error';
+        return [];
     }
 };
 
-export const autoDownloadBaseMaps = async () => {
+export const getLocalPmtilesUrl = async (regionId: string): Promise<string | null> => {
+    if (!Capacitor.isNativePlatform()) return null;
     try {
-        const worldUrls = generateTileQueue(WORLD_BOUNDS, 0, 2);
-        const usUrls = generateTileQueue(NORTH_AMERICA_BOUNDS, 0, 4);
-        
-        // Let it run silently in the background
-        await downloadMapTiles([...worldUrls, ...usUrls], () => {});
-    } catch (err: unknown) {
-        if (err instanceof Error) console.error("Auto base map download failed", err.message);
-    }
-};
-
-/**
- * Heuristically detects the maximum zoom level currently downloaded 
- * for a specific region by scanning cache keys.
- */
-export const detectMaxZoom = async (type: 'world' | 'na'): Promise<number> => {
-    try {
-        const allUrls: string[] = [];
-        for (const name of MAP_CACHE_NAMES) {
-            const cache = await caches.open(name);
-            const keys = await cache.keys();
-            allUrls.push(...keys.map(k => k.url));
-        }
-        
-        const bounds = type === 'world' ? WORLD_BOUNDS : NORTH_AMERICA_BOUNDS;
-        const tileCountsByZoom: Record<number, number> = {};
-        const zoomRegex = /\/(\d+)\/(\d+)\/(\d+)\.png$/;
-        
-        const boundsCache: Record<number, { minX: number, maxX: number, minY: number, maxY: number }> = {};
-        
-        function isTileInBounds(x: number, y: number, z: number, bounds: BoundingBox) {
-            if (!boundsCache[z]) {
-                boundsCache[z] = {
-                    minX: Math.max(0, lon2tile(bounds.minLon, z)),
-                    maxX: Math.min(Math.pow(2, z) - 1, lon2tile(bounds.maxLon, z)),
-                    minY: Math.max(0, lat2tile(bounds.maxLat, z)),
-                    maxY: Math.min(Math.pow(2, z) - 1, lat2tile(bounds.minLat, z))
-                };
-            }
-            const b = boundsCache[z];
-            return (x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY);
-        }
-
-        // Group and count strictly within geographic target bounds
-        for (const url of allUrls) {
-            const match = zoomRegex.exec(url);
-            if (match) {
-                const z = parseInt(match[1], 10);
-                const x = parseInt(match[2], 10);
-                const y = parseInt(match[3], 10);
-
-                if (isTileInBounds(x, y, z, bounds)) {
-                    tileCountsByZoom[z] = (tileCountsByZoom[z] || 0) + 1;
-                }
-            }
-        }
-        
-        let maxCompleteZoom = -1;
-        const maxPossible = type === 'world' ? 10 : 14;
-        
-        // Validate each level sequentially. Break cleanly if a layer is missing tiles.
-        for (let z = 0; z <= maxPossible; z++) {
-            const minX = Math.max(0, lon2tile(bounds.minLon, z));
-            const maxX = Math.min(Math.pow(2, z) - 1, lon2tile(bounds.maxLon, z));
-            const minY = Math.max(0, lat2tile(bounds.maxLat, z));
-            const maxY = Math.min(Math.pow(2, z) - 1, lat2tile(bounds.minLat, z));
-            
-            const expectedCount = (maxX - minX + 1) * (maxY - minY + 1);
-            const actualCount = tileCountsByZoom[z] || 0;
-
-            if (actualCount >= expectedCount) {
-                maxCompleteZoom = z;
-            } else {
-                break; 
-            }
-        }
-        
-        // Return standard minimum baselines natively 
-        const defaultZoom = type === 'world' ? 2 : 4;
-        return maxCompleteZoom >= defaultZoom ? maxCompleteZoom : defaultZoom;
+        const uriResult = await Filesystem.getUri({
+            path: `${MAPS_DIR}/${regionId}.pmtiles`,
+            directory: Directory.Data
+        });
+        return Capacitor.convertFileSrc(uriResult.uri);
     } catch {
-        return type === 'world' ? 2 : 4;
+        return null;
+    }
+};
+
+export const downloadMapRegion = async (
+    region: MapRegion, 
+    onProgress: (progress: number) => void
+): Promise<void> => {
+    if (!Capacitor.isNativePlatform()) {
+        throw new Error("Offline map downloading is currently only supported on the native mobile app.");
+    }
+    
+    await ensureMapDirectory();
+    const destPath = `${MAPS_DIR}/${region.id}.pmtiles`;
+
+    try {
+        // Clean up any partial previous download
+        try {
+            await Filesystem.deleteFile({ path: destPath, directory: Directory.Data });
+        } catch (_err) {
+            // eslint-disable-next-line sonarjs/no-ignored-exceptions
+        }
+
+        // Use Capacitor's native Filesystem downloader to bypass JS memory limits for huge files
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        await Filesystem.downloadFile({
+            url: region.url!,
+            path: destPath,
+            directory: Directory.Data,
+            progress: true
+        });
+        
+        // Note: CapacitorHttp doesn't easily expose the progress callback to the JS layer in a streaming way
+        // without an event listener. For simplicity in this demo, we simulate a jump to 100% when done.
+        onProgress(1.0);
+        
+    } catch (err: any) {
+        // Clean up corrupted file on failure
+        try {
+            await Filesystem.deleteFile({ path: destPath, directory: Directory.Data });
+        } catch (_err) {
+            // eslint-disable-next-line sonarjs/no-ignored-exceptions
+        }
+        throw new Error(`Failed to download map: ${err.message}`, { cause: err });
+    }
+};
+
+export const deleteMapRegion = async (regionId: string): Promise<void> => {
+    if (!Capacitor.isNativePlatform()) return;
+    try {
+        await Filesystem.deleteFile({
+            path: `${MAPS_DIR}/${regionId}.pmtiles`,
+            directory: Directory.Data
+        });
+    } catch (_err) {
+        // eslint-disable-next-line sonarjs/no-ignored-exceptions
+        // File could not be deleted
     }
 };

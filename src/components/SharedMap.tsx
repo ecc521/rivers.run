@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup, useMap, GeoJSON } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import Map, { Source, Layer, Popup, Marker } from "react-map-gl/maplibre";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { getDownloadedRegions, getLocalPmtilesUrl } from "../utils/offlineMapEngine";
+import { Protocol } from "pmtiles";
 import type { RiverData } from "../types/River";
 import { calculateColor } from "../utils/flowInfoCalculations";
 import { useSettings } from "../context/SettingsContext";
@@ -21,7 +23,6 @@ import { fetchAPI } from "../services/api";
 
 import { SearchOverlay } from "./SearchOverlay";
 import { ShareMapModal } from "./ShareMapModal";
-import { Circle } from "react-leaflet";
 import { Capacitor } from '@capacitor/core';
 import { SystemBars } from '@capacitor/core';
 
@@ -84,125 +85,17 @@ const PopupEventManager = ({ isHoverMode, onEnter, onLeave, children }: { isHove
     return <div ref={ref} style={{ textAlign: "center", fontSize: "1.1em" }}>{children}</div>;
 };
 
-const MapStateObserver = ({ setCenter, setZoom }: { setCenter: any, setZoom: any }) => {
-    const map = useMap();
-    useEffect(() => {
-        const onMoveEnd = () => {
-            const center = map.getCenter();
-            setCenter([center.lat, center.lng]);
-            setZoom(map.getZoom());
-        };
-        map.on("moveend", onMoveEnd);
-        map.on("zoomend", onMoveEnd);
-        return () => {
-            map.off("moveend", onMoveEnd);
-            map.off("zoomend", onMoveEnd);
-        };
-    }, [map, setCenter, setZoom]);
-    return null;
-};
-const MapController = ({ isFullScreen }: { isFullScreen: boolean }) => {
-    const map = useMap();
-    useEffect(() => {
-        // Invalidate map size so Leaflet recalculates dimensions when fullscreen toggles
-        const timer = setTimeout(() => {
-            if (map && map.getContainer && map.getContainer()) {
-                map.invalidateSize();
-            }
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [isFullScreen, map]);
-    return null;
-};
 
 
-const imageIconCache = new Map<string, HTMLImageElement>();
-
-// --- Leaflet DOM-less Canvas Injection ---
-if (typeof window !== "undefined" && L && L.Canvas) {
-    const originalUpdateCircle = (L.Canvas.prototype as any)._updateCircle;
-    // We only hook once
-    if (!originalUpdateCircle.__isHooked) {
-        (L.Canvas.prototype as any)._updateCircle = function(layer: any) {
-            if (layer.options.img && layer.options.img.complete) {
-                if (!(this as any)._drawing || layer._empty()) { return; }
-                const p = layer._point;
-                const ctx = (this as any)._ctx;
-                const img = layer.options.img;
-                
-                // Draw image on hardware canvas
-                // Our PNG size is 28x40, anchor is at [14, 38]
-                ctx.drawImage(img, p.x - 14, p.y - 38, 28, 40);
-            } else {
-                // Standard circle rendering fallback
-                originalUpdateCircle.call(this, layer);
-            }
-        };
-        (L.Canvas.prototype as any)._updateCircle.__isHooked = true;
-    }
-}
-
-if (typeof window !== "undefined" && L && L.CircleMarker) {
-    const originalContainsPoint = (L.CircleMarker.prototype as any)._containsPoint;
-    if (!originalContainsPoint.__isHooked) {
-        (L.CircleMarker.prototype as any)._containsPoint = function(p: any) {
-            // Apply 15px universal "fat-finger" padding explicitly to counteract
-            // the loss of native OS DOM-element touch heuristics on WebGL canvas bounds.
-            let fatFingerPadding = 15;
-            
-            // Prevent massive hitboxes from overlapping adjacent clustered markers on desktop
-            // by disabling artificial fat-finger expansion during precise mouse hover events.
-            const globalWin = window as any;
-            if (typeof window !== "undefined" && globalWin.event) {
-                const e = globalWin.event;
-                if (e.type === 'mousemove' || e.pointerType === 'mouse') {
-                    fatFingerPadding = 0;
-                }
-            }
-
-            if (this.options.img) {
-                const x = this._point.x;
-                const y = this._point.y;
-                const tol = this._clickTolerance() + fatFingerPadding;
-                
-                // 1. Check if inside the top circular bulb of the pin
-                // Our SVG circle is radius 12 at [14, 14], with a 1.5px stroke
-                const cy = y - 24; // Center Y relative to the bottom tip
-                const dx = p.x - x;
-                const dy = p.y - cy;
-                const distToCenter = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distToCenter <= 13.5 + tol) {
-                    return true;
-                }
-                
-                // 2. Check if inside the triangular tail of the pin
-                // Tail linearly tapers from full width at cy down to a point at y
-                if (p.y > cy && p.y <= y + tol) {
-                    const taperRatio = Math.max(0, (y - p.y) / 24);
-                    const halfWidth = 12 * taperRatio + 1.5; // + stroke
-                    if (Math.abs(dx) <= halfWidth + tol) {
-                        return true;
-                    }
-                }
-                
-                return false;
-            } else {
-                // Native leaflet distance calculation with our injected padding
-                const tol = this._clickTolerance() + fatFingerPadding;
-                return p.distanceTo(this._point) <= this._radius + tol;
-            }
-        };
-        (L.CircleMarker.prototype as any)._containsPoint.__isHooked = true;
-    }
-}
+const imageIconCache = new globalThis.Map<string, { imageData: ImageData, pixelRatio: number }>();
 
 
-const getCachedCanvasImage = (letter: string, fillColor: string, opacity: number, isDarkMode: boolean) => {
+
+const getCachedCanvasImage = (letter: string, fillColor: string, opacity: number) => {
     const dpr = typeof window !== "undefined" ? (window.devicePixelRatio || 2) : 2;
     const finalDpr = Math.max(dpr, 2); // Baseline at least 2x
     
-    const key = `${letter}_${fillColor}_${opacity}_${isDarkMode}_${finalDpr}`;
+    const key = `${letter}_${fillColor}_${opacity}_${finalDpr}`;
     if (imageIconCache.has(key)) {
         return imageIconCache.get(key)!;
     }
@@ -215,10 +108,6 @@ const getCachedCanvasImage = (letter: string, fillColor: string, opacity: number
     if (ctx) {
         ctx.scale(finalDpr, finalDpr);
         ctx.translate(2, 2);
-        
-        if (isDarkMode) {
-            ctx.filter = "brightness(0.82)";
-        }
 
         const p = new Path2D("M12 0C5.373 0 0 5.373 0 12c0 8.25 12 24 12 24s12-15.75 12-24C24 5.373 18.627 0 12 0z");
         
@@ -228,7 +117,7 @@ const getCachedCanvasImage = (letter: string, fillColor: string, opacity: number
         
         ctx.globalAlpha = 1.0;
         ctx.lineWidth = 1.5;
-        ctx.strokeStyle = isDarkMode ? "#f8fafc" : "#1e293b";
+        ctx.strokeStyle = "#1e293b"; // Always dark, CSS invert will flip it for dark mode
         ctx.stroke(p);
         
         ctx.fillStyle = "#ffffff";
@@ -237,148 +126,20 @@ const getCachedCanvasImage = (letter: string, fillColor: string, opacity: number
         ctx.textBaseline = "middle";
         
         ctx.lineWidth = 2.5;
-        ctx.strokeStyle = "rgba(0,0,0,0.85)";
         ctx.strokeText(letter, 12, 13.5);
         ctx.fillText(letter, 12, 13.5);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const result = { imageData, pixelRatio: finalDpr };
+        imageIconCache.set(key, result);
+        return result;
     }
     
-    const img = new Image();
-    img.src = canvas.toDataURL("image/png");
-    imageIconCache.set(key, img);
-    return img;
-};
-
-const MapMarkers = React.memo(({ 
-    markers, 
-    handleMarkerClick, 
-    handleMarkerMouseOver,
-    handleMarkerMouseOut,
-    isDarkMode, 
-    isColorBlindMode 
-}: { 
-    markers: any[], 
-    handleMarkerClick: (river: RiverData, point: any, lat: number, lon: number) => void,
-    handleMarkerMouseOver: (river: RiverData, point: any, lat: number, lon: number) => void,
-    handleMarkerMouseOut: () => void,
-    isDarkMode: boolean, 
-    isColorBlindMode: boolean 
-}) => {
-    const gauges = useMemo(() => markers.filter(pt => pt.river.isGauge), [markers]);
-    const nonGauges = useMemo(() => markers.filter(pt => !pt.river.isGauge), [markers]);
-
-    const geoJsonData: any = useMemo(() => {
-        return {
-            type: "FeatureCollection",
-            features: gauges.map(pt => ({
-                type: "Feature",
-                geometry: {
-                    type: "Point",
-                    coordinates: [pt.lon, pt.lat]
-                },
-                properties: {
-                    river: pt.river,
-                    point: pt.point,
-                    fillColor: "#df6af1"
-                }
-            }))
-        };
-    }, [gauges]);
-
-    const onEachFeature = (feature: any, layer: any) => {
-        const pt = feature.properties;
-        layer.on('click', () => handleMarkerClick(pt.river, pt.point, pt.point.lat, pt.point.lon));
-        layer.on('mouseover', () => handleMarkerMouseOver(pt.river, pt.point, pt.point.lat, pt.point.lon));
-        layer.on('mouseout', () => handleMarkerMouseOut());
-    };
-
-    const pointToLayer = (feature: any, latlng: any) => {
-        return L.circleMarker(latlng, {
-            radius: 6.75,
-            fillColor: feature.properties.fillColor,
-            fillOpacity: 1.0,
-            color: isDarkMode ? "#f8fafc" : "#1e293b",
-            weight: 1
-        });
-    };
-
-    const geoJsonKey = `geo-${gauges.length}`;
-
-    return (
-        <>
-            {gauges.length > 0 && (
-                <GeoJSON 
-                    key={geoJsonKey}
-                    data={geoJsonData} 
-                    pointToLayer={pointToLayer} 
-                    onEachFeature={onEachFeature} 
-                />
-            )}
-            {nonGauges.map((pt, i) => {
-                const isValidRunning = typeof pt.river.running === 'number' && !isNaN(pt.river.running);
-                const colorStr = calculateColor(isValidRunning ? pt.river.running : null, false, isColorBlindMode);
-                const unknownColor = isDarkMode ? "#000000" : "#9ca3af";
-                const fillColor = colorStr || unknownColor;
-                const opacity = 0.9;
-                
-                const getAccessLetter = (pt: any) => {
-                    if (pt?.type === "put-in") return "P";
-                    if (pt?.type === "take-out") return "T";
-                    return "A";
-                };
-                const letter = getAccessLetter(pt.point);
-
-                const img = getCachedCanvasImage(letter, fillColor, opacity, isDarkMode);
-
-                return (
-                    <CircleMarker
-                        key={`global-${i}`}
-                        center={[pt.lat, pt.lon]}
-                        radius={14}
-                        pathOptions={{ 
-                            img: img,
-                            stroke: false,
-                            fill: false
-                        } as any}
-                        eventHandlers={{
-                            click: () => handleMarkerClick(pt.river, pt.point, pt.lat, pt.lon),
-                            mouseover: () => handleMarkerMouseOver(pt.river, pt.point, pt.lat, pt.lon),
-                            mouseout: () => handleMarkerMouseOut()
-                        }}
-                    >
-                    </CircleMarker>
-                );
-            })}
-        </>
-    );
-});
-
-const MapFocusController = ({ focusRiver }: { focusRiver?: RiverData }) => {
-    const map = useMap();
-    const mapLocation = useRouterLocation();
-
-    useEffect(() => {
-        if (focusRiver && focusRiver.accessPoints && focusRiver.accessPoints.length > 0) {
-            
-            // If the user explicitly clicked a map pin (e.g. takeout) to navigate to this river...
-            // Do NOT aggressively override them and snap the map to the put-in!
-            // MapContainer's initialCenter array handles the correct positioning.
-            const routeState = mapLocation.state as { clickedLat?: number, clickedLon?: number } | undefined;
-            if (routeState && routeState.clickedLat && routeState.clickedLon) {
-                return;
-            }
-
-            const pt = focusRiver.accessPoints[0];
-            if (pt.lat && pt.lon) {
-                // Smoothly pan without remounting the entire MapContainer!
-                try {
-                    map.flyTo([pt.lat, pt.lon], map.getZoom(), { duration: 0.5 });
-                } catch (err) {
-                    console.warn("Leaflet flyTo safely caught during transition", err);
-                }
-            }
-        }
-    }, [focusRiver?.id, map, mapLocation.state]);
-    return null;
+    // Fallback if context is null
+    const emptyCanvas = document.createElement("canvas");
+    emptyCanvas.width = 1; emptyCanvas.height = 1;
+    const emptyCtx = emptyCanvas.getContext("2d")!;
+    return { imageData: emptyCtx.getImageData(0, 0, 1, 1), pixelRatio: 1 };
 };
 
 interface SharedMapProps {
@@ -387,6 +148,9 @@ interface SharedMapProps {
     focusRiver?: RiverData;
     height?: string; // Standard CSS dimension
 }
+
+// eslint-disable-next-line prefer-const
+let pmtilesProtocolAdded = false;
 
 export const SharedMap: React.FC<SharedMapProps> = ({ 
     initialCenter = [39.8283, -98.5795], 
@@ -398,6 +162,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const { rivers } = useRivers();
     const { isRiverInQuickList } = useLists();
     const location = useLocation();
+    const mapLocation = useRouterLocation();
     const { alert, prompt } = useModal();
     const { user } = useAuth();
     
@@ -697,6 +462,175 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         return finalPoints;
     }, [rivers, searchQuery, isRiverInQuickList]);
 
+    const mapRef = React.useRef<any>(null);
+    const [viewState, setViewState] = useState({
+        longitude: mapInitialCenter[1],
+        latitude: mapInitialCenter[0],
+        zoom: mapInitialZoom
+    });
+
+    // Keep viewState in sync with center changes
+    useEffect(() => {
+        setViewState({
+            longitude: mapCenter[1],
+            latitude: mapCenter[0],
+            zoom: mapZoom
+        });
+    }, [mapCenter, mapZoom]);
+
+    useEffect(() => {
+        if (focusRiver && focusRiver.accessPoints && focusRiver.accessPoints.length > 0) {
+            const routeState = mapLocation.state as { clickedLat?: number, clickedLon?: number } | undefined;
+            if (routeState && routeState.clickedLat && routeState.clickedLon) return;
+            const pt = focusRiver.accessPoints[0];
+            if (pt.lat && pt.lon) {
+                mapRef.current?.flyTo({ center: [pt.lon, pt.lat], zoom: mapZoom, duration: 500 });
+            }
+        }
+    }, [focusRiver?.id, mapLocation.state]);
+
+    const [dynamicStyle, setDynamicStyle] = useState<any>(null);
+
+    useEffect(() => {
+        if (!pmtilesProtocolAdded) {
+            const protocol = new Protocol();
+            maplibregl.addProtocol("pmtiles", protocol.tile);
+            pmtilesProtocolAdded = true;
+        }
+
+        async function buildStyle() {
+            try {
+                const res = await fetch("/local_style.json");
+                const baseStyle = await res.json();
+                
+                // Set default online source
+                baseStyle.sources.protomaps.url = undefined;
+                baseStyle.sources.protomaps.tiles = ["https://api.protomaps.com/tiles/v3/{z}/{x}/{y}.mvt?key=08cdd323336ea22b"];
+
+                const downloaded = await getDownloadedRegions();
+                if (downloaded && downloaded.length > 0) {
+                    for (const region of downloaded) {
+                        const localUrl = await getLocalPmtilesUrl(region);
+                        if (!localUrl) continue;
+                        
+                        const sourceId = `protomaps_${region}`;
+                        baseStyle.sources[sourceId] = {
+                            type: "vector",
+                            url: `pmtiles://${localUrl}`
+                        };
+                        
+                        // Clone layers
+                        const newLayers = baseStyle.layers
+                            .filter((l: any) => l.source === 'protomaps')
+                            .map((l: any) => ({
+                                ...l,
+                                id: `${l.id}_${region}`,
+                                source: sourceId
+                            }));
+                        baseStyle.layers.push(...newLayers);
+                    }
+                }
+                setDynamicStyle(baseStyle);
+            } catch (e) {
+                console.error("Failed to build dynamic map style:", e);
+                setDynamicStyle("/local_style.json"); // Fallback
+            }
+        }
+        buildStyle();
+    }, []);
+
+    const gauges = useMemo(() => globalMarkers.filter((pt: any) => pt.river.isGauge), [globalMarkers]);
+    const nonGauges = useMemo(() => globalMarkers.filter((pt: any) => !pt.river.isGauge), [globalMarkers]);
+
+    const gaugesGeoJson = useMemo<any>(() => ({
+        type: "FeatureCollection",
+        features: gauges.map((pt: any) => ({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [pt.lon, pt.lat] },
+            properties: { 
+                fillColor: "#df6af1",
+                riverId: pt.river.id,
+                pointIndex: gauges.indexOf(pt)
+            }
+        }))
+    }), [gauges]);
+
+    const nonGaugesGeoJson = useMemo<any>(() => ({
+        type: "FeatureCollection",
+        features: nonGauges.map((pt: any) => {
+            const isValidRunning = typeof pt.river.running === 'number' && !isNaN(pt.river.running);
+            const colorStr = calculateColor(isValidRunning ? pt.river.running : null, false, isColorBlindMode);
+            const fillColor = colorStr || "#9ca3af";
+            const getAccessLetter = (pt: any) => {
+                if (pt?.type === "put-in") return "P";
+                if (pt?.type === "take-out") return "T";
+                return "A";
+            };
+            const letter = getAccessLetter(pt.point);
+            return {
+                type: "Feature",
+                geometry: { type: "Point", coordinates: [pt.lon, pt.lat] },
+                properties: { 
+                    imageKey: `${letter}_${fillColor}_0.9_2`,
+                    riverId: pt.river.id,
+                    pointIndex: nonGauges.indexOf(pt),
+                    letter,
+                    fillColor
+                }
+            };
+        })
+    }), [nonGauges, isColorBlindMode]);
+
+    useEffect(() => {
+        if (!mapRef.current) return;
+        const map = mapRef.current.getMap();
+        const loadImages = () => {
+            if (!map || !map.style) return;
+            try {
+                nonGaugesGeoJson.features.forEach((f: any) => {
+                    const { imageKey, letter, fillColor } = f.properties;
+                    if (!map.hasImage(imageKey)) {
+                        const { imageData, pixelRatio } = getCachedCanvasImage(letter, fillColor, 0.9);
+                        map.addImage(imageKey, imageData, { pixelRatio });
+                    }
+                });
+            } catch (e) {
+                console.error("Map style not ready for images", e);
+            }
+        };
+
+        if (map.isStyleLoaded()) {
+            loadImages();
+        } else {
+            map.once('style.load', loadImages);
+        }
+    }, [nonGaugesGeoJson, dynamicStyle]); // Re-run when style loads
+
+    const handleMapClick = React.useCallback((e: any) => {
+        const feature = e.features && e.features[0];
+        if (feature) {
+            const isGauge = feature.layer.id === 'gauges-layer';
+            const arr = isGauge ? gauges : nonGauges;
+            const pt = arr[feature.properties.pointIndex];
+            if (pt) handleStableMarkerClick(pt.river, pt.point, pt.lat, pt.lon);
+        }
+    }, [gauges, nonGauges, handleStableMarkerClick]);
+
+    const handleMapMouseMove = React.useCallback((e: any) => {
+        const feature = e.features && e.features[0];
+        if (feature) {
+            const isGauge = feature.layer.id === 'gauges-layer';
+            const arr = isGauge ? gauges : nonGauges;
+            const pt = arr[feature.properties.pointIndex];
+            if (pt) handleStableMarkerMouseOver(pt.river, pt.point, pt.lat, pt.lon);
+            if (mapRef.current) mapRef.current.getCanvas().style.cursor = 'pointer';
+        } else {
+            handleStableMarkerMouseOut();
+            if (mapRef.current) mapRef.current.getCanvas().style.cursor = '';
+        }
+    }, [gauges, nonGauges, handleStableMarkerMouseOver, handleStableMarkerMouseOut]);
+
+
     // Using true HTML5 Native Fullscreen where supported! 
     return (
         <div 
@@ -838,34 +772,52 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 </div>
             </div>
 
-            <MapContainer 
-                center={mapInitialCenter} 
-                zoom={mapInitialZoom} 
-                style={{ height: "100%", width: "100%" }}
-                zoomControl={true}
-                preferCanvas={true}
+            <Map 
+                ref={mapRef}
+                {...viewState}
+                onMove={evt => {
+                    setViewState(evt.viewState);
+                    setMapCenter([evt.viewState.latitude, evt.viewState.longitude]);
+                    setMapZoom(evt.viewState.zoom);
+                }}
+                mapStyle={dynamicStyle}
+                style={{ width: "100%", height: "100%" }}
+                interactiveLayerIds={['gauges-layer', 'non-gauges-layer']}
+                onClick={handleMapClick}
+                onMouseMove={handleMapMouseMove}
+                onMouseLeave={handleStableMarkerMouseOut}
             >
-                <MapStateObserver setCenter={setMapCenter} setZoom={setMapZoom} />
-                <MapController isFullScreen={isFullScreen} />
-                <MapFocusController focusRiver={focusRiver} />
-                
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                
-                {/* Embedded Weather Radar */}
                 <WeatherRadarLayer mode={radarMode} />
 
-                {/* Global River Markers */}
-                <MapMarkers 
-                    markers={globalMarkers}
-                    handleMarkerClick={handleStableMarkerClick}
-                    handleMarkerMouseOver={handleStableMarkerMouseOver}
-                    handleMarkerMouseOut={handleStableMarkerMouseOut}
-                    isDarkMode={isDarkMode}
-                    isColorBlindMode={isColorBlindMode}
-                />
+                {gauges.length > 0 && (
+                    <Source id="gauges" type="geojson" data={gaugesGeoJson}>
+                        <Layer 
+                            id="gauges-layer" 
+                            type="circle" 
+                            paint={{
+                                "circle-radius": 6.75,
+                                "circle-color": ["get", "fillColor"],
+                                "circle-stroke-color": "#1e293b",
+                                "circle-stroke-width": 1
+                            }}
+                        />
+                    </Source>
+                )}
+
+                {nonGauges.length > 0 && (
+                    <Source id="non-gauges" type="geojson" data={nonGaugesGeoJson}>
+                        <Layer 
+                            id="non-gauges-layer" 
+                            type="symbol" 
+                            layout={{
+                                "icon-image": ["get", "imageKey"],
+                                "icon-allow-overlap": true,
+                                "icon-ignore-placement": true,
+                                "icon-offset": [0, -20]
+                            }}
+                        />
+                    </Source>
+                )}
 
                 {/* Mini-Map specific contextual Popup */}
                 {popupPosition && (activePopupData || hoverPopupData) && (() => {
@@ -876,17 +828,16 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
                     return (
                         <Popup 
-                            position={popupPosition} 
-                            eventHandlers={{
-                                remove: () => {
-                                    setActivePopupData(null);
-                                    setHoverPopupData(null);
-                                }
+                            longitude={popupPosition[1]} 
+                            latitude={popupPosition[0]}
+                            onClose={() => {
+                                setActivePopupData(null);
+                                setHoverPopupData(null);
                             }}
-                            // Dynamically pull the popup down so the arrow physically touches the circles
-                            // Gauges have ~6.75px radius, Rivers have 14px radius
-                            offset={[0, thePopupData!.river.isGauge ? -6 : -13]}
-                            autoPan={!isHoverMode}
+                            offset={[0, thePopupData!.river.isGauge ? -6 : -25]}
+                            closeButton={false}
+                            closeOnClick={false}
+                            className="custom-maplibre-popup"
                         >
                             <PopupEventManager 
                                 isHoverMode={isHoverMode}
@@ -898,7 +849,6 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 {thePopupData!.river.name} {thePopupData!.river.section ? `(${thePopupData!.river.section})` : ""}<br/>
                                 {thePopupData!.river.flowInfo ? <span>{thePopupData!.river.flowInfo}</span> : null}
 
-                                
                                 <div style={{ marginTop: "8px" }}>
                                     <button 
                                         onClick={(e) => {
@@ -934,42 +884,61 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     );
                 })()}
 
-
-
                 {/* Local User Physical GPS Position Marker */}
                 {location.latitude && location.longitude && (
-                    <CircleMarker
-                        center={[location.latitude, location.longitude]}
-                        radius={7}
-                        fillColor="#3b82f6"
-                        fillOpacity={1.0}
-                        color="#ffffff"
-                        weight={2}
+                    <Marker
+                        longitude={location.longitude}
+                        latitude={location.latitude}
+                        anchor="center"
                     >
-                        <Tooltip direction="top" offset={[0, -5]}>
-                            <div style={{ textAlign: "center" }}>
-                                <strong>Your Current Location</strong><br />
-                                {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
-                            </div>
-                        </Tooltip>
-                    </CircleMarker>
+                        <div 
+                            title={`Your Current Location: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`}
+                            style={{
+                                width: 14,
+                                height: 14,
+                                backgroundColor: "#3b82f6",
+                                border: "2px solid #ffffff",
+                                borderRadius: "50%",
+                                boxShadow: "0 0 4px rgba(0,0,0,0.5)"
+                            }}
+                        />
+                    </Marker>
                 )}
 
                 {/* Distance Radius Circle */}
                 {searchQuery.distanceMax && (
-                    <Circle 
-                        center={(searchQuery.mapRadiusMode === "center" || !location.latitude || !location.longitude) ? mapCenter : [location.latitude, location.longitude]} 
-                        radius={searchQuery.distanceMax * 1609.34} // Convert miles to meters
-                        pathOptions={{ 
-                            fillColor: 'var(--primary)', 
-                            fillOpacity: 0.1, 
-                            color: 'var(--primary)', 
-                            weight: 2, 
-                            dashArray: "4 4" 
-                        }} 
-                    />
+                    <Source 
+                        id="radius-circle" 
+                        type="geojson" 
+                        data={{
+                            type: "Feature",
+                            geometry: {
+                                type: "Point",
+                                coordinates: (searchQuery.mapRadiusMode === "center" || !location.latitude || !location.longitude) 
+                                    ? [mapCenter[1], mapCenter[0]] 
+                                    : [location.longitude, location.latitude]
+                            },
+                            properties: {}
+                        }}
+                    >
+                        <Layer 
+                            id="radius-circle-layer" 
+                            type="circle" 
+                            paint={{
+                                "circle-radius": [
+                                    "interpolate", ["exponential", 2], ["zoom"],
+                                    0, 0,
+                                    20, searchQuery.distanceMax * 1609.34 / 0.075 / Math.cos(mapCenter[0] * Math.PI / 180)
+                                ],
+                                "circle-color": "var(--primary)",
+                                "circle-opacity": 0.1,
+                                "circle-stroke-color": "var(--primary)",
+                                "circle-stroke-width": 2
+                            }}
+                        />
+                    </Source>
                 )}
-            </MapContainer>
+            </Map>
 
             {/* Universally Injected Selected River Sidebar */}
             {selectedRiver && (
