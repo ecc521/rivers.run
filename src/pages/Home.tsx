@@ -183,9 +183,6 @@ const Home: React.FC = () => {
       const { persistentStorage } = await import("../utils/persistentStorage");
       
       const defaultSearch = await persistentStorage.get("homePageDefaultSearch");
-      if (defaultSearch === "favorites") {
-        setSearchQuery(prev => ({ ...prev, favoritesOnly: true }));
-      }
 
       const listParam = searchParams.get("list");
       let targetListId = listParam;
@@ -529,20 +526,26 @@ const Home: React.FC = () => {
             <span>
               ⚠️ Data was last synced {dataGeneratedAt ? Math.round((Date.now() - dataGeneratedAt) / 60000) : "?"} mins ago.
             </span>
-            <button 
-              onClick={() => refresh()}
-              style={{
-                backgroundColor: "var(--warning)",
-                color: "var(--warning-text)",
-                border: "1px solid var(--warning-text)",
-                padding: "4px 12px",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontWeight: "900"
-              }}
-            >
-              Update
-            </button>
+            {riversLoading ? (
+              <span style={{ fontStyle: "italic", fontWeight: "bold", marginLeft: "5px" }}>
+                 Syncing...
+              </span>
+            ) : (
+              <button 
+                onClick={() => refresh()}
+                style={{
+                  backgroundColor: "var(--warning)",
+                  color: "var(--warning-text)",
+                  border: "1px solid var(--warning-text)",
+                  padding: "4px 12px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontWeight: "900"
+                }}
+              >
+                Update
+              </button>
+            )}
           </div>
         )}
         <ViewSelector 

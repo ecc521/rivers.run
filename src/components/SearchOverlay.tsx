@@ -7,6 +7,7 @@ import { useLists } from "../context/ListsContext";
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import { getShareBaseUrl } from "../utils/url";
+import { Capacitor } from "@capacitor/core";
 
 
 interface SearchOverlayProps {
@@ -102,6 +103,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       setIfValid("search", localQuery.normalSearch);
       setIfValid("name", localQuery.name);
       setIfValid("section", localQuery.section);
+      setIfValid("list", localQuery.listId);
       
       if (localQuery.distanceMax) {
           params.set("distanceMax", localQuery.distanceMax.toString());
@@ -234,12 +236,23 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 />
                 <button 
                     onClick={async () => {
-                        try {
-                            await navigator.clipboard.writeText(shareUrl);
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 2000);
-                        } catch (err) {
-                            console.error("Failed to copy", err);
+                        if (Capacitor.isNativePlatform() && navigator.share) {
+                            try {
+                                await navigator.share({
+                                    title: "Rivers.run Search Results",
+                                    url: shareUrl
+                                });
+                            } catch (err) {
+                                console.warn("Share failed", err);
+                            }
+                        } else {
+                            try {
+                                await navigator.clipboard.writeText(shareUrl);
+                                setCopied(true);
+                                setTimeout(() => setCopied(false), 2000);
+                            } catch (err) {
+                                console.error("Failed to copy", err);
+                            }
                         }
                     }}
                     style={{
@@ -254,7 +267,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                         transition: "all 0.2s"
                     }}
                 >
-                    {copied ? "Copied!" : "Copy"}
+                    {copied ? "Copied!" : (Capacitor.isNativePlatform() ? "Share" : "Copy")}
                 </button>
               </div>
             </div>

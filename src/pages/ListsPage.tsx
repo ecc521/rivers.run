@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCommunityLists } from "../hooks/useCommunityLists";
 import { useLists, type UserList } from "../context/ListsContext";
 import { useAuth } from "../context/AuthContext";
@@ -7,6 +7,8 @@ import { useSettings } from "../context/SettingsContext";
 import { useModal } from "../context/ModalContext";
 import { useSEO } from "../hooks/useSEO";
 import { ListEditorModal } from "../components/ListEditorModal";
+import { getShareBaseUrl } from "../utils/url";
+import { Capacitor } from "@capacitor/core";
 
 const ListsPage: React.FC = () => {
   const { user, isAdmin, isModerator, loading: authLoading } = useAuth();
@@ -14,8 +16,15 @@ const ListsPage: React.FC = () => {
   const { homePageDefaultSearch, updateSetting } = useSettings();
   const { confirm, alert } = useModal();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<"mine" | "community">("mine");
+  const tabParam = searchParams.get("tab");
+  const activeTab = tabParam === "community" ? "community" : "mine";
+
+  const setActiveTab = (tab: "mine" | "community") => {
+      setSearchParams({ tab });
+  };
+
   const { lists: communityLists, loading: communityLoading } = useCommunityLists();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -37,9 +46,9 @@ const ListsPage: React.FC = () => {
   // Force tab to community if logged out
   useEffect(() => {
     if (!authLoading && !user && activeTab !== "community") {
-      setActiveTab("community");
+      setSearchParams({ tab: "community" }, { replace: true });
     }
-  }, [user, activeTab, authLoading]);
+  }, [user, activeTab, authLoading, setSearchParams]);
 
   const filteredCommunityLists = communityLists.filter(list => {
       if (!searchQuery) return true;
@@ -191,6 +200,34 @@ const ListsPage: React.FC = () => {
                 </button>
             )}
 
+            <button
+               onClick={async () => {
+                  const url = `${getShareBaseUrl("/")}?list=${list.id}`;
+                  if (Capacitor.isNativePlatform() && navigator.share) {
+                      try {
+                          await navigator.share({
+                              title: list.title,
+                              text: list.description,
+                              url: url
+                          });
+                      } catch (err) {
+                          console.warn("Share failed", err);
+                      }
+                  } else {
+                      try {
+                          await navigator.clipboard.writeText(url);
+                          await alert("Link copied to clipboard!");
+                      } catch (err) {
+                          console.error("Clipboard copy failed", err);
+                          await alert("Failed to copy link. Please manually copy the URL.", "Error");
+                      }
+                  }
+               }}
+               style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+            >
+               <span>🔗</span> {Capacitor.isNativePlatform() ? "Share" : "Copy Link"}
+            </button>
+
             {isOwned && (
                 <button
                    onClick={() => handleToggleNotifications(list)}
@@ -200,10 +237,42 @@ const ListsPage: React.FC = () => {
                 </button>
             )}
 
+            {user && (
+                <button
+                   onClick={async () => {
+                       const isSub = isSubscribed(list.id);
+                       if (!isSub && !isOwned) {
+                           await alert("You must subscribe to this list before setting it as your default startup view.", "Subscribe First");
+                           return;
+                       }
+                       
+                       const isDefault = homePageDefaultSearch === `list:${list.id}`;
+                       if (isDefault) {
+                           updateSetting("homePageDefaultSearch", null);
+                       } else {
+                           if (await confirm(`Set "${list.title}" as your default startup view? It will load automatically whenever you open Rivers.run.`, "Set Default")) {
+                               updateSetting("homePageDefaultSearch", `list:${list.id}`);
+                           }
+                       }
+                   }}
+                   style={{ padding: "8px 16px", backgroundColor: homePageDefaultSearch === `list:${list.id}` ? "var(--primary)" : "var(--surface-hover)", color: homePageDefaultSearch === `list:${list.id}` ? "var(--surface)" : "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
+                >
+                   {homePageDefaultSearch === `list:${list.id}` ? "★ Default List" : "☆ Set as Default"}
+                </button>
+            )}
+
             {user && !isOwned && (
                 <button
-                   onClick={() => toggleSubscription(list.id)}
-                   style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
+                   onClick={async () => {
+                      const willSubscribe = !isSubscribed(list.id);
+                      await toggleSubscription(list.id);
+                      if (willSubscribe) {
+                          await alert(`You are now subscribed to "${list.title}"! ${list.notificationsEnabled ? "Since the author has Alerts enabled, you will also receive daily email digests when these rivers are running." : ""}`, "Subscribed");
+                      } else {
+                          await alert(`You have unsubscribed from "${list.title}".`, "Unsubscribed");
+                      }
+                   }}
+                   style={{ padding: "8px 16px", backgroundColor: isSubscribed(list.id) ? "var(--primary)" : "var(--surface-hover)", color: isSubscribed(list.id) ? "var(--surface)" : "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
                 >
                    {isSubscribed(list.id) ? "Unsubscribe" : "Subscribe"}
                 </button>
@@ -264,7 +333,6 @@ const ListsPage: React.FC = () => {
             style={{ padding: "8px", borderRadius: "6px", fontSize: "1rem", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", minWidth: "200px" }}
          >
             <option value="null">None (Display All Rivers)</option>
-            <option value="favorites">My Lists (Default Target)</option>
             {user && (
                <optgroup label="My Custom Lists">
                  {myLists.map(list => (

@@ -503,10 +503,36 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 const res = await fetch("/local_style.json");
                 const baseStyle = await res.json();
                 
+                const originalLayers = [...baseStyle.layers];
+                
                 // Set default online source
                 baseStyle.sources.protomaps.url = undefined;
                 baseStyle.sources.protomaps.tiles = ["https://api.protomaps.com/tiles/v3/{z}/{x}/{y}.mvt?key=08cdd323336ea22b"];
 
+                // Rebuild layers in specific z-order
+                baseStyle.layers = [];
+                
+                const bgLayer = originalLayers.find((l: any) => l.type === 'background');
+                if (bgLayer) baseStyle.layers.push(bgLayer);
+
+                const dataLayers = originalLayers.filter((l: any) => l.type !== 'background' && l.source === 'protomaps');
+
+                // 1. Bundled Offline Basemap (Bottom layer, renders Z0-Z5 globally)
+                baseStyle.sources.bundled_basemap = {
+                    type: "vector",
+                    url: `pmtiles://${window.location.origin}/basemap.pmtiles`
+                };
+                const basemapLayers = dataLayers.map((l: any) => ({
+                    ...l,
+                    id: `${l.id}_bundled`,
+                    source: "bundled_basemap"
+                }));
+                baseStyle.layers.push(...basemapLayers);
+
+                // 2. Online Protomaps API (Middle layer)
+                baseStyle.layers.push(...dataLayers);
+
+                // 3. Downloaded Offline States (Top layer)
                 const downloaded = await getDownloadedRegions();
                 if (downloaded && downloaded.length > 0) {
                     for (const region of downloaded) {
@@ -519,14 +545,11 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                             url: `pmtiles://${localUrl}`
                         };
                         
-                        // Clone layers
-                        const newLayers = baseStyle.layers
-                            .filter((l: any) => l.source === 'protomaps')
-                            .map((l: any) => ({
-                                ...l,
-                                id: `${l.id}_${region}`,
-                                source: sourceId
-                            }));
+                        const newLayers = dataLayers.map((l: any) => ({
+                            ...l,
+                            id: `${l.id}_${region}`,
+                            source: sourceId
+                        }));
                         baseStyle.layers.push(...newLayers);
                     }
                 }

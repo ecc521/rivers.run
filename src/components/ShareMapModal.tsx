@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { getShareBaseUrl } from "../utils/url";
+import { Capacitor } from "@capacitor/core";
 
 
 interface ShareMapModalProps {
@@ -80,6 +81,7 @@ function buildShareUrl(params: ShareUrlParams): string {
         if (params.currentQuery.skillMax !== 8) url.searchParams.set("skillMax", params.currentQuery.skillMax!.toString());
         if (params.currentQuery.flowMin !== 0) url.searchParams.set("flowMin", params.currentQuery.flowMin!.toString());
         if (params.currentQuery.flowMax !== 4) url.searchParams.set("flowMax", params.currentQuery.flowMax!.toString());
+        if (params.currentQuery.listId) url.searchParams.set("list", params.currentQuery.listId);
     }
 
     return url.toString();
@@ -122,12 +124,23 @@ export const ShareMapModal: React.FC<ShareMapModalProps> = ({
     if (!isOpen) return null;
 
     const handleCopy = async () => {
-        try {
-            await navigator.clipboard.writeText(generatedUrl);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error("Failed to copy", err);
+        if (Capacitor.isNativePlatform() && navigator.share) {
+            try {
+                await navigator.share({
+                    title: "Rivers.run Map View",
+                    url: generatedUrl
+                });
+            } catch (err) {
+                console.warn("Share failed", err);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(generatedUrl);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch (err) {
+                console.error("Failed to copy", err);
+            }
         }
     };
 
@@ -280,10 +293,11 @@ export const ShareMapModal: React.FC<ShareMapModalProps> = ({
                                 color: "white",
                                 fontWeight: "bold",
                                 cursor: "pointer",
-                                transition: "all 0.2s"
+                                transition: "all 0.2s",
+                                minWidth: "100px"
                             }}
                         >
-                            {copied ? "Copied!" : "Copy"}
+                            {copied ? "Copied!" : (Capacitor.isNativePlatform() ? "Share" : "Copy")}
                         </button>
                     </div>
                 </div>

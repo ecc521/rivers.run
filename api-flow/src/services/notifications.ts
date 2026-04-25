@@ -24,7 +24,7 @@ export interface DigestSummary {
 export async function fetchSubscribedUsers(env: Env, currentTime: number): Promise<Map<string, UserSubscriptionInfo>> {
     const digestQuery = `
         SELECT 
-            l.owner_id as user_id, 
+            target_user.user_id, 
             u.email, 
             u.notifications_time_of_day,
             c.river_id, 
@@ -35,12 +35,19 @@ export async function fetchSubscribedUsers(env: Env, currentTime: number): Promi
             r.gauges, 
             c.custom_min, 
             c.custom_max
-        FROM community_lists l
-        JOIN community_list_rivers c ON l.id = c.list_id
+        FROM (
+            -- Owners of active lists
+            SELECT owner_id as user_id, id as list_id FROM community_lists WHERE notifications_enabled = 1
+            UNION
+            -- Subscribers to active lists
+            SELECT s.user_id, s.list_id FROM user_subscriptions s 
+            JOIN community_lists l ON s.list_id = l.id 
+            WHERE l.notifications_enabled = 1
+        ) as target_user
+        JOIN community_list_rivers c ON target_user.list_id = c.list_id
         JOIN rivers r ON c.river_id = r.id
-        JOIN users u ON l.owner_id = u.user_id
-        WHERE l.notifications_enabled = 1 
-          AND u.notifications_enabled = 1 
+        JOIN users u ON target_user.user_id = u.user_id
+        WHERE u.notifications_enabled = 1 
           AND u.email IS NOT NULL AND u.email != ''
           AND u.notifications_none_until <= ?
     `;

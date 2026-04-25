@@ -303,12 +303,14 @@ export const useRivers = (): UseRiversResult => {
     // Auto-fetch on refocus/visibility if data is > 15 mins old
     const handleVisibility = () => {
         if (document.visibilityState === 'visible') {
-            fetchRivers();
+            const isStale = globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000);
+            fetchRivers(!!isStale);
         }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    fetchRivers();
+    const isStaleOnMount = globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000);
+    fetchRivers(!!isStaleOnMount);
 
     return () => {
         fetchSubscribers.delete(handleUpdate);

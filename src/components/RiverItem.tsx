@@ -18,7 +18,7 @@ interface RiverItemProps {
   isDarkMode?: boolean;
   isColorBlindMode?: boolean;
   initiallyExpanded?: boolean; // legacy prop, preserved for safety
-
+  onClickOverride?: () => void;
 }
 
 
@@ -28,7 +28,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   index,
   isDarkMode = false,
   isColorBlindMode = false,
-
+  onClickOverride
 }) => {
   const navigate = useNavigate();
   const baseId = `b${index}`;
@@ -129,6 +129,10 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   const handleCloseModal = () => setModalOpen(false);
 
   const handleNavigate = () => {
+     if (onClickOverride) {
+         onClickOverride();
+         return;
+     }
      let slug = slugify(river.name);
      if (river.section) slug += '-' + slugify(river.section);
      const prefix = river.isGauge ? '/gauge/' : '/river/';

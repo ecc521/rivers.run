@@ -17,6 +17,7 @@ import { ALL_STATE_CODES, getStateName, getCountryISOStaticName } from "../utils
 import { RiverHistoryPanel } from "../components/RiverHistoryPanel";
 import { RiverHistoryComparison } from "../components/RiverHistoryComparison";
 import { reconstructHistoricalState } from "../utils/historyUtils";
+import { RiverExpansion } from "../components/RiverExpansion";
 import type { RiverData } from "../types/River";
 
 export default function RiverEditor() {
@@ -29,17 +30,29 @@ export default function RiverEditor() {
   
   const [liveData, setLiveData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [proposedData, setProposedData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showSuggestionDiff, setShowSuggestionDiff] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
   
   const isReviewMode = location.pathname.startsWith('/review') && !!queueId;
   const isNewFromURL = riverId === "new" || !riverId;
   const isNew = isReviewMode ? (!loading && !liveData) : isNewFromURL;
   const targetId = riverId || queueId || "";
 
-  const stableRandomId = useMemo(() => window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36), []);
+  const stableRandomId = useMemo(() => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const randomValues = window.crypto.getRandomValues(new Uint32Array(10));
+    for (let i = 0; i < 10; i++) {
+        result += chars.charAt(randomValues[i] % chars.length);
+    }
+    return result;
+  }, []);
 
   const [riverData, setRiverData] = useState<any>({
     id: targetId,
@@ -105,6 +118,20 @@ export default function RiverEditor() {
         imageUrls: Array.isArray(data.imageUrls) ? data.imageUrls : [],
         flow: data.flow || { unit: "cfs", min: null, low: null, mid: null, high: null, max: null }
       });
+      setIsDirty(false);
+  };
+
+  const updateRiverData = (newData: any) => {
+      if (typeof newData === 'function') {
+          setRiverData((prev: any) => {
+              const res = newData(prev);
+              setIsDirty(true);
+              return res;
+          });
+      } else {
+          setRiverData(newData);
+          setIsDirty(true);
+      }
   };
 
   useEffect(() => {
@@ -157,12 +184,14 @@ export default function RiverEditor() {
          } else {
             const live = await fetchAPI(`/rivers/${riverId}`, {}, user);
             setLiveData(live);
-            syncInputs(live);
+            if (!isDirty) syncInputs(live);
          }
        } catch (e: unknown) {
          if (e instanceof Error) {
             console.error("Error loading river", e.message);
-            await alert(`Failed to load data: ${e.message}. Check if your local API is running.`);
+            setLoadError(`Failed to load data: ${e.message}`);
+         } else {
+            setLoadError("An unknown error occurred while loading data.");
          }
        } finally {
          setLoading(false);
@@ -217,6 +246,7 @@ export default function RiverEditor() {
           const parsedLon = toDecimalDegrees(ap.rawLon || ap.lon);
           if (parsedLat !== null && parsedLon !== null) {
               newAccessPoints.push({
+                  ...ap,
                   name: ap.name || "Access Point",
                   type: ap.type || "put-in",
                   lat: parsedLat,
@@ -234,8 +264,7 @@ export default function RiverEditor() {
 
       let idToSave: string;
       if (isNew) {
-        const baseSlug = riverData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        idToSave = isAdmin ? baseSlug : `${baseSlug}-${stableRandomId}`;
+        idToSave = stableRandomId;
       } else {
         idToSave = riverData.id;
       }
@@ -248,7 +277,7 @@ export default function RiverEditor() {
         tags: (riverData.rawTags || "").split(',').map((t: string) => t.trim()).filter(Boolean),
         accessPoints: newAccessPoints,
         flow: riverData.flow || { unit: "cfs", min: null, low: null, mid: null, high: null, max: null },
-        updatedAt: new Date(),
+        updatedAt: Date.now(),
         submittedBy: isReviewMode ? (proposedData?.submittedBy || user?.uid || "anonymous") : (user?.uid || "anonymous")
       };
   };
@@ -256,12 +285,7 @@ export default function RiverEditor() {
   const toggleView = (mode: "draft" | "original") => {
       if (mode === "original") {
           // Sever references by deep cloning, preserving the draft exactly as-is
-          const draft = generateFinalObj();
-          // CRITICAL: Preserve metadata that isn't part of the core river object but needed for the session
-          draft.queueId = proposedData?.queueId;
-          draft.id = riverData.id; 
-          
-          setProposedData(JSON.parse(JSON.stringify(draft)));
+          setProposedData(JSON.parse(JSON.stringify(riverData)));
           setViewMode("original");
           syncInputs(liveData);
       } else {
@@ -313,6 +337,7 @@ export default function RiverEditor() {
       }, user);
       
       await alert(isAdminPublish ? "Saved successfully!" : "Submitted successfully!");
+      setIsDirty(false);
       
       if (!isAdminPublish) {
          if (isAdmin) navigate("/admin");
@@ -423,6 +448,7 @@ export default function RiverEditor() {
   const handleRestoreVersion = async (historical: RiverData) => {
     if (await confirm("Restore this historical version into your current editor draft? You will still need to click Publish to save it.")) {
         syncInputs(historical);
+        setIsDirty(true);
         setComparisonData(null);
         setShowHistoryPanel(false);
     }
@@ -446,6 +472,22 @@ export default function RiverEditor() {
   }
 
   if (loading || authLoading) return <div className="page-content center"><h2>Loading Editor...</h2></div>;
+
+  if (loadError) {
+      return (
+          <div className="page-content center" style={{ marginTop: "100px", textAlign: "center" }}>
+              <h2>Error Loading Editor</h2>
+              <div style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '15px', borderRadius: '5px', display: 'inline-block', maxWidth: '600px', marginTop: '20px' }}>
+                  {loadError}
+              </div>
+              <div style={{ marginTop: '30px' }}>
+                  <button onClick={() => navigate("/")} style={{ padding: "10px 20px", backgroundColor: "var(--primary)", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "16px" }}>
+                      Return Home
+                  </button>
+              </div>
+          </div>
+      );
+  }
 
   const isOriginalView = viewMode === "original";
   const pointerEvents = isOriginalView ? 'none' : 'auto';
@@ -517,10 +559,10 @@ export default function RiverEditor() {
       <hr style={{ borderColor: 'var(--border)', margin: '15px 0 20px 0' }} />
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents, opacity }}>
-        <RiverDetailsEditor riverData={riverData} setRiverData={setRiverData} />
-        <RiverGaugesEditor riverData={riverData} setRiverData={setRiverData} />
-        {hasPrimaryGauge && <RiverFlowThresholdsEditor riverData={riverData} setRiverData={setRiverData} />}
-        <RiverAccessEditor riverData={riverData} setRiverData={setRiverData} />
+        <RiverDetailsEditor riverData={riverData} updateRiverData={updateRiverData} />
+        <RiverGaugesEditor riverData={riverData} updateRiverData={updateRiverData} />
+        {hasPrimaryGauge && <RiverFlowThresholdsEditor riverData={riverData} updateRiverData={updateRiverData} />}
+        <RiverAccessEditor riverData={riverData} updateRiverData={updateRiverData} />
 
         <div style={{ marginTop: '20px' }}>
           <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>River Writeup & Description</label>
@@ -528,7 +570,7 @@ export default function RiverEditor() {
             <ReactQuill 
               theme="snow" 
               value={riverData.writeup || ""} 
-              onChange={(val) => setRiverData((prev: any) => ({...prev, writeup: val}))}
+              onChange={(val) => updateRiverData((prev: any) => ({...prev, writeup: val}))}
               modules={quillModules}
               style={{ height: '300px', marginBottom: '50px' }}
             />
@@ -560,7 +602,18 @@ export default function RiverEditor() {
                      </div>
                   ) : (
                      <div style={{ borderRadius: '10px' }}>
-                        <RiverItem river={{...hydratedPreview, running: 2}} index={0} isDarkMode={isDarkMode} isColorBlindMode={isColorBlindMode} />
+                        <RiverItem 
+                          river={hydratedPreview} 
+                          index={0} 
+                          isDarkMode={isDarkMode} 
+                          isColorBlindMode={isColorBlindMode} 
+                          onClickOverride={() => setPreviewExpanded(!previewExpanded)}
+                        />
+                        {previewExpanded && (
+                           <div style={{ padding: '15px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderTop: 'none', borderBottomLeftRadius: '10px', borderBottomRightRadius: '10px' }}>
+                              <RiverExpansion river={hydratedPreview} />
+                           </div>
+                        )}
                      </div>
                   )}
               </div>
@@ -577,6 +630,13 @@ export default function RiverEditor() {
                       style={{ flex: 1, padding: '10px', backgroundColor: viewMode === 'draft' ? "var(--success)" : 'transparent', color: viewMode === 'draft' ? 'white' : 'var(--text)', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}>
                       Your Current Working Draft
                     </button>
+                    {isReviewMode && (
+                      <button 
+                        onClick={() => setShowSuggestionDiff(true)}
+                        style={{ marginLeft: '5px', padding: '10px', backgroundColor: 'transparent', color: 'var(--primary)', border: '2px solid var(--primary)', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
+                        View Changes
+                      </button>
+                    )}
                  </div>
               )}
 
@@ -661,11 +721,24 @@ export default function RiverEditor() {
         onClose={() => setComparisonData(null)}
       />
     )}
+
+    {showSuggestionDiff && liveData && proposedData && (
+      <RiverHistoryComparison 
+        historicalState={liveData}
+        currentState={proposedData}
+        title="Suggestion Changes"
+        leftTitle="Original Live River"
+        rightTitle="Proposed Changes"
+        leftSubtitle="Currently active configuration"
+        rightSubtitle="Submitted Draft"
+        onClose={() => setShowSuggestionDiff(false)}
+      />
+    )}
     </>
   );
 }
 
-const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ riverData, setRiverData }) => (
+const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = ({ riverData, updateRiverData }) => (
   <>
     <div style={{ display: 'flex', gap: '15px' }}>
       <div style={{ flex: 2 }}>
@@ -675,7 +748,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
           style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
           value={riverData.name} 
           placeholder="e.g. Potomac River"
-          onChange={e => setRiverData({...riverData, name: e.target.value})} 
+          onChange={e => updateRiverData({...riverData, name: e.target.value})} 
         />
       </div>
       <div style={{ flex: 1 }}>
@@ -685,7 +758,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
           style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
           value={riverData.section} 
           placeholder="e.g. Little Falls"
-          onChange={e => setRiverData({...riverData, section: e.target.value})} 
+          onChange={e => updateRiverData({...riverData, section: e.target.value})} 
         />
       </div>
     </div>
@@ -698,7 +771,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
           style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
           value={riverData.class} 
           placeholder="e.g. II-III+"
-          onChange={e => setRiverData({...riverData, class: e.target.value})} 
+          onChange={e => updateRiverData({...riverData, class: e.target.value})} 
         />
       </div>
       <div style={{ flex: 1 }}>
@@ -706,7 +779,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
         <select 
           style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
           value={riverData.skill} 
-          onChange={e => setRiverData({...riverData, skill: e.target.value})} 
+          onChange={e => updateRiverData({...riverData, skill: e.target.value})} 
         >
            {skillLevels.map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}
         </select>
@@ -720,7 +793,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
               style={{ backgroundColor: "var(--primary)", color: "white", padding: "2px 6px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
               onClick={() => {
                 const newCountry = riverData.countries!.split(',').map((st: string) => st.trim()).filter((st: string) => st !== s).join(', ');
-                setRiverData({...riverData, countries: newCountry});
+                updateRiverData({...riverData, countries: newCountry});
               }}
               title="Click to remove"
             >
@@ -736,7 +809,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
                const curr = riverData.countries?.split(',').map((s: string) => s.trim()).filter(Boolean) || [];
                if (!curr.includes(e.target.value)) {
                  curr.push(e.target.value);
-                 setRiverData({...riverData, countries: curr.join(', ')});
+                 updateRiverData({...riverData, countries: curr.join(', ')});
                }
              }
           }} 
@@ -758,7 +831,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
               style={{ backgroundColor: "var(--primary)", color: "white", padding: "2px 6px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
               onClick={() => {
                 const newState = riverData.states!.split(',').map((st: string) => st.trim()).filter((st: string) => st !== s).join(', ');
-                setRiverData({...riverData, states: newState});
+                updateRiverData({...riverData, states: newState});
               }}
               title="Click to remove"
             >
@@ -774,7 +847,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
                const curr = riverData.states?.split(',').map((s: string) => s.trim()).filter(Boolean) || [];
                if (!curr.includes(e.target.value)) {
                  curr.push(e.target.value);
-                 setRiverData({...riverData, states: curr.join(', ')});
+                 updateRiverData({...riverData, states: curr.join(', ')});
                }
              }
           }} 
@@ -797,7 +870,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
               style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
               placeholder="e.g. 129"
               value={riverData.aw} 
-              onChange={e => setRiverData({...riverData, aw: e.target.value})} 
+              onChange={e => updateRiverData({...riverData, aw: e.target.value})} 
             />
          </div>
          <div style={{ flex: 1 }}>
@@ -807,7 +880,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
               style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
               placeholder="e.g. classic, roadside (comma separated)"
               value={riverData.rawTags || ""} 
-              onChange={e => setRiverData({...riverData, rawTags: e.target.value})} 
+              onChange={e => updateRiverData({...riverData, rawTags: e.target.value})} 
             />
          </div>
          <div style={{ display: 'flex', alignItems: 'center', marginTop: '20px' }}>
@@ -815,7 +888,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
                <input 
                  type="checkbox" 
                  checked={riverData.dam || false} 
-                 onChange={e => setRiverData({...riverData, dam: e.target.checked})} 
+                 onChange={e => updateRiverData({...riverData, dam: e.target.checked})} 
                />
                Dam Released
             </label>
@@ -824,7 +897,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ r
   </>
 );
 
-const RiverGaugesEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ riverData, setRiverData }) => (
+const RiverGaugesEditor: React.FC<{ riverData: any, updateRiverData: any }> = ({ riverData, updateRiverData }) => (
   <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px', marginTop: '15px' }}>
     <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Gauges</label>
     {(riverData.gauges || []).map((g: any, i: number) => (
@@ -837,23 +910,23 @@ const RiverGaugesEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ ri
           if (updates.isPrimary) {
             newG.forEach((gObj, idx) => { if (idx !== i) gObj.isPrimary = false; });
           }
-          setRiverData({ ...riverData, gauges: newG });
+          updateRiverData({ ...riverData, gauges: newG });
         }}
         onDelete={() => {
           const newG = riverData.gauges.filter((_:any, index:number) => index !== i);
-          setRiverData({ ...riverData, gauges: newG });
+          updateRiverData({ ...riverData, gauges: newG });
         }}
       />
     ))}
     <button onClick={() => {
         const newG = [...(riverData.gauges || [])];
         newG.push({ id: "USGS:", isPrimary: newG.length === 0 });
-        setRiverData({...riverData, gauges: newG});
+        updateRiverData({...riverData, gauges: newG});
     }} style={{ padding: '8px', cursor: 'pointer' }}>+ Add Gauge</button>
   </div>
 );
 
-const RiverFlowThresholdsEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ riverData, setRiverData }) => (
+const RiverFlowThresholdsEditor: React.FC<{ riverData: any, updateRiverData: any }> = ({ riverData, updateRiverData }) => (
   <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px', marginTop: '15px' }}>
     <label style={{fontWeight: 'bold', display: 'flex', alignItems: 'center', marginBottom: '10px'}}>
       Flow Thresholds (Used for Color Coding)
@@ -874,7 +947,7 @@ const RiverFlowThresholdsEditor: React.FC<{ riverData: any, setRiverData: any }>
         <select 
           style={{ width: '100%', padding: '6px', height: '34px', boxSizing: 'border-box' }} 
           value={riverData.flow?.unit || "cfs"}
-          onChange={e => setRiverData({...riverData, flow: {...riverData.flow, unit: e.target.value}})}
+          onChange={e => updateRiverData({...riverData, flow: {...riverData.flow, unit: e.target.value}})}
         >
           <option value="cfs">cfs</option>
           <option value="ft">ft</option>
@@ -896,7 +969,7 @@ const RiverFlowThresholdsEditor: React.FC<{ riverData: any, setRiverData: any }>
             type="number" 
             style={{ width: '100%', padding: '6px', height: '34px', boxSizing: 'border-box' }} 
             value={riverData.flow?.[field] ?? ""} 
-            onChange={e => setRiverData({...riverData, flow: {...riverData.flow, [field]: e.target.value ? parseFloat(e.target.value) : null}})} 
+            onChange={e => updateRiverData({...riverData, flow: {...riverData.flow, [field]: e.target.value ? parseFloat(e.target.value) : null}})} 
           />
         </div>
       ))}
@@ -904,7 +977,7 @@ const RiverFlowThresholdsEditor: React.FC<{ riverData: any, setRiverData: any }>
   </div>
 );
 
-const RiverAccessEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ riverData, setRiverData }) => (
+const RiverAccessEditor: React.FC<{ riverData: any, updateRiverData: any }> = ({ riverData, updateRiverData }) => (
   <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px', marginTop: '15px' }}>
     <label style={{fontWeight: 'bold', display: 'block', marginBottom: '10px'}}>Access Points</label>
     {(riverData.accessPoints || []).map((ap: any, i: number) => (
@@ -920,18 +993,18 @@ const RiverAccessEditor: React.FC<{ riverData: any, setRiverData: any }> = ({ ri
                 newA[i].name = ({"put-in": "Put-In", "access": "Access", "take-out": "Take-Out"} as Record<string, string>)[updates.type] || "Access";
             }
             
-            setRiverData({ ...riverData, accessPoints: newA });
+            updateRiverData({ ...riverData, accessPoints: newA });
          }}
          onDelete={() => {
             const newA = riverData.accessPoints.filter((_:any, index:number) => index !== i);
-            setRiverData({ ...riverData, accessPoints: newA });
+            updateRiverData({ ...riverData, accessPoints: newA });
          }}
       />
     ))}
     <button onClick={() => {
         const newA = [...(riverData.accessPoints || [])];
         newA.push({ type: "put-in", name: "Put-In", lat: null, lon: null, rawLat: "", rawLon: "" });
-        setRiverData({...riverData, accessPoints: newA});
+        updateRiverData({...riverData, accessPoints: newA});
     }} style={{ padding: '8px', cursor: 'pointer' }}>+ Add Access Point</button>
   </div>
 );

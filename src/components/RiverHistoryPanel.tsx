@@ -101,14 +101,6 @@ export const RiverHistoryPanel: React.FC<RiverHistoryPanelProps> = ({ riverId, o
                 cursor: 'pointer',
                 transition: 'transform 0.1s, border-color 0.1s'
               }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = 'var(--primary)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '5px' }}>
                 <span>{new Date(log.changed_at * 1000).toLocaleDateString()}</span>

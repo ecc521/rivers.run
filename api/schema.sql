@@ -106,6 +106,24 @@ CREATE TABLE user_subscriptions (
 );
 
 -- ==========================================
+-- 4.5. AUTOMATED COUNTERS (Subscription Tracking)
+-- ==========================================
+
+-- Trigger to increment subscribes count when a user subscribes
+CREATE TRIGGER IF NOT EXISTS increment_subscribes
+AFTER INSERT ON user_subscriptions
+BEGIN
+    UPDATE community_lists SET subscribes = subscribes + 1 WHERE id = NEW.list_id;
+END;
+
+-- Trigger to decrement subscribes count when a user unsubscribes or is deleted
+CREATE TRIGGER IF NOT EXISTS decrement_subscribes
+AFTER DELETE ON user_subscriptions
+BEGIN
+    UPDATE community_lists SET subscribes = MAX(0, subscribes - 1) WHERE id = OLD.list_id;
+END;
+
+-- ==========================================
 -- 5. REVIEW QUEUE (Community Suggestions)
 -- ==========================================
 CREATE TABLE river_suggestions (
@@ -115,8 +133,7 @@ CREATE TABLE river_suggestions (
     proposed_changes JSON NOT NULL,  -- The full River object delta or new state
     status TEXT DEFAULT 'pending',   -- 'pending', 'resolved', 'rejected'
     resolution_note TEXT,            -- Admin reason/note for approval or rejection
-    created_at INTEGER NOT NULL,     -- Unix timestamp
-    FOREIGN KEY(river_id) REFERENCES rivers(id) ON DELETE CASCADE
+    created_at INTEGER NOT NULL      -- Unix timestamp
 );
 CREATE INDEX idx_suggestions_river_id ON river_suggestions(river_id);
 CREATE INDEX idx_suggestions_created_at ON river_suggestions(created_at);

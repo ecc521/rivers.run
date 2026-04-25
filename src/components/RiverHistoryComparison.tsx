@@ -4,15 +4,25 @@ import type { RiverData } from '../types/River';
 interface RiverHistoryComparisonProps {
   historicalState: RiverData;
   currentState: RiverData;
-  onRestore: (state: RiverData) => void;
+  onRestore?: (state: RiverData) => void;
   onClose: () => void;
+  title?: string;
+  leftTitle?: string;
+  rightTitle?: string;
+  leftSubtitle?: React.ReactNode;
+  rightSubtitle?: React.ReactNode;
 }
 
 export const RiverHistoryComparison: React.FC<RiverHistoryComparisonProps> = ({ 
   historicalState, 
   currentState, 
   onRestore, 
-  onClose 
+  onClose,
+  title = "Version Comparison",
+  leftTitle = "Historical Version",
+  rightTitle = "Current Live Version",
+  leftSubtitle,
+  rightSubtitle
 }) => {
 
   const FIELD_LABELS: Record<string, string> = {
@@ -68,25 +78,25 @@ export const RiverHistoryComparison: React.FC<RiverHistoryComparisonProps> = ({
       flexDirection: 'column'
     }}>
       <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>Version Comparison</h2>
+        <h2 style={{ margin: 0 }}>{title}</h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
           <div>
-            <h4 style={{ color: 'var(--text-muted)', marginBottom: '10px' }}>Historical Version</h4>
+            <h4 style={{ color: 'var(--text-muted)', marginBottom: '10px' }}>{leftTitle}</h4>
             <div style={{ padding: '10px', backgroundColor: 'rgba(255, 0, 0, 0.05)', borderRadius: '8px', border: '1px solid rgba(255, 0, 0, 0.2)' }}>
-                {(() => {
+                {leftSubtitle !== undefined ? leftSubtitle : (() => {
                   const timestamp = (historicalState as any).updated_at || (historicalState as any).updatedAt;
                   return timestamp ? new Date(timestamp * 1000).toLocaleString() : 'Unknown Date';
                 })()}
             </div>
           </div>
           <div>
-            <h4 style={{ color: 'var(--text-muted)', marginBottom: '10px' }}>Current Live Version</h4>
+            <h4 style={{ color: 'var(--text-muted)', marginBottom: '10px' }}>{rightTitle}</h4>
             <div style={{ padding: '10px', backgroundColor: 'rgba(0, 255, 0, 0.05)', borderRadius: '8px', border: '1px solid rgba(0, 255, 0, 0.2)' }}>
-                Live (Latest)
+                {rightSubtitle !== undefined ? rightSubtitle : 'Live (Latest)'}
             </div>
           </div>
         </div>
@@ -128,21 +138,23 @@ export const RiverHistoryComparison: React.FC<RiverHistoryComparisonProps> = ({
         >
           Close
         </button>
-        <button 
-          onClick={() => onRestore(historicalState)}
-          style={{ 
-            padding: '10px 20px', 
-            borderRadius: '8px', 
-            border: 'none', 
-            backgroundColor: 'var(--primary)', 
-            color: 'white', 
-            fontWeight: 'bold', 
-            cursor: 'pointer',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-          }}
-        >
-          Restore This Version
-        </button>
+        {onRestore && (
+          <button 
+            onClick={() => onRestore(historicalState)}
+            style={{ 
+              padding: '10px 20px', 
+              borderRadius: '8px', 
+              border: 'none', 
+              backgroundColor: 'var(--primary)', 
+              color: 'white', 
+              fontWeight: 'bold', 
+              cursor: 'pointer',
+              boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+            }}
+          >
+            Restore This Version
+          </button>
+        )}
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ import Footer from "./components/Footer";
 import { recordAppOpen } from "./utils/appReview";
 
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 function App() {
@@ -35,6 +36,21 @@ function App() {
     if (Capacitor.isNativePlatform()) {
       // Notify Capgo the app boots successfully
       CapacitorUpdater.notifyAppReady();
+
+      // Handle deep links when the app is already running or opened via URL
+      CapacitorApp.addListener('appUrlOpen', data => {
+          console.log('App opened with URL:', data.url);
+          const url = new URL(data.url);
+          
+          // We use a custom event or a window-level bridge to notify the router
+          // since the Router component is nested below and we can't use useNavigate here.
+          // Alternatively, we can use window.location for a hard reload to the correct path,
+          // which is often safer in Capacitor to ensure state is fresh.
+          
+          // Standardize the path and search for the internal webview
+          const internalPath = url.pathname + url.search;
+          window.location.href = internalPath;
+      });
 
       // Check for OTA updates
       const checkUpdate = async () => {

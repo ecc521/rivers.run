@@ -6,6 +6,7 @@ import { useModal } from "../context/ModalContext";
 import { fetchAPI } from "../services/api";
 import { getShareBaseUrl } from "../utils/url";
 import { WatchSyncModal } from "./WatchSyncModal";
+import { Capacitor } from "@capacitor/core";
 
 
 interface ListEditorModalProps {
@@ -74,13 +75,29 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     }
   };
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
      if (targetList) {
         const url = `${getShareBaseUrl("/")}?list=${targetList.id}`;
 
-        navigator.clipboard.writeText(url).then(async () => {
-           await alert("Link copied to clipboard!");
-        });
+        if (Capacitor.isNativePlatform() && navigator.share) {
+            try {
+              await navigator.share({
+                title: targetList.title,
+                text: targetList.description,
+                url: url
+              });
+            } catch (err) {
+              console.warn("Share failed", err);
+            }
+        } else {
+            try {
+              await navigator.clipboard.writeText(url);
+              await alert("Link copied to clipboard!");
+            } catch (err) {
+              console.error("Clipboard copy failed", err);
+              await alert("Failed to copy link. Please manually copy the URL.", "Error");
+            }
+        }
      }
   };
 
@@ -244,30 +261,34 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "1.5rem" }}>
             {modalTitle}
             </h3>
-            {isEdit && !!activeList && (
-               <div style={{ display: "flex", gap: "10px" }}>
-                 <button onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
-                   🔗 Share Link
+            {(isEdit || isShared) && !!activeList && (
+               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                 <button onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
+                   <span style={{ fontSize: "1.1em" }}>🔗</span> {Capacitor.isNativePlatform() ? "Share List" : "Copy Link"}
                  </button>
-                 <button 
-                  onClick={handleTogglePublish} 
-                  disabled={toggling}
-                  style={{ 
-                    padding: "6px 12px", 
-                    backgroundColor: activeList.isPublished ? "var(--primary)" : "var(--surface-hover)", 
-                    border: "1px solid var(--border)", 
-                    color: activeList.isPublished ? "white" : "var(--text)", 
-                    borderRadius: "6px", 
-                    cursor: toggling ? "not-allowed" : "pointer", 
-                    fontWeight: "bold",
-                    transition: "all 0.2s ease"
-                  }}
-                 >
-                   {activeList.isPublished ? "🌍 Public" : "🔒 Unlisted"}
-                 </button>
-                 <button onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
-                   ⌚️ Sync Watch
-                 </button>
+                 {isEdit && (
+                    <>
+                      <button 
+                        onClick={handleTogglePublish} 
+                        disabled={toggling}
+                        style={{ 
+                          padding: "6px 12px", 
+                          backgroundColor: activeList.isPublished ? "var(--primary)" : "var(--surface-hover)", 
+                          border: "1px solid var(--border)", 
+                          color: activeList.isPublished ? "white" : "var(--text)", 
+                          borderRadius: "6px", 
+                          cursor: toggling ? "not-allowed" : "pointer", 
+                          fontWeight: "bold",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        {activeList.isPublished ? "🌍 Public" : "🔒 Unlisted"}
+                      </button>
+                      <button onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
+                        ⌚️ Sync Watch
+                      </button>
+                    </>
+                 )}
                </div>
             )}
         </div>
