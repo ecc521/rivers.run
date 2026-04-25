@@ -13,6 +13,7 @@ export default defineConfig({
       enabled: false,
     },
     workbox: {
+      globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,pmtiles}'],
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/api\.rivers\.run\/.*/i,
@@ -62,53 +63,6 @@ export default defineConfig({
             expiration: {
               maxEntries: 10,
               maxAgeSeconds: 60 * 60 * 24 * 30 // Keep static river data for up to a month
-            },
-            cacheableResponse: {
-              statuses: [0, 200]
-            }
-          }
-        },
-        {
-          // Tier 1: Permanent Basemaps (Zoom 0-8)
-          // No expiration age, large limit to protect manual downloads.
-          urlPattern: /^https:\/\/tile\.openstreetmap\.org\/([0-8])\//i,
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'map-tiles-permanent',
-            expiration: {
-              maxEntries: 15000,
-            },
-            cacheableResponse: {
-              statuses: [0, 200]
-            }
-          }
-        },
-        {
-          // Tier 2: Regional Maps (Zoom 9-12)
-          // 30-day rotation for automated browsing.
-          urlPattern: /^https:\/\/tile\.openstreetmap\.org\/(9|1[0-2])\//i,
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'map-tiles-regional',
-            expiration: {
-              maxEntries: 2000,
-              maxAgeSeconds: 60 * 60 * 24 * 30
-            },
-            cacheableResponse: {
-              statuses: [0, 200]
-            }
-          }
-        },
-        {
-          // Tier 3: Detailed Spots (Zoom 13+)
-          // 7-day aggressive rotation for detailed river spots.
-          urlPattern: /^https:\/\/tile\.openstreetmap\.org\/(1[3-9]|2[0-9])\//i,
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'map-tiles-detailed',
-            expiration: {
-              maxEntries: 500,
-              maxAgeSeconds: 60 * 60 * 24 * 7
             },
             cacheableResponse: {
               statuses: [0, 200]

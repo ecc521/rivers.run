@@ -4,14 +4,13 @@ import {
   fetchMapRegions,
   getDownloadedRegions,
   downloadMapRegion,
-  deleteMapRegion
+  deleteMapRegion,
+  supportsOfflineMaps
 } from "../utils/offlineMapEngine";
 import type { MapRegion } from "../utils/offlineMapEngine";
 import { useModal } from "../context/ModalContext";
 import { AccountSettings } from "../components/AccountSettings";
 import { InteractiveUSMap } from "../components/InteractiveUSMap";
-import { Capacitor } from "@capacitor/core";
-
 const SettingsPage: React.FC = () => {
   const { 
     isDarkMode, 
@@ -211,8 +210,8 @@ const OfflineMapManager: React.FC = () => {
   };
 
   const handleDownload = async (region: MapRegion) => {
-    if (!Capacitor.isNativePlatform()) {
-      await alert("Offline maps are only supported in the native mobile app.");
+    if (!supportsOfflineMaps()) {
+      await alert("Your browser does not support high-performance offline map downloads. Please use a modern browser (Chrome, Safari, Firefox).");
       return;
     }
     if (downloadingRegionId) return;
@@ -297,10 +296,29 @@ const OfflineMapManager: React.FC = () => {
         Download high-quality vector maps to ensure you can navigate even when driving to remote put-ins without cell service.
       </p>
 
+      {!supportsOfflineMaps() && (
+          <div style={{ padding: '15px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '20px', border: '1px solid #fca5a5' }}>
+            <strong>Unsupported Browser:</strong> Your browser is too old to support saving large offline maps. Please update your browser or use the iOS/Android app.
+          </div>
+      )}
+
       {regions.length === 0 ? (
         <p>Loading available regions...</p>
       ) : (
         <>
+          <div style={{ marginBottom: "20px" }}>
+            <h4 style={{ margin: "0 0 10px 0" }}>Core Bundled Maps</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px' }}>
+              <div>
+                <div style={{ fontWeight: 'bold' }}>North America Baseline Map</div>
+                <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>~3.7 MB • Covers US, Canada, Mexico (Zoom 0-5)</div>
+              </div>
+              <div>
+                <span style={{ color: "var(--primary)", fontWeight: "bold", padding: '6px 12px' }}>Pre-cached</span>
+              </div>
+            </div>
+          </div>
+
           <div style={{ marginBottom: "30px" }}>
              <InteractiveUSMap 
                 downloadedRegions={downloadedRegions}

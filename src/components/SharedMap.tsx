@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import Map, { Source, Layer, Popup, Marker } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { getDownloadedRegions, getLocalPmtilesUrl } from "../utils/offlineMapEngine";
-import { Protocol } from "pmtiles";
+import { getDownloadedRegions, getOfflineMapSource } from "../utils/offlineMapEngine";
+import { Protocol, PMTiles, FileSource } from "pmtiles";
 import type { RiverData } from "../types/River";
 import { calculateColor } from "../utils/flowInfoCalculations";
 import { useSettings } from "../context/SettingsContext";
@@ -28,9 +28,10 @@ import { SystemBars } from '@capacitor/core';
 
 // Global protocol state
 let pmtilesProtocolAdded = false;
+// Global protocol state
 let hybridProtocolAdded = false;
-let activeOfflineUrls: string[] = [];
-const pmtilesProtocol = new Protocol();
+let activeOfflineInstances: PMTiles[] = [];
+let basemapInstance: PMTiles | null = null;
 
 export const formatAccessName = (point: any) => {
     if (!point) return "Access";
@@ -499,7 +500,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     useEffect(() => {
         if (!pmtilesProtocolAdded) {
-            maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
+            const protocol = new Protocol();
+            maplibregl.addProtocol("pmtiles", protocol.tile);
             pmtilesProtocolAdded = true;
         }
 
@@ -511,30 +513,24 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 const x = parseInt(match[2], 10);
                 const y = parseInt(match[3], 10);
 
-                const checkPmtiles = async (pmtilesUrl: string) => {
+                // 1. Check bundled basemap (Z0-Z5)
+                if (z <= 5 && basemapInstance) {
                     try {
-                        const fakeUrl = `pmtiles://${pmtilesUrl}/${z}/${x}/${y}`;
-                        const result = await pmtilesProtocol.tile({ ...params, url: fakeUrl }, abortController);
-                        if (result && result.data && (result.data as ArrayBuffer).byteLength > 0) {
-                            return result.data;
-                        }
+                        const tile = await basemapInstance.getZxy(z, x, y, abortController.signal);
+                        if (tile && tile.data) return { data: tile.data };
                     } catch (e) {
                         // ignore
                     }
-                    return null;
-                };
-
-                // 1. Check bundled basemap (Z0-Z5)
-                if (z <= 5) {
-                    const basemapUrl = `${window.location.origin}/basemap.pmtiles`;
-                    const data = await checkPmtiles(basemapUrl);
-                    if (data) return { data };
                 }
 
                 // 2. Check offline downloaded states
-                for (const url of activeOfflineUrls) {
-                    const data = await checkPmtiles(url);
-                    if (data) return { data };
+                for (const pmtiles of activeOfflineInstances) {
+                    try {
+                        const tile = await pmtiles.getZxy(z, x, y, abortController.signal);
+                        if (tile && tile.data) return { data: tile.data };
+                    } catch (e) {
+                        // ignore
+                    }
                 }
 
                 // 3. Fallback to online API
@@ -556,16 +552,27 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
         async function buildStyle() {
             try {
-                // Fetch downloaded states and populate the global array
+                // Initialize bundled basemap instance if not done
+                if (!basemapInstance) {
+                    basemapInstance = new PMTiles(`${window.location.origin}/basemap.pmtiles`);
+                }
+
+                // Fetch downloaded states and populate the global instances array
                 const downloaded = await getDownloadedRegions();
-                const newUrls: string[] = [];
+                const newInstances: PMTiles[] = [];
                 if (downloaded && downloaded.length > 0) {
                     for (const region of downloaded) {
-                        const localUrl = await getLocalPmtilesUrl(region);
-                        if (localUrl) newUrls.push(localUrl);
+                        const source = await getOfflineMapSource(region);
+                        if (source) {
+                            if (typeof source === 'string') {
+                                newInstances.push(new PMTiles(source));
+                            } else {
+                                newInstances.push(new PMTiles(new FileSource(source as File)));
+                            }
+                        }
                     }
                 }
-                activeOfflineUrls = newUrls;
+                activeOfflineInstances = newInstances;
 
                 const res = await fetch("/local_style.json");
                 const baseStyle = await res.json();
