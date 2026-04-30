@@ -9,7 +9,7 @@ import compat from 'eslint-plugin-compat'
 
 export default defineConfig([
   {
-    ignores: ['dist/**', 'android/**', 'ios/**', 'functions/**', '**/.wrangler/**'],
+    ignores: ['dist/**', 'android/**', 'ios/**', 'functions/**', '**/.wrangler/**', 'valhalla-wasm/**'],
   },
   {
     linterOptions: {

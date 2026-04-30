@@ -126,6 +126,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom', // Better for React/DOM testing than plain node
-    exclude: ['node_modules', 'dist', '.git', 'api', 'api-flow', 'functions', 'tests'],
+    exclude: ['node_modules', 'dist', '.git', 'api', 'api-flow', 'functions', 'tests', 'valhalla-wasm'],
   },
 })

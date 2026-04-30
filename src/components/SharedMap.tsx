@@ -156,8 +156,6 @@ interface SharedMapProps {
     height?: string; // Standard CSS dimension
 }
 
-// eslint-disable-next-line prefer-const
-
 
 export const SharedMap: React.FC<SharedMapProps> = ({ 
     initialCenter = [39.8283, -98.5795], 
@@ -507,7 +505,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
         if (!hybridProtocolAdded) {
             maplibregl.addProtocol("hybrid", async (params, abortController) => {
-                const match = params.url.match(/hybrid:\/\/(\d+)\/(\d+)\/(\d+)/);
+                const match = /hybrid:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params.url);
                 if (!match) return { data: null };
                 const z = parseInt(match[1], 10);
                 const x = parseInt(match[2], 10);
@@ -518,8 +516,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     try {
                         const tile = await basemapInstance.getZxy(z, x, y, abortController.signal);
                         if (tile && tile.data) return { data: tile.data };
-                    } catch (e) {
-                        // ignore
+                    } catch (_e) {
+                        console.debug("Basemap tile fetch error:", _e);
                     }
                 }
 
@@ -528,8 +526,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     try {
                         const tile = await pmtiles.getZxy(z, x, y, abortController.signal);
                         if (tile && tile.data) return { data: tile.data };
-                    } catch (e) {
-                        // ignore
+                    } catch (_e) {
+                        console.debug("Offline tile fetch error:", _e);
                     }
                 }
 
@@ -541,8 +539,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         const data = await response.arrayBuffer();
                         return { data };
                     }
-                } catch (e) {
-                    // network error
+                } catch (_e) {
+                    console.debug("Online tile network error:", _e);
                 }
 
                 return { data: null };

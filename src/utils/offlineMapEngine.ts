@@ -66,8 +66,7 @@ const ensureMapDirectory = async () => {
                 recursive: true
             });
         } catch (_e) {
-            // eslint-disable-next-line sonarjs/no-ignored-exceptions
-            // Directory likely exists
+            console.debug("Directory likely exists:", _e);
         }
     }
 };
@@ -82,7 +81,6 @@ export const getDownloadedRegions = async (): Promise<string[]> => {
             });
             return result.files.map(f => f.name.replace('.pmtiles', ''));
         } catch {
-            // eslint-disable-next-line sonarjs/no-ignored-exceptions
             return [];
         }
     } else {
@@ -91,7 +89,6 @@ export const getDownloadedRegions = async (): Promise<string[]> => {
             const root = await (navigator as any).storage.getDirectory();
             const dir = await root.getDirectoryHandle(MAPS_DIR, { create: true });
             const regions: string[] = [];
-            // @ts-ignore
             for await (const name of dir.keys()) {
                 if (name.endsWith('.pmtiles')) {
                     regions.push(name.replace('.pmtiles', ''));
@@ -145,10 +142,11 @@ export const downloadMapRegion = async (
             try {
                 await Filesystem.deleteFile({ path: destPath, directory: Directory.Data });
             } catch (_err) {
+                console.debug("No previous file to delete:", _err);
             }
     
             // Use Capacitor's native Filesystem downloader
-            // @ts-ignore
+            // eslint-disable-next-line sonarjs/deprecation
             await Filesystem.downloadFile({
                 url: region.url!,
                 path: destPath,
@@ -162,7 +160,9 @@ export const downloadMapRegion = async (
             try {
                 await Filesystem.deleteFile({ path: destPath, directory: Directory.Data });
             } catch (_err) {
+                console.debug("File cleanup failed:", _err);
             }
+            // eslint-disable-next-line preserve-caught-error
             throw new Error(`Failed to download map: ${err.message}`);
         }
     } else {
@@ -201,9 +201,10 @@ export const downloadMapRegion = async (
         } catch (err: any) {
             try {
                 await dir.removeEntry(fileName);
-            } catch (e) {
-                // eslint-disable-next-line sonarjs/no-ignored-exceptions
+            } catch (_e) {
+                console.debug("File cleanup failed:", _e);
             }
+            // eslint-disable-next-line preserve-caught-error
             throw new Error(`Failed to download map: ${err.message}`);
         }
     }
@@ -217,7 +218,7 @@ export const deleteMapRegion = async (regionId: string): Promise<void> => {
                 directory: Directory.Data
             });
         } catch (_err) {
-            // eslint-disable-next-line sonarjs/no-ignored-exceptions
+            console.debug("Delete failed or file missing:", _err);
         }
     } else {
         if (!supportsOfflineMaps()) return;
@@ -226,6 +227,7 @@ export const deleteMapRegion = async (regionId: string): Promise<void> => {
             const dir = await root.getDirectoryHandle(MAPS_DIR);
             await dir.removeEntry(`${regionId}.pmtiles`);
         } catch (_err) {
+            console.debug("Delete failed or file missing:", _err);
         }
     }
 };
