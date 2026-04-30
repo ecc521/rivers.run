@@ -5,6 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import sonarjs from 'eslint-plugin-sonarjs'
+import compat from 'eslint-plugin-compat'
 
 export default defineConfig([
   {
@@ -24,9 +25,10 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
       sonarjs.configs.recommended,
+      compat.configs['flat/recommended'],
     ],
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: 2021,
       globals: globals.browser,
       parserOptions: {
         projectService: true,
@@ -63,7 +65,7 @@ export default defineConfig([
       sonarjs.configs.recommended,
     ],
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: 2021,
       globals: {
         ...globals.serviceworker,
         ...globals.node,

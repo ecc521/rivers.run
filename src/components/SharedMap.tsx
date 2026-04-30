@@ -359,7 +359,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     useEffect(() => {
         const handleFullscreenChange = () => {
-            setIsFullScreen(!!document.fullscreenElement || !!(document as any).webkitFullscreenElement);
+            setIsFullScreen(!!(document as any).fullscreenElement || !!(document as any).webkitFullscreenElement);
         };
         document.addEventListener("fullscreenchange", handleFullscreenChange);
         document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
@@ -383,7 +383,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     const toggleFullScreen = async () => {
         // Fallback for browsers without native Fullscreen API (e.g. old iOS)
-        const canNativeFullscreen = !Capacitor.isNativePlatform() && (document.fullscreenEnabled || (document as any).webkitFullscreenEnabled);
+        const canNativeFullscreen = !Capacitor.isNativePlatform() && ((document as any).fullscreenEnabled || (document as any).webkitFullscreenEnabled);
         
         if (!isFullScreen) {
             if (mapContainerRef.current && canNativeFullscreen) {
@@ -397,9 +397,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 setIsFullScreen(true);
             }
         } else {
-            if (canNativeFullscreen && (document.fullscreenElement || (document as any).webkitFullscreenElement)) {
-                if (document.exitFullscreen) {
-                    await document.exitFullscreen().catch(() => {});
+            if (canNativeFullscreen && ((document as any).fullscreenElement || (document as any).webkitFullscreenElement)) {
+                if ((document as any).exitFullscreen) {
+                    await (document as any).exitFullscreen().catch(() => {});
                 } else if ((document as any).webkitExitFullscreen) {
                     await (document as any).webkitExitFullscreen();
                 }

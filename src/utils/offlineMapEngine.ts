@@ -17,7 +17,7 @@ let cachedManifest: MapRegion[] | null = null;
 
 export const supportsOfflineMaps = () => {
     if (Capacitor.isNativePlatform()) return true;
-    return typeof navigator !== 'undefined' && !!navigator.storage && !!navigator.storage.getDirectory;
+    return typeof navigator !== 'undefined' && !!(navigator as any).storage && !!(navigator as any).storage.getDirectory;
 };
 
 export const fetchMapRegions = async (): Promise<MapRegion[]> => {
@@ -88,7 +88,7 @@ export const getDownloadedRegions = async (): Promise<string[]> => {
     } else {
         if (!supportsOfflineMaps()) return [];
         try {
-            const root = await navigator.storage.getDirectory();
+            const root = await (navigator as any).storage.getDirectory();
             const dir = await root.getDirectoryHandle(MAPS_DIR, { create: true });
             const regions: string[] = [];
             // @ts-ignore
@@ -118,7 +118,7 @@ export const getOfflineMapSource = async (regionId: string): Promise<string | Fi
     } else {
         if (!supportsOfflineMaps()) return null;
         try {
-            const root = await navigator.storage.getDirectory();
+            const root = await (navigator as any).storage.getDirectory();
             const dir = await root.getDirectoryHandle(MAPS_DIR);
             const fileHandle = await dir.getFileHandle(`${regionId}.pmtiles`);
             return await fileHandle.getFile();
@@ -163,14 +163,14 @@ export const downloadMapRegion = async (
                 await Filesystem.deleteFile({ path: destPath, directory: Directory.Data });
             } catch (_err) {
             }
-            throw new Error(`Failed to download map: ${err.message}`, { cause: err });
+            throw new Error(`Failed to download map: ${err.message}`);
         }
     } else {
-        if (navigator.storage && navigator.storage.persist) {
-            await navigator.storage.persist();
+        if ((navigator as any).storage && (navigator as any).storage.persist) {
+            await (navigator as any).storage.persist();
         }
 
-        const root = await navigator.storage.getDirectory();
+        const root = await (navigator as any).storage.getDirectory();
         const dir = await root.getDirectoryHandle(MAPS_DIR, { create: true });
         const fileName = `${region.id}.pmtiles`;
 
@@ -204,7 +204,7 @@ export const downloadMapRegion = async (
             } catch (e) {
                 // eslint-disable-next-line sonarjs/no-ignored-exceptions
             }
-            throw new Error(`Failed to download map: ${err.message}`, { cause: err });
+            throw new Error(`Failed to download map: ${err.message}`);
         }
     }
 };
@@ -222,7 +222,7 @@ export const deleteMapRegion = async (regionId: string): Promise<void> => {
     } else {
         if (!supportsOfflineMaps()) return;
         try {
-            const root = await navigator.storage.getDirectory();
+            const root = await (navigator as any).storage.getDirectory();
             const dir = await root.getDirectoryHandle(MAPS_DIR);
             await dir.removeEntry(`${regionId}.pmtiles`);
         } catch (_err) {

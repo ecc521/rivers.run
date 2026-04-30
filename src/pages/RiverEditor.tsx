@@ -381,9 +381,11 @@ export default function RiverEditor() {
           }, user);
           
           await alert("Successfully approved!");
-          const bc = new BroadcastChannel("admin_updates");
-          bc.postMessage("refresh");
-          bc.close();
+          if (typeof BroadcastChannel !== 'undefined') {
+              const bc = new BroadcastChannel("admin_updates");
+              bc.postMessage("refresh");
+              bc.close();
+          }
           navigate("/admin");
       } catch (e: unknown) {
           if (e instanceof Error) await alert(`Failed to approve: ${e.message}`);
@@ -410,9 +412,11 @@ export default function RiverEditor() {
               })
           }, user);
           await alert("Submission completely rejected.");
-          const bc = new BroadcastChannel("admin_updates");
-          bc.postMessage("refresh");
-          bc.close();
+          if (typeof BroadcastChannel !== 'undefined') {
+              const bc = new BroadcastChannel("admin_updates");
+              bc.postMessage("refresh");
+              bc.close();
+          }
           navigate("/admin");
       } catch (e: unknown) {
           if (e instanceof Error) await alert(`Failed to reject: ${e.message}`);

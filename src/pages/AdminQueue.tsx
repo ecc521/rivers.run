@@ -57,14 +57,17 @@ export default function AdminQueue() {
     const handleFocus = () => refreshQueue(true);
     window.addEventListener("focus", handleFocus);
 
-    const bc = new BroadcastChannel("admin_updates");
-    bc.onmessage = (event) => {
-      if (event.data === "refresh") refreshQueue(true);
-    };
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel("admin_updates");
+        bc.onmessage = (event) => {
+          if (event.data === "refresh") refreshQueue(true);
+        };
+    }
 
     return () => {
       window.removeEventListener("focus", handleFocus);
-      bc.close();
+      bc?.close();
     };
   }, [isModerator, user, refreshQueue]);
 

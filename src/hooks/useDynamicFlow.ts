@@ -19,7 +19,7 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
     if (!river.gauges || river.gauges.length === 0) return;
 
     const allGauges = river.gauges.map(g => g.id);
-    const cacheKey = allGauges.toSorted((a, b) => a.localeCompare(b)).join(",");
+    const cacheKey = [...allGauges].sort((a, b) => a.localeCompare(b)).join(",");
     const cached = dynamicFlowCache.get(cacheKey);
 
     const primaryGaugeID = river.gauges?.find((g: any) => g.isPrimary)?.id || river.gauges?.[0]?.id;

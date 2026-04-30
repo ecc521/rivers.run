@@ -294,11 +294,14 @@ export const useRivers = (): UseRiversResult => {
     };
 
     // Service Worker Broadcast Listener
-    const updateChannel = new BroadcastChannel('flow-data-updates');
-    updateChannel.onmessage = (_event) => {
-        console.log("Service Worker broadcast: Fresh flow data available. Refreshing UI...");
-        setTimeout(() => fetchRivers(true), 100);
-    };
+    let updateChannel: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+        updateChannel = new BroadcastChannel('flow-data-updates');
+        updateChannel.onmessage = (_event) => {
+            console.log("Service Worker broadcast: Fresh flow data available. Refreshing UI...");
+            setTimeout(() => fetchRivers(true), 100);
+        };
+    }
 
     // Auto-fetch on refocus/visibility if data is > 15 mins old
     const handleVisibility = () => {
@@ -316,7 +319,7 @@ export const useRivers = (): UseRiversResult => {
         fetchSubscribers.delete(handleUpdate);
         clearInterval(heartbeatId);
         document.removeEventListener('visibilitychange', handleVisibility);
-        updateChannel.close();
+        updateChannel?.close();
     };
   }, []);
 

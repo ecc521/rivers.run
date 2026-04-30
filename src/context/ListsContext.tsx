@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { persistentStorage } from "../utils/persistentStorage";
 import { fetchAPI } from "../services/api";
+import { generateUUID } from "../utils/uuid";
 
 export interface UserList {
   id: string; // Document ID
@@ -119,7 +120,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!isAdmin && myLists.length >= 5) {
        throw new Error("You have reached the maximum limit of 5 custom lists.");
     }
-    const uuid = crypto.randomUUID();
+    const uuid = generateUUID();
     const newList: UserList = {
       id: uuid, title, description, ownerId: user.uid,
       author: user.displayName || "Community Paddler",

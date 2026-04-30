@@ -60,6 +60,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "archiver": "^7.0.1",
     "eslint": "^10.2.0",
+    "eslint-plugin-compat": "^7.0.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "eslint-plugin-sonarjs": "^4.0.2",
@@ -73,5 +74,12 @@
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.4",
     "wrangler": "^4.83.0"
-  }
+  },
+  "browserslist": [
+    "ios_saf >= 15",
+    "last 2 versions",
+    "> 1%",
+    "not dead",
+    "not op_mini all"
+  ]
 }
