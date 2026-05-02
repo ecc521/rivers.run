@@ -111,7 +111,7 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
         isMounted = false;
         clearTimeout(timeoutId);
     };
-  }, [river.id, river.gauges?.map(g => g.id).join(",")]);
+  }, [river.id, river.gauges?.map(g => g.id).join(",") ?? ""]);
 
   const enrichedRiver = useMemo(() => {
     if (!dynamicPayload) return null;

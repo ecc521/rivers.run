@@ -66,15 +66,15 @@ const PopupEventManager = ({ isHoverMode, onEnter, onLeave, children }: { isHove
     useEffect(() => {
         if (!isHoverMode || !ref.current) return;
         // Listen directly on the parent Leaflet container to eliminate any padding dead zones
-        const popupContainer = ref.current.closest(".leaflet-popup");
+        const popupContainer = ref.current.closest(".maplibregl-popup");
         if (popupContainer) {
             // Fix Leaflet's massive transparent bounding box issue by pushing interactivity down
             // to the visible sub-components. This prevents popups from silently swallowing 
             // interactions for the map canvas directly underneath them!
             (popupContainer as HTMLElement).style.pointerEvents = "none";
-            const wrapper = popupContainer.querySelector('.leaflet-popup-content-wrapper') as HTMLElement;
+            const wrapper = popupContainer.querySelector('.maplibregl-popup-content') as HTMLElement;
             if (wrapper) wrapper.style.pointerEvents = "auto";
-            const tip = popupContainer.querySelector('.leaflet-popup-tip') as HTMLElement;
+            const tip = popupContainer.querySelector('.maplibregl-popup-tip') as HTMLElement;
             if (tip) tip.style.pointerEvents = "auto";
 
             popupContainer.addEventListener("mouseenter", onEnter);
@@ -699,17 +699,21 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         >
             <style>
                 {`
-                .map-fullscreen-container .leaflet-top {
+                .map-fullscreen-container .maplibregl-ctrl-top-left,
+                .map-fullscreen-container .maplibregl-ctrl-top-right {
                     top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
                 }
-                .map-fullscreen-container .leaflet-left {
+                .map-fullscreen-container .maplibregl-ctrl-bottom-left,
+                .map-fullscreen-container .maplibregl-ctrl-bottom-right {
+                    bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+                }
+                .map-fullscreen-container .maplibregl-ctrl-top-left,
+                .map-fullscreen-container .maplibregl-ctrl-bottom-left {
                     left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
                 }
-                .map-fullscreen-container .leaflet-right {
+                .map-fullscreen-container .maplibregl-ctrl-top-right,
+                .map-fullscreen-container .maplibregl-ctrl-bottom-right {
                     right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
-                }
-                .map-fullscreen-container .leaflet-bottom {
-                    bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
                 }
                 `}
             </style>
