@@ -76,6 +76,11 @@ function skillToNumber(skill: string | number): number {
 }
 
 
+function getTagsArray(tags: string | string[] | undefined): string[] {
+  if (!tags) return [];
+  if (Array.isArray(tags)) return tags;
+  return [tags];
+}
 
 
 function matchNormalSearch(r: RiverData, terms: string[]): boolean {
@@ -83,7 +88,7 @@ function matchNormalSearch(r: RiverData, terms: string[]): boolean {
   const searchStr = r._searchString || [
     r.name || "",
     r.section || "",
-    ...(Array.isArray(r.tags) ? r.tags : r.tags ? [r.tags] : []),
+    ...getTagsArray(r.tags),
     r.isGauge ? "gauge" : "",
     ...(r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [])
   ].join(" ").toLowerCase();
@@ -150,7 +155,7 @@ function getSearchRelevanceScore(r: RiverData, terms: string[], regexes: RegExp[
   const lowerName = r._lowerName || String(r.name || "").toLowerCase();
   const lowerSection = r._lowerSection || String(r.section || "").toLowerCase();
   const searchTags = r._searchTags || [
-    ...(Array.isArray(r.tags) ? r.tags : r.tags ? [r.tags] : []),
+    ...getTagsArray(r.tags),
     r.isGauge ? "gauge" : "",
     ...(r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [])
   ].join(" ").toLowerCase();

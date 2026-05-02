@@ -1,0 +1,53 @@
+# Antigravity Language Server Ignore File
+
+# Large Data & Scripts (Crucial to ignore for performance)
+scripts/
+data/
+output/
+.wrangler/
+
+# Build & Dependencies
+node_modules/
+dist/
+dist-ssr/
+build-tools/
+
+# Mobile Platforms
+ios/
+android/
+# applewatch/ removed per user request (custom code)
+
+# Logs & Reports
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+lint_output.txt
+eslint-report.json
+
+# Databases
+*.db
+rivers.db
+
+# Temporary & Cache
+._vite_temp/
+.firebase/
+functions/lib/
+*.tsbuildinfo
+ttsconfig.tsbuildinfo
+artifacts/screenshots/
+test-results/
+.DS_Store
+
+# Misc
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*firebase-adminsdk*.json

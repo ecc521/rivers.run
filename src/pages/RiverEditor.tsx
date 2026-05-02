@@ -198,7 +198,7 @@ export default function RiverEditor() {
        }
      }
     load();
-  }, [riverId, queueId, isNew, isReviewMode, navigate, user, authLoading, alert]);
+  }, [riverId, queueId, isReviewMode, isNewFromURL, location.search, navigate, user, authLoading, alert]);
 
   const quillModules = useMemo(() => {
     return {

@@ -9,7 +9,10 @@ export async function logToD1(
     details?: any
 ) {
     const timestamp = Math.floor(Date.now() / 1000);
-    const detailsStr = details ? (typeof details === 'string' ? details : JSON.stringify(details)) : null;
+    let detailsStr: string | null = null;
+    if (details) {
+        detailsStr = typeof details === 'string' ? details : JSON.stringify(details);
+    }
 
     console.log(`[${level}] [${component}] ${message}`);
 
