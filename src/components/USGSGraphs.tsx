@@ -140,7 +140,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
 
   const [showForecast, setShowForecast] = useState<boolean>(true);
 
-  const [timeRange, setTimeRange] = useState<number>(3);
+  const [timeRange, setTimeRange] = useState<number>(7);
   const data = useMemo(() => {
      if (rawData.length === 0) return [];
 
@@ -331,20 +331,26 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
 
             {/* Time Range Switch */}
             {!hasNoData && (
-                <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", backgroundColor: "var(--surface-hover)", marginLeft: (!hasNoData && hasForecastData) ? "0" : "auto" }}>
-                    <button 
-                        onClick={() => setTimeRange(1)}
-                        style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: timeRange === 1 ? "var(--primary)" : "transparent", color: timeRange === 1 ? "#fff" : "var(--text)" }}
-                    >1D</button>
-                    <button 
-                        onClick={() => setTimeRange(3)}
-                        style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: timeRange === 3 ? "var(--primary)" : "transparent", color: timeRange === 3 ? "#fff" : "var(--text)" }}
-                    >3D</button>
-                    <button 
-                        onClick={() => setTimeRange(7)}
-                        style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: timeRange === 7 ? "var(--primary)" : "transparent", color: timeRange === 7 ? "#fff" : "var(--text)" }}
-                    >7D</button>
-                </div>
+                <select
+                    value={timeRange}
+                    onChange={(e) => setTimeRange(Number(e.target.value))}
+                    style={{
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border)",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--text)",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                        marginLeft: (!hasNoData && hasForecastData) ? "0" : "auto"
+                    }}
+                >
+                    <option value={1}>1 Day</option>
+                    <option value={3}>3 Days</option>
+                    <option value={7}>7 Days</option>
+                    <option value={14}>14 Days</option>
+                    <option value={30}>30 Days</option>
+                </select>
             )}
         </div>
       </div>
