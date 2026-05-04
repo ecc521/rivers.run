@@ -81,8 +81,8 @@ app.openapi(historyRoute, async (c) => {
     }
     
     const durationDays = parseInt(days) || 7;
-    if (durationDays > 28) {
-        return c.json({ error: "Duration too long. Max 28 days." }, 400);
+    if (durationDays > 30) {
+        return c.json({ error: "Duration too long. Max 30 days." }, 400);
     }
 
     const providerGroups: Record<string, string[]> = {};
