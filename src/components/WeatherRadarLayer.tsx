@@ -39,9 +39,9 @@ export const WeatherRadarLayer: React.FC<{ mode: "off" | "live" | "60min" }> = (
     return (
         <>
             {frames.map((url, i) => (
-                <Source key={url} id={`radar-${i}`} type="raster" tiles={[url]} tileSize={256} maxzoom={8}>
+                <Source key={`${mode}-${url}`} id={`radar-${mode}-${i}`} type="raster" tiles={[url]} tileSize={256} maxzoom={8}>
                     <Layer 
-                        id={`radar-layer-${i}`} 
+                        id={`radar-layer-${mode}-${i}`} 
                         type="raster" 
                         paint={{ "raster-opacity": i === activeIndex ? 0.5 : 0 }} 
                     />
