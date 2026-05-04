@@ -32,8 +32,16 @@
   fill: #e2e8f0; /* Gray for not downloaded */
 }
 
-.state-path.downloaded {
-  fill: #10b981; /* Green for ready */
+.state-path.downloaded-full {
+  fill: #065f46; /* Dark Green for Map + Routing */
+}
+
+.state-path.downloaded-map {
+  fill: #10b981; /* Light Green for Map only */
+}
+
+.state-path.downloaded-routing {
+  fill: #eab308; /* Yellow for Routing only */
 }
 
 .state-path.downloading {

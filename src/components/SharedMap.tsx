@@ -19,10 +19,13 @@ import { useModal } from "../context/ModalContext";
 import { useAuth } from "../context/AuthContext";
 import { getRiverShareUrl } from "../utils/url";
 import { fetchAPI } from "../services/api";
+import { persistentStorage } from "../utils/persistentStorage";
+
 
 
 import { SearchOverlay } from "./SearchOverlay";
 import { ShareMapModal } from "./ShareMapModal";
+import { NavigationPanel } from "./NavigationPanel";
 import { Capacitor } from '@capacitor/core';
 import { SystemBars } from '@capacitor/core';
 
@@ -156,6 +159,9 @@ interface SharedMapProps {
     height?: string; // Standard CSS dimension
 }
 
+ 
+
+
 
 export const SharedMap: React.FC<SharedMapProps> = ({ 
     initialCenter = [39.8283, -98.5795], 
@@ -189,6 +195,10 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     const [radarMode, setRadarMode] = useState<"off" | "live" | "60min">("off");
     const [copiedRiverId, setCopiedRiverId] = useState<string | null>(null);
+
+    const [isNavigating, setIsNavigating] = useState(false);
+    const [navDestination, setNavDestination] = useState<[number, number] | null>(null);
+    const [navRoute, setNavRoute] = useState<GeoJSON.LineString | null>(null);
 
     
     const [searchParams] = useSearchParams();
@@ -517,7 +527,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         const tile = await basemapInstance.getZxy(z, x, y, abortController.signal);
                         if (tile && tile.data) return { data: tile.data };
                     } catch (_e) {
-                        console.debug("Basemap tile fetch error:", _e);
+                        console.debug("Basemap tile not found", _e);
                     }
                 }
 
@@ -527,7 +537,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         const tile = await pmtiles.getZxy(z, x, y, abortController.signal);
                         if (tile && tile.data) return { data: tile.data };
                     } catch (_e) {
-                        console.debug("Offline tile fetch error:", _e);
+                        console.debug("Offline tile not found", _e);
                     }
                 }
 
@@ -540,10 +550,10 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         return { data };
                     }
                 } catch (_e) {
-                    console.debug("Online tile network error:", _e);
+                    console.debug("Online tile fetch failed", _e);
                 }
 
-                return { data: null };
+                throw new Error("Tile unavailable - offline or missing");
             });
             hybridProtocolAdded = true;
         }
@@ -559,8 +569,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 const downloaded = await getDownloadedRegions();
                 const newInstances: PMTiles[] = [];
                 if (downloaded && downloaded.length > 0) {
-                    for (const region of downloaded) {
-                        const source = await getOfflineMapSource(region);
+                    const mapRegions = downloaded.filter(d => d.hasMap).map(d => d.id);
+                    for (const regionId of mapRegions) {
+                        const source = await getOfflineMapSource(regionId);
                         if (source) {
                             if (typeof source === 'string') {
                                 newInstances.push(new PMTiles(source));
@@ -572,8 +583,27 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 }
                 activeOfflineInstances = newInstances;
 
-                const res = await fetch("/local_style.json");
-                const baseStyle = await res.json();
+                let baseStyle: any;
+                try {
+                    const res = await fetch("/local_style.json");
+                    if (!res.ok) throw new Error("Style fetch failed");
+                    baseStyle = await res.json();
+                    // Cache the style for future offline use
+                    await persistentStorage.set("offline_map_style", JSON.stringify(baseStyle)).catch(err => console.warn("Failed to cache map style", err));
+                } catch (fetchErr) {
+                    console.warn("Failed to fetch map style, trying cache:", fetchErr);
+                    const cached = await persistentStorage.get("offline_map_style");
+                    if (cached) {
+                        try {
+                            baseStyle = JSON.parse(cached);
+                        } catch (parseErr) {
+                            console.error("Failed to parse cached map style", parseErr);
+                            throw fetchErr;
+                        }
+                    } else {
+                        throw fetchErr; // Re-throw if no cache either
+                    }
+                }
                 
                 // Set the monolithic hybrid source
                 baseStyle.sources.protomaps.url = undefined;
@@ -584,6 +614,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 setDynamicStyle(baseStyle);
             } catch (e) {
                 console.error("Failed to build dynamic map style:", e);
+                // If we're on a native platform or offline, a missing style is fatal to the map.
+                // We'll set it back to the string path as a last-resort fallback.
                 setDynamicStyle("/local_style.json");
             }
         }
@@ -655,6 +687,27 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         } else {
             map.once('style.load', loadImages);
         }
+
+        const handleImageMissing = (e: any) => {
+            const id = e.id;
+            if (id && !map.hasImage(id)) {
+                const match = id.match(/^([PTA])_(hsl\([^)]+\))_([0-9.]+)_(\d+)$/);
+                if (match) {
+                    const [, letter, fillColor, opacityStr] = match;
+                    const { imageData, pixelRatio } = getCachedCanvasImage(letter, fillColor, parseFloat(opacityStr));
+                    map.addImage(id, imageData, { pixelRatio });
+                } else {
+                    // Suppress warning with 1x1 transparent pixel
+                    map.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) });
+                }
+            }
+        };
+
+        map.on('styleimagemissing', handleImageMissing);
+
+        return () => {
+            map.off('styleimagemissing', handleImageMissing);
+        };
     }, [nonGaugesGeoJson, dynamicStyle]); // Re-run when style loads
 
     const handleMapClick = React.useCallback((e: any) => {
@@ -993,7 +1046,37 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         />
                     </Source>
                 )}
+                {/* Navigation Route Path */}
+                {navRoute && (
+                    <Source 
+                        id="navigation-route" 
+                        type="geojson" 
+                        data={{ type: "Feature", geometry: navRoute, properties: {} }}
+                    >
+                        <Layer 
+                            id="navigation-route-layer" 
+                            type="line" 
+                            paint={{
+                                "line-color": "#3b82f6",
+                                "line-width": 5,
+                                "line-opacity": 0.8
+                            }}
+                            layout={{
+                                "line-join": "round",
+                                "line-cap": "round"
+                            }}
+                        />
+                    </Source>
+                )}
             </Map>
+
+            <NavigationPanel 
+                isOpen={isNavigating}
+                onClose={() => setIsNavigating(false)}
+                startCoord={location.longitude && location.latitude ? [location.longitude, location.latitude] : null}
+                endCoord={navDestination}
+                onRouteCalculated={setNavRoute}
+            />
 
             {/* Universally Injected Selected River Sidebar */}
             {selectedRiver && (
@@ -1078,13 +1161,24 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     <div style={{ padding: "0 20px 20px 20px", color: "var(--text-secondary)" }}>
                             {selectedAccessPoint && selectedAccessPoint.lat && (
                                 <div style={{ marginBottom: "15px" }}>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setNavDestination([selectedAccessPoint.lon as number, selectedAccessPoint.lat as number]);
+                                            setIsNavigating(true);
+                                        }}
+                                        style={{ display: "inline-block", backgroundColor: "var(--primary)", color: "#fff", padding: "8px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none", border: "none", cursor: "pointer", marginBottom: "8px" }}
+                                    >
+                                        🧭 Navigate Offline
+                                    </button>
+                                    <br />
                                     <a 
                                         href={`https://www.google.com/maps/dir/?api=1&destination=${selectedAccessPoint.lat},${selectedAccessPoint.lon}`} 
                                         target="_blank" 
                                         rel="noreferrer"
-                                        style={{ display: "inline-block", backgroundColor: "var(--primary)", color: "#fff", padding: "8px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}
+                                        style={{ display: "inline-block", backgroundColor: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "7px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}
                                     >
-                                        📍 Navigate in Google Maps
+                                        📍 Google Maps
                                     </a>
                                     <button 
                                         onClick={(e) => handleShare(e, selectedRiver)}

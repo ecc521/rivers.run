@@ -1,8 +1,9 @@
 import React from 'react';
 import './InteractiveUSMap.css';
+import type { DownloadedRegionState } from '../utils/offlineMapEngine';
 
 interface InteractiveUSMapProps {
-  downloadedRegions: string[];
+  downloadedRegions: DownloadedRegionState[];
   downloadingRegionId: string | null;
   onStateClick: (stateAbbrev: string) => void;
 }
@@ -15,7 +16,11 @@ export const InteractiveUSMap: React.FC<InteractiveUSMapProps> = ({
   const getStateStatus = (abbrev: string) => {
     const id = `US-${abbrev.toUpperCase()}`;
     if (downloadingRegionId === id) return 'downloading';
-    if (downloadedRegions.includes(id)) return 'downloaded';
+    const state = downloadedRegions.find(r => r.id === id);
+    if (!state) return 'none';
+    if (state.hasMap && state.hasRouting) return 'downloaded-full';
+    if (state.hasMap) return 'downloaded-map';
+    if (state.hasRouting) return 'downloaded-routing';
     return 'none';
   };
 

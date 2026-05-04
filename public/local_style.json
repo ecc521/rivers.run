@@ -5,7 +5,7 @@
   "sprite": "https://protomaps.github.io/basemaps-assets/sprites/v3/light",
   "sources": {
     "protomaps": {
-      "attribution": "<a href=\"https://github.com/protomaps/basemaps\">Protomaps</a> \u00a9 <a href=\"https://openstreetmap.org\">OpenStreetMap</a>",
+      "attribution": "<a href=\"https://github.com/protomaps/basemaps\">Protomaps</a> © <a href=\"https://openstreetmap.org\">OpenStreetMap</a>",
       "type": "vector",
       "tiles": [
         "https://api.protomaps.com/tiles/v3/{z}/{x}/{y}.mvt?key=08cdd323336ea22b"
@@ -39,15 +39,29 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "national_park",
-          "park",
-          "cemetery",
-          "protected_area",
-          "nature_reserve",
-          "forest",
-          "golf_course"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "national_park",
+            "park",
+            "cemetery",
+            "protected_area",
+            "nature_reserve",
+            "forest",
+            "golf_course"
+          ],
+          [
+            "in",
+            "kind",
+            "national_park",
+            "park",
+            "cemetery",
+            "protected_area",
+            "nature_reserve",
+            "forest",
+            "golf_course"
+          ]
         ]
       ],
       "paint": {
@@ -74,11 +88,21 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "allotments",
-          "village_green",
-          "playground"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "allotments",
+            "village_green",
+            "playground"
+          ],
+          [
+            "in",
+            "kind",
+            "allotments",
+            "village_green",
+            "playground"
+          ]
         ]
       ],
       "paint": {
@@ -94,9 +118,17 @@
       "filter": [
         "any",
         [
-          "==",
-          "pmap:kind",
-          "hospital"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "hospital"
+          ],
+          [
+            "==",
+            "kind",
+            "hospital"
+          ]
         ]
       ],
       "paint": {
@@ -111,9 +143,17 @@
       "filter": [
         "any",
         [
-          "==",
-          "pmap:kind",
-          "industrial"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "industrial"
+          ],
+          [
+            "==",
+            "kind",
+            "industrial"
+          ]
         ]
       ],
       "paint": {
@@ -128,11 +168,21 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "school",
-          "university",
-          "college"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "school",
+            "university",
+            "college"
+          ],
+          [
+            "in",
+            "kind",
+            "school",
+            "university",
+            "college"
+          ]
         ]
       ],
       "paint": {
@@ -147,9 +197,17 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "beach"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "beach"
+          ],
+          [
+            "in",
+            "kind",
+            "beach"
+          ]
         ]
       ],
       "paint": {
@@ -164,9 +222,17 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "zoo"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "zoo"
+          ],
+          [
+            "in",
+            "kind",
+            "zoo"
+          ]
         ]
       ],
       "paint": {
@@ -181,11 +247,21 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "military",
-          "naval_base",
-          "airfield"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "military",
+            "naval_base",
+            "airfield"
+          ],
+          [
+            "in",
+            "kind",
+            "military",
+            "naval_base",
+            "airfield"
+          ]
         ]
       ],
       "paint": {
@@ -200,11 +276,21 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "wood",
-          "nature_reserve",
-          "forest"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "wood",
+            "nature_reserve",
+            "forest"
+          ],
+          [
+            "in",
+            "kind",
+            "wood",
+            "nature_reserve",
+            "forest"
+          ]
         ]
       ],
       "paint": {
@@ -229,11 +315,21 @@
       "source": "protomaps",
       "source-layer": "natural",
       "filter": [
-        "in",
-        "pmap:kind",
-        "scrub",
-        "grassland",
-        "grass"
+        "any",
+        [
+          "in",
+          "pmap:kind",
+          "scrub",
+          "grassland",
+          "grass"
+        ],
+        [
+          "in",
+          "kind",
+          "scrub",
+          "grassland",
+          "grass"
+        ]
       ],
       "paint": {
         "fill-color": [
@@ -257,9 +353,17 @@
       "source": "protomaps",
       "source-layer": "natural",
       "filter": [
-        "==",
-        "pmap:kind",
-        "glacier"
+        "any",
+        [
+          "==",
+          "pmap:kind",
+          "glacier"
+        ],
+        [
+          "==",
+          "kind",
+          "glacier"
+        ]
       ],
       "paint": {
         "fill-color": "#e7e7e7"
@@ -271,9 +375,17 @@
       "source": "protomaps",
       "source-layer": "natural",
       "filter": [
-        "==",
-        "pmap:kind",
-        "sand"
+        "any",
+        [
+          "==",
+          "pmap:kind",
+          "sand"
+        ],
+        [
+          "==",
+          "kind",
+          "sand"
+        ]
       ],
       "paint": {
         "fill-color": "#e2e0d7"
@@ -287,9 +399,17 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "aerodrome"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "aerodrome"
+          ],
+          [
+            "in",
+            "kind",
+            "aerodrome"
+          ]
         ]
       ],
       "paint": {
@@ -304,9 +424,17 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind_detail",
-          "runway"
+          "any",
+          [
+            "in",
+            "pmap:kind_detail",
+            "runway"
+          ],
+          [
+            "in",
+            "kind_detail",
+            "runway"
+          ]
         ]
       ],
       "paint": {
@@ -338,9 +466,17 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind_detail",
-          "taxiway"
+          "any",
+          [
+            "in",
+            "pmap:kind_detail",
+            "taxiway"
+          ],
+          [
+            "in",
+            "kind_detail",
+            "taxiway"
+          ]
         ]
       ],
       "paint": {
@@ -381,9 +517,17 @@
       "filter": [
         "all",
         [
-          "in",
-          "pmap:kind",
-          "stream"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "stream"
+          ],
+          [
+            "in",
+            "kind",
+            "stream"
+          ]
         ]
       ],
       "paint": {
@@ -400,9 +544,17 @@
       "filter": [
         "all",
         [
-          "in",
-          "pmap:kind",
-          "river"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "river"
+          ],
+          [
+            "in",
+            "kind",
+            "river"
+          ]
         ]
       ],
       "paint": {
@@ -433,9 +585,17 @@
       "filter": [
         "any",
         [
-          "==",
-          "pmap:kind",
-          "pedestrian"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "pedestrian"
+          ],
+          [
+            "==",
+            "kind",
+            "pedestrian"
+          ]
         ]
       ],
       "paint": {
@@ -450,9 +610,17 @@
       "filter": [
         "any",
         [
-          "==",
-          "pmap:kind",
-          "pier"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "pier"
+          ],
+          [
+            "==",
+            "kind",
+            "pier"
+          ]
         ]
       ],
       "paint": {
@@ -467,15 +635,32 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "in",
-          "pmap:kind",
-          "other",
-          "path"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "other",
+            "path"
+          ],
+          [
+            "in",
+            "kind",
+            "other",
+            "path"
+          ]
         ]
       ],
       "paint": {
@@ -504,14 +689,30 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "minor_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "minor_road"
+          ],
+          [
+            "==",
+            "kind",
+            "minor_road"
+          ]
         ]
       ],
       "paint": {
@@ -562,14 +763,30 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:link",
-          1
+          "any",
+          [
+            "==",
+            "pmap:link",
+            1
+          ],
+          [
+            "==",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -618,14 +835,30 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "medium_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "medium_road"
+          ],
+          [
+            "==",
+            "kind",
+            "medium_road"
+          ]
         ]
       ],
       "paint": {
@@ -674,14 +907,30 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "major_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "major_road"
+          ],
+          [
+            "==",
+            "kind",
+            "major_road"
+          ]
         ]
       ],
       "paint": {
@@ -730,19 +979,43 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "highway"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "highway"
+          ],
+          [
+            "==",
+            "kind",
+            "highway"
+          ]
         ],
         [
-          "!=",
-          "pmap:link",
-          1
+          "all",
+          [
+            "!=",
+            "pmap:link",
+            1
+          ],
+          [
+            "!=",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -793,15 +1066,32 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "in",
-          "pmap:kind",
-          "other",
-          "path"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "other",
+            "path"
+          ],
+          [
+            "in",
+            "kind",
+            "other",
+            "path"
+          ]
         ]
       ],
       "paint": {
@@ -834,14 +1124,30 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "minor_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "minor_road"
+          ],
+          [
+            "==",
+            "kind",
+            "minor_road"
+          ]
         ]
       ],
       "paint": {
@@ -874,14 +1180,30 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:link",
-          1
+          "any",
+          [
+            "==",
+            "pmap:link",
+            1
+          ],
+          [
+            "==",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -912,14 +1234,30 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "medium_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "medium_road"
+          ],
+          [
+            "==",
+            "kind",
+            "medium_road"
+          ]
         ]
       ],
       "paint": {
@@ -952,14 +1290,30 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "major_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "major_road"
+          ],
+          [
+            "==",
+            "kind",
+            "major_road"
+          ]
         ]
       ],
       "paint": {
@@ -992,19 +1346,43 @@
       "filter": [
         "all",
         [
-          "<",
-          "pmap:level",
-          0
+          "any",
+          [
+            "<",
+            "pmap:level",
+            0
+          ],
+          [
+            "<",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "highway"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "highway"
+          ],
+          [
+            "==",
+            "kind",
+            "highway"
+          ]
         ],
         [
-          "!=",
-          "pmap:link",
-          1
+          "all",
+          [
+            "!=",
+            "pmap:link",
+            1
+          ],
+          [
+            "!=",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -1039,9 +1417,17 @@
       "filter": [
         "any",
         [
-          "==",
-          "pmap:kind",
-          "pier"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "pier"
+          ],
+          [
+            "==",
+            "kind",
+            "pier"
+          ]
         ]
       ],
       "paint": {
@@ -1073,19 +1459,43 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "minor_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "minor_road"
+          ],
+          [
+            "==",
+            "kind",
+            "minor_road"
+          ]
         ],
         [
-          "==",
-          "pmap:kind_detail",
-          "service"
+          "any",
+          [
+            "==",
+            "pmap:kind_detail",
+            "service"
+          ],
+          [
+            "==",
+            "kind_detail",
+            "service"
+          ]
         ]
       ],
       "paint": {
@@ -1128,19 +1538,43 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "minor_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "minor_road"
+          ],
+          [
+            "==",
+            "kind",
+            "minor_road"
+          ]
         ],
         [
-          "!=",
-          "pmap:kind_detail",
-          "service"
+          "all",
+          [
+            "!=",
+            "pmap:kind_detail",
+            "service"
+          ],
+          [
+            "!=",
+            "kind_detail",
+            "service"
+          ]
         ]
       ],
       "paint": {
@@ -1188,9 +1622,17 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:link",
-          1
+          "any",
+          [
+            "==",
+            "pmap:link",
+            1
+          ],
+          [
+            "==",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -1235,14 +1677,30 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "medium_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "medium_road"
+          ],
+          [
+            "==",
+            "kind",
+            "medium_road"
+          ]
         ]
       ],
       "paint": {
@@ -1290,14 +1748,30 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "major_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "major_road"
+          ],
+          [
+            "==",
+            "kind",
+            "major_road"
+          ]
         ]
       ],
       "paint": {
@@ -1345,19 +1819,43 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "highway"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "highway"
+          ],
+          [
+            "==",
+            "kind",
+            "highway"
+          ]
         ],
         [
-          "!=",
-          "pmap:link",
-          1
+          "all",
+          [
+            "!=",
+            "pmap:link",
+            1
+          ],
+          [
+            "!=",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -1404,15 +1902,32 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "in",
-          "pmap:kind",
-          "other",
-          "path"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "other",
+            "path"
+          ],
+          [
+            "in",
+            "kind",
+            "other",
+            "path"
+          ]
         ]
       ],
       "paint": {
@@ -1445,9 +1960,17 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:link",
-          1
+          "any",
+          [
+            "==",
+            "pmap:link",
+            1
+          ],
+          [
+            "==",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -1478,19 +2001,43 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "minor_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "minor_road"
+          ],
+          [
+            "==",
+            "kind",
+            "minor_road"
+          ]
         ],
         [
-          "==",
-          "pmap:kind_detail",
-          "service"
+          "any",
+          [
+            "==",
+            "pmap:kind_detail",
+            "service"
+          ],
+          [
+            "==",
+            "kind_detail",
+            "service"
+          ]
         ]
       ],
       "paint": {
@@ -1519,19 +2066,43 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "minor_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "minor_road"
+          ],
+          [
+            "==",
+            "kind",
+            "minor_road"
+          ]
         ],
         [
-          "!=",
-          "pmap:kind_detail",
-          "service"
+          "all",
+          [
+            "!=",
+            "pmap:kind_detail",
+            "service"
+          ],
+          [
+            "!=",
+            "kind_detail",
+            "service"
+          ]
         ]
       ],
       "paint": {
@@ -1564,14 +2135,30 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "medium_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "medium_road"
+          ],
+          [
+            "==",
+            "kind",
+            "medium_road"
+          ]
         ]
       ],
       "paint": {
@@ -1605,14 +2192,30 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "major_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "major_road"
+          ],
+          [
+            "==",
+            "kind",
+            "major_road"
+          ]
         ]
       ],
       "paint": {
@@ -1657,14 +2260,30 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "major_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "major_road"
+          ],
+          [
+            "==",
+            "kind",
+            "major_road"
+          ]
         ]
       ],
       "paint": {
@@ -1698,19 +2317,43 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "highway"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "highway"
+          ],
+          [
+            "==",
+            "kind",
+            "highway"
+          ]
         ],
         [
-          "!=",
-          "pmap:link",
-          1
+          "all",
+          [
+            "!=",
+            "pmap:link",
+            1
+          ],
+          [
+            "!=",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -1740,8 +2383,10 @@
           [
             "zoom"
           ],
-          7,
+          4,
           0,
+          5,
+          0.5,
           7.5,
           1
         ]
@@ -1755,19 +2400,43 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:level",
-          0
+          "any",
+          [
+            "==",
+            "pmap:level",
+            0
+          ],
+          [
+            "==",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "highway"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "highway"
+          ],
+          [
+            "==",
+            "kind",
+            "highway"
+          ]
         ],
         [
-          "!=",
-          "pmap:link",
-          1
+          "all",
+          [
+            "!=",
+            "pmap:link",
+            1
+          ],
+          [
+            "!=",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -1783,6 +2452,8 @@
           ],
           3,
           0,
+          5,
+          0.8,
           6,
           1.1,
           12,
@@ -1802,9 +2473,17 @@
       "filter": [
         "all",
         [
-          "==",
-          "pmap:kind",
-          "rail"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "rail"
+          ],
+          [
+            "==",
+            "kind",
+            "rail"
+          ]
         ]
       ],
       "paint": {
@@ -1838,9 +2517,17 @@
       "source": "protomaps",
       "source-layer": "boundaries",
       "filter": [
-        "<=",
-        "pmap:min_admin_level",
-        2
+        "any",
+        [
+          "<=",
+          "pmap:min_admin_level",
+          2
+        ],
+        [
+          "<=",
+          "min_admin_level",
+          2
+        ]
       ],
       "paint": {
         "line-color": "#adadad",
@@ -1857,9 +2544,17 @@
       "source": "protomaps",
       "source-layer": "boundaries",
       "filter": [
-        ">",
-        "pmap:min_admin_level",
-        2
+        "any",
+        [
+          ">",
+          "pmap:min_admin_level",
+          2
+        ],
+        [
+          ">",
+          "min_admin_level",
+          2
+        ]
       ],
       "paint": {
         "line-color": "#adadad",
@@ -1879,15 +2574,32 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "in",
-          "pmap:kind",
-          "other",
-          "path"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "other",
+            "path"
+          ],
+          [
+            "in",
+            "kind",
+            "other",
+            "path"
+          ]
         ]
       ],
       "paint": {
@@ -1917,14 +2629,30 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:link",
-          1
+          "any",
+          [
+            "==",
+            "pmap:link",
+            1
+          ],
+          [
+            "==",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -1970,14 +2698,30 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "minor_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "minor_road"
+          ],
+          [
+            "==",
+            "kind",
+            "minor_road"
+          ]
         ]
       ],
       "paint": {
@@ -2025,14 +2769,30 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "medium_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "medium_road"
+          ],
+          [
+            "==",
+            "kind",
+            "medium_road"
+          ]
         ]
       ],
       "paint": {
@@ -2080,14 +2840,30 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "major_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "major_road"
+          ],
+          [
+            "==",
+            "kind",
+            "major_road"
+          ]
         ]
       ],
       "paint": {
@@ -2133,15 +2909,32 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "in",
-          "pmap:kind",
-          "other",
-          "path"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "other",
+            "path"
+          ],
+          [
+            "in",
+            "kind",
+            "other",
+            "path"
+          ]
         ]
       ],
       "paint": {
@@ -2175,14 +2968,30 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "minor_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "minor_road"
+          ],
+          [
+            "==",
+            "kind",
+            "minor_road"
+          ]
         ]
       ],
       "paint": {
@@ -2216,14 +3025,30 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:link",
-          1
+          "any",
+          [
+            "==",
+            "pmap:link",
+            1
+          ],
+          [
+            "==",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -2255,14 +3080,30 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "medium_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "medium_road"
+          ],
+          [
+            "==",
+            "kind",
+            "medium_road"
+          ]
         ]
       ],
       "paint": {
@@ -2296,14 +3137,30 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "major_road"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "major_road"
+          ],
+          [
+            "==",
+            "kind",
+            "major_road"
+          ]
         ]
       ],
       "paint": {
@@ -2337,19 +3194,43 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "highway"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "highway"
+          ],
+          [
+            "==",
+            "kind",
+            "highway"
+          ]
         ],
         [
-          "!=",
-          "pmap:link",
-          1
+          "all",
+          [
+            "!=",
+            "pmap:link",
+            1
+          ],
+          [
+            "!=",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -2396,19 +3277,43 @@
       "filter": [
         "all",
         [
-          ">",
-          "pmap:level",
-          0
+          "any",
+          [
+            ">",
+            "pmap:level",
+            0
+          ],
+          [
+            ">",
+            "level",
+            0
+          ]
         ],
         [
-          "==",
-          "pmap:kind",
-          "highway"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "highway"
+          ],
+          [
+            "==",
+            "kind",
+            "highway"
+          ]
         ],
         [
-          "!=",
-          "pmap:link",
-          1
+          "all",
+          [
+            "!=",
+            "pmap:link",
+            1
+          ],
+          [
+            "!=",
+            "link",
+            1
+          ]
         ]
       ],
       "paint": {
@@ -2444,10 +3349,19 @@
       "filter": [
         "all",
         [
-          "in",
-          "pmap:kind",
-          "river",
-          "stream"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "river",
+            "stream"
+          ],
+          [
+            "in",
+            "kind",
+            "river",
+            "stream"
+          ]
         ]
       ],
       "layout": {
@@ -2474,9 +3388,17 @@
       "filter": [
         "any",
         [
-          "==",
-          "pmap:kind",
-          "peak"
+          "any",
+          [
+            "==",
+            "pmap:kind",
+            "peak"
+          ],
+          [
+            "==",
+            "kind",
+            "peak"
+          ]
         ]
       ],
       "layout": {
@@ -2529,17 +3451,34 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "minor_road",
-          "other",
-          "path"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "minor_road",
+            "other",
+            "path"
+          ],
+          [
+            "in",
+            "kind",
+            "minor_road",
+            "other",
+            "path"
+          ]
         ]
       ],
       "layout": {
         "symbol-sort-key": [
-          "get",
-          "pmap:min_zoom"
+          "coalesce",
+          [
+            "get",
+            "pmap:min_zoom"
+          ],
+          [
+            "get",
+            "min_zoom"
+          ]
         ],
         "symbol-placement": "line",
         "text-font": [
@@ -2565,15 +3504,29 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "sea",
-          "ocean",
-          "lake",
-          "water",
-          "bay",
-          "strait",
-          "fjord"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "sea",
+            "ocean",
+            "lake",
+            "water",
+            "bay",
+            "strait",
+            "fjord"
+          ],
+          [
+            "in",
+            "kind",
+            "sea",
+            "ocean",
+            "lake",
+            "water",
+            "bay",
+            "strait",
+            "fjord"
+          ]
         ]
       ],
       "layout": {
@@ -2614,10 +3567,19 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "lake",
-          "water"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "lake",
+            "water"
+          ],
+          [
+            "in",
+            "kind",
+            "lake",
+            "water"
+          ]
         ]
       ],
       "layout": {
@@ -2660,17 +3622,34 @@
       "filter": [
         "any",
         [
-          "in",
-          "pmap:kind",
-          "highway",
-          "major_road",
-          "medium_road"
+          "any",
+          [
+            "in",
+            "pmap:kind",
+            "highway",
+            "major_road",
+            "medium_road"
+          ],
+          [
+            "in",
+            "kind",
+            "highway",
+            "major_road",
+            "medium_road"
+          ]
         ]
       ],
       "layout": {
         "symbol-sort-key": [
-          "get",
-          "pmap:min_zoom"
+          "coalesce",
+          [
+            "get",
+            "pmap:min_zoom"
+          ],
+          [
+            "get",
+            "min_zoom"
+          ]
         ],
         "symbol-placement": "line",
         "text-font": [
@@ -2694,14 +3673,29 @@
       "source": "protomaps",
       "source-layer": "places",
       "filter": [
-        "==",
-        "pmap:kind",
-        "neighbourhood"
+        "any",
+        [
+          "==",
+          "pmap:kind",
+          "neighbourhood"
+        ],
+        [
+          "==",
+          "kind",
+          "neighbourhood"
+        ]
       ],
       "layout": {
         "symbol-sort-key": [
-          "get",
-          "pmap:min_zoom"
+          "coalesce",
+          [
+            "get",
+            "pmap:min_zoom"
+          ],
+          [
+            "get",
+            "min_zoom"
+          ]
         ],
         "text-field": "{name}",
         "text-font": [
@@ -2756,9 +3750,17 @@
       "source": "protomaps",
       "source-layer": "places",
       "filter": [
-        "==",
-        "pmap:kind",
-        "locality"
+        "any",
+        [
+          "==",
+          "pmap:kind",
+          "locality"
+        ],
+        [
+          "==",
+          "kind",
+          "locality"
+        ]
       ],
       "layout": {
         "icon-image": [
@@ -2777,8 +3779,15 @@
           [
             "<=",
             [
-              "get",
-              "pmap:min_zoom"
+              "coalesce",
+              [
+                "get",
+                "pmap:min_zoom"
+              ],
+              [
+                "get",
+                "min_zoom"
+              ]
             ],
             5
           ],
@@ -2824,8 +3833,15 @@
             [
               "<",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               13
             ],
@@ -2833,8 +3849,15 @@
             [
               ">=",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               13
             ],
@@ -2847,8 +3870,15 @@
             [
               "<",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               13
             ],
@@ -2856,8 +3886,15 @@
             [
               ">=",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               13
             ],
@@ -2870,8 +3907,15 @@
             [
               "<",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               12
             ],
@@ -2879,8 +3923,15 @@
             [
               ">=",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               12
             ],
@@ -2893,8 +3944,15 @@
             [
               "<",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               11
             ],
@@ -2902,8 +3960,15 @@
             [
               ">=",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               11
             ],
@@ -2916,8 +3981,15 @@
             [
               "<",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               9
             ],
@@ -2925,8 +3997,15 @@
             [
               ">=",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               9
             ],
@@ -2939,8 +4018,15 @@
             [
               "<",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               8
             ],
@@ -2948,8 +4034,15 @@
             [
               ">=",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               8
             ],
@@ -2999,14 +4092,29 @@
       "source": "protomaps",
       "source-layer": "places",
       "filter": [
-        "==",
-        "pmap:kind",
-        "region"
+        "any",
+        [
+          "==",
+          "pmap:kind",
+          "region"
+        ],
+        [
+          "==",
+          "kind",
+          "region"
+        ]
       ],
       "layout": {
         "symbol-sort-key": [
-          "get",
-          "pmap:min_zoom"
+          "coalesce",
+          [
+            "get",
+            "pmap:min_zoom"
+          ],
+          [
+            "get",
+            "min_zoom"
+          ]
         ],
         "text-field": [
           "step",
@@ -3055,14 +4163,29 @@
       "source": "protomaps",
       "source-layer": "places",
       "filter": [
-        "==",
-        "pmap:kind",
-        "country"
+        "any",
+        [
+          "==",
+          "pmap:kind",
+          "country"
+        ],
+        [
+          "==",
+          "kind",
+          "country"
+        ]
       ],
       "layout": {
         "symbol-sort-key": [
-          "get",
-          "pmap:min_zoom"
+          "coalesce",
+          [
+            "get",
+            "pmap:min_zoom"
+          ],
+          [
+            "get",
+            "min_zoom"
+          ]
         ],
         "text-field": "{name}",
         "text-font": [
@@ -3082,8 +4205,15 @@
             [
               "<",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               10
             ],
@@ -3091,8 +4221,15 @@
             [
               ">=",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               10
             ],
@@ -3105,8 +4242,15 @@
             [
               "<",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               8
             ],
@@ -3114,8 +4258,15 @@
             [
               ">=",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               8
             ],
@@ -3128,8 +4279,15 @@
             [
               "<",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               7
             ],
@@ -3137,8 +4295,15 @@
             [
               ">=",
               [
-                "get",
-                "pmap:population_rank"
+                "coalesce",
+                [
+                  "get",
+                  "pmap:population_rank"
+                ],
+                [
+                  "get",
+                  "population_rank"
+                ]
               ],
               7
             ],

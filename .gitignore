@@ -75,3 +75,4 @@ data/
 output/
 *.pmtiles
 
+valhalla-wasm/

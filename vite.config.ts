@@ -13,7 +13,7 @@ export default defineConfig({
       enabled: false,
     },
     workbox: {
-      globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,pmtiles}'],
+      globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,pmtiles,json}'],
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/api\.rivers\.run\/.*/i,
@@ -120,6 +120,9 @@ export default defineConfig({
       ]
     }
   }), process.env.VITEST ? null : cloudflare()],
+  server: {
+    host: true,
+  },
   build: {
     target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
   },
