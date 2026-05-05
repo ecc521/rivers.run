@@ -504,8 +504,49 @@
       "type": "fill",
       "source": "protomaps",
       "source-layer": "water",
+      "filter": [
+        "==",
+        "$type",
+        "Polygon"
+      ],
       "paint": {
         "fill-color": "#8ac5eb"
+      }
+    },
+    {
+      "id": "water_line",
+      "type": "line",
+      "source": "protomaps",
+      "source-layer": "water",
+      "filter": [
+        "==",
+        "$type",
+        "LineString"
+      ],
+      "paint": {
+        "line-color": "#8ac5eb",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.6
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0,
+          9,
+          0.5,
+          9.5,
+          1,
+          18,
+          12
+        ]
+      },
+      "layout": {
+        "line-join": "round",
+        "line-cap": "round"
       }
     },
     {
@@ -531,8 +572,12 @@
         ]
       ],
       "paint": {
-        "line-color": "#80deea",
+        "line-color": "#8ac5eb",
         "line-width": 0.5
+      },
+      "layout": {
+        "line-join": "round",
+        "line-cap": "round"
       }
     },
     {
@@ -540,7 +585,7 @@
       "type": "line",
       "source": "protomaps",
       "source-layer": "physical_line",
-      "minzoom": 9,
+      "minzoom": 5,
       "filter": [
         "all",
         [
@@ -558,7 +603,7 @@
         ]
       ],
       "paint": {
-        "line-color": "#80deea",
+        "line-color": "#8ac5eb",
         "line-width": [
           "interpolate",
           [
@@ -568,13 +613,19 @@
           [
             "zoom"
           ],
-          9,
+          5,
           0,
+          9,
+          0.5,
           9.5,
           1,
           18,
           12
         ]
+      },
+      "layout": {
+        "line-join": "round",
+        "line-cap": "round"
       }
     },
     {
