@@ -22,6 +22,7 @@ import ListsPage from "./pages/ListsPage";
 import { ReloadPrompt } from "./components/ReloadPrompt";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import Footer from "./components/Footer";
+import NotFound from "./pages/NotFound";
 
 import { recordAppOpen } from "./utils/appReview";
 
@@ -127,6 +128,7 @@ function App() {
                       <Route path="/terms" element={<TermsOfService />} />
                       <Route path="/privacy" element={<PrivacyPolicy />} />
                       <Route path="/disclaimer" element={<Disclaimer />} />
+                      <Route path="*" element={<NotFound />} />
                     </Routes>
                   </ErrorBoundary>
                 </main>

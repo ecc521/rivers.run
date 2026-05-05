@@ -144,10 +144,12 @@ const RiverPage: React.FC = () => {
   };
 
   useSEO({
-    title: river ? `${river.name} - ${river.section}` : undefined,
+    title: river ? `${river.name} - ${river.section}` : "River Not Found",
     description: river 
       ? `Detailed flow info, running status, and description for ${river.name} (${river.section}) in ${river.states || 'the USA'}.` 
-      : undefined
+      : undefined,
+    canonical: river ? `https://rivers.run/${river.isGauge ? 'gauge' : 'river'}/${river.id}` : undefined,
+    noindex: !!error || (!loading && !river)
   });
 
   if (loading) {

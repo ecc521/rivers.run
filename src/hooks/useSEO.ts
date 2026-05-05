@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export function useSEO({ title, description, canonical }: { title?: string; description?: string; canonical?: string }) {
+export function useSEO({ title, description, canonical, noindex }: { title?: string; description?: string; canonical?: string; noindex?: boolean }) {
   useEffect(() => {
     // 1. Update Title
     if (title) {
@@ -30,19 +30,32 @@ export function useSEO({ title, description, canonical }: { title?: string; desc
     }
 
     // 3. Update Canonical Tag
-    if (canonical) {
-        let canonicalEl = document.querySelector('link[rel="canonical"]');
-        if (!canonicalEl) {
-            canonicalEl = document.createElement("link");
-            canonicalEl.setAttribute("rel", "canonical");
-            document.head.appendChild(canonicalEl);
-        }
-        canonicalEl.setAttribute("href", canonical);
+    const finalCanonical = canonical || `https://rivers.run${window.location.pathname}`;
+    let canonicalEl = document.querySelector('link[rel="canonical"]');
+    if (!canonicalEl) {
+        canonicalEl = document.createElement("link");
+        canonicalEl.setAttribute("rel", "canonical");
+        document.head.appendChild(canonicalEl);
     }
+    canonicalEl.setAttribute("href", finalCanonical);
     
+    // 4. Update NoIndex
+    let robotsEl = document.querySelector('meta[name="robots"]');
+    if (noindex) {
+        if (!robotsEl) {
+            robotsEl = document.createElement("meta");
+            robotsEl.setAttribute("name", "robots");
+            document.head.appendChild(robotsEl);
+        }
+        robotsEl.setAttribute("content", "noindex");
+    } else if (robotsEl) {
+        robotsEl.remove();
+    }
+
     // Clean up on unmount
     return () => {
        if (title) document.title = "Rivers.run - Whitewater Gauge Maps & Flow Data";
+       if (noindex && robotsEl) robotsEl.remove();
     };
-  }, [title, description, canonical]);
+  }, [title, description, canonical, noindex]);
 }
