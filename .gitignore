@@ -76,3 +76,4 @@ output/
 *.pmtiles
 
 valhalla-wasm/
+scratch/

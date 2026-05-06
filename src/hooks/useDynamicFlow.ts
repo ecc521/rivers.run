@@ -27,9 +27,9 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
     const existingFirstTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[0]?.dateTime ? river.gaugeData[primaryGaugeID][0].dateTime : 0;
     const existingLastTime = primaryGaugeID && river.gaugeData?.[primaryGaugeID]?.[existingDatasetLength - 1]?.dateTime ? river.gaugeData[primaryGaugeID][existingDatasetLength - 1].dateTime : 0;
 
-    // We consider the data "fresh enough" if it covers at least 29.5 days and was fetched in the last 15 mins
+    // We consider the data "fresh enough" if it covers at least 27.5 days and was fetched in the last 15 mins
     const hasThirtyDays = existingDatasetLength > 0 && 
-       (existingLastTime - existingFirstTime >= 29.5 * 24 * 60 * 60 * 1000);
+       (existingLastTime - existingFirstTime >= 27.5 * 24 * 60 * 60 * 1000);
     
     const newlyFetched = cached && (Date.now() - cached.lastFetchedMs < 15 * 60 * 1000);
 
@@ -47,8 +47,8 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
 
         if (allGauges.length === 0) return;
 
-        // Fetch 30 days + Forecasts from unified flow API
-        const url = `${FLOW_API_URL}/history?gauges=${allGauges.join(",")}&days=30&forecast=true`;
+        // Fetch 28 days + Forecasts from unified flow API
+        const url = `${FLOW_API_URL}/history?gauges=${allGauges.join(",")}&days=28&forecast=true`;
         const res = await fetch(url);
         
         if (!res.ok) {

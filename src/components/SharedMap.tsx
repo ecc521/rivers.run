@@ -26,8 +26,10 @@ import { persistentStorage } from "../utils/persistentStorage";
 import { SearchOverlay } from "./SearchOverlay";
 import { ShareMapModal } from "./ShareMapModal";
 import { NavigationPanel } from "./NavigationPanel";
+import { MapSearchbar } from "./MapSearchbar";
 import { Capacitor } from '@capacitor/core';
 import { SystemBars } from '@capacitor/core';
+import { KeepAwake } from '@capacitor-community/keep-awake';
 
 // Global protocol state
 let pmtilesProtocolAdded = false;
@@ -197,8 +199,32 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const [copiedRiverId, setCopiedRiverId] = useState<string | null>(null);
 
     const [isNavigating, setIsNavigating] = useState(false);
+    const [isAutoCenter, setIsAutoCenter] = useState(true);
     const [navDestination, setNavDestination] = useState<[number, number] | null>(null);
     const [navRoute, setNavRoute] = useState<GeoJSON.LineString | null>(null);
+    const [showUserLocationPopup, setShowUserLocationPopup] = useState(false);
+    const [navDestinationPlace, setNavDestinationPlace] = useState<any>(null);
+
+    useEffect(() => {
+        if (isNavigating) {
+            setIsAutoCenter(true);
+            location.watchLocation();
+            if (Capacitor.isNativePlatform()) {
+                KeepAwake.keepAwake().catch(console.warn);
+            }
+        } else {
+            location.clearWatch();
+            if (Capacitor.isNativePlatform()) {
+                KeepAwake.allowSleep().catch(console.warn);
+            }
+        }
+    }, [isNavigating]);
+
+    useEffect(() => {
+        if (isNavigating && isAutoCenter && location.latitude && location.longitude && mapRef.current) {
+            mapRef.current.flyTo({ center: [location.longitude, location.latitude], zoom: Math.max(mapZoom, 14), duration: 500 });
+        }
+    }, [isNavigating, isAutoCenter, location.latitude, location.longitude]);
 
     
     const [searchParams] = useSearchParams();
@@ -682,9 +708,14 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             }
         };
 
-        if (map.isStyleLoaded()) {
-            loadImages();
-        } else {
+        try {
+            if (map.style && map.isStyleLoaded()) {
+                loadImages();
+            } else {
+                map.once('style.load', loadImages);
+            }
+        } catch (_e) {
+            console.debug("Map style not ready for images", _e);
             map.once('style.load', loadImages);
         }
 
@@ -770,27 +801,16 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 }
                 `}
             </style>
-            <button 
-                onClick={toggleFullScreen}
-                style={{
-                    position: "absolute",
-                    top: isFullScreen ? "calc(10px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))" : "10px",
-                    right: isFullScreen ? "calc(10px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))" : "10px",
-                    zIndex: 2000,
-                    padding: "8px 12px",
-                    backgroundColor: "var(--surface)",
-                    color: "var(--text)",
-                    border: "2px solid var(--border)",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    boxShadow: "0 2px 5px rgba(0,0,0,0.3)"
-                }}
-            >
-                {isFullScreen ? "↖ Exit Fullscreen" : "⤢ Fullscreen"}
-            </button>
+            {/* MapSearchbar centered at the top */}
+            <MapSearchbar 
+                onSelect={(res) => {
+                    setNavDestination([res.lon, res.lat]);
+                    setNavDestinationPlace(res);
+                    setIsNavigating(true);
+                }} 
+            />
 
-            {/* Filter and Share Controls next to Zoom Controls */}
+            {/* Filter Control next to Zoom Controls */}
             <div style={{
                 position: "absolute",
                 top: isFullScreen ? "calc(10px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))" : "10px",
@@ -814,20 +834,55 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 >
                     Filter
                 </button>
+            </div>
+
+            {/* Bottom Right Controls: Share & Fullscreen */}
+            <div style={{
+                position: "absolute",
+                bottom: isFullScreen ? "calc(30px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))" : "30px",
+                right: isFullScreen ? "calc(10px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))" : "10px",
+                zIndex: 1000,
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px"
+            }}>
                 <button
                     onClick={() => setIsShareOpen(true)}
+                    aria-label="Share Map"
                     style={{
-                        padding: "8px 12px",
+                        padding: "10px",
                         backgroundColor: "var(--primary)",
                         color: "var(--surface)",
                         border: "2px solid var(--border)",
                         borderRadius: "8px",
                         cursor: "pointer",
-                        fontWeight: "bold",
-                        boxShadow: "0 2px 5px rgba(0,0,0,0.3)"
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "20px"
                     }}
                 >
-                    Share
+                    🔗
+                </button>
+                <button 
+                    onClick={toggleFullScreen}
+                    aria-label="Toggle Fullscreen"
+                    style={{
+                        padding: "10px",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--text)",
+                        border: "2px solid var(--border)",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "20px"
+                    }}
+                >
+                    {isFullScreen ? "↖" : "⤢"}
                 </button>
             </div>
 
@@ -880,9 +935,37 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 </div>
             </div>
 
+            {isNavigating && !isAutoCenter && (
+                <button
+                    onClick={() => setIsAutoCenter(true)}
+                    style={{
+                        position: "absolute",
+                        bottom: isFullScreen ? "calc(100px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))" : "100px",
+                        right: isFullScreen ? "calc(10px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))" : "10px",
+                        zIndex: 2000,
+                        padding: "10px 16px",
+                        backgroundColor: "var(--primary)",
+                        color: "var(--surface)",
+                        border: "2px solid var(--border)",
+                        borderRadius: "20px",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                        boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px"
+                    }}
+                >
+                    📍 Re-center
+                </button>
+            )}
+
             <Map 
                 ref={mapRef}
                 {...viewState}
+                onDragStart={() => {
+                    if (isNavigating) setIsAutoCenter(false);
+                }}
                 onMove={evt => {
                     setViewState(evt.viewState);
                     setMapCenter([evt.viewState.latitude, evt.viewState.longitude]);
@@ -994,23 +1077,50 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
                 {/* Local User Physical GPS Position Marker */}
                 {location.latitude && location.longitude && (
-                    <Marker
-                        longitude={location.longitude}
-                        latitude={location.latitude}
-                        anchor="center"
-                    >
-                        <div 
-                            title={`Your Current Location: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`}
-                            style={{
-                                width: 14,
-                                height: 14,
-                                backgroundColor: "#3b82f6",
-                                border: "2px solid #ffffff",
-                                borderRadius: "50%",
-                                boxShadow: "0 0 4px rgba(0,0,0,0.5)"
+                    <>
+                        <Marker
+                            longitude={location.longitude}
+                            latitude={location.latitude}
+                            anchor="center"
+                            onClick={(e) => {
+                                e.originalEvent.stopPropagation();
+                                setShowUserLocationPopup(true);
                             }}
-                        />
-                    </Marker>
+                        >
+                            <div 
+                                title={`Your Current Location: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`}
+                                style={{
+                                    width: 14,
+                                    height: 14,
+                                    backgroundColor: "#3b82f6",
+                                    border: "2px solid #ffffff",
+                                    borderRadius: "50%",
+                                    boxShadow: "0 0 4px rgba(0,0,0,0.5)",
+                                    cursor: "pointer"
+                                }}
+                            />
+                        </Marker>
+                        
+                        {showUserLocationPopup && (
+                            <Popup
+                                longitude={location.longitude}
+                                latitude={location.latitude}
+                                closeOnClick={true}
+                                closeButton={true}
+                                onClose={() => setShowUserLocationPopup(false)}
+                                anchor="bottom"
+                                offset={[0, -10]}
+                                style={{ zIndex: 1500 }}
+                            >
+                                <div style={{ padding: "4px 8px", textAlign: "center", color: "var(--text)" }}>
+                                    <strong>Your Location</strong><br/>
+                                    <span style={{ fontSize: "0.9em", color: "var(--text-secondary)" }}>
+                                        {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+                                    </span>
+                                </div>
+                            </Popup>
+                        )}
+                    </>
                 )}
 
                 {/* Distance Radius Circle */}
@@ -1068,6 +1178,42 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         />
                     </Source>
                 )}
+
+                {/* Navigation Destination Dot */}
+                {navDestination && isNavigating && (
+                    <Source 
+                        id="navigation-destination" 
+                        type="geojson" 
+                        data={{
+                            type: "Feature",
+                            geometry: {
+                                type: "Point",
+                                coordinates: navDestination
+                            },
+                            properties: {}
+                        }}
+                    >
+                        <Layer 
+                            id="navigation-destination-layer-halo" 
+                            type="circle" 
+                            paint={{
+                                "circle-radius": 10,
+                                "circle-color": "#ffffff",
+                                "circle-opacity": 0.5
+                            }}
+                        />
+                        <Layer 
+                            id="navigation-destination-layer" 
+                            type="circle" 
+                            paint={{
+                                "circle-radius": 6,
+                                "circle-color": "#ef4444",
+                                "circle-stroke-width": 2,
+                                "circle-stroke-color": "#ffffff"
+                            }}
+                        />
+                    </Source>
+                )}
             </Map>
 
             <NavigationPanel 
@@ -1075,7 +1221,29 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 onClose={() => setIsNavigating(false)}
                 startCoord={location.longitude && location.latitude ? [location.longitude, location.latitude] : null}
                 endCoord={navDestination}
-                onRouteCalculated={setNavRoute}
+                destinationRiver={selectedRiver}
+                destinationPlace={navDestinationPlace}
+                onRouteCalculated={(route) => {
+                    setNavRoute(route);
+                    if (route && mapRef.current) {
+                        setIsAutoCenter(false);
+                        const coords = route.coordinates;
+                        if (coords && coords.length > 0) {
+                            let minLng = coords[0][0], maxLng = coords[0][0];
+                            let minLat = coords[0][1], maxLat = coords[0][1];
+                            for (const coord of coords) {
+                                if (coord[0] < minLng) minLng = coord[0];
+                                if (coord[0] > maxLng) maxLng = coord[0];
+                                if (coord[1] < minLat) minLat = coord[1];
+                                if (coord[1] > maxLat) maxLat = coord[1];
+                            }
+                            mapRef.current.fitBounds(
+                                [[minLng, minLat], [maxLng, maxLat]],
+                                { padding: { top: 80, bottom: 50, left: 50, right: 50 }, duration: 1000 }
+                            );
+                        }
+                    }
+                }}
             />
 
             {/* Universally Injected Selected River Sidebar */}
@@ -1164,6 +1332,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                     <button 
                                         onClick={(e) => {
                                             e.preventDefault();
+                                            setNavDestinationPlace(null);
                                             setNavDestination([selectedAccessPoint.lon as number, selectedAccessPoint.lat as number]);
                                             setIsNavigating(true);
                                         }}

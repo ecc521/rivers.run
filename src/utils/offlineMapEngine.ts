@@ -44,7 +44,7 @@ export const fetchMapRegions = async (): Promise<MapRegion[]> => {
             const raw = data[abbrev];
             const id = `US-${abbrev}`;
             const mapFileName = raw.mapFile || raw.file;
-            const routingFileName = raw.routingFile || raw.file.replace('_z14.pmtiles', '_routing.tar.gz');
+            const routingFileName = raw.routingFile || raw.file.replace('_z14.pmtiles', '_routing.tar');
             
             return {
                 id,
@@ -276,10 +276,6 @@ export const downloadMapRegion = async (
                     const routeFileHandle = await dir.getFileHandle(routingFileName, { create: true });
                     const routeWritable = await routeFileHandle.createWritable();
 
-                    // ONLY decompress if the browser hasn't already done it.
-                    // If the browser decompressed it transparently, the Content-Encoding header will be stripped.
-                    const isGzipped = routeResponse.headers.get('Content-Encoding') === 'gzip';
-
                     let stream = routeResponse.body;
 
                     let compressedLoaded = 0;
@@ -300,11 +296,6 @@ export const downloadMapRegion = async (
                     });
 
                     stream = stream.pipeThrough(progressStream);
-
-                    if (isGzipped && typeof DecompressionStream !== 'undefined') {
-                        console.log(`[OfflineMapEngine] Decompressing routing data for ${region.id}...`);
-                        stream = stream.pipeThrough(new DecompressionStream('gzip'));
-                    }
 
                     const routeReader = stream.getReader();
                     let routeLoaded = 0;

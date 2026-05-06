@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@capacitor-community/in-app-review": "^8.0.0",
+    "@capacitor-community/keep-awake": "^8.0.1",
     "@capacitor-firebase/analytics": "^8.2.0",
     "@capacitor-firebase/authentication": "^8.2.0",
     "@capacitor/app": "^8.1.0",
