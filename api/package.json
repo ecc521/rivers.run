@@ -12,7 +12,7 @@
   "dependencies": {
     "@hono/zod-openapi": "^0.13.0",
     "@scalar/hono-api-reference": "^0.10.7",
-    "hono": "^4.2.4",
+    "hono": "^4.12.18",
     "nodemailer": "^8.0.5",
     "zod": "3.25.76"
   },
