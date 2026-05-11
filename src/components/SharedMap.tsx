@@ -12,7 +12,7 @@ import { useRivers } from "../hooks/useRivers";
 import { useLocation } from "../hooks/useLocation";
 import { WeatherRadarLayer } from "./WeatherRadarLayer";
 import { RiverExpansion } from "./RiverExpansion";
-import { useSearchParams, useNavigate, useLocation as useRouterLocation } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { filterRivers, defaultAdvancedSearchQuery } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useModal } from "../context/ModalContext";
@@ -175,11 +175,12 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const { rivers } = useRivers();
     const { isRiverInQuickList } = useLists();
     const location = useLocation();
-    const mapLocation = useRouterLocation();
-    const { alert, prompt } = useModal();
+
+    const { alert, promptReport } = useModal();
     const { user } = useAuth();
     
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isMapLoaded, setIsMapLoaded] = useState(false);
 
     const [selectedRiver, setSelectedRiver] = useState<RiverData | null>(null);
     const [selectedAccessPoint, setSelectedAccessPoint] = useState<any>(null);
@@ -317,8 +318,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     const handleReport = async (e: React.MouseEvent, river: RiverData) => {
         e.preventDefault();
-        const reason = await prompt(`Please explain the problem with the data for ${river.name}:`, "Report Content");
-        if (!reason || !reason.trim()) return;
+        const result = await promptReport(`Please explain the problem with the data for ${river.name}:`, "Report Content", user?.email || "");
+        if (!result || !result.reason || !result.reason.trim()) return;
 
         try {
             await fetchAPI("/reports", {
@@ -326,8 +327,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 body: JSON.stringify({
                     target_id: river.id,
                     type: "river",
-                    reason: reason.trim(),
-                    email: user?.email || ""
+                    reason: result.reason.trim(),
+                    email: result.email || user?.email || ""
                 })
             });
             await alert("Report submitted successfully. Our moderators will review it shortly.", "Report Sent");
@@ -520,15 +521,45 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     }, [mapCenter, mapZoom]);
 
     useEffect(() => {
+        if (!isMapLoaded) return;
         if (focusRiver && focusRiver.accessPoints && focusRiver.accessPoints.length > 0) {
-            const routeState = mapLocation.state as { clickedLat?: number, clickedLon?: number } | undefined;
-            if (routeState && routeState.clickedLat && routeState.clickedLon) return;
-            const pt = focusRiver.accessPoints[0];
-            if (pt.lat && pt.lon) {
-                mapRef.current?.flyTo({ center: [pt.lon, pt.lat], zoom: mapZoom, duration: 500 });
+            const validPoints = focusRiver.accessPoints.filter(pt => {
+                const lat = Array.isArray(pt.lat) ? pt.lat[0] : pt.lat;
+                const lon = Array.isArray(pt.lon) ? pt.lon[0] : pt.lon;
+                return typeof lat === "number" && typeof lon === "number" && !isNaN(lat) && !isNaN(lon);
+            });
+
+            if (validPoints.length === 0) return;
+
+            if (validPoints.length === 1) {
+                const pt = validPoints[0];
+                const lat = Array.isArray(pt.lat) ? pt.lat[0] : pt.lat;
+                const lon = Array.isArray(pt.lon) ? pt.lon[0] : pt.lon;
+                mapRef.current?.flyTo({ center: [lon, lat], zoom: mapZoom > 10 ? mapZoom : 12, duration: 500 });
+            } else {
+                let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+                validPoints.forEach(pt => {
+                    const lat = Array.isArray(pt.lat) ? pt.lat[0] : pt.lat;
+                    const lon = Array.isArray(pt.lon) ? pt.lon[0] : pt.lon;
+                    if (lat < minLat) minLat = lat;
+                    if (lat > maxLat) maxLat = lat;
+                    if (lon < minLon) minLon = lon;
+                    if (lon > maxLon) maxLon = lon;
+                });
+                
+                const latPadding = (maxLat - minLat) * 0.1 || 0.01;
+                const lonPadding = (maxLon - minLon) * 0.1 || 0.01;
+                
+                mapRef.current?.fitBounds(
+                    [
+                        [minLon - lonPadding, minLat - latPadding],
+                        [maxLon + lonPadding, maxLat + latPadding]
+                    ], 
+                    { padding: 50, duration: 500, maxZoom: 14 }
+                );
             }
         }
-    }, [focusRiver?.id, mapLocation.state]);
+    }, [focusRiver?.id, isMapLoaded]);
 
     const [dynamicStyle, setDynamicStyle] = useState<any>(null);
 
@@ -799,6 +830,26 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 .map-fullscreen-container .maplibregl-ctrl-bottom-right {
                     right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
                 }
+                .custom-maplibre-popup .maplibregl-popup-content {
+                    background-color: var(--surface);
+                    color: var(--text);
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    padding: 12px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                }
+                .custom-maplibre-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+                    border-top-color: var(--surface);
+                }
+                .custom-maplibre-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+                    border-bottom-color: var(--surface);
+                }
+                .custom-maplibre-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+                    border-right-color: var(--surface);
+                }
+                .custom-maplibre-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+                    border-left-color: var(--surface);
+                }
                 `}
             </style>
             {/* MapSearchbar centered at the top */}
@@ -963,6 +1014,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             <Map 
                 ref={mapRef}
                 {...viewState}
+                onLoad={() => setIsMapLoaded(true)}
                 onDragStart={() => {
                     if (isNavigating) setIsAutoCenter(false);
                 }}
@@ -986,7 +1038,11 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                             id="gauges-layer" 
                             type="circle" 
                             paint={{
-                                "circle-radius": 6.75,
+                                "circle-radius": [
+                                    "case",
+                                    ["==", ["get", "riverId"], focusRiver?.id || selectedRiver?.id || ""], 10.125, // 50% bigger than 6.75
+                                    6.75
+                                ],
                                 "circle-color": ["get", "fillColor"],
                                 "circle-stroke-color": "#1e293b",
                                 "circle-stroke-width": 1
@@ -1004,7 +1060,12 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 "icon-image": ["get", "imageKey"],
                                 "icon-allow-overlap": true,
                                 "icon-ignore-placement": true,
-                                "icon-offset": [0, -20]
+                                "icon-offset": [0, -20],
+                                "icon-size": [
+                                    "case",
+                                    ["==", ["get", "riverId"], focusRiver?.id || selectedRiver?.id || ""], 1.5,
+                                    1.0
+                                ]
                             }}
                         />
                     </Source>
@@ -1026,8 +1087,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 setHoverPopupData(null);
                             }}
                             offset={[0, thePopupData!.river.isGauge ? -6 : -25]}
-                            closeButton={false}
-                            closeOnClick={false}
+                            closeButton={true}
+                            closeOnClick={true}
                             className="custom-maplibre-popup"
                         >
                             <PopupEventManager 

@@ -33,7 +33,7 @@ const RiverPage: React.FC = () => {
 
   const river = rivers.find((r) => r.id === id);
   const { isDarkMode, isColorBlindMode } = useSettings();
-  const { alert, prompt } = useModal();
+  const { alert, promptReport } = useModal();
   const { user } = useAuth();
   const [scrubbedReading, setScrubbedReading] = useState<any | null>(null);
   const [isCopied, setIsCopied] = useState(false);
@@ -41,8 +41,8 @@ const RiverPage: React.FC = () => {
   const handleReport = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!river) return;
-    const reason = await prompt(`Please explain the problem with the data for ${river.name}:`, "Report Content");
-    if (!reason || !reason.trim()) return;
+    const result = await promptReport(`Please explain the problem with the data for ${river.name}:`, "Report Content", user?.email || "");
+    if (!result || !result.reason || !result.reason.trim()) return;
 
     try {
       await fetchAPI("/reports", {
@@ -50,8 +50,8 @@ const RiverPage: React.FC = () => {
         body: JSON.stringify({
           target_id: river.id,
           type: "river",
-          reason: reason.trim(),
-          email: user?.email || ""
+          reason: result.reason.trim(),
+          email: result.email || user?.email || ""
         })
       });
       await alert("Report submitted successfully. Our moderators will review it shortly.", "Report Sent");

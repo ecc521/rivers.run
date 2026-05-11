@@ -6,6 +6,7 @@ type ModalContextType = {
   confirm: (message: string, title?: string) => Promise<boolean>;
   prompt: (message: string, title?: string) => Promise<string | null>;
   promptEmail: (message: string, title?: string) => Promise<{ subject: string, body: string } | null>;
+  promptReport: (message: string, title?: string, defaultEmail?: string) => Promise<{ reason: string, email: string } | null>;
   resolveSuggestion: (message: string, title?: string, isAnonymous?: boolean) => Promise<{ confirmed: boolean, reason: string, notify: boolean } | null>;
 };
 
@@ -20,7 +21,9 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
     isPrompt: boolean;
     isEmail: boolean;
     isResolution: boolean;
+    isReport: boolean;
     isAnonymous?: boolean;
+    defaultEmail?: string;
     resolve: (value: any) => void;
   }>({
     isOpen: false,
@@ -30,46 +33,56 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
     isPrompt: false,
     isEmail: false,
     isResolution: false,
+    isReport: false,
     isAnonymous: false,
+    defaultEmail: "",
     resolve: () => {},
   });
 
   const alert = useCallback((message: string, title: string = "Alert") => {
     return new Promise<void>((resolve) => {
-      setModalState({ isOpen: true, title, message, isAlert: true, isPrompt: false, isEmail: false, isResolution: false, resolve });
+      setModalState({ isOpen: true, title, message, isAlert: true, isPrompt: false, isEmail: false, isResolution: false, isReport: false, resolve });
     });
   }, []);
 
   const confirm = useCallback((message: string, title: string = "Confirm") => {
     return new Promise<boolean>((resolve) => {
-      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: false, isEmail: false, isResolution: false, resolve });
+      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: false, isEmail: false, isResolution: false, isReport: false, resolve });
     });
   }, []);
 
   const prompt = useCallback((message: string, title: string = "Input Required") => {
     return new Promise<string | null>((resolve) => {
-      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: true, isEmail: false, isResolution: false, resolve });
+      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: true, isEmail: false, isResolution: false, isReport: false, resolve });
     });
   }, []);
 
   const promptEmail = useCallback((message: string, title: string = "Compose Email") => {
     return new Promise<{ subject: string, body: string } | null>((resolve) => {
-      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: false, isEmail: true, isResolution: false, resolve });
+      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: false, isEmail: true, isResolution: false, isReport: false, resolve });
+    });
+  }, []);
+
+  const promptReport = useCallback((message: string, title: string = "Submit Report", defaultEmail: string = "") => {
+    return new Promise<{ reason: string, email: string } | null>((resolve) => {
+      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: false, isEmail: false, isResolution: false, isReport: true, defaultEmail, resolve });
     });
   }, []);
 
   const resolveSuggestion = useCallback((message: string, title: string = "Resolve Suggestion", isAnonymous: boolean = false) => {
     return new Promise<{ confirmed: boolean, reason: string, notify: boolean } | null>((resolve) => {
-      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: false, isEmail: false, isResolution: true, isAnonymous, resolve });
+      setModalState({ isOpen: true, title, message, isAlert: false, isPrompt: false, isEmail: false, isResolution: true, isReport: false, isAnonymous, resolve });
     });
   }, []);
 
-  const handleConfirm = (val?: string, notify?: boolean) => {
+  const handleConfirm = (val?: any, notify?: boolean) => {
     if (modalState.isAlert) {
       modalState.resolve(undefined);
     } else if (modalState.isPrompt) {
       modalState.resolve(val || "");
     } else if (modalState.isEmail) {
+      modalState.resolve(val);
+    } else if (modalState.isReport) {
       modalState.resolve(val);
     } else if (modalState.isResolution) {
       modalState.resolve({ confirmed: true, reason: val || "", notify: !!notify });
@@ -82,7 +95,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const handleCancel = () => {
     if (modalState.isAlert) {
       modalState.resolve(undefined);
-    } else if (modalState.isPrompt || modalState.isResolution || modalState.isEmail) {
+    } else if (modalState.isPrompt || modalState.isResolution || modalState.isEmail || modalState.isReport) {
       modalState.resolve(null);
     } else {
       modalState.resolve(false);
@@ -91,7 +104,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ModalContext.Provider value={{ alert, confirm, prompt, promptEmail, resolveSuggestion }}>
+    <ModalContext.Provider value={{ alert, confirm, prompt, promptEmail, promptReport, resolveSuggestion }}>
       {children}
       <PromptModal
         isOpen={modalState.isOpen}
@@ -101,7 +114,9 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
         isPrompt={modalState.isPrompt}
         isEmail={modalState.isEmail}
         isResolution={modalState.isResolution}
+        isReport={modalState.isReport}
         isAnonymous={modalState.isAnonymous}
+        defaultEmail={modalState.defaultEmail}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
       />

@@ -40,7 +40,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const { user } = useAuth();
   const { myLists, updateRiverInList, removeRiverFromList, updateList, deleteList, toggleSubscription, isSubscribed } = useLists();
   const { rivers } = useRivers();
-  const { alert, confirm, prompt } = useModal();
+  const { alert, confirm, promptReport } = useModal();
 
   const activeList = useMemo(() => {
     if (!targetList) return null;
@@ -106,8 +106,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const handleReport = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!targetList) return;
-    const reason = await prompt("Please explain the problem with this list:", "Report List");
-    if (!reason || !reason.trim()) return;
+    const result = await promptReport("Please explain the problem with this list:", "Report List", user?.email || "");
+    if (!result || !result.reason || !result.reason.trim()) return;
 
     try {
       await fetchAPI("/reports", {
@@ -115,8 +115,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
         body: JSON.stringify({
           target_id: targetList.id,
           type: "list",
-          reason: reason.trim(),
-          email: user?.email || ""
+          reason: result.reason.trim(),
+          email: result.email || user?.email || ""
         })
       });
       await alert("Report submitted successfully. Our moderators will review it shortly.", "Report Sent");
