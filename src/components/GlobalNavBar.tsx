@@ -17,13 +17,20 @@ const GlobalNavBar: React.FC = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-      if (window.innerWidth > 930) {
-        setIsNavMoreOpen(false);
-      }
+      // Slight delay ensures iOS WebKit/Capacitor has updated native window bounds during rotation
+      setTimeout(() => {
+        setWindowWidth(window.innerWidth);
+        if (window.innerWidth > 930) {
+          setIsNavMoreOpen(false);
+        }
+      }, 100);
     };
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
   }, []);
 
   const handleDownloadData = async () => {
