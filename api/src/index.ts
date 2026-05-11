@@ -489,11 +489,11 @@ app.openapi(getAdminQueueRoute, async (c) => {
 });
 
 const getMySuggestionRoute = createRoute({
-    middleware: [firebaseAuthMiddleware],
+    middleware: [optionalFirebaseAuthMiddleware],
     method: 'get',
     path: '/my-submissions/{id}',
     summary: 'Get your own suggestion (even if rejected) to restore progress',
-    security: [{ bearerAuth: [] }],
+    security: [{ bearerAuth: [] }, {}],
     request: {
         params: z.object({
             id: z.string().openapi({ param: { name: 'id', in: 'path', required: true } })
@@ -501,20 +501,14 @@ const getMySuggestionRoute = createRoute({
     },
     responses: {
         200: { content: { 'application/json': { schema: GenericObjectSchema } }, description: 'Suggestion details' },
-        403: { description: 'Not your submission' },
         404: { description: 'Not found' }
     }
 });
 
 app.openapi(getMySuggestionRoute, async (c) => {
     const id = c.req.param("id");
-    const user = c.get("user");
     const result = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE suggestion_id = ?").bind(id).first();
     if (!result) return c.json({ error: "Submission not found" }, 404);
-    
-    if (result.suggested_by !== user.user_id) {
-        return c.json({ error: "Access denied: You can only restore your own submissions." }, 403);
-    }
     
     return c.json({
         ...result,
@@ -672,11 +666,22 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     const notifyUser = async (isAccepted: boolean) => {
         try {
             if (!notify_submitter) return;
-            const suggestedBy = suggestion.suggested_by as string;
-            if (suggestedBy.startsWith("IP:")) return;
+            const submitterEmail = proposed.submitterEmail;
+            let emailToNotify: string | null = null;
 
-            const userRecord = await c.env.DB.prepare("SELECT email FROM users WHERE user_id = ?").bind(suggestedBy).first() as { email: string } | null;
-            if (!userRecord || !userRecord.email) return;
+            if (submitterEmail) {
+                emailToNotify = submitterEmail;
+            } else {
+                const suggestedBy = suggestion.suggested_by as string;
+                if (suggestedBy.startsWith("IP:")) return;
+
+                const userRecord = await c.env.DB.prepare("SELECT email FROM users WHERE user_id = ?").bind(suggestedBy).first() as { email: string } | null;
+                if (userRecord && userRecord.email) {
+                    emailToNotify = userRecord.email;
+                }
+            }
+
+            if (!emailToNotify) return;
 
             const statusLabel = isAccepted ? "accepted" : "rejected";
             const subject = `Rivers.run: Your submission for ${riverName} was ${statusLabel}!`;
@@ -722,7 +727,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
 
             const emailPayload = {
                 env: c.env,
-                to: userRecord.email,
+                to: emailToNotify,
                 subject,
                 html
             };

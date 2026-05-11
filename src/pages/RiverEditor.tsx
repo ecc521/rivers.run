@@ -38,6 +38,7 @@ export default function RiverEditor() {
   const [isDirty, setIsDirty] = useState(false);
   const [showSuggestionDiff, setShowSuggestionDiff] = useState(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [submitterEmail, setSubmitterEmail] = useState("");
   
   const isReviewMode = location.pathname.startsWith('/review') && !!queueId;
   const isNewFromURL = riverId === "new" || !riverId;
@@ -278,7 +279,8 @@ export default function RiverEditor() {
         accessPoints: newAccessPoints,
         flow: riverData.flow || { unit: "cfs", min: null, low: null, mid: null, high: null, max: null },
         updatedAt: Date.now(),
-        submittedBy: isReviewMode ? (proposedData?.submittedBy || user?.uid || "anonymous") : (user?.uid || "anonymous")
+        submittedBy: isReviewMode ? (proposedData?.submittedBy || user?.uid || "anonymous") : (user?.uid || "anonymous"),
+        submitterEmail: submitterEmail || undefined
       };
   };
 
@@ -507,6 +509,19 @@ export default function RiverEditor() {
             <button onClick={() => setShowSubmitModal(false)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '24px', color: 'var(--text)' }}>×</button>
             <h3 style={{ marginTop: 0 }}>Almost Done!</h3>
             <p>Would you like to sign in? If you sign in, we can contact you if there are questions with this submission.</p>
+            
+            <div style={{ marginTop: '15px', marginBottom: '15px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold' }}>Or provide an email (optional):</label>
+              <input 
+                type="email" 
+                placeholder="Email address"
+                value={submitterEmail}
+                onChange={e => setSubmitterEmail(e.target.value)}
+                style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '5px' }}
+              />
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>We'll email you when your suggestion is approved or rejected so you can restore your progress.</span>
+            </div>
+
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                <button onClick={() => { setShowSubmitModal(false); setShowAuthModal(true); }} style={{ padding: '8px 15px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Sign In</button>
                <button onClick={() => { setShowSubmitModal(false); processSave(false); }} style={{ padding: '8px 15px', backgroundColor: 'var(--surface-hover)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer' }}>Submit Anonymously</button>

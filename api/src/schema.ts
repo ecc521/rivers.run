@@ -49,7 +49,8 @@ export const RiverEditorPayload = z.object({
   gauges: z.array(GaugeMappingSchema).max(10).optional().openapi({ type: 'array' }),
   flow: FlowThresholdsSchema.optional().nullable(),
   dam: z.boolean().optional().nullable().openapi({ type: 'boolean' }),
-  aw: limitString(50)
+  aw: limitString(50),
+  submitterEmail: z.string().email("Invalid email").optional().nullable().openapi({ type: 'string' })
 }).openapi({ type: 'object', description: 'Payload for creating or updating a river' });
 
 export type RiverEditInput = z.infer<typeof RiverEditorPayload>;
