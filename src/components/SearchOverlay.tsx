@@ -368,17 +368,16 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               min={10}
               max={510}
               step={10}
-              value={520 - (localQuery.distanceMax || 510)}
+              value={localQuery.distanceMax || 510}
               onChange={(e) => {
                 const rawVal = parseInt(e.target.value);
-                const actualDistance = 520 - rawVal;
-                setLocalQuery({ ...localQuery, distanceMax: actualDistance > 500 ? undefined : actualDistance });
+                setLocalQuery({ ...localQuery, distanceMax: rawVal > 500 ? undefined : rawVal });
               }}
               style={{ width: "100%" }}
             />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px" }}>
-              <span>Unlimited</span>
               <span>10 Mi</span>
+              <span>Unlimited</span>
             </div>
             {location.loading && (!isMapMode || (localQuery.mapRadiusMode !== "center" && localQuery.mapRadiusMode !== "custom")) && <span style={{fontSize: '0.8em', color: "var(--text-muted)"}}>Requesting location hardware...</span>}
             {location.error && (!isMapMode || (localQuery.mapRadiusMode !== "center" && localQuery.mapRadiusMode !== "custom")) && <span style={{fontSize: '0.8em', color: "var(--danger)"}}>{location.error}</span>}

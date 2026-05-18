@@ -163,6 +163,39 @@ interface SharedMapProps {
 
  
 
+function destination(lon: number, lat: number, distanceMiles: number, bearingDegrees: number): [number, number] {
+    const R = 3959; // Earth's radius in miles
+    const ad = distanceMiles / R; // angular distance in radians
+    const la1 = lat * Math.PI / 180;
+    const lo1 = lon * Math.PI / 180;
+    const theta = bearingDegrees * Math.PI / 180;
+
+    const la2 = Math.asin(Math.sin(la1) * Math.cos(ad) + Math.cos(la1) * Math.sin(ad) * Math.cos(theta));
+    const lo2 = lo1 + Math.atan2(Math.sin(theta) * Math.sin(ad) * Math.cos(la1), Math.cos(ad) - Math.sin(la1) * Math.sin(la2));
+
+    return [lo2 * 180 / Math.PI, la2 * 180 / Math.PI];
+}
+
+function createGeoJSONCircle(centerLon: number, centerLat: number, radiusInMiles: number, points = 64): any {
+    const coords = [];
+    for(let i=0; i<points; i++) {
+        const bearing = (i / points) * 360;
+        coords.push(destination(centerLon, centerLat, radiusInMiles, bearing));
+    }
+    coords.push([coords[0][0], coords[0][1]]); // close the polygon explicitly without reference sharing
+
+    return {
+        type: "FeatureCollection",
+        features: [{
+            type: "Feature",
+            geometry: {
+                type: "Polygon",
+                coordinates: [coords]
+            },
+            properties: {}
+        }]
+    };
+}
 
 
 export const SharedMap: React.FC<SharedMapProps> = ({ 
@@ -341,6 +374,10 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const [searchQuery, setSearchQuery] = useState<AdvancedSearchQuery>(() => {
 
         const q: AdvancedSearchQuery = { ...defaultAdvancedSearchQuery };
+        if (!focusRiver && !searchParams.has("distanceMax")) {
+            q.distanceMax = 100;
+            q.mapRadiusMode = "current";
+        }
         if (searchParams.get("name")) q.name = searchParams.get("name")!;
         if (searchParams.get("section")) q.section = searchParams.get("section")!;
         
@@ -360,6 +397,19 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         return q;
     });
 
+    // Calculate map circle data efficiently at top level
+    const radiusCircleData = useMemo(() => {
+        if (!searchQuery.distanceMax) return null;
+        const centerLon = (searchQuery.mapRadiusMode === "center" || !location.latitude || !location.longitude) 
+            ? mapCenter[1] 
+            : location.longitude;
+        const centerLat = (searchQuery.mapRadiusMode === "center" || !location.latitude || !location.longitude) 
+            ? mapCenter[0] 
+            : location.latitude;
+        if (typeof centerLon !== 'number' || typeof centerLat !== 'number' || isNaN(centerLon) || isNaN(centerLat)) return null;
+        return createGeoJSONCircle(centerLon, centerLat, searchQuery.distanceMax);
+    }, [searchQuery.distanceMax, searchQuery.mapRadiusMode, mapCenter[0], mapCenter[1], location.latitude, location.longitude]);
+
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
 
@@ -369,6 +419,14 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             location.requestLocation();
         }
     }, []);
+
+    const [hasFlippedToUserLocation, setHasFlippedToUserLocation] = useState(false);
+    useEffect(() => {
+        if (!urlLat && !urlLng && !hasFlippedToUserLocation && location.latitude && location.longitude && mapRef.current) {
+            setHasFlippedToUserLocation(true);
+            mapRef.current.flyTo({ center: [location.longitude, location.latitude], zoom: 7, duration: 800 });
+        }
+    }, [location.latitude, location.longitude, urlLat, urlLng, hasFlippedToUserLocation]);
 
     // Handle riverId deep-linking: Open sidebar automatically if riverId is in URL
     useEffect(() => {
@@ -1185,34 +1243,28 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 )}
 
                 {/* Distance Radius Circle */}
-                {searchQuery.distanceMax && (
+                {radiusCircleData && (
                     <Source 
                         id="radius-circle" 
                         type="geojson" 
-                        data={{
-                            type: "Feature",
-                            geometry: {
-                                type: "Point",
-                                coordinates: (searchQuery.mapRadiusMode === "center" || !location.latitude || !location.longitude) 
-                                    ? [mapCenter[1], mapCenter[0]] 
-                                    : [location.longitude, location.latitude]
-                            },
-                            properties: {}
-                        }}
+                        data={radiusCircleData}
                     >
                         <Layer 
-                            id="radius-circle-layer" 
-                            type="circle" 
+                            id="radius-circle-layer-fill" 
+                            type="fill" 
+                            source="radius-circle"
                             paint={{
-                                "circle-radius": [
-                                    "interpolate", ["exponential", 2], ["zoom"],
-                                    0, 0,
-                                    20, searchQuery.distanceMax * 1609.34 / 0.075 / Math.cos(mapCenter[0] * Math.PI / 180)
-                                ],
-                                "circle-color": "var(--primary)",
-                                "circle-opacity": 0.1,
-                                "circle-stroke-color": "var(--primary)",
-                                "circle-stroke-width": 2
+                                "fill-color": "#3b82f6",
+                                "fill-opacity": 0.1
+                            }}
+                        />
+                        <Layer 
+                            id="radius-circle-layer-line" 
+                            type="line" 
+                            source="radius-circle"
+                            paint={{
+                                "line-color": "#3b82f6",
+                                "line-width": 2
                             }}
                         />
                     </Source>
