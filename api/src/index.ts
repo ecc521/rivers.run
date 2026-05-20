@@ -2002,11 +2002,30 @@ const openApiConfig = {
 };
 
 // Expose OpenAPI dynamic specification directly
-app.doc('/openapi.json', openApiConfig);
+const openApiDoc = app.getOpenAPIDocument(openApiConfig);
+if (openApiDoc.paths) {
+    for (const [path, methods] of Object.entries(openApiDoc.paths)) {
+        for (const [method, operation] of Object.entries(methods as any)) {
+            const op = operation as any;
+            const isPublicPath = path.startsWith('/rivers') && method === 'get';
+            if (isPublicPath) {
+                op.tags = ['Public Data APIs (API Key Allowed)'];
+            } else if (path.startsWith('/developer/') || path === '/developer') {
+                op.tags = ['Developer Key APIs (User Auth Required)'];
+            } else if (path.startsWith('/admin/') || path === '/admin' || path.includes('resolve') || path.includes('review')) {
+                op.tags = ['Admin & Moderation APIs (Admin Auth Required)'];
+            } else {
+                op.tags = ['User & Account APIs (User Auth Required)'];
+            }
+        }
+    }
+}
+
+app.doc('/openapi.json', openApiDoc);
 
 // Generate auto-updating Scalar interface dynamically
 app.get('/docs', apiReference({
-    content: app.getOpenAPIDocument(openApiConfig),
+    content: openApiDoc,
     theme: 'purple',
     layout: 'modern'
 }));

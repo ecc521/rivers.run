@@ -120,6 +120,7 @@ const GlobalNavBar: React.FC = () => {
             {windowWidth > 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }}>Clubs</Link>}
             {windowWidth > 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>FAQ</Link>}
             {windowWidth > 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>Settings</Link>}
+            {windowWidth > 720 && <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }}>API</Link>}
           </div>
 
           <div style={{ display: "flex", gap: "20px", alignItems: "center", marginLeft: "auto", marginRight: "10px" }}>
@@ -167,6 +168,7 @@ const GlobalNavBar: React.FC = () => {
                      {windowWidth <= 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Clubs</Link>}
                      {windowWidth <= 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>FAQ</Link>}
                      {windowWidth <= 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Settings</Link>}
+                     {windowWidth <= 720 && <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>API</Link>}
                      
                      {windowWidth <= 860 && (
                         <hr style={{ borderColor: "#334155", width: "100%", margin: 0 }} />

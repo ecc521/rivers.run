@@ -837,6 +837,10 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             const arr = isGauge ? gauges : nonGauges;
             const pt = arr[feature.properties.pointIndex];
             if (pt) handleStableMarkerClick(pt.river, pt.point, pt.lat, pt.lon);
+        } else {
+            setActivePopupData(null);
+            setHoverPopupData(null);
+            setShowUserLocationPopup(false);
         }
     }, [gauges, nonGauges, handleStableMarkerClick]);
 
@@ -1230,6 +1234,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 anchor="bottom"
                                 offset={[0, -10]}
                                 style={{ zIndex: 1500 }}
+                                className="custom-maplibre-popup"
                             >
                                 <div style={{ padding: "4px 8px", textAlign: "center", color: "var(--text)" }}>
                                     <strong>Your Location</strong><br/>

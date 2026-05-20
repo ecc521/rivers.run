@@ -206,3 +206,31 @@ CREATE TABLE IF NOT EXISTS watch_sync_codes (
     list_id TEXT NOT NULL,
     expires_at INTEGER NOT NULL
 );
+
+-- ==========================================
+-- 11. DEVELOPER API KEYS & TELEMETRY
+-- ==========================================
+CREATE TABLE IF NOT EXISTS api_keys (
+    key_hash TEXT PRIMARY KEY,       -- SHA-256 hash of the API key
+    key_prefix TEXT NOT NULL,        -- First 8 characters of key for display (e.g. 'rr_live_')
+    user_id TEXT NOT NULL,           -- Firebase Auth UID of owner
+    name TEXT NOT NULL,              -- Name or description of the key
+    status TEXT DEFAULT 'active',    -- 'active', 'suspended', 'revoked'
+    tier TEXT DEFAULT 'free',        -- 'free', 'commercial', 'internal'
+    created_at INTEGER NOT NULL,     -- Unix timestamp
+    last_used_at INTEGER,            -- Unix timestamp
+    daily_limit INTEGER DEFAULT 1000,-- Configurable daily rate limit
+    FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
+
+CREATE TABLE IF NOT EXISTS api_usage (
+    key_hash TEXT NOT NULL,
+    date TEXT NOT NULL,              -- 'YYYY-MM-DD'
+    endpoint_type TEXT NOT NULL,     -- 'metadata' (DB api) vs 'gauge-flow' (real-time/flow api)
+    request_count INTEGER DEFAULT 0,
+    PRIMARY KEY(key_hash, date, endpoint_type),
+    FOREIGN KEY(key_hash) REFERENCES api_keys(key_hash) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_api_usage_lookup ON api_usage(key_hash, date);
+

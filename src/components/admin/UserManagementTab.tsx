@@ -69,8 +69,14 @@ export default function UserManagementTab() {
     
     setLoading(true);
     try {
-      const endpoint = currentlyBanned ? `/admin/users/${userData.user_id}/unban` : `/admin/users/${userData.user_id}/ban`;
-      await fetchAPI(endpoint, { method: 'PUT' });
+      const newRole = currentlyBanned ? 'user' : 'banned';
+      await fetchAPI(`/admin/users/${userData.user_id}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          role: newRole,
+          reason: currentlyBanned ? 'Ban lifted via dashboard toggle.' : 'Banned via dashboard toggle.'
+        })
+      });
       await alert(`User ${currentlyBanned ? 'unbanned' : 'banned'} successfully.`);
       await handleSearch();
     } catch (e: any) {

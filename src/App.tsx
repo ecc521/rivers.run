@@ -10,6 +10,7 @@ import SettingsPage from "./pages/Settings";
 
 import Clubs from "./pages/Clubs";
 import FAQ from "./pages/FAQ";
+import DeveloperPage from "./pages/Developer";
 import TermsOfService from "./pages/legal/TermsOfService";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import Disclaimer from "./pages/legal/Disclaimer";
@@ -120,6 +121,7 @@ function App() {
                       <Route path="/favorites" element={<ListsPage />} />
                       <Route path="/faq" element={<FAQ />} />
                       <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/api" element={<DeveloperPage />} />
                       <Route path="/create" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
                       <Route path="/edit/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
                       <Route path="/admin" element={<AdminQueue />} />

@@ -3,6 +3,8 @@ import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { z } from "@hono/zod-openapi";
 import { apiReference } from '@scalar/hono-api-reference';
 import { cors } from "hono/cors";
+import { apiKeyFlowMiddleware } from "./auth";
+
 import { usgsProvider } from "./services/usgs";
 import { nwsProvider } from "./services/nws";
 import { ecProvider } from "./services/canada";
@@ -37,7 +39,7 @@ const app = new OpenAPIHono<{ Bindings: Env }>();
 app.use("*", cors({
     origin: "*",
     allowMethods: ["GET", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "x-api-key", "X-API-Key"],
     exposeHeaders: ["Content-Length", "X-Knative-Response-Contained"],
     maxAge: 86400,
 }));
@@ -49,9 +51,11 @@ app.onError((err, c) => {
 });
 
 const historyRoute = createRoute({
+    middleware: [apiKeyFlowMiddleware],
     method: 'get',
     path: '/history',
-    summary: 'Get historical data for a set of gauges (multi-provider aware)',
+    summary: 'Fetch Multiple Gauge Histories',
+    description: 'Retrieve historical flow readings for up to 10 gauges across multiple providers (e.g. USGS, Environment Canada, NWS).',
     request: {
         query: z.object({
             gauges: z.string().openapi({ param: { name: 'gauges', in: 'query', required: true }, example: 'USGS:03451500,ireland:0001' }),
@@ -117,9 +121,11 @@ app.openapi(historyRoute, async (c) => {
 });
 
 const flowdataRoute = createRoute({
+    middleware: [apiKeyFlowMiddleware],
     method: 'get',
     path: '/flowdata',
-    summary: 'The full gauge dataset for local sync',
+    summary: 'Sync Full Flow Dataset',
+    description: 'Download the entire active gauge dataset. Supports ETag headers for efficient local caching and synchronization.',
     responses: {
         200: { 
             description: 'Full reading map', 
@@ -160,9 +166,11 @@ app.openapi(flowdataRoute, async (c) => {
 });
 
 const gaugeRoute = createRoute({
+    middleware: [apiKeyFlowMiddleware],
     method: 'get',
     path: '/gauge/{prefix}/{id}',
-    summary: 'Get site metadata and history for a single gauge',
+    summary: 'Fetch Single Gauge',
+    description: 'Get flow readings, historical logs, and metadata for a specific gauge and provider.',
     request: {
         params: z.object({
             prefix: z.string().openapi({ param: { name: 'prefix', in: 'path', required: true } }),
@@ -307,10 +315,20 @@ const openApiConfig = {
 
 if (process.env.NODE_ENV !== 'test') {
     try {
-        app.doc('/openapi.json', openApiConfig);
+        const openApiDoc = app.getOpenAPIDocument(openApiConfig);
+        if (openApiDoc.paths) {
+            for (const methods of Object.values(openApiDoc.paths)) {
+                for (const operation of Object.values(methods as any)) {
+                    const op = operation as any;
+                    op.tags = ['Public Flow & Gauge APIs (API Key Allowed)'];
+                }
+            }
+        }
+
+        app.doc('/openapi.json', openApiDoc);
 
         app.get('/docs', apiReference({
-            content: app.getOpenAPIDocument(openApiConfig),
+            content: openApiDoc,
             theme: 'purple',
             layout: 'modern'
         }));

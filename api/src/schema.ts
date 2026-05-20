@@ -155,6 +155,29 @@ export const RiverHistoryResponseSchema = z.object({
     nextOffset: z.number().optional().nullable().openapi({ type: 'integer' })
 }).openapi({ type: 'object', description: 'Paginated history response' });
 
+export const ApiKeyCreateInput = z.object({
+    name: requiredString(100)
+}).openapi({ type: 'object', description: 'Payload for generating a new developer API key' });
+
+export const ApiKeySchema = z.object({
+    key_hash: z.string().openapi({ type: 'string' }),
+    key_prefix: z.string().openapi({ type: 'string' }),
+    user_id: z.string().openapi({ type: 'string' }),
+    name: z.string().openapi({ type: 'string' }),
+    status: z.enum(["active", "suspended", "revoked"]).openapi({ type: 'string' }),
+    tier: z.enum(["free", "commercial", "internal"]).openapi({ type: 'string' }),
+    created_at: z.number().openapi({ type: 'number' }),
+    last_used_at: z.number().optional().nullable().openapi({ type: 'number' }),
+    daily_limit: z.number().openapi({ type: 'number' })
+}).openapi({ type: 'object', description: 'A developer API key record' });
+
+export const ApiUsageSchema = z.object({
+    key_hash: z.string().openapi({ type: 'string' }),
+    date: z.string().openapi({ type: 'string' }),
+    endpoint_type: z.enum(["metadata", "gauge-flow"]).openapi({ type: 'string' }),
+    request_count: z.number().openapi({ type: 'number' })
+}).openapi({ type: 'object', description: 'API usage counter logs' });
+
 export const checkPayloadSize = async (c: any, next: any) => {
     const contentLength = Number(c.req.header("content-length") || 0);
     if (contentLength > 50 * 1024) {
@@ -162,3 +185,4 @@ export const checkPayloadSize = async (c: any, next: any) => {
     }
     await next();
 };
+
