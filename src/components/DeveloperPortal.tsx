@@ -24,7 +24,7 @@ interface ApiUsage {
 }
 
 export const DeveloperPortal: React.FC = () => {
-    const { user } = useAuth();
+    const { user, setAuthModalOpen } = useAuth();
     const { alert, confirm } = useModal();
     const [keys, setKeys] = useState<ApiKey[]>([]);
     const [usage, setUsage] = useState<ApiUsage[]>([]);
@@ -97,8 +97,7 @@ export const DeveloperPortal: React.FC = () => {
         }
     };
 
-    if (!user) return null;
-    if (loading) {
+    if (loading && user) {
         return (
             <div style={{ padding: "20px", color: "var(--text-muted)" }}>
                 Loading developer portal settings...
@@ -124,9 +123,45 @@ export const DeveloperPortal: React.FC = () => {
     return (
         <div style={{ width: "100%", color: "var(--text)" }}>
             <div style={{ display: "flex", gap: "30px", flexFlow: "row wrap", alignItems: "flex-start" }}>
-                {/* Left Panel - Console / Key Management */}
+                {/* Left Panel - Console / Key Management or Sign-In Callout */}
                 <div style={{ flex: "2 1 500px", display: "flex", flexDirection: "column", gap: "25px" }}>
-                    {/* API Keys Table */}
+                    {!user ? (
+                        <div style={{
+                            backgroundColor: "var(--surface)",
+                            padding: "40px 30px",
+                            borderRadius: "10px",
+                            border: "1px solid var(--border)",
+                            textAlign: "center",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "20px"
+                        }}>
+                            <div style={{ fontSize: "3em" }}>🔑</div>
+                            <h3 style={{ margin: 0, color: "var(--text)" }}>API Key Management</h3>
+                            <p style={{ color: "var(--text-muted)", fontSize: "0.95em", lineHeight: "1.6", maxWidth: "450px", margin: "0 auto" }}>
+                                Log in or create a rivers.run developer account to generate API keys, monitor usage telemetry, and manage your integrations.
+                            </p>
+                            <button
+                                onClick={() => setAuthModalOpen?.(true)}
+                                style={{
+                                    backgroundColor: "var(--primary)",
+                                    color: "var(--surface)",
+                                    border: "none",
+                                    padding: "12px 24px",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    fontWeight: "bold",
+                                    fontSize: "0.95em",
+                                    transition: "background-color 0.2s"
+                                }}
+                            >
+                                Log In / Sign Up
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            {/* API Keys Table */}
                     <div style={{ backgroundColor: "var(--surface)", padding: "20px", borderRadius: "10px", border: "1px solid var(--border)" }}>
                         <h3 style={{ margin: "0 0 15px 0", color: "var(--text)" }}>Your API Keys</h3>
                         {keys.length === 0 ? (
@@ -266,6 +301,8 @@ export const DeveloperPortal: React.FC = () => {
                                 </table>
                             </div>
                         </div>
+                    )}
+                        </>
                     )}
                 </div>
 
