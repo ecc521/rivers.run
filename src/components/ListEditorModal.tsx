@@ -59,7 +59,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const isShared = mode === "shared";
   const isEdit = mode === "edit";
   const isOwner = user && activeList && activeList.ownerId === user.uid;
-  const canEdit = isOwner && (isEdit || mode === "create");
+  const canEdit = mode === "create" || mode === "copy" || (isOwner && isEdit);
+  const canEditRivers = isOwner && isEdit;
 
   const handleSave = async (e: React.SyntheticEvent | React.MouseEvent) => {
     if ('preventDefault' in e) e.preventDefault();
@@ -417,7 +418,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                                 )}
                             </div>
                             
-                            {!canEdit ? (
+                            {!canEditRivers ? (
                                 <span style={{ fontSize: "0.85em", color: "var(--text-muted)" }}>
                                     Target Flow: {r.min || '0'} - {r.max || '∞'} {r.units || 'cfs'}
                                 </span>
@@ -550,7 +551,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                     opacity: (saving || !title.trim()) ? 0.7 : 1
                 }}
                 >
-                {saving ? "Saving..." : "Save Settings"}
+                {saving ? "Saving..." : (mode === "create" || mode === "copy") ? "Create List" : "Save Settings"}
                 </button>
             )}
           </div>
