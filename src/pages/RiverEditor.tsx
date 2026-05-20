@@ -112,6 +112,7 @@ export default function RiverEditor() {
         accessPoints: safeAccess,
         writeup: data.writeup || "",
         rawTags: (() => {
+          if (data.rawTags !== undefined) return data.rawTags;
           if (Array.isArray(data.tags)) return data.tags.join(", ");
           if (typeof data.tags === "string") return data.tags;
           return "";
@@ -335,7 +336,10 @@ export default function RiverEditor() {
 
       await fetchAPI(endpoint, {
         method,
-        body: JSON.stringify(finalObj)
+        body: JSON.stringify({
+            ...finalObj,
+            submitterEmail: submitterEmail || undefined
+        })
       }, user);
       
       await alert(isAdminPublish ? "Saved successfully!" : "Submitted successfully!");

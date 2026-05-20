@@ -7,11 +7,17 @@ import {
     UserSettingsSchema, CommunityListSchema, 
     SubscriptionPayloadSchema, AdminResolutionSchema,
     RiverSchema, UserReportPayload, RoleUpdatePayload,
-    UserManagementSchema, UserSearchResponse, RiverHistoryResponseSchema
+    UserManagementSchema, UserSearchResponse, RiverHistoryResponseSchema,
+    ApiKeyCreateInput, ApiKeySchema, ApiUsageSchema
 } from "./schema";
-import { firebaseAuthMiddleware, requireModerator, requireAdmin, optionalFirebaseAuthMiddleware, requireNotBanned } from "./auth";
+import { 
+    firebaseAuthMiddleware, requireModerator, requireAdmin, 
+    optionalFirebaseAuthMiddleware, requireNotBanned, apiKeyMetadataMiddleware 
+} from "./auth";
 import { sendEmail } from "./email";
 import { logToD1 } from "./utils/logger";
+import { generateRawKey, hashKey } from "./utils/apiKey";
+
 
 
 type Bindings = {
@@ -34,7 +40,7 @@ const GenericArraySchema = z.array(GenericObjectSchema).openapi({ type: 'array' 
 app.use("*", cors({
     origin: "*",
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"]
+    allowHeaders: ["Content-Type", "Authorization", "x-api-key", "X-API-Key"]
 }));
 
 // Global error handler
@@ -51,6 +57,7 @@ app.onError((err, c) => {
  */
 
 const getRiversRoute = createRoute({
+    middleware: [apiKeyMetadataMiddleware],
     method: 'get',
     path: '/rivers',
     summary: 'Fetch all rivers',
@@ -142,12 +149,13 @@ app.openapi(getRiversRoute, async (c) => {
     
     // Explicit aggressive caching header to push the massive load physically onto Cloudflare Edge Nodes
     // stale-while-revalidate=86400 allows serving old content while refetching in the background
-    c.header("Cache-Control", "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400");
+    c.header("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=86400");
     
     return c.json(rivers);
 });
 
 const getRiverRoute = createRoute({
+    middleware: [apiKeyMetadataMiddleware],
     method: 'get',
     path: '/rivers/{id}',
     summary: 'Get river by ID',
@@ -967,7 +975,16 @@ const deleteUserRoute = createRoute({
 
 app.openapi(deleteUserRoute, async (c) => {
     const user = c.get("user");
-    await c.env.DB.prepare("DELETE FROM users WHERE user_id = ?").bind(user.user_id).run();
+    const id = user.user_id;
+
+    await c.env.DB.batch([
+        c.env.DB.prepare("DELETE FROM community_lists WHERE owner_id = ?").bind(id),
+        c.env.DB.prepare("DELETE FROM river_suggestions WHERE suggested_by = ?").bind(id),
+        c.env.DB.prepare("DELETE FROM user_reports WHERE reported_by = ?").bind(id),
+        c.env.DB.prepare("DELETE FROM user_subscriptions WHERE user_id = ?").bind(id),
+        c.env.DB.prepare("DELETE FROM users WHERE user_id = ?").bind(id)
+    ]);
+
     return c.json({ success: true });
 });
 
@@ -1479,83 +1496,6 @@ app.openapi(getAdminUserByIdRoute, async (c) => {
     return c.json(result);
 });
 
-const banUserRoute = createRoute({
-    middleware: [firebaseAuthMiddleware, requireAdmin],
-    method: 'put',
-    path: '/admin/users/{id}/ban',
-    summary: 'Legacy Ban shortcut (uses hierarchy logic)',
-    security: [{ bearerAuth: [] }],
-    request: {
-        params: z.object({
-            id: z.string().openapi({
-                param: {
-                    name: 'id',
-                    in: 'path',
-                    required: true
-                }
-            })
-        })
-    },
-    responses: { 
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Banned' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Hierarchy violation' }
-    }
-});
-
-app.openapi(banUserRoute, async (c) => {
-    const id = c.req.param("id");
-    const caller = c.get("user");
-    
-    const target = await c.env.DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(id).first() as { role: string } | null;
-    if (target && caller.d1Role === 'admin' && (target.role === 'admin' || target.role === 'super-admin')) {
-         return c.json({ error: "Cannot ban an Admin." }, 403) as any;
-    }
-
-    await c.env.DB.batch([
-        c.env.DB.prepare("UPDATE users SET role = 'banned' WHERE user_id = ?").bind(id),
-        c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('BAN_USER', caller.user_id, id, 'Banned via shortcut', Math.floor(Date.now() / 1000))
-    ]);
-    return c.json({ success: true }) as any;
-});
-
-const unbanUserRoute = createRoute({
-    middleware: [firebaseAuthMiddleware, requireAdmin],
-    method: 'put',
-    path: '/admin/users/{id}/unban',
-    summary: 'Legacy Unban shortcut (uses hierarchy logic)',
-    security: [{ bearerAuth: [] }],
-    request: {
-        params: z.object({
-            id: z.string().openapi({
-                param: {
-                    name: 'id',
-                    in: 'path',
-                    required: true
-                }
-            })
-        })
-    },
-    responses: { 
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Unbanned' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Hierarchy violation' }
-    }
-});
-
-app.openapi(unbanUserRoute, async (c) => {
-    const id = c.req.param("id");
-    const caller = c.get("user");
-
-    const target = await c.env.DB.prepare("SELECT role FROM users WHERE user_id = ?").bind(id).first() as { role: string } | null;
-    if (target && caller.d1Role === 'admin' && (target.role === 'admin' || target.role === 'super-admin')) {
-        return c.json({ error: "Cannot modify an Admin." }, 403) as any;
-    }
-
-    await c.env.DB.batch([
-        c.env.DB.prepare("UPDATE users SET role = 'user' WHERE user_id = ?").bind(id),
-        c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind('UNBAN_USER', caller.user_id, id, 'Unbanned via shortcut', Math.floor(Date.now() / 1000))
-    ]);
-    return c.json({ success: true }) as any;
-});
 
 const deleteAdminUserRoute = createRoute({
     middleware: [firebaseAuthMiddleware, requireAdmin],
@@ -1858,6 +1798,190 @@ app.get('/sitemap.xml', async (c) => {
     }
     c.header("Content-Type", "application/xml");
     return c.body(object.body);
+});
+
+// ==========================================
+// 11. DEVELOPER PORTAL API KEY ENDPOINTS
+// ==========================================
+
+const listApiKeysRoute = createRoute({
+    method: 'get',
+    path: '/developer/keys',
+    summary: 'List API Keys',
+    description: 'Retrieve all API keys associated with the current user.',
+    middleware: [firebaseAuthMiddleware],
+    responses: {
+        200: {
+            content: { 'application/json': { schema: z.array(ApiKeySchema) } },
+            description: 'List of developer API keys'
+        },
+        401: {
+            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            description: 'Unauthorized'
+        }
+    }
+});
+
+app.openapi(listApiKeysRoute, async (c) => {
+    const user = c.get("user");
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const { results } = await c.env.DB.prepare(`
+        SELECT key_hash, key_prefix, user_id, name, status, tier, created_at, last_used_at, daily_limit 
+        FROM api_keys 
+        WHERE user_id = ?
+    `).bind(user.user_id).all();
+
+    return c.json(results as any);
+});
+
+const createApiKeyRoute = createRoute({
+    method: 'post',
+    path: '/developer/keys',
+    summary: 'Create API Key',
+    description: 'Generate a new API key. The raw secret key is returned only once.',
+    middleware: [firebaseAuthMiddleware],
+    request: {
+        body: {
+            content: { 'application/json': { schema: ApiKeyCreateInput } }
+        }
+    },
+    responses: {
+        200: {
+            content: { 'application/json': { schema: z.object({
+                raw_key: z.string().openapi({ type: 'string', description: 'The plaintext API key to copy' }),
+                key: ApiKeySchema
+            }).openapi({ type: 'object' }) } },
+            description: 'Newly created API key details'
+        },
+        401: {
+            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            description: 'Unauthorized'
+        }
+    }
+});
+
+app.openapi(createApiKeyRoute, async (c) => {
+    const user = c.get("user");
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const body = await c.req.json();
+    const validated = ApiKeyCreateInput.parse(body);
+
+    const rawKey = generateRawKey();
+    const prefix = rawKey.substring(0, 12); // e.g. "rr_live_xxxx"
+    const hash = await hashKey(rawKey);
+    const now = Math.floor(Date.now() / 1000);
+
+    const newKey = {
+        key_hash: hash,
+        key_prefix: prefix,
+        user_id: user.user_id,
+        name: validated.name,
+        status: 'active' as const,
+        tier: 'free' as const,
+        created_at: now,
+        last_used_at: null,
+        daily_limit: 1000
+    };
+
+    await c.env.DB.prepare(`
+        INSERT INTO api_keys (key_hash, key_prefix, user_id, name, status, tier, created_at, last_used_at, daily_limit)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+        newKey.key_hash,
+        newKey.key_prefix,
+        newKey.user_id,
+        newKey.name,
+        newKey.status,
+        newKey.tier,
+        newKey.created_at,
+        newKey.last_used_at,
+        newKey.daily_limit
+    ).run();
+
+    return c.json({
+        raw_key: rawKey,
+        key: newKey
+    } as any);
+});
+
+const revokeApiKeyRoute = createRoute({
+    method: 'delete',
+    path: '/developer/keys/{hash}',
+    summary: 'Revoke API Key',
+    description: 'Permanently delete/revoke an API key.',
+    middleware: [firebaseAuthMiddleware],
+    request: {
+        params: z.object({
+            hash: z.string().openapi({ param: { name: 'hash', in: 'path', required: true } })
+        })
+    },
+    responses: {
+        200: {
+            content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } },
+            description: 'Key successfully revoked'
+        },
+        401: {
+            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            description: 'Unauthorized'
+        },
+        404: {
+            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            description: 'Key not found'
+        }
+    }
+});
+
+app.openapi(revokeApiKeyRoute, async (c) => {
+    const user = c.get("user");
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const hash = c.req.param("hash");
+
+    const result = await c.env.DB.prepare(`
+        DELETE FROM api_keys WHERE key_hash = ? AND user_id = ?
+    `).bind(hash, user.user_id).run();
+
+    if (!result.success) {
+        return c.json({ error: "API Key not found or does not belong to you." }, 404);
+    }
+
+    return c.json({ success: true } as any);
+});
+
+const getApiUsageRoute = createRoute({
+    method: 'get',
+    path: '/developer/usage',
+    summary: 'Get API Usage',
+    description: 'Retrieve daily API usage stats for the past 30 days.',
+    middleware: [firebaseAuthMiddleware],
+    responses: {
+        200: {
+            content: { 'application/json': { schema: z.array(ApiUsageSchema) } },
+            description: 'Daily usage logs'
+        },
+        401: {
+            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            description: 'Unauthorized'
+        }
+    }
+});
+
+app.openapi(getApiUsageRoute, async (c) => {
+    const user = c.get("user");
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const { results } = await c.env.DB.prepare(`
+        SELECT u.key_hash, u.date, u.endpoint_type, u.request_count 
+        FROM api_usage u
+        JOIN api_keys k ON u.key_hash = k.key_hash
+        WHERE k.user_id = ?
+        ORDER BY u.date DESC, u.endpoint_type ASC
+        LIMIT 1000
+    `).bind(user.user_id).all();
+
+    return c.json(results as any);
 });
 
 // Register Security Schemes
