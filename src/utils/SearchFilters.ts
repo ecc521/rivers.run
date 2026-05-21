@@ -13,6 +13,7 @@ export interface AdvancedSearchQuery {
   includeUnknownSkill?: boolean;
   includeUnknownFlow?: boolean;
   includeDams?: boolean;
+  includeGauges?: boolean;
   favoritesOnly?: boolean;
   distanceMax?: number;
   userLat?: number;
@@ -35,6 +36,7 @@ export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
   includeUnknownSkill: true,
   includeUnknownFlow: true,
   includeDams: true,
+  includeGauges: true,
   sortBy: "alphabetical",
   sortReverse: false,
 };
@@ -56,6 +58,7 @@ export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
   if (query.includeUnknownSkill !== undefined && query.includeUnknownSkill !== defaultAdvancedSearchQuery.includeUnknownSkill) return true;
   if (query.includeUnknownFlow !== undefined && query.includeUnknownFlow !== defaultAdvancedSearchQuery.includeUnknownFlow) return true;
   if (query.includeDams !== undefined && query.includeDams !== defaultAdvancedSearchQuery.includeDams) return true;
+  if (query.includeGauges !== undefined && query.includeGauges !== defaultAdvancedSearchQuery.includeGauges) return true;
   
   return false;
 }
@@ -211,6 +214,7 @@ export function filterRivers(
     if (!matchSkill(r, query)) return false;
     if (!matchFlow(r, query)) return false;
     if (!matchProximity(r, query)) return false;
+    if (query.includeGauges === false && r.isGauge && String(r.id).startsWith("USGS:")) return false;
     return true;
   });
 

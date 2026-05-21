@@ -234,5 +234,46 @@ describe("SearchFilters", () => {
       const resultsWithGauge = filterRivers(mixedMockRivers, queryWithGauge);
       expect(resultsWithGauge[0].id).toBe("gauge2");
     });
+
+    it("filters out USGS gauges when includeGauges is false", () => {
+      const mockItems: RiverData[] = [
+        {
+          id: "USGS:04161000",
+          name: "USGS Gauge",
+          isGauge: true,
+        } as RiverData,
+        {
+          id: "r1",
+          name: "River One",
+          isGauge: false,
+        } as RiverData,
+        {
+          id: "OTHER:12345",
+          name: "Non-USGS Gauge",
+          isGauge: true,
+        } as RiverData,
+      ];
+
+      const queryIncludeFalse: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        includeGauges: false,
+      };
+
+      const results = filterRivers(mockItems, queryIncludeFalse);
+      
+      // Should filter out the USGS gauge, but keep the river and non-USGS gauge
+      expect(results.length).toBe(2);
+      expect(results.some(r => r.id === "USGS:04161000")).toBe(false);
+      expect(results.some(r => r.id === "r1")).toBe(true);
+      expect(results.some(r => r.id === "OTHER:12345")).toBe(true);
+
+      const queryIncludeTrue: AdvancedSearchQuery = {
+        ...defaultAdvancedSearchQuery,
+        includeGauges: true,
+      };
+
+      const resultsTrue = filterRivers(mockItems, queryIncludeTrue);
+      expect(resultsTrue.length).toBe(3);
+    });
   });
 });

@@ -75,6 +75,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       includeUnknownSkill: true,
       includeUnknownFlow: true,
       includeDams: true,
+      includeGauges: true,
       distanceMax: undefined,
       userLat: undefined,
       userLon: undefined,
@@ -481,6 +482,12 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 label="Include Dam Controlled Rivers"
                 checked={localQuery.includeDams || false}
                 onChange={(checked) => setLocalQuery({ ...localQuery, includeDams: checked })}
+              />
+
+              <FilterCheckbox
+                label="Include Gauges"
+                checked={localQuery.includeGauges !== false}
+                onChange={(checked) => setLocalQuery({ ...localQuery, includeGauges: checked })}
               />
               
               <div style={{...getSectionStyle(), marginTop: '10px'}}>
