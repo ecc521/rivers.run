@@ -49,9 +49,9 @@ export const MapSearchbar: React.FC<MapSearchbarProps> = ({ onSelect }) => {
                 const queryWords = q.split(/\s+/).filter(w => w.length > 0);
 
                 const matchedRivers = rivers.filter((r: any) => {
-                    const fullName = `${r.name || ''} ${r.section || ''}`.toLowerCase();
-                    // Ensure every word in the query appears somewhere in the name or section
-                    return queryWords.every(word => fullName.includes(word));
+                    const searchStr = `${r.name || ''} ${r.section || ''} ${r.tags ? (Array.isArray(r.tags) ? r.tags.join(' ') : r.tags) : ''} river creek run brook stream branch fork gauge`.toLowerCase();
+                    // Ensure every word in the query appears somewhere in the search string
+                    return queryWords.every(word => searchStr.includes(word));
                 }).sort((a: any, b: any) => {
                     const aName = `${a.name || ''} ${a.section || ''}`.toLowerCase();
                     const bName = `${b.name || ''} ${b.section || ''}`.toLowerCase();

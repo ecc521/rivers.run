@@ -1,4 +1,5 @@
 import { Directory, Filesystem } from '@capacitor/filesystem';
+import { persistentStorage } from './persistentStorage';
 import { Capacitor } from '@capacitor/core';
 
 export interface MapRegion {
@@ -33,12 +34,28 @@ export const supportsOfflineMaps = () => {
 export const fetchMapRegions = async (): Promise<MapRegion[]> => {
     if (cachedManifest) return cachedManifest;
 
+    let data;
     try {
         const response = await fetch(`${R2_PUBLIC_URL}/regions_manifest.json`);
         if (!response.ok) throw new Error("Failed to fetch regions manifest");
+        data = await response.json();
+        persistentStorage.set("offline_regions_manifest", JSON.stringify(data)).catch(e => console.warn("Failed to cache manifest", e));
+    } catch (e) {
+        console.warn("Manifest Fetch Error, trying cache:", e);
+        const cached = await persistentStorage.get("offline_regions_manifest");
+        if (cached) {
+            try {
+                data = JSON.parse(cached);
+            } catch (err) {
+                console.error("Cache parse error", err);
+                return [];
+            }
+        } else {
+            return [];
+        }
+    }
         
-        const data = await response.json();
-        
+    try {
         // Transform the object into an array of MapRegion objects
         const regions: MapRegion[] = Object.keys(data).map(abbrev => {
             const raw = data[abbrev];
@@ -66,7 +83,7 @@ export const fetchMapRegions = async (): Promise<MapRegion[]> => {
         cachedManifest = regions;
         return regions;
     } catch (e) {
-        console.error("Manifest Fetch Error:", e);
+        console.error("Manifest Parse Error:", e);
         return [];
     }
 };
@@ -122,7 +139,7 @@ export const getDownloadedRegions = async (): Promise<DownloadedRegionState[]> =
             const root = await (navigator as any).storage.getDirectory();
             const dir = await root.getDirectoryHandle(MAPS_DIR, { create: true });
 
-            for await (const name of dir.keys()) {
+            for await (const [name] of (dir as any).entries()) {
                 if (name.endsWith('.pmtiles')) {
                     getOrInit(name.replace('.pmtiles', '')).hasMap = true;
                 } else if (name.endsWith('_routing.tar')) {

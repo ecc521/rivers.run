@@ -117,6 +117,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({ isOpen, onClos
             if (routingRegions.length === 0) {
                 setMissingData(true);
                 setIsCalculating(false);
+                setIsExpanded(true);
                 
                 try {
                     const allRegions = await fetchMapRegions();
@@ -178,6 +179,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({ isOpen, onClos
                     setSummary(e.data.summary || null);
                 } else {
                     setError(e.data.error || "Failed to calculate route.");
+                    setIsExpanded(true);
                 }
             };
 

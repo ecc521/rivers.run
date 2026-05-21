@@ -641,8 +641,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     try {
                         const tile = await basemapInstance.getZxy(z, x, y, abortController.signal);
                         if (tile && tile.data) return { data: tile.data };
-                    } catch (_e) {
-                        console.debug("Basemap tile not found", _e);
+                    } catch (_e: any) {
+                        if (_e.name !== 'AbortError') console.debug("Basemap tile not found", _e);
                     }
                 }
 
@@ -651,8 +651,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     try {
                         const tile = await pmtiles.getZxy(z, x, y, abortController.signal);
                         if (tile && tile.data) return { data: tile.data };
-                    } catch (_e) {
-                        console.debug("Offline tile not found", _e);
+                    } catch (_e: any) {
+                        if (_e.name !== 'AbortError') console.debug("Offline tile not found", _e);
                     }
                 }
 
@@ -664,8 +664,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         const data = await response.arrayBuffer();
                         return { data };
                     }
-                } catch (_e) {
-                    console.debug("Online tile fetch failed", _e);
+                } catch (_e: any) {
+                    if (_e.name !== 'AbortError') console.debug("Online tile fetch failed", _e);
                 }
 
                 throw new Error("Tile unavailable - offline or missing");
