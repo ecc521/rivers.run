@@ -4,9 +4,8 @@ compatibility_date = "2026-04-15"
 compatibility_flags = ["nodejs_compat"]
 
 # 10 Million Requests / month
-# Unbound allows long wall-clock time limit for cron fetch loops
-usage_model = "unbound"
-
+# Cloudflare Workers Standard Pricing now automatically applies unbound limits
+# to cron fetch loops without needing to specify usage_model.
 # We strictly bind R2 here isolated from the DB app for clean separation
 [[r2_buckets]]
 binding = "FLOW_STORAGE"
