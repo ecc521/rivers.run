@@ -1,5 +1,6 @@
 import { InAppReview } from '@capacitor-community/in-app-review';
 import { persistentStorage } from './persistentStorage';
+import { Capacitor } from '@capacitor/core';
 
 const REVIEW_DATES_KEY = "app_review_active_dates";
 const HAS_REQUESTED_REVIEW_KEY = "app_review_has_requested";
@@ -45,8 +46,10 @@ export async function triggerReviewIfEligible(): Promise<void> {
       // Mark as requested before we call it, to prevent double-firing
       await persistentStorage.set(HAS_REQUESTED_REVIEW_KEY, "true");
       
-      // Call the native review prompt
-      await InAppReview.requestReview();
+      // Call the native review prompt only on native platforms
+      if (Capacitor.isNativePlatform()) {
+        await InAppReview.requestReview();
+      }
     }
   } catch (error) {
     console.error("Failed to trigger app review", error);

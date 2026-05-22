@@ -478,7 +478,7 @@ const RiverPage: React.FC = () => {
                 </div>
                 
                 {/* Min/Max Bar below */}
-                <div style={{ display: "flex", alignItems: "center", gap: "15px", fontSize: "0.85rem", width: "100%", maxWidth: "200px", marginTop: "15px", marginBottom: "15px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "15px", fontSize: "0.85rem", width: "100%", minWidth: "240px", maxWidth: "300px", marginTop: "15px", marginBottom: "15px" }}>
                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", color: "var(--text-muted)", lineHeight: 1.2 }}>
                       <span style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>Min</span>
                       {(() => {
@@ -493,6 +493,7 @@ const RiverPage: React.FC = () => {
                    <div style={{ 
                        flex: 1, 
                        height: "8px", 
+                       minWidth: "120px",
                        borderRadius: "4px",
                        backgroundImage: `linear-gradient(to right, ${[0, 1, 2, 3, 4].map((i) => calculateColor(i, isDarkMode, isColorBlindMode)).join(",")})`,
                        position: "relative"
