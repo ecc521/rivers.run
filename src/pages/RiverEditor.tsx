@@ -76,7 +76,7 @@ export default function RiverEditor() {
 
   const [viewMode, setViewMode] = useState<"draft" | "original">("draft");
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
-  const [comparisonData, setComparisonData] = useState<{ historical: RiverData, logIndex: number, allLogs: any[] } | null>(null);
+  const [comparisonData, setComparisonData] = useState<{ historical: RiverData, stateAfterEdit: RiverData, _log: any, logIndex: number, allLogs: any[] } | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
   const syncInputs = (inputData: any) => {
@@ -162,6 +162,7 @@ export default function RiverEditor() {
            
            proposed.queueId = suggestion.suggestion_id || queueId; 
            proposed.id = suggestion.river_id; 
+           proposed.created_at = suggestion.created_at;
            
            setProposedData(proposed);
            setIsAnonymous(suggestion.suggested_by?.startsWith("IP:") || !suggestion.suggested_by);
@@ -365,6 +366,13 @@ export default function RiverEditor() {
       if (!isAdmin) return alert("You must be an administrator to approve submissions.");
       if (!proposedData?.queueId) return alert("Missing Suggestion ID. Please refresh and try again.");
       
+      if (liveData && proposedData && proposedData.created_at && liveData.updated_at) {
+          if (liveData.updated_at > proposedData.created_at) {
+              const confirmOverwrite = await confirm("WARNING: The live database has been updated since this suggestion was submitted. Approving this will OVERWRITE those recent edits.\n\nAre you absolutely sure you want to proceed?");
+              if (!confirmOverwrite) return;
+          }
+      }
+      
       const res = await resolveSuggestion("Review the changes and confirm if you want to push this to the live database.", "Approve Suggestion", isAnonymous);
       if (!res || !res.confirmed) return;
 
@@ -450,9 +458,17 @@ export default function RiverEditor() {
   const handleSelectVersion = (_log: any, index: number, allLogs: any[]) => {
     if (!liveData) return;
     const historical = reconstructHistoricalState(liveData, allLogs, index);
+    
+    // Calculate the state AFTER the edit, which is unwound up to index - 1
+    const stateAfterEdit = index > 0 
+      ? reconstructHistoricalState(liveData, allLogs, index - 1)
+      : liveData;
+
     // Injected for UI display consistency
     (historical as any).updated_at = _log.changed_at;
-    setComparisonData({ historical, logIndex: index, allLogs });
+    (stateAfterEdit as any).updated_at = index > 0 ? allLogs[index - 1].changed_at : undefined;
+    
+    setComparisonData({ historical, stateAfterEdit, logIndex: index, allLogs, _log });
   };
 
   const handleRestoreVersion = async (historical: RiverData) => {
@@ -739,7 +755,10 @@ export default function RiverEditor() {
     {comparisonData && (
       <RiverHistoryComparison 
         historicalState={comparisonData.historical}
-        currentState={liveData}
+        currentState={comparisonData.stateAfterEdit}
+        leftTitle="State Before Edit"
+        rightTitle="State After Edit"
+        rightSubtitle={comparisonData.logIndex === 0 ? "Live (Latest)" : new Date(comparisonData._log.changed_at * 1000).toLocaleString()}
         onRestore={handleRestoreVersion}
         onClose={() => setComparisonData(null)}
       />

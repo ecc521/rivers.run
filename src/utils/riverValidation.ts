@@ -68,6 +68,23 @@ export function validateRiver(river: any): RiverValidationResult {
   const gauges = Array.isArray(river.gauges) ? river.gauges : [];
   if (river.gauges && !Array.isArray(river.gauges)) {
     errors.push("Gauges must be an array.");
+  } else {
+    for (const g of gauges) {
+       if (!g.id || typeof g.id !== "string") {
+         errors.push("A gauge is missing a valid ID string.");
+       } else {
+         const parts = g.id.split(':');
+         if (parts.length < 2) {
+           errors.push(`Gauge ID '${g.id}' is malformed. Expected format AGENCY:CODE.`);
+         } else {
+           const agency = parts[0];
+           const code = parts[1];
+           if (agency === 'USGS' && !/^\d+$/.test(code)) {
+             errors.push(`USGS Gauge ID '${g.id}' is invalid. The code must be purely numeric.`);
+           }
+         }
+       }
+    }
   }
 
   const primaryCount = gauges.filter((g: any) => g.isPrimary).length;
