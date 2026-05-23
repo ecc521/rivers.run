@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateRelativeFlow, calculateColor } from "./flowInfoCalculations";
+import { calculateRelativeFlow, calculateColor, calculateTrend } from "./flowInfoCalculations";
 import type { RiverData } from "../types/River";
 
 describe("flowInfoCalculations", () => {
@@ -112,6 +112,94 @@ describe("flowInfoCalculations", () => {
 
     it("returns empty string on null", () => {
       expect(calculateColor(null)).toBe("");
+    });
+  });
+
+  describe("calculateTrend", () => {
+    it("returns 'flat' if less than 2 readings", () => {
+      expect(calculateTrend(undefined)).toBe("flat");
+      expect(calculateTrend([])).toBe("flat");
+      expect(calculateTrend([{ dateTime: 1000, cfs: 100 }])).toBe("flat");
+    });
+
+    it("calculates flow trends correctly using cfs", () => {
+      const now = Date.now();
+      // Up trend: 100 cfs to 120 cfs (20% increase, +20 cfs) over 2 hours
+      const upReadings = [
+        { dateTime: now - 2 * 60 * 60 * 1000, cfs: 100 },
+        { dateTime: now, cfs: 120 }
+      ];
+      expect(calculateTrend(upReadings)).toBe("up");
+
+      // Flat trend (insufficient increase percentage): 1000 cfs to 1010 cfs (+1% increase)
+      const flatUpReadings = [
+        { dateTime: now - 2 * 60 * 60 * 1000, cfs: 1000 },
+        { dateTime: now, cfs: 1010 }
+      ];
+      expect(calculateTrend(flatUpReadings)).toBe("flat");
+
+      // Flat trend (insufficient absolute increase): 10 cfs to 15 cfs (+50% increase, but only +5 cfs)
+      const flatUpLowFlow = [
+        { dateTime: now - 2 * 60 * 60 * 1000, cfs: 10 },
+        { dateTime: now, cfs: 15 }
+      ];
+      expect(calculateTrend(flatUpLowFlow)).toBe("flat");
+
+      // Down trend: 200 cfs to 180 cfs (10% decrease, -20 cfs) over 2 hours
+      const downReadings = [
+        { dateTime: now - 2 * 60 * 60 * 1000, cfs: 200 },
+        { dateTime: now, cfs: 180 }
+      ];
+      expect(calculateTrend(downReadings)).toBe("down");
+    });
+
+    it("calculates stage trends correctly using ft", () => {
+      const now = Date.now();
+      // Up trend: 2.0 ft to 2.05 ft (+0.05 ft) over 2 hours
+      const upReadings = [
+        { dateTime: now - 2 * 60 * 60 * 1000, ft: 2.0 },
+        { dateTime: now, ft: 2.05 }
+      ];
+      expect(calculateTrend(upReadings)).toBe("up");
+
+      // Flat trend: 2.0 ft to 2.02 ft (+0.02 ft)
+      const flatReadings = [
+        { dateTime: now - 2 * 60 * 60 * 1000, ft: 2.0 },
+        { dateTime: now, ft: 2.02 }
+      ];
+      expect(calculateTrend(flatReadings)).toBe("flat");
+
+      // Down trend: 3.5 ft to 3.4 ft (-0.1 ft)
+      const downReadings = [
+        { dateTime: now - 2 * 60 * 60 * 1000, ft: 3.5 },
+        { dateTime: now, ft: 3.4 }
+      ];
+      expect(calculateTrend(downReadings)).toBe("down");
+    });
+
+    it("filters out forecast readings when calculating trend", () => {
+      const now = Date.now();
+      // Two actual readings showing flat trend, plus future forecast showing huge rise.
+      // Should ignore forecast and return flat.
+      const readings = [
+        { dateTime: now - 2 * 60 * 60 * 1000, cfs: 100 },
+        { dateTime: now, cfs: 100 },
+        { dateTime: now + 2 * 60 * 60 * 1000, cfs: 500, isForecast: true }
+      ];
+      expect(calculateTrend(readings)).toBe("flat");
+    });
+
+    it("uses oldest reading if no reading falls exactly in the 1.5 - 2.5 hour window", () => {
+      const now = Date.now();
+      // Readings at 1 hour ago and now. Oldest is 1 hour ago.
+      // Time difference is 1 hour (>= 45 mins), so it should evaluate trend against it.
+      // 100 to 110 cfs (10% increase, +10 cfs) -> Flat (since cfs change is < 15)
+      // 100 to 120 cfs (20% increase, +20 cfs) -> Up
+      const readings = [
+        { dateTime: now - 1 * 60 * 60 * 1000, cfs: 100 },
+        { dateTime: now, cfs: 120 }
+      ];
+      expect(calculateTrend(readings)).toBe("up");
     });
   });
 });

@@ -145,3 +145,76 @@ export function calculateColor(
     return `hsl(${0 + 60 * running},100%,${lightness}%)`;
   }
 }
+
+export function calculateTrend(readings: any[] | undefined): "up" | "down" | "flat" {
+  if (!readings || !Array.isArray(readings) || readings.length < 2) return "flat";
+
+  // Filter out any forecasted readings
+  const actualReadings = readings.filter(r => !r.isForecast);
+  if (actualReadings.length < 2) return "flat";
+
+  // The latest reading
+  const latest = actualReadings[actualReadings.length - 1];
+  
+  // Find a reference reading from 1.5 to 2.5 hours ago, or default to the oldest available reading
+  let refReading = actualReadings[0];
+  const targetDiffMin = 1.5 * 60 * 60 * 1000;
+  const targetDiffMax = 2.5 * 60 * 60 * 1000;
+
+  for (let i = actualReadings.length - 2; i >= 0; i--) {
+    const diff = latest.dateTime - actualReadings[i].dateTime;
+    if (diff >= targetDiffMin && diff <= targetDiffMax) {
+      refReading = actualReadings[i];
+      break;
+    }
+    if (diff > targetDiffMax) {
+      refReading = actualReadings[i + 1] || actualReadings[i];
+      break;
+    }
+  }
+
+  // Ensure reference reading is at least 45 minutes older than latest to establish a real trend
+  const timeDiff = latest.dateTime - refReading.dateTime;
+  if (timeDiff < 45 * 60 * 1000) {
+    return "flat";
+  }
+
+  // Compare flow (cfs/cms) first
+  const latestFlow = latest.cfs ?? latest.cms;
+  const refFlow = refReading.cfs ?? refReading.cms;
+
+  if (latestFlow !== undefined && refFlow !== undefined && refFlow > 0) {
+    const diff = latestFlow - refFlow;
+    const pct = diff / refFlow;
+    const isCfs = latest.cfs !== undefined;
+
+    if (isCfs) {
+      if (diff >= 15 && pct >= 0.025) return "up";
+      if (diff <= -15 && pct <= -0.025) return "down";
+    } else {
+      if (diff >= 0.4 && pct >= 0.025) return "up";
+      if (diff <= -0.4 && pct <= -0.025) return "down";
+    }
+    return "flat";
+  }
+
+  // Fallback to stage (feet/meters)
+  const latestStage = latest.ft ?? latest.m;
+  const refStage = refReading.ft ?? refReading.m;
+
+  if (latestStage !== undefined && refStage !== undefined) {
+    const diff = latestStage - refStage;
+    const isFt = latest.ft !== undefined;
+
+    if (isFt) {
+      if (diff >= 0.04) return "up";
+      if (diff <= -0.04) return "down";
+    } else {
+      if (diff >= 0.012) return "up";
+      if (diff <= -0.012) return "down";
+    }
+    return "flat";
+  }
+
+  return "flat";
+}

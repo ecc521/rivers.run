@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { RiverData } from "../types/River";
 import { getSkillAbbreviation, getSkillFull } from "../utils/skillTranslations";
-import { calculateColor } from "../utils/flowInfoCalculations";
+import { calculateColor, calculateTrend } from "../utils/flowInfoCalculations";
 import { slugify } from "../utils/url";
 
 
@@ -139,6 +139,18 @@ export const RiverItem: React.FC<RiverItemProps> = ({
      navigate(`${prefix}${river.id}/${slug}${window.location.search}`);
   };
 
+  const getTrendArrow = () => {
+    const primaryGauge = river.gauges?.find((g: any) => g.isPrimary) || river.gauges?.[0];
+    const primaryGaugeId = primaryGauge?.id;
+    const readings = primaryGaugeId ? river.gaugeData?.[primaryGaugeId] : undefined;
+    const trend = calculateTrend(readings);
+
+    if (trend === "up") return "↑";
+    if (trend === "down") return "↓";
+    if (trend === "flat") return "-";
+    return "";
+  };
+
   const getFlowDisplay = () => {
     if (river.isReadingStale) {
       return (
@@ -148,14 +160,21 @@ export const RiverItem: React.FC<RiverItemProps> = ({
       );
     }
     if (river.flowInfo || typeof river.flow === "string") {
+      const flowText = river.flowInfo || (typeof river.flow === "string" ? river.flow : "");
       return (
         <span className="riverspan flowspan">
-          {river.flowInfo || (typeof river.flow === "string" ? river.flow : "")}
+          {flowText}
+          {getTrendArrow()}
         </span>
       );
     }
     if (river.dam) {
-      return <span className="riverspan flowspan">Dam</span>;
+      return (
+        <span className="riverspan flowspan">
+          Dam
+          {getTrendArrow()}
+        </span>
+      );
     }
     return <span className="riverspan flowspan"></span>;
   };
