@@ -3,6 +3,7 @@ import { usgsProvider } from './usgs';
 import { ecProvider } from './canada';
 import { ukProvider } from './uk';
 import { irelandProvider } from './ireland';
+import { nwsProvider } from './nws';
 import { logToD1 } from '../utils/logger';
 import type { Env } from '../index';
 
@@ -52,6 +53,46 @@ export async function compileGaugeRegistry(env: Env, existingRegistry: Record<st
         } else {
             console.log(`- Provider ${provider.id} does not support full site listing.`);
         }
+    }
+
+    // 4. Fetch NWS gauges that are actively used by rivers to avoid loading/polling all NWS sites
+    try {
+        await logToD1(env, "INFO", "registry", "Fetching active NWS gauges from database...");
+        const { results: riverResults } = await env.DB.prepare("SELECT gauges FROM rivers").all();
+        const activeNwsGauges = new Set<string>();
+        (riverResults || []).forEach((row: any) => {
+            try {
+                const gauges = typeof row.gauges === "string" ? JSON.parse(row.gauges) : (row.gauges || []);
+                gauges.forEach((g: any) => {
+                    if (typeof g.id === "string" && g.id.startsWith("NWS:")) {
+                        activeNwsGauges.add(g.id.split(":")[1]);
+                    }
+                });
+            } catch (e) {
+                console.warn("Failed to parse gauges for row during registry compile", e);
+            }
+        });
+
+        if (activeNwsGauges.size > 0) {
+            const nwsList = Array.from(activeNwsGauges);
+            const nwsSites = await nwsProvider.getSiteListing(nwsList);
+            
+            // Clear old NWS entries
+            Object.keys(gaugeRegistry).forEach(k => {
+                if (k.startsWith("NWS:")) delete gaugeRegistry[k];
+            });
+
+            for (const site of nwsSites) {
+                const fullId = `NWS:${site.id}`;
+                gaugeRegistry[fullId] = {
+                    ...site,
+                    id: fullId
+                };
+            }
+            await logToD1(env, "INFO", "registry", `Updated NWS active registry: ${nwsSites.length} gauges found.`);
+        }
+    } catch (e: any) {
+        await logToD1(env, "WARN", "registry", `Failed to compile active NWS registry. Error: ${e.message || e}`);
     }
 
     return gaugeRegistry;

@@ -61,6 +61,7 @@ const historyRoute = createRoute({
             gauges: z.string().openapi({ param: { name: 'gauges', in: 'query', required: true }, example: 'USGS:03451500,ireland:0001' }),
             units: z.string().openapi({ param: { name: 'units', in: 'query', required: false } }).optional().default('default'),
             days: z.string().openapi({ param: { name: 'days', in: 'query', required: false } }).optional().default('7'),
+            forecast: z.string().optional().openapi({ param: { name: 'forecast', in: 'query', required: false }, example: 'true' }),
         })
     },
     responses: {

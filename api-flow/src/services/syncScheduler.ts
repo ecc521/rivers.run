@@ -98,9 +98,14 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
                             linkedCount = Object.keys(data).length;
                             Object.entries(data).forEach(([id, history]) => {
                                 const fullId = `${prefix}:${id}`;
+                                const existingName = mergedData[fullId]?.name;
+                                const newName = (typeof history.name === 'string' && history.name.toLowerCase() !== id.toLowerCase())
+                                    ? history.name
+                                    : (existingName || history.name);
                                 mergedData[fullId] = {
                                     ...mergedData[fullId],
                                     ...history,
+                                    name: newName,
                                     lat: sanitizeCoordinate(history.lat) ?? sanitizeCoordinate(registryMetadata[fullId]?.lat),
                                     lon: sanitizeCoordinate(history.lon) ?? sanitizeCoordinate(registryMetadata[fullId]?.lon),
                                     state: history.state ?? registryMetadata[fullId]?.state,
