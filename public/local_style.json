@@ -10,8 +10,7 @@
       "tiles": [
         "https://api.protomaps.com/tiles/v3/{z}/{x}/{y}.mvt?key=08cdd323336ea22b"
       ],
-      "maxzoom": 15,
-      "url": "pmtiles://http://localhost:5173/PA_z14.pmtiles"
+      "maxzoom": 15
     }
   },
   "layers": [

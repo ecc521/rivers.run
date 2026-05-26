@@ -14,6 +14,7 @@ export default defineConfig({
     },
     workbox: {
       globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,pmtiles,json}'],
+      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/api\.rivers\.run\/.*/i,

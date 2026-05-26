@@ -422,11 +422,12 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     const [hasFlippedToUserLocation, setHasFlippedToUserLocation] = useState(false);
     useEffect(() => {
-        if (!urlLat && !urlLng && !hasFlippedToUserLocation && location.latitude && location.longitude && mapRef.current) {
+        const riverId = searchParams.get("riverId");
+        if (!focusRiver && !riverId && !urlLat && !urlLng && !hasFlippedToUserLocation && location.latitude && location.longitude && mapRef.current) {
             setHasFlippedToUserLocation(true);
             mapRef.current.flyTo({ center: [location.longitude, location.latitude], zoom: 7, duration: 800 });
         }
-    }, [location.latitude, location.longitude, urlLat, urlLng, hasFlippedToUserLocation]);
+    }, [location.latitude, location.longitude, urlLat, urlLng, hasFlippedToUserLocation, focusRiver, searchParams]);
 
     // Handle riverId deep-linking: Open sidebar automatically if riverId is in URL
     useEffect(() => {
