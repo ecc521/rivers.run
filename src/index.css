@@ -540,6 +540,12 @@ Those include name,section,skill,quality, and flow info*/
     box-sizing: border-box;
 }
 
+@media screen and (max-width: 549px) {
+    .statespan {
+        display: none !important;
+    }
+}
+
 @media screen and (min-width: 550px) {
     .statespan {
         display: inline-block;
