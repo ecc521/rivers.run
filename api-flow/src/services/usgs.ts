@@ -347,10 +347,9 @@ export const usgsProvider: GaugeProvider = {
         console.log("USGS Provider: Starting full site discovery crawl...");
         const gaugeRegistry: Record<string, GaugeSite> = {};
         
-        // USGS allows multiple states in one request. We batch them (5 at a time) 
-        // to reduce the total number of subrequests while avoiding URI length issues.
+        // USGS allows only one state code per request now. We batch them 1 at a time.
         const stateBatches: string[] = [];
-        const STATE_BATCH_SIZE = 5;
+        const STATE_BATCH_SIZE = 1;
         for (let i = 0; i < states.length; i += STATE_BATCH_SIZE) {
             stateBatches.push(states.slice(i, i + STATE_BATCH_SIZE).join(","));
         }
