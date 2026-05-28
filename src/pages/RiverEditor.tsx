@@ -24,7 +24,7 @@ export default function RiverEditor() {
   const { riverId, queueId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isModerator, loading: authLoading } = useAuth();
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert, confirm, prompt, resolveSuggestion } = useModal();
   
@@ -331,7 +331,7 @@ export default function RiverEditor() {
           return;
       }
 
-      const isAdminPublish = isAdmin && !forceQueue;
+      const isAdminPublish = isModerator && !forceQueue;
       const endpoint = isAdminPublish ? `/rivers/${finalObj.id}` : `/rivers/${finalObj.id}/suggest`;
       const method = isAdminPublish ? "PUT" : "POST";
 
@@ -347,7 +347,7 @@ export default function RiverEditor() {
       setIsDirty(false);
       
       if (!isAdminPublish) {
-         if (isAdmin) navigate("/admin");
+         if (isModerator) navigate("/admin");
          else navigate("/");
       } else {
          if (isNew) navigate(`/edit/${finalObj.id}`);
@@ -363,7 +363,7 @@ export default function RiverEditor() {
   };
 
   const handleApproveReview = async () => {
-      if (!isAdmin) return alert("You must be an administrator to approve submissions.");
+      if (!isModerator) return alert("You must be an administrator or moderator to approve submissions.");
       if (!proposedData?.queueId) return alert("Missing Suggestion ID. Please refresh and try again.");
       
       if (liveData && proposedData && proposedData.created_at && liveData.updated_at) {
@@ -411,7 +411,7 @@ export default function RiverEditor() {
   };
 
   const handleRejectReview = async () => {
-      if (!isAdmin) return alert("You must be an administrator to reject submissions.");
+      if (!isModerator) return alert("You must be an administrator or moderator to reject submissions.");
       if (!proposedData?.queueId) return alert("Missing Suggestion ID. Please refresh and try again.");
       
       const res = await resolveSuggestion("Are you sure you want to reject this submission completely?", "Reject Suggestion", isAnonymous);
@@ -703,16 +703,16 @@ export default function RiverEditor() {
                   <button 
                     onClick={() => handleSave(false)} 
                     disabled={saving || isOriginalView}
-                    style={{ flex: isAdmin ? 2 : 1, padding: '15px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
+                    style={{ flex: isModerator ? 2 : 1, padding: '15px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '5px', fontSize: '18px', cursor: (saving || isOriginalView) ? 'not-allowed' : 'pointer', opacity: isOriginalView ? 0.3 : 1 }}
                   >
                     {(() => {
                       if (saving) return "Saving...";
-                      if (isAdmin) return "Publish";
+                      if (isModerator) return "Publish";
                       return "Submit for Review";
                     })()}
 
                   </button>
-                  {isAdmin && (
+                  {isModerator && (
                     <button 
                       onClick={() => handleSave(true)} 
                       disabled={saving || isOriginalView}
