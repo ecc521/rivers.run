@@ -23,6 +23,6 @@ custom_domain = true
 
 # Cron triggers for background polling
 # 1. 15-minute gauge polling
-# 2. Monthly full registry recompilation
+# 2. Weekly full registry recompilation (every Friday)
 [triggers]
-crons = ["*/15 * * * *", "0 0 * * *", "0 0 1 * *"]
+crons = ["*/15 * * * *", "0 0 * * *", "0 0 * * 5"]

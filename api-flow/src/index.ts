@@ -216,7 +216,7 @@ export default {
 
         try {
             let registryMetadata: Record<string, any> = {};
-            const isWeeklyRecompile = event.cron === "0 0 * * 0"; // Every Sunday
+            const isWeeklyRecompile = event.cron === "0 0 * * 0" || event.cron === "0 0 * * 5"; // Every Sunday (tests) or Friday (production)
             const isDailyMaintenance = event.cron === "0 0 * * *" || isWeeklyRecompile;
             let needsRecompile = isWeeklyRecompile;
 
