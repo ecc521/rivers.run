@@ -95,8 +95,10 @@ export default function AdminQueue() {
 
   const tabs = [
     { id: "queue", label: "Review Queue", count: queue.length },
+    ...(isModerator ? [
+      { id: "reports", label: "User Reports" }
+    ] : []),
     ...(isAdmin ? [
-      { id: "reports", label: "User Reports" },
       { id: "users", label: "User Management" },
       { id: "lists", label: "List Admin" },
       { id: "system", label: "System & Sync" }
@@ -128,7 +130,7 @@ export default function AdminQueue() {
           />
         )}
         
-        {isAdmin && activeTab === "reports" && <ReportsAdminTab />}
+        {isModerator && activeTab === "reports" && <ReportsAdminTab />}
         {isAdmin && activeTab === "users" && <UserManagementTab />}
         {isAdmin && activeTab === "lists" && <ListAdminTab />}
         {isAdmin && activeTab === "system" && <SystemAdminTab />}
