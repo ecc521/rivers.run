@@ -367,7 +367,9 @@ export default function RiverEditor() {
       if (!proposedData?.queueId) return alert("Missing Suggestion ID. Please refresh and try again.");
       
       if (liveData && proposedData && proposedData.created_at && liveData.updated_at) {
-          if (liveData.updated_at > proposedData.created_at) {
+          const liveUpdatedAt = liveData.updated_at > 1000000000000 ? Math.floor(liveData.updated_at / 1000) : liveData.updated_at;
+          const proposedCreatedAt = proposedData.created_at > 1000000000000 ? Math.floor(proposedData.created_at / 1000) : proposedData.created_at;
+          if (liveUpdatedAt > proposedCreatedAt) {
               const confirmOverwrite = await confirm("WARNING: The live database has been updated since this suggestion was submitted. Approving this will OVERWRITE those recent edits.\n\nAre you absolutely sure you want to proceed?");
               if (!confirmOverwrite) return;
           }

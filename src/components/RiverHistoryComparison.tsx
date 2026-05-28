@@ -89,7 +89,8 @@ export const RiverHistoryComparison: React.FC<RiverHistoryComparisonProps> = ({
             <div style={{ padding: '10px', backgroundColor: 'rgba(255, 0, 0, 0.05)', borderRadius: '8px', border: '1px solid rgba(255, 0, 0, 0.2)' }}>
                 {leftSubtitle !== undefined ? leftSubtitle : (() => {
                   const timestamp = (historicalState as any).updated_at || (historicalState as any).updatedAt;
-                  return timestamp ? new Date(timestamp * 1000).toLocaleString() : 'Unknown Date';
+                  const msTimestamp = timestamp ? (timestamp > 1000000000000 ? timestamp : timestamp * 1000) : null;
+                  return msTimestamp ? new Date(msTimestamp).toLocaleString() : 'Unknown Date';
                 })()}
             </div>
           </div>
