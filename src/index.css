@@ -224,8 +224,8 @@ https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
 }
 
 .riverWriteup {
-	overflow-wrap: anywhere;
-	word-break: break-word; /* For compatibility */
+	overflow-wrap: break-word;
+	word-break: normal;
 }
 
 .riverWriteup pre {

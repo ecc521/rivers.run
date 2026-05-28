@@ -33,7 +33,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
     <div className="riverWriteup" style={{ padding: "6px" }}>
 
       <div className="textInfo">
-        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(river.writeup || "") }} />
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(river.writeup || "", { FORBID_ATTR: ["style"] }) }} />
         <br />
 
         {river.averagegradient && (
