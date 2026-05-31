@@ -143,12 +143,12 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
 
             {activeTab === "state" && (
               <>
-                <div className="view-dropdown-header">{currentCountry === "ec" ? "Provinces" : "All Regions"}</div>
+                <div className="view-dropdown-header">{currentCountry === "ec" ? "Provinces" : "All States"}</div>
                 <div 
                   className={`view-dropdown-item ${!stateLabel ? "selected" : ""}`} 
                   onClick={() => { onSelectState(null); setIsOpen(false); }}
                 >
-                  {currentCountry === "ec" ? "All Provinces" : "All Regions"}
+                  {currentCountry === "ec" ? "All Provinces" : "All States"}
                 </div>
                 {statesToShow.map((st: string) => (
                     <div 

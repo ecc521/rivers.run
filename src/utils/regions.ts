@@ -88,7 +88,7 @@ export function getStateName(code: string): string {
 }
 
 export function getRegionName(code: string | null | undefined): string {
-    if (!code) return "All Regions";
+    if (!code) return "All States";
     return getStateName(code);
 }
 
