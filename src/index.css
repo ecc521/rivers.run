@@ -580,6 +580,25 @@ Those include name,section,skill,quality, and flow info*/
     max-width: var(--riverFlowWidth);
     margin-left: 1%;
     font-family: BlinkMacSystemFont, "Noto Sans HK", Arial, Helvetica, sans-serif; /*Noto Sans HK contains the arrows that I want. On Apple Macs, use the system font.*/
+    display: inline-flex;
+    align-items: center;
+}
+
+.trend-arrow {
+    font-family: 'Noto Sans HK', Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 1.25em; /* Make the arrow fatter and stand out more */
+    line-height: 1;
+    flex-shrink: 0;
+    margin-left: 2px; /* Small space next to flow on small screens */
+    display: inline-block;
+}
+
+@media screen and (min-width: 550px) {
+    .trend-arrow {
+        margin-left: auto; /* Push the arrow to the right of the column on larger screens */
+        padding-right: 4px; /* Give some spacing from the right border */
+    }
 }
 
 @media screen and (min-width: 550px) {

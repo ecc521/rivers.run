@@ -145,10 +145,10 @@ export const RiverItem: React.FC<RiverItemProps> = ({
     const readings = primaryGaugeId ? river.gaugeData?.[primaryGaugeId] : undefined;
     const trend = calculateTrend(readings);
 
-    if (trend === "up") return "↑";
-    if (trend === "down") return "↓";
-    if (trend === "flat") return "-";
-    return "";
+    if (trend === "up") return <span className="trend-arrow">⬆</span>;
+    if (trend === "down") return <span className="trend-arrow">⬇</span>;
+    if (trend === "flat") return <span className="trend-arrow trend-flat">‐</span>;
+    return null;
   };
 
   const getFlowDisplay = () => {
