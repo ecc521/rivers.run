@@ -590,14 +590,13 @@ Those include name,section,skill,quality, and flow info*/
     font-size: 1.25em; /* Make the arrow fatter and stand out more */
     line-height: 1;
     flex-shrink: 0;
-    margin-left: 2px; /* Small space next to flow on small screens */
+    margin-left: 0; /* 0px space next to flow on small screens */
     display: inline-block;
 }
 
 @media screen and (min-width: 550px) {
     .trend-arrow {
-        margin-left: auto; /* Push the arrow to the right of the column on larger screens */
-        padding-right: 4px; /* Give some spacing from the right border */
+        margin-left: 8px; /* 8px space on larger screens */
     }
 }
 
