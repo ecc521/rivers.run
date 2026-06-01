@@ -11,7 +11,7 @@ import { getShareBaseUrl } from "../utils/url";
 import { Capacitor } from "@capacitor/core";
 
 const ListsPage: React.FC = () => {
-  const { user, isAdmin, isModerator, loading: authLoading } = useAuth();
+  const { user, isModerator, loading: authLoading } = useAuth();
   const { myLists, subscribedListIds, createList, updateList, toggleSubscription, isSubscribed } = useLists();
   const { homePageDefaultSearch, updateSetting } = useSettings();
   const { confirm, alert } = useModal();
@@ -60,8 +60,9 @@ const ListsPage: React.FC = () => {
   });
 
   const handleCreateList = async () => {
-    if (!isModerator && myLists.length >= 5) {
-      await alert("You have reached the limit of 5 custom lists.");
+    const limit = isModerator ? 500 : 5;
+    if (myLists.length >= limit) {
+      await alert(`You have reached the limit of ${limit} custom lists.`);
       return;
     }
     setEditorModal({
@@ -83,8 +84,9 @@ const ListsPage: React.FC = () => {
   };
 
   const handleCopyList = async (list: UserList) => {
-    if (!isModerator && myLists.length >= 5) {
-      await alert("You have reached the limit of 5 custom lists. You cannot copy another list until you delete one of your own.");
+    const limit = isModerator ? 500 : 5;
+    if (myLists.length >= limit) {
+      await alert(`You have reached the limit of ${limit} custom lists. You cannot copy another list until you delete one of your own.`);
       return;
     }
     setEditorModal({
@@ -366,12 +368,12 @@ const ListsPage: React.FC = () => {
            <>
              {myLists.length > 0 && (
                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px", marginBottom: "10px" }}>
-                    <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>My Lists ({myLists.length}/5)</h3>
+                    <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>My Lists ({myLists.length}/{isModerator ? "Unlimited" : "5"})</h3>
                  </div>
              )}
 
              {myLists.map(l => renderListCard(l))}
-             {(isAdmin || myLists.length < 5) && (
+             {myLists.length < (isModerator ? 500 : 5) && (
                  <button onClick={handleCreateList} style={{ padding: "15px", border: "2px dashed var(--border)", borderRadius: "8px", backgroundColor: "transparent", color: "var(--primary)", fontWeight: "bold", fontSize: "1.1em", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "5px" }}>
                     <span>+</span> Create New List
                  </button>

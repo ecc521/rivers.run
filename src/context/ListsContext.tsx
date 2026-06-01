@@ -65,7 +65,7 @@ const ListsContext = createContext<ListsContextType>({
 });
 
 export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAdmin } = useAuth();
+  const { user, isModerator } = useAuth();
   const [myLists, setMyLists] = useState<UserList[]>([]);
   const [subscribedListIds, setSubscribedListIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,8 +117,9 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const createList = async (title: string, description: string, isPublished: boolean, rivers: { id: string; order: number }[] = []) => {
     if (!user) return null;
-    if (!isAdmin && myLists.length >= 5) {
-       throw new Error("You have reached the maximum limit of 5 custom lists.");
+    const limit = isModerator ? 500 : 5;
+    if (myLists.length >= limit) {
+       throw new Error(`You have reached the maximum limit of ${limit} custom lists.`);
     }
     const uuid = generateUUID();
     const newList: UserList = {

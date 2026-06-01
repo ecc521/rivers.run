@@ -1135,6 +1135,13 @@ app.openapi(createListRoute, async (c) => {
         return c.json({ error: "Banned users cannot create public lists." }, 403);
     }
 
+    const { count } = await c.env.DB.prepare("SELECT COUNT(*) as count FROM community_lists WHERE owner_id = ?").bind(user.user_id).first<{ count: number }>() || { count: 0 };
+    const isModerator = user.d1Role === 'moderator' || user.d1Role === 'admin' || user.d1Role === 'super-admin';
+    const limit = isModerator ? 500 : 5;
+    if (count >= limit) {
+        return c.json({ error: `You have reached the maximum limit of ${limit} custom lists.` }, 403);
+    }
+
     const listId = validated.id || crypto.randomUUID();
     
     const queries = [
