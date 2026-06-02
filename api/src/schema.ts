@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+import { normalizeGaugeId } from "./utils/formatting";
 
 // Shared common components - now with explicit OpenAPI types
 const limitString = (max: number) => z.string().max(max, `Must be under ${max} characters`).optional().nullable().openapi({ type: 'string' });
@@ -16,7 +17,7 @@ export const AccessPointSchema = z.object({
 }).openapi({ type: 'object', description: 'A river access point' });
 
 export const GaugeMappingSchema = z.object({
-  id: strictString(50), 
+  id: strictString(50).transform((val) => normalizeGaugeId(val)), 
   isPrimary: z.boolean().optional().default(false).openapi({ type: 'boolean' })
 }).openapi({ type: 'object', description: 'A mapping of a river to an external gauge' });
 

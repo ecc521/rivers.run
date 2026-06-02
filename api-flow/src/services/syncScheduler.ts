@@ -2,6 +2,7 @@ import type { Env } from "../index";
 import type { GaugeProvider } from "../services/provider";
 import { withTimeout } from "../utils/timeout";
 import { logToD1 } from '../utils/logger';
+import { normalizeGaugeId } from "../utils/formatting";
 
 const sanitizeCoordinate = (val: any): number | undefined => {
     if (val === undefined || val === null) return undefined;
@@ -20,7 +21,7 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
         dbGauges = (riverResults || []).flatMap((row: any) => {
             try {
                 const gauges = typeof row.gauges === "string" ? JSON.parse(row.gauges) : (row.gauges || []);
-                return gauges.map((g: any) => g.id);
+                return gauges.map((g: any) => typeof g.id === "string" ? normalizeGaugeId(g.id) : "").filter(Boolean);
             } catch (e) {
                 console.warn("Failed to parse gauges for row, skipping.", e);
                 return [];
@@ -30,7 +31,7 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
         console.warn("Modern 'gauges' column not found, falling back to legacy 'river_gauges' table...", err);
         try {
             const { results: legacyResults } = await env.DB.prepare("SELECT gauge_id FROM river_gauges").all();
-            dbGauges = (legacyResults || []).map((row: any) => row.gauge_id);
+            dbGauges = (legacyResults || []).map((row: any) => typeof row.gauge_id === "string" ? normalizeGaugeId(row.gauge_id) : "").filter(Boolean);
         } catch (legacyErr) {
             console.error("FATAL: Could not read gauges from any schema.", legacyErr);
         }

@@ -17,6 +17,7 @@ import {
 import { sendEmail } from "./email";
 import { logToD1 } from "./utils/logger";
 import { generateRawKey, hashKey } from "./utils/apiKey";
+import { normalizeGaugeId } from "./utils/formatting";
 
 
 
@@ -115,8 +116,17 @@ const formatRiverRow = (row: any) => {
         } else if (Array.isArray(row.gauges)) {
             formatted.gauges = row.gauges;
         }
+
+        if (Array.isArray(formatted.gauges)) {
+            formatted.gauges = formatted.gauges.map((g: any) => {
+                if (g && typeof g.id === 'string') {
+                    return { ...g, id: normalizeGaugeId(g.id) };
+                }
+                return g;
+            });
+        }
     } catch (e) {
-        console.warn(`Failed to parse gauges for river ${row.id}:`, e);
+        console.warn(`Failed to parse/normalize gauges for river ${row.id}:`, e);
     }
 
     try {

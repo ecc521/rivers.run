@@ -5,6 +5,7 @@ import { ukProvider } from './uk';
 import { irelandProvider } from './ireland';
 import { nwsProvider } from './nws';
 import { logToD1 } from '../utils/logger';
+import { normalizeGaugeId } from '../utils/formatting';
 import type { Env } from '../index';
 
 const providers: GaugeProvider[] = [
@@ -64,8 +65,11 @@ export async function compileGaugeRegistry(env: Env, existingRegistry: Record<st
             try {
                 const gauges = typeof row.gauges === "string" ? JSON.parse(row.gauges) : (row.gauges || []);
                 gauges.forEach((g: any) => {
-                    if (typeof g.id === "string" && g.id.startsWith("NWS:")) {
-                        activeNwsGauges.add(g.id.split(":")[1]);
+                    if (typeof g.id === "string") {
+                        const normalized = normalizeGaugeId(g.id);
+                        if (normalized.startsWith("NWS:")) {
+                            activeNwsGauges.add(normalized.substring(4));
+                        }
                     }
                 });
             } catch (e) {

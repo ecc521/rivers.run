@@ -16,6 +16,7 @@ import { toUnitSystemHistory } from "./utils/units";
 import { compileGaugeRegistry } from "./services/gaugeRegistry";
 import { withTimeout } from "./utils/timeout";
 import { stringifyJSONObject } from "./utils/stream";
+import { normalizeGaugeId } from "./utils/formatting";
 import { generateSitemap } from "./services/sitemap";
 import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
@@ -78,7 +79,9 @@ const historyRoute = createRoute({
 
 app.openapi(historyRoute, async (c) => {
     const { gauges: gaugeString, units, days, forecast } = c.req.valid('query') as any;
-    const gauges = gaugeString.split(",").map((g: string) => g.trim()).filter((g: string) => g.includes(":"));
+    const gauges = gaugeString.split(",")
+        .map((g: string) => normalizeGaugeId(g))
+        .filter((g: string) => g.includes(":"));
     
     // Safety Limits
     if (gauges.length > 10) {
