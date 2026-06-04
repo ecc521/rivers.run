@@ -42,7 +42,7 @@
     "react-is": "^19.2.5",
     "react-map-gl": "^8.1.1",
     "react-quill-new": "^3.8.3",
-    "react-router-dom": "^7.14.1",
+    "react-router-dom": "^7.16.0",
     "recharts": "^3.8.1",
     "zod": "3.25.76"
   },
