@@ -1,38 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Source, Layer } from "react-map-gl/maplibre";
 
+const baseUrl = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0";
+
 export const WeatherRadarLayer: React.FC<{ mode: "off" | "live" | "60min" }> = ({ mode }) => {
-    const [frames, setFrames] = useState<string[]>([]);
     const [activeIndex, setActiveIndex] = useState<number>(0);
 
-    useEffect(() => {
-        if (mode === "off") {
-            setFrames([]);
-            return;
-        }
-
-        let animationInterval: any = null;
-        const baseUrl = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0";
-        
+    const frames = useMemo(() => {
+        if (mode === "off") return [];
         if (mode === "live") {
-            setFrames([`${baseUrl}/nexrad-n0q-900913/{z}/{x}/{y}.png`]);
-            setActiveIndex(0);
-        } else if (mode === "60min") {
-            const offsets = ["-m50m", "-m45m", "-m40m", "-m35m", "-m30m", "-m25m", "-m20m", "-m15m", "-m10m", "-m05m", ""];
-            const paths = offsets.map(offset => `${baseUrl}/nexrad-n0q-900913${offset}/{z}/{x}/{y}.png`);
-            
-            setFrames(paths);
-            setActiveIndex(0);
-             
-            animationInterval = setInterval(() => {
-                setActiveIndex(prev => (prev + 1) % paths.length);
-            }, 750);
+            return [`${baseUrl}/nexrad-n0q-900913/{z}/{x}/{y}.png`];
         }
-        
-        return () => { 
-            if (animationInterval) clearInterval(animationInterval); 
-        };
+        const offsets = ["-m50m", "-m45m", "-m40m", "-m35m", "-m30m", "-m25m", "-m20m", "-m15m", "-m10m", "-m05m", ""];
+        return offsets.map(offset => `${baseUrl}/nexrad-n0q-900913${offset}/{z}/{x}/{y}.png`);
     }, [mode]);
+
+    useEffect(() => {
+        setActiveIndex(0);
+
+        if (mode !== "60min" || frames.length === 0) return;
+
+        const animationInterval = setInterval(() => {
+            setActiveIndex(prev => (prev + 1) % frames.length);
+        }, 750);
+
+        return () => {
+            clearInterval(animationInterval);
+        };
+    }, [mode, frames.length]);
 
     if (mode === "off" || frames.length === 0) return null;
 
