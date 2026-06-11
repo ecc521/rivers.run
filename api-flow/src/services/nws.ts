@@ -19,7 +19,7 @@ export function parseNWSeries(data: any, observations: any[], minTime: number, m
         // Align timestamps like USGS to Nearest 5 minutes
         const snappedTime = Math.round(rawTime / 300000) * 300000;
         if (!readingMap.has(snappedTime)) {
-            readingMap.set(snappedTime, { dateTime: snappedTime, ...(isForecast && { isForecast: true }) });
+            readingMap.set(snappedTime, { dateTime: snappedTime, ...(isForecast && { isForecast: true, forecastSource: "NWS" }) });
         }
         
         const reading = readingMap.get(snappedTime)!;

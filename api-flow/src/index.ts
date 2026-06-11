@@ -210,6 +210,25 @@ app.openapi(gaugeRoute, async (c) => {
     }
 });
 
+app.get("/seed-local-r2", async (c) => {
+    try {
+        console.log("Seeding local R2 storage from local src/data/sitedata.json...");
+        const { default: sitedata } = await import("./data/sitedata.json");
+        const body = JSON.stringify(sitedata);
+        
+        await c.env.FLOW_STORAGE.put("sitedata.json", body, {
+            httpMetadata: { contentType: "application/json" }
+        });
+        
+        console.log("Successfully seeded sitedata.json locally from src/data/sitedata.json!");
+        return c.text("Local R2 seed successful!");
+    } catch (e: any) {
+        console.error("Local R2 seeding failed:", e);
+        return c.text(`Seeding failed: ${e.message}`, 500);
+    }
+});
+
+
 export default {
     fetch: app.fetch,
 

@@ -58,16 +58,31 @@ export function toUnitSystem(reading: GaugeReading, nativeSystem: 'imperial' | '
     // FILTERING
     const requested = target === 'default' ? nativeSystem : target;
 
-    if (requested === 'imperial') {
-        if (full.cfs !== undefined) result.cfs = full.cfs;
-        if (full.ft !== undefined) result.ft = full.ft;
-        if (full.temp_f !== undefined) result.temp_f = full.temp_f;
-        if (full.precip_in !== undefined) result.precip_in = full.precip_in;
-    } else if (requested === 'metric') {
-        if (full.cms !== undefined) result.cms = full.cms;
-        if (full.m !== undefined) result.m = full.m;
-        if (full.temp_c !== undefined) result.temp_c = full.temp_c;
-        if (full.precip_mm !== undefined) result.precip_mm = full.precip_mm;
+    if (reading.isForecast) {
+        if (reading.forecastSource) result.forecastSource = reading.forecastSource;
+        if (requested === 'imperial') {
+            if (full.cfs !== undefined) result.cfsForecast = full.cfs;
+            if (full.ft !== undefined) result.ftForecast = full.ft;
+            if (full.temp_f !== undefined) result.temp_f = full.temp_f;
+            if (full.precip_in !== undefined) result.precip_in = full.precip_in;
+        } else if (requested === 'metric') {
+            if (full.cms !== undefined) result.cmsForecast = full.cms;
+            if (full.m !== undefined) result.mForecast = full.m;
+            if (full.temp_c !== undefined) result.temp_c = full.temp_c;
+            if (full.precip_mm !== undefined) result.precip_mm = full.precip_mm;
+        }
+    } else {
+        if (requested === 'imperial') {
+            if (full.cfs !== undefined) result.cfs = full.cfs;
+            if (full.ft !== undefined) result.ft = full.ft;
+            if (full.temp_f !== undefined) result.temp_f = full.temp_f;
+            if (full.precip_in !== undefined) result.precip_in = full.precip_in;
+        } else if (requested === 'metric') {
+            if (full.cms !== undefined) result.cms = full.cms;
+            if (full.m !== undefined) result.m = full.m;
+            if (full.temp_c !== undefined) result.temp_c = full.temp_c;
+            if (full.precip_mm !== undefined) result.precip_mm = full.precip_mm;
+        }
     }
 
     return result as Partial<GaugeReading>;

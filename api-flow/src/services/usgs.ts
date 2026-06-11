@@ -2,6 +2,7 @@ import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingVal
 import { formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
+import usgsReaches from '../data/usgs_reaches.json';
 
 const states = [
   "al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl", "ga",
@@ -283,7 +284,7 @@ export const usgsProvider: GaugeProvider = {
     id: "USGS",
     preferredUnits: 'imperial',
     capabilities: {
-        hasForecast: false,
+        hasForecast: true,
         hasSiteListing: true
     },
 
@@ -298,27 +299,39 @@ export const usgsProvider: GaugeProvider = {
         return latest;
     },
 
-    async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {
+    async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {
         const now = Date.now();
         // If the request is for the last 30 days and ends "now" (within 10 mins), use period.
         // USGS period is much more robust and faster for recent data.
         const isUntilNow = !endTs || Math.abs(endTs - now) < 600000;
         const durationMs = (endTs || now) - startTs;
         
+        let historiesPromise: Promise<Record<string, GaugeHistory>>;
         if (isUntilNow && durationMs > 0 && durationMs < 30 * 24 * 60 * 60 * 1000) {
             const hours = Math.ceil(durationMs / 3600000);
-            return fetchUSGSBatch(siteCodes, `&period=PT${hours}H`, env);
+            historiesPromise = fetchUSGSBatch(siteCodes, `&period=PT${hours}H`, env);
+        } else {
+            // Standard formatting for older historical queries. 
+            // USGS NWIS prefers YYYY-MM-DDTHH:mm:ss (no millis, no Z if offset not specified).
+            const toUSGSDate = (ts: number) => new Date(ts).toISOString().split('.')[0];
+            const timeQuery = endTs 
+                ? `&startDT=${toUSGSDate(startTs)}&endDT=${toUSGSDate(endTs)}`
+                : `&startDT=${toUSGSDate(startTs)}`;
+            historiesPromise = fetchUSGSBatch(siteCodes, timeQuery, env);
         }
 
-        // Standard formatting for older historical queries. 
-        // USGS NWIS prefers YYYY-MM-DDTHH:mm:ss (no millis, no Z if offset not specified).
-        const toUSGSDate = (ts: number) => new Date(ts).toISOString().split('.')[0];
-        
-        const timeQuery = endTs 
-            ? `&startDT=${toUSGSDate(startTs)}&endDT=${toUSGSDate(endTs)}`
-            : `&startDT=${toUSGSDate(startTs)}`;
-            
-        return fetchUSGSBatch(siteCodes, timeQuery, env);
+        const histories = await historiesPromise;
+
+        // Expose the NWM Reach ID for client-side fetches
+        siteCodes.forEach((site) => {
+            const history = histories[site];
+            const reachId = (usgsReaches as Record<string, string>)[site];
+            if (history && reachId) {
+                history.nwmReachId = reachId;
+            }
+        });
+
+        return histories;
     },
 
     async getSiteListing(siteCodes: string[]): Promise<GaugeSite[]> {

@@ -6,17 +6,24 @@ export const ReadingSchema = z.object({
   ft: z.number().optional().openapi({ example: 3.5, description: 'Stage in feet' }),
   cms: z.number().optional().openapi({ example: 34.2, description: 'Flow in cubic meters per second' }),
   m: z.number().optional().openapi({ example: 1.05, description: 'Stage in meters' }),
+  cfsForecast: z.number().optional().openapi({ example: 1300, description: 'Forecasted flow in cubic feet per second' }),
+  ftForecast: z.number().optional().openapi({ example: 3.6, description: 'Forecasted stage in feet' }),
+  cmsForecast: z.number().optional().openapi({ example: 36.8, description: 'Forecasted flow in cubic meters per second' }),
+  mForecast: z.number().optional().openapi({ example: 1.10, description: 'Forecasted stage in meters' }),
   temp_f: z.number().optional().openapi({ example: 68.5, description: 'Temperature in Fahrenheit' }),
   temp_c: z.number().optional().openapi({ example: 20.3, description: 'Temperature in Celsius' }),
   precip_in: z.number().optional().openapi({ example: 0.25, description: 'Precipitation in inches' }),
-  precip_mm: z.number().optional().openapi({ example: 6.35, description: 'Precipitation in millimeters' })
+  precip_mm: z.number().optional().openapi({ example: 6.35, description: 'Precipitation in millimeters' }),
+  isForecast: z.boolean().optional().openapi({ example: true, description: 'Whether this point represents a forecasted value' }),
+  forecastSource: z.string().optional().openapi({ example: 'NWM', description: 'Source model of the forecast' })
 }).openapi({ type: 'object', description: 'A single sensor reading' });
 
 export const HistorySchema = z.object({
   id: z.string().openapi({ example: "USGS:03451500" }),
   name: z.string().optional().openapi({ example: "French Broad River at Marshall, NC" }),
   section: z.string().optional().openapi({ example: "Section 9" }),
-  readings: z.array(ReadingSchema)
+  readings: z.array(ReadingSchema),
+  nwmReachId: z.string().optional().openapi({ example: "6929014", description: "NWM Reach ID for client-side forecasts" })
 }).openapi({ type: 'object', description: 'Historical readings for a gauge' });
 
 export const SiteSchema = z.object({

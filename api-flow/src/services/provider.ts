@@ -6,11 +6,16 @@ export interface GaugeReading {
     ft?: number;
     cms?: number;
     m?: number;
+    cfsForecast?: number;
+    ftForecast?: number;
+    cmsForecast?: number;
+    mForecast?: number;
     temp_f?: number;
     temp_c?: number;
     precip_in?: number;
     precip_mm?: number;
     isForecast?: boolean;
+    forecastSource?: string;
     state?: string;
 }
 
@@ -24,6 +29,7 @@ export interface GaugeHistory {
     lon?: number;
     readings: GaugeReading[];
     units?: string; 
+    nwmReachId?: string;
 }
 
 

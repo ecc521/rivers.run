@@ -28,7 +28,7 @@ describe('Schema Validation Audit', () => {
         
         // Assert no legacy leaks
         const keys = Object.keys(result);
-        const allowedKeys = ['dateTime', 'cfs', 'ft', 'temp_f', 'precip_in', 'isForecast'];
+        const allowedKeys = ['dateTime', 'cfs', 'ft', 'cfsForecast', 'ftForecast', 'temp_f', 'precip_in', 'isForecast', 'forecastSource'];
         keys.forEach(k => {
             expect(allowedKeys).toContain(k);
         });
@@ -43,7 +43,7 @@ describe('Schema Validation Audit', () => {
         expect(parsed.success).toBe(true);
         
         const keys = Object.keys(result);
-        const allowedKeys = ['dateTime', 'cms', 'm', 'temp_c', 'precip_mm', 'isForecast'];
+        const allowedKeys = ['dateTime', 'cms', 'm', 'cmsForecast', 'mForecast', 'temp_c', 'precip_mm', 'isForecast', 'forecastSource'];
         keys.forEach(k => {
             expect(allowedKeys).toContain(k);
         });

@@ -6,6 +6,7 @@
     "strict": true,
     "preserveConstEnums": true,
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
