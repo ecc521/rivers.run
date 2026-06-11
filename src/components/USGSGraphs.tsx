@@ -33,7 +33,7 @@ const getUnit = (dataKey: string) => {
   return "in";
 };
 
-const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, volumeColor, stageColor, tempColor, precipColor }: any) => {
+const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, volumeColor, stageColor, tempColor, precipColor, forecastSource }: any) => {
   if (active && payload && payload.length) {
     const rowData = payload[0].payload;
     const items: { name: string, value: any, color: string, dataKey: string }[] = [];
@@ -45,14 +45,21 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
       const flowVal = rowData[flowKey] ?? rowData[`${flowKey}Forecast`];
       const stageVal = rowData[stageKey] ?? rowData[`${stageKey}Forecast`];
 
+      const flowLabel = isForecastFlow 
+        ? (forecastSource === "NWM" ? "NOAA NWM Forecast" : forecastSource === "NWS" ? "NWS Forecast" : "Forecasted Flow")
+        : "Flow";
+      const stageLabel = isForecastStage 
+        ? (forecastSource === "NWM" ? "NOAA NWM Forecast" : forecastSource === "NWS" ? "NWS Forecast" : "Forecasted Stage")
+        : "Stage";
+
       items.push({ 
-        name: isForecastFlow ? "Forecasted Flow" : "Flow", 
+        name: flowLabel, 
         value: flowVal, 
         color: volumeColor, 
         dataKey: flowKey 
       });
       items.push({ 
-        name: isForecastStage ? "Forecasted Stage" : "Stage", 
+        name: stageLabel, 
         value: stageVal, 
         color: stageColor, 
         dataKey: stageKey 
@@ -136,6 +143,10 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
 
   const hasForecastData = useMemo(() => {
     return rawData.some((d: any) => d.cfsForecast != null || d.ftForecast != null || d.forecast === true);
+  }, [rawData]);
+
+  const forecastSource = useMemo(() => {
+    return rawData.find((d: any) => d.forecastSource)?.forecastSource;
   }, [rawData]);
 
   const [showForecast, setShowForecast] = useState<boolean>(true);
@@ -420,6 +431,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                         stageColor={stageColor}
                         tempColor={tempColor}
                         precipColor={precipColor}
+                        forecastSource={forecastSource}
                     />
                 } />
                 <Legend wrapperStyle={{ paddingTop: "20px" }} verticalAlign="bottom" height={36} />

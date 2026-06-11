@@ -580,6 +580,7 @@ const RiverPage: React.FC = () => {
                    ? [(routeLocation.state as any).clickedLat, (routeLocation.state as any).clickedLon]
                    : undefined
              }
+             skipHydration={true}
           />
  
           {/* Internal Linking: Nearby Rivers */}

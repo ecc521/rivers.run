@@ -12,9 +12,10 @@ interface RiverExpansionProps {
   dataGeneratedAt?: number | null;
   onScrub?: (reading: any | null) => void;
   clickedPoint?: [number, number];
+  skipHydration?: boolean;
 }
 
-export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, dataGeneratedAt, onScrub, clickedPoint }) => {
+export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOverlay, dataGeneratedAt, onScrub, clickedPoint, skipHydration }) => {
   const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
   }, []);
 
   // The hook directly yields a fully cloned, flow-hydrated RiverData precisely compiled
-  const displayRiver = useDynamicFlow(river, dataGeneratedAt) || river;
+  const displayRiver = useDynamicFlow(river, dataGeneratedAt, skipHydration) || river;
 
   return (
     <div className="riverWriteup" style={{ padding: "6px" }}>

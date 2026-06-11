@@ -114,6 +114,7 @@ export interface GaugeReading {
   forecast?: boolean;
   cfsForecast?: number;
   ftForecast?: number;
+  forecastSource?: string;
 }
 
 export interface Gauge {

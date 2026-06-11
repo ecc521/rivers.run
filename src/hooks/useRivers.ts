@@ -233,7 +233,10 @@ export const useRivers = (): UseRiversResult => {
       try {
         const [data, flowData] = await Promise.all([
           fetchAPI("/rivers"),
-          fetchFlowData()
+          fetchFlowData().catch(e => {
+            console.warn("Failed to fetch flow data, continuing with offline/placeholder state:", e);
+            return null;
+          })
         ]);
         
         let processedData = data;

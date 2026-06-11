@@ -10,12 +10,24 @@ function applyFlowSettings(r: any, flowUnits: string) {
         if (r.ft === undefined && r.m !== undefined) {
              r.ft = Math.round((r.m * 3.28084) * 100) / 100;
         }
+        if (r.cfsForecast === undefined && r.cmsForecast !== undefined) {
+             r.cfsForecast = Math.round((r.cmsForecast * 35.3147) * 100) / 100;
+        }
+        if (r.ftForecast === undefined && r.mForecast !== undefined) {
+             r.ftForecast = Math.round((r.mForecast * 3.28084) * 100) / 100;
+        }
     } else if (flowUnits === 'metric') {
         if (r.cms === undefined && r.cfs !== undefined) {
              r.cms = Math.round((r.cfs * 0.0283168) * 1000) / 1000;
         }
         if (r.m === undefined && r.ft !== undefined) {
              r.m = Math.round((r.ft * 0.3048) * 1000) / 1000;
+        }
+        if (r.cmsForecast === undefined && r.cfsForecast !== undefined) {
+             r.cmsForecast = Math.round((r.cfsForecast * 0.0283168) * 1000) / 1000;
+        }
+        if (r.mForecast === undefined && r.ftForecast !== undefined) {
+             r.mForecast = Math.round((r.ftForecast * 0.3048) * 1000) / 1000;
         }
     }
 }

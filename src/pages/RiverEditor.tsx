@@ -654,7 +654,7 @@ export default function RiverEditor() {
                         />
                         {previewExpanded && (
                            <div style={{ padding: '15px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderTop: 'none', borderBottomLeftRadius: '10px', borderBottomRightRadius: '10px' }}>
-                              <RiverExpansion river={hydratedPreview} />
+                              <RiverExpansion river={hydratedPreview} skipHydration={true} />
                            </div>
                         )}
                      </div>
