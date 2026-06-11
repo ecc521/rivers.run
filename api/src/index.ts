@@ -882,14 +882,16 @@ app.openapi(getUserSettingsRoute, async (c) => {
     `).bind(user.user_id).first();
     
     if (!result) {
+        const initialName = user.name || "Unknown Paddler";
         // Auto-provision user record on first hit
         await c.env.DB.prepare(`
             INSERT INTO users (user_id, display_name, email, role, updated_at) 
             VALUES (?, ?, ?, 'user', ?)
-        `).bind(user.user_id, user.name || "Unknown Paddler", (user.email || "").toLowerCase(), Math.floor(Date.now() / 1000)).run();
+        `).bind(user.user_id, initialName, (user.email || "").toLowerCase(), Math.floor(Date.now() / 1000)).run();
         
         return c.json({
             role: "user",
+            displayName: initialName,
             notifications: {
                 enabled: true,
                 noneUntil: 0,
@@ -902,6 +904,7 @@ app.openapi(getUserSettingsRoute, async (c) => {
     
     return c.json({
         role: result.role || "user",
+        displayName: result.display_name || null,
         notifications: {
             enabled: result.notifications_enabled === 1,
             noneUntil: result.notifications_none_until || 0,
@@ -931,6 +934,11 @@ app.openapi(updateUserSettingsRoute, async (c) => {
     
     const updateFields: string[] = ["updated_at = ?"];
     const params: any[] = [Math.floor(Date.now() / 1000)];
+
+    if (validated.displayName !== undefined) {
+        updateFields.push("display_name = ?");
+        params.push(validated.displayName);
+    }
 
     if (validated.notifications) {
         const n = validated.notifications;
@@ -1010,7 +1018,12 @@ const getCommunityListsRoute = createRoute({
 app.openapi(getCommunityListsRoute, async (c) => {
     // 1. Fetch all published lists and their river mappings
     const [listsRaw, mappingRaw] = await c.env.DB.batch([
-        c.env.DB.prepare("SELECT * FROM community_lists WHERE is_published = 1"),
+        c.env.DB.prepare(`
+            SELECT cl.*, u.display_name as user_display_name, u.settings_json as user_settings_json, u.role as user_role
+            FROM community_lists cl
+            LEFT JOIN users u ON cl.owner_id = u.user_id
+            WHERE cl.is_published = 1
+        `),
         c.env.DB.prepare(`
             SELECT lr.* FROM community_list_rivers lr
             JOIN community_lists l ON l.id = lr.list_id
@@ -1038,30 +1051,30 @@ app.openapi(getCommunityListsRoute, async (c) => {
         });
     }
 
-    // 3. User privacy masking
-    const ownerIds = [...new Set(lists.map(l => l.owner_id))];
-    const anonMap = new Map<string, boolean>();
-    
-    if (ownerIds.length > 0) {
-        const { results: ownerSettings } = await c.env.DB.prepare(`
-            SELECT user_id, settings_json FROM users WHERE user_id IN (${ownerIds.map(() => '?').join(',')})
-        `).bind(...ownerIds).all();
-        
-        (ownerSettings as any[]).forEach(s => {
+    const result = lists.map(l => {
+        let isAnon = false;
+        if (l.user_settings_json) {
             try {
-                const settings = typeof s.settings_json === 'string' ? JSON.parse(s.settings_json) : s.settings_json;
-                if (settings?.hidePublicName) anonMap.set(s.user_id, true);
+                const settings = typeof l.user_settings_json === 'string' ? JSON.parse(l.user_settings_json) : l.user_settings_json;
+                if (settings?.hidePublicName) isAnon = true;
             } catch {}
-        });
-    }
+        }
 
-    const result = lists.map(l => ({
-        ...l,
-        ownerId: l.owner_id,
-        author: anonMap.get(l.owner_id) ? "Anonymous Paddler" : l.author,
-        isPublished: true, 
-        rivers: mappingMap.get(l.id) || []
-    }));
+        const listObj = {
+            ...l,
+            owner_id: isAnon ? "" : l.owner_id,
+            ownerId: isAnon ? "" : l.owner_id,
+            author: isAnon ? "Anonymous Paddler" : (l.user_display_name || l.author),
+            authorRole: isAnon ? "user" : (l.user_role || "user"),
+            isPublished: true, 
+            rivers: mappingMap.get(l.id) || []
+        };
+
+        delete listObj.user_display_name;
+        delete listObj.user_settings_json;
+        delete listObj.user_role;
+        return listObj;
+    });
 
     // 4. Aggressive CDN Cache (10 min browser, 1 hour edge, 24 hour stale)
     c.header("Cache-Control", "public, max-age=600, s-maxage=3600, stale-while-revalidate=86400");
@@ -1309,22 +1322,36 @@ const getListByIdRoute = createRoute({
 app.openapi(getListByIdRoute, async (c) => {
     const id = c.req.param("id");
     
-    // Batch retrieve list metadata and pinned rivers
+    // Batch retrieve list metadata (with owner settings joined) and pinned rivers
     const [listRaw, riversRaw] = await c.env.DB.batch([
-        c.env.DB.prepare("SELECT * FROM community_lists WHERE id = ?").bind(id),
+        c.env.DB.prepare(`
+            SELECT cl.*, u.display_name as user_display_name, u.settings_json as user_settings_json, u.role as user_role
+            FROM community_lists cl
+            LEFT JOIN users u ON cl.owner_id = u.user_id
+            WHERE cl.id = ?
+        `).bind(id),
         c.env.DB.prepare("SELECT * FROM community_list_rivers WHERE list_id = ?").bind(id)
     ]);
 
     const list = listRaw.results[0] as any;
     if (!list) return c.json({ error: "List not found" }, 404);
     
-    const ownerSettings = await c.env.DB.prepare("SELECT settings_json FROM users WHERE user_id = ?").bind(list.owner_id).first();
-    if (ownerSettings && ownerSettings.settings_json) {
+    let isAnon = false;
+    if (list.user_settings_json) {
         try {
-            const s = typeof ownerSettings.settings_json === 'string' ? JSON.parse(ownerSettings.settings_json) : ownerSettings.settings_json;
-            if (s.hidePublicName) list.author = "Anonymous Paddler";
+            const settings = typeof list.user_settings_json === 'string' ? JSON.parse(list.user_settings_json) : list.user_settings_json;
+            if (settings?.hidePublicName) isAnon = true;
         } catch {}
     }
+    
+    list.author = isAnon ? "Anonymous Paddler" : (list.user_display_name || list.author);
+    list.authorRole = isAnon ? "user" : (list.user_role || "user");
+    if (isAnon) {
+        list.owner_id = "";
+    }
+    delete list.user_display_name;
+    delete list.user_settings_json;
+    delete list.user_role;
     
     const rivers = (riversRaw.results as any[]).map(rv => ({
         id: rv.river_id,

@@ -57,6 +57,7 @@ export const RiverEditorPayload = z.object({
 export type RiverEditInput = z.infer<typeof RiverEditorPayload>;
 
 export const UserSettingsSchema = z.object({
+  displayName: z.string().max(100).optional().nullable().openapi({ type: 'string' }),
   settings_json: GenericObjectSchema.optional(),
   notifications: z.object({
     enabled: z.boolean().optional().openapi({ type: 'boolean' }),
