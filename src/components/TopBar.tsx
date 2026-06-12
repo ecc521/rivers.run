@@ -106,8 +106,8 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
         }}
         ref={menuRef}
       >
-        <div style={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
-           ☰
+        <div style={{ display: "flex", justifyContent: "flex-end", width: "100%", fontSize: "1.05em" }}>
+           ⚙
         </div>
 
         {menuOpen && (

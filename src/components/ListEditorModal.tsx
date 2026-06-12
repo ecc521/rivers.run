@@ -42,6 +42,9 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const { rivers } = useRivers();
   const { alert, confirm, promptReport } = useModal();
 
+  const [hidePublicName, setHidePublicName] = useState(false);
+  const [loadingPrivacy, setLoadingPrivacy] = useState(false);
+
   const activeList = useMemo(() => {
     if (!targetList) return null;
     return myLists.find(l => l.id === targetList.id) || targetList;
@@ -53,6 +56,42 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
       setDescription(initialDescription);
     }
   }, [isOpen, initialTitle, initialDescription]);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      const fetchPrivacy = async () => {
+        setLoadingPrivacy(true);
+        try {
+          const settings = await fetchAPI("/user/settings");
+          if (settings && settings.settings_json) {
+            setHidePublicName(!!settings.settings_json.hidePublicName);
+          }
+        } catch (err) {
+          console.error("Failed to load user privacy settings in ListEditorModal:", err);
+        } finally {
+          setLoadingPrivacy(false);
+        }
+      };
+      fetchPrivacy();
+    }
+  }, [isOpen, user]);
+
+  const handleToggleHidePublicName = async (val: boolean) => {
+    setHidePublicName(val);
+    if (!user) return;
+    try {
+      const settings = await fetchAPI("/user/settings");
+      const sj = settings?.settings_json || {};
+      sj.hidePublicName = val;
+      
+      await fetchAPI("/user/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ settings_json: sj })
+      });
+    } catch (err) {
+      console.error("Failed to update user privacy settings:", err);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -250,12 +289,12 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                 {activeList.isPublished ? "🔒" : "🌍"}
               </div>
               <h3 style={{ margin: "0 0 10px 0", color: "var(--text)", fontSize: "1.2rem" }}>
-                {activeList.isPublished ? "Make List Unlisted?" : "Make List Public?"}
+                {activeList.isPublished ? "Make List Unlisted?" : "Publish List to Community?"}
               </h3>
               <p style={{ margin: "0 0 24px 0", color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: "1.5" }}>
                 {activeList.isPublished 
-                  ? "This will remove the list from the community feed." 
-                  : "This will make your list visible on the community feed."}
+                  ? "This will hide the list from the public community feed. People with the link can still view it." 
+                  : "This will publish your list to the public community feed for anyone to search and discover."}
               </p>
               <div style={{ display: "flex", gap: "12px", width: "100%" }}>
                 <button 
@@ -293,16 +332,16 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                         disabled={toggling}
                         style={{ 
                           padding: "6px 12px", 
-                          backgroundColor: activeList.isPublished ? "var(--primary)" : "var(--surface-hover)", 
+                          backgroundColor: activeList.isPublished ? "var(--surface-hover)" : "var(--primary)", 
                           border: "1px solid var(--border)", 
-                          color: activeList.isPublished ? "white" : "var(--text)", 
+                          color: activeList.isPublished ? "var(--text)" : "white", 
                           borderRadius: "6px", 
                           cursor: toggling ? "not-allowed" : "pointer", 
                           fontWeight: "bold",
                           transition: "all 0.2s ease"
                         }}
                       >
-                        {activeList.isPublished ? "🌍 Public" : "🔒 Unlisted"}
+                        {activeList.isPublished ? "🔒 Make Unlisted" : "🌍 Publish to Feed"}
                       </button>
                       <button onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
                         ⌚️ Sync Watch
@@ -399,6 +438,30 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                 />
             )}
           </div>
+
+          {canEdit && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px", padding: "12px", backgroundColor: "var(--surface-hover)", borderRadius: "8px", border: "1px solid var(--border)", flexWrap: "wrap" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: "bold", fontSize: "0.95rem" }}>
+                <input
+                  type="checkbox"
+                  id="modalHidePublicNameCheck"
+                  checked={hidePublicName}
+                  disabled={loadingPrivacy}
+                  onChange={(e) => handleToggleHidePublicName(e.target.checked)}
+                />
+                Keep my name private on all community lists and river edits
+              </label>
+              {hidePublicName ? (
+                <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginLeft: "auto" }}>
+                  (Showing as: Anonymous Paddler)
+                </span>
+              ) : (
+                <span style={{ fontSize: "0.85rem", color: "var(--primary)", marginLeft: "auto" }}>
+                  (Showing as: {user?.displayName || "Community Paddler"})
+                </span>
+              )}
+            </div>
+          )}
 
           {targetList && targetList.rivers && (
              <div style={{ marginTop: "10px", borderTop: "1px solid var(--border)", paddingTop: "15px", display: "flex", flexDirection: "column", gap: "10px" }}>
