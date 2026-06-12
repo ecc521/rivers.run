@@ -162,7 +162,10 @@ const ListsPage: React.FC = () => {
 
   const renderListCard = (list: UserList) => {
     const isOwned = user ? list.ownerId === user.uid : false;
-    const isAnonymous = list.author === "Anonymous Paddler" || !list.ownerId;
+    const isAnonymous = list.author === "Anonymous Paddler" || !list.ownerId || list.ownerId === "";
+    const otherLists = (list.ownerId && list.ownerId !== "" && !isAnonymous) 
+      ? communityLists.filter(l => l.ownerId === list.ownerId && l.id !== list.id)
+      : [];
 
     return (
       <div
@@ -317,13 +320,13 @@ const ListsPage: React.FC = () => {
                             </span>
                           </div>
                           
-                          {communityLists.filter(l => l.ownerId === list.ownerId && l.id !== list.id).length > 0 && (
+                          {otherLists.length > 0 && (
                             <div style={{ borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
                               <div style={{ fontSize: "0.85em", fontWeight: "bold", marginBottom: "6px", color: "var(--text-secondary)" }}>
-                                Other Lists by Creator ({communityLists.filter(l => l.ownerId === list.ownerId && l.id !== list.id).length}):
+                                Other Lists by Creator ({otherLists.length}):
                               </div>
                               <div style={{ maxHeight: "150px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
-                                {communityLists.filter(l => l.ownerId === list.ownerId && l.id !== list.id).map(other => (
+                                {otherLists.map(other => (
                                   <div 
                                     key={other.id}
                                     onClick={(e) => {

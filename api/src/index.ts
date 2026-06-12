@@ -902,9 +902,38 @@ app.openapi(getUserSettingsRoute, async (c) => {
         });
     }
     
+    let displayName = result.display_name;
+    let email = result.email;
+
+    // Auto-update display name/email if currently generic/null but available in token (e.g. after Google OAuth linking)
+    const hasGenericName = !displayName || displayName === "Unknown Paddler" || displayName === "Community Paddler";
+    const hasIncomingName = user.name && user.name !== "Unknown Paddler" && user.name !== "Community Paddler";
+    const hasGenericEmail = !email;
+    const hasIncomingEmail = user.email;
+
+    if ((hasGenericName && hasIncomingName) || (hasGenericEmail && hasIncomingEmail)) {
+        const updateFields: string[] = ["updated_at = ?"];
+        const params: any[] = [Math.floor(Date.now() / 1000)];
+
+        if (hasGenericName && hasIncomingName) {
+            displayName = user.name;
+            updateFields.push("display_name = ?");
+            params.push(displayName);
+        }
+        if (hasGenericEmail && hasIncomingEmail) {
+            email = user.email.toLowerCase();
+            updateFields.push("email = ?");
+            params.push(email);
+        }
+
+        params.push(user.user_id);
+        await c.env.DB.prepare(`UPDATE users SET ${updateFields.join(", ")} WHERE user_id = ?`)
+            .bind(...params).run();
+    }
+    
     return c.json({
         role: result.role || "user",
-        displayName: result.display_name || null,
+        displayName: displayName || null,
         notifications: {
             enabled: result.notifications_enabled === 1,
             noneUntil: result.notifications_none_until || 0,

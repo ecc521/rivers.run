@@ -7,7 +7,8 @@
     "dev": "wrangler dev -c wrangler.toml",
     "start": "wrangler dev -c wrangler.toml",
     "test": "vitest run",
-    "lint": "tsc && npx eslint src"
+    "lint": "tsc && npx eslint src",
+    "generate-reaches": "node scripts/generate_reaches.js"
   },
   "dependencies": {
     "@hono/zod-openapi": "^0.13.0",

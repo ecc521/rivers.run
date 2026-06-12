@@ -20,6 +20,7 @@ import { normalizeGaugeId } from "./utils/formatting";
 import { generateSitemap } from "./services/sitemap";
 import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
+import { syncUsgsReaches } from "./services/usgsReaches";
 
 export interface Env {
     FLOW_STORAGE: R2Bucket;
@@ -267,6 +268,9 @@ export default {
                     await env.FLOW_STORAGE.put("gauge_registry.json", registryBuffer, {
                         httpMetadata: { contentType: "application/json" }
                     });
+
+                    // Sync USGS to NWM reaches mapping
+                    await syncUsgsReaches(env);
                 } catch (_e) {
                     console.error("CRITICAL: Registry compilation failed or timed out.", _e);
                 }

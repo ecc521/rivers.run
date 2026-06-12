@@ -2,6 +2,7 @@ import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingVal
 import { formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
+import usgsReaches from '../data/usgs_reaches.json';
 
 let cachedReaches: Record<string, string> | null = null;
 
@@ -333,7 +334,7 @@ export const usgsProvider: GaugeProvider = {
                 console.warn("Failed to load usgs_reaches.json from R2", e);
             }
         }
-        const reaches = (cachedReaches || {}) as Record<string, string>;
+        const reaches = (cachedReaches || usgsReaches || {}) as Record<string, string>;
 
         // Expose the NWM Reach ID for client-side fetches
         siteCodes.forEach((site) => {

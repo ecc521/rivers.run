@@ -80,13 +80,9 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     setHidePublicName(val);
     if (!user) return;
     try {
-      const settings = await fetchAPI("/user/settings");
-      const sj = settings?.settings_json || {};
-      sj.hidePublicName = val;
-      
       await fetchAPI("/user/settings", {
         method: "PATCH",
-        body: JSON.stringify({ settings_json: sj })
+        body: JSON.stringify({ settings_json: { hidePublicName: val } })
       });
     } catch (err) {
       console.error("Failed to update user privacy settings:", err);
