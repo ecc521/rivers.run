@@ -7,6 +7,7 @@ import { useSettings } from "../context/SettingsContext";
 import { useModal } from "../context/ModalContext";
 import { useSEO } from "../hooks/useSEO";
 import { ListEditorModal } from "../components/ListEditorModal";
+import { AuthorHoverCard } from "../components/AuthorHoverCard";
 import { getShareBaseUrl } from "../utils/url";
 import { Capacitor } from "@capacitor/core";
 
@@ -27,7 +28,17 @@ const ListsPage: React.FC = () => {
 
   const { lists: communityLists, loading: communityLoading } = useCommunityLists();
   const [searchQuery, setSearchQuery] = useState("");
-  const [hoveredAuthorListId, setHoveredAuthorListId] = useState<string | null>(null);
+
+  const listsByOwner = React.useMemo(() => {
+    const map = new Map<string, UserList[]>();
+    for (const list of communityLists) {
+      if (!list.ownerId) continue;
+      const existing = map.get(list.ownerId) || [];
+      existing.push(list);
+      map.set(list.ownerId, existing);
+    }
+    return map;
+  }, [communityLists]);
 
   const [editorModal, setEditorModal] = useState<{
     isOpen: boolean;
@@ -76,14 +87,14 @@ const ListsPage: React.FC = () => {
     return score;
   };
 
-  const filteredCommunityLists = communityLists.filter(list => {
+  let filteredCommunityLists = communityLists.filter(list => {
     if (searchTerms.length === 0) return true;
     const searchStr = `${list.title || ""} ${list.description || ""} ${list.author || ""}`.toLowerCase();
     return searchTerms.every(term => searchStr.includes(term));
   });
 
   if (searchTerms.length > 0) {
-    filteredCommunityLists.sort((a, b) => {
+    filteredCommunityLists = [...filteredCommunityLists].sort((a, b) => {
       const aScore = getListRelevanceScore(a, searchTerms);
       const bScore = getListRelevanceScore(b, searchTerms);
       if (aScore !== bScore) {
@@ -163,9 +174,12 @@ const ListsPage: React.FC = () => {
   const renderListCard = (list: UserList) => {
     const isOwned = user ? list.ownerId === user.uid : false;
     const isAnonymous = list.author === "Anonymous Paddler" || !list.ownerId || list.ownerId === "";
-    const otherLists = (list.ownerId && list.ownerId !== "" && !isAnonymous) 
-      ? communityLists.filter(l => l.ownerId === list.ownerId && l.id !== list.id)
-      : [];
+    
+    let otherLists: UserList[] = [];
+    if (!isAnonymous && list.ownerId) {
+      const ownerLists = listsByOwner.get(list.ownerId) || [];
+      otherLists = ownerLists.filter(l => l.id !== list.id);
+    }
 
     return (
       <div
@@ -262,100 +276,11 @@ const ListsPage: React.FC = () => {
                 {isAnonymous ? (
                   list.author
                 ) : (
-                  <span
-                    onMouseEnter={() => setHoveredAuthorListId(list.id)}
-                    onMouseLeave={() => setHoveredAuthorListId(null)}
-                    style={{ position: "relative", display: "inline-block" }}
-                  >
-                    <span
-                      style={{
-                        cursor: "pointer",
-                        borderBottom: "1px dashed var(--text-secondary)",
-                        fontWeight: 500,
-                        color: "var(--text)"
-                      }}
-                    >
-                      {list.author}
-                    </span>
-                    {hoveredAuthorListId === list.id && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: "0",
-                          zIndex: 10,
-                          paddingTop: "8px", // Bridges the gap to prevent mouse exit dead zone
-                          cursor: "default",
-                          fontStyle: "normal"
-                        }}
-                        onClick={(e) => e.stopPropagation()} // Prevent clicking within card from selecting the parent list card
-                      >
-                        <div
-                          style={{
-                            backgroundColor: "var(--surface)",
-                            border: "1px solid var(--border)",
-                            borderRadius: "8px",
-                            padding: "12px",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                            width: "260px",
-                            color: "var(--text)",
-                            textAlign: "left"
-                          }}
-                        >
-                          <div style={{ fontWeight: "bold", fontSize: "1.05em", marginBottom: "4px" }}>{list.author}</div>
-                          <div style={{ fontSize: "0.85em", color: "var(--text-muted)", marginBottom: "10px" }}>
-                            Role: <span style={{ 
-                              fontWeight: "bold", 
-                              color: list.authorRole === "admin" || list.authorRole === "super-admin" 
-                                ? "var(--danger)" 
-                                : list.authorRole === "moderator" 
-                                  ? "var(--primary)" 
-                                  : "var(--text-secondary)" 
-                            }}>
-                              {list.authorRole === "admin" || list.authorRole === "super-admin" 
-                                ? "Administrator" 
-                                : list.authorRole === "moderator" 
-                                  ? "Moderator" 
-                                  : "Paddler"}
-                            </span>
-                          </div>
-                          
-                          {otherLists.length > 0 && (
-                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
-                              <div style={{ fontSize: "0.85em", fontWeight: "bold", marginBottom: "6px", color: "var(--text-secondary)" }}>
-                                Other Lists by Creator ({otherLists.length}):
-                              </div>
-                              <div style={{ maxHeight: "150px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
-                                {otherLists.map(other => (
-                                  <div 
-                                    key={other.id}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/?list=${other.id}`);
-                                      setHoveredAuthorListId(null);
-                                    }}
-                                    style={{
-                                      fontSize: "0.85em",
-                                      color: "var(--primary)",
-                                      fontWeight: "normal",
-                                      cursor: "pointer",
-                                      textDecoration: "underline",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap"
-                                    }}
-                                    title={other.title}
-                                  >
-                                    {other.title}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </span>
+                  <AuthorHoverCard 
+                    list={list} 
+                    otherLists={otherLists} 
+                    navigate={navigate} 
+                  />
                 )}
               </p>
           </div>
@@ -484,7 +409,12 @@ const ListsPage: React.FC = () => {
             onChange={(e) => updateSetting("homePageDefaultSearch", e.target.value)}
             style={{ padding: "8px", borderRadius: "6px", fontSize: "1rem", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", minWidth: "200px" }}
          >
-            <option value="null">None (Display All Rivers)</option>
+                        <option value="null">None (Display All Rivers)</option>
+            {homePageDefaultSearch && homePageDefaultSearch !== "null" && 
+              !myLists.some(l => `list:${l.id}` === homePageDefaultSearch) &&
+              !communityLists.filter(list => subscribedListIds.includes(list.id)).some(l => `list:${l.id}` === homePageDefaultSearch) && (
+              <option value={homePageDefaultSearch}>Current Startup List (Not Subscribed)</option>
+            )}
             {user && (
                <optgroup label="My Custom Lists">
                  {myLists.map(list => (

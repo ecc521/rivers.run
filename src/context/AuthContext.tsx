@@ -12,6 +12,8 @@ interface AuthContextType {
   isModerator: boolean;
   isAuthModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
+  privacySettings: { hidePublicName: boolean };
+  updatePrivacySettings: (hidePublicName: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +24,8 @@ const AuthContext = createContext<AuthContextType>({
   isModerator: false,
   isAuthModalOpen: false,
   setAuthModalOpen: () => {},
+  privacySettings: { hidePublicName: false },
+  updatePrivacySettings: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -33,6 +37,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState({ hidePublicName: false });
+  
+  const updatePrivacySettings = async (hidePublicName: boolean) => {
+    setPrivacySettings({ hidePublicName });
+    if (user) {
+      try {
+        await fetchAPI("/user/settings", {
+          method: "PATCH",
+          body: JSON.stringify({ settings_json: { hidePublicName } })
+        });
+      } catch (err) {
+        console.error("Failed to update privacy settings:", err);
+      }
+    }
+  };
 
   useEffect(() => {
     try {
@@ -51,6 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 setIsSuperAdmin(sAdmin);
                 setIsAdmin(admin);
                 setIsModerator(mod);
+                const sj = settings?.settings_json || {};
+                setPrivacySettings({ hidePublicName: !!sj.hidePublicName });
             } catch (err: unknown) {
                 if (err instanceof Error) console.error("Failed to fetch user roles from API", err.message);
                 setIsAdmin(false);
@@ -74,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, isSuperAdmin, isModerator, isAuthModalOpen, setAuthModalOpen }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, isSuperAdmin, isModerator, isAuthModalOpen, setAuthModalOpen, privacySettings, updatePrivacySettings }}>
       {children}
     </AuthContext.Provider>
   );

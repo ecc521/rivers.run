@@ -37,13 +37,10 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const [toggling, setToggling] = useState(false);
   const [showWatchSync, setShowWatchSync] = useState(false);
   
-  const { user } = useAuth();
+  const { user, setAuthModalOpen, privacySettings, updatePrivacySettings } = useAuth();
   const { myLists, updateRiverInList, removeRiverFromList, updateList, deleteList, toggleSubscription, isSubscribed } = useLists();
   const { rivers } = useRivers();
   const { alert, confirm, promptReport } = useModal();
-
-  const [hidePublicName, setHidePublicName] = useState(false);
-  const [loadingPrivacy, setLoadingPrivacy] = useState(false);
 
   const activeList = useMemo(() => {
     if (!targetList) return null;
@@ -56,39 +53,6 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
       setDescription(initialDescription);
     }
   }, [isOpen, initialTitle, initialDescription]);
-
-  useEffect(() => {
-    if (isOpen && user) {
-      const fetchPrivacy = async () => {
-        setLoadingPrivacy(true);
-        try {
-          const settings = await fetchAPI("/user/settings");
-          if (settings && settings.settings_json) {
-            setHidePublicName(!!settings.settings_json.hidePublicName);
-          }
-        } catch (err) {
-          console.error("Failed to load user privacy settings in ListEditorModal:", err);
-        } finally {
-          setLoadingPrivacy(false);
-        }
-      };
-      fetchPrivacy();
-    }
-  }, [isOpen, user]);
-
-  const handleToggleHidePublicName = async (val: boolean) => {
-    setHidePublicName(val);
-    if (!user) return;
-    try {
-      await fetchAPI("/user/settings", {
-        method: "PATCH",
-        body: JSON.stringify({ settings_json: { hidePublicName: val } })
-      });
-    } catch (err) {
-      console.error("Failed to update user privacy settings:", err);
-    }
-  };
-
   if (!isOpen) return null;
 
   const isShared = mode === "shared";
@@ -368,7 +332,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
              )}
              {!user && (
                  <button
-                    onClick={() => { window.location.href = "/login"; }}
+                    onClick={() => { setAuthModalOpen(true); }}
                     style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
                  >
                     Sign in to Save
@@ -441,13 +405,13 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                 <input
                   type="checkbox"
                   id="modalHidePublicNameCheck"
-                  checked={hidePublicName}
-                  disabled={loadingPrivacy}
-                  onChange={(e) => handleToggleHidePublicName(e.target.checked)}
+                  checked={privacySettings.hidePublicName}
+                  
+                  onChange={(e) => updatePrivacySettings(e.target.checked)}
                 />
                 Keep my name private on all community lists and river edits
               </label>
-              {hidePublicName ? (
+              {privacySettings.hidePublicName ? (
                 <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginLeft: "auto" }}>
                   (Showing as: Anonymous Paddler)
                 </span>
