@@ -14,7 +14,7 @@
     "@hono/zod-openapi": "^0.13.0",
     "@scalar/hono-api-reference": "^0.10.7",
     "@types/nodemailer": "^8.0.0",
-    "hono": "^4.2.4",
+    "hono": "^4.12.25",
     "nodemailer": "^8.0.5",
     "zod": "^3.23.4"
   },
