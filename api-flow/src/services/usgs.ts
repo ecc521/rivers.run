@@ -4,6 +4,8 @@ import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
 import usgsReaches from '../data/usgs_reaches.json';
 
+let cachedReaches: Record<string, string> | null = null;
+
 const states = [
   "al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl", "ga",
   "hi", "id", "il", "in", "ia", "ks", "ky", "la", "me", "md", "ma",
@@ -322,10 +324,22 @@ export const usgsProvider: GaugeProvider = {
 
         const histories = await historiesPromise;
 
+        if (!cachedReaches && env?.FLOW_STORAGE) {
+            try {
+                const reachesObject = await env.FLOW_STORAGE.get("usgs_reaches.json");
+                if (reachesObject) {
+                    cachedReaches = await reachesObject.json();
+                }
+            } catch (e) {
+                console.warn("Failed to load usgs_reaches.json from R2", e);
+            }
+        }
+        const reaches = (cachedReaches || usgsReaches || {}) as Record<string, string>;
+
         // Expose the NWM Reach ID for client-side fetches
         siteCodes.forEach((site) => {
             const history = histories[site];
-            const reachId = (usgsReaches as Record<string, string>)[site];
+            const reachId = reaches[site];
             if (history && reachId) {
                 history.nwmReachId = reachId;
             }

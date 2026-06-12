@@ -69,7 +69,7 @@ rivers-run-firebase-adminsdk-wzb5p-843d01551f.json
 ttsconfig.tsbuildinfo
 artifacts/screenshots/
 test-results/
-data/
+/data/
 
 # Map Data
 output/
@@ -77,3 +77,5 @@ output/
 
 valhalla-wasm/
 scratch/
+api-flow/src/data/sitedata.json
+api-flow/src/data/gauge_registry.json

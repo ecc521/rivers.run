@@ -212,15 +212,17 @@ app.openapi(gaugeRoute, async (c) => {
 
 app.get("/seed-local-r2", async (c) => {
     try {
-        console.log("Seeding local R2 storage from local src/data/sitedata.json...");
-        const { default: sitedata } = await import("./data/sitedata.json");
+        console.log("Seeding local R2 storage from production flow.rivers.run...");
+        const res = await fetch("https://flow.rivers.run/sitedata.json");
+        if (!res.ok) throw new Error(`Failed to fetch production sitedata: ${res.statusText}`);
+        const sitedata = await res.json();
         const body = JSON.stringify(sitedata);
         
         await c.env.FLOW_STORAGE.put("sitedata.json", body, {
             httpMetadata: { contentType: "application/json" }
         });
         
-        console.log("Successfully seeded sitedata.json locally from src/data/sitedata.json!");
+        console.log("Successfully seeded sitedata.json locally!");
         return c.text("Local R2 seed successful!");
     } catch (e: any) {
         console.error("Local R2 seeding failed:", e);
