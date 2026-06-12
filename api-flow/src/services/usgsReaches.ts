@@ -2,15 +2,20 @@ import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
 import type { Env } from '../index';
 
-// Simple CSV line parser supporting quoted fields
-function parseCSVLine(line: string): string[] {
+// Simple CSV line parser supporting quoted fields and escaped quotes
+export function parseCSVLine(line: string): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
     if (char === '"') {
-      inQuotes = !inQuotes;
+      if (inQuotes && line[i+1] === '"') {
+        current += '"';
+        i++; // skip escaped quote
+      } else {
+        inQuotes = !inQuotes;
+      }
     } else if (char === ',' && !inQuotes) {
       result.push(current);
       current = '';

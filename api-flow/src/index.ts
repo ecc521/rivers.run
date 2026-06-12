@@ -269,12 +269,14 @@ export default {
                         httpMetadata: { contentType: "application/json" }
                     });
 
-                    // Sync USGS to NWM reaches mapping
-                    await syncUsgsReaches(env);
                 } catch (_e) {
                     console.error("CRITICAL: Registry compilation failed or timed out.", _e);
                 }
+
+                // Sync USGS to NWM reaches mapping
+                await syncUsgsReaches(env);
             }
+
 
             // 1. Fetch Gauges
             const mergedData = await performDataSync(env, registryMetadata, providers);
