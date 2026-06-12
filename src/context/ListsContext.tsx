@@ -9,6 +9,7 @@ export interface UserList {
   title: string;
   description: string;
   author: string; 
+  authorRole?: string;
   ownerId: string;
   isPublished: boolean;
   notificationsEnabled?: boolean;

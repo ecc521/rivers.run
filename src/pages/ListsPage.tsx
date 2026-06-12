@@ -27,6 +27,7 @@ const ListsPage: React.FC = () => {
 
   const { lists: communityLists, loading: communityLoading } = useCommunityLists();
   const [searchQuery, setSearchQuery] = useState("");
+  const [hoveredAuthorListId, setHoveredAuthorListId] = useState<string | null>(null);
 
   const [editorModal, setEditorModal] = useState<{
     isOpen: boolean;
@@ -50,14 +51,47 @@ const ListsPage: React.FC = () => {
     }
   }, [user, activeTab, authLoading, setSearchParams]);
 
+  const searchTerms = searchQuery
+    ? searchQuery.toLowerCase().split(/[ ,]+/).filter(t => t.length > 0)
+    : [];
+
+  const getListRelevanceScore = (list: UserList, terms: string[]) => {
+    if (terms.length === 0) return 0;
+    let score = 0;
+    const lowerTitle = String(list.title || "").toLowerCase();
+    const lowerAuthor = String(list.author || "").toLowerCase();
+    const lowerDesc = String(list.description || "").toLowerCase();
+
+    for (const t of terms) {
+      if (lowerTitle === t) score += 100;
+      else if (lowerTitle.startsWith(t)) score += 80;
+      else if (lowerTitle.includes(t)) score += 40;
+
+      if (lowerAuthor === t) score += 60;
+      else if (lowerAuthor.startsWith(t)) score += 40;
+      else if (lowerAuthor.includes(t)) score += 20;
+
+      if (lowerDesc.includes(t)) score += 10;
+    }
+    return score;
+  };
+
   const filteredCommunityLists = communityLists.filter(list => {
-      if (!searchQuery) return true;
-      const lowerQ = searchQuery.toLowerCase();
-      const titleMatch = list.title?.toLowerCase().includes(lowerQ);
-      const descMatch = list.description?.toLowerCase().includes(lowerQ);
-      const authMatch = list.author?.toLowerCase().includes(lowerQ);
-      return titleMatch || descMatch || authMatch;
+    if (searchTerms.length === 0) return true;
+    const searchStr = `${list.title || ""} ${list.description || ""} ${list.author || ""}`.toLowerCase();
+    return searchTerms.every(term => searchStr.includes(term));
   });
+
+  if (searchTerms.length > 0) {
+    filteredCommunityLists.sort((a, b) => {
+      const aScore = getListRelevanceScore(a, searchTerms);
+      const bScore = getListRelevanceScore(b, searchTerms);
+      if (aScore !== bScore) {
+        return bScore - aScore;
+      }
+      return (b.subscribes || 0) - (a.subscribes || 0);
+    });
+  }
 
   const handleCreateList = async () => {
     const limit = isModerator ? 500 : 5;
@@ -128,6 +162,7 @@ const ListsPage: React.FC = () => {
 
   const renderListCard = (list: UserList) => {
     const isOwned = user ? list.ownerId === user.uid : false;
+    const isAnonymous = list.author === "Anonymous Paddler" || !list.ownerId;
 
     return (
       <div
@@ -219,7 +254,107 @@ const ListsPage: React.FC = () => {
                     <span style={{ fontSize: "0.55em", padding: "2px 6px", borderRadius: "4px", backgroundColor: "#334155", color: "white", textTransform: "uppercase" }}>Private</span>
                  )}
               </h2>
-              <p style={{ margin: "5px 0 0 0", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.9em" }}>By {list.author}</p>
+              <p style={{ margin: "5px 0 0 0", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "6px" }}>
+                By{" "}
+                {isAnonymous ? (
+                  list.author
+                ) : (
+                  <span
+                    onMouseEnter={() => setHoveredAuthorListId(list.id)}
+                    onMouseLeave={() => setHoveredAuthorListId(null)}
+                    style={{ position: "relative", display: "inline-block" }}
+                  >
+                    <span
+                      style={{
+                        cursor: "pointer",
+                        borderBottom: "1px dashed var(--text-secondary)",
+                        fontWeight: 500,
+                        color: "var(--text)"
+                      }}
+                    >
+                      {list.author}
+                    </span>
+                    {hoveredAuthorListId === list.id && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: "0",
+                          zIndex: 10,
+                          paddingTop: "8px", // Bridges the gap to prevent mouse exit dead zone
+                          cursor: "default",
+                          fontStyle: "normal"
+                        }}
+                        onClick={(e) => e.stopPropagation()} // Prevent clicking within card from selecting the parent list card
+                      >
+                        <div
+                          style={{
+                            backgroundColor: "var(--surface)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "8px",
+                            padding: "12px",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                            width: "260px",
+                            color: "var(--text)",
+                            textAlign: "left"
+                          }}
+                        >
+                          <div style={{ fontWeight: "bold", fontSize: "1.05em", marginBottom: "4px" }}>{list.author}</div>
+                          <div style={{ fontSize: "0.85em", color: "var(--text-muted)", marginBottom: "10px" }}>
+                            Role: <span style={{ 
+                              fontWeight: "bold", 
+                              color: list.authorRole === "admin" || list.authorRole === "super-admin" 
+                                ? "var(--danger)" 
+                                : list.authorRole === "moderator" 
+                                  ? "var(--primary)" 
+                                  : "var(--text-secondary)" 
+                            }}>
+                              {list.authorRole === "admin" || list.authorRole === "super-admin" 
+                                ? "Administrator" 
+                                : list.authorRole === "moderator" 
+                                  ? "Moderator" 
+                                  : "Paddler"}
+                            </span>
+                          </div>
+                          
+                          {communityLists.filter(l => l.ownerId === list.ownerId && l.id !== list.id).length > 0 && (
+                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
+                              <div style={{ fontSize: "0.85em", fontWeight: "bold", marginBottom: "6px", color: "var(--text-secondary)" }}>
+                                Other Lists by Creator ({communityLists.filter(l => l.ownerId === list.ownerId && l.id !== list.id).length}):
+                              </div>
+                              <div style={{ maxHeight: "150px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
+                                {communityLists.filter(l => l.ownerId === list.ownerId && l.id !== list.id).map(other => (
+                                  <div 
+                                    key={other.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/?list=${other.id}`);
+                                      setHoveredAuthorListId(null);
+                                    }}
+                                    style={{
+                                      fontSize: "0.85em",
+                                      color: "var(--primary)",
+                                      fontWeight: "normal",
+                                      cursor: "pointer",
+                                      textDecoration: "underline",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap"
+                                    }}
+                                    title={other.title}
+                                  >
+                                    {other.title}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </span>
+                )}
+              </p>
           </div>
           <span style={{ backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
              {list.subscribes || 0} Subscribers
@@ -354,11 +489,13 @@ const ListsPage: React.FC = () => {
                  ))}
                </optgroup>
             )}
-            <optgroup label="Community Lists">
-               {communityLists.map(list => (
-                  <option key={list.id} value={`list:${list.id}`}>List: {list.title}</option>
-               ))}
-            </optgroup>
+            {subscribedListIds.length > 0 && (
+               <optgroup label="Subscribed Lists">
+                  {communityLists.filter(list => subscribedListIds.includes(list.id)).map(list => (
+                     <option key={list.id} value={`list:${list.id}`}>List: {list.title}</option>
+                  ))}
+               </optgroup>
+            )}
          </select>
       </div>
 
