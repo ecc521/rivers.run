@@ -145,11 +145,12 @@ const GlobalNavBar: React.FC = () => {
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setLocalTime(val);
-    if (!val) return;
+    setLocalTime(e.target.value);
+  };
 
-    const [h, m] = val.split(":");
+  const handleTimeBlur = () => {
+    if (!localTime) return;
+    const [h, m] = localTime.split(":");
     const simDate = new Date();
     simDate.setHours(Number(h), Number(m), 0, 0);
 
@@ -159,15 +160,22 @@ const GlobalNavBar: React.FC = () => {
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setLocalDate(val);
-    if (!val) {
+    setLocalDate(e.target.value);
+  };
+
+  const handleDateBlur = () => {
+    if (!localDate) {
       updateConfig({ noneUntil: 0 });
     } else {
       const timeTarget = localTime || "00:00";
-      const blockTime = new Date(`${val}T${timeTarget}`).getTime();
+      const blockTime = new Date(`${localDate}T${timeTarget}`).getTime();
       updateConfig({ noneUntil: blockTime });
     }
+  };
+
+  const handleClearDate = () => {
+    setLocalDate("");
+    updateConfig({ noneUntil: 0 });
   };
 
   useEffect(() => {
@@ -520,6 +528,7 @@ const GlobalNavBar: React.FC = () => {
                                     type="time"
                                     value={localTime}
                                     onChange={handleTimeChange}
+                                    onBlur={handleTimeBlur}
                                     disabled={savingSettings}
                                     style={{
                                       padding: "4px 6px",
@@ -543,6 +552,7 @@ const GlobalNavBar: React.FC = () => {
                                       min={new Date().toISOString().split("T")[0]}
                                       value={localDate}
                                       onChange={handleDateChange}
+                                      onBlur={handleDateBlur}
                                       disabled={savingSettings}
                                       style={{
                                         padding: "4px 6px",
@@ -557,7 +567,7 @@ const GlobalNavBar: React.FC = () => {
                                     />
                                     {localDate && (
                                       <button
-                                        onClick={() => handleDateChange({ target: { value: "" } } as any)}
+                                        onClick={handleClearDate}
                                         disabled={savingSettings}
                                         style={{
                                           padding: "4px 8px",
