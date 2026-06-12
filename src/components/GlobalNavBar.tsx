@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { signOut, deleteUser } from "firebase/auth";
+import { signOut, deleteUser, updateProfile } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { AuthModal } from "./AuthModal";
@@ -14,6 +14,161 @@ const GlobalNavBar: React.FC = () => {
   const [isNavMoreOpen, setIsNavMoreOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [imgError, setImgError] = useState(false);
+
+  // Profile Dropdown click-outside ref
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Server Settings State
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [config, setConfig] = useState<any>({});
+  const [displayName, setDisplayName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [nameSaveMsg, setNameSaveMsg] = useState("");
+  const [localTime, setLocalTime] = useState("");
+  const [localDate, setLocalDate] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [emailSettingsExpanded, setEmailSettingsExpanded] = useState(false);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  // Fetch settings when dropdown is opened
+  useEffect(() => {
+    if (!user || !isDropdownOpen) return;
+    const fetchConfig = async () => {
+      setSettingsLoading(true);
+      try {
+        const settings = await fetchAPI("/user/settings");
+        if (settings) {
+          const n = settings.notifications || {};
+          const sj = settings.settings_json || {};
+          
+          setConfig({
+             ...n,
+             hidePublicName: !!sj.hidePublicName
+          });
+
+          if (settings.displayName) {
+             setDisplayName(settings.displayName);
+          } else if (user.displayName) {
+             setDisplayName(user.displayName);
+          }
+
+          // Transform UTC timeOfDay to Local Time Input
+          if (n.timeOfDay) {
+            const [h, m] = n.timeOfDay.split(":").map(Number);
+            const d = new Date();
+            d.setUTCHours(h, m, 0, 0);
+            const localH = String(d.getHours()).padStart(2, "0");
+            const localM = String(d.getMinutes()).padStart(2, "0");
+            setLocalTime(`${localH}:${localM}`);
+          }
+
+          if (n.noneUntil && n.noneUntil > Date.now()) {
+            setLocalDate(new Date(n.noneUntil).toISOString().split("T")[0]);
+          } else {
+            setLocalDate("");
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch notification settings:", e);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    fetchConfig();
+  }, [user, isDropdownOpen]);
+
+  const updateConfig = async (newProps: any) => {
+    if (!user) return;
+    const merged = { ...config, ...newProps };
+    setConfig(merged);
+    
+    const payload: any = { notifications: {} };
+    const settingsJson: any = {};
+    
+    if (merged.enabled !== undefined) payload.notifications.enabled = merged.enabled;
+    if (merged.noneUntil !== undefined) payload.notifications.noneUntil = merged.noneUntil;
+    if (merged.timeOfDay !== undefined) payload.notifications.timeOfDay = merged.timeOfDay;
+    if (merged.reviewQueueAlerts !== undefined) payload.notifications.reviewQueueAlerts = merged.reviewQueueAlerts;
+    if (merged.hidePublicName !== undefined) settingsJson.hidePublicName = merged.hidePublicName;
+    
+    if (Object.keys(settingsJson).length > 0) payload.settings_json = settingsJson;
+
+    setSavingSettings(true);
+    try {
+      await fetchAPI("/user/settings", {
+        method: "PATCH",
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const saveDisplayName = async () => {
+    if (!user || !displayName.trim()) return;
+    setSavingName(true);
+    setNameSaveMsg("");
+    try {
+      // 1. Update Firebase Auth profile
+      await updateProfile(user, { displayName: displayName.trim() });
+      
+      // 2. Update D1 database
+      await fetchAPI("/user/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ displayName: displayName.trim() })
+      });
+      
+      setNameSaveMsg("Name saved!");
+      setTimeout(() => setNameSaveMsg(""), 3000);
+    } catch (e: any) {
+      console.error("Failed to update profile name:", e);
+      setNameSaveMsg("Failed to save");
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalTime(val);
+    if (!val) return;
+
+    const [h, m] = val.split(":");
+    const simDate = new Date();
+    simDate.setHours(Number(h), Number(m), 0, 0);
+
+    const utcH = String(simDate.getUTCHours()).padStart(2, "0");
+    const utcM = String(simDate.getUTCMinutes()).padStart(2, "0");
+    updateConfig({ timeOfDay: `${utcH}:${utcM}` });
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalDate(val);
+    if (!val) {
+      updateConfig({ noneUntil: 0 });
+    } else {
+      const timeTarget = localTime || "00:00";
+      const blockTime = new Date(`${val}T${timeTarget}`).getTime();
+      updateConfig({ noneUntil: blockTime });
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -202,6 +357,7 @@ const GlobalNavBar: React.FC = () => {
           {!loading && user && (
             <div
               className="user-profile"
+              ref={dropdownRef}
               style={{ display: "flex", gap: "12px", alignItems: "center", position: "relative" }}
             >
               <div 
@@ -229,24 +385,211 @@ const GlobalNavBar: React.FC = () => {
                   position: "absolute",
                   top: "45px",
                   right: "0",
-                  backgroundColor: "white",
-                  color: "black",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text)",
                   borderRadius: "8px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+                  border: "1px solid var(--border)",
                   padding: "16px",
-                  width: "250px",
+                  width: "280px",
                   zIndex: 1000,
                   display: "flex",
                   flexDirection: "column",
-                  gap: "10px"
-                }}>
-                  <div style={{ borderBottom: "1px solid #eee", paddingBottom: "10px", marginBottom: "5px" }}>
-                    <p style={{ margin: "0", fontWeight: "bold" }}>{user.displayName || "User"}</p>
-                    <p style={{ margin: "0", fontSize: "0.85rem", color: "#666" }}>{user.email}</p>
-                    <p style={{ margin: "5px 0 0 0", fontSize: "0.75rem", color: "#999", fontFamily: "monospace" }}>ID: {user.uid}</p>
+                  gap: "12px"
+                }}
+                onClick={(e) => e.stopPropagation()}
+                >
+                  <div style={{ borderBottom: "1px solid var(--border)", paddingBottom: "10px", marginBottom: "5px" }}>
+                    <p style={{ margin: "0", fontSize: "0.85rem", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
+                    <p style={{ margin: "5px 0 0 0", fontSize: "0.7rem", color: "var(--text-muted)", fontFamily: "monospace" }}>ID: {user.uid}</p>
                   </div>
                   
-                  <Link to="/lists" onClick={() => setIsDropdownOpen(false)} style={{ textDecoration: "none", color: "#317EFB", padding: "5px 0", fontWeight: "500" }}>
+                  {settingsLoading ? (
+                    <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", padding: "10px 0", textAlign: "center" }}>
+                      Loading Profile...
+                    </div>
+                  ) : (
+                    <>
+                      {/* Name input */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <label htmlFor="navProfileName" style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: "bold" }}>
+                          Public Profile Name
+                        </label>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <input 
+                            type="text"
+                            id="navProfileName"
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            placeholder="e.g. Jane Doe"
+                            disabled={savingName}
+                            style={{
+                              padding: "6px 8px",
+                              fontSize: "0.85rem",
+                              borderRadius: "4px",
+                              border: "1px solid var(--border)",
+                              flexGrow: 1,
+                              minWidth: "0",
+                              backgroundColor: "var(--surface-hover)",
+                              color: "var(--text)"
+                            }}
+                          />
+                          {displayName.trim() !== (user.displayName || "") && (
+                            <button
+                              onClick={saveDisplayName}
+                              disabled={savingName || !displayName.trim()}
+                              style={{
+                                padding: "4px 8px",
+                                backgroundColor: "var(--primary)",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "0.75rem",
+                                cursor: "pointer",
+                                fontWeight: "bold"
+                              }}
+                            >
+                              {savingName ? "..." : "Save"}
+                            </button>
+                          )}
+                        </div>
+                        {nameSaveMsg && (
+                          <span style={{ fontSize: "0.75rem", color: nameSaveMsg.includes("Failed") ? "var(--danger)" : "var(--success)", marginTop: "2px" }}>
+                            {nameSaveMsg}
+                          </span>
+                        )}
+                        {(!displayName.trim() || displayName === "Community Paddler") && (
+                          <span style={{ fontSize: "0.75rem", color: "#f59e0b", fontWeight: 500, marginTop: "2px" }}>
+                            ⚠️ Please set a custom public name.
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Privacy toggle */}
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", cursor: "pointer", color: "var(--text)" }}>
+                        <input 
+                          type="checkbox"
+                          checked={!!config.hidePublicName}
+                          onChange={(e) => updateConfig({ hidePublicName: e.target.checked })}
+                          disabled={savingSettings}
+                          style={{ cursor: "pointer" }}
+                        />
+                        Keep my name private on lists
+                      </label>
+
+                      {/* Notifications Section */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: "10px", marginTop: "4px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div 
+                          onClick={() => setEmailSettingsExpanded(!emailSettingsExpanded)}
+                          style={{ 
+                            display: "flex", 
+                            justifyContent: "space-between", 
+                            alignItems: "center", 
+                            cursor: "pointer", 
+                            fontWeight: "bold", 
+                            fontSize: "0.85rem", 
+                            color: "var(--text-secondary)",
+                            padding: "4px 0"
+                          }}
+                        >
+                          <span>Email Alerts</span>
+                          <span>{emailSettingsExpanded ? "▲" : "▼"}</span>
+                        </div>
+
+                        {emailSettingsExpanded && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", cursor: "pointer", color: "var(--text)" }}>
+                              <input 
+                                type="checkbox"
+                                checked={config.enabled !== false}
+                                onChange={(e) => updateConfig({ enabled: e.target.checked, noneUntil: 0 })}
+                                disabled={savingSettings}
+                                style={{ cursor: "pointer" }}
+                              />
+                              Receive daily flow digests
+                            </label>
+                            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginLeft: "22px", display: "block", marginTop: "-4px" }}>
+                              Summarizes conditions for lists you subscribe to.
+                            </span>
+
+                            {config.enabled !== false && (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "22px", marginTop: "4px" }}>
+                                <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                                  Digest Delivery Time:
+                                  <input 
+                                    type="time"
+                                    value={localTime}
+                                    onChange={handleTimeChange}
+                                    disabled={savingSettings}
+                                    style={{
+                                      padding: "4px 6px",
+                                      borderRadius: "4px",
+                                      border: "1px solid var(--border)",
+                                      fontSize: "0.8rem",
+                                      backgroundColor: "var(--surface-hover)",
+                                      color: "var(--text)",
+                                      width: "90px"
+                                    }}
+                                  />
+                                </label>
+
+                                <div style={{ borderTop: "1px dashed var(--border)", margin: "4px 0" }}></div>
+
+                                <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                                  <span>Snooze alerts until:</span>
+                                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                    <input 
+                                      type="date"
+                                      min={new Date().toISOString().split("T")[0]}
+                                      value={localDate}
+                                      onChange={handleDateChange}
+                                      disabled={savingSettings}
+                                      style={{
+                                        padding: "4px 6px",
+                                        borderRadius: "4px",
+                                        border: "1px solid var(--border)",
+                                        fontSize: "0.8rem",
+                                        backgroundColor: "var(--surface-hover)",
+                                        color: "var(--text)",
+                                        flexGrow: 1,
+                                        width: "100%"
+                                      }}
+                                    />
+                                    {localDate && (
+                                      <button
+                                        onClick={() => handleDateChange({ target: { value: "" } } as any)}
+                                        disabled={savingSettings}
+                                        style={{
+                                          padding: "4px 8px",
+                                          backgroundColor: "transparent",
+                                          color: "var(--danger)",
+                                          border: "1px solid var(--danger)",
+                                          borderRadius: "4px",
+                                          fontSize: "0.75rem",
+                                          cursor: "pointer"
+                                        }}
+                                      >
+                                        Clear
+                                      </button>
+                                    )}
+                                  </div>
+                                </label>
+                              </div>
+                            )}
+                            {savingSettings && (
+                              <span style={{ fontSize: "0.7rem", color: "var(--primary)", marginLeft: "22px", fontStyle: "italic" }}>
+                                Saving changes...
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "4px 0" }} />
+                  
+                  <Link to="/lists" onClick={() => setIsDropdownOpen(false)} style={{ textDecoration: "none", color: "#317EFB", padding: "2px 0", fontWeight: "500", fontSize: "0.9rem" }}>
                     My Lists
                   </Link>
 
@@ -256,7 +599,6 @@ const GlobalNavBar: React.FC = () => {
                         signOut(auth);
                     }}
                     style={{
-                      marginTop: "10px",
                       padding: "8px 12px",
                       borderRadius: "6px",
                       border: "none",
@@ -264,46 +606,49 @@ const GlobalNavBar: React.FC = () => {
                       color: "white",
                       cursor: "pointer",
                       width: "100%",
-                      fontWeight: "bold"
+                      fontWeight: "bold",
+                      fontSize: "0.85rem"
                     }}
                   >
                     Sign Out
                   </button>
 
-                  <button
-                    onClick={handleDownloadData}
-                    style={{
-                      marginTop: "10px",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      border: "1px solid #ccc",
-                      backgroundColor: "transparent",
-                      color: "#333",
-                      cursor: "pointer",
-                      width: "100%",
-                      fontWeight: "bold"
-                    }}
-                  >
-                    Download Data
-                  </button>
+                  <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+                    <button
+                      onClick={handleDownloadData}
+                      style={{
+                        padding: "6px 8px",
+                        borderRadius: "4px",
+                        border: "1px solid var(--border)",
+                        backgroundColor: "transparent",
+                        color: "var(--text-secondary)",
+                        cursor: "pointer",
+                        flex: 1,
+                        fontSize: "0.75rem",
+                        fontWeight: "bold"
+                      }}
+                    >
+                      Export Data
+                    </button>
 
-                  <button
-                    onClick={handleDeleteAccount}
-                    style={{
-                      marginTop: "5px",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      border: "none",
-                      backgroundColor: "transparent",
-                      color: "#dc2626",
-                      cursor: "pointer",
-                      width: "100%",
-                      fontWeight: "bold",
-                      textDecoration: "underline"
-                    }}
-                  >
-                    Delete Account
-                  </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      style={{
+                        padding: "6px 8px",
+                        borderRadius: "4px",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        color: "var(--danger)",
+                        cursor: "pointer",
+                        flex: 1,
+                        fontSize: "0.75rem",
+                        fontWeight: "bold",
+                        textDecoration: "underline"
+                      }}
+                    >
+                      Delete Account
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -9,7 +9,6 @@ import {
 } from "../utils/offlineMapEngine";
 import type { MapRegion, DownloadedRegionState } from "../utils/offlineMapEngine";
 import { useModal } from "../context/ModalContext";
-import { AccountSettings } from "../components/AccountSettings";
 import { InteractiveUSMap } from "../components/InteractiveUSMap";
 import { useLocation } from "react-router-dom";
 
@@ -179,9 +178,7 @@ const SettingsPage: React.FC = () => {
 
       </div>
 
-      <div style={{ marginTop: '30px' }}>
-        <AccountSettings />
-      </div>
+
 
       <div id="offline-maps" style={{ marginTop: '30px' }}>
         <OfflineMapManager />
