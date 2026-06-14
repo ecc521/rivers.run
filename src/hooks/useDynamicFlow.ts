@@ -17,8 +17,6 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
   const [dynamicPayload, setDynamicPayload] = useState<{ gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> } | null>(null);
   const settings = useSettings();
 
-  console.log(`[useDynamicFlow] Render: id=${river.id}, hasPayload=${!!dynamicPayload}, skipFetch=${skipFetch}`);
-
   useEffect(() => {
     if (skipFetch) return;
     if (!river.gauges || river.gauges.length === 0) return;
@@ -38,10 +36,7 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
     
     const newlyFetched = cached && (Date.now() - cached.lastFetchedMs < 15 * 60 * 1000);
 
-    console.log(`[useDynamicFlow] useEffect: id=${river.id}, hasThirtyDays=${hasThirtyDays}, newlyFetched=${newlyFetched}, cached=${!!cached}`);
-
     if (hasThirtyDays && newlyFetched && cached) {
-       console.log(`[useDynamicFlow] hitting early return: id=${river.id}`);
        if (!dynamicPayload || dynamicPayload.gaugeData !== cached.gaugeData || dynamicPayload.gaugeNames !== cached.gaugeNames) {
            setDynamicPayload({ gaugeData: cached.gaugeData, gaugeNames: cached.gaugeNames });
        }
@@ -49,7 +44,6 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
     }
 
     if (activeFetches.has(cacheKey)) {
-       console.log(`[useDynamicFlow] fetch already in progress: id=${river.id}`);
        return;
     }
 
@@ -58,7 +52,6 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
     const fetchGauges = async () => {
       if (activeFetches.has(cacheKey)) return;
       activeFetches.add(cacheKey);
-      console.log(`[useDynamicFlow] fetchGauges starting: id=${river.id}`);
       try {
         const gaugeDataMap: Record<string, Map<number, any>> = {};
         const siteNameMap: Record<string, string> = {};
