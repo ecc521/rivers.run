@@ -4,7 +4,7 @@ import { fetchAPI } from "../services/api";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css"; 
 import { useAuth } from "../context/AuthContext";
-import DOMPurify from "dompurify";
+import { sanitizeHtml } from "../utils/sanitizeHtml";
 import { firebaseConfig } from "../firebase";
 import { skillLevels, getSkillAbbreviation, getSkillIndex } from "../utils/skillTranslations";
 import { RiverItem } from "../components/RiverItem";
@@ -45,6 +45,8 @@ export default function RiverEditor() {
   const isNewFromURL = riverId === "new" || !riverId;
   const isNew = isReviewMode ? (!loading && !liveData) : isNewFromURL;
   const targetId = riverId || queueId || "";
+
+
 
   const stableRandomId = useMemo(() => {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -280,7 +282,7 @@ export default function RiverEditor() {
         gauges: parsedGauges,
         tags: (riverData.rawTags || "").split(',').map((t: string) => t.trim()).filter(Boolean),
         accessPoints: newAccessPoints,
-        writeup: DOMPurify.sanitize(riverData.writeup || "", { FORBID_ATTR: ["style"] }),
+        writeup: sanitizeHtml(riverData.writeup || ""),
         flow: riverData.flow || { unit: "cfs", min: null, low: null, mid: null, high: null, max: null },
         updatedAt: Date.now(),
         submittedBy: isReviewMode ? (proposedData?.submittedBy || user?.uid || "anonymous") : (user?.uid || "anonymous"),
