@@ -271,18 +271,20 @@ const ListsPage: React.FC = () => {
                     <span style={{ fontSize: "0.55em", padding: "2px 6px", borderRadius: "4px", backgroundColor: "#334155", color: "white", textTransform: "uppercase" }}>Private</span>
                  )}
               </h2>
-              <p style={{ margin: "5px 0 0 0", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "6px" }}>
-                By{" "}
-                {isAnonymous ? (
-                  list.author
-                ) : (
-                  <AuthorHoverCard 
-                    list={list} 
-                    otherLists={otherLists} 
-                    navigate={navigate} 
-                  />
-                )}
-              </p>
+              {!isOwned && (
+                <p style={{ margin: "5px 0 0 0", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "6px" }}>
+                  By{" "}
+                  {isAnonymous ? (
+                    list.author
+                  ) : (
+                    <AuthorHoverCard 
+                      list={list} 
+                      otherLists={otherLists} 
+                      navigate={navigate} 
+                    />
+                  )}
+                </p>
+              )}
           </div>
           <span style={{ backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
              {list.subscribes || 0} Subscribers
