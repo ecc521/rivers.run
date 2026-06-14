@@ -101,14 +101,16 @@ describe('Daily Digest Notification Engine', () => {
                 section: null,
                 flow_min: 500,
                 flow_max: 1000,
+                flow_unit: 'cfs',
                 gauges: JSON.stringify([{ id: 'USGS:1' }]),
                 custom_min: null,
-                custom_max: null
+                custom_max: null,
+                custom_units: null
             }
         ], {
             "USGS:1": {
                 id: "USGS:1", name: "Test Gauge", lat: 0, lon: 0,
-                readings: [{ value: 100, timestamp: Date.now() }] // Way below 500
+                readings: [{ cfs: 100, timestamp: Date.now() }] // Way below 500 cfs
             }
         });
 
@@ -138,14 +140,16 @@ describe('Daily Digest Notification Engine', () => {
                 section: null,
                 flow_min: 500,
                 flow_max: 1000,
+                flow_unit: 'cfs',
                 gauges: JSON.stringify([{ id: 'USGS:2' }]),
                 custom_min: null,
-                custom_max: null
+                custom_max: null,
+                custom_units: null
             }
         ], {
             "USGS:2": {
                 id: "USGS:2", name: "Test Gauge", lat: 0, lon: 0,
-                readings: [{ value: 750, timestamp: Date.now() }] // Perfect
+                readings: [{ cfs: 750, timestamp: Date.now() }] // Perfect
             }
         });
 
@@ -169,14 +173,16 @@ describe('Daily Digest Notification Engine', () => {
                 section: null,
                 flow_min: 500, // Normally too high if > 1000
                 flow_max: 1000,
+                flow_unit: 'cfs',
                 gauges: JSON.stringify([{ id: 'USGS:3' }]),
                 custom_min: 1500, // User ONLY wants emails when it is massively flooded
-                custom_max: 2000
+                custom_max: 2000,
+                custom_units: 'cfs'
             }
         ], {
             "USGS:3": {
                 id: "USGS:3", name: "Test Gauge", lat: 0, lon: 0,
-                readings: [{ value: 1600, timestamp: Date.now() }] // Running according to custom limits!
+                readings: [{ cfs: 1600, timestamp: Date.now() }] // Running according to custom limits!
             }
         });
 
@@ -190,11 +196,12 @@ describe('Daily Digest Notification Engine', () => {
 
 describe('Notification Helpers (Pure Unit Tests)', () => {
     describe('evaluateRiverConditions', () => {
-        const createRiver = (name: string, min: number | null, max: number | null): RiverCondition => ({
+        const createRiver = (name: string, min: number | null, max: number | null, unit: string | null = 'cfs'): RiverCondition => ({
             name,
             section: 'Test Section',
             min,
             max,
+            unit,
             gauges: [{ id: 'USGS:TEST' }]
         });
 
@@ -251,6 +258,64 @@ describe('Notification Helpers (Pure Unit Tests)', () => {
             
             expect(summary.running).toHaveLength(1);
             expect(summary.high).toHaveLength(1);
+            expect(summary.low).toHaveLength(0);
+        });
+
+        it('uses unit-aware readings and conversion', () => {
+            const rivers = [
+                { ...createRiver('RiverCFS', 100, 500, 'cfs'), gauges: [{ id: 'USGS:A' }] }, // CFS match
+                { ...createRiver('RiverCMS', 5, 20, 'cms'), gauges: [{ id: 'USGS:B' }] }, // CMS match
+                { ...createRiver('RiverConverted', 35, 100, 'cfs'), gauges: [{ id: 'USGS:C' }] }, // CMS to CFS conversion
+            ];
+            const data = {
+                'USGS:A': { readings: [{ cfs: 250 }] },
+                'USGS:B': { readings: [{ cms: 10 }] },
+                'USGS:C': { readings: [{ cms: 1 }] }, // 1 cms ~ 35.31 cfs, should be running
+            };
+            const summary = evaluateRiverConditions(rivers, data);
+
+            expect(summary.running).toHaveLength(3);
+            expect(summary.running[0]).toContain('RiverCFS (Test Section): 250 cfs');
+            expect(summary.running[1]).toContain('RiverCMS (Test Section): 10 cms');
+            expect(summary.running[2]).toContain('RiverConverted (Test Section): 35.31 cfs');
+        });
+
+        it('handles missing readings or missing values by skipping them', () => {
+            const rivers = [
+                { ...createRiver('RiverNoReadings', 100, 500, 'cfs'), gauges: [{ id: 'USGS:A' }] },
+                { ...createRiver('RiverEmptyReadings', 100, 500, 'cfs'), gauges: [{ id: 'USGS:B' }] },
+                { ...createRiver('RiverMissingUnitValue', 100, 500, 'cfs'), gauges: [{ id: 'USGS:C' }] },
+                { ...createRiver('RiverInvalidVal', 100, 500, 'cfs'), gauges: [{ id: 'USGS:D' }] },
+            ];
+            const data = {
+                'USGS:A': {}, // no readings array at all
+                'USGS:B': { readings: [] }, // empty readings array
+                'USGS:C': { readings: [{ temp_f: 65 }] }, // missing flow value
+                'USGS:D': { readings: [{ cfs: NaN }] }, // invalid value
+            };
+            const summary = evaluateRiverConditions(rivers, data as any);
+
+            expect(summary.running).toHaveLength(0);
+            expect(summary.low).toHaveLength(0);
+            expect(summary.high).toHaveLength(0);
+        });
+
+        it('evaluates the LATEST reading, not the oldest reading', () => {
+            const rivers = [
+                { ...createRiver('RiverA', 100, 500, 'cfs'), gauges: [{ id: 'USGS:A' }] },
+            ];
+            const data = {
+                'USGS:A': {
+                    readings: [
+                        { cfs: 50, dateTime: 1000 },  // Old reading (Too Low)
+                        { cfs: 250, dateTime: 2000 }  // Latest reading (Running!)
+                    ]
+                }
+            };
+            const summary = evaluateRiverConditions(rivers, data);
+
+            expect(summary.running).toHaveLength(1);
+            expect(summary.running[0]).toContain('RiverA (Test Section): 250 cfs');
             expect(summary.low).toHaveLength(0);
         });
     });

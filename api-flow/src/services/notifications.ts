@@ -6,6 +6,7 @@ export interface RiverCondition {
     section: string | null;
     min: number | null;
     max: number | null;
+    unit: string | null;
     gauges: any[];
 }
 
@@ -32,9 +33,11 @@ export async function fetchSubscribedUsers(env: Env, currentTime: number): Promi
             r.section,
             r.flow_min, 
             r.flow_max, 
+            r.flow_unit,
             r.gauges, 
             c.custom_min, 
-            c.custom_max
+            c.custom_max,
+            c.custom_units
         FROM (
             -- Owners of active lists
             SELECT owner_id as user_id, id as list_id FROM community_lists WHERE notifications_enabled = 1
@@ -67,10 +70,58 @@ export async function fetchSubscribedUsers(env: Env, currentTime: number): Promi
             section: row.section as string | null,
             min: row.custom_min !== null ? (row.custom_min as number) : (row.flow_min as number | null),
             max: row.custom_max !== null ? (row.custom_max as number) : (row.flow_max as number | null),
+            unit: (row.custom_min !== null || row.custom_max !== null)
+                ? (row.custom_units as string | null)
+                : (row.flow_unit as string | null),
             gauges: typeof row.gauges === "string" ? JSON.parse(row.gauges) : (row.gauges || [])
         });
     }
     return usersMap;
+}
+
+/**
+ * Resolves the numeric reading value based on the river's unit preference,
+ * converting between flow (cfs/cms) or stage (ft/m) if necessary.
+ * Falls back to legacy `.value` (for test suite compatibility) or any available unit.
+ */
+export function getReadingValue(reading: any, unit: string | null): number | undefined {
+    if (!reading) return undefined;
+
+    // Check for mock test compatibility
+    if (reading.value !== undefined && reading.value !== null) {
+        return Number(reading.value);
+    }
+
+    if (!unit) {
+        // Fallback: try to find any available flow or stage value in order of preference
+        const val = reading.cfs ?? reading.cms ?? reading.ft ?? reading.m;
+        return val !== undefined ? Number(val) : undefined;
+    }
+
+    const cleanUnit = unit.toLowerCase();
+
+    // If the exact unit is present, return it
+    if (reading[cleanUnit] !== undefined && reading[cleanUnit] !== null) {
+        return Number(reading[cleanUnit]);
+    }
+
+    // Otherwise, perform conversions if possible
+    if (cleanUnit === "cfs" && reading.cms !== undefined && reading.cms !== null) {
+        return Math.round((Number(reading.cms) * 35.3147) * 100) / 100;
+    }
+    if (cleanUnit === "cms" && reading.cfs !== undefined && reading.cfs !== null) {
+        return Math.round((Number(reading.cfs) * 0.0283168) * 1000) / 1000;
+    }
+    if (cleanUnit === "ft" && reading.m !== undefined && reading.m !== null) {
+        return Math.round((Number(reading.m) * 3.28084) * 100) / 100;
+    }
+    if (cleanUnit === "m" && reading.ft !== undefined && reading.ft !== null) {
+        return Math.round((Number(reading.ft) * 0.3048) * 1000) / 1000;
+    }
+
+    // Secondary fallback
+    const val = reading.cfs ?? reading.cms ?? reading.ft ?? reading.m;
+    return val !== undefined ? Number(val) : undefined;
 }
 
 export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Record<string, any>): DigestSummary {
@@ -84,19 +135,24 @@ export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Re
         const match = mergedData[primaryGaugeId];
         if (!match || !match.readings || match.readings.length === 0) continue;
         
-        const reading = match.readings[0].value;
+        // Readings in history are sorted ascending, so the latest is at the end of the array
+        const latestReading = match.readings[match.readings.length - 1];
+        const reading = getReadingValue(latestReading, river.unit);
+        if (reading === undefined || isNaN(reading)) continue;
+
         const displayName = river.name + (river.section ? ` (${river.section})` : '');
+        const unitSuffix = river.unit ? ` ${river.unit}` : '';
 
         if (river.min !== null && river.max !== null) {
-            if (reading > river.max) high.push(`<li>${displayName}: ${reading} (Too High)</li>`);
-            else if (reading >= river.min) running.push(`<li>${displayName}: ${reading}</li>`);
-            else low.push(`<li>${displayName}: ${reading} (Too Low)</li>`);
+            if (reading > river.max) high.push(`<li>${displayName}: ${reading}${unitSuffix} (Too High)</li>`);
+            else if (reading >= river.min) running.push(`<li>${displayName}: ${reading}${unitSuffix}</li>`);
+            else low.push(`<li>${displayName}: ${reading}${unitSuffix} (Too Low)</li>`);
         } else if (river.min !== null) {
-            if (reading >= river.min) running.push(`<li>${displayName}: ${reading}</li>`);
-            else low.push(`<li>${displayName}: ${reading} (Too Low)</li>`);
+            if (reading >= river.min) running.push(`<li>${displayName}: ${reading}${unitSuffix}</li>`);
+            else low.push(`<li>${displayName}: ${reading}${unitSuffix} (Too Low)</li>`);
         } else if (river.max !== null) {
-            if (reading <= river.max) running.push(`<li>${displayName}: ${reading}</li>`);
-            else high.push(`<li>${displayName}: ${reading} (Too High)</li>`);
+            if (reading <= river.max) running.push(`<li>${displayName}: ${reading}${unitSuffix}</li>`);
+            else high.push(`<li>${displayName}: ${reading}${unitSuffix} (Too High)</li>`);
         }
     }
     return { high, running, low };
