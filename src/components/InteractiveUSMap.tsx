@@ -27,7 +27,7 @@ export const InteractiveUSMap: React.FC<InteractiveUSMapProps> = ({
   return (
     <div className="interactive-us-map-container">
       
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 959 593">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 959 593" aria-hidden="true">
   <title>Blank map of the United States, territories not included</title>
 <defs>
 

@@ -110,6 +110,14 @@ const GlobalNavBar: React.FC = () => {
                <div style={{ position: "relative" }}>
                  <div
                    onClick={() => setIsNavMoreOpen(!isNavMoreOpen)}
+                   onKeyDown={(e) => {
+                     if (e.key === "Enter" || e.key === " ") {
+                       e.preventDefault();
+                       setIsNavMoreOpen(!isNavMoreOpen);
+                     }
+                   }}
+                   role="button"
+                   tabIndex={0}
                    style={{ color: "#cbd5e1", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px" }}
                  >
                    More <span style={{ fontSize: "0.8em" }}>▼</span>
@@ -173,6 +181,15 @@ const GlobalNavBar: React.FC = () => {
             >
               <div 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setIsDropdownOpen(!isDropdownOpen);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Profile menu"
                 style={{ display: "flex", alignItems: "center", cursor: "pointer", gap: "8px" }}
               >
                 {user.photoURL && !imgError ? (

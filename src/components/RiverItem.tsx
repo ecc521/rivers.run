@@ -87,7 +87,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
     }
   }
 
-  const handleActionClick = async (e: React.MouseEvent) => {
+  const handleActionClick = async (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     
     if (!user) {
@@ -192,11 +192,21 @@ export const RiverItem: React.FC<RiverItemProps> = ({
 
   return (
     <React.Fragment>
-      <button
+      <div
         id={`${baseId}1`}
         className={buttonClassNames}
         style={bgColor ? { backgroundColor: bgColor } : {}}
         onClick={handleNavigate}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            if (e.target === e.currentTarget) {
+              e.preventDefault();
+              handleNavigate();
+            }
+          }
+        }}
       >
         <span className="riverspan">{river.name}</span>
         <span className="riverspan">{river.section}</span>
@@ -239,7 +249,15 @@ export const RiverItem: React.FC<RiverItemProps> = ({
         <span
           className="riverspan favspan"
           title={getFavTitle()}
-
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              handleActionClick(e);
+            }
+          }}
           style={{
             color: displayColor,
             fontWeight: "bold",
@@ -257,7 +275,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
               riverId={river.id} 
            />
         )}
-      </button>
+      </div>
 
     </React.Fragment>
   );

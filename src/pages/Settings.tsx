@@ -370,10 +370,23 @@ const OfflineMapManagerInner: React.FC = () => {
             const hasBoth = state.hasMap && state.hasRouting;
             
             return (
-              <div key={region.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer' }} onClick={() => {
+              <div 
+                key={region.id} 
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setExpandedRegionId(region.id);
+                    setDownloadOptions({ map: !state.hasMap, routing: !state.hasRouting });
+                  }
+                }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer' }} 
+                onClick={() => {
                   setExpandedRegionId(region.id);
                   setDownloadOptions({ map: !state.hasMap, routing: !state.hasRouting });
-              }}>
+                }}
+              >
                 <div>
                   <div style={{ fontWeight: 'bold' }}>{region.name}</div>
                   <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>

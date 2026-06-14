@@ -400,6 +400,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <div style={{ textAlign: "right", marginBottom: "16px" }}>
               <span 
                 onClick={() => setView('forgot_password')} 
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setView('forgot_password');
+                  }
+                }}
+                role="button"
+                tabIndex={0}
                 style={{ color: "var(--primary)", fontSize: "0.85rem", cursor: "pointer", fontWeight: 500 }}
               >
                 Forgot Password?
@@ -410,7 +418,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </button>
             <p style={{ marginTop: "20px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
               Don't have an account?{' '}
-              <span onClick={() => {setView('email_signup'); setErrorText(null);}} style={{ color: "var(--primary)", cursor: "pointer", fontWeight: 600 }}>
+              <span 
+                onClick={() => {setView('email_signup'); setErrorText(null);}} 
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setView('email_signup');
+                    setErrorText(null);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                style={{ color: "var(--primary)", cursor: "pointer", fontWeight: 600 }}
+              >
                 Sign Up
               </span>
             </p>
@@ -441,7 +461,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </button>
             <p style={{ marginTop: "20px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
               Already have an account?{' '}
-              <span onClick={() => {setView('email_signin'); setErrorText(null);}} style={{ color: "var(--primary)", cursor: "pointer", fontWeight: 600 }}>
+              <span 
+                onClick={() => {setView('email_signin'); setErrorText(null);}} 
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setView('email_signin');
+                    setErrorText(null);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                style={{ color: "var(--primary)", cursor: "pointer", fontWeight: 600 }}
+              >
                 Sign In
               </span>
             </p>
@@ -466,7 +498,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </button>
             <p style={{ marginTop: "20px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
               Remembered your password?{' '}
-              <span onClick={() => {setView('email_signin'); setErrorText(null); setSuccessText(null);}} style={{ color: "var(--primary)", cursor: "pointer", fontWeight: 600 }}>
+              <span 
+                onClick={() => {setView('email_signin'); setErrorText(null); setSuccessText(null);}} 
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setView('email_signin');
+                    setErrorText(null);
+                    setSuccessText(null);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                style={{ color: "var(--primary)", cursor: "pointer", fontWeight: 600 }}
+              >
                 Sign In
               </span>
             </p>
