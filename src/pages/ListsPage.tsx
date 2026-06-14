@@ -272,7 +272,7 @@ const ListsPage: React.FC = () => {
                  )}
               </h2>
               {!isOwned && (
-                <p style={{ margin: "5px 0 0 0", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ margin: "5px 0 0 0", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "6px" }}>
                   By{" "}
                   {isAnonymous ? (
                     list.author
@@ -283,7 +283,7 @@ const ListsPage: React.FC = () => {
                       navigate={navigate} 
                     />
                   )}
-                </p>
+                </div>
               )}
           </div>
           <span style={{ backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
