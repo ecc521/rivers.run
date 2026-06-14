@@ -152,7 +152,7 @@ const RiverPage: React.FC = () => {
     noindex: !!error || (!loading && !river)
   });
 
-  if (loading) {
+  if (loading && rivers.length === 0) {
     return (
       <div className="page-content center">
         <h2>Loading River Data...</h2>

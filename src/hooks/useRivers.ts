@@ -212,9 +212,11 @@ export const useRivers = (): UseRiversResult => {
     fetchSubscribers.add(handleUpdate);
 
     const fetchRivers = async (force = false) => {
-      // If we already have fresh data (less than 15 mins old), or are already fetching, skip
+      // Guard: Never fetch concurrently
+      if (globalLoading) return;
+
       const isFresh = globalLastFetchTime && (Date.now() - globalLastFetchTime < 15 * 60 * 1000);
-      if (!force && isFresh && (globalRiversCache || globalLoading)) {
+      if (!force && isFresh && globalRiversCache) {
           return;
       }
       
@@ -309,14 +311,18 @@ export const useRivers = (): UseRiversResult => {
     // Auto-fetch on refocus/visibility if data is > 15 mins old
     const handleVisibility = () => {
         if (document.visibilityState === 'visible') {
-            const isStale = globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000);
-            fetchRivers(!!isStale);
+            const isStale = !globalRiversCache || (globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000));
+            if (isStale) {
+                fetchRivers(false);
+            }
         }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    const isStaleOnMount = globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000);
-    fetchRivers(!!isStaleOnMount);
+    const isStaleOnMount = !globalRiversCache || (globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000));
+    if (isStaleOnMount) {
+        fetchRivers(false);
+    }
 
     return () => {
         fetchSubscribers.delete(handleUpdate);

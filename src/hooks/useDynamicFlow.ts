@@ -42,7 +42,9 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
 
     if (hasThirtyDays && newlyFetched && cached) {
        console.log(`[useDynamicFlow] hitting early return: id=${river.id}`);
-       setDynamicPayload({ gaugeData: cached.gaugeData, gaugeNames: cached.gaugeNames });
+       if (!dynamicPayload || dynamicPayload.gaugeData !== cached.gaugeData || dynamicPayload.gaugeNames !== cached.gaugeNames) {
+           setDynamicPayload({ gaugeData: cached.gaugeData, gaugeNames: cached.gaugeNames });
+       }
        return;
     }
 

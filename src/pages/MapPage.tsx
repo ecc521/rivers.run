@@ -5,19 +5,19 @@ import { SharedMap } from "../components/SharedMap";
 
 const MapPage: React.FC = () => {
   const location = useLocation();
-  const { loading: riversLoading, error: riversError } = useRivers();
-  const [loading, setLoading] = useState(true);
+  const { rivers, loading: riversLoading, error: riversError } = useRivers();
+  const [loading, setLoading] = useState(rivers.length === 0);
   const [error, setError] = useState<string | null>(null);
 
   // Sync internal loading state with rivers data hook
   useEffect(() => {
-     if (riversLoading) {
+     if (riversLoading && rivers.length === 0) {
          setLoading(true);
      } else {
          setLoading(false);
          if (riversError) setError(riversError);
      }
-  }, [riversLoading, riversError]);
+  }, [riversLoading, riversError, rivers.length]);
 
   useEffect(() => {
     // Automatically query for user location to place native tracker token
