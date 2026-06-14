@@ -30,10 +30,12 @@ export interface UserList {
 interface ListsContextType {
   myLists: UserList[];
   subscribedListIds: string[];
+  subscribedListNotifications: Record<string, boolean>;
   createList: (title: string, description: string, isPublished: boolean, rivers?: any[]) => Promise<string | null>;
   updateList: (id: string, updates: Partial<UserList>) => Promise<void>;
   deleteList: (id: string) => Promise<void>;
   toggleSubscription: (listId: string) => Promise<void>;
+  toggleSubscriptionNotifications: (listId: string) => Promise<void>;
   isSubscribed: (listId: string) => boolean;
   addRiverToList: (listId: string, river: any) => Promise<void>;
   addMultipleRiversToList: (listId: string, rivers: any[]) => Promise<void>;
@@ -49,10 +51,12 @@ interface ListsContextType {
 const ListsContext = createContext<ListsContextType>({
   myLists: [],
   subscribedListIds: [],
+  subscribedListNotifications: {},
   createList: async () => null,
   updateList: async () => {},
   deleteList: async () => {},
   toggleSubscription: async () => {},
+  toggleSubscriptionNotifications: async () => {},
   isSubscribed: () => false,
   addRiverToList: async () => {},
   addMultipleRiversToList: async () => {},
@@ -69,6 +73,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { user, isModerator } = useAuth();
   const [myLists, setMyLists] = useState<UserList[]>([]);
   const [subscribedListIds, setSubscribedListIds] = useState<string[]>([]);
+  const [subscribedListNotifications, setSubscribedListNotifications] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -82,6 +87,10 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const storedSubs = await persistentStorage.get("my_subscribed_lists");
       if (storedSubs) {
         try { setSubscribedListIds(JSON.parse(storedSubs)); } catch {}
+      }
+      const storedSubNotifs = await persistentStorage.get("my_subscribed_list_notifications");
+      if (storedSubNotifs) {
+        try { setSubscribedListNotifications(JSON.parse(storedSubNotifs)); } catch {}
       }
       setLoading(false);
     }
@@ -102,6 +111,10 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (serverSubs && serverSubs.subscriptions) {
               setSubscribedListIds(serverSubs.subscriptions);
               persistentStorage.set("my_subscribed_lists", JSON.stringify(serverSubs.subscriptions));
+
+              const notifs = serverSubs.notificationStates || {};
+              setSubscribedListNotifications(notifs);
+              persistentStorage.set("my_subscribed_list_notifications", JSON.stringify(notifs));
         }
     } catch (e: any) {
         console.error("Failed to sync cloud state:", e);
@@ -182,12 +195,31 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await fetchAPI(`/user/subscriptions`, { method: "PUT", body: JSON.stringify({ subscriptions: newSubs }) }, user);
   };
 
+  const toggleSubscriptionNotifications = async (listId: string) => {
+    if (!user) return;
+    const currentVal = !!subscribedListNotifications[listId];
+    const newVal = !currentVal;
+
+    const updated = { ...subscribedListNotifications, [listId]: newVal };
+    setSubscribedListNotifications(updated);
+    persistentStorage.set("my_subscribed_list_notifications", JSON.stringify(updated));
+
+    await fetchAPI(`/user/subscriptions/${listId}/notifications`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled: newVal })
+    }, user);
+  };
+
   const isSubscribed = (listId: string) => subscribedListIds.includes(listId);
 
   const addRiverToList = async (listId: string, river: any) => {
     if (!user) return;
     const list = myLists.find(l => l.id === listId);
     if (!list || list.rivers.some(r => r.id === river.id)) return;
+
+    if (list.rivers.length >= 500) {
+      throw new Error(`Cannot add river. Lists are limited to 500 rivers.`);
+    }
 
     const primaryGaugeId = river.gauges?.find((g: any) => g.isPrimary)?.id || river.gauges?.[0]?.id;
     const newRivers = [...list.rivers, { 
@@ -217,9 +249,8 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     
     if (modified) {
-       // Check for massive payload size (rough estimate)
-       if (newRivers.length > 1000) {
-          console.warn(`Bulk adding ${rivers.length} rivers. Total list size now ${newRivers.length}. This may exceed API limits.`);
+       if (newRivers.length > 500) {
+          throw new Error(`Cannot add rivers. Lists are limited to 500 rivers (attempted ${newRivers.length}).`);
        }
        await updateList(listId, { rivers: newRivers });
     }
@@ -271,8 +302,8 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ListsContext.Provider
       value={{
-        myLists, subscribedListIds, createList, updateList, deleteList,
-        toggleSubscription, isSubscribed, addRiverToList, addMultipleRiversToList,
+        myLists, subscribedListIds, subscribedListNotifications, createList, updateList, deleteList,
+        toggleSubscription, toggleSubscriptionNotifications, isSubscribed, addRiverToList, addMultipleRiversToList,
         removeRiverFromList, updateRiverInList, toggleRiverInQuickList,
         isRiverInQuickList, loading, syncError, refreshCloudState: pullCloudState
       }}

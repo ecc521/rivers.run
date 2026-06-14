@@ -5,6 +5,7 @@ html, body {
     min-height: 100dvh;
     max-width: 100vw;
     overflow-x: clip;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 button, select {
@@ -746,6 +747,9 @@ Those include name,section,skill,quality, and flow info*/
     text-align:left;
 	display:flex;
 	align-items:center;
+	padding: 6px 8px;
+	cursor: pointer;
+	box-sizing: border-box;
 }
 
 .riverbutton:nth-child(even) {
