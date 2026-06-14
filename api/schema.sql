@@ -55,7 +55,7 @@ CREATE TABLE river_audit_log (
     changed_at INTEGER NOT NULL, -- Unix timestamp
     diff_patch JSON NOT NULL     -- Tracks the delta/diff of what actually changed
 );
-CREATE INDEX idx_audit_log_river_id ON river_audit_log(river_id);
+CREATE INDEX idx_audit_log_river_history ON river_audit_log(river_id, changed_at DESC);
 CREATE INDEX idx_audit_log_changed_at ON river_audit_log(changed_at);
 
 -- Note: Because we want strictly minimized DIFFs to save DB Storage limits, 
@@ -76,6 +76,8 @@ CREATE TABLE community_lists (
 );
 CREATE INDEX idx_community_lists_owner_id ON community_lists(owner_id);
 CREATE INDEX idx_community_lists_published ON community_lists(is_published);
+CREATE INDEX idx_community_lists_published_subscribes ON community_lists(is_published, subscribes DESC);
+CREATE INDEX idx_community_lists_notifications ON community_lists(notifications_enabled) WHERE notifications_enabled = 1;
 
 CREATE TABLE community_list_rivers (
     list_id TEXT NOT NULL,
@@ -100,9 +102,11 @@ CREATE TABLE community_list_rivers (
 CREATE TABLE user_subscriptions (
     user_id TEXT NOT NULL,       -- Auth UID
     list_id TEXT NOT NULL,
+    notifications_enabled INTEGER DEFAULT 0,
     FOREIGN KEY(list_id) REFERENCES community_lists(id) ON DELETE CASCADE,
     PRIMARY KEY(user_id, list_id)
 );
+CREATE INDEX idx_user_subscriptions_notifications ON user_subscriptions(notifications_enabled) WHERE notifications_enabled = 1;
 
 -- ==========================================
 -- 4.5. AUTOMATED COUNTERS (Subscription Tracking)
@@ -136,6 +140,8 @@ CREATE TABLE river_suggestions (
 );
 CREATE INDEX idx_suggestions_river_id ON river_suggestions(river_id);
 CREATE INDEX idx_suggestions_created_at ON river_suggestions(created_at);
+CREATE INDEX idx_suggestions_status_created ON river_suggestions(status, created_at DESC);
+CREATE INDEX idx_suggestions_suggested_by ON river_suggestions(suggested_by);
 
 -- ==========================================
 -- 6. USER PROFILES & SETTINGS
@@ -154,6 +160,7 @@ CREATE TABLE users (
 );
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_notification_settings ON users(notifications_enabled, notifications_none_until) WHERE notifications_enabled = 1;
 
 -- ==========================================
 -- 7. ADMIN AUDIT TRAIL
@@ -180,8 +187,8 @@ CREATE TABLE user_reports (
     status TEXT DEFAULT 'pending',
     created_at INTEGER NOT NULL
 );
-CREATE INDEX idx_user_reports_status ON user_reports(status);
-CREATE INDEX idx_user_reports_created_at ON user_reports(created_at);
+CREATE INDEX idx_reports_status_created ON user_reports(status, created_at DESC);
+CREATE INDEX idx_user_reports_reported_by ON user_reports(reported_by);
 
 
 -- ==========================================
@@ -205,6 +212,7 @@ CREATE TABLE IF NOT EXISTS watch_sync_codes (
     list_id TEXT NOT NULL,
     expires_at INTEGER NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_watch_sync_codes_expiry ON watch_sync_codes(expires_at);
 
 -- ==========================================
 -- 11. DEVELOPER API KEYS & TELEMETRY
@@ -231,5 +239,3 @@ CREATE TABLE IF NOT EXISTS api_usage (
     PRIMARY KEY(key_hash, date, endpoint_type),
     FOREIGN KEY(key_hash) REFERENCES api_keys(key_hash) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS idx_api_usage_lookup ON api_usage(key_hash, date);
-

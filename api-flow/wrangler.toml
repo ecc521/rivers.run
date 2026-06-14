@@ -3,6 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2026-04-15"
 compatibility_flags = ["nodejs_compat"]
 
+[dev]
+port = 8787
+
 # 10 Million Requests / month
 # Cloudflare Workers Standard Pricing now automatically applies unbound limits
 # to cron fetch loops without needing to specify usage_model.

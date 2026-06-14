@@ -1012,31 +1012,56 @@ const getCommunityListsRoute = createRoute({
     method: 'get',
     path: '/community/lists',
     summary: 'Get all public community lists',
+    request: {
+        query: z.object({
+            limit: z.string().optional().openapi({ param: { name: 'limit', in: 'query' } })
+        })
+    },
     responses: {
         200: { content: { 'application/json': { schema: GenericArraySchema } }, description: 'Public lists feed' }
     }
 });
 
 app.openapi(getCommunityListsRoute, async (c) => {
-    // 1. Fetch all published lists and their river mappings
-    const [listsRaw, mappingRaw] = await c.env.DB.batch([
-        c.env.DB.prepare(`
-            SELECT cl.*, u.display_name as user_display_name, u.settings_json as user_settings_json, u.role as user_role
-            FROM community_lists cl
-            LEFT JOIN users u ON cl.owner_id = u.user_id
-            WHERE cl.is_published = 1
-        `),
-        c.env.DB.prepare(`
-            SELECT lr.* FROM community_list_rivers lr
-            JOIN community_lists l ON l.id = lr.list_id
-            WHERE l.is_published = 1
-        `)
-    ]);
+    const limitQuery = c.req.query("limit");
+    let limit: number | null = null;
+    if (limitQuery) {
+        limit = Math.min(Math.max(parseInt(limitQuery) || 50, 1), 100);
+    }
 
+    let listsQuery = `
+        SELECT cl.*, u.display_name as user_display_name, u.settings_json as user_settings_json, u.role as user_role
+        FROM community_lists cl
+        LEFT JOIN users u ON cl.owner_id = u.user_id
+        WHERE cl.is_published = 1
+        ORDER BY cl.subscribes DESC, cl.id ASC
+    `;
+
+    let listsStmt;
+    if (limit !== null) {
+        listsQuery += " LIMIT ?";
+        listsStmt = c.env.DB.prepare(listsQuery).bind(limit);
+    } else {
+        listsStmt = c.env.DB.prepare(listsQuery);
+    }
+
+    const listsRaw = await listsStmt.all();
     const lists = listsRaw.results as any[];
-    const mappings = mappingRaw.results as any[];
 
-    // 2. Group mapping identically to the personal /lists endpoint
+    // 2. Fetch only mappings for the returned lists
+    let mappings: any[] = [];
+    if (lists.length > 0) {
+        const placeholders = lists.map(() => "?").join(",");
+        const listIds = lists.map(l => l.id);
+        const mappingStmt = c.env.DB.prepare(`
+            SELECT * FROM community_list_rivers
+            WHERE list_id IN (${placeholders})
+        `).bind(...listIds);
+        const mappingRaw = await mappingStmt.all();
+        mappings = mappingRaw.results as any[];
+    }
+
+    // 3. Group mapping identically to the personal /lists endpoint
     const mappingMap = new Map<string, any[]>();
     for (const m of mappings) {
         if (!mappingMap.has(m.list_id)) mappingMap.set(m.list_id, []);
@@ -1394,14 +1419,29 @@ const getSubscriptionsRoute = createRoute({
     summary: 'Get your active list subscriptions',
     security: [{ bearerAuth: [] }],
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ subscriptions: z.array(z.string()) }).openapi({ type: 'object' }) } }, description: 'Subscriptions' }
+        200: { 
+            content: { 
+                'application/json': { 
+                    schema: z.object({ 
+                        subscriptions: z.array(z.string()),
+                        notificationStates: z.record(z.boolean()).optional()
+                    }).openapi({ type: 'object' }) 
+                } 
+            }, 
+            description: 'Subscriptions' 
+        }
     }
 });
 
 app.openapi(getSubscriptionsRoute, async (c) => {
     const user = c.get("user");
-    const { results } = await c.env.DB.prepare("SELECT list_id FROM user_subscriptions WHERE user_id = ?").bind(user.user_id).all();
-    return c.json({ subscriptions: (results || []).map(r => r.list_id as string) });
+    const { results } = await c.env.DB.prepare("SELECT list_id, notifications_enabled FROM user_subscriptions WHERE user_id = ?").bind(user.user_id).all();
+    const subscriptions = (results || []).map(r => r.list_id as string);
+    const notificationStates = (results || []).reduce((acc: Record<string, boolean>, r: any) => {
+        acc[r.list_id] = r.notifications_enabled === 1;
+        return acc;
+    }, {});
+    return c.json({ subscriptions, notificationStates });
 });
 
 const updateSubscriptionsRoute = createRoute({
@@ -1422,12 +1462,70 @@ app.openapi(updateSubscriptionsRoute, async (c) => {
     const { subscriptions } = SubscriptionPayloadSchema.parse(body);
     
     const batch = [];
-    batch.push(c.env.DB.prepare("DELETE FROM user_subscriptions WHERE user_id = ?").bind(user.user_id));
-    for (const listId of subscriptions) {
-        batch.push(c.env.DB.prepare("INSERT INTO user_subscriptions (user_id, list_id) VALUES (?, ?)").bind(user.user_id, listId));
+    if (subscriptions.length === 0) {
+        batch.push(c.env.DB.prepare("DELETE FROM user_subscriptions WHERE user_id = ?").bind(user.user_id));
+    } else {
+        const placeholders = subscriptions.map(() => "?").join(", ");
+        batch.push(c.env.DB.prepare(`
+            DELETE FROM user_subscriptions 
+            WHERE user_id = ? AND list_id NOT IN (${placeholders})
+        `).bind(user.user_id, ...subscriptions));
+
+        for (const listId of subscriptions) {
+            batch.push(c.env.DB.prepare(`
+                INSERT OR IGNORE INTO user_subscriptions (user_id, list_id, notifications_enabled) 
+                VALUES (?, ?, 0)
+            `).bind(user.user_id, listId));
+        }
     }
     
     await c.env.DB.batch(batch);
+    return c.json({ success: true });
+});
+
+const toggleSubNotificationRoute = createRoute({
+    middleware: [firebaseAuthMiddleware],
+    method: 'patch',
+    path: '/user/subscriptions/{listId}/notifications',
+    summary: 'Toggle notifications for a subscription',
+    security: [{ bearerAuth: [] }],
+    request: {
+        params: z.object({
+            listId: z.string().openapi({
+                param: {
+                    name: 'listId',
+                    in: 'path',
+                    required: true
+                }
+            })
+        }),
+        body: {
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        enabled: z.boolean()
+                    }).openapi({ type: 'object' })
+                }
+            }
+        }
+    },
+    responses: {
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' }
+    }
+});
+
+app.openapi(toggleSubNotificationRoute, async (c) => {
+    const user = c.get("user");
+    const listId = c.req.param("listId");
+    const body = await c.req.json();
+    const { enabled } = z.object({ enabled: z.boolean() }).parse(body);
+
+    await c.env.DB.prepare(`
+        UPDATE user_subscriptions 
+        SET notifications_enabled = ? 
+        WHERE user_id = ? AND list_id = ?
+    `).bind(enabled ? 1 : 0, user.user_id, listId).run();
+
     return c.json({ success: true });
 });
 

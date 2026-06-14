@@ -44,8 +44,7 @@ export async function fetchSubscribedUsers(env: Env, currentTime: number): Promi
             UNION
             -- Subscribers to active lists
             SELECT s.user_id, s.list_id FROM user_subscriptions s 
-            JOIN community_lists l ON s.list_id = l.id 
-            WHERE l.notifications_enabled = 1
+            WHERE s.notifications_enabled = 1
         ) as target_user
         JOIN community_list_rivers c ON target_user.list_id = c.list_id
         JOIN rivers r ON c.river_id = r.id
