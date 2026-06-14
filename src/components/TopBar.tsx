@@ -40,7 +40,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
       </span>
       <span className="riverspan">Section</span>
       <span
-        className="riverspan"
+        className="riverspan skillspan"
         onClick={() => {
           toggleSort("skill");
         }}
@@ -57,7 +57,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
         Skill⇅
       </span>
       <span
-        className="riverspan"
+        className="riverspan classspan"
         onClick={() => {
           toggleSort("class");
         }}
@@ -74,7 +74,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
         Class⇅
       </span>
       <span
-        className="riverspan"
+        className="riverspan flowspan"
         onClick={() => {
           toggleSort("running");
         }}
@@ -91,7 +91,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
         Flow⇅
       </span>
       <span
-        className="riverspan"
+        className="riverspan statespan"
         onClick={() => {
           toggleSort("state" as any);
         }}

@@ -24,6 +24,7 @@ let globalRiversCache: RiverData[] | null = null;
 let globalDataGeneratedAt: number | null = null;
 let globalLastFetchTime: number | null = null;
 let globalLoading = false;
+let globalSyncing = false;
 let globalError: string | null = null;
 let globalStateToCountryMap: Map<string, Set<CountryCode>> | null = null;
 let globalAvailableStates: string[] = [];
@@ -213,14 +214,18 @@ export const useRivers = (): UseRiversResult => {
 
     const fetchRivers = async (force = false) => {
       // Guard: Never fetch concurrently
-      if (globalLoading) return;
+      if (globalLoading || globalSyncing) return;
 
       const isFresh = globalLastFetchTime && (Date.now() - globalLastFetchTime < 15 * 60 * 1000);
       if (!force && isFresh && globalRiversCache) {
           return;
       }
       
-      globalLoading = true;
+      if (globalRiversCache && globalRiversCache.length > 0) {
+          globalSyncing = true;
+      } else {
+          globalLoading = true;
+      }
       notifySubscribers();
 
       // Safety timeout to prevent permanently stuck loading state
@@ -228,6 +233,10 @@ export const useRivers = (): UseRiversResult => {
           if (globalLoading && (!globalRiversCache || force)) {
               globalLoading = false;
               globalError = "Request timed out. Please try again or check your connection.";
+              notifySubscribers();
+          }
+          if (globalSyncing) {
+              globalSyncing = false;
               notifySubscribers();
           }
       }, 15000);
@@ -268,6 +277,7 @@ export const useRivers = (): UseRiversResult => {
         globalAvailableStates = (Array.from(new Set(processedData.flatMap((r: any) => (r.states || "").split(/[ ,]+/).filter(Boolean).map((s: string) => s.toUpperCase())))) as string[]).sort((a, b) => a.localeCompare(b));
 
         globalLoading = false;
+        globalSyncing = false;
 
         // Persist to local storage for future bootstrap
         try {
@@ -294,6 +304,7 @@ export const useRivers = (): UseRiversResult => {
         clearTimeout(timeoutId);
         globalError = err instanceof Error ? err.message : "An error occurred";
         globalLoading = false;
+        globalSyncing = false;
         notifySubscribers();
       }
     };
