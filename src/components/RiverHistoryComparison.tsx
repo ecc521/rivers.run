@@ -1,6 +1,6 @@
 import React from 'react';
 import type { RiverData } from '../types/River';
-import DOMPurify from 'dompurify';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 
 interface RiverHistoryComparisonProps {
   historicalState: RiverData;
@@ -56,7 +56,7 @@ export const RiverHistoryComparison: React.FC<RiverHistoryComparisonProps> = ({
       return <span>Unit: {val.unit}, Range: {val.min ?? '?'} - {val.max ?? '?'}</span>;
     }
     if (field === 'writeup') {
-        return <div style={{ maxHeight: '100px', overflowY: 'auto', fontSize: '0.9rem', border: '1px solid var(--border)', padding: '5px' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(val || "", { FORBID_ATTR: ["style"] }) }} />;
+        return <div style={{ maxHeight: '100px', overflowY: 'auto', fontSize: '0.9rem', border: '1px solid var(--border)', padding: '5px' }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(val || "") }} />;
     }
     return <span>{String(val)}</span>;
   };

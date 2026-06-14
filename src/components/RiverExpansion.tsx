@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { RiverData } from "../types/River";
 import { USGSGraphs } from "./USGSGraphs";
 import { useDynamicFlow } from "../hooks/useDynamicFlow";
-import DOMPurify from "dompurify";
+import { sanitizeHtml } from "../utils/sanitizeHtml";
 import { SharedMap } from "./SharedMap";
 
 interface RiverExpansionProps {
@@ -34,7 +34,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
     <div className="riverWriteup" style={{ padding: "6px" }}>
 
       <div className="textInfo">
-        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(river.writeup || "", { FORBID_ATTR: ["style"] }) }} />
+        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(river.writeup || "") }} />
         <br />
 
         {river.averagegradient && (
