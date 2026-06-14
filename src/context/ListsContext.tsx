@@ -135,6 +135,9 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (myLists.length >= limit) {
        throw new Error(`You have reached the maximum limit of ${limit} custom lists.`);
     }
+    if (rivers.length > 500) {
+       throw new Error("A list can contain at most 500 rivers.");
+    }
     const uuid = generateUUID();
     const newList: UserList = {
       id: uuid, title, description, ownerId: user.uid,
@@ -156,6 +159,10 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!user) return;
     const list = myLists.find(l => l.id === id);
     if (!list) return;
+
+    if (updates.rivers && updates.rivers.length > 500) {
+       throw new Error("A list can contain at most 500 rivers.");
+    }
 
     const fullUpdatedList = { ...list, ...updates };
     const newLists = myLists.map(l => l.id === id ? fullUpdatedList : l);
@@ -250,7 +257,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     if (modified) {
        if (newRivers.length > 500) {
-          throw new Error(`Cannot add rivers. Lists are limited to 500 rivers (attempted ${newRivers.length}).`);
+          throw new Error(`Cannot add rivers. A list can contain at most 500 rivers (this action would result in ${newRivers.length} rivers).`);
        }
        await updateList(listId, { rivers: newRivers });
     }

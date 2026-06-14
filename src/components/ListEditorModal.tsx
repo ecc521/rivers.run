@@ -72,6 +72,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
       onClose();
     } catch (err: unknown) {
       console.error(err);
+      const msg = err instanceof Error ? err.message : String(err);
+      await alert(msg || "Failed to save list. Please try again.", "Error Saving List");
     } finally {
       setSaving(false);
     }

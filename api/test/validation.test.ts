@@ -16,10 +16,10 @@ describe("API Core Validation and Payload Checks", () => {
         await initAuthMock();
     });
 
-    it("should reject payloads exceeding 50KB outright", async () => {
+    it("should reject payloads exceeding 100KB outright", async () => {
          const adminToken = await createTestJwt("test-admin-validator");
          // Generate a bloated mock payload
-         const massiveString = "a".repeat(51 * 1024); 
+         const massiveString = "a".repeat(101 * 1024); 
          const res = await app.request("/rivers/test-01", {
              method: "PUT",
              headers: {

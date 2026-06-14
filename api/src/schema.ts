@@ -82,7 +82,7 @@ export const CommunityListSchema = z.object({
       customMin: z.number().optional().nullable().openapi({ type: 'number' }),
       customMax: z.number().optional().nullable().openapi({ type: 'number' }),
       customUnits: z.string().optional().nullable().openapi({ type: 'string' })
-  }).openapi({ type: 'object' })).optional().openapi({ type: 'array' })
+  }).openapi({ type: 'object' })).max(500, "A list can contain at most 500 rivers").optional().openapi({ type: 'array' })
 }).openapi({ type: 'object', description: 'A community list' });
 
 export const SubscriptionPayloadSchema = z.object({
@@ -181,8 +181,8 @@ export const ApiUsageSchema = z.object({
 
 export const checkPayloadSize = async (c: any, next: any) => {
     const contentLength = Number(c.req.header("content-length") || 0);
-    if (contentLength > 50 * 1024) {
-         return c.json({ error: "Payload exceeds absolute 50KB limit." }, 413);
+    if (contentLength > 100 * 1024) {
+         return c.json({ error: "Payload exceeds absolute 100KB limit." }, 413);
     }
     await next();
 };

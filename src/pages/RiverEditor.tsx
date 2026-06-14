@@ -19,6 +19,7 @@ import { RiverHistoryPanel } from "../components/RiverHistoryPanel";
 import { RiverHistoryComparison } from "../components/RiverHistoryComparison";
 import { reconstructHistoricalState } from "../utils/historyUtils";
 import { RiverExpansion } from "../components/RiverExpansion";
+import { useSEO } from "../hooks/useSEO";
 import type { RiverData } from "../types/River";
 
 export default function RiverEditor() {
@@ -46,7 +47,11 @@ export default function RiverEditor() {
   const isNew = isReviewMode ? (!loading && !liveData) : isNewFromURL;
   const targetId = riverId || queueId || "";
 
-
+  useSEO({
+    title: isReviewMode ? "Review Contribution" : isNew ? "Create River Entry" : "Edit River Entry",
+    description: "Manage river entries and gauge associations on Rivers.run.",
+    canonical: "https://rivers.run/create"
+  });
 
   const stableRandomId = useMemo(() => {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
