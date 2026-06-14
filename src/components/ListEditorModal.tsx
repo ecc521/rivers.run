@@ -38,7 +38,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const [showWatchSync, setShowWatchSync] = useState(false);
   
   const { user, setAuthModalOpen, privacySettings, updatePrivacySettings } = useAuth();
-  const { myLists, updateRiverInList, removeRiverFromList, updateList, deleteList, toggleSubscription, isSubscribed } = useLists();
+  const { myLists, updateRiverInList, removeRiverFromList, updateList, deleteList } = useLists();
   const { rivers } = useRivers();
   const { alert, confirm, promptReport } = useModal();
 
@@ -171,8 +171,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
 
   const modalTitle = {
     create: "Create New List",
-    edit: isOwner ? "Manage List" : "List Settings",
-    copy: "Copy List",
+    edit: isOwner ? "Manage List" : "Details",
+    copy: "Clone List",
     shared: "Shared List Explorer"
   }[mode];
 
@@ -312,32 +312,24 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             )}
         </div>
 
-        {(isShared || !isOwner) && !!activeList && (
+        {isShared && !!activeList && (
            <div style={{ display: "flex", gap: "10px", paddingBottom: "10px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
-             {!isOwner && (
-               <button
-                  onClick={() => { if (activeList) toggleSubscription(activeList.id); }}
-                  style={{ padding: "10px 16px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--primary)", color: "var(--primary)", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
-               >
-                  {isSubscribed(activeList.id) ? "Unsubscribe" : "Subscribe for Updates"}
-               </button>
-             )}
              {user && onCopySharedList && (
                  <button
                     onClick={handleDuplicateList}
                     style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
                  >
-                    {isShared ? "Import to My Lists" : "Duplicate List"}
+                    Import to My Lists
                  </button>
              )}
              {!user && (
                  <button
                     onClick={() => { setAuthModalOpen(true); }}
                     style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
-                 >
-                    Sign in to Save
-                 </button>
-             )}
+                  >
+                     Sign in to Save
+                  </button>
+              )}
            </div>
         )}
 
@@ -434,11 +426,17 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                         <div key={r.id + idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", padding: "10px", backgroundColor: "var(--surface-hover)", borderRadius: "8px", border: "1px solid var(--border)" }}>
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                                 <span style={{ fontWeight: "bold", fontSize: "0.95em" }}>{rName}</span>
-                                {r.gaugeId && (
-                                    <span style={{ fontSize: "0.75em", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px" }}>
-                                        📍 Valid Sensor: <code>{r.gaugeId.split(':').pop()}</code>
-                                    </span>
-                                )}
+                                {r.gaugeId && (() => {
+                                     const parts = r.gaugeId.split(':');
+                                     const provider = parts.length > 1 ? parts[0].toUpperCase() : "";
+                                     const sensorId = parts.length > 1 ? parts[1] : parts[0];
+                                     const sensorLabel = provider ? `${provider} Sensor: ${sensorId}` : `Sensor: ${sensorId}`;
+                                     return (
+                                         <span style={{ fontSize: "0.75em", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px" }}>
+                                             📍 {sensorLabel}
+                                         </span>
+                                     );
+                                 })()}
                             </div>
                             
                             {!canEditRivers ? (
@@ -574,7 +572,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                     opacity: (saving || !title.trim()) ? 0.7 : 1
                 }}
                 >
-                {saving ? "Saving..." : (mode === "create" || mode === "copy") ? "Create List" : "Save Settings"}
+                {saving ? "Saving..." : mode === "create" ? "Create List" : mode === "copy" ? "Clone List" : "Save Settings"}
                 </button>
             )}
           </div>

@@ -320,7 +320,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
                   Receive daily flow digests
                 </label>
                 <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginLeft: "22px", display: "block", marginTop: "-4px" }}>
-                  Summarizes conditions for lists you subscribe to.
+                  Summarizes conditions for lists you star.
                 </span>
 
                 {config.enabled !== false && (

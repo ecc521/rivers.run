@@ -13,7 +13,7 @@ import { Capacitor } from "@capacitor/core";
 
 const ListsPage: React.FC = () => {
   const { user, isModerator, loading: authLoading } = useAuth();
-  const { myLists, subscribedListIds, createList, updateList, toggleSubscription, isSubscribed } = useLists();
+  const { myLists, subscribedListIds, subscribedListNotifications, createList, updateList, toggleSubscription, toggleSubscriptionNotifications, isSubscribed } = useLists();
   const { homePageDefaultSearch, updateSetting } = useSettings();
   const { confirm, alert } = useModal();
   const navigate = useNavigate();
@@ -131,13 +131,13 @@ const ListsPage: React.FC = () => {
   const handleCopyList = async (list: UserList) => {
     const limit = isModerator ? 500 : 5;
     if (myLists.length >= limit) {
-      await alert(`You have reached the limit of ${limit} custom lists. You cannot copy another list until you delete one of your own.`);
+      await alert(`You have reached the limit of ${limit} custom lists. You cannot clone another list until you delete one of your own.`);
       return;
     }
     setEditorModal({
       isOpen: true,
       mode: "copy",
-      initialTitle: `Copy of ${list.title}`,
+      initialTitle: `Clone of ${list.title}`,
       initialDescription: list.description || "",
       targetList: list
     });
@@ -151,7 +151,7 @@ const ListsPage: React.FC = () => {
     } else if (editorModal.mode === "copy" && editorModal.targetList) {
       // Create a new list with the target list's rivers
       await createList(title, description, false, editorModal.targetList.rivers);
-      await alert("List copied successfully! It is now in 'My Lists'.");
+      await alert("List cloned successfully! It is now in 'My Lists'.");
       setActiveTab("mine");
     }
   };
@@ -171,6 +171,18 @@ const ListsPage: React.FC = () => {
      }
   };
 
+  const handleToggleSubscriptionNotifications = async (list: UserList) => {
+     try {
+       await toggleSubscriptionNotifications(list.id);
+       const isCurrentlyEnabled = !!subscribedListNotifications[list.id];
+       if (!isCurrentlyEnabled) {
+          await alert("Flow alerts enabled! You will be notified when rivers in this list pass your configured flow limits.");
+       }
+     } catch (err: unknown) {
+       if (err instanceof Error) await alert(`Failed to toggle notifications: ${err.message}`);
+     }
+  };
+
   const renderListCard = (list: UserList) => {
     const isOwned = user ? list.ownerId === user.uid : false;
     const isAnonymous = list.author === "Anonymous Paddler" || !list.ownerId || list.ownerId === "";
@@ -180,6 +192,13 @@ const ListsPage: React.FC = () => {
       const ownerLists = listsByOwner.get(list.ownerId) || [];
       otherLists = ownerLists.filter(l => l.id !== list.id);
     }
+
+    const buttonCount = user 
+      ? (isOwned 
+          ? 2 
+          : (isSubscribed(list.id) ? 3 : 2))
+      : 0;
+    const paddingRight = buttonCount > 0 ? `${buttonCount * 36 + (buttonCount - 1) * 8 + 20}px` : "0px";
 
     return (
       <div
@@ -203,7 +222,7 @@ const ListsPage: React.FC = () => {
                   e.stopPropagation();
                   const isSub = isSubscribed(list.id);
                   if (!isSub && !isOwned) {
-                      await alert("You must subscribe to this list before setting it as your default startup view.", "Subscribe First");
+                      await alert("You must star/subscribe to this list before setting it as your default startup view.", "Star First");
                       return;
                   }
                   
@@ -227,12 +246,48 @@ const ListsPage: React.FC = () => {
                   alignItems: "center", 
                   justifyContent: "center", 
                   cursor: "pointer",
-                  fontSize: "1.2em",
+                  fontSize: "1.1em",
                   color: homePageDefaultSearch === `list:${list.id}` ? "var(--surface)" : "var(--text-muted)",
                   boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
                 }}
               >
-                {homePageDefaultSearch === `list:${list.id}` ? "★" : "☆"}
+                📌
+              </button>
+            )}
+
+            {user && !isOwned && (
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const willStar = !isSubscribed(list.id);
+                  await toggleSubscription(list.id);
+                  if (willStar) {
+                      await alert(`You have starred "${list.title}"! By default, alerts are muted. Click the bell icon to enable notifications.`, "List Starred");
+                  } else {
+                      await alert(`You have removed "${list.title}" from your starred lists.`, "List Unstarred");
+                      // If it was the default startup view, also remove it
+                      if (homePageDefaultSearch === `list:${list.id}`) {
+                          updateSetting("homePageDefaultSearch", null);
+                      }
+                  }
+                }}
+                title={isSubscribed(list.id) ? "Unstar List" : "Star List"}
+                style={{ 
+                  backgroundColor: isSubscribed(list.id) ? "var(--primary)" : "var(--surface-hover)", 
+                  border: "1px solid var(--border)", 
+                  borderRadius: "50%", 
+                  width: "36px", 
+                  height: "36px", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  cursor: "pointer",
+                  fontSize: "1.25em",
+                  color: isSubscribed(list.id) ? "var(--surface)" : "var(--text-muted)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                }}
+              >
+                {isSubscribed(list.id) ? "★" : "☆"}
               </button>
             )}
 
@@ -261,9 +316,35 @@ const ListsPage: React.FC = () => {
                 {list.notificationsEnabled ? "🔔" : "🔕"}
               </button>
             )}
+
+            {!isOwned && isSubscribed(list.id) && (
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  handleToggleSubscriptionNotifications(list);
+                }}
+                title={subscribedListNotifications[list.id] ? "Disable Email Alerts" : "Enable Email Alerts"}
+                style={{ 
+                  backgroundColor: subscribedListNotifications[list.id] ? "var(--primary)" : "var(--surface-hover)", 
+                  border: "1px solid var(--border)", 
+                  borderRadius: "50%", 
+                  width: "36px", 
+                  height: "36px", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  cursor: "pointer",
+                  fontSize: "1.1em",
+                  color: subscribedListNotifications[list.id] ? "var(--surface)" : "var(--text-muted)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                }}
+              >
+                {subscribedListNotifications[list.id] ? "🔔" : "🔕"}
+              </button>
+            )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingRight: "80px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingRight }}>
           <div>
               <h2 style={{ margin: 0, color: "var(--text)", fontSize: "1.4em", display: "flex", alignItems: "center", gap: "10px" }}>
                  {list.title}
@@ -287,7 +368,7 @@ const ListsPage: React.FC = () => {
               )}
           </div>
           <span style={{ backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
-             {list.subscribes || 0} Subscribers
+             {list.subscribes || 0} Stars
           </span>
         </div>
         
@@ -297,7 +378,7 @@ const ListsPage: React.FC = () => {
           Contains {list.rivers?.length || 0} River Sections
         </p>
 
-        {list.notificationsEnabled && list.rivers?.length > 0 && (
+        {((isOwned && list.notificationsEnabled) || (!isOwned && isSubscribed(list.id) && !!subscribedListNotifications[list.id])) && list.rivers?.length > 0 && (
            <div style={{ padding: "8px 12px", backgroundColor: "var(--surface-hover)", borderRadius: "6px", border: "1px solid var(--primary)", borderLeftWidth: "4px" }}>
              <p style={{ margin: 0, fontSize: "0.85em", fontWeight: "bold", color: "var(--primary)" }}>
                 🔔 {list.rivers.filter(r => r.gaugeId).length} Active Pinned Alerts
@@ -321,7 +402,16 @@ const ListsPage: React.FC = () => {
                    onClick={() => handleEditList(list)}
                    style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
                 >
-                   Manage List
+                   {isOwned ? "Manage List" : "Details"}
+                </button>
+            )}
+
+            {user && (
+                <button
+                   onClick={() => handleCopyList(list)}
+                   style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
+                >
+                   Clone
                 </button>
             )}
 
@@ -352,23 +442,6 @@ const ListsPage: React.FC = () => {
             >
                <span>🔗</span> Share
             </button>
-
-            {user && !isOwned && (
-                <button
-                   onClick={async () => {
-                      const willSubscribe = !isSubscribed(list.id);
-                      await toggleSubscription(list.id);
-                      if (willSubscribe) {
-                          await alert(`You are now subscribed to "${list.title}"! ${list.notificationsEnabled ? "Since the author has Alerts enabled, you will also receive daily email digests when these rivers are running." : ""}`, "Subscribed");
-                      } else {
-                          await alert(`You have unsubscribed from "${list.title}".`, "Unsubscribed");
-                      }
-                   }}
-                   style={{ padding: "8px 16px", backgroundColor: isSubscribed(list.id) ? "var(--primary)" : "var(--surface-hover)", color: isSubscribed(list.id) ? "var(--surface)" : "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
-                >
-                   {isSubscribed(list.id) ? "Unsubscribe" : "Subscribe"}
-                </button>
-            )}
         </div>
       </div>
     );
@@ -411,11 +484,11 @@ const ListsPage: React.FC = () => {
             onChange={(e) => updateSetting("homePageDefaultSearch", e.target.value)}
             style={{ padding: "8px", borderRadius: "6px", fontSize: "1rem", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", minWidth: "200px" }}
          >
-                        <option value="null">None (Display All Rivers)</option>
+            <option value="null">None (Display All Rivers)</option>
             {homePageDefaultSearch && homePageDefaultSearch !== "null" && 
               !myLists.some(l => `list:${l.id}` === homePageDefaultSearch) &&
               !communityLists.filter(list => subscribedListIds.includes(list.id)).some(l => `list:${l.id}` === homePageDefaultSearch) && (
-              <option value={homePageDefaultSearch}>Current Startup List (Not Subscribed)</option>
+              <option value={homePageDefaultSearch}>Current Startup List (Not Starred)</option>
             )}
             {user && (
                <optgroup label="My Custom Lists">
@@ -425,7 +498,7 @@ const ListsPage: React.FC = () => {
                </optgroup>
             )}
             {subscribedListIds.length > 0 && (
-               <optgroup label="Subscribed Lists">
+               <optgroup label="Starred Lists">
                   {communityLists.filter(list => subscribedListIds.includes(list.id)).map(list => (
                      <option key={list.id} value={`list:${list.id}`}>List: {list.title}</option>
                   ))}
@@ -452,17 +525,17 @@ const ListsPage: React.FC = () => {
              )}
 
              <div style={{ marginTop: "30px", marginBottom: "10px", display: "flex", alignItems: "center" }}>
-                <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>Subscriptions</h3>
+                <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>Starred Lists</h3>
              </div>
 
              {communityLoading ? (
-                 <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading subscriptions...</div>
+                 <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading starred lists...</div>
              ) : (
                  <>
                    {communityLists.filter(l => subscribedListIds.includes(l.id)).map(l => renderListCard(l))}
                    {communityLists.filter(l => subscribedListIds.includes(l.id)).length === 0 && (
                       <div style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)", backgroundColor: "var(--surface)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                        You haven't subscribed to any community lists.
+                        You haven't starred any community lists.
                       </div>
                    )}
                  </>
@@ -472,24 +545,24 @@ const ListsPage: React.FC = () => {
 
         {activeTab === "community" && (
            <>
-             <div style={{ marginBottom: "20px" }}>
-                 <input 
-                    type="search" 
-                    placeholder="Search by list name, description, or author..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ 
-                        width: "100%", 
-                        padding: "15px", 
-                        borderRadius: "8px", 
-                        border: "1px solid var(--border)", 
-                        backgroundColor: "var(--surface)", 
-                        color: "var(--text)",
-                        fontSize: "1.1em",
-                        boxSizing: "border-box"
-                    }}
-                 />
-             </div>
+              <div style={{ marginBottom: "20px" }}>
+                  <input 
+                     type="search" 
+                     placeholder="Search by list name, description, or author..." 
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     style={{ 
+                         width: "100%", 
+                         padding: "15px", 
+                         borderRadius: "8px", 
+                         border: "1px solid var(--border)", 
+                         backgroundColor: "var(--surface)", 
+                         color: "var(--text)",
+                         fontSize: "1.1em",
+                         boxSizing: "border-box"
+                     }}
+                  />
+              </div>
 
              {communityLoading ? (
                  <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading community lists natively...</div>

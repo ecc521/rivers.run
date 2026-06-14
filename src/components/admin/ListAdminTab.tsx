@@ -118,7 +118,7 @@ export default function ListAdminTab() {
                     <span style={{ fontWeight: 600 }}>{adminListObj.rivers?.length || 0}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Subscribers:</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Stars:</span>
                     <span style={{ fontWeight: 600 }}>{adminListObj.subscribes || 0}</span>
                   </div>
                 </div>
