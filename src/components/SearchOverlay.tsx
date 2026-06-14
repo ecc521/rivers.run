@@ -4,6 +4,8 @@ import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useLocation } from "../hooks/useLocation";
 import { FilterCheckbox } from "./FilterCheckbox";
 import { useLists } from "../context/ListsContext";
+import { useCommunityLists } from "../hooks/useCommunityLists";
+import { useAuth } from "../context/AuthContext";
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import { getShareBaseUrl } from "../utils/url";
@@ -30,7 +32,23 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const [localQuery, setLocalQuery] = useState<AdvancedSearchQuery>(query);
   const [copied, setCopied] = useState(false);
   const location = useLocation();
-  const { myLists } = useLists();
+  const { myLists, subscribedListIds } = useLists();
+  const { lists: communityLists } = useCommunityLists();
+  const { user } = useAuth();
+
+  const userCustomLists = React.useMemo(() => {
+    return myLists.filter(l => l.title !== "Favorites");
+  }, [myLists]);
+
+  const subscribedLists = React.useMemo(() => {
+    return communityLists.filter(list => subscribedListIds.includes(list.id));
+  }, [communityLists, subscribedListIds]);
+
+  const topCommunityLists = React.useMemo(() => {
+    return communityLists
+      .filter(list => !subscribedListIds.includes(list.id) && list.ownerId !== user?.uid)
+      .slice(0, 5);
+  }, [communityLists, subscribedListIds, user?.uid]);
   useEffect(() => {
     setLocalQuery(query);
   }, [query, isOpen]);
@@ -502,7 +520,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                      } else if (val === "favorites") {
                          setLocalQuery({ ...localQuery, favoritesOnly: true, listId: undefined, listData: undefined });
                      } else {
-                         const list = myLists.find(l => l.id === val);
+                         const list = myLists.find(l => l.id === val) || communityLists.find(l => l.id === val);
                          if (list) {
                             setLocalQuery({ 
                                 ...localQuery, 
@@ -516,9 +534,30 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 >
                   <option value="none">All Available Rivers</option>
                   <option value="favorites">Favorites</option>
-                  {myLists.map(l => (
-                     <option key={l.id} value={l.id}>{l.title}</option>
-                  ))}
+                  
+                  {userCustomLists.length > 0 && (
+                     <optgroup label="My Lists">
+                       {userCustomLists.map(l => (
+                          <option key={l.id} value={l.id}>{l.title}</option>
+                       ))}
+                     </optgroup>
+                  )}
+                  
+                  {subscribedLists.length > 0 && (
+                     <optgroup label="Starred Lists">
+                       {subscribedLists.map(l => (
+                          <option key={l.id} value={l.id}>{l.title}</option>
+                       ))}
+                     </optgroup>
+                  )}
+                  
+                  {topCommunityLists.length > 0 && (
+                     <optgroup label="Top Community Lists">
+                       {topCommunityLists.map(l => (
+                          <option key={l.id} value={l.id}>{l.title}</option>
+                       ))}
+                     </optgroup>
+                  )}
                 </select>
               </div>
             </div>

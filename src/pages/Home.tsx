@@ -244,7 +244,7 @@ const Home: React.FC = () => {
       }
     }
     loadPersistence();
-  }, [searchParams]);
+  }, [searchParams.get("list")]);
 
   const location = useLocation();
 
@@ -397,7 +397,7 @@ const Home: React.FC = () => {
 
   // We use the globally defined LazyRiverPage to inject the UI seamlessly without breaking Suspense
 
-  const handleViewChange = (view: "all" | "favorites") => {
+  const handleViewChange = (view: "all" | "favorites" | string, listTitleToSet?: string) => {
     const params = new URLSearchParams(searchParams);
     if (view === "all") {
       params.delete("favoritesOnly");
@@ -406,11 +406,16 @@ const Home: React.FC = () => {
       params.delete("country");
       setListTitle(null);
       setSearchQuery(prev => ({ ...prev, favoritesOnly: false, listId: undefined, listData: undefined, state: undefined, country: undefined }));
-    } else {
+    } else if (view === "favorites") {
       params.set("favoritesOnly", "true");
       params.delete("list");
       setListTitle(null);
       setSearchQuery(prev => ({ ...prev, favoritesOnly: true, listId: undefined, listData: undefined }));
+    } else {
+      params.delete("favoritesOnly");
+      params.set("list", view);
+      if (listTitleToSet) setListTitle(listTitleToSet);
+      setSearchQuery(prev => ({ ...prev, favoritesOnly: false, listId: view }));
     }
     navigate(`/?${params.toString()}`);
   };
@@ -552,6 +557,7 @@ const Home: React.FC = () => {
           regionLabel={regionPrefix}
           stateLabel={searchQuery.state}
           viewLabel={viewLabel}
+          currentViewId={searchQuery.favoritesOnly ? "favorites" : (searchQuery.listId || "all")}
           currentCountry={searchQuery.country}
           availableStates={availableStates}
           onSelectRegion={handleCountryChange}
@@ -697,7 +703,7 @@ const Home: React.FC = () => {
 
       {/* Rivers List */}
       <div id="Rivers">
-        <TopBar query={searchQuery} setQuery={setSearchQuery} filteredRivers={filteredRivers} />
+        <TopBar setQuery={setSearchQuery} filteredRivers={filteredRivers} />
         {filteredRivers.length === 0 && (
           <div className="empty-state-view">
             <div className="empty-state-icon">

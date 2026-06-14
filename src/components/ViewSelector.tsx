@@ -1,22 +1,27 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getStateName, getRegionName } from "../utils/regions";
+import { useLists } from "../context/ListsContext";
+import { useCommunityLists } from "../hooks/useCommunityLists";
+import { useAuth } from "../context/AuthContext";
 
 interface ViewSelectorProps {
   regionLabel: string;
   stateLabel?: string;
   viewLabel: string;
+  currentViewId?: string;
   currentCountry?: string;
   availableStates?: string[];
   onSelectRegion: (region: string) => void;
   onSelectState: (state: string | null) => void;
-  onSelectView: (view: "all" | "favorites") => void;
+  onSelectView: (view: "all" | "favorites" | string, title?: string) => void;
 }
 
 export const ViewSelector: React.FC<ViewSelectorProps> = ({ 
     regionLabel, 
     stateLabel,
     viewLabel, 
+    currentViewId = "all",
     currentCountry,
     availableStates = [],
     onSelectRegion, 
@@ -27,6 +32,10 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
   const [activeTab, setActiveTab] = useState<"view" | "region" | "state">("view");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const { myLists, subscribedListIds } = useLists();
+  const { lists: communityLists } = useCommunityLists();
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -47,6 +56,23 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
     }
     return popularStates;
   }, [availableStates]);
+
+  // My Lists: excluding system Favorites list (which is handled as a core option)
+  const userCustomLists = useMemo(() => {
+    return myLists.filter(list => list.title !== "Favorites");
+  }, [myLists]);
+
+  // Subscribed Lists
+  const subscribedLists = useMemo(() => {
+    return communityLists.filter(list => subscribedListIds.includes(list.id));
+  }, [communityLists, subscribedListIds]);
+
+  // Top community lists (excluding own/subscribed lists, showing top 10)
+  const topCommunityLists = useMemo(() => {
+    return communityLists
+      .filter(list => !subscribedListIds.includes(list.id) && list.ownerId !== user?.uid)
+      .slice(0, 10);
+  }, [communityLists, subscribedListIds, user?.uid]);
 
   const handleToggle = (tab: "view" | "region" | "state") => {
     if (isOpen && activeTab === tab) {
@@ -90,17 +116,66 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
               <>
                 <div className="view-dropdown-header">View Type</div>
                 <div 
-                  className={`view-dropdown-item ${viewLabel === "Full List" || viewLabel === "All Rivers" ? "selected" : ""}`} 
+                  className={`view-dropdown-item ${currentViewId === "all" ? "selected" : ""}`} 
                   onClick={() => { onSelectView("all"); setIsOpen(false); }}
                 >
                   Full List
                 </div>
                 <div 
-                  className={`view-dropdown-item ${viewLabel === "Favorites" ? "selected" : ""}`} 
+                  className={`view-dropdown-item ${currentViewId === "favorites" ? "selected" : ""}`} 
                   onClick={() => { onSelectView("favorites"); setIsOpen(false); }}
                 >
                   Favorites
                 </div>
+
+                {userCustomLists.length > 0 && (
+                  <>
+                    <div className="view-dropdown-divider"></div>
+                    <div className="view-dropdown-header">My Lists</div>
+                    {userCustomLists.map(list => (
+                      <div 
+                        key={list.id}
+                        className={`view-dropdown-item ${currentViewId === list.id ? "selected" : ""}`} 
+                        onClick={() => { onSelectView(list.id, list.title); setIsOpen(false); }}
+                      >
+                        📁 {list.title}
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {subscribedLists.length > 0 && (
+                  <>
+                    <div className="view-dropdown-divider"></div>
+                    <div className="view-dropdown-header">Starred Lists</div>
+                    {subscribedLists.map(list => (
+                      <div 
+                        key={list.id}
+                        className={`view-dropdown-item ${currentViewId === list.id ? "selected" : ""}`} 
+                        onClick={() => { onSelectView(list.id, list.title); setIsOpen(false); }}
+                      >
+                        ★ {list.title}
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {topCommunityLists.length > 0 && (
+                  <>
+                    <div className="view-dropdown-divider"></div>
+                    <div className="view-dropdown-header">Top Community Lists</div>
+                    {topCommunityLists.map(list => (
+                      <div 
+                        key={list.id}
+                        className={`view-dropdown-item ${currentViewId === list.id ? "selected" : ""}`} 
+                        onClick={() => { onSelectView(list.id, list.title); setIsOpen(false); }}
+                      >
+                        🌐 {list.title} <span style={{ fontSize: "0.8em", opacity: 0.7 }}>({list.subscribes})</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
                 <div className="view-dropdown-divider"></div>
                 <div 
                     className="view-dropdown-item secondary" 
@@ -151,13 +226,13 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
                   {currentCountry === "ec" ? "All Provinces" : "All States"}
                 </div>
                 {statesToShow.map((st: string) => (
-                    <div 
-                        key={st}
-                        className={`view-dropdown-item ${stateLabel === st ? "selected" : ""}`} 
-                        onClick={() => { onSelectState(st); setIsOpen(false); }}
-                    >
-                        {getStateName(st)}
-                    </div>
+                  <div 
+                      key={st}
+                      className={`view-dropdown-item ${stateLabel === st ? "selected" : ""}`} 
+                      onClick={() => { onSelectState(st); setIsOpen(false); }}
+                  >
+                      {getStateName(st)}
+                  </div>
                 ))}
               </>
             )}
