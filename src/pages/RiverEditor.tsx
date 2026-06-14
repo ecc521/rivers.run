@@ -543,12 +543,16 @@ export default function RiverEditor() {
                 onChange={e => setSubmitterEmail(e.target.value)}
                 style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '5px' }}
               />
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>We'll email you when your suggestion is approved or rejected so you can restore your progress.</span>
+              {!submitterEmail.trim() && (
+                <span style={{ fontSize: '12px', color: '#f59e0b', display: 'block', marginTop: '5px' }}>
+                  ⚠️ We cannot contact you regarding your submission without an email.
+                </span>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                <button onClick={() => { setShowSubmitModal(false); setShowAuthModal(true); }} style={{ padding: '8px 15px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Sign In</button>
-               <button onClick={() => { setShowSubmitModal(false); processSave(false); }} style={{ padding: '8px 15px', backgroundColor: 'var(--surface-hover)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer' }}>Submit Anonymously</button>
+               <button onClick={() => { setShowSubmitModal(false); processSave(false); }} style={{ padding: '8px 15px', backgroundColor: 'var(--surface-hover)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer' }}>Submit Suggestion</button>
             </div>
          </div>
       </div>

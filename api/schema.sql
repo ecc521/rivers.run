@@ -69,7 +69,6 @@ CREATE TABLE community_lists (
     id TEXT PRIMARY KEY,         -- UUID
     title TEXT NOT NULL,
     description TEXT,
-    author TEXT NOT NULL,        -- Display Name
     owner_id TEXT NOT NULL,      -- User Auth UID
     is_published BOOLEAN DEFAULT 0,
     subscribes INTEGER DEFAULT 0,

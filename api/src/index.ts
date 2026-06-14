@@ -882,7 +882,7 @@ app.openapi(getUserSettingsRoute, async (c) => {
     `).bind(user.user_id).first();
     
     if (!result) {
-        const initialName = user.name || "Unknown Paddler";
+        const initialName = (user.name && user.name !== "Unknown Paddler" && user.name !== "Unknown User") ? user.name : null;
         // Auto-provision user record on first hit
         await c.env.DB.prepare(`
             INSERT INTO users (user_id, display_name, email, role, updated_at) 
@@ -902,35 +902,8 @@ app.openapi(getUserSettingsRoute, async (c) => {
         });
     }
     
-    let displayName = result.display_name;
-    let email = result.email;
+    const displayName = result.display_name;
 
-    // Auto-update display name/email if currently generic/null but available in token (e.g. after Google OAuth linking)
-    const hasGenericName = !displayName || displayName === "Unknown Paddler" || displayName === "Community Paddler";
-    const hasIncomingName = user.name && user.name !== "Unknown Paddler" && user.name !== "Community Paddler";
-    const hasGenericEmail = !email;
-    const hasIncomingEmail = user.email;
-
-    if ((hasGenericName && hasIncomingName) || (hasGenericEmail && hasIncomingEmail)) {
-        const updateFields: string[] = ["updated_at = ?"];
-        const params: any[] = [Math.floor(Date.now() / 1000)];
-
-        if (hasGenericName && hasIncomingName) {
-            displayName = user.name;
-            updateFields.push("display_name = ?");
-            params.push(displayName);
-        }
-        if (hasGenericEmail && hasIncomingEmail) {
-            email = user.email.toLowerCase();
-            updateFields.push("email = ?");
-            params.push(email);
-        }
-
-        params.push(user.user_id);
-        await c.env.DB.prepare(`UPDATE users SET ${updateFields.join(", ")} WHERE user_id = ?`)
-            .bind(...params).run();
-    }
-    
     return c.json({
         role: result.role || "user",
         displayName: displayName || null,
@@ -1093,7 +1066,7 @@ app.openapi(getCommunityListsRoute, async (c) => {
             ...l,
             owner_id: isAnon ? "" : l.owner_id,
             ownerId: isAnon ? "" : l.owner_id,
-            author: isAnon ? "Anonymous Paddler" : (l.user_display_name || l.author),
+            author: isAnon ? "Anonymous Paddler" : (l.user_display_name || "Community Paddler"),
             authorRole: isAnon ? "user" : (l.user_role || "user"),
             isPublished: true, 
             rivers: mappingMap.get(l.id) || []
@@ -1128,7 +1101,12 @@ app.openapi(getListsRoute, async (c) => {
     
     // Batch retrieve user's lists and all associated river mappings
     const [listsRaw, mappingRaw] = await c.env.DB.batch([
-        c.env.DB.prepare("SELECT * FROM community_lists WHERE owner_id = ?").bind(user.user_id),
+        c.env.DB.prepare(`
+            SELECT cl.*, u.display_name as user_display_name, u.role as user_role
+            FROM community_lists cl
+            LEFT JOIN users u ON cl.owner_id = u.user_id
+            WHERE cl.owner_id = ?
+        `).bind(user.user_id),
         c.env.DB.prepare(`
             SELECT lr.* FROM community_list_rivers lr
             JOIN community_lists l ON l.id = lr.list_id
@@ -1156,13 +1134,20 @@ app.openapi(getListsRoute, async (c) => {
         });
     }
 
-    return c.json(lists.map(l => ({
-        ...l,
-        ownerId: l.owner_id,
-        isPublished: l.is_published === 1 || l.is_published === true,
-        notificationsEnabled: l.notifications_enabled === 1 || l.notifications_enabled === true,
-        rivers: mappingMap.get(l.id) || []
-    })));
+    return c.json(lists.map(l => {
+        const listObj = {
+            ...l,
+            ownerId: l.owner_id,
+            author: l.user_display_name || "Community Paddler",
+            authorRole: l.user_role || "user",
+            isPublished: l.is_published === 1 || l.is_published === true,
+            notificationsEnabled: l.notifications_enabled === 1 || l.notifications_enabled === true,
+            rivers: mappingMap.get(l.id) || []
+        };
+        delete (listObj as any).user_display_name;
+        delete (listObj as any).user_role;
+        return listObj;
+    }));
 });
 
 const createListRoute = createRoute({
@@ -1198,9 +1183,9 @@ app.openapi(createListRoute, async (c) => {
     
     const queries = [
         c.env.DB.prepare(`
-            INSERT INTO community_lists (id, title, description, author, owner_id, is_published, subscribes)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).bind(listId, validated.title, validated.description, validated.author, user.user_id, validated.isPublished ? 1 : 0, 0)
+            INSERT INTO community_lists (id, title, description, owner_id, is_published, subscribes)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(listId, validated.title, validated.description, user.user_id, validated.isPublished ? 1 : 0, 0)
     ];
 
     if (validated.rivers && validated.rivers.length > 0) {
@@ -1266,9 +1251,9 @@ app.openapi(updateListRoute, async (c) => {
     const queries = [
         c.env.DB.prepare(`
             UPDATE community_lists 
-            SET title = ?, description = ?, author = ?, is_published = ?
+            SET title = ?, description = ?, is_published = ?
             WHERE id = ?
-        `).bind(validated.title, validated.description, validated.author, validated.isPublished ? 1 : 0, id),
+        `).bind(validated.title, validated.description, validated.isPublished ? 1 : 0, id),
         // Delete all existing rivers for this list
         c.env.DB.prepare("DELETE FROM community_list_rivers WHERE list_id = ?").bind(id)
     ];
