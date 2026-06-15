@@ -5,6 +5,8 @@ import { auth } from "../firebase";
 import { fetchAPI } from "../services/api";
 import { useModal } from "../context/ModalContext";
 import { useAuth } from "../context/AuthContext";
+import { compileExportData } from "../utils/exportData";
+
 
 interface ProfileMenuProps {
   user: any;
@@ -152,20 +154,20 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
 
   const handleDownloadData = async () => {
     try {
-      const { persistentStorage } = await import("../utils/persistentStorage");
-      const data = await persistentStorage.get("rivers_favorites") || "{}";
-      const blob = new Blob([data], { type: "application/json" });
+      const exportData = await compileExportData(user);
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "rivers_account_backup.json";
+      a.download = `rivers_account_backup_${user ? user.uid : "local"}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
       if (e instanceof Error) console.error("Failed to download data", e.message);
-      await alert("No data found or failed to parse favorites.");
+      await alert("Failed to export account data.");
     }
   };
 
