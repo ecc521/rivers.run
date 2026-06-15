@@ -37,39 +37,40 @@ const Home: React.FC = () => {
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert } = useModal();
   const { id } = useParams<{ id: string }>();
+  const decodedId = id ? decodeURIComponent(id) : undefined;
   const routeLocation = useRouterLocation();
   const navigate = useNavigate();
   
-  const isListOverlay = routeLocation.pathname.startsWith("/lists/") && !!id;
-  const isRiverOverlay = !isListOverlay && !!id;
+  const isListOverlay = routeLocation.pathname.startsWith("/lists/") && !!decodedId;
+  const isRiverOverlay = !isListOverlay && !!decodedId;
 
   const [sharedList, setSharedList] = useState<UserList | null>(null);
   const [showListModal, setShowListModal] = useState(false);
   const { createList } = useLists();
 
   useEffect(() => {
-     if (isListOverlay && id) {
+     if (isListOverlay && decodedId) {
         const fetchSharedList = async () => {
-            try {
-               const data = await fetchAPI(`/lists/${id}`);
-               if (data) {
-                  setSharedList(data as UserList);
-                  setShowListModal(true);
-               } else {
-                  await alert("This list could not be found. It may have been deleted.");
-                  navigate("/");
-               }
-           } catch (e) {
-              console.error(e);
-              navigate("/");
-           }
-        };
-        fetchSharedList();
+             try {
+                const data = await fetchAPI(`/lists/${decodedId}`);
+                if (data) {
+                   setSharedList(data as UserList);
+                   setShowListModal(true);
+                } else {
+                   await alert("This list could not be found. It may have been deleted.");
+                   navigate("/");
+                }
+            } catch (e) {
+               console.error(e);
+               navigate("/");
+            }
+         };
+         fetchSharedList();
      } else {
         setShowListModal(false);
         setSharedList(null);
      }
-  }, [isListOverlay, id, navigate]);
+  }, [isListOverlay, decodedId, navigate]);
 
    const { rivers, loading: riversLoading, error: riversError, isGlobalStale, dataGeneratedAt, refresh } = useRivers();
    const { syncError: listSyncError, refreshCloudState } = useLists();

@@ -21,6 +21,7 @@ import type { RiverData } from "../types/River";
 
 const RiverPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const decodedId = id ? decodeURIComponent(id) : undefined;
   const navigate = useNavigate();
   const routeLocation = useLocation();
   const { rivers, loading, error, dataGeneratedAt } = useRivers();
@@ -28,10 +29,10 @@ const RiverPage: React.FC = () => {
   // Reset scroll position to top when navigating to a different river
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [decodedId]);
 
 
-  const river = rivers.find((r) => r.id === id);
+  const river = rivers.find((r) => r.id === decodedId);
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert, promptReport } = useModal();
   const { user } = useAuth();

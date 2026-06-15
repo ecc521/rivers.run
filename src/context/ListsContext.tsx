@@ -41,8 +41,8 @@ interface ListsContextType {
   addMultipleRiversToList: (listId: string, rivers: any[]) => Promise<void>;
   removeRiverFromList: (listId: string, riverId: string) => Promise<void>;
   updateRiverInList: (listId: string, riverId: string, updates: any) => Promise<void>;
-  toggleRiverInQuickList: (river: any, quickActionPref: string) => Promise<void>;
-  isRiverInQuickList: (riverId: string, quickActionPref: string) => boolean;
+  toggleRiverInQuickList: (river: any, quickActionPref: string | null) => Promise<string | null>;
+  isRiverInQuickList: (riverId: string, quickActionPref: string | null) => boolean;
   loading: boolean;
   syncError: string | null;
   refreshCloudState: () => Promise<void>;
@@ -62,7 +62,7 @@ const ListsContext = createContext<ListsContextType>({
   addMultipleRiversToList: async () => {},
   removeRiverFromList: async () => {},
   updateRiverInList: async () => {},
-  toggleRiverInQuickList: async () => {},
+  toggleRiverInQuickList: async () => null,
   isRiverInQuickList: () => false,
   loading: true,
   syncError: null,
@@ -279,31 +279,35 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await updateList(listId, { rivers: newRivers });
   };
 
-  const isRiverInQuickList = (riverId: string, quickActionPref: string) => {
+  const isRiverInQuickList = (riverId: string, quickActionPref: string | null) => {
     let targetId: string | null = null;
-    if (quickActionPref === "favorites") targetId = myLists.find(l => l.title === "Favorites")?.id || null;
-    else if (quickActionPref.startsWith("list:")) targetId = quickActionPref.split(":")[1];
+    if (quickActionPref && quickActionPref.startsWith("list:")) targetId = quickActionPref.split(":")[1];
     
     if (!targetId) return false;
     return myLists.find(l => l.id === targetId)?.rivers.some(r => r.id === riverId) || false;
   };
 
-  const toggleRiverInQuickList = async (river: any, quickActionPref: string) => {
-      if (!user) return;
+  const toggleRiverInQuickList = async (river: any, quickActionPref: string | null): Promise<string | null> => {
+      if (!user) return null;
       let targetId: string | null = null;
-      if (quickActionPref === "favorites") {
-          targetId = myLists.find(l => l.title === "Favorites")?.id || null;
-          if (!targetId) targetId = await createList("Favorites", "My favorite saved runs.", false, []);
-      } else if (quickActionPref.startsWith("list:")) {
+      if (quickActionPref && quickActionPref.startsWith("list:")) {
           targetId = quickActionPref.split(":")[1];
       }
-      if (!targetId) return;
+      
+      if (!targetId) {
+          targetId = myLists.find(l => l.title === "Favorites")?.id || null;
+          if (!targetId) targetId = await createList("Favorites", "My favorite saved runs.", false, []);
+      }
+      
+      if (!targetId) return null;
 
       const list = myLists.find(l => l.id === targetId);
-      if (!list) return;
+      if (!list) return targetId;
 
       if (list.rivers.some(r => r.id === river.id)) await removeRiverFromList(targetId, river.id);
       else await addRiverToList(targetId, river);
+      
+      return targetId;
   };
 
   return (

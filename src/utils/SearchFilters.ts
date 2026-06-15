@@ -14,7 +14,6 @@ export interface AdvancedSearchQuery {
   includeUnknownFlow?: boolean;
   includeDams?: boolean;
   includeGauges?: boolean;
-  favoritesOnly?: boolean;
   distanceMax?: number;
   userLat?: number;
   userLon?: number;
@@ -42,7 +41,6 @@ export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
 };
 
 export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
-  if (query.favoritesOnly === true) return true;
   if (query.listId && query.listId.trim() !== "") return true;
   if (query.listData && query.listData.length > 0) return true;
   if (query.distanceMax != null && query.distanceMax <= 500) return true;

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ModalProvider } from "./context/ModalContext";
@@ -31,6 +31,48 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
+function DeepLinkHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      // Handle deep links when app is already running
+      const listener = CapacitorApp.addListener('appUrlOpen', data => {
+        console.log('App opened with URL:', data.url);
+        try {
+          const url = new URL(data.url);
+          const internalPath = url.pathname + url.search;
+          navigate(internalPath);
+        } catch (e) {
+          console.error('Failed to parse appUrlOpen URL', e);
+        }
+      });
+
+      // Handle cold launch deep links
+      CapacitorApp.getLaunchUrl().then(ret => {
+        if (ret && ret.url) {
+          console.log('App cold launched with URL:', ret.url);
+          try {
+            const url = new URL(ret.url);
+            const internalPath = url.pathname + url.search;
+            if (url.pathname !== "/" && url.pathname !== "/index.html") {
+              navigate(internalPath);
+            }
+          } catch (e) {
+            console.error('Failed to parse cold launch URL', e);
+          }
+        }
+      });
+
+      return () => {
+        listener.then(h => h.remove());
+      };
+    }
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   useEffect(() => {
     recordAppOpen();
@@ -38,21 +80,6 @@ function App() {
     if (Capacitor.isNativePlatform()) {
       // Notify Capgo the app boots successfully
       CapacitorUpdater.notifyAppReady();
-
-      // Handle deep links when the app is already running or opened via URL
-      CapacitorApp.addListener('appUrlOpen', data => {
-          console.log('App opened with URL:', data.url);
-          const url = new URL(data.url);
-          
-          // We use a custom event or a window-level bridge to notify the router
-          // since the Router component is nested below and we can't use useNavigate here.
-          // Alternatively, we can use window.location for a hard reload to the correct path,
-          // which is often safer in Capacitor to ensure state is fresh.
-          
-          // Standardize the path and search for the internal webview
-          const internalPath = url.pathname + url.search;
-          window.location.href = internalPath;
-      });
 
       // Check for OTA updates
       const checkUpdate = async () => {
@@ -99,6 +126,7 @@ function App() {
         <ListsProvider>
           <ModalProvider>
             <Router>
+              <DeepLinkHandler />
               <div
                 style={{
                   minHeight: "100vh",

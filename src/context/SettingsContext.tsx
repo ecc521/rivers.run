@@ -5,7 +5,7 @@ interface SettingsContextType {
   isDarkMode: boolean;
   isColorBlindMode: boolean;
   homePageDefaultSearch: string | null;
-  quickActionPref: string;
+  quickActionPref: string | null;
   updateSetting: (key: string, value: string | null) => void;
   loading: boolean;
   themePref: string | null;
@@ -19,7 +19,7 @@ const SettingsContext = createContext<SettingsContextType>({
   isDarkMode: false,
   isColorBlindMode: false,
   homePageDefaultSearch: null,
-  quickActionPref: "favorites",
+  quickActionPref: null,
   updateSetting: () => {},
   loading: true,
   themePref: null,
@@ -36,7 +36,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [themePref, setThemePref] = useState<string | null>(null);
   const [colorBlindPref, setColorBlindPref] = useState<string | null>(null);
   const [defaultSearchPref, setDefaultSearchPref] = useState<string | null>(null);
-  const [quickActionState, setQuickActionState] = useState<string>("favorites");
+  const [quickActionState, setQuickActionState] = useState<string | null>(null);
   const [flowUnits, setFlowUnits] = useState<string>("default");
   const [tempUnits, setTempUnits] = useState<string>("imperial");
   const [precipUnits, setPrecipUnits] = useState<string>("imperial");
@@ -50,8 +50,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     async function init() {
       let qap = await persistentStorage.get("quickActionPref") || await persistentStorage.get("starActionPref");
-      if (qap === "ask") qap = "favorites";
-      setQuickActionState(qap || "favorites");
+      if (qap === "ask" || qap === "favorites") qap = null;
+      setQuickActionState(qap || null);
       setFlowUnits(await persistentStorage.get("flowUnits") || "default");
       setTempUnits(await persistentStorage.get("tempUnits") || "imperial");
       setPrecipUnits(await persistentStorage.get("precipUnits") || "imperial");
@@ -92,7 +92,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     if (key === "homePageDefaultSearch")
       setDefaultSearchPref(value === "null" ? null : value);
     if (key === "quickActionPref" || key === "starActionPref")
-      setQuickActionState(value === "null" || value === "ask" ? "favorites" : (value || "favorites"));
+      setQuickActionState(value === "null" || value === "ask" || value === "favorites" ? null : value);
     if (key === "flowUnits") setFlowUnits(value || "default");
     if (key === "tempUnits") setTempUnits(value || "imperial");
     if (key === "precipUnits") setPrecipUnits(value || "imperial");
