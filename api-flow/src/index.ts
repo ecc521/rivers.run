@@ -108,7 +108,7 @@ app.openapi(historyRoute, async (c) => {
         const provider = providers[prefix];
         if (!provider) return {};
         try {
-            const data = await provider.getHistory(ids, start, Date.now(), includeForecast);
+            const data = await provider.getHistory(ids, start, Date.now(), includeForecast, c.env);
             const normalized: Record<string, GaugeHistory> = {};
             Object.entries(data).forEach(([id, history]) => {
                 normalized[`${prefix}:${id}`] = toUnitSystemHistory(history, units as Units);
@@ -200,7 +200,7 @@ app.openapi(gaugeRoute, async (c) => {
 
     try {
         // Fetch 6 hours (21600000 ms) of history to populate charts/tables adequately
-        const historyMap = await provider.getHistory([id], Date.now() - 21600000, Date.now());
+        const historyMap = await provider.getHistory([id], Date.now() - 21600000, Date.now(), undefined, c.env);
         const history = historyMap[id];
         if (!history) return c.json({ error: "Gauge not found" }, 404);
 
