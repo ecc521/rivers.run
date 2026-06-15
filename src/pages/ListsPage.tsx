@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCommunityLists } from "../hooks/useCommunityLists";
 import { useLists, type UserList } from "../context/ListsContext";
@@ -12,7 +12,7 @@ import { getShareBaseUrl } from "../utils/url";
 import { Capacitor } from "@capacitor/core";
 
 const ListsPage: React.FC = () => {
-  const { user, isModerator, loading: authLoading } = useAuth();
+  const { user, isModerator, setAuthModalOpen } = useAuth();
   const { myLists, subscribedListIds, subscribedListNotifications, createList, updateList, toggleSubscription, toggleSubscriptionNotifications, isSubscribed } = useLists();
   const { homePageDefaultSearch, updateSetting } = useSettings();
   const { confirm, alert } = useModal();
@@ -55,12 +55,7 @@ const ListsPage: React.FC = () => {
 
   useSEO({ title: "Rivers.run Lists", description: "Curated river itineraries from paddlers worldwide." });
 
-  // Force tab to community if logged out
-  useEffect(() => {
-    if (!authLoading && !user && activeTab !== "community") {
-      setSearchParams({ tab: "community" }, { replace: true });
-    }
-  }, [user, activeTab, authLoading, setSearchParams]);
+
 
   const searchTerms = searchQuery
     ? searchQuery.toLowerCase().split(/[ ,]+/).filter(t => t.length > 0)
@@ -456,7 +451,6 @@ const ListsPage: React.FC = () => {
         Build, share, and discover river itineraries.
       </p>
 
-      {user && (
          <div style={{ display: "flex", justifyContent: "center", marginBottom: "30px", gap: "10px", flexWrap: "wrap" }}>
            <button 
              onClick={() => setActiveTab("mine")}
@@ -471,7 +465,6 @@ const ListsPage: React.FC = () => {
              Community
            </button>
          </div>
-      )}
 
       {/* Startup View Setting Shortcut */}
       <div style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", padding: "15px", marginBottom: "30px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "15px" }}>
@@ -511,34 +504,52 @@ const ListsPage: React.FC = () => {
         
         {activeTab === "mine" && (
            <>
-             {myLists.length > 0 && (
-                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px", marginBottom: "10px" }}>
-                    <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>My Lists ({myLists.length}/{isModerator ? "Unlimited" : "5"})</h3>
-                 </div>
-             )}
-
-             {myLists.map(l => renderListCard(l))}
-             {myLists.length < (isModerator ? 500 : 5) && (
-                 <button onClick={handleCreateList} style={{ padding: "15px", border: "2px dashed var(--border)", borderRadius: "8px", backgroundColor: "transparent", color: "var(--primary)", fontWeight: "bold", fontSize: "1.1em", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "5px" }}>
-                    <span>+</span> Create New List
-                 </button>
-             )}
-
-             <div style={{ marginTop: "30px", marginBottom: "10px", display: "flex", alignItems: "center" }}>
-                <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>Starred Lists</h3>
-             </div>
-
-             {communityLoading ? (
-                 <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading starred lists...</div>
+             {!user ? (
+                <div style={{ textAlign: "center", padding: "40px 20px", backgroundColor: "var(--surface)", borderRadius: "8px", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "16px", alignItems: "center" }}>
+                   <span style={{ fontSize: "3rem" }}>🔒</span>
+                   <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: "800", color: "var(--text)" }}>Sign In Required</h2>
+                   <p style={{ margin: 0, color: "var(--text-secondary)", maxWidth: "400px", lineHeight: "1.5" }}>
+                      You need to sign in to save favorite rivers, create custom lists, and sync them across your devices.
+                   </p>
+                   <button
+                     onClick={() => setAuthModalOpen(true)}
+                     style={{ padding: "12px 24px", backgroundColor: "var(--primary)", color: "#ffffff", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "1rem", cursor: "pointer", marginTop: "10px" }}
+                   >
+                     Sign In Now
+                   </button>
+                </div>
              ) : (
-                 <>
-                   {communityLists.filter(l => subscribedListIds.includes(l.id)).map(l => renderListCard(l))}
-                   {communityLists.filter(l => subscribedListIds.includes(l.id)).length === 0 && (
-                      <div style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)", backgroundColor: "var(--surface)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                        You haven't starred any community lists.
+                <>
+                  {myLists.length > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px", marginBottom: "10px" }}>
+                         <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>My Lists ({myLists.length}/{isModerator ? "Unlimited" : "5"})</h3>
                       </div>
-                   )}
-                 </>
+                  )}
+
+                  {myLists.map(l => renderListCard(l))}
+                  {myLists.length < (isModerator ? 500 : 5) && (
+                      <button onClick={handleCreateList} style={{ padding: "15px", border: "2px dashed var(--border)", borderRadius: "8px", backgroundColor: "transparent", color: "var(--primary)", fontWeight: "bold", fontSize: "1.1em", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "5px" }}>
+                         <span>+</span> Create New List
+                      </button>
+                  )}
+
+                  <div style={{ marginTop: "30px", marginBottom: "10px", display: "flex", alignItems: "center" }}>
+                     <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>Starred Lists</h3>
+                  </div>
+
+                  {communityLoading ? (
+                      <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading starred lists...</div>
+                  ) : (
+                      <>
+                        {communityLists.filter(l => subscribedListIds.includes(l.id)).map(l => renderListCard(l))}
+                        {communityLists.filter(l => subscribedListIds.includes(l.id)).length === 0 && (
+                           <div style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)", backgroundColor: "var(--surface)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                             You haven't starred any community lists.
+                           </div>
+                        )}
+                      </>
+                  )}
+                </>
              )}
            </>
         )}

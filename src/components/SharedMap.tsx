@@ -506,11 +506,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const globalMarkers = useMemo(() => {
         // Strip out distanceMax so markers aren't filtered out by distance on the map!
         const filterQuery = { ...searchQuery, distanceMax: undefined };
-        let filtered = filterRivers(rivers, filterQuery);
-
-        if (filterQuery.favoritesOnly) {
-            filtered = filtered.filter(r => isRiverInQuickList(r.id, "favorites"));
-        }
+        const filtered = filterRivers(rivers, filterQuery);
 
         const rawPoints: any[] = [];
         filtered.forEach(river => {

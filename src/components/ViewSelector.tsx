@@ -14,7 +14,7 @@ interface ViewSelectorProps {
   availableStates?: string[];
   onSelectRegion: (region: string) => void;
   onSelectState: (state: string | null) => void;
-  onSelectView: (view: "all" | "favorites" | string, title?: string) => void;
+  onSelectView: (view: "all" | string, title?: string) => void;
 }
 
 export const ViewSelector: React.FC<ViewSelectorProps> = ({ 
@@ -120,12 +120,6 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
                   onClick={() => { onSelectView("all"); setIsOpen(false); }}
                 >
                   Full List
-                </div>
-                <div 
-                  className={`view-dropdown-item ${currentViewId === "favorites" ? "selected" : ""}`} 
-                  onClick={() => { onSelectView("favorites"); setIsOpen(false); }}
-                >
-                  Favorites
                 </div>
 
                 {userCustomLists.length > 0 && (

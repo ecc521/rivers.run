@@ -125,9 +125,7 @@ const Home: React.FC = () => {
         if (customLon) q.userLon = parseFloat(customLon);
     }
     
-    const favOnly = searchParams.get("favoritesOnly");
-    if (favOnly) q.favoritesOnly = favOnly === "true";
-    
+
     const sMin = searchParams.get("skillMin");
     if (sMin) q.skillMin = parseInt(sMin);
     
@@ -170,11 +168,10 @@ const Home: React.FC = () => {
     // Sync regional and filter params from URL to state
     const state = searchParams.get("state") || undefined;
     const country = searchParams.get("country") || undefined;
-    const favoritesOnly = searchParams.get("favoritesOnly") === "true";
     
     setSearchQuery(prev => {
-        if (prev.state === state && prev.country === country && prev.favoritesOnly === favoritesOnly) return prev;
-        return { ...prev, state, country, favoritesOnly };
+        if (prev.state === state && prev.country === country) return prev;
+        return { ...prev, state, country };
     });
   }, [searchParams]);
 
@@ -264,10 +261,7 @@ const Home: React.FC = () => {
   const { isRiverInQuickList } = useLists();
 
   const filteredRivers = useMemo(() => {
-    let result = filterRivers(rivers, searchQuery);
-    if (searchQuery.favoritesOnly) {
-      result = result.filter((r) => isRiverInQuickList(r.id, "favorites"));
-    }
+    const result = filterRivers(rivers, searchQuery);
     return result;
   }, [rivers, searchQuery, isRiverInQuickList]);
   
@@ -398,25 +392,18 @@ const Home: React.FC = () => {
 
   // We use the globally defined LazyRiverPage to inject the UI seamlessly without breaking Suspense
 
-  const handleViewChange = (view: "all" | "favorites" | string, listTitleToSet?: string) => {
+  const handleViewChange = (view: "all" | string, listTitleToSet?: string) => {
     const params = new URLSearchParams(searchParams);
     if (view === "all") {
-      params.delete("favoritesOnly");
       params.delete("list");
       params.delete("state");
       params.delete("country");
       setListTitle(null);
-      setSearchQuery(prev => ({ ...prev, favoritesOnly: false, listId: undefined, listData: undefined, state: undefined, country: undefined }));
-    } else if (view === "favorites") {
-      params.set("favoritesOnly", "true");
-      params.delete("list");
-      setListTitle(null);
-      setSearchQuery(prev => ({ ...prev, favoritesOnly: true, listId: undefined, listData: undefined }));
+      setSearchQuery(prev => ({ ...prev, listId: undefined, listData: undefined, state: undefined, country: undefined }));
     } else {
-      params.delete("favoritesOnly");
       params.set("list", view);
       if (listTitleToSet) setListTitle(listTitleToSet);
-      setSearchQuery(prev => ({ ...prev, favoritesOnly: false, listId: view }));
+      setSearchQuery(prev => ({ ...prev, listId: view }));
     }
     navigate(`/?${params.toString()}`);
   };
@@ -558,7 +545,7 @@ const Home: React.FC = () => {
           regionLabel={regionPrefix}
           stateLabel={searchQuery.state}
           viewLabel={viewLabel}
-          currentViewId={searchQuery.favoritesOnly ? "favorites" : (searchQuery.listId || "all")}
+          currentViewId={searchQuery.listId || "all"}
           currentCountry={searchQuery.country}
           availableStates={availableStates}
           onSelectRegion={handleCountryChange}

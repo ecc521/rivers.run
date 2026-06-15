@@ -235,7 +235,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
             gap: "20px",
           }}
         >
-          {!localQuery.favoritesOnly && (
+          {!localQuery.listId && (
             <div style={{...getSectionStyle(), backgroundColor: "var(--surface-hover)", padding: "15px", borderRadius: "8px", border: "1px solid var(--border)"}}>
               <label style={getLabelStyle()}>Sharable Link to This Search</label>
               <div style={{ display: "flex", gap: "10px", marginTop: "5px" }}>
@@ -512,28 +512,24 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 <label style={{...getLabelStyle(), color: "var(--primary)"}}>Limit to Specific Lists</label>
                 <select
                   style={{...getInputStyle(), padding: "8px 12px", width: "100%", maxWidth: "300px"}}
-                  value={localQuery.favoritesOnly ? "favorites" : (localQuery.listId || "none")}
+                  value={localQuery.listId || "none"}
                   onChange={(e) => {
                      const val = e.target.value;
                      if (val === "none") {
-                         setLocalQuery({ ...localQuery, favoritesOnly: false, listId: undefined, listData: undefined });
-                     } else if (val === "favorites") {
-                         setLocalQuery({ ...localQuery, favoritesOnly: true, listId: undefined, listData: undefined });
+                         setLocalQuery({ ...localQuery, listId: undefined, listData: undefined });
                      } else {
                          const list = myLists.find(l => l.id === val) || communityLists.find(l => l.id === val);
                          if (list) {
-                            setLocalQuery({ 
-                                ...localQuery, 
-                                favoritesOnly: false, 
-                                listId: list.id,
-                                listData: list.rivers.map((r, i) => ({ id: r.id, order: i })) 
-                            });
+                             setLocalQuery({ 
+                                 ...localQuery, 
+                                 listId: list.id,
+                                 listData: list.rivers.map((r, i) => ({ id: r.id, order: i })) 
+                             });
                          }
                      }
                   }}
                 >
                   <option value="none">All Available Rivers</option>
-                  <option value="favorites">Favorites</option>
                   
                   {userCustomLists.length > 0 && (
                      <optgroup label="My Lists">

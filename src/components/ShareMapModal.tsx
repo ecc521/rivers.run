@@ -74,7 +74,7 @@ function buildShareUrl(params: ShareUrlParams): string {
             if (latToShare !== undefined) url.searchParams.set("userLat", typeof latToShare === "number" ? latToShare.toFixed(5) : latToShare);
             if (lonToShare !== undefined) url.searchParams.set("userLon", typeof lonToShare === "number" ? lonToShare.toFixed(5) : lonToShare);
         }
-        if (params.currentQuery.favoritesOnly) url.searchParams.set("favoritesOnly", "true");
+
         
         // Only add skill/flow if not default
         if (params.currentQuery.skillMin !== 1) url.searchParams.set("skillMin", params.currentQuery.skillMin!.toString());

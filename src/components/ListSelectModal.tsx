@@ -38,10 +38,8 @@ export const ListSelectModal: React.FC<ListSelectModalProps> = ({
   let activeListId: string | null = null;
   if (myLists.length === 1) {
     activeListId = myLists[0].id;
-  } else if (quickActionPref.startsWith("list:")) {
+  } else if (quickActionPref && quickActionPref.startsWith("list:")) {
     activeListId = quickActionPref.split(":")[1];
-  } else if (quickActionPref === "favorites") {
-    activeListId = myLists.find(l => l.title === "Favorites")?.id || null;
   }
 
   const handleSelect = async (listId: string) => {

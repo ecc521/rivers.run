@@ -52,7 +52,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   );
   
   const { myLists, addRiverToList, removeRiverFromList, toggleRiverInQuickList } = useLists();
-  const { quickActionPref } = useSettings();
+  const { quickActionPref, updateSetting } = useSettings();
   const { user, setAuthModalOpen } = useAuth();
   const { confirm } = useModal();
   const [isModalOpen, setModalOpen] = useState(false);
@@ -61,11 +61,8 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   
   if (myLists.length === 1) {
     targetListId = myLists[0].id;
-  } else if (quickActionPref.startsWith("list:")) {
+  } else if (quickActionPref && quickActionPref.startsWith("list:")) {
     targetListId = quickActionPref.split(":")[1];
-  } else if (quickActionPref === "favorites") {
-    const favList = myLists.find(l => l.title === "Favorites");
-    if (favList) targetListId = favList.id;
   }
 
   let isActive = false;
@@ -116,7 +113,8 @@ export const RiverItem: React.FC<RiverItemProps> = ({
             await addRiverToList(targetListId, river);
          }
       } else if (myLists.length === 0) {
-         await toggleRiverInQuickList(river, "favorites");
+         const newTargetId = await toggleRiverInQuickList(river, null);
+         if (newTargetId) updateSetting("quickActionPref", `list:${newTargetId}`);
       } else {
          setModalOpen(true);
       }
@@ -180,10 +178,10 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   };
 
   const getFavTitle = () => {
-    if (quickActionPref.startsWith("list:")) {
+    if (quickActionPref && quickActionPref.startsWith("list:")) {
       return isActive ? "Remove from List" : "Add to List";
     }
-    if (quickActionPref === "ask" && myLists.length > 0) {
+    if (myLists.length > 0) {
       return "Save River to Lists";
     }
     return isActive ? "Remove River from Lists" : "Add River to Lists";

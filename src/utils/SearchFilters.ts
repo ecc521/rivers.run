@@ -24,6 +24,7 @@ export interface AdvancedSearchQuery {
   mapRadiusMode?: "current" | "center" | "custom";
   country?: string; 
   state?: string;
+  favoritesOnly?: boolean;
 }
 
 export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
