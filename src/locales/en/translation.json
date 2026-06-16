@@ -1,0 +1,301 @@
+{
+  "settings": {
+    "title": "Settings",
+    "theme": {
+      "title": "Theme (Color Scheme)",
+      "systemDefault": "System Default",
+      "light": "Light",
+      "dark": "Dark",
+      "statusDefault": "Currently utilizing System Default theme: {{theme}}",
+      "statusOverride": "Overriding System Default Theme."
+    },
+    "colorBlind": {
+      "title": "Color Blind Mode",
+      "default": "Default (No)",
+      "no": "No",
+      "yes": "Yes",
+      "description": "Color blind mode alters the primary flow color indicators natively embedded everywhere, as well as line-colors on Flow charts."
+    },
+    "units": {
+      "title": "Units",
+      "description": "Configure how flow, temperature, and rainfall units are displayed across the site.",
+      "flow": {
+        "label": "Flow & Volume",
+        "default": "Use Site Units (Gauge Default)",
+        "imperial": "Imperial (CFS / FT)",
+        "metric": "Metric (CMS / M)"
+      },
+      "temp": {
+        "label": "Temperature",
+        "default": "Use Site Units (Gauge Default)",
+        "imperial": "Imperial (Fahrenheit)",
+        "metric": "Metric (Celsius)"
+      },
+      "precip": {
+        "label": "Rainfall (Precipitation)",
+        "default": "Use Site Units (Gauge Default)",
+        "imperial": "Imperial (Inches)",
+        "metric": "Metric (Millimeters)"
+      }
+    },
+    "language": {
+      "title": "Language",
+      "description": "Select your preferred application language.",
+      "en": "English",
+      "fr": "Français"
+    },
+    "offlineMaps": {
+      "title": "Offline Maps",
+      "unsupported": "Your browser is too old to support saving large offline maps. Please update your browser or use the iOS/Android app.",
+      "unsupportedTitle": "Unsupported Browser:",
+      "downloading": "Downloading {{regionName}}...",
+      "loading": "Loading available regions...",
+      "baselineTitle": "North America Baseline Map",
+      "baselineDesc": "~3.7 MB • Covers US, Canada, Mexico (Zoom 0-5)",
+      "downloaded": "Downloaded",
+      "allRegions": "All Available Regions",
+      "mapReady": "Map Ready",
+      "navReady": "Nav Ready",
+      "download": "Download",
+      "mapSize": "Map: ~{{mapSize}} MB | Nav: ~{{navSize}} MB",
+      "step1of2": "Step 1 of 2: Map Data",
+      "step2of2": "Step 2 of 2: Routing Data",
+      "step1of1": "Step 1 of 1: Downloading Data"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "map": "Map",
+    "lists": "Lists",
+    "clubs": "Clubs",
+    "more": "More",
+    "settings": "Settings",
+    "faq": "FAQ",
+    "api": "API",
+    "developer": "Developer API",
+    "about": "About",
+    "createRiver": "Create River",
+    "suggestRiver": "Suggest a River",
+    "adminTools": "Admin Tools",
+    "signIn": "Sign In",
+    "loading": "Loading..."
+  },
+  "home": {
+    "loadingData": "Loading River Data...",
+    "downloadFailed": "River data failed to download",
+    "connectInternet": "Please connect to the internet and try again.",
+    "tryAgain": "Try Again",
+    "searchPlaceholder": "Search for a river...",
+    "advanced": "Advanced",
+    "customFiltersActive": "Custom Filters Active",
+    "clearFilters": "Clear Filters (View All)",
+    "cloudSyncFailed": "Cloud lists sync failed. Using offline data.",
+    "retry": "Retry",
+    "lastSynced": "⚠️ Data was last synced {{mins}} mins ago.",
+    "syncing": "Syncing...",
+    "update": "Update",
+    "noRiversTitle": "No Rivers Found",
+    "noRiversDesc": "Try adjusting your filters or search terms.",
+    "noFavsTitle": "Your Favorites are Empty",
+    "noFavsDesc": "Star a river from the list to save it here!",
+    "noListTitle": "This List is Empty",
+    "noListDesc": "Add rivers to this list using the 'Save to List' menu on any river page.",
+    "showAllRivers": "Show All Rivers",
+    "manageLists": "Manage Your Lists",
+    "loadingRiver": "Loading River...",
+    "reqLocation": "Requesting device location to evaluate shared radius search...",
+    "failLocation": "Failed to get location for radius search: {{error}}",
+    "legend": {
+      "tooLow": "Too Low",
+      "lowFlow": "Low Flow",
+      "midFlow": "Mid Flow",
+      "highFlow": "High Flow",
+      "tooHigh": "Too High"
+    }
+  },
+  "topBar": {
+    "river": "River⇅",
+    "section": "Section",
+    "skill": "Skill⇅",
+    "class": "Class⇅",
+    "flow": "Flow⇅",
+    "state": "State⇅",
+    "configSaveTarget": "Configure Quick Save Target"
+  },
+  "profileMenu": {
+    "loadingProfile": "Loading Profile...",
+    "publicName": "Public Profile Name",
+    "namePlaceholder": "e.g. Jane Doe",
+    "save": "Save",
+    "nameSaved": "Name saved!",
+    "failedSave": "Failed to save",
+    "setNameWarning": "⚠️ Please set a custom public name.",
+    "keepPrivate": "Keep my name private on lists",
+    "emailAlerts": "Email Alerts",
+    "receiveDigests": "Receive daily flow digests",
+    "digestsDesc": "Summarizes conditions for lists you star.",
+    "deliveryTime": "Digest Delivery Time:",
+    "snoozeUntil": "Snooze alerts until:",
+    "clear": "Clear",
+    "savingChanges": "Saving changes...",
+    "myLists": "My Lists",
+    "signOut": "Sign Out",
+    "exportData": "Export Data",
+    "deleteAccount": "Delete Account"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "The page you are looking for does not exist.",
+    "message": "Sorry, the page you are looking for doesn't exist or has been moved.",
+    "returnHome": "Return Home"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Click on the question to see or hide the answer.",
+    "banner": {
+      "text1": "New Users: Watch the ",
+      "link": "Rivers.run Tutorial",
+      "text2": " for an overview of Rivers.run features!"
+    },
+    "q1": {
+      "q": "How does the app work offline?",
+      "p1": "For the best experience, download the native app from the App Store or Google Play. The app (and the website itself!) is built \"offline-first\". This means it automatically downloads map tiles, river coordinates, and flow data in the background.",
+      "proTip": "Pro Tip:",
+      "p2": " Simply open the app or website while you still have an internet connection (like on the drive to the put-in). It will silently fetch the latest flow limits so you can view accurately colored rivers later on when you lose cell service!"
+    },
+    "q2": {
+      "q": "What do the different colors on the rivers mean?",
+      "p1": "We use a standardized color scale based on community-sourced threshold data to instantly show river runnability:",
+      "tooLow": "Too Low (Red):",
+      "tooLowDesc": " Below the minimum recommended flow.",
+      "low": "Low (Yellow):",
+      "lowDesc": " Scrappy or low water, but navigable.",
+      "runnable": "Runnable (Green):",
+      "runnableDesc": " Optimal, standard flow.",
+      "high": "High (Light Blue):",
+      "highDesc": " Fast, elevated flow.",
+      "tooHigh": "Too High (Dark Blue):",
+      "tooHighDesc": " Flood levels or generally unsafe/blown out."
+    },
+    "q3": {
+      "q": "How do I add a new river?",
+      "p1": "Click the ",
+      "strong1": "Suggest a River",
+      "p2": " button in the navigation menu (or the [+] icon). Fill out the form with the river's basic details and click Submit. Our administrators will review your suggestion before it's published to the global map."
+    },
+    "q4": {
+      "q": "A river's flow limits or access markers are wrong. How do I fix it?",
+      "p1": "Rivers.run relies on crowdsourced data! Click on any river in the list to expand its details window, then click the ",
+      "strong1": "Suggest an Edit",
+      "p2": " button at the very top.",
+      "p3": "Make your changes and submit them. They will go directly into the admin queue for review."
+    },
+    "q5": {
+      "q": "I found a bug or need administrative help. Who do I contact?",
+      "p1": "Please email us directly at ",
+      "p2": ". This is our only monitored support inbox for technical features or administrative requests."
+    },
+    "q6": {
+      "q": "I would like to help build rivers.run",
+      "p1": "Assistance is always welcome! Please direct your inquiries to ",
+      "p2": ". Please be clear that Rivers.run is independently developed and compensation will not be offered for contributions."
+    }
+  },
+  "footer": {
+    "legal": "Legal Information",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "disclaimer": "Disclaimer",
+    "getApp": "Get the App",
+    "allRightsReserved": "All rights reserved."
+  },
+  "mapPage": {
+    "loading": "Loading Map Data...",
+    "error": "Error loading map: {{error}}"
+  },
+  "riverItem": {
+    "signInPrompt": "Please sign in to save favorites and sync them across your devices.",
+    "signInRequired": "Sign In Required",
+    "listOwnershipPrompt": "You are currently viewing a community list that you don't own. To add or remove rivers, please create a personal copy of this list on the Lists page. Would you like to go there now?",
+    "listOwnership": "List Ownership",
+    "updateError": "Failed to update your list. Please try again.",
+    "updateErrorTitle": "Error Updating List",
+    "stale": "(stale)",
+    "dam": "Dam",
+    "removeFromList": "Remove from List",
+    "addToList": "Add to List",
+    "saveRiverToLists": "Save River to Lists",
+    "removeRiverFromLists": "Remove River from Lists",
+    "addRiverToLists": "Add River to Lists"
+  },
+  "listsPage": {
+    "title": "Rivers.run Lists",
+    "seoDesc": "Curated river itineraries from paddlers worldwide.",
+    "subtitle": "Build, share, and discover river itineraries.",
+    "myListsTab": "My Lists",
+    "communityTab": "Community",
+    "appStartupView": "App Startup View",
+    "appStartupDesc": "Choose what loads by default when you open Rivers.run.",
+    "noneDisplayAll": "None (Display All Rivers)",
+    "currentStartupList": "Current Startup List (Not Starred)",
+    "myCustomListsGroup": "My Custom Lists",
+    "starredListsGroup": "Starred Lists",
+    "signInRequired": "Sign In Required",
+    "signInDesc": "You need to sign in to save favorite rivers, create custom lists, and sync them across your devices.",
+    "signInNow": "Sign In Now",
+    "unlimited": "Unlimited",
+    "myListsTitle": "My Lists ({{count}}/{{limit}})",
+    "createNewList": "Create New List",
+    "starredListsTitle": "Starred Lists",
+    "loadingStarred": "Loading starred lists...",
+    "noStarredLists": "You haven't starred any community lists.",
+    "searchPlaceholder": "Search by list name, description, or author...",
+    "loadingCommunity": "Loading community lists natively...",
+    "noCommunityMatch": "No published lists match your search criteria.",
+    "noCommunityYet": "No community lists published yet!",
+    "listPrefix": "List: ",
+    "viewList": "View List",
+    "manageList": "Manage List",
+    "details": "Details",
+    "clone": "Clone",
+    "share": "Share",
+    "containsSections": "Contains {{count}} River Sections",
+    "activeAlerts": "{{count}} Active Pinned Alerts",
+    "pinnedToSensors": "Pinned to specific sensors at time of addition.",
+    "stars": "Stars",
+    "by": "By ",
+    "private": "Private"
+  },
+  "riverPage": {
+    "reportPrompt": "Please explain the problem with the data for {{riverName}}:",
+    "reportTitle": "Report Content",
+    "reportSuccess": "Report submitted successfully. Our moderators will review it shortly.",
+    "reportSent": "Report Sent",
+    "reportError": "Failed to submit report: {{error}}",
+    "copyError": "Failed to copy link. Please manually copy the URL.",
+    "errorTitle": "Error",
+    "minimum": "Minimum",
+    "low": "Low",
+    "runnable": "Runnable",
+    "high": "High",
+    "maximum": "Maximum",
+    "riverNotFound": "River Not Found",
+    "loadingData": "Loading River Data...",
+    "errorNotFound": "Error: Could not find river.",
+    "returnHome": "Return Home",
+    "results": "Results",
+    "class": "Class",
+    "editRiver": "Edit River",
+    "linkCopied": "Link Copied!",
+    "share": "Share",
+    "viewAW": "View on AW",
+    "reportProblem": "Report Problem",
+    "tooLow": "Too Low",
+    "tooHigh": "Too High",
+    "staleData": "STALE DATA",
+    "min": "Min",
+    "max": "Max",
+    "otherNearby": "Other nearby rivers",
+    "mi": "mi"
+  }
+}

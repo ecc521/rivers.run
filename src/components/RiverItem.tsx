@@ -11,6 +11,7 @@ import { useSettings } from "../context/SettingsContext";
 import { useAuth } from "../context/AuthContext";
 import { useModal } from "../context/ModalContext";
 import { ListSelectModal } from "./ListSelectModal";
+import { useTranslation } from "react-i18next";
 
 interface RiverItemProps {
   river: RiverData;
@@ -30,6 +31,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
   isColorBlindMode = false,
   onClickOverride
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const baseId = `b${index}`;
 
@@ -88,7 +90,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
     e.stopPropagation();
     
     if (!user) {
-        const shouldSignIn = await confirm("Please sign in to save favorites and sync them across your devices.", "Sign In Required");
+        const shouldSignIn = await confirm(t("riverItem.signInPrompt"), t("riverItem.signInRequired"));
         if (shouldSignIn) {
             setAuthModalOpen(true);
         }
@@ -100,8 +102,8 @@ export const RiverItem: React.FC<RiverItemProps> = ({
          const ownedList = myLists.find(l => l.id === targetListId);
          if (!ownedList) {
              const goToLists = await confirm(
-                 "You are currently viewing a community list that you don't own. To add or remove rivers, please create a personal copy of this list on the Lists page. Would you like to go there now?",
-                 "List Ownership"
+                 t("riverItem.listOwnershipPrompt"),
+                 t("riverItem.listOwnership")
              );
              if (goToLists) navigate("/lists");
              return;
@@ -120,7 +122,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
       }
     } catch (e: any) {
       console.error("Failed to perform list action:", e);
-      await confirm(e.message || "Failed to update your list. Please try again.", "Error Updating List");
+      await confirm(e.message || t("riverItem.updateError"), t("riverItem.updateErrorTitle"));
     }
   };
 
@@ -153,7 +155,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
     if (river.isReadingStale) {
       return (
         <span className="riverspan flowspan" style={{ fontSize: "0.85em", fontStyle: "italic", opacity: 0.8 }}>
-          (stale)
+          {t("riverItem.stale")}
         </span>
       );
     }
@@ -169,7 +171,7 @@ export const RiverItem: React.FC<RiverItemProps> = ({
     if (river.dam) {
       return (
         <span className="riverspan flowspan">
-          Dam
+          {t("riverItem.dam")}
           {getTrendArrow()}
         </span>
       );
@@ -179,12 +181,12 @@ export const RiverItem: React.FC<RiverItemProps> = ({
 
   const getFavTitle = () => {
     if (quickActionPref && quickActionPref.startsWith("list:")) {
-      return isActive ? "Remove from List" : "Add to List";
+      return isActive ? t("riverItem.removeFromList") : t("riverItem.addToList");
     }
     if (myLists.length > 0) {
-      return "Save River to Lists";
+      return t("riverItem.saveRiverToLists");
     }
-    return isActive ? "Remove River from Lists" : "Add River to Lists";
+    return isActive ? t("riverItem.removeRiverFromLists") : t("riverItem.addRiverToLists");
   };
 
 

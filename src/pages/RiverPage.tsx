@@ -16,10 +16,11 @@ import { lambert } from "../utils/distance";
 import { getCountryName, getRiverCountries } from "../utils/regions";
 import { getSkillFull } from "../utils/skillTranslations";
 import type { RiverData } from "../types/River";
-
+import { useTranslation } from "react-i18next";
 
 
 const RiverPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const decodedId = id ? decodeURIComponent(id) : undefined;
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ const RiverPage: React.FC = () => {
   const handleReport = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!river) return;
-    const result = await promptReport(`Please explain the problem with the data for ${river.name}:`, "Report Content", user?.email || "");
+    const result = await promptReport(t("riverPage.reportPrompt", { riverName: river.name }), t("riverPage.reportTitle"), user?.email || "");
     if (!result || !result.reason || !result.reason.trim()) return;
 
     try {
@@ -55,9 +56,9 @@ const RiverPage: React.FC = () => {
           email: result.email || user?.email || ""
         })
       });
-      await alert("Report submitted successfully. Our moderators will review it shortly.", "Report Sent");
+      await alert(t("riverPage.reportSuccess"), t("riverPage.reportSent"));
     } catch (e: any) {
-      await alert("Failed to submit report: " + e.message);
+      await alert(t("riverPage.reportError", { error: e.message }));
     }
   };
 
@@ -84,7 +85,7 @@ const RiverPage: React.FC = () => {
         setTimeout(() => setIsCopied(false), 2000);
       } catch (err) {
         console.error("Clipboard copy failed", err);
-        await alert("Failed to copy link. Please manually copy the URL.", "Error");
+        await alert(t("riverPage.copyError"), t("riverPage.errorTitle"));
       }
     }
   };
@@ -145,7 +146,7 @@ const RiverPage: React.FC = () => {
   };
 
   useSEO({
-    title: river ? `${river.name} - ${river.section}` : "River Not Found",
+    title: river ? `${river.name} - ${river.section}` : t("riverPage.riverNotFound"),
     description: river 
       ? `Detailed flow info, running status, and description for ${river.name} (${river.section}) in ${river.states || 'the USA'}.` 
       : undefined,
@@ -156,7 +157,7 @@ const RiverPage: React.FC = () => {
   if (loading && rivers.length === 0) {
     return (
       <div className="page-content center">
-        <h2>Loading River Data...</h2>
+        <h2>{t("riverPage.loadingData")}</h2>
       </div>
     );
   }
@@ -164,9 +165,9 @@ const RiverPage: React.FC = () => {
   if (error || !river) {
     return (
       <div className="page-content center">
-        <h2>Error: Could not find river.</h2>
+        <h2>{t("riverPage.errorNotFound")}</h2>
         <button onClick={() => navigate("/")} style={{ padding: "10px", marginTop: "20px" }}>
-          Return Home
+          {t("riverPage.returnHome")}
         </button>
       </div>
     );
@@ -224,7 +225,7 @@ const RiverPage: React.FC = () => {
                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--surface-hover)"}
                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
             >
-                &#8592; Results
+                &#8592; {t("riverPage.results")}
             </span>
             {(() => {
               const countries = Array.from(getRiverCountries(river)).filter(c => c !== "global");
@@ -281,7 +282,7 @@ const RiverPage: React.FC = () => {
                 border: "1px solid var(--border)",
                 color: "var(--primary)"
               }}>
-                Class {river.class}
+                {t("riverPage.class")} {river.class}
               </span>
             )}
             {(() => {
@@ -335,7 +336,7 @@ const RiverPage: React.FC = () => {
                 e.currentTarget.style.borderColor = "var(--border)";
               }}
             >
-              Edit River
+              {t("riverPage.editRiver")}
             </Link>
 
             <button 
@@ -361,7 +362,7 @@ const RiverPage: React.FC = () => {
                 e.currentTarget.style.borderColor = "var(--border)";
               }}
             >
-              {isCopied ? "Link Copied!" : "Share"}
+              {isCopied ? t("riverPage.linkCopied") : t("riverPage.share")}
             </button>
 
             {river.aw && (
@@ -390,7 +391,7 @@ const RiverPage: React.FC = () => {
                   e.currentTarget.style.borderColor = "var(--border)";
                 }}
               >
-                View on AW
+                {t("riverPage.viewAW")}
               </a>
             )}
 
@@ -417,7 +418,7 @@ const RiverPage: React.FC = () => {
                 e.currentTarget.style.borderColor = "var(--border)";
               }}
             >
-              Report Problem
+              {t("riverPage.reportProblem")}
             </button>
           </div>
         </div>
@@ -436,11 +437,11 @@ const RiverPage: React.FC = () => {
                 borderBottom: "none"
             }}>
                 <div className="tooltiptext" style={{ textAlign: "left", lineHeight: "1.4", padding: "10px 15px", whiteSpace: "nowrap", fontWeight: "normal", zIndex: 10 }}>
-                    {renderTooltipRow("Minimum", pillRiver.flow?.min, parsedThresholds[0])}
-                    {renderTooltipRow("Low", pillRiver.flow?.low, parsedThresholds[1])}
-                    {renderTooltipRow("Runnable", pillRiver.flow?.mid, parsedThresholds[2])}
-                    {renderTooltipRow("High", pillRiver.flow?.high, parsedThresholds[3])}
-                    {renderTooltipRow("Maximum", pillRiver.flow?.max, parsedThresholds[4])}
+                    {renderTooltipRow(t("riverPage.minimum"), pillRiver.flow?.min, parsedThresholds[0])}
+                    {renderTooltipRow(t("riverPage.low"), pillRiver.flow?.low, parsedThresholds[1])}
+                    {renderTooltipRow(t("riverPage.runnable"), pillRiver.flow?.mid, parsedThresholds[2])}
+                    {renderTooltipRow(t("riverPage.high"), pillRiver.flow?.high, parsedThresholds[3])}
+                    {renderTooltipRow(t("riverPage.maximum"), pillRiver.flow?.max, parsedThresholds[4])}
                 </div>
                 <div
                     style={{
@@ -468,20 +469,20 @@ const RiverPage: React.FC = () => {
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "1rem", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                         {pillRiver.isReadingStale && <span>⚠️</span>}
                         {(() => {
-                           if (pillRiver.running === 0) return "Too Low";
-                           if (pillRiver.running < 1) return "Low";
-                           if (pillRiver.running < 3) return "Runnable";
-                           if (pillRiver.running < 4) return "High";
-                           return "Too High";
+                           if (pillRiver.running === 0) return t("riverPage.tooLow");
+                           if (pillRiver.running < 1) return t("riverPage.low");
+                           if (pillRiver.running < 3) return t("riverPage.runnable");
+                           if (pillRiver.running < 4) return t("riverPage.high");
+                           return t("riverPage.tooHigh");
                         })()}
                     </div>
-                    {pillRiver.isReadingStale && <div style={{ fontSize: "0.75rem", color: "var(--warning-text)", fontWeight: "800", letterSpacing: "0.5px" }}>STALE DATA</div>}
+                    {pillRiver.isReadingStale && <div style={{ fontSize: "0.75rem", color: "var(--warning-text)", fontWeight: "800", letterSpacing: "0.5px" }}>{t("riverPage.staleData")}</div>}
                 </div>
                 
                 {/* Min/Max Bar below */}
                 <div style={{ display: "flex", alignItems: "center", gap: "15px", fontSize: "0.85rem", width: "100%", minWidth: "240px", maxWidth: "300px", marginTop: "15px", marginBottom: "15px" }}>
                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", color: "var(--text-muted)", lineHeight: 1.2 }}>
-                      <span style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>Min</span>
+                      <span style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>{t("riverPage.min")}</span>
                       {(() => {
                         const raw = pillRiver.flow?.min;
                         if (raw != null && (raw as any) !== "") return <strong style={{ color: "var(--text)" }}>{raw}</strong>;
@@ -553,7 +554,7 @@ const RiverPage: React.FC = () => {
                    </div>
                    
                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", color: "var(--text-muted)", lineHeight: 1.2 }}>
-                      <span style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>Max</span>
+                      <span style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>{t("riverPage.max")}</span>
                       {(() => {
                         const raw = pillRiver.flow?.max;
                         if (raw != null && (raw as any) !== "") return <strong style={{ color: "var(--text)" }}>{raw}</strong>;
@@ -660,7 +661,7 @@ const RiverPage: React.FC = () => {
 
             return (
               <div style={{ marginTop: "60px", paddingTop: "40px", borderTop: "1px solid var(--border)" }}>
-                <h3 style={{ marginBottom: "20px" }}>Other nearby rivers</h3>
+                <h3 style={{ marginBottom: "20px" }}>{t("riverPage.otherNearby")}</h3>
                 <div style={{ 
                   display: "grid", 
                   gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", 
@@ -714,7 +715,7 @@ const RiverPage: React.FC = () => {
                            {other.class && other.class !== "?" && (
                                <span style={{ fontSize: "0.7rem", opacity: 0.8, backgroundColor: "var(--surface)", padding: "1px 4px", borderRadius: "4px", border: "1px solid var(--border)" }}>{other.class}</span>
                            )}
-                           <span style={{ fontWeight: "600", color: "var(--primary)" }}>{Math.round((other as any)._dist)} mi</span>
+                           <span style={{ fontWeight: "600", color: "var(--primary)" }}>{Math.round((other as any)._dist)} {t("riverPage.mi")}</span>
                         </div>
                       </div>
                     </Link>

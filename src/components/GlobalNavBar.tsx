@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { AuthModal } from "./AuthModal";
 import { ProfileMenu } from "./ProfileMenu";
 
 const GlobalNavBar: React.FC = () => {
+  const { t } = useTranslation();
   const { user, loading, isAdmin, isAuthModalOpen, setAuthModalOpen } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNavMoreOpen, setIsNavMoreOpen] = useState(false);
@@ -81,28 +83,28 @@ const GlobalNavBar: React.FC = () => {
           style={{ display: "flex", gap: "20px", alignItems: "center", marginLeft: "20px", flexWrap: "nowrap", flexGrow: 1 }}
         >
           <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-            <Link to="/map" style={{ color: "#cbd5e1", textDecoration: "none" }}>Map</Link>
-            {windowWidth > 450 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none" }}>Lists</Link>}
-            {windowWidth > 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }}>Clubs</Link>}
-            {windowWidth > 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>FAQ</Link>}
-            {windowWidth > 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>Settings</Link>}
-            {windowWidth > 720 && <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }}>API</Link>}
+            <Link to="/map" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.map")}</Link>
+            {windowWidth > 450 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.lists")}</Link>}
+            {windowWidth > 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.clubs")}</Link>}
+            {windowWidth > 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.faq")}</Link>}
+            {windowWidth > 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.settings")}</Link>}
+            {windowWidth > 720 && <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.api")}</Link>}
           </div>
 
           <div style={{ display: "flex", gap: "20px", alignItems: "center", marginLeft: "auto", marginRight: "10px" }}>
             {windowWidth > 860 && (isAdmin ? (
                <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontSize: "0.85em", fontWeight: "bold" }}>
-                 Create River
+                 {t("nav.createRiver")}
                </Link>
             ) : (
                <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold" }}>
-                 Suggest a River
+                 {t("nav.suggestRiver")}
                </Link>
             ))}
 
             {windowWidth > 930 && isAdmin && (
                <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold" }}>
-                 Admin Tools
+                 {t("nav.adminTools")}
                </Link>
             )}
 
@@ -120,7 +122,7 @@ const GlobalNavBar: React.FC = () => {
                    tabIndex={0}
                    style={{ color: "#cbd5e1", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px", padding: "5px 10px" }}
                  >
-                   More <span style={{ fontSize: "0.8em" }}>▼</span>
+                   {t("nav.more")} <span style={{ fontSize: "0.8em" }}>▼</span>
                  </div>
                  {isNavMoreOpen && (
                    <div style={{ 
@@ -138,11 +140,11 @@ const GlobalNavBar: React.FC = () => {
                      boxShadow: "0 4px 12px rgba(0,0,0,0.5)", 
                      width: "160px" 
                    }}>
-                     {windowWidth <= 450 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Lists</Link>}
-                     {windowWidth <= 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Clubs</Link>}
-                     {windowWidth <= 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>FAQ</Link>}
-                     {windowWidth <= 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>Settings</Link>}
-                     {windowWidth <= 720 && <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>API</Link>}
+                     {windowWidth <= 450 && <Link to="/lists" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.lists")}</Link>}
+                     {windowWidth <= 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.clubs")}</Link>}
+                     {windowWidth <= 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.faq")}</Link>}
+                     {windowWidth <= 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.settings")}</Link>}
+                     {windowWidth <= 720 && <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.api")}</Link>}
                      
                      {windowWidth <= 860 && (
                         <hr style={{ borderColor: "#334155", width: "100%", margin: 0 }} />
@@ -150,17 +152,17 @@ const GlobalNavBar: React.FC = () => {
                      {windowWidth <= 860 && (
                         isAdmin ? (
                          <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold" }} onClick={() => setIsNavMoreOpen(false)}>
-                           Create River
+                           {t("nav.createRiver")}
                          </Link>
                         ) : (
                          <Link to="/create" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold" }} onClick={() => setIsNavMoreOpen(false)}>
-                           Suggest a River
+                           {t("nav.suggestRiver")}
                          </Link>
                         )
                      )}
                      {windowWidth <= 930 && isAdmin && (
                         <Link to="/admin" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: "bold" }} onClick={() => setIsNavMoreOpen(false)}>
-                          Admin Tools
+                          {t("nav.adminTools")}
                         </Link>
                      )}
                    </div>
@@ -172,7 +174,7 @@ const GlobalNavBar: React.FC = () => {
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: "auto" }}>
           <div className="nav-auth">
-          {loading && <span style={{ color: "#94a3b8" }}>Loading...</span>}
+          {loading && <span style={{ color: "#94a3b8" }}>{t("nav.loading")}</span>}
           {!loading && user && (
             <div
               className="user-profile"
@@ -226,7 +228,7 @@ const GlobalNavBar: React.FC = () => {
                 fontWeight: 600,
               }}
             >
-              Sign In
+              {t("nav.signIn")}
             </button>
           )}
         </div>

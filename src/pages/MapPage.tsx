@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "../hooks/useLocation";
 import { useRivers } from "../hooks/useRivers";
 import { SharedMap } from "../components/SharedMap";
+import { useTranslation } from "react-i18next";
 
 const MapPage: React.FC = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const { rivers, loading: riversLoading, error: riversError } = useRivers();
   const [loading, setLoading] = useState(rivers.length === 0);
@@ -27,13 +29,13 @@ const MapPage: React.FC = () => {
   if (loading)
     return (
       <div className="page-content center">
-        <h2>Loading Map Data...</h2>
+        <h2>{t("mapPage.loading")}</h2>
       </div>
     );
   if (error)
     return (
       <div className="page-content center">
-        <h2>Error loading map: {error}</h2>
+        <h2>{t("mapPage.error", { error })}</h2>
       </div>
     );
 

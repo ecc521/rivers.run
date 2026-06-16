@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
+import "./i18n";
 
 // Show a helpful error if a chunk fails to load due to genuinely dead WiFi.
 // Since we use the PWA 'prompt' update mode, they will never hit a 404 cache miss,

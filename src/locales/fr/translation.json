@@ -1,0 +1,301 @@
+{
+  "settings": {
+    "title": "Paramètres",
+    "theme": {
+      "title": "Thème (Couleurs)",
+      "systemDefault": "Par défaut du système",
+      "light": "Clair",
+      "dark": "Sombre",
+      "statusDefault": "Utilisation actuelle du thème par défaut: {{theme}}",
+      "statusOverride": "Remplacement du thème par défaut."
+    },
+    "colorBlind": {
+      "title": "Mode daltonien",
+      "default": "Par défaut (Non)",
+      "no": "Non",
+      "yes": "Oui",
+      "description": "Le mode daltonien modifie les indicateurs de couleur de débit principaux intégrés partout, ainsi que les couleurs de ligne sur les graphiques de débit."
+    },
+    "units": {
+      "title": "Unités",
+      "description": "Configurez l'affichage des unités de débit, de température et de précipitations sur le site.",
+      "flow": {
+        "label": "Débit et volume",
+        "default": "Utiliser les unités du site (Par défaut de la jauge)",
+        "imperial": "Impérial (CFS / FT)",
+        "metric": "Métrique (CMS / M)"
+      },
+      "temp": {
+        "label": "Température",
+        "default": "Utiliser les unités du site (Par défaut de la jauge)",
+        "imperial": "Impérial (Fahrenheit)",
+        "metric": "Métrique (Celsius)"
+      },
+      "precip": {
+        "label": "Précipitations",
+        "default": "Utiliser les unités du site (Par défaut de la jauge)",
+        "imperial": "Impérial (Pouces)",
+        "metric": "Métrique (Millimètres)"
+      }
+    },
+    "language": {
+      "title": "Langue",
+      "description": "Sélectionnez la langue de votre application.",
+      "en": "English",
+      "fr": "Français"
+    },
+    "offlineMaps": {
+      "title": "Cartes hors ligne",
+      "unsupported": "Votre navigateur est trop ancien pour prendre en charge l'enregistrement de grandes cartes hors ligne. Veuillez le mettre à jour ou utiliser l'application iOS/Android.",
+      "unsupportedTitle": "Navigateur non pris en charge :",
+      "downloading": "Téléchargement de {{regionName}}...",
+      "loading": "Chargement des régions disponibles...",
+      "baselineTitle": "Carte de base de l'Amérique du Nord",
+      "baselineDesc": "~3.7 Mo • Couvre les États-Unis, le Canada et le Mexique (Zoom 0-5)",
+      "downloaded": "Téléchargé",
+      "allRegions": "Toutes les régions disponibles",
+      "mapReady": "Carte prête",
+      "navReady": "Nav prête",
+      "download": "Télécharger",
+      "mapSize": "Carte: ~{{mapSize}} Mo | Nav: ~{{navSize}} Mo",
+      "step1of2": "Étape 1 sur 2 : Données cartographiques",
+      "step2of2": "Étape 2 sur 2 : Données de routage",
+      "step1of1": "Étape 1 sur 1 : Téléchargement des données"
+    }
+  },
+  "nav": {
+    "home": "Accueil",
+    "map": "Carte",
+    "lists": "Listes",
+    "clubs": "Clubs",
+    "more": "Plus",
+    "settings": "Paramètres",
+    "faq": "FAQ",
+    "api": "API",
+    "developer": "API Développeur",
+    "about": "À propos",
+    "createRiver": "Créer une rivière",
+    "suggestRiver": "Suggérer une rivière",
+    "adminTools": "Outils d'administration",
+    "signIn": "Se connecter",
+    "loading": "Chargement..."
+  },
+  "home": {
+    "loadingData": "Chargement des données...",
+    "downloadFailed": "Échec du téléchargement des données",
+    "connectInternet": "Veuillez vous connecter à Internet et réessayer.",
+    "tryAgain": "Réessayer",
+    "searchPlaceholder": "Rechercher une rivière...",
+    "advanced": "Avancé",
+    "customFiltersActive": "Filtres personnalisés actifs",
+    "clearFilters": "Effacer les filtres (Voir tout)",
+    "cloudSyncFailed": "Échec de la synchronisation des listes cloud. Utilisation des données hors ligne.",
+    "retry": "Réessayer",
+    "lastSynced": "⚠️ Les données ont été synchronisées il y a {{mins}} mins.",
+    "syncing": "Synchronisation...",
+    "update": "Mettre à jour",
+    "noRiversTitle": "Aucune rivière trouvée",
+    "noRiversDesc": "Essayez de modifier vos filtres ou termes de recherche.",
+    "noFavsTitle": "Vos favoris sont vides",
+    "noFavsDesc": "Ajoutez une rivière aux favoris pour la voir ici !",
+    "noListTitle": "Cette liste est vide",
+    "noListDesc": "Ajoutez des rivières à cette liste en utilisant le menu 'Ajouter à la liste' sur la page d'une rivière.",
+    "showAllRivers": "Afficher toutes les rivières",
+    "manageLists": "Gérer vos listes",
+    "loadingRiver": "Chargement de la rivière...",
+    "reqLocation": "Demande de localisation de l'appareil pour évaluer la recherche par rayon...",
+    "failLocation": "Impossible d'obtenir la position pour la recherche par rayon : {{error}}",
+    "legend": {
+      "tooLow": "Trop bas",
+      "lowFlow": "Débit bas",
+      "midFlow": "Débit moyen",
+      "highFlow": "Débit élevé",
+      "tooHigh": "Trop haut"
+    }
+  },
+  "topBar": {
+    "river": "Rivière⇅",
+    "section": "Section",
+    "skill": "Niveau⇅",
+    "class": "Classe⇅",
+    "flow": "Débit⇅",
+    "state": "État/Prov⇅",
+    "configSaveTarget": "Configurer la cible d'enregistrement rapide"
+  },
+  "profileMenu": {
+    "loadingProfile": "Chargement du profil...",
+    "publicName": "Nom du profil public",
+    "namePlaceholder": "ex. Jeanne Dupont",
+    "save": "Enregistrer",
+    "nameSaved": "Nom enregistré !",
+    "failedSave": "Échec de l'enregistrement",
+    "setNameWarning": "⚠️ Veuillez définir un nom public personnalisé.",
+    "keepPrivate": "Garder mon nom privé sur les listes",
+    "emailAlerts": "Alertes par e-mail",
+    "receiveDigests": "Recevoir des résumés quotidiens du débit",
+    "digestsDesc": "Résume les conditions des listes que vous mettez en favori.",
+    "deliveryTime": "Heure de livraison du résumé :",
+    "snoozeUntil": "Mettre les alertes en sourdine jusqu'au :",
+    "clear": "Effacer",
+    "savingChanges": "Enregistrement des modifications...",
+    "myLists": "Mes listes",
+    "signOut": "Se déconnecter",
+    "exportData": "Exporter les données",
+    "deleteAccount": "Supprimer le compte"
+  },
+  "notFound": {
+    "title": "Page non trouvée",
+    "description": "La page que vous recherchez n'existe pas.",
+    "message": "Désolé, la page que vous recherchez n'existe pas ou a été déplacée.",
+    "returnHome": "Retourner à l'accueil"
+  },
+  "faq": {
+    "title": "Foire aux questions",
+    "subtitle": "Cliquez sur la question pour afficher ou masquer la réponse.",
+    "banner": {
+      "text1": "Nouveaux utilisateurs : Regardez le ",
+      "link": "tutoriel Rivers.run",
+      "text2": " pour un aperçu des fonctionnalités !"
+    },
+    "q1": {
+      "q": "Comment l'application fonctionne-t-elle hors ligne ?",
+      "p1": "Pour une meilleure expérience, téléchargez l'application native depuis l'App Store ou Google Play. L'application (et le site web !) est conçue de manière \"hors-ligne d'abord\". Cela signifie qu'elle télécharge automatiquement les cartes, les coordonnées des rivières et les données de débit en arrière-plan.",
+      "proTip": "Astuce de pro :",
+      "p2": " Ouvrez simplement l'application ou le site web lorsque vous avez encore une connexion Internet (comme sur la route vers l'embarquement). Il récupérera silencieusement les dernières limites de débit afin que vous puissiez voir les rivières colorées avec précision plus tard lorsque vous perdrez le service cellulaire !"
+    },
+    "q2": {
+      "q": "Que signifient les différentes couleurs sur les rivières ?",
+      "p1": "Nous utilisons une échelle de couleurs standardisée basée sur des données de seuil fournies par la communauté pour montrer instantanément la navigabilité de la rivière :",
+      "tooLow": "Trop bas (Rouge) :",
+      "tooLowDesc": " En dessous du débit minimum recommandé.",
+      "low": "Bas (Jaune) :",
+      "lowDesc": " Niveau bas ou rocailleux, mais navigable.",
+      "runnable": "Navigable (Vert) :",
+      "runnableDesc": " Débit optimal et standard.",
+      "high": "Élevé (Bleu clair) :",
+      "highDesc": " Débit rapide et élevé.",
+      "tooHigh": "Trop haut (Bleu foncé) :",
+      "tooHighDesc": " Niveaux d'inondation ou généralement dangereux/impraticable."
+    },
+    "q3": {
+      "q": "Comment ajouter une nouvelle rivière ?",
+      "p1": "Cliquez sur le bouton ",
+      "strong1": "Suggérer une rivière",
+      "p2": " dans le menu de navigation (ou l'icône [+]). Remplissez le formulaire avec les détails de base de la rivière et cliquez sur Soumettre. Nos administrateurs examineront votre suggestion avant sa publication sur la carte mondiale."
+    },
+    "q4": {
+      "q": "Les limites de débit ou les points d'accès d'une rivière sont erronés. Comment corriger cela ?",
+      "p1": "Rivers.run s'appuie sur des données crowdsourcées ! Cliquez sur n'importe quelle rivière dans la liste pour agrandir sa fenêtre de détails, puis cliquez sur le bouton ",
+      "strong1": "Suggérer une modification",
+      "p2": " tout en haut.",
+      "p3": "Effectuez vos modifications et soumettez-les. Elles iront directement dans la file d'attente d'administration pour examen."
+    },
+    "q5": {
+      "q": "J'ai trouvé un bug ou j'ai besoin d'aide administrative. Qui dois-je contacter ?",
+      "p1": "Veuillez nous envoyer un e-mail directement à ",
+      "p2": ". Il s'agit de notre seule boîte de réception de support surveillée pour les fonctionnalités techniques ou les demandes administratives."
+    },
+    "q6": {
+      "q": "Je souhaite aider à développer rivers.run",
+      "p1": "L'aide est toujours la bienvenue ! Veuillez adresser vos demandes à ",
+      "p2": ". Veuillez noter que Rivers.run est développé de manière indépendante et qu'aucune rémunération ne sera offerte pour les contributions."
+    }
+  },
+  "footer": {
+    "legal": "Informations Légales",
+    "terms": "Conditions",
+    "privacy": "Confidentialité",
+    "disclaimer": "Clause de non-responsabilité",
+    "getApp": "Obtenir l'Application",
+    "allRightsReserved": "Tous droits réservés."
+  },
+  "mapPage": {
+    "loading": "Chargement des données cartographiques...",
+    "error": "Erreur lors du chargement de la carte : {{error}}"
+  },
+  "riverItem": {
+    "signInPrompt": "Veuillez vous connecter pour enregistrer vos favoris et les synchroniser sur vos appareils.",
+    "signInRequired": "Connexion requise",
+    "listOwnershipPrompt": "Vous consultez actuellement une liste communautaire qui ne vous appartient pas. Pour ajouter ou supprimer des rivières, veuillez créer une copie personnelle de cette liste sur la page Listes. Voulez-vous y aller maintenant ?",
+    "listOwnership": "Propriété de la liste",
+    "updateError": "Échec de la mise à jour de votre liste. Veuillez réessayer.",
+    "updateErrorTitle": "Erreur de mise à jour de la liste",
+    "stale": "(obsolète)",
+    "dam": "Barrage",
+    "removeFromList": "Retirer de la liste",
+    "addToList": "Ajouter à la liste",
+    "saveRiverToLists": "Enregistrer la rivière dans les listes",
+    "removeRiverFromLists": "Retirer la rivière des listes",
+    "addRiverToLists": "Ajouter la rivière aux listes"
+  },
+  "listsPage": {
+    "title": "Listes Rivers.run",
+    "seoDesc": "Itinéraires de rivières sélectionnés par des kayakistes du monde entier.",
+    "subtitle": "Créez, partagez et découvrez des itinéraires de rivières.",
+    "myListsTab": "Mes listes",
+    "communityTab": "Communauté",
+    "appStartupView": "Vue au démarrage de l'app",
+    "appStartupDesc": "Choisissez ce qui se charge par défaut lorsque vous ouvrez Rivers.run.",
+    "noneDisplayAll": "Aucune (Afficher toutes les rivières)",
+    "currentStartupList": "Liste de démarrage actuelle (Non mise en favori)",
+    "myCustomListsGroup": "Mes listes personnalisées",
+    "starredListsGroup": "Listes favorites",
+    "signInRequired": "Connexion requise",
+    "signInDesc": "Vous devez vous connecter pour enregistrer vos rivières préférées, créer des listes personnalisées et les synchroniser sur tous vos appareils.",
+    "signInNow": "Se connecter maintenant",
+    "unlimited": "Illimité",
+    "myListsTitle": "Mes listes ({{count}}/{{limit}})",
+    "createNewList": "Créer une nouvelle liste",
+    "starredListsTitle": "Listes favorites",
+    "loadingStarred": "Chargement des listes favorites...",
+    "noStarredLists": "Vous n'avez mis aucune liste communautaire en favori.",
+    "searchPlaceholder": "Rechercher par nom de liste, description ou auteur...",
+    "loadingCommunity": "Chargement des listes communautaires de manière native...",
+    "noCommunityMatch": "Aucune liste publiée ne correspond à vos critères de recherche.",
+    "noCommunityYet": "Aucune liste communautaire n'a encore été publiée !",
+    "listPrefix": "Liste : ",
+    "viewList": "Voir la liste",
+    "manageList": "Gérer la liste",
+    "details": "Détails",
+    "clone": "Cloner",
+    "share": "Partager",
+    "containsSections": "Contient {{count}} sections de rivière",
+    "activeAlerts": "{{count}} alertes épinglées actives",
+    "pinnedToSensors": "Épinglé à des capteurs spécifiques lors de l'ajout.",
+    "stars": "Étoiles",
+    "by": "Par ",
+    "private": "Privé"
+  },
+  "riverPage": {
+    "reportPrompt": "Veuillez expliquer le problème avec les données pour {{riverName}} :",
+    "reportTitle": "Contenu du signalement",
+    "reportSuccess": "Signalement soumis avec succès. Nos modérateurs l'examineront sous peu.",
+    "reportSent": "Signalement envoyé",
+    "reportError": "Échec de l'envoi du signalement : {{error}}",
+    "copyError": "Échec de la copie du lien. Veuillez copier manuellement l'URL.",
+    "errorTitle": "Erreur",
+    "minimum": "Minimum",
+    "low": "Bas",
+    "runnable": "Navigable",
+    "high": "Haut",
+    "maximum": "Maximum",
+    "riverNotFound": "Rivière non trouvée",
+    "loadingData": "Chargement des données de la rivière...",
+    "errorNotFound": "Erreur : Impossible de trouver la rivière.",
+    "returnHome": "Retour à l'accueil",
+    "results": "Résultats",
+    "class": "Classe",
+    "editRiver": "Modifier la rivière",
+    "linkCopied": "Lien copié !",
+    "share": "Partager",
+    "viewAW": "Voir sur AW",
+    "reportProblem": "Signaler un problème",
+    "tooLow": "Trop bas",
+    "tooHigh": "Trop haut",
+    "staleData": "DONNÉES OBSOLÈTES",
+    "min": "Min",
+    "max": "Max",
+    "otherNearby": "Autres rivières à proximité",
+    "mi": "mi"
+  }
+}

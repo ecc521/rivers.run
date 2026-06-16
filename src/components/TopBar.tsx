@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { ListSelectModal } from "./ListSelectModal";
+import { useTranslation } from "react-i18next";
 
 interface TopBarProps {
   setQuery: React.Dispatch<React.SetStateAction<AdvancedSearchQuery>>;
@@ -8,6 +9,7 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
+  const { t } = useTranslation();
   const [isListModalOpen, setListModalOpen] = useState(false);
 
   const toggleSort = (nextSort: NonNullable<AdvancedSearchQuery["sortBy"]>) => {
@@ -36,9 +38,9 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
         tabIndex={0}
         style={{ cursor: "pointer" }}
       >
-        River⇅
+        {t("topBar.river")}
       </span>
-      <span className="riverspan">Section</span>
+      <span className="riverspan">{t("topBar.section")}</span>
       <span
         className="riverspan skillspan"
         onClick={() => {
@@ -54,7 +56,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
         tabIndex={0}
         style={{ cursor: "pointer" }}
       >
-        Skill⇅
+        {t("topBar.skill")}
       </span>
       <span
         className="riverspan classspan"
@@ -71,7 +73,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
         tabIndex={0}
         style={{ cursor: "pointer" }}
       >
-        Class⇅
+        {t("topBar.class")}
       </span>
       <span
         className="riverspan flowspan"
@@ -88,7 +90,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
         tabIndex={0}
         style={{ cursor: "pointer" }}
       >
-        Flow⇅
+        {t("topBar.flow")}
       </span>
       <span
         className="riverspan statespan"
@@ -105,7 +107,7 @@ export const TopBar: React.FC<TopBarProps> = ({ setQuery, filteredRivers }) => {
         tabIndex={0}
         style={{ cursor: "pointer" }}
       >
-        State⇅
+        {t("topBar.state")}
       </span>
 
       <span

@@ -10,8 +10,10 @@ import { ListEditorModal } from "../components/ListEditorModal";
 import { AuthorHoverCard } from "../components/AuthorHoverCard";
 import { getShareBaseUrl } from "../utils/url";
 import { Capacitor } from "@capacitor/core";
+import { useTranslation } from "react-i18next";
 
 const ListsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { user, isModerator, setAuthModalOpen } = useAuth();
   const { myLists, subscribedListIds, subscribedListNotifications, createList, updateList, toggleSubscription, toggleSubscriptionNotifications, isSubscribed } = useLists();
   const { homePageDefaultSearch, updateSetting } = useSettings();
@@ -53,7 +55,7 @@ const ListsPage: React.FC = () => {
     initialDescription: ""
   });
 
-  useSEO({ title: "Rivers.run Lists", description: "Curated river itineraries from paddlers worldwide." });
+  useSEO({ title: t("listsPage.title"), description: t("listsPage.seoDesc") });
 
 
 
@@ -344,12 +346,12 @@ const ListsPage: React.FC = () => {
               <h2 style={{ margin: 0, color: "var(--text)", fontSize: "1.4em", display: "flex", alignItems: "center", gap: "10px" }}>
                  {list.title}
                  {isOwned && !list.isPublished && (
-                    <span style={{ fontSize: "0.55em", padding: "2px 6px", borderRadius: "4px", backgroundColor: "#334155", color: "white", textTransform: "uppercase" }}>Private</span>
+                    <span style={{ fontSize: "0.55em", padding: "2px 6px", borderRadius: "4px", backgroundColor: "#334155", color: "white", textTransform: "uppercase" }}>{t("listsPage.private")}</span>
                  )}
               </h2>
               {!isOwned && (
                 <div style={{ margin: "5px 0 0 0", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "6px" }}>
-                  By{" "}
+                  {t("listsPage.by")}
                   {isAnonymous ? (
                     list.author
                   ) : (
@@ -363,23 +365,23 @@ const ListsPage: React.FC = () => {
               )}
           </div>
           <span style={{ backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
-             {list.subscribes || 0} Stars
+             {list.subscribes || 0} {t("listsPage.stars")}
           </span>
         </div>
         
         <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: "1.5" }}>{list.description || "No description provided."}</p>
         
         <p style={{ margin: "5px 0 0 0", color: "var(--text-muted)", fontSize: "0.9em" }}>
-          Contains {list.rivers?.length || 0} River Sections
+          {t("listsPage.containsSections", { count: list.rivers?.length || 0 })}
         </p>
 
         {((isOwned && list.notificationsEnabled) || (!isOwned && isSubscribed(list.id) && !!subscribedListNotifications[list.id])) && list.rivers?.length > 0 && (
            <div style={{ padding: "8px 12px", backgroundColor: "var(--surface-hover)", borderRadius: "6px", border: "1px solid var(--primary)", borderLeftWidth: "4px" }}>
              <p style={{ margin: 0, fontSize: "0.85em", fontWeight: "bold", color: "var(--primary)" }}>
-                🔔 {list.rivers.filter(r => r.gaugeId).length} Active Pinned Alerts
+                🔔 {t("listsPage.activeAlerts", { count: list.rivers.filter(r => r.gaugeId).length })}
              </p>
              <p style={{ margin: "2px 0 0 0", fontSize: "0.8em", color: "var(--text-muted)" }}>
-                Pinned to specific sensors at time of addition.
+                {t("listsPage.pinnedToSensors")}
              </p>
            </div>
         )}
@@ -389,7 +391,7 @@ const ListsPage: React.FC = () => {
               onClick={() => navigate(`/?list=${list.id}`)}
               style={{ padding: "8px 16px", backgroundColor: "var(--primary)", color: "var(--surface)", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
             >
-              View List
+              {t("listsPage.viewList")}
             </button>
 
             {user && (
@@ -397,7 +399,7 @@ const ListsPage: React.FC = () => {
                    onClick={() => handleEditList(list)}
                    style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
                 >
-                   {isOwned ? "Manage List" : "Details"}
+                   {isOwned ? t("listsPage.manageList") : t("listsPage.details")}
                 </button>
             )}
 
@@ -406,7 +408,7 @@ const ListsPage: React.FC = () => {
                    onClick={() => handleCopyList(list)}
                    style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
                 >
-                   Clone
+                   {t("listsPage.clone")}
                 </button>
             )}
 
@@ -435,7 +437,7 @@ const ListsPage: React.FC = () => {
                }}
                style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
             >
-               <span>🔗</span> Share
+               <span>🔗</span> {t("listsPage.share")}
             </button>
         </div>
       </div>
@@ -445,10 +447,10 @@ const ListsPage: React.FC = () => {
   return (
     <div className="page-content" style={{ maxWidth: "900px", margin: "0 auto", padding: "40px 20px" }}>
       <h1 className="center" style={{ marginBottom: "10px" }}>
-        Rivers.run Lists
+        {t("listsPage.title")}
       </h1>
       <p className="center" style={{ color: "var(--text-muted)", marginBottom: "30px", fontSize: "1.1rem" }}>
-        Build, share, and discover river itineraries.
+        {t("listsPage.subtitle")}
       </p>
 
          <div style={{ display: "flex", justifyContent: "center", marginBottom: "30px", gap: "10px", flexWrap: "wrap" }}>
@@ -456,44 +458,44 @@ const ListsPage: React.FC = () => {
              onClick={() => setActiveTab("mine")}
              style={{ padding: "10px 20px", borderRadius: "20px", border: "none", fontWeight: "bold", cursor: "pointer", backgroundColor: activeTab === "mine" ? "var(--primary)" : "var(--surface-hover)", color: activeTab === "mine" ? "var(--surface)" : "var(--text)" }}
            >
-             My Lists
+             {t("listsPage.myListsTab")}
            </button>
            <button 
              onClick={() => setActiveTab("community")}
              style={{ padding: "10px 20px", borderRadius: "20px", border: "none", fontWeight: "bold", cursor: "pointer", backgroundColor: activeTab === "community" ? "var(--primary)" : "var(--surface-hover)", color: activeTab === "community" ? "var(--surface)" : "var(--text)" }}
            >
-             Community
+             {t("listsPage.communityTab")}
            </button>
          </div>
 
       {/* Startup View Setting Shortcut */}
       <div style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", padding: "15px", marginBottom: "30px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "15px" }}>
          <div>
-            <h3 style={{ margin: "0 0 5px 0", fontSize: "1.1em" }}>App Startup View</h3>
-            <p style={{ margin: 0, fontSize: "0.9em", color: "var(--text-muted)" }}>Choose what loads by default when you open Rivers.run.</p>
+            <h3 style={{ margin: "0 0 5px 0", fontSize: "1.1em" }}>{t("listsPage.appStartupView")}</h3>
+            <p style={{ margin: 0, fontSize: "0.9em", color: "var(--text-muted)" }}>{t("listsPage.appStartupDesc")}</p>
          </div>
          <select
             value={homePageDefaultSearch || "null"}
             onChange={(e) => updateSetting("homePageDefaultSearch", e.target.value)}
             style={{ padding: "8px", borderRadius: "6px", fontSize: "1rem", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", minWidth: "200px" }}
          >
-            <option value="null">None (Display All Rivers)</option>
+            <option value="null">{t("listsPage.noneDisplayAll")}</option>
             {homePageDefaultSearch && homePageDefaultSearch !== "null" && 
               !myLists.some(l => `list:${l.id}` === homePageDefaultSearch) &&
               !communityLists.filter(list => subscribedListIds.includes(list.id)).some(l => `list:${l.id}` === homePageDefaultSearch) && (
-              <option value={homePageDefaultSearch}>Current Startup List (Not Starred)</option>
+              <option value={homePageDefaultSearch}>{t("listsPage.currentStartupList")}</option>
             )}
             {user && (
-               <optgroup label="My Custom Lists">
+               <optgroup label={t("listsPage.myCustomListsGroup")}>
                  {myLists.map(list => (
-                    <option key={list.id} value={`list:${list.id}`}>List: {list.title}</option>
+                    <option key={list.id} value={`list:${list.id}`}>{t("listsPage.listPrefix")}{list.title}</option>
                  ))}
                </optgroup>
             )}
             {subscribedListIds.length > 0 && (
-               <optgroup label="Starred Lists">
+               <optgroup label={t("listsPage.starredListsGroup")}>
                   {communityLists.filter(list => subscribedListIds.includes(list.id)).map(list => (
-                     <option key={list.id} value={`list:${list.id}`}>List: {list.title}</option>
+                     <option key={list.id} value={`list:${list.id}`}>{t("listsPage.listPrefix")}{list.title}</option>
                   ))}
                </optgroup>
             )}
@@ -507,44 +509,44 @@ const ListsPage: React.FC = () => {
              {!user ? (
                 <div style={{ textAlign: "center", padding: "40px 20px", backgroundColor: "var(--surface)", borderRadius: "8px", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "16px", alignItems: "center" }}>
                    <span style={{ fontSize: "3rem" }}>🔒</span>
-                   <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: "800", color: "var(--text)" }}>Sign In Required</h2>
+                   <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: "800", color: "var(--text)" }}>{t("listsPage.signInRequired")}</h2>
                    <p style={{ margin: 0, color: "var(--text-secondary)", maxWidth: "400px", lineHeight: "1.5" }}>
-                      You need to sign in to save favorite rivers, create custom lists, and sync them across your devices.
+                      {t("listsPage.signInDesc")}
                    </p>
                    <button
                      onClick={() => setAuthModalOpen(true)}
                      style={{ padding: "12px 24px", backgroundColor: "var(--primary)", color: "#ffffff", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "1rem", cursor: "pointer", marginTop: "10px" }}
                    >
-                     Sign In Now
+                     {t("listsPage.signInNow")}
                    </button>
                 </div>
              ) : (
                 <>
                   {myLists.length > 0 && (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px", marginBottom: "10px" }}>
-                         <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>My Lists ({myLists.length}/{isModerator ? "Unlimited" : "5"})</h3>
+                         <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>{t("listsPage.myListsTitle", { count: myLists.length, limit: isModerator ? t("listsPage.unlimited") : "5" })}</h3>
                       </div>
                   )}
 
                   {myLists.map(l => renderListCard(l))}
                   {myLists.length < (isModerator ? 500 : 5) && (
                       <button onClick={handleCreateList} style={{ padding: "15px", border: "2px dashed var(--border)", borderRadius: "8px", backgroundColor: "transparent", color: "var(--primary)", fontWeight: "bold", fontSize: "1.1em", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "5px" }}>
-                         <span>+</span> Create New List
+                         <span>+</span> {t("listsPage.createNewList")}
                       </button>
                   )}
 
                   <div style={{ marginTop: "30px", marginBottom: "10px", display: "flex", alignItems: "center" }}>
-                     <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>Starred Lists</h3>
+                     <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>{t("listsPage.starredListsTitle")}</h3>
                   </div>
 
                   {communityLoading ? (
-                      <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading starred lists...</div>
+                      <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>{t("listsPage.loadingStarred")}</div>
                   ) : (
                       <>
                         {communityLists.filter(l => subscribedListIds.includes(l.id)).map(l => renderListCard(l))}
                         {communityLists.filter(l => subscribedListIds.includes(l.id)).length === 0 && (
                            <div style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)", backgroundColor: "var(--surface)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                             You haven't starred any community lists.
+                             {t("listsPage.noStarredLists")}
                            </div>
                         )}
                       </>
@@ -559,7 +561,7 @@ const ListsPage: React.FC = () => {
               <div style={{ marginBottom: "20px" }}>
                   <input 
                      type="search" 
-                     placeholder="Search by list name, description, or author..." 
+                     placeholder={t("listsPage.searchPlaceholder")} 
                      value={searchQuery}
                      onChange={(e) => setSearchQuery(e.target.value)}
                      style={{ 
@@ -576,13 +578,13 @@ const ListsPage: React.FC = () => {
               </div>
 
              {communityLoading ? (
-                 <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading community lists natively...</div>
+                 <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>{t("listsPage.loadingCommunity")}</div>
              ) : (
                  <>
                    {filteredCommunityLists.map(l => renderListCard(l as unknown as UserList))}
                    {filteredCommunityLists.length === 0 && (
                       <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>
-                        {searchQuery ? "No published lists match your search criteria." : "No community lists published yet!"}
+                        {searchQuery ? t("listsPage.noCommunityMatch") : t("listsPage.noCommunityYet")}
                       </div>
                    )}
                  </>

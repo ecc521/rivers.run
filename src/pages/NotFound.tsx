@@ -1,22 +1,24 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useSEO } from "../hooks/useSEO";
+import { useTranslation } from "react-i18next";
 
 const NotFound: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useSEO({
-    title: "Page Not Found",
-    description: "The page you are looking for does not exist.",
+    title: t("notFound.title"),
+    description: t("notFound.description"),
     noindex: true
   });
 
   return (
     <div className="page-content center" style={{ padding: "40px 20px" }}>
       <h1 style={{ fontSize: "3em", margin: "20px 0", color: "var(--primary)" }}>404</h1>
-      <h2>Page Not Found</h2>
+      <h2>{t("notFound.title")}</h2>
       <p style={{ margin: "20px 0", color: "var(--text-secondary)" }}>
-        Sorry, the page you are looking for doesn't exist or has been moved.
+        {t("notFound.message")}
       </p>
       <button 
         onClick={() => navigate("/")} 
@@ -31,7 +33,7 @@ const NotFound: React.FC = () => {
           fontWeight: "bold"
         }}
       >
-        Return Home
+        {t("notFound.returnHome")}
       </button>
     </div>
   );

@@ -1,8 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
+import { useTranslation } from "react-i18next";
 
 const Footer: React.FC = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const isNative = Capacitor.isNativePlatform();
 
@@ -29,7 +31,7 @@ const Footer: React.FC = () => {
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "40px", width: "100%" }}>
         <div style={{ textAlign: "center" }}>
           <p style={{ fontWeight: "bold", marginBottom: "10px", color: "var(--text)" }}>
-            Legal Information
+            {t("footer.legal")}
           </p>
           <div
             style={{
@@ -44,19 +46,19 @@ const Footer: React.FC = () => {
               to="/terms"
               style={{ color: "var(--primary)", textDecoration: "none" }}
             >
-              Terms
+              {t("footer.terms")}
             </Link>
             <Link
               to="/privacy"
               style={{ color: "var(--primary)", textDecoration: "none" }}
             >
-              Privacy
+              {t("footer.privacy")}
             </Link>
             <Link
               to="/disclaimer"
               style={{ color: "var(--primary)", textDecoration: "none" }}
             >
-              Disclaimer
+              {t("footer.disclaimer")}
             </Link>
           </div>
         </div>
@@ -64,7 +66,7 @@ const Footer: React.FC = () => {
         {!isNative && (
           <div style={{ textAlign: "center" }}>
             <p style={{ fontWeight: "bold", marginBottom: "10px", color: "var(--text)" }}>
-              Get the App
+              {t("footer.getApp")}
             </p>
             <div
               style={{
@@ -102,7 +104,7 @@ const Footer: React.FC = () => {
       </div>
       
       <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "10px" }}>
-        © {new Date().getFullYear()} Rivers.run. All rights reserved.
+        © {new Date().getFullYear()} Rivers.run. {t("footer.allRightsReserved")}
       </p>
     </footer>
   );

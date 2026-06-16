@@ -6,6 +6,7 @@ import { fetchAPI } from "../services/api";
 import { useModal } from "../context/ModalContext";
 import { useAuth } from "../context/AuthContext";
 import { compileExportData } from "../utils/exportData";
+import { useTranslation } from "react-i18next";
 
 
 interface ProfileMenuProps {
@@ -14,6 +15,7 @@ interface ProfileMenuProps {
 }
 
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpen }) => {
+  const { t } = useTranslation();
   const { alert, confirm } = useModal();
   const { privacySettings, updatePrivacySettings } = useAuth();
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -108,11 +110,11 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
         method: "PATCH",
         body: JSON.stringify({ displayName: displayName.trim() })
       });
-      setNameSaveMsg("Name saved!");
+      setNameSaveMsg(t("profileMenu.nameSaved"));
       setTimeout(() => setNameSaveMsg(""), 3000);
     } catch (e: any) {
       console.error("Failed to update profile name:", e);
-      setNameSaveMsg("Failed to save");
+      setNameSaveMsg(t("profileMenu.failedSave"));
     } finally {
       setSavingName(false);
     }
@@ -222,13 +224,13 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
       
       {settingsLoading ? (
         <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", padding: "10px 0", textAlign: "center" }}>
-          Loading Profile...
+          {t("profileMenu.loadingProfile")}
         </div>
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <label htmlFor="navProfileName" style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: "bold" }}>
-              Public Profile Name
+              {t("profileMenu.publicName")}
             </label>
             <div style={{ display: "flex", gap: "6px" }}>
               <input 
@@ -236,7 +238,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
                 id="navProfileName"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="e.g. Jane Doe"
+                placeholder={t("profileMenu.namePlaceholder")}
                 disabled={savingName}
                 style={{
                   padding: "6px 8px",
@@ -264,7 +266,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
                     fontWeight: "bold"
                   }}
                 >
-                  {savingName ? "..." : "Save"}
+                  {savingName ? "..." : t("profileMenu.save")}
                 </button>
               )}
             </div>
@@ -275,7 +277,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
             )}
             {(!displayName.trim() || displayName === "Community Paddler") && (
               <span style={{ fontSize: "0.75rem", color: "#f59e0b", fontWeight: 500, marginTop: "2px" }}>
-                ⚠️ Please set a custom public name.
+                {t("profileMenu.setNameWarning")}
               </span>
             )}
           </div>
@@ -288,7 +290,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
               disabled={savingSettings}
               style={{ cursor: "pointer" }}
             />
-            Keep my name private on lists
+            {t("profileMenu.keepPrivate")}
           </label>
 
           <div style={{ borderTop: "1px solid var(--border)", paddingTop: "10px", marginTop: "4px", display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -305,7 +307,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
                 padding: "4px 0"
               }}
             >
-              <span>Email Alerts</span>
+              <span>{t("profileMenu.emailAlerts")}</span>
               <span>{emailSettingsExpanded ? "▲" : "▼"}</span>
             </div>
 
@@ -319,16 +321,16 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
                     disabled={savingSettings}
                     style={{ cursor: "pointer" }}
                   />
-                  Receive daily flow digests
+                  {t("profileMenu.receiveDigests")}
                 </label>
                 <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginLeft: "22px", display: "block", marginTop: "-4px" }}>
-                  Summarizes conditions for lists you star.
+                  {t("profileMenu.digestsDesc")}
                 </span>
 
                 {config.enabled !== false && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "22px", marginTop: "4px" }}>
                     <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                      Digest Delivery Time:
+                      {t("profileMenu.deliveryTime")}
                       <input 
                         type="time"
                         value={localTime}
@@ -350,7 +352,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
                     <div style={{ borderTop: "1px dashed var(--border)", margin: "4px 0" }}></div>
 
                     <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                      <span>Snooze alerts until:</span>
+                      <span>{t("profileMenu.snoozeUntil")}</span>
                       <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                         <input 
                           type="date"
@@ -384,7 +386,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
                               cursor: "pointer"
                             }}
                           >
-                            Clear
+                            {t("profileMenu.clear")}
                           </button>
                         )}
                       </div>
@@ -393,7 +395,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
                 )}
                 {savingSettings && (
                   <span style={{ fontSize: "0.7rem", color: "var(--primary)", marginLeft: "22px", fontStyle: "italic" }}>
-                    Saving changes...
+                    {t("profileMenu.savingChanges")}
                   </span>
                 )}
               </div>
@@ -405,7 +407,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
       <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "4px 0" }} />
       
       <Link to="/lists" onClick={() => setIsDropdownOpen(false)} style={{ textDecoration: "none", color: "#317EFB", padding: "2px 0", fontWeight: "500", fontSize: "0.9rem" }}>
-        My Lists
+        {t("profileMenu.myLists")}
       </Link>
 
       <button
@@ -425,7 +427,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
           fontSize: "0.85rem"
         }}
       >
-        Sign Out
+        {t("profileMenu.signOut")}
       </button>
 
       <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
@@ -443,7 +445,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
             fontWeight: "bold"
           }}
         >
-          Export Data
+          {t("profileMenu.exportData")}
         </button>
 
         <button
@@ -461,7 +463,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
             textDecoration: "underline"
           }}
         >
-          Delete Account
+          {t("profileMenu.deleteAccount")}
         </button>
       </div>
     </div>

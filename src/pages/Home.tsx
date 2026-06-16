@@ -22,6 +22,7 @@ import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useSettings } from "../context/SettingsContext";
 import { useModal } from "../context/ModalContext";
 import { triggerReviewIfEligible } from "../utils/appReview";
+import { useTranslation } from "react-i18next";
 
 import { useSEO } from "../hooks/useSEO";
 import { DEFAULT_STATE_MAP, getCountryName } from "../utils/regions";
@@ -34,6 +35,7 @@ const Home: React.FC = () => {
     title: "Whitewater Gauge Maps & Flow Data",
     description: "Real-time whitewater flow data, gauge maps, and river running status for over 250 rivers in the US, UK, Ireland, and Canada."
   });
+  const { t } = useTranslation();
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert } = useModal();
   const { id } = useParams<{ id: string }>();
@@ -363,14 +365,14 @@ const Home: React.FC = () => {
   if (loading)
     return (
       <div className="page-content center">
-        <h2>Loading River Data...</h2>
+        <h2>{t("home.loadingData")}</h2>
       </div>
     );
   if (error)
     return (
       <div className="page-content center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '15px' }}>
-        <h2 style={{ marginBottom: "5px" }}>River data failed to download</h2>
-        <p style={{ color: "var(--text-muted)", marginTop: 0 }}>Please connect to the internet and try again.</p>
+        <h2 style={{ marginBottom: "5px" }}>{t("home.downloadFailed")}</h2>
+        <p style={{ color: "var(--text-muted)", marginTop: 0 }}>{t("home.connectInternet")}</p>
         <button 
           onClick={() => refresh()}
           style={{
@@ -385,7 +387,7 @@ const Home: React.FC = () => {
             marginTop: "10px"
           }}
         >
-          Try Again
+          {t("home.tryAgain")}
         </button>
       </div>
     );
@@ -448,17 +450,17 @@ const Home: React.FC = () => {
   const regionPrefix = getCountryName(searchQuery.country || "global");
   const viewLabel = listTitle || (searchQuery.favoritesOnly ? "Favorites" : "Full List");
 
-  let emptyStateTitle = "No Rivers Found";
-  let emptyStateDesc = "Try adjusting your filters or search terms.";
+  let emptyStateTitle = t("home.noRiversTitle");
+  let emptyStateDesc = t("home.noRiversDesc");
   let emptyStateIcon = "🔍";
 
   if (searchQuery.favoritesOnly) {
-    emptyStateTitle = "Your Favorites are Empty";
-    emptyStateDesc = "Star a river from the list to save it here!";
+    emptyStateTitle = t("home.noFavsTitle");
+    emptyStateDesc = t("home.noFavsDesc");
     emptyStateIcon = "⭐";
   } else if (searchQuery.listId) {
-    emptyStateTitle = "This List is Empty";
-    emptyStateDesc = "Add rivers to this list using the 'Save to List' menu on any river page.";
+    emptyStateTitle = t("home.noListTitle");
+    emptyStateDesc = t("home.noListDesc");
     emptyStateIcon = "📋";
   }
 
@@ -484,7 +486,7 @@ const Home: React.FC = () => {
             gap: "10px"
           }}>
             <span>
-              Cloud lists sync failed. Using offline data.
+              {t("home.cloudSyncFailed")}
             </span>
             <button 
               onClick={() => refreshCloudState()}
@@ -498,7 +500,7 @@ const Home: React.FC = () => {
                 fontSize: "0.9em"
               }}
             >
-              Retry
+              {t("home.retry")}
             </button>
           </div>
         )}
@@ -517,11 +519,11 @@ const Home: React.FC = () => {
             gap: "10px"
           }}>
             <span>
-              ⚠️ Data was last synced {dataGeneratedAt ? Math.round((Date.now() - dataGeneratedAt) / 60000) : "?"} mins ago.
+              {t("home.lastSynced", { mins: dataGeneratedAt ? Math.round((Date.now() - dataGeneratedAt) / 60000) : "?" })}
             </span>
             {riversLoading ? (
               <span style={{ fontStyle: "italic", fontWeight: "bold", marginLeft: "5px" }}>
-                 Syncing...
+                 {t("home.syncing")}
               </span>
             ) : (
               <button 
@@ -536,7 +538,7 @@ const Home: React.FC = () => {
                   fontWeight: "900"
                 }}
               >
-                Update
+                {t("home.update")}
               </button>
             )}
           </div>
@@ -570,7 +572,7 @@ const Home: React.FC = () => {
           id="searchbox"
           type="text"
           aria-label="Type in the box to search for a river"
-          placeholder="Search for a river..."
+          placeholder={t("home.searchPlaceholder")}
           value={searchQuery.normalSearch || ""}
           onChange={(e) => {
             const hasText = e.target.value.trim().length > 0;
@@ -628,26 +630,26 @@ const Home: React.FC = () => {
             transition: "all 0.2s"
           }}
         >
-          Advanced
+          {t("home.advanced")}
         </button>
       </div>
 
       {location.loading && (!searchQuery.mapRadiusMode || searchQuery.mapRadiusMode === "current") && searchQuery.distanceMax !== undefined && searchQuery.userLat === undefined && (
           <div style={{ textAlign: "center", marginBottom: "15px", color: "var(--text-muted)", fontSize: "0.9em" }}>
-             <em>Requesting device location to evaluate shared radius search...</em>
+             <em>{t("home.reqLocation")}</em>
           </div>
       )}
       
       {location.error && (!searchQuery.mapRadiusMode || searchQuery.mapRadiusMode === "current") && searchQuery.distanceMax !== undefined && searchQuery.userLat === undefined && (
           <div style={{ textAlign: "center", marginBottom: "15px", color: "var(--danger)", fontSize: "0.9em" }}>
-             <em>Failed to get location for radius search: {location.error}</em>
+             <em>{t("home.failLocation", { error: location.error })}</em>
           </div>
       )}
 
       {hasActiveFilters(searchQuery) && (
          <div style={{ textAlign: "center", marginBottom: "15px" }}>
             <span style={{ fontSize: "0.9em", color: "var(--text-muted)", fontStyle: "italic", marginRight: "10px" }}>
-                Custom Filters Active
+                {t("home.customFiltersActive")}
             </span>
             <button 
                 onClick={() => handleViewChange("all")}
@@ -662,7 +664,7 @@ const Home: React.FC = () => {
                     fontWeight: "bold"
                 }}
             >
-                Clear Filters (View All)
+                {t("home.clearFilters")}
             </button>
          </div>
       )}
@@ -682,11 +684,11 @@ const Home: React.FC = () => {
           backgroundImage: `linear-gradient(to right, ${[0, 1, 2, 3, 4].map((i) => calculateColor(i, isDarkMode, isColorBlindMode)).join(",")})`,
         }}
       >
-        <span id="toolow">Too Low</span>
-        <span id="lowflow">Low Flow</span>
-        <span id="midflow">Mid Flow</span>
-        <span id="highflow">High Flow</span>
-        <span id="toohigh">Too High</span>
+        <span id="toolow">{t("home.legend.tooLow")}</span>
+        <span id="lowflow">{t("home.legend.lowFlow")}</span>
+        <span id="midflow">{t("home.legend.midFlow")}</span>
+        <span id="highflow">{t("home.legend.highFlow")}</span>
+        <span id="toohigh">{t("home.legend.tooHigh")}</span>
       </div>
 
       {/* Rivers List */}
@@ -705,14 +707,14 @@ const Home: React.FC = () => {
             </p>
             <div className="empty-state-actions">
               <button className="clear-filters-btn" onClick={() => handleViewChange("all")}>
-                  Show All Rivers
+                  {t("home.showAllRivers")}
               </button>
               {(searchQuery.favoritesOnly || searchQuery.listId) && (
                 <button 
                   className="secondary-action-btn" 
                   onClick={() => navigate("/lists")}
                 >
-                  Manage Your Lists
+                  {t("home.manageLists")}
                 </button>
               )}
             </div>
@@ -723,7 +725,7 @@ const Home: React.FC = () => {
       </div>
 
       {isRiverOverlay && (
-        <React.Suspense fallback={<div className="page-content center"><h2>Loading River...</h2></div>}>
+        <React.Suspense fallback={<div className="page-content center"><h2>{t("home.loadingRiver")}</h2></div>}>
            <LazyRiverPage />
         </React.Suspense>
       )}

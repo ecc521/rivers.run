@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useSettings } from "../context/SettingsContext";
 import { 
   fetchMapRegions,
@@ -13,6 +14,7 @@ import { InteractiveUSMap } from "../components/InteractiveUSMap";
 import { useLocation } from "react-router-dom";
 
 const SettingsPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const location = useLocation();
 
   useEffect(() => {
@@ -40,9 +42,9 @@ const SettingsPage: React.FC = () => {
 
   const themeStatusText = (() => {
     if (!themePref || themePref === "null") {
-      return `Currently utilizing System Default theme: ${isDarkMode ? "Dark" : "Light"}`;
+      return t("settings.theme.statusDefault", { theme: isDarkMode ? t("settings.theme.dark") : t("settings.theme.light") });
     }
-    return "Overriding System Default Theme.";
+    return t("settings.theme.statusOverride");
   })();
 
 
@@ -52,12 +54,12 @@ const SettingsPage: React.FC = () => {
       style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}
     >
       <h1 className="center" style={{ marginBottom: "40px" }}>
-        Settings
+        {t("settings.title")}
       </h1>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
         <div className="settings-card">
-          <h3 style={{ marginTop: 0 }}>Theme (Color Scheme)</h3>
+          <h3 style={{ marginTop: 0 }}>{t("settings.theme.title")}</h3>
           {loading ? <p>Loading...</p> : (
             <>
               <select
@@ -73,9 +75,9 @@ const SettingsPage: React.FC = () => {
                   marginBottom: "10px",
                 }}
               >
-                <option value="null">System Default</option>
-                <option value="false">Light</option>
-                <option value="true">Dark</option>
+                <option value="null">{t("settings.theme.systemDefault")}</option>
+                <option value="false">{t("settings.theme.light")}</option>
+                <option value="true">{t("settings.theme.dark")}</option>
               </select>
               <p style={{ color: "var(--text-muted)", fontSize: "0.9em", margin: 0 }}>
                 {themeStatusText}
@@ -87,7 +89,7 @@ const SettingsPage: React.FC = () => {
 
 
         <div className="settings-card">
-          <h3 style={{ marginTop: 0 }}>Color Blind Mode</h3>
+          <h3 style={{ marginTop: 0 }}>{t("settings.colorBlind.title")}</h3>
           {loading ? <p>Loading...</p> : (
             <select
               value={colorBlindPref || "null"}
@@ -102,26 +104,25 @@ const SettingsPage: React.FC = () => {
                 marginBottom: "10px",
               }}
             >
-              <option value="null">Default (No)</option>
-              <option value="false">No</option>
-              <option value="true">Yes</option>
+              <option value="null">{t("settings.colorBlind.default")}</option>
+              <option value="false">{t("settings.colorBlind.no")}</option>
+              <option value="true">{t("settings.colorBlind.yes")}</option>
             </select>
           )}
           <p style={{ color: "var(--text-muted)", fontSize: "0.9em", margin: 0 }}>
-            Color blind mode alters the primary flow color indicators natively
-            embedded everywhere, as well as line-colors on Flow charts.
+            {t("settings.colorBlind.description")}
           </p>
         </div>
         
         <div className="settings-card">
-          <h3 style={{ marginTop: 0 }}>Units</h3>
+          <h3 style={{ marginTop: 0 }}>{t("settings.units.title")}</h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.9em", marginBottom: "20px" }}>
-            Configure how flow, temperature, and rainfall units are displayed across the site.
+            {t("settings.units.description")}
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label style={{ fontSize: "0.9em", fontWeight: "bold" }}>Flow & Volume</label>
+              <label style={{ fontSize: "0.9em", fontWeight: "bold" }}>{t("settings.units.flow.label")}</label>
               <select
                 value={flowUnits}
                 onChange={(e) => updateSetting("flowUnits", e.target.value)}
@@ -132,14 +133,14 @@ const SettingsPage: React.FC = () => {
                   maxWidth: "300px",
                 }}
               >
-                <option value="default">Use Site Units (Gauge Default)</option>
-                <option value="imperial">Imperial (CFS / FT)</option>
-                <option value="metric">Metric (CMS / M)</option>
+                <option value="default">{t("settings.units.flow.default")}</option>
+                <option value="imperial">{t("settings.units.flow.imperial")}</option>
+                <option value="metric">{t("settings.units.flow.metric")}</option>
               </select>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label style={{ fontSize: "0.9em", fontWeight: "bold" }}>Temperature</label>
+              <label style={{ fontSize: "0.9em", fontWeight: "bold" }}>{t("settings.units.temp.label")}</label>
               <select
                 value={tempUnits}
                 onChange={(e) => updateSetting("tempUnits", e.target.value)}
@@ -150,14 +151,14 @@ const SettingsPage: React.FC = () => {
                   maxWidth: "300px",
                 }}
               >
-                <option value="default">Use Site Units (Gauge Default)</option>
-                <option value="imperial">Imperial (Fahrenheit)</option>
-                <option value="metric">Metric (Celsius)</option>
+                <option value="default">{t("settings.units.temp.default")}</option>
+                <option value="imperial">{t("settings.units.temp.imperial")}</option>
+                <option value="metric">{t("settings.units.temp.metric")}</option>
               </select>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label style={{ fontSize: "0.9em", fontWeight: "bold" }}>Rainfall (Precipitation)</label>
+              <label style={{ fontSize: "0.9em", fontWeight: "bold" }}>{t("settings.units.precip.label")}</label>
               <select
                 value={precipUnits}
                 onChange={(e) => updateSetting("precipUnits", e.target.value)}
@@ -168,12 +169,35 @@ const SettingsPage: React.FC = () => {
                   maxWidth: "300px",
                 }}
               >
-                <option value="default">Use Site Units (Gauge Default)</option>
-                <option value="imperial">Imperial (Inches)</option>
-                <option value="metric">Metric (Millimeters)</option>
+                <option value="default">{t("settings.units.precip.default")}</option>
+                <option value="imperial">{t("settings.units.precip.imperial")}</option>
+                <option value="metric">{t("settings.units.precip.metric")}</option>
               </select>
             </div>
           </div>
+        </div>
+
+        <div className="settings-card">
+          <h3 style={{ marginTop: 0 }}>{t("settings.language.title")}</h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9em", marginBottom: "20px" }}>
+            {t("settings.language.description")}
+          </p>
+
+          <select
+            value={i18n.resolvedLanguage || i18n.language || "en"}
+            onChange={(e) => {
+              i18n.changeLanguage(e.target.value);
+            }}
+            style={{
+              padding: "8px",
+              fontSize: "16px",
+              width: "100%",
+              maxWidth: "300px",
+            }}
+          >
+            <option value="en">{t("settings.language.en")}</option>
+            <option value="fr">{t("settings.language.fr")}</option>
+          </select>
         </div>
 
       </div>
@@ -207,6 +231,7 @@ const OfflineMapManager: React.FC = () => {
 };
 
 const OfflineMapManagerInner: React.FC = () => {
+  const { t } = useTranslation();
   const [downloadedRegions, setDownloadedRegions] = useState<DownloadedRegionState[]>([]);
   const [downloadingRegionId, setDownloadingRegionId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -362,7 +387,7 @@ const OfflineMapManagerInner: React.FC = () => {
   const renderRegionList = () => {
     return (
       <div style={{ marginBottom: "20px" }}>
-        <h4 style={{ margin: "0 0 10px 0" }}>All Available Regions</h4>
+        <h4 style={{ margin: "0 0 10px 0" }}>{t("settings.offlineMaps.allRegions")}</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {regions.map(region => {
             const state = downloadedRegions.find(r => r.id === region.id) || { id: region.id, hasMap: false, hasRouting: false };
@@ -390,7 +415,7 @@ const OfflineMapManagerInner: React.FC = () => {
                 <div>
                   <div style={{ fontWeight: 'bold' }}>{region.name}</div>
                   <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>
-                    Map: ~{region.estimatedSizeMB} MB | Nav: ~{region.routingSizeMB || 0} MB
+                    {t("settings.offlineMaps.mapSize", { mapSize: region.estimatedSizeMB, navSize: region.routingSizeMB || 0 })}
                   </div>
                 </div>
                 <div>
@@ -412,16 +437,16 @@ const OfflineMapManagerInner: React.FC = () => {
                       );
                     })()
                   ) : hasBoth ? (
-                    <span style={{ color: "var(--primary)", fontWeight: "bold" }}>Downloaded</span>
+                    <span style={{ color: "var(--primary)", fontWeight: "bold" }}>{t("settings.offlineMaps.downloaded")}</span>
                   ) : (
                     (() => {
-                      const statusText = state.hasMap ? "Map Ready" : "Nav Ready";
+                      const statusText = state.hasMap ? t("settings.offlineMaps.mapReady") : t("settings.offlineMaps.navReady");
                       return (state.hasMap || state.hasRouting) ? (
                         <span style={{ color: "var(--text-muted)", fontSize: "0.9em" }}>
                           {statusText}
                         </span>
                       ) : (
-                        <button style={{ padding: '6px 12px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Download</button>
+                        <button style={{ padding: '6px 12px', backgroundColor: "var(--primary)", color: "var(--surface)", border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>{t("settings.offlineMaps.download")}</button>
                       );
                     })()
                   )}
@@ -442,13 +467,13 @@ const OfflineMapManagerInner: React.FC = () => {
       }}
     >
       <h3 style={{ marginTop: 0, display: 'flex', justifyContent: 'space-between' }}>
-        Offline Maps
+        {t("settings.offlineMaps.title")}
       </h3>
 
 
       {!supportsOfflineMaps() && (
           <div style={{ padding: '15px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '20px', border: '1px solid #fca5a5' }}>
-            <strong>Unsupported Browser:</strong> Your browser is too old to support saving large offline maps. Please update your browser or use the iOS/Android app.
+            <strong>{t("settings.offlineMaps.unsupportedTitle")}</strong> {t("settings.offlineMaps.unsupported")}
           </div>
       )}
 
@@ -467,7 +492,7 @@ const OfflineMapManagerInner: React.FC = () => {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 'bold', fontSize: '1.1em', color: 'var(--text)' }}>
-              Downloading {regions.find(r => r.id === downloadingRegionId)?.name}...
+              {t("settings.offlineMaps.downloading", { regionName: regions.find(r => r.id === downloadingRegionId)?.name })}
             </span>
             <span style={{ fontSize: '1em', fontWeight: 'bold', color: 'var(--primary)' }}>
               {Math.round(downloadProgress * 100)}%
@@ -486,23 +511,23 @@ const OfflineMapManagerInner: React.FC = () => {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85em', color: 'var(--text-muted)' }}>
              <span>{downloadBytes.loaded > 0 ? `${(downloadBytes.loaded / (1024 * 1024)).toFixed(1)} MB` : ''} {downloadBytes.total > 0 ? `/ ${(downloadBytes.total / (1024 * 1024)).toFixed(1)} MB` : ''}</span>
-             <span>Step {downloadProgress < 0.8 && activeDownloadOptions?.map && activeDownloadOptions?.routing ? '1 of 2: Map Data' : (activeDownloadOptions?.map && activeDownloadOptions?.routing ? '2 of 2: Routing Data' : '1 of 1: Downloading Data')}</span>
+             <span>{downloadProgress < 0.8 && activeDownloadOptions?.map && activeDownloadOptions?.routing ? t("settings.offlineMaps.step1of2") : (activeDownloadOptions?.map && activeDownloadOptions?.routing ? t("settings.offlineMaps.step2of2") : t("settings.offlineMaps.step1of1"))}</span>
           </div>
         </div>
       )}
 
       {regions.length === 0 ? (
-        <p>Loading available regions...</p>
+        <p>{t("settings.offlineMaps.loading")}</p>
       ) : (
         <>
           <div style={{ marginBottom: "20px", marginTop: "10px" }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px' }}>
               <div>
-                <div style={{ fontWeight: 'bold' }}>North America Baseline Map</div>
-                <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>~3.7 MB • Covers US, Canada, Mexico (Zoom 0-5)</div>
+                <div style={{ fontWeight: 'bold' }}>{t("settings.offlineMaps.baselineTitle")}</div>
+                <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>{t("settings.offlineMaps.baselineDesc")}</div>
               </div>
               <div>
-                <span style={{ color: "var(--primary)", fontWeight: "bold", padding: '6px 12px' }}>Downloaded</span>
+                <span style={{ color: "var(--primary)", fontWeight: "bold", padding: '6px 12px' }}>{t("settings.offlineMaps.downloaded")}</span>
               </div>
             </div>
           </div>
