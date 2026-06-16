@@ -34,12 +34,14 @@ export const WatchSyncModal: React.FC<WatchSyncModalProps> = ({ isOpen, onClose,
     <div style={{
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
       backgroundColor: "rgba(15, 23, 42, 0.75)", backdropFilter: "blur(4px)",
-      zIndex: 100001, display: "flex", justifyContent: "center", alignItems: "center"
+      zIndex: 10001, display: "flex", justifyContent: "center", alignItems: "center",
+      boxSizing: "border-box"
     }} onClick={onClose}>
       <div style={{
         backgroundColor: "var(--surface)", padding: "24px", borderRadius: "12px",
         maxWidth: "400px", width: "95%", textAlign: "center",
-        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)"
+        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+        boxSizing: "border-box"
       }} onClick={e => e.stopPropagation()}>
         <h2 style={{ margin: "0 0 16px 0", color: "var(--text)" }}>⌚️ Link Apple Watch</h2>
         <p style={{ color: "var(--text-secondary)", marginBottom: "24px" }}>

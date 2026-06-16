@@ -109,7 +109,8 @@ export const ListSelectModal: React.FC<ListSelectModalProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "20px"
+        padding: "20px",
+        boxSizing: "border-box"
       }}
       onClick={onClose}
     >
@@ -125,7 +126,8 @@ export const ListSelectModal: React.FC<ListSelectModalProps> = ({
           animation: "modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
           display: "flex",
           flexDirection: "column",
-          gap: "16px"
+          gap: "16px",
+          boxSizing: "border-box"
         }}
         onClick={(e) => e.stopPropagation()}
       >

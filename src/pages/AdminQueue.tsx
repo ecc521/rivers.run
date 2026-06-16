@@ -13,7 +13,7 @@ import SystemAdminTab from "../components/admin/SystemAdminTab";
 import ReportsAdminTab from "../components/admin/ReportsAdminTab";
 
 export default function AdminQueue() {
-  const { user, isAdmin, isModerator, loading: authLoading } = useAuth();
+  const { user, isAdmin, isModerator, loading: authLoading, setAuthModalOpen } = useAuth();
   const navigate = useNavigate();
   const { alert } = useModal();
   
@@ -35,11 +35,6 @@ export default function AdminQueue() {
   }, [isModerator, user, alert]);
 
   useEffect(() => {
-    if (!authLoading && !isModerator) {
-      navigate("/");
-      return;
-    }
-
     if (isModerator && user) {
       refreshQueue(false);
       // Fetch notification preference from Cloudflare API
@@ -49,7 +44,7 @@ export default function AdminQueue() {
         }
       }).catch(e => console.error("Could not fetch user settings:", e));
     }
-  }, [isModerator, user, authLoading, navigate, activeTab, refreshQueue]);
+  }, [isModerator, user, authLoading, activeTab, refreshQueue]);
 
   useEffect(() => {
     if (!isModerator || !user) return;
@@ -85,7 +80,37 @@ export default function AdminQueue() {
     window.open(`/review/${queueId}`, "_blank");
   };
 
-  if (authLoading || (loading && isModerator)) {
+  if (authLoading) {
+      return (
+        <div className="page-content center" style={{ padding: '100px 20px' }}>
+            <h2 style={{ color: 'var(--text-secondary)' }}>Loading Admin Portal...</h2>
+        </div>
+      );
+  }
+
+  if (!isModerator) {
+      const isAuthError = !user;
+      return (
+          <div className="page-content center" style={{ padding: '100px 20px', textAlign: "center" }}>
+              <h2>{isAuthError ? "Sign In Required" : "Access Denied"}</h2>
+              <div style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '15px', borderRadius: '5px', display: 'inline-block', maxWidth: '600px', marginTop: '20px' }}>
+                  {isAuthError 
+                    ? "You must be signed in as a moderator or administrator to access the admin portal." 
+                    : "Access Denied: Your account does not have moderator or administrator permissions."}
+              </div>
+              <div style={{ marginTop: '30px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <button onClick={() => setAuthModalOpen(true)} style={{ padding: "10px 20px", backgroundColor: "var(--primary)", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "16px" }}>
+                      {isAuthError ? "Sign In" : "Switch Account"}
+                  </button>
+                  <button onClick={() => navigate("/")} style={{ padding: "10px 20px", backgroundColor: "var(--text-secondary)", color: "var(--surface)", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "16px" }}>
+                      Return Home
+                  </button>
+              </div>
+          </div>
+      );
+  }
+
+  if (loading) {
       return (
         <div className="page-content center" style={{ padding: '100px 20px' }}>
             <h2 style={{ color: 'var(--text-secondary)' }}>Loading Admin Portal...</h2>

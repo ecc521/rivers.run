@@ -160,6 +160,7 @@ export const ShareMapModal: React.FC<ShareMapModalProps> = ({
                 justifyContent: "center",
                 padding: "20px",
                 animation: "fadeIn 0.2s ease-out",
+                boxSizing: "border-box"
             }}
             onClick={onClose}
         >
@@ -174,6 +175,7 @@ export const ShareMapModal: React.FC<ShareMapModalProps> = ({
                     flexDirection: "column",
                     position: "relative",
                     padding: "24px",
+                    boxSizing: "border-box"
                 }}
                 onClick={(e) => e.stopPropagation()}
             >

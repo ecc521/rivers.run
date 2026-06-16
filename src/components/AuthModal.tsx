@@ -257,6 +257,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         justifyContent: "center",
         padding: "20px",
         animation: "fadeIn 0.2s ease-out",
+        boxSizing: "border-box"
       }}
       onClick={onClose}
     >
@@ -274,6 +275,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           padding: "24px",
           textAlign: "center",
           gap: "20px",
+          boxSizing: "border-box"
         }}
         onClick={(e) => {
           e.stopPropagation();

@@ -243,7 +243,8 @@ app.openapi(getRiverHistoryRoute, async (c) => {
         } catch {}
 
         const originalAuthor = diffObj.original_author;
-        const isAnonContributor = (originalAuthor && originalAuthor.startsWith("IP:")) || (!originalAuthor && !entry.editor_name);
+        const originalAuthorEmail = diffObj.original_author_email;
+        const isAnonContributor = (originalAuthor && (originalAuthor.startsWith("IP:") || originalAuthor.includes("IP:"))) || (!originalAuthor && !entry.editor_name);
 
         // Privacy Masking
         if (!isAdmin) {
@@ -257,7 +258,10 @@ app.openapi(getRiverHistoryRoute, async (c) => {
             }
         } else {
             // Admin view: provide best available identifier
-            if (originalAuthor) {
+            if (originalAuthorEmail) {
+                const authorSuffix = originalAuthor ? ` (${originalAuthor})` : "";
+                entry.editor_name = `Contributor: ${originalAuthorEmail}${authorSuffix}`;
+            } else if (originalAuthor) {
                 entry.editor_name = `Contributor: ${originalAuthor}`;
             } else if (!entry.editor_name) {
                 entry.editor_name = entry.email || (entry.changed_by ? `UID: ${entry.changed_by.slice(0, 10)}...` : "Anonymous Paddler");
@@ -494,12 +498,22 @@ app.openapi(getAdminQueueRoute, async (c) => {
             console.error("Failed to parse proposed_changes for suggestion", row.suggestion_id);
         }
 
+        const isIp = row.suggested_by && row.suggested_by.startsWith("IP:");
+        const ipAddress = isIp ? row.suggested_by.slice(4) : null;
+        const submitterEmail = (proposed as any).submitterEmail || null;
+        let submittedBy = row.editor_name || row.editor_email || null;
+        if (!submittedBy && row.suggested_by && !isIp) {
+            submittedBy = row.suggested_by;
+        }
+
         return {
             ...row,
             queueId: row.suggestion_id,
             name: (proposed as any).name || "Unknown River",
             states: (proposed as any).states || "N/A",
-            submittedBy: row.editor_name || row.editor_email || row.suggested_by
+            submittedBy,
+            submitterEmail,
+            ipAddress
         };
     });
 
@@ -559,12 +573,36 @@ const getAdminSuggestionRoute = createRoute({
 
 app.openapi(getAdminSuggestionRoute, async (c) => {
     const id = c.req.param("id");
-    const result = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE suggestion_id = ?").bind(id).first();
+    const result = await c.env.DB.prepare(`
+        SELECT s.*, u.display_name as editor_name, u.email as editor_email
+        FROM river_suggestions s
+        LEFT JOIN users u ON s.suggested_by = u.user_id
+        WHERE s.suggestion_id = ?
+    `).bind(id).first();
     if (!result) return c.json({ error: "Suggestion not found" }, 404);
     
+    const res = result as any;
+    let proposed = {};
+    try {
+        proposed = typeof res.proposed_changes === 'string' ? JSON.parse(res.proposed_changes) : res.proposed_changes;
+    } catch {
+        console.error("Failed to parse proposed_changes for suggestion", res.suggestion_id);
+    }
+
+    const isIp = res.suggested_by && typeof res.suggested_by === 'string' && res.suggested_by.startsWith("IP:");
+    const ipAddress = isIp ? res.suggested_by.slice(4) : null;
+    const submitterEmail = (proposed as any).submitterEmail || null;
+    let submittedBy = res.editor_name || res.editor_email || null;
+    if (!submittedBy && res.suggested_by && !isIp) {
+        submittedBy = res.suggested_by;
+    }
+
     return c.json({
-        ...result,
-        proposed_changes: typeof result.proposed_changes === 'string' ? JSON.parse(result.proposed_changes) : result.proposed_changes
+        ...res,
+        proposed_changes: proposed,
+        submittedBy,
+        submitterEmail,
+        ipAddress
     });
 });
 
@@ -838,11 +876,12 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     
     // Preserve Author ID / IP for administrative visibility
     const cleanAuthor = (suggestion as any).suggested_by as string;
+    const submitterEmail = proposed.submitterEmail || null;
 
     // Log the math diff
     batch.push(c.env.DB.prepare(`
         INSERT INTO river_audit_log (river_id, action_type, changed_by, diff_patch, changed_at) VALUES (?, ?, ?, ?, ?)
-    `).bind(suggestion.river_id, existingRiver ? 'UPDATE' : 'INSERT', user.user_id, JSON.stringify({ diff: diff_patch, note: admin_notes, type: "approval", original_author: cleanAuthor }), now));
+    `).bind(suggestion.river_id, existingRiver ? 'UPDATE' : 'INSERT', user.user_id, JSON.stringify({ diff: diff_patch, note: admin_notes, type: "approval", original_author: cleanAuthor, original_author_email: submitterEmail }), now));
 
     // Formal Admin Audit Log
     batch.push(c.env.DB.prepare("INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)").bind(
