@@ -64,6 +64,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({
         justifyContent: "center",
         alignItems: "center",
         animation: "fadeIn 0.2s ease-out",
+        boxSizing: "border-box"
       }}
       onClick={onCancel}
     >
@@ -79,6 +80,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({
           display: "flex",
           flexDirection: "column",
           gap: "16px",
+          boxSizing: "border-box"
         }}
         onClick={(e) => e.stopPropagation()}
       >

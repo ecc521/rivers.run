@@ -159,6 +159,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
         justifyContent: "center",
         padding: "20px",
         animation: "fadeIn 0.2s ease-out",
+        boxSizing: "border-box"
       }}
       onClick={onClose}
     >
@@ -175,6 +176,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
           display: "flex",
           flexDirection: "column",
           position: "relative",
+          boxSizing: "border-box"
         }}
         onClick={(e) => {
           e.stopPropagation();

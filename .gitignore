@@ -46,9 +46,9 @@ temp_*
 scripts/
 
 # Native Mobile Wrappers (Capacitor generated)
-ios/
-android/
-applewatch/
+/ios/
+/android/
+/applewatch/
 
 # Firebase Cache
 .firebase/

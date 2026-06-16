@@ -106,7 +106,13 @@ export default function ReviewQueueTab({ queue, adminQueueAlerts, onToggleAlerts
                 </h3>
                 <div style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "6px", display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                   <div>
-                    <span style={{ fontWeight: 600 }}>Submitted By:</span> {item.submittedBy || 'Anonymous'}
+                    <span style={{ fontWeight: 600 }}>Submitted By:</span> {(() => {
+                      if (item.submittedBy) return item.submittedBy;
+                      if (item.submitterEmail) {
+                        return item.ipAddress ? `${item.submitterEmail} (IP: ${item.ipAddress})` : item.submitterEmail;
+                      }
+                      return item.ipAddress ? `IP: ${item.ipAddress}` : 'Anonymous';
+                    })()}
                   </div>
                   {item.created_at && (
                     <div>
