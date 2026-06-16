@@ -192,6 +192,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        boxSizing: "border-box"
       }}
       onClick={onClose}
     >
@@ -208,6 +209,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
           display: "flex",
           flexDirection: "column",
           gap: "20px",
+          boxSizing: "border-box"
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -338,7 +340,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
         <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
             <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-              List Name
+              List Name <span style={{ color: 'var(--danger)' }}>*</span>
             </label>
             {!canEdit ? (
                <h2 style={{ margin: 0, color: "var(--text)" }}>{title}</h2>

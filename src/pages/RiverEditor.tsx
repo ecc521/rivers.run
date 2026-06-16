@@ -26,7 +26,7 @@ export default function RiverEditor() {
   const { riverId, queueId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin, isModerator, loading: authLoading } = useAuth();
+  const { user, isAdmin, isModerator, loading: authLoading, setAuthModalOpen } = useAuth();
   const { isDarkMode, isColorBlindMode } = useSettings();
   const { alert, confirm, prompt, resolveSuggestion } = useModal();
   
@@ -158,6 +158,12 @@ export default function RiverEditor() {
       setLoading(true);
       try {
         if (isReviewMode) {
+          if (!user || !isModerator) {
+            setLoadError("Access Denied: You must be logged in as a moderator or administrator to view this suggestion.");
+            if (!user) setAuthModalOpen(true);
+            setLoading(false);
+            return;
+          }
            const suggestion = await fetchAPI(`/admin/queue/${queueId}`, {}, user);
            let proposed = typeof suggestion.proposed_changes === 'string' 
                ? JSON.parse(suggestion.proposed_changes) 
@@ -171,9 +177,13 @@ export default function RiverEditor() {
            proposed.queueId = suggestion.suggestion_id || queueId; 
            proposed.id = suggestion.river_id; 
            proposed.created_at = suggestion.created_at;
+           proposed.submittedBy = suggestion.submittedBy;
+           proposed.submitterEmail = suggestion.submitterEmail;
+           proposed.ipAddress = suggestion.ipAddress;
            
            setProposedData(proposed);
-           setIsAnonymous(suggestion.suggested_by?.startsWith("IP:") || !suggestion.suggested_by);
+           const isAnon = (suggestion.suggested_by?.startsWith("IP:") || !suggestion.suggested_by) && !suggestion.submitterEmail;
+           setIsAnonymous(isAnon);
            
            // ALWAYS prioritize proposed changes in the UI state during review
            syncInputs(proposed);
@@ -511,14 +521,21 @@ export default function RiverEditor() {
   if (loading || authLoading) return <div className="page-content center"><h2>Loading Editor...</h2></div>;
 
   if (loadError) {
+      const isAuthError = loadError.includes("logged in") || loadError.includes("401");
+      const isAccessDenied = loadError.includes("Access Denied") || loadError.includes("403");
       return (
-          <div className="page-content center" style={{ marginTop: "100px", textAlign: "center" }}>
-              <h2>Error Loading Editor</h2>
+          <div className="page-content center" style={{ marginTop: "100px", textAlign: "center", padding: '0 20px' }}>
+              <h2>{isAccessDenied ? "Access Denied" : "Error Loading Editor"}</h2>
               <div style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '15px', borderRadius: '5px', display: 'inline-block', maxWidth: '600px', marginTop: '20px' }}>
                   {loadError}
               </div>
-              <div style={{ marginTop: '30px' }}>
-                  <button onClick={() => navigate("/")} style={{ padding: "10px 20px", backgroundColor: "var(--primary)", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "16px" }}>
+              <div style={{ marginTop: '30px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  {(isAuthError || isAccessDenied) && (
+                      <button onClick={() => setAuthModalOpen(true)} style={{ padding: "10px 20px", backgroundColor: "var(--primary)", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "16px" }}>
+                          {isAccessDenied ? "Switch Account" : "Sign In"}
+                      </button>
+                  )}
+                  <button onClick={() => navigate("/")} style={{ padding: "10px 20px", backgroundColor: "var(--text-secondary)", color: "var(--surface)", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "16px" }}>
                       Return Home
                   </button>
               </div>
@@ -610,6 +627,25 @@ export default function RiverEditor() {
           </div>
         )}
       </div>
+      {isReviewMode && (
+         <div style={{ 
+           backgroundColor: "var(--surface)", 
+           padding: '12px 16px', 
+           borderRadius: '8px', 
+           marginTop: '15px', 
+           border: '1px solid var(--border)',
+           fontSize: '14px',
+           color: 'var(--text-secondary)'
+         }}>
+           <span style={{ fontWeight: 600 }}>Submitted By:</span> {(() => {
+             if (proposedData?.submittedBy) return proposedData.submittedBy;
+             if (proposedData?.submitterEmail) {
+               return proposedData.ipAddress ? `${proposedData.submitterEmail} (IP: ${proposedData.ipAddress})` : proposedData.submitterEmail;
+             }
+             return proposedData?.ipAddress ? `IP: ${proposedData.ipAddress}` : 'Anonymous';
+           })()}
+         </div>
+      )}
       <hr style={{ borderColor: 'var(--border)', margin: '15px 0 20px 0' }} />
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents, opacity }}>
@@ -799,7 +835,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = (
   <>
     <div style={{ display: 'flex', gap: '15px' }}>
       <div style={{ flex: 2 }}>
-        <label style={{fontWeight: 'bold', display: 'block'}}>River Name</label>
+        <label style={{fontWeight: 'bold', display: 'block'}}>River Name <span style={{ color: 'var(--danger)' }}>*</span></label>
         <input 
           type="text" 
           style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
@@ -842,7 +878,7 @@ const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = (
         </select>
       </div>
       <div style={{ flex: 1 }}>
-        <label style={{fontWeight: 'bold', display: 'block'}}>Country</label>
+        <label style={{fontWeight: 'bold', display: 'block'}}>Country <span style={{ color: 'var(--danger)' }}>*</span></label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginBottom: riverData.countries ? "5px" : "0" }}>
           {riverData.countries?.split(',').map((s: string) => s.trim()).filter(Boolean).map((s: string) => (
             <span 
