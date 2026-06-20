@@ -123,6 +123,8 @@ export default defineConfig({
   }), process.env.VITEST ? null : cloudflare()],
   server: {
     host: true,
+    port: 5173,
+    strictPort: true,
   },
   build: {
     target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],

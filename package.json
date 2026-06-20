@@ -47,6 +47,7 @@
     "react-quill-new": "^3.8.3",
     "react-router-dom": "^7.14.1",
     "recharts": "^3.8.1",
+    "valhalla-wasm": "^0.1.0",
     "zod": "3.25.76"
   },
   "devDependencies": {

@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [dev]
 port = 8787
+strict_port = true
 
 # 10 Million Requests / month
 # Cloudflare Workers Standard Pricing now automatically applies unbound limits
