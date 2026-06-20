@@ -1,7 +1,6 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import { fileURLToPath } from 'node:url'
 
 import { cloudflare } from "@cloudflare/vite-plugin";
 
@@ -122,14 +121,6 @@ export default defineConfig({
       ]
     }
   }), process.env.VITEST ? null : cloudflare()],
-  resolve: {
-    alias: {
-      // Local source resolution for the not-yet-published `valhalla-wasm` package.
-      // Once it's on npm, remove this alias (and the tsconfig path) and add the
-      // package as a normal dependency — the import statements stay the same.
-      'valhalla-wasm': fileURLToPath(new URL('./valhalla-wasm/web/index.ts', import.meta.url)),
-    },
-  },
   server: {
     host: true,
     port: 5173,
