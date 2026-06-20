@@ -213,7 +213,7 @@ export function filterRivers(
     if (!matchSkill(r, query)) return false;
     if (!matchFlow(r, query)) return false;
     if (!matchProximity(r, query)) return false;
-    if (query.includeGauges === false && r.isGauge && String(r.id).startsWith("USGS:")) return false;
+    if (query.includeGauges === false && r.isGauge) return false;
     return true;
   });
 
