@@ -65,13 +65,11 @@ npm run dev
 ```
 
 > [!TIP]
-> Use `npx wrangler d1 execute rivers-run-db --local --file=./schema.sql` within the `api` directory to initialize a local SQLite instance for development.
+> Use `npx wrangler d1 execute rivers-db --local --file=./schema.sql` within the `api` directory to initialize a local SQLite instance for development.
 
 ## Deployment & CI/CD
 
-## Deployment & CI/CD
-
-The entire application stack is automatically deployed via GitHub Actions to Cloudflare:
+The entire application stack is automatically deployed via GitHub Actions to Cloudflare (`.github/workflows/cloudflare.yml`) on every push to `main`. The single consolidated job lints, runs the full test suite (web, api, api-flow), builds the frontend, then deploys all three services:
 
 ### Cloudflare Pages (Frontend)
 The frontend web application is automatically built and deployed as a Cloudflare Pages project (using static assets) on every push to the `main` branch. 
