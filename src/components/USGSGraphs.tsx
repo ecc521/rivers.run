@@ -253,7 +253,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
       }
 
       if (link) {
-        return <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: "bold", color: "var(--text)", textDecoration: "none" }}>{name} <span style={{ fontSize: "0.8em" }}>↗</span></a>;
+        return <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: "bold", color: "var(--text)", textDecoration: "none" }}>{name} <span style={{ fontSize: "1em", color: "var(--primary)" }}>↗</span></a>;
       }
       return <span style={{ fontWeight: "bold", color: "var(--text)" }}>{name}</span>;
   })();
