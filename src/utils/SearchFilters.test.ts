@@ -235,7 +235,7 @@ describe("SearchFilters", () => {
       expect(resultsWithGauge[0].id).toBe("gauge2");
     });
 
-    it("filters out USGS gauges when includeGauges is false", () => {
+    it("filters out all gauges when includeGauges is false", () => {
       const mockItems: RiverData[] = [
         {
           id: "USGS:04161000",
@@ -260,12 +260,11 @@ describe("SearchFilters", () => {
       };
 
       const results = filterRivers(mockItems, queryIncludeFalse);
-      
-      // Should filter out the USGS gauge, but keep the river and non-USGS gauge
-      expect(results.length).toBe(2);
-      expect(results.some(r => r.id === "USGS:04161000")).toBe(false);
+
+      // All gauges are excluded regardless of provider, only rivers remain
+      expect(results.length).toBe(1);
       expect(results.some(r => r.id === "r1")).toBe(true);
-      expect(results.some(r => r.id === "OTHER:12345")).toBe(true);
+      expect(results.some(r => r.isGauge)).toBe(false);
 
       const queryIncludeTrue: AdvancedSearchQuery = {
         ...defaultAdvancedSearchQuery,
