@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [dev]
 port = 8788
+strict_port = true
 
 
 # D1 Database Binding
