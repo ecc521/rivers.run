@@ -349,20 +349,21 @@ const ListsPage: React.FC = () => {
                     <span style={{ fontSize: "0.55em", padding: "2px 6px", borderRadius: "4px", backgroundColor: "#334155", color: "white", textTransform: "uppercase" }}>{t("listsPage.private")}</span>
                  )}
               </h2>
-              {!isOwned && (
-                <div style={{ margin: "5px 0 0 0", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "6px" }}>
-                  {t("listsPage.by")}
-                  {isAnonymous ? (
-                    list.author
-                  ) : (
-                    <AuthorHoverCard 
-                      list={list} 
-                      otherLists={otherLists} 
-                      navigate={navigate} 
-                    />
-                  )}
-                </div>
-              )}
+              <div style={{ margin: "5px 0 0 0", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "6px" }}>
+                {t("listsPage.by")}
+                {isAnonymous ? (
+                  list.author
+                ) : (
+                  <AuthorHoverCard
+                    list={list}
+                    otherLists={otherLists}
+                    navigate={navigate}
+                  />
+                )}
+                {isOwned && (
+                  <span style={{ fontStyle: "normal", fontSize: "0.8em", padding: "1px 6px", borderRadius: "4px", backgroundColor: "var(--primary)", color: "white", fontWeight: 600 }}>you</span>
+                )}
+              </div>
           </div>
           <span style={{ backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", padding: "4px 8px", borderRadius: "12px", fontSize: "0.85em", fontWeight: "bold" }}>
              {list.subscribes || 0} {t("listsPage.stars")}
