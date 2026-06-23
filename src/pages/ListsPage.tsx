@@ -257,9 +257,8 @@ const ListsPage: React.FC = () => {
                   const willStar = !isSubscribed(list.id);
                   await toggleSubscription(list.id);
                   if (willStar) {
-                      await alert(`You have starred "${list.title}"! By default, alerts are muted. Click the bell icon to enable notifications.`, "List Starred");
+                      await alert(`"${list.title}" added to your Starred Lists. You can enable flow alerts with the bell icon, or set it as your default home screen search.`, "List Starred");
                   } else {
-                      await alert(`You have removed "${list.title}" from your starred lists.`, "List Unstarred");
                       // If it was the default startup view, also remove it
                       if (homePageDefaultSearch === `list:${list.id}`) {
                           updateSetting("homePageDefaultSearch", null);
