@@ -1317,10 +1317,10 @@ app.openapi(updateListRoute, async (c) => {
 
     const queries = [
         c.env.DB.prepare(`
-            UPDATE community_lists 
-            SET title = ?, description = ?, is_published = ?
+            UPDATE community_lists
+            SET title = ?, description = ?, is_published = ?, notifications_enabled = ?
             WHERE id = ?
-        `).bind(validated.title, validated.description ?? null, validated.isPublished ? 1 : 0, id),
+        `).bind(validated.title, validated.description ?? null, validated.isPublished ? 1 : 0, validated.notificationsEnabled ? 1 : 0, id),
         // Delete all existing rivers for this list
         c.env.DB.prepare("DELETE FROM community_list_rivers WHERE list_id = ?").bind(id)
     ];

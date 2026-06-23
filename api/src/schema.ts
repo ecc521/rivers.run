@@ -72,6 +72,7 @@ export const CommunityListSchema = z.object({
   title: requiredString(100),
   description: limitString(5000),
   isPublished: z.boolean().optional().openapi({ type: 'boolean' }),
+  notificationsEnabled: z.boolean().optional().openapi({ type: 'boolean' }),
   rivers: z.array(z.object({
       id: z.string().openapi({ type: 'string' }),
       order: z.number().int().openapi({ type: 'integer' }),

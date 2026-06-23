@@ -44,7 +44,7 @@ const ListsPage: React.FC = () => {
 
   const [editorModal, setEditorModal] = useState<{
     isOpen: boolean;
-    mode: "create" | "edit" | "copy";
+    mode: "create" | "edit" | "copy" | "shared";
     initialTitle: string;
     initialDescription: string;
     targetList?: UserList;
@@ -116,9 +116,10 @@ const ListsPage: React.FC = () => {
   };
 
   const handleEditList = (list: UserList) => {
+    const isOwned = user ? list.ownerId === user.uid : false;
     setEditorModal({
       isOpen: true,
-      mode: "edit",
+      mode: isOwned ? "edit" : "shared",
       initialTitle: list.title,
       initialDescription: list.description || "",
       targetList: list
