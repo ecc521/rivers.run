@@ -49,8 +49,9 @@ app.onError((err, c) => {
     if (err instanceof z.ZodError) {
          return c.json({ error: "Validation Failed", details: err.issues }, 400);
     }
-    console.error(`Internal crash processing ${c.req.url}:`, err);
-    return c.json({ error: "Internal Server Error" }, 500);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Internal crash processing ${c.req.url}:`, msg, err);
+    return c.json({ error: "Internal Server Error", detail: msg }, 500);
 });
 
 /**
@@ -1251,7 +1252,7 @@ app.openapi(createListRoute, async (c) => {
         c.env.DB.prepare(`
             INSERT INTO community_lists (id, title, description, owner_id, is_published, subscribes)
             VALUES (?, ?, ?, ?, ?, ?)
-        `).bind(listId, validated.title, validated.description, user.user_id, validated.isPublished ? 1 : 0, 0)
+        `).bind(listId, validated.title, validated.description ?? null, user.user_id, validated.isPublished ? 1 : 0, 0)
     ];
 
     if (validated.rivers && validated.rivers.length > 0) {
@@ -1319,7 +1320,7 @@ app.openapi(updateListRoute, async (c) => {
             UPDATE community_lists 
             SET title = ?, description = ?, is_published = ?
             WHERE id = ?
-        `).bind(validated.title, validated.description, validated.isPublished ? 1 : 0, id),
+        `).bind(validated.title, validated.description ?? null, validated.isPublished ? 1 : 0, id),
         // Delete all existing rivers for this list
         c.env.DB.prepare("DELETE FROM community_list_rivers WHERE list_id = ?").bind(id)
     ];
@@ -1340,6 +1341,29 @@ app.openapi(updateListRoute, async (c) => {
     }
 
     await c.env.DB.batch(queries);
+
+    if (existing.owner_id !== user.user_id) {
+        const now = Math.floor(Date.now() / 1000);
+        await c.env.DB.prepare(
+            "INSERT INTO admin_audit_log (action_type, admin_id, target_id, reason, created_at) VALUES (?, ?, ?, ?, ?)"
+        ).bind('EDIT_LIST', user.user_id, existing.owner_id, id, now).run();
+
+        const ownerRow: any = await c.env.DB.prepare(
+            "SELECT email, display_name FROM users WHERE user_id = ?"
+        ).bind(existing.owner_id).first();
+
+        if (ownerRow?.email) {
+            const greeting = ownerRow.display_name ? ` ${ownerRow.display_name}` : '';
+            await sendEmail({
+                env: c.env,
+                to: ownerRow.email,
+                subject: `Your list "${validated.title}" was modified by an administrator`,
+                text: `Hi${greeting},\n\nAn administrator has made changes to your list "${validated.title}" on rivers.run.\n\nIf you have questions, please contact us.\n\n— The rivers.run team`,
+                html: `<p>Hi${greeting},</p><p>An administrator has made changes to your list <strong>${validated.title}</strong> on rivers.run.</p><p>If you have questions, please contact us.</p><p>— The rivers.run team</p>`
+            });
+        }
+    }
+
     return c.json({ success: true }, 200);
 });
 

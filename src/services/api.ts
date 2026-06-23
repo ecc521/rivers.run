@@ -33,7 +33,8 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}, user
             if (payload.success === false && payload.error && Array.isArray(payload.error.issues)) {
                 errorMsg = payload.error.issues.map((i: any) => `${i.path.join('.')}: ${i.message}`).join('\n');
             } else if (payload.error) {
-                errorMsg = typeof payload.error === 'string' ? payload.error : JSON.stringify(payload.error);
+                const base = typeof payload.error === 'string' ? payload.error : JSON.stringify(payload.error);
+                errorMsg = payload.detail ? `${base}: ${payload.detail}` : base;
             }
         }
         
