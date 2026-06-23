@@ -1250,9 +1250,9 @@ app.openapi(createListRoute, async (c) => {
     
     const queries = [
         c.env.DB.prepare(`
-            INSERT INTO community_lists (id, title, description, author, owner_id, is_published, subscribes)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).bind(listId, validated.title, validated.description ?? null, validated.author ?? "Community Paddler", user.user_id, validated.isPublished ? 1 : 0, 0)
+            INSERT INTO community_lists (id, title, description, owner_id, is_published, subscribes)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(listId, validated.title, validated.description ?? null, user.user_id, validated.isPublished ? 1 : 0, 0)
     ];
 
     if (validated.rivers && validated.rivers.length > 0) {
