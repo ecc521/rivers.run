@@ -206,6 +206,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   
   const { user, isAdmin, setAuthModalOpen, privacySettings, updatePrivacySettings, d1DisplayName } = useAuth();
   const [adminEditMode, setAdminEditMode] = useState(false);
+  const [localRivers, setLocalRivers] = useState<UserList["rivers"] | null>(null);
   const { myLists, updateRiverInList, removeRiverFromList, updateList, deleteList } = useLists();
   const { rivers } = useRivers();
   const { alert, confirm, promptReport } = useModal();
@@ -224,7 +225,13 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     if (oldIdx === -1 || newIdx === -1) return;
     const reordered = arrayMove(sortedRivers, oldIdx, newIdx).map((r, i) => ({ ...r, order: i }));
     try {
-      await updateList(activeList.id, { rivers: reordered });
+      if (isAdminEditing) {
+        setLocalRivers(reordered);
+        // Pass activeList as baseList so updateList can resolve a list we don't own
+        await updateList(activeList.id, { rivers: reordered }, activeList);
+      } else {
+        await updateList(activeList.id, { rivers: reordered });
+      }
     } catch (e: any) {
       await alert("Failed to save order: " + (e?.message || "Please try again."));
     }
@@ -234,7 +241,13 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     if (!activeList) return;
     const reordered = arrayMove(sortedRivers, fromIdx, toIdx).map((r, i) => ({ ...r, order: i }));
     try {
-      await updateList(activeList.id, { rivers: reordered });
+      if (isAdminEditing) {
+        setLocalRivers(reordered);
+        // Pass activeList as baseList so updateList can resolve a list we don't own
+        await updateList(activeList.id, { rivers: reordered }, activeList);
+      } else {
+        await updateList(activeList.id, { rivers: reordered });
+      }
     } catch (e: any) {
       await alert("Failed to save order: " + (e?.message || "Please try again."));
     }
@@ -246,18 +259,19 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   }, [myLists, targetList]);
 
   const sortedRivers = useMemo(() => {
-    if (!activeList) return [];
-    return [...activeList.rivers].sort((a, b) => {
+    const rivers = localRivers !== null ? localRivers : (activeList?.rivers ?? []);
+    return [...rivers].sort((a, b) => {
       const diff = (a.order ?? 0) - (b.order ?? 0);
       return diff !== 0 ? diff : String(a.id).localeCompare(String(b.id));
     });
-  }, [activeList]);
+  }, [activeList, localRivers]);
 
   useEffect(() => {
     if (isOpen) {
       setTitle(initialTitle);
       setDescription(initialDescription);
       setAdminEditMode(false);
+      setLocalRivers(null);
     }
   }, [isOpen, initialTitle, initialDescription]);
   if (!isOpen) return null;
@@ -267,8 +281,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   // adminEditMode is a state flag: an admin opted into editing a list they don't own.
   const isAdminEditing = mode === "shared" && isAdmin && !isOwner && adminEditMode;
   const canEdit = mode === "create" || mode === "copy" || (mode === "edit" && isOwner) || isAdminEditing;
-  // River editing stays owner-only; admin override covers title/description moderation.
-  const canEditRivers = mode === "edit" && isOwner;
+  const canEditRivers = (mode === "edit" && isOwner) || isAdminEditing;
 
   const handleSave = async (e: React.SyntheticEvent | React.MouseEvent) => {
     if ('preventDefault' in e) e.preventDefault();
@@ -525,7 +538,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                  {mode === "shared" && isAdmin && !isOwner && !adminEditMode && (
                    <button
                      type="button"
-                     onClick={() => setAdminEditMode(true)}
+                     onClick={() => { setAdminEditMode(true); setLocalRivers(activeList ? [...activeList.rivers] : []); }}
                      style={{ padding: "6px 12px", backgroundColor: "#d97706", border: "none", color: "white", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}
                    >
                      Edit (Admin)
@@ -537,7 +550,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
 
         {isAdminEditing && !!activeList && (
           <div style={{ backgroundColor: "rgba(217, 119, 6, 0.12)", border: "1px solid #d97706", borderRadius: "8px", padding: "10px 14px", color: "#d97706", fontSize: "0.85rem", fontWeight: 600 }}>
-            ⚠️ Editing as Admin — you are modifying {activeList.author || "another user"}'s list.
+            ⚠️ Editing as Admin — List owner ({activeList.author || "another user"}) may be notified.
           </div>
         )}
 
@@ -662,8 +675,24 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                         rName={rName}
                         canEditRivers={canEditRivers}
                         onPositionMove={moveRiverToPosition}
-                        onUpdateRiver={(riverId, updates) => updateRiverInList(activeList.id, riverId, updates)}
-                        onRemoveRiver={(riverId) => removeRiverFromList(activeList.id, riverId)}
+                        onUpdateRiver={async (riverId, updates) => {
+                            if (isAdminEditing) {
+                              const newRivers = (localRivers || []).map(r => r.id === riverId ? { ...r, ...updates } : r);
+                              setLocalRivers(newRivers);
+                              await updateList(activeList.id, { rivers: newRivers }, activeList);
+                            } else {
+                              await updateRiverInList(activeList.id, riverId, updates);
+                            }
+                          }}
+                        onRemoveRiver={async (riverId) => {
+                            if (isAdminEditing) {
+                              const newRivers = (localRivers || []).filter(r => r.id !== riverId);
+                              setLocalRivers(newRivers);
+                              await updateList(activeList.id, { rivers: newRivers }, activeList);
+                            } else {
+                              await removeRiverFromList(activeList.id, riverId);
+                            }
+                          }}
                         targetListId={activeList.id}
                       />
                     );

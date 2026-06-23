@@ -9,7 +9,7 @@ export interface CommunityListPayload {
   ownerId: string;
   isPublished: boolean;
   subscribes: number;
-  rivers: { id: string; order: number }[];
+  rivers: { id: string; order: number; gaugeId?: string; min?: number; max?: number; units?: string; customMin?: number; customMax?: number; customUnits?: "cfs" | "ft" | "cms" | "m" }[];
 }
 
 interface UseCommunityListsResult {
