@@ -1,0 +1,32 @@
+Water levels, notifications, and paddling information at your fingertips. Rivers.run includes information on over 10,000 rivers and creeks across the US, Canada, and UK/Ireland.
+
+Rivers.run is your guide to whitewater (and flatwater) paddling, matching real-time gauge data with crowdsourced expertise. With data sourced from USGS, Environment Canada, and UK/Ireland gauges, rivers.run takes the guesswork out of river levels with flow notifications, color coding, and easy to use search & sort tools.
+
+KEY FEATURES
+
+Interactive Map & Weather
+Discover local rivers, view live weather radar (US), and tap any run to see live gauge information, access points, and rapid descriptions.
+
+Works Offline
+Crucial for remote put-ins and deep canyons, rivers.run is designed to work offline. Cache your favorites, maps, and flow graphs before you leave — the app stays fully functional in dead zones.
+
+Advanced Search & Filtering
+Find your next trip by filtering rivers by current water levels, difficulty class, location, distance, custom tags, and more.
+
+Custom Lists & Favorites
+Build and organize your own river lists by region, difficulty, or trip plan.
+
+Flow Notifications
+Set alerts for your favorite runs and get notified when flows hit your preferred range.
+
+Community-Driven
+Can't find your favorite local creek? Don't agree with a runnable level? Our database is crowdsourced, allowing you to easily contribute and improve the map for fellow paddlers.
+
+Rivers.run is free, open-source, and built by paddlers for paddlers.
+
+River flows are subject to change and conditions can vary rapidly. Always exercise caution, wear appropriate safety gear, and verify local conditions before paddling.
+
+Need assistance or have feedback? Reach out to support@rivers.run
+
+Privacy Policy: https://rivers.run/privacy
+Terms of Service: https://rivers.run/terms

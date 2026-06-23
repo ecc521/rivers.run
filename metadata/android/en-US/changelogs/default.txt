@@ -1,0 +1,1 @@
+Rivers.run v5 — a major update! Custom river lists, new bottom navigation bar, and a significantly smaller app size. Maps and flow graphs cache more reliably for offline use. Better flow notification delivery. Bug fixes for shared links and data export.

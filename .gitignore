@@ -58,6 +58,11 @@ functions/lib/
 
 rivers-run-firebase-adminsdk-wzb5p-843d01551f.json
 
+# Fastlane credentials — never commit
+fastlane/AuthKey*.p8
+fastlane/play-store-key.json
+fastlane/api_key.json
+
 # wrangler files
 .wrangler
 .dev.vars*

@@ -1,0 +1,10 @@
+# Rivers.run — Fastlane Appfile
+# See https://docs.fastlane.tools/advanced/Appfile/
+
+# iOS
+app_identifier("run.rivers.twa")
+apple_id(ENV["FASTLANE_APPLE_ID"])
+
+# Android
+package_name("run.rivers.twa")
+json_key_file(File.expand_path(ENV["PLAY_JSON_KEY_FILE"]))
