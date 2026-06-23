@@ -37,7 +37,6 @@ export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
   includeUnknownFlow: true,
   includeDams: true,
   includeGauges: true,
-  sortBy: "alphabetical",
   sortReverse: false,
 };
 
@@ -294,8 +293,14 @@ export function filterRivers(
       if (!aGauge && bGauge) return -1;
       if (aGauge && !bGauge) return 1;
       
-      // 4. Preserve original order
-      return a.index - b.index; // Preserve original order
+      // 4. Alphabetical fallback when no search terms, otherwise preserve order
+      if (terms.length === 0) {
+        const aName = String(a.value.name || "").toLowerCase();
+        const bName = String(b.value.name || "").toLowerCase();
+        if (aName < bName) return -1;
+        if (aName > bName) return 1;
+      }
+      return a.index - b.index;
     });
     list = mapped.map(m => m.value);
   }

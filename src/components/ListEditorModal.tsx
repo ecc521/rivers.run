@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useLists, type UserList } from "../context/ListsContext";
 import { useRivers } from "../hooks/useRivers";
 import { useAuth } from "../context/AuthContext";
@@ -7,7 +7,174 @@ import { fetchAPI } from "../services/api";
 import { getShareBaseUrl } from "../utils/url";
 import { WatchSyncModal } from "./WatchSyncModal";
 import { Capacitor } from "@capacitor/core";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
+
+interface SortableRiverRowProps {
+  river: UserList["rivers"][number];
+  idx: number;
+  total: number;
+  rName: string;
+  canEditRivers: boolean;
+  onPositionMove: (fromIdx: number, toIdx: number) => void;
+  onUpdateRiver: (riverId: string, updates: any) => void;
+  onRemoveRiver: (riverId: string) => void;
+  targetListId: string;
+}
+
+const SortableRiverRow: React.FC<SortableRiverRowProps> = ({
+  river: r, idx, total, rName, canEditRivers,
+  onPositionMove, onUpdateRiver, onRemoveRiver,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: r.id });
+  const [editingPos, setEditingPos] = useState(false);
+  const [posInput, setPosInput] = useState("");
+  const posInputRef = useRef<HTMLInputElement>(null);
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const commitPosition = () => {
+    const target = parseInt(posInput, 10);
+    if (!isNaN(target) && target >= 1 && target <= total) {
+      onPositionMove(idx, target - 1);
+    }
+    setEditingPos(false);
+  };
+
+  const parts = r.gaugeId?.split(":") ?? [];
+  const provider = parts.length > 1 ? parts[0].toUpperCase() : "";
+  const sensorId = parts.length > 1 ? parts[1] : parts[0];
+  const sensorLabel = r.gaugeId ? (provider ? `${provider} Sensor: ${sensorId}` : `Sensor: ${sensorId}`) : null;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        padding: "10px",
+        backgroundColor: "var(--surface-hover)",
+        borderRadius: "8px",
+        border: isDragging ? "1px solid var(--primary)" : "1px solid var(--border)",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Row 1: handle + badge + identity */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+        {canEditRivers && (
+          <div
+            {...attributes}
+            {...listeners}
+            style={{ cursor: "grab", color: "var(--text-muted)", fontSize: "1.1rem", lineHeight: 1, padding: "2px 4px", flexShrink: 0, touchAction: "none" }}
+            title="Drag to reorder"
+          >
+            ⠿
+          </div>
+        )}
+
+        {canEditRivers && (
+          editingPos ? (
+            <input
+              ref={posInputRef}
+              type="number"
+              min={1}
+              max={total}
+              value={posInput}
+              autoFocus
+              onChange={(e) => setPosInput(e.target.value)}
+              onBlur={commitPosition}
+              onKeyDown={(e) => { if (e.key === "Enter") { commitPosition(); } else if (e.key === "Escape") { setEditingPos(false); } }}
+              style={{ width: "44px", padding: "2px 4px", borderRadius: "4px", border: "1px solid var(--primary)", backgroundColor: "var(--surface)", color: "var(--text)", fontSize: "0.75rem", textAlign: "center", flexShrink: 0 }}
+            />
+          ) : (
+            <span
+              onClick={() => { setPosInput(String(idx + 1)); setEditingPos(true); }}
+              title="Click to jump to position"
+              style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-muted)", backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: "4px", padding: "2px 5px", cursor: "pointer", flexShrink: 0, minWidth: "28px", textAlign: "center", userSelect: "none" }}
+            >
+              #{idx + 1}
+            </span>
+          )
+        )}
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontWeight: "bold", fontSize: "0.95em", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rName}</span>
+          {sensorLabel && (
+            <span style={{ fontSize: "0.75em", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
+              📍 {sensorLabel}
+            </span>
+          )}
+        </div>
+
+        {!canEditRivers && (
+          <span style={{ fontSize: "0.85em", color: "var(--text-muted)", flexShrink: 0 }}>
+            {r.min || "0"} – {r.max || "∞"} {r.units || "cfs"}
+          </span>
+        )}
+      </div>
+
+      {/* Row 2: flow controls (edit mode only) */}
+      {canEditRivers && (
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", paddingLeft: "2px" }}>
+          <span style={{ fontSize: "0.8em", color: "var(--text-muted)", textTransform: "uppercase" }}>Target Flow:</span>
+          <input
+            type="number"
+            placeholder="Min"
+            defaultValue={r.min ?? ""}
+            onBlur={(e) => onUpdateRiver(r.id, { min: e.target.value ? Number(e.target.value) : null })}
+            style={{ width: "60px", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
+          />
+          <span style={{ color: "var(--text-secondary)" }}>–</span>
+          <input
+            type="number"
+            placeholder="Max"
+            defaultValue={r.max ?? ""}
+            onBlur={(e) => onUpdateRiver(r.id, { max: e.target.value ? Number(e.target.value) : null })}
+            style={{ width: "60px", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
+          />
+          <select
+            defaultValue={r.units || "cfs"}
+            onChange={(e) => onUpdateRiver(r.id, { units: e.target.value })}
+            style={{ padding: "4px", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
+          >
+            <option value="cfs">cfs</option>
+            <option value="ft">ft</option>
+            <option value="cms">cms</option>
+            <option value="m">m</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => onRemoveRiver(r.id)}
+            style={{ padding: "4px 8px", backgroundColor: "transparent", color: "var(--danger)", border: "1px solid var(--danger)", borderRadius: "4px", cursor: "pointer", fontSize: "0.8em", marginLeft: "auto" }}
+          >
+            🗑️
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface ListEditorModalProps {
   isOpen: boolean;
@@ -42,6 +209,28 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const { rivers } = useRivers();
   const { alert, confirm, promptReport } = useModal();
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    if (!activeList) return;
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = activeList.rivers.findIndex(r => r.id === active.id);
+    const newIdx = activeList.rivers.findIndex(r => r.id === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+    const reordered = arrayMove(activeList.rivers, oldIdx, newIdx).map((r, i) => ({ ...r, order: i }));
+    updateList(activeList.id, { rivers: reordered });
+  };
+
+  const moveRiverToPosition = (fromIdx: number, toIdx: number) => {
+    if (!activeList) return;
+    const reordered = arrayMove(activeList.rivers, fromIdx, toIdx).map((r, i) => ({ ...r, order: i }));
+    updateList(activeList.id, { rivers: reordered });
+  };
+
   const activeList = useMemo(() => {
     if (!targetList) return null;
     return myLists.find(l => l.id === targetList.id) || targetList;
@@ -59,7 +248,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const isEdit = mode === "edit";
   const isOwner = user && activeList && activeList.ownerId === user.uid;
   const canEdit = mode === "create" || mode === "copy" || (isOwner && isEdit);
-  const canEditRivers = isOwner && isEdit;
+  const canEditRivers = !!isOwner && isEdit;
 
   const handleSave = async (e: React.SyntheticEvent | React.MouseEvent) => {
     if ('preventDefault' in e) e.preventDefault();
@@ -419,76 +608,39 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             </div>
           )}
 
-          {targetList && targetList.rivers && (
-             <div style={{ marginTop: "10px", borderTop: "1px solid var(--border)", paddingTop: "15px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                <h4 style={{ margin: 0, fontSize: "0.95em", color: "var(--text-secondary)", textTransform: "uppercase" }}>River Configurations ({targetList.rivers.length})</h4>
-                {targetList.rivers.map((r, idx) => {
+          {activeList && activeList.rivers && (
+            <div style={{ marginTop: "10px", borderTop: "1px solid var(--border)", paddingTop: "15px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <h4 style={{ margin: 0, fontSize: "0.95em", color: "var(--text-secondary)", textTransform: "uppercase" }}>
+                River Configurations ({activeList.rivers.length})
+              </h4>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                {(() => {
+                  const sortedRivers = [...activeList.rivers].sort((a, b) => a.order - b.order);
+                  return (
+                <SortableContext items={sortedRivers.map(r => r.id)} strategy={verticalListSortingStrategy}>
+                  {sortedRivers.map((r, idx) => {
                     const masterRiver = rivers.find(mr => mr.id === r.id);
                     const rName = masterRiver ? masterRiver.name : "Unknown River";
-                    
                     return (
-                        <div key={r.id + idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", padding: "10px", backgroundColor: "var(--surface-hover)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                                <span style={{ fontWeight: "bold", fontSize: "0.95em" }}>{rName}</span>
-                                {r.gaugeId && (() => {
-                                     const parts = r.gaugeId.split(':');
-                                     const provider = parts.length > 1 ? parts[0].toUpperCase() : "";
-                                     const sensorId = parts.length > 1 ? parts[1] : parts[0];
-                                     const sensorLabel = provider ? `${provider} Sensor: ${sensorId}` : `Sensor: ${sensorId}`;
-                                     return (
-                                         <span style={{ fontSize: "0.75em", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px" }}>
-                                             📍 {sensorLabel}
-                                         </span>
-                                     );
-                                 })()}
-                            </div>
-                            
-                            {!canEditRivers ? (
-                                <span style={{ fontSize: "0.85em", color: "var(--text-muted)" }}>
-                                    Target Flow: {r.min || '0'} - {r.max || '∞'} {r.units || 'cfs'}
-                                </span>
-                            ) : (
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px", overflowX: "auto" }}>
-                                    <span style={{ fontSize: "0.8em", color: "var(--text-muted)", textTransform: "uppercase" }}>Target Flow:</span>
-                                    <input 
-                                        type="number" 
-                                        placeholder="Min" 
-                                        defaultValue={r.min ?? ""} 
-                                        onBlur={(e) => updateRiverInList(targetList.id, r.id, { min: e.target.value ? Number(e.target.value) : null })}
-                                        style={{ width: "60px", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
-                                    />
-                                    <span style={{color: "var(--text-secondary)"}}>-</span>
-                                    <input 
-                                        type="number" 
-                                        placeholder="Max" 
-                                        defaultValue={r.max ?? ""} 
-                                        onBlur={(e) => updateRiverInList(targetList.id, r.id, { max: e.target.value ? Number(e.target.value) : null })}
-                                        style={{ width: "60px", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
-                                    />
-                                    <select 
-                                        defaultValue={r.units || "cfs"}
-                                        onChange={(e) => updateRiverInList(targetList.id, r.id, { units: e.target.value })}
-                                        style={{ padding: "4px", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
-                                    >
-                                        <option value="cfs">cfs</option>
-                                        <option value="ft">ft</option>
-                                        <option value="cms">cms</option>
-                                        <option value="m">m</option>
-                                    </select>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeRiverFromList(targetList.id, r.id)}
-                                        style={{ padding: "4px 8px", backgroundColor: "transparent", color: "var(--danger)", border: "1px solid var(--danger)", borderRadius: "4px", cursor: "pointer", fontSize: "0.8em", marginLeft: "10px" }}
-                                    >
-                                        🗑️
-                                    </button>
-                                </div>
-                            )}
-
-                        </div>
+                      <SortableRiverRow
+                        key={r.id}
+                        river={r}
+                        idx={idx}
+                        total={activeList.rivers.length}
+                        rName={rName}
+                        canEditRivers={canEditRivers}
+                        onPositionMove={moveRiverToPosition}
+                        onUpdateRiver={(riverId, updates) => updateRiverInList(activeList.id, riverId, updates)}
+                        onRemoveRiver={(riverId) => removeRiverFromList(activeList.id, riverId)}
+                        targetListId={activeList.id}
+                      />
                     );
-                })}
-             </div>
+                  })}
+                </SortableContext>
+                  );
+                })()}
+              </DndContext>
+            </div>
           )}
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>

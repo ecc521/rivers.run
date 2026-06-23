@@ -1095,6 +1095,7 @@ app.openapi(getCommunityListsRoute, async (c) => {
         const mappingStmt = c.env.DB.prepare(`
             SELECT * FROM community_list_rivers
             WHERE list_id IN (${placeholders})
+            ORDER BY sort_order ASC
         `).bind(...listIds);
         const mappingRaw = await mappingStmt.all();
         mappings = mappingRaw.results as any[];
@@ -1175,6 +1176,7 @@ app.openapi(getListsRoute, async (c) => {
             SELECT lr.* FROM community_list_rivers lr
             JOIN community_lists l ON l.id = lr.list_id
             WHERE l.owner_id = ?
+            ORDER BY lr.sort_order ASC
         `).bind(user.user_id)
     ]);
 
@@ -1408,7 +1410,7 @@ app.openapi(getListByIdRoute, async (c) => {
             LEFT JOIN users u ON cl.owner_id = u.user_id
             WHERE cl.id = ?
         `).bind(id),
-        c.env.DB.prepare("SELECT * FROM community_list_rivers WHERE list_id = ?").bind(id)
+        c.env.DB.prepare("SELECT * FROM community_list_rivers WHERE list_id = ? ORDER BY sort_order ASC").bind(id)
     ]);
 
     const list = listRaw.results[0] as any;
