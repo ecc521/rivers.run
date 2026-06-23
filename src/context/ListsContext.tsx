@@ -170,12 +170,11 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMyLists(newLists);
     persistentStorage.set("my_custom_lists", JSON.stringify(newLists));
     
-    // Background sync - Ensure we send required fields (title, author) to satisfy Zod validation
     const payload = {
         title: fullUpdatedList.title,
         description: fullUpdatedList.description,
-        author: fullUpdatedList.author,
         isPublished: fullUpdatedList.isPublished,
+        notificationsEnabled: fullUpdatedList.notificationsEnabled,
         rivers: fullUpdatedList.rivers
     };
 
