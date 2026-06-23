@@ -262,16 +262,17 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   }, [isOpen, initialTitle, initialDescription]);
   if (!isOpen) return null;
 
-  const isViewMode = mode === "shared";
-  const isOwnerMode = mode === "edit";
-  const isOwner = user && activeList && activeList.ownerId === user.uid;
-  const isAdminOverride = !!(isAdmin && !isOwner && adminEditMode);
-  const canEdit = mode === "create" || mode === "copy" || (isOwner && isOwnerMode) || isAdminOverride;
-  const canEditRivers = (!!isOwner && isOwnerMode) || isAdminOverride;
+  // Facts about the viewer, derived once.
+  const isOwner = !!(user && activeList && activeList.ownerId === user.uid);
+  // adminEditMode is a state flag: an admin opted into editing a list they don't own.
+  const isAdminEditing = mode === "shared" && isAdmin && !isOwner && adminEditMode;
+  const canEdit = mode === "create" || mode === "copy" || (mode === "edit" && isOwner) || isAdminEditing;
+  // River editing stays owner-only; admin override covers title/description moderation.
+  const canEditRivers = mode === "edit" && isOwner;
 
   const handleSave = async (e: React.SyntheticEvent | React.MouseEvent) => {
     if ('preventDefault' in e) e.preventDefault();
-    if (isViewMode && !isAdminOverride) { onClose(); return; }
+    if (mode === "shared" && !isAdminEditing) { onClose(); return; }
     if (!title.trim()) return;
     
     setSaving(true);
@@ -337,7 +338,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   };
 
   const handleTogglePublish = () => {
-    if (activeList && isOwnerMode && isOwner) {
+    if (activeList && mode === "edit" && isOwner) {
       setShowConfirmOverlay(true);
     }
   };
@@ -493,12 +494,12 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "1.5rem" }}>
             {modalTitle}
             </h3>
-            {(isOwnerMode || isViewMode) && !!activeList && (
+            {(mode === "edit" || mode === "shared") && !!activeList && (
                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                  <button onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
                    <span style={{ fontSize: "1.1em" }}>🔗</span> {Capacitor.isNativePlatform() ? "Share List" : "Copy Link"}
                  </button>
-                 {(isOwnerMode || isAdminOverride) && (
+                 {mode === "edit" && isOwner && (
                    <button
                      onClick={handleTogglePublish}
                      disabled={toggling}
@@ -521,7 +522,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                      ⌚️ Sync Watch
                    </button>
                  )}
-                 {isAdmin && !isOwner && !adminEditMode && (
+                 {mode === "shared" && isAdmin && !isOwner && !adminEditMode && (
                    <button
                      type="button"
                      onClick={() => setAdminEditMode(true)}
@@ -534,13 +535,13 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             )}
         </div>
 
-        {isAdminOverride && !!activeList && (
+        {isAdminEditing && !!activeList && (
           <div style={{ backgroundColor: "rgba(217, 119, 6, 0.12)", border: "1px solid #d97706", borderRadius: "8px", padding: "10px 14px", color: "#d97706", fontSize: "0.85rem", fontWeight: 600 }}>
-            Editing as Admin — {activeList.author || "another user"} will be notified of any changes.
+            ⚠️ Editing as Admin — you are modifying {activeList.author || "another user"}'s list.
           </div>
         )}
 
-        {isViewMode && !!activeList && (
+        {mode === "shared" && !isAdminEditing && !!activeList && (
            <div style={{ display: "flex", gap: "10px", paddingBottom: "10px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
              {user && onCopySharedList && (
                  <button
@@ -593,7 +594,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
 
           <div>
             <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-              Description {isViewMode ? "" : "(Optional)"}
+              Description {canEdit ? "(Optional)" : ""}
             </label>
             {!canEdit ? (
                 <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: "1.5" }}>{description || "No description provided."}</p>
@@ -674,7 +675,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
             {(() => {
-              if (isViewMode && targetList) {
+              if (mode === "shared" && !isAdminEditing && targetList) {
                 return (
                   <button
                     type="button"

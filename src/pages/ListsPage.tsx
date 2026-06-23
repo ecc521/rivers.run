@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 
 const ListsPage: React.FC = () => {
   const { t } = useTranslation();
-  const { user, isModerator, setAuthModalOpen } = useAuth();
+  const { user, isAdmin, isModerator, setAuthModalOpen } = useAuth();
   const { myLists, subscribedListIds, subscribedListNotifications, createList, updateList, toggleSubscription, toggleSubscriptionNotifications, isSubscribed } = useLists();
   const { homePageDefaultSearch, updateSetting } = useSettings();
   const { confirm, alert } = useModal();
@@ -146,6 +146,10 @@ const ListsPage: React.FC = () => {
       await createList(title, description, false);
     } else if (editorModal.mode === "edit" && editorModal.targetList) {
       await updateList(editorModal.targetList.id, { title, description });
+    } else if (editorModal.mode === "shared" && editorModal.targetList && isAdmin) {
+      // Admin override: editing a list owned by someone else. Pass the target as the
+      // base list since it won't be in the admin's own myLists.
+      await updateList(editorModal.targetList.id, { title, description }, editorModal.targetList);
     } else if (editorModal.mode === "copy" && editorModal.targetList) {
       // Create a new list with the target list's rivers
       await createList(title, description, false, editorModal.targetList.rivers);

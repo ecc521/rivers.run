@@ -32,7 +32,7 @@ interface ListsContextType {
   subscribedListIds: string[];
   subscribedListNotifications: Record<string, boolean>;
   createList: (title: string, description: string, isPublished: boolean, rivers?: any[]) => Promise<string | null>;
-  updateList: (id: string, updates: Partial<UserList>) => Promise<void>;
+  updateList: (id: string, updates: Partial<UserList>, baseList?: UserList) => Promise<void>;
   deleteList: (id: string) => Promise<void>;
   toggleSubscription: (listId: string) => Promise<void>;
   toggleSubscriptionNotifications: (listId: string) => Promise<void>;
@@ -155,9 +155,11 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return uuid;
   };
 
-  const updateList = async (id: string, updates: Partial<UserList>) => {
+  const updateList = async (id: string, updates: Partial<UserList>, baseList?: UserList) => {
     if (!user) return;
-    const list = myLists.find(l => l.id === id);
+    // baseList lets callers (e.g. an admin editing a list they don't own) update a
+    // list that isn't in myLists. Owners always resolve from myLists.
+    const list = myLists.find(l => l.id === id) || baseList;
     if (!list) return;
 
     if (updates.rivers && updates.rivers.length > 500) {
@@ -165,11 +167,14 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const fullUpdatedList = { ...list, ...updates };
-    const newLists = myLists.map(l => l.id === id ? fullUpdatedList : l);
-    
-    setMyLists(newLists);
-    persistentStorage.set("my_custom_lists", JSON.stringify(newLists));
-    
+
+    // Only mirror into local state when the list is actually one of ours.
+    if (myLists.some(l => l.id === id)) {
+      const newLists = myLists.map(l => l.id === id ? fullUpdatedList : l);
+      setMyLists(newLists);
+      persistentStorage.set("my_custom_lists", JSON.stringify(newLists));
+    }
+
     const payload = {
         title: fullUpdatedList.title,
         description: fullUpdatedList.description,
