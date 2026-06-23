@@ -204,7 +204,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const [toggling, setToggling] = useState(false);
   const [showWatchSync, setShowWatchSync] = useState(false);
   
-  const { user, setAuthModalOpen, privacySettings, updatePrivacySettings, d1DisplayName } = useAuth();
+  const { user, isAdmin, setAuthModalOpen, privacySettings, updatePrivacySettings, d1DisplayName } = useAuth();
+  const [adminEditMode, setAdminEditMode] = useState(false);
   const { myLists, updateRiverInList, removeRiverFromList, updateList, deleteList } = useLists();
   const { rivers } = useRivers();
   const { alert, confirm, promptReport } = useModal();
@@ -256,19 +257,21 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     if (isOpen) {
       setTitle(initialTitle);
       setDescription(initialDescription);
+      setAdminEditMode(false);
     }
   }, [isOpen, initialTitle, initialDescription]);
   if (!isOpen) return null;
 
-  const isShared = mode === "shared";
-  const isEdit = mode === "edit";
+  const isViewMode = mode === "shared";
+  const isOwnerMode = mode === "edit";
   const isOwner = user && activeList && activeList.ownerId === user.uid;
-  const canEdit = mode === "create" || mode === "copy" || (isOwner && isEdit);
-  const canEditRivers = !!isOwner && isEdit;
+  const isAdminOverride = !!(isAdmin && !isOwner && adminEditMode);
+  const canEdit = mode === "create" || mode === "copy" || (isOwner && isOwnerMode) || isAdminOverride;
+  const canEditRivers = (!!isOwner && isOwnerMode) || isAdminOverride;
 
   const handleSave = async (e: React.SyntheticEvent | React.MouseEvent) => {
     if ('preventDefault' in e) e.preventDefault();
-    if (isShared) { onClose(); return; }
+    if (isViewMode && !isAdminOverride) { onClose(); return; }
     if (!title.trim()) return;
     
     setSaving(true);
@@ -334,7 +337,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   };
 
   const handleTogglePublish = () => {
-    if (activeList && isEdit && isOwner) {
+    if (activeList && isOwnerMode && isOwner) {
       setShowConfirmOverlay(true);
     }
   };
@@ -490,39 +493,54 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "1.5rem" }}>
             {modalTitle}
             </h3>
-            {(isEdit || isShared) && !!activeList && (
+            {(isOwnerMode || isViewMode) && !!activeList && (
                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                  <button onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
                    <span style={{ fontSize: "1.1em" }}>🔗</span> {Capacitor.isNativePlatform() ? "Share List" : "Copy Link"}
                  </button>
-                 {isEdit && isOwner && (
-                    <>
-                      <button 
-                        onClick={handleTogglePublish} 
-                        disabled={toggling}
-                        style={{ 
-                          padding: "6px 12px", 
-                          backgroundColor: activeList.isPublished ? "var(--surface-hover)" : "var(--primary)", 
-                          border: "1px solid var(--border)", 
-                          color: activeList.isPublished ? "var(--text)" : "white", 
-                          borderRadius: "6px", 
-                          cursor: toggling ? "not-allowed" : "pointer", 
-                          fontWeight: "bold",
-                          transition: "all 0.2s ease"
-                        }}
-                      >
-                        {activeList.isPublished ? "🔒 Make Unlisted" : "🌍 Publish to Feed"}
-                      </button>
-                      <button onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
-                        ⌚️ Sync Watch
-                      </button>
-                    </>
+                 {(isOwnerMode || isAdminOverride) && (
+                   <button
+                     onClick={handleTogglePublish}
+                     disabled={toggling}
+                     style={{
+                       padding: "6px 12px",
+                       backgroundColor: activeList.isPublished ? "var(--surface-hover)" : "var(--primary)",
+                       border: "1px solid var(--border)",
+                       color: activeList.isPublished ? "var(--text)" : "white",
+                       borderRadius: "6px",
+                       cursor: toggling ? "not-allowed" : "pointer",
+                       fontWeight: "bold",
+                       transition: "all 0.2s ease"
+                     }}
+                   >
+                     {activeList.isPublished ? "🔒 Make Unlisted" : "🌍 Publish to Feed"}
+                   </button>
+                 )}
+                 {!!user && (
+                   <button onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
+                     ⌚️ Sync Watch
+                   </button>
+                 )}
+                 {isAdmin && !isOwner && !adminEditMode && (
+                   <button
+                     type="button"
+                     onClick={() => setAdminEditMode(true)}
+                     style={{ padding: "6px 12px", backgroundColor: "#d97706", border: "none", color: "white", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}
+                   >
+                     Edit (Admin)
+                   </button>
                  )}
                </div>
             )}
         </div>
 
-        {isShared && !!activeList && (
+        {isAdminOverride && !!activeList && (
+          <div style={{ backgroundColor: "rgba(217, 119, 6, 0.12)", border: "1px solid #d97706", borderRadius: "8px", padding: "10px 14px", color: "#d97706", fontSize: "0.85rem", fontWeight: 600 }}>
+            Editing as Admin — {activeList.author || "another user"} will be notified of any changes.
+          </div>
+        )}
+
+        {isViewMode && !!activeList && (
            <div style={{ display: "flex", gap: "10px", paddingBottom: "10px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
              {user && onCopySharedList && (
                  <button
@@ -575,7 +593,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
 
           <div>
             <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-              Description {isShared ? "" : "(Optional)"}
+              Description {isViewMode ? "" : "(Optional)"}
             </label>
             {!canEdit ? (
                 <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: "1.5" }}>{description || "No description provided."}</p>
@@ -656,7 +674,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
             {(() => {
-              if (isShared && targetList) {
+              if (isViewMode && targetList) {
                 return (
                   <button
                     type="button"
