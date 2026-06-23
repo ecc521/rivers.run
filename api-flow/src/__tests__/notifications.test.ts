@@ -197,6 +197,7 @@ describe('Daily Digest Notification Engine', () => {
 describe('Notification Helpers (Pure Unit Tests)', () => {
     describe('evaluateRiverConditions', () => {
         const createRiver = (name: string, min: number | null, max: number | null, unit: string | null = 'cfs'): RiverCondition => ({
+            id: 'test-id',
             name,
             section: 'Test Section',
             min,
@@ -275,9 +276,12 @@ describe('Notification Helpers (Pure Unit Tests)', () => {
             const summary = evaluateRiverConditions(rivers, data);
 
             expect(summary.running).toHaveLength(3);
-            expect(summary.running[0]).toContain('RiverCFS (Test Section): 250 cfs');
-            expect(summary.running[1]).toContain('RiverCMS (Test Section): 10 cms');
-            expect(summary.running[2]).toContain('RiverConverted (Test Section): 35.31 cfs');
+            expect(summary.running[0]).toContain('RiverCFS (Test Section)');
+            expect(summary.running[0]).toContain('250 cfs');
+            expect(summary.running[1]).toContain('RiverCMS (Test Section)');
+            expect(summary.running[1]).toContain('10 cms');
+            expect(summary.running[2]).toContain('RiverConverted (Test Section)');
+            expect(summary.running[2]).toContain('35.31 cfs');
         });
 
         it('handles missing readings or missing values by skipping them', () => {
@@ -315,30 +319,31 @@ describe('Notification Helpers (Pure Unit Tests)', () => {
             const summary = evaluateRiverConditions(rivers, data);
 
             expect(summary.running).toHaveLength(1);
-            expect(summary.running[0]).toContain('RiverA (Test Section): 250 cfs');
+            expect(summary.running[0]).toContain('RiverA (Test Section)');
+            expect(summary.running[0]).toContain('250 cfs');
             expect(summary.low).toHaveLength(0);
         });
     });
 
     describe('buildDigestEmailBody', () => {
         it('returns null if there are no active running/high rivers', () => {
-            const result = buildDigestEmailBody({ high: [], running: [], low: ['<li>River</li>'] });
+            const result = buildDigestEmailBody({ high: [], running: [], runningNames: [], low: ['<li>River</li>'] });
             expect(result).toBeNull();
         });
 
         it('generates a singular subject for a single running river without Creek suffix', () => {
-            const result = buildDigestEmailBody({ high: [], running: ['<li>Colorado: 5000</li>'], low: [] });
+            const result = buildDigestEmailBody({ high: [], running: ['<li>Colorado: 5000</li>'], runningNames: ['Colorado'], low: [] });
             expect(result?.subject).toBe('The Colorado is running!');
-            expect(result?.html).toContain('The Colorado is running!'.replace('The', '').split('is')[0].trim());
+            expect(result?.html).toContain('Colorado');
         });
 
         it('drops "The" for rivers ending in Creek', () => {
-            const result = buildDigestEmailBody({ high: [], running: ['<li>Clear Creek: 250</li>'], low: [] });
+            const result = buildDigestEmailBody({ high: [], running: ['<li>Clear Creek: 250</li>'], runningNames: ['Clear Creek'], low: [] });
             expect(result?.subject).toBe('Clear Creek is running!');
         });
 
         it('generates a plural subject for multiple running rivers', () => {
-            const result = buildDigestEmailBody({ high: [], running: ['<li>R1</li>', '<li>R2</li>'], low: [] });
+            const result = buildDigestEmailBody({ high: [], running: ['<li>R1</li>', '<li>R2</li>'], runningNames: ['R1', 'R2'], low: [] });
             expect(result?.subject).toBe('2 rivers are running!');
         });
     });

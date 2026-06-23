@@ -2,12 +2,27 @@ import type { Env } from "../index";
 import { sendEmail } from "../email";
 
 export interface RiverCondition {
+    id: string;
     name: string;
     section: string | null;
     min: number | null;
     max: number | null;
     unit: string | null;
     gauges: any[];
+}
+
+function slugify(text: string): string {
+    if (!text) return '';
+    const cleaned = text.toString().toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w-]+/g, '');
+    return cleaned.split('-').filter(Boolean).join('-');
+}
+
+function getRiverUrl(id: string, name: string, section: string | null): string {
+    let slug = slugify(name);
+    if (section) slug += '-' + slugify(section);
+    return `https://rivers.run/river/${id}/${slug}`;
 }
 
 export interface UserSubscriptionInfo {
@@ -19,6 +34,7 @@ export interface UserSubscriptionInfo {
 export interface DigestSummary {
     high: string[];
     running: string[];
+    runningNames: string[];
     low: string[];
 }
 
@@ -65,6 +81,7 @@ export async function fetchSubscribedUsers(env: Env, currentTime: number): Promi
             });
         }
         usersMap.get(row.user_id as string)!.rivers.push({
+            id: row.river_id as string,
             name: row.name as string,
             section: row.section as string | null,
             min: row.custom_min !== null ? (row.custom_min as number) : (row.flow_min as number | null),
@@ -126,6 +143,7 @@ export function getReadingValue(reading: any, unit: string | null): number | und
 export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Record<string, any>): DigestSummary {
     const high: string[] = [];
     const running: string[] = [];
+    const runningNames: string[] = [];
     const low: string[] = [];
 
     for (const river of rivers) {
@@ -141,24 +159,26 @@ export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Re
 
         const displayName = river.name + (river.section ? ` (${river.section})` : '');
         const unitSuffix = river.unit ? ` ${river.unit}` : '';
+        const riverUrl = getRiverUrl(river.id, river.name, river.section);
+        const link = `<a href="${riverUrl}">${displayName}</a>`;
 
         if (river.min !== null && river.max !== null) {
-            if (reading > river.max) high.push(`<li>${displayName}: ${reading}${unitSuffix} (Too High)</li>`);
-            else if (reading >= river.min) running.push(`<li>${displayName}: ${reading}${unitSuffix}</li>`);
-            else low.push(`<li>${displayName}: ${reading}${unitSuffix} (Too Low)</li>`);
+            if (reading > river.max) high.push(`<li>${link}: ${reading}${unitSuffix} (Too High)</li>`);
+            else if (reading >= river.min) { running.push(`<li>${link}: ${reading}${unitSuffix}</li>`); runningNames.push(displayName); }
+            else low.push(`<li>${link}: ${reading}${unitSuffix} (Too Low)</li>`);
         } else if (river.min !== null) {
-            if (reading >= river.min) running.push(`<li>${displayName}: ${reading}${unitSuffix}</li>`);
-            else low.push(`<li>${displayName}: ${reading}${unitSuffix} (Too Low)</li>`);
+            if (reading >= river.min) { running.push(`<li>${link}: ${reading}${unitSuffix}</li>`); runningNames.push(displayName); }
+            else low.push(`<li>${link}: ${reading}${unitSuffix} (Too Low)</li>`);
         } else if (river.max !== null) {
-            if (reading <= river.max) running.push(`<li>${displayName}: ${reading}${unitSuffix}</li>`);
-            else high.push(`<li>${displayName}: ${reading}${unitSuffix} (Too High)</li>`);
+            if (reading <= river.max) { running.push(`<li>${link}: ${reading}${unitSuffix}</li>`); runningNames.push(displayName); }
+            else high.push(`<li>${link}: ${reading}${unitSuffix} (Too High)</li>`);
         }
     }
-    return { high, running, low };
+    return { high, running, runningNames, low };
 }
 
 export function buildDigestEmailBody(summary: DigestSummary): { subject: string, html: string } | null {
-    const { high, running, low } = summary;
+    const { high, running, runningNames, low } = summary;
     const totalActive = high.length + running.length;
 
     // Legacy behavior: Only email if something is active
@@ -168,7 +188,7 @@ export function buildDigestEmailBody(summary: DigestSummary): { subject: string,
 
     let subject = "Rivers are running!";
     if (running.length === 1 && high.length === 0) {
-        const rName = running[0].split(':')[0].replace('<li>', '').trim();
+        const rName = (runningNames?.[0] ?? '').split(':')[0].trim();
         subject = (rName.endsWith('Creek') ? '' : 'The ') + rName + " is running!";
     } else if (running.length > 1) {
         subject = `${running.length} rivers are running!`;
@@ -179,7 +199,7 @@ export function buildDigestEmailBody(summary: DigestSummary): { subject: string,
     if (running.length > 0) html += `<h3>Rivers that are Running:</h3><ul>${running.join('')}</ul>`;
     if (low.length > 0) html += `<h3>Rivers that are Too Low:</h3><ul>${low.join('')}</ul>`;
     
-    html += `<p><a href="https://rivers.run/favorites">View All Favorites on rivers.run</a></p>`;
+    html += `<p><a href="https://rivers.run/favorites">View Your Lists on rivers.run</a></p>`;
     html += `<p>Click <a href="https://rivers.run/favorites">here</a> to manage your subscription.</p></body></html>`;
 
     return { subject, html };
