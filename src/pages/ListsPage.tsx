@@ -165,9 +165,6 @@ const ListsPage: React.FC = () => {
   const handleToggleNotifications = async (list: UserList) => {
      try {
        await updateList(list.id, { notificationsEnabled: !list.notificationsEnabled });
-       if (!list.notificationsEnabled) {
-          await alert("Flow alerts enabled! You will be notified when rivers in this list pass your configured flow limits.");
-       }
      } catch (err: unknown) {
        if (err instanceof Error) await alert(`Failed to toggle notifications: ${err.message}`);
      }
@@ -176,10 +173,6 @@ const ListsPage: React.FC = () => {
   const handleToggleSubscriptionNotifications = async (list: UserList) => {
      try {
        await toggleSubscriptionNotifications(list.id);
-       const isCurrentlyEnabled = !!subscribedListNotifications[list.id];
-       if (!isCurrentlyEnabled) {
-          await alert("Flow alerts enabled! You will be notified when rivers in this list pass your configured flow limits.");
-       }
      } catch (err: unknown) {
        if (err instanceof Error) await alert(`Failed to toggle notifications: ${err.message}`);
      }
