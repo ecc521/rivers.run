@@ -204,7 +204,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const [toggling, setToggling] = useState(false);
   const [showWatchSync, setShowWatchSync] = useState(false);
   
-  const { user, setAuthModalOpen, privacySettings, updatePrivacySettings } = useAuth();
+  const { user, setAuthModalOpen, privacySettings, updatePrivacySettings, d1DisplayName } = useAuth();
   const { myLists, updateRiverInList, removeRiverFromList, updateList, deleteList } = useLists();
   const { rivers } = useRivers();
   const { alert, confirm, promptReport } = useModal();
@@ -601,17 +601,16 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             )}
           </div>
 
-          {canEdit && (
+          {canEdit && activeList?.isPublished && (
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px", padding: "12px", backgroundColor: "var(--surface-hover)", borderRadius: "8px", border: "1px solid var(--border)", flexWrap: "wrap" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: "bold", fontSize: "0.95rem" }}>
                 <input
                   type="checkbox"
                   id="modalHidePublicNameCheck"
                   checked={privacySettings.hidePublicName}
-                  
                   onChange={(e) => updatePrivacySettings(e.target.checked)}
                 />
-                Keep my name private on all community lists and river edits
+                Hide my name on community lists
               </label>
               {privacySettings.hidePublicName ? (
                 <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginLeft: "auto" }}>
@@ -619,7 +618,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                 </span>
               ) : (
                 <span style={{ fontSize: "0.85rem", color: "var(--primary)", marginLeft: "auto" }}>
-                  (Showing as: {user?.displayName || "Community Paddler"})
+                  (Showing as: {d1DisplayName || "Community Paddler"})
                 </span>
               )}
             </div>

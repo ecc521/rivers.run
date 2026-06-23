@@ -124,7 +124,7 @@
   },
   "profileMenu": {
     "loadingProfile": "Loading Profile...",
-    "publicName": "Public Profile Name",
+    "publicName": "Display name",
     "namePlaceholder": "e.g. Jane Doe",
     "save": "Save",
     "nameSaved": "Name saved!",

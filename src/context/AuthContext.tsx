@@ -14,6 +14,7 @@ interface AuthContextType {
   setAuthModalOpen: (open: boolean) => void;
   privacySettings: { hidePublicName: boolean };
   updatePrivacySettings: (hidePublicName: boolean) => Promise<void>;
+  d1DisplayName: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   setAuthModalOpen: () => {},
   privacySettings: { hidePublicName: false },
   updatePrivacySettings: async () => {},
+  d1DisplayName: null,
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -38,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isModerator, setIsModerator] = useState(false);
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [privacySettings, setPrivacySettings] = useState({ hidePublicName: false });
+  const [d1DisplayName, setD1DisplayName] = useState<string | null>(null);
   
   const updatePrivacySettings = async (hidePublicName: boolean) => {
     setPrivacySettings({ hidePublicName });
@@ -72,6 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 setIsModerator(mod);
                 const sj = settings?.settings_json || {};
                 setPrivacySettings({ hidePublicName: !!sj.hidePublicName });
+                setD1DisplayName(settings?.displayName || null);
             } catch (err: unknown) {
                 if (err instanceof Error) console.error("Failed to fetch user roles from API", err.message);
                 setIsAdmin(false);
@@ -82,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             setIsAdmin(false);
             setIsSuperAdmin(false);
             setIsModerator(false);
+            setD1DisplayName(null);
         }
         setLoading(false);
       });
@@ -95,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, isSuperAdmin, isModerator, isAuthModalOpen, setAuthModalOpen, privacySettings, updatePrivacySettings }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, isSuperAdmin, isModerator, isAuthModalOpen, setAuthModalOpen, privacySettings, updatePrivacySettings, d1DisplayName }}>
       {children}
     </AuthContext.Provider>
   );
