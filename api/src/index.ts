@@ -1261,9 +1261,9 @@ app.openapi(createListRoute, async (c) => {
                     INSERT INTO community_list_rivers (list_id, river_id, sort_order, gauge_id, min_val, max_val, units, custom_min, custom_max, custom_units)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `).bind(
-                    listId, river.id, river.order, river.gaugeId || null, 
-                    river.min || null, river.max || null, river.units || null, 
-                    river.customMin || null, river.customMax || null, river.customUnits || null
+                    listId, river.id, river.order, river.gaugeId || null,
+                    river.min ?? null, river.max ?? null, river.units || null,
+                    river.customMin ?? null, river.customMax ?? null, river.customUnits || null
                 )
             );
         });
@@ -1331,9 +1331,9 @@ app.openapi(updateListRoute, async (c) => {
                     INSERT INTO community_list_rivers (list_id, river_id, sort_order, gauge_id, min_val, max_val, units, custom_min, custom_max, custom_units)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `).bind(
-                    id, river.id, river.order, river.gaugeId || null, 
-                    river.min || null, river.max || null, river.units || null, 
-                    river.customMin || null, river.customMax || null, river.customUnits || null
+                    id, river.id, river.order, river.gaugeId || null,
+                    river.min ?? null, river.max ?? null, river.units || null,
+                    river.customMin ?? null, river.customMax ?? null, river.customUnits || null
                 )
             );
         });

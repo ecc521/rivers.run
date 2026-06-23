@@ -17,7 +17,12 @@ import { createRoutingEngine, createOpfsTarTileSourceFactory } from 'valhalla-wa
 (self as any).global = self;
 
 // Load the Emscripten loader; valhalla.js + valhalla.wasm are served at the root.
-importScripts('/valhalla.js');
+// importScripts is unavailable in ESM workers (Vite dev); production bundles as classic worker so it works there.
+if (typeof importScripts === 'function') {
+  importScripts('/valhalla.js');
+} else {
+  console.warn('[valhallaRouting] ESM worker context (Vite dev): importScripts unavailable — routing requires a production build.');
+}
 declare const ValhallaModule: (opts?: any) => Promise<any>;
 
 const route = createRoutingEngine({

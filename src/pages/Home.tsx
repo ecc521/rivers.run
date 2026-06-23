@@ -586,7 +586,7 @@ const Home: React.FC = () => {
               if (hasText) {
                 nextSort = "none";
               } else if (prev.sortBy === "none") {
-                nextSort = "alphabetical";
+                nextSort = prev.listId ? undefined : "alphabetical";
               }
               
               return { 

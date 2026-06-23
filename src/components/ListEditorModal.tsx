@@ -129,7 +129,7 @@ const SortableRiverRow: React.FC<SortableRiverRowProps> = ({
 
         {!canEditRivers && (
           <span style={{ fontSize: "0.85em", color: "var(--text-muted)", flexShrink: 0 }}>
-            {r.min || "0"} – {r.max || "∞"} {r.units || "cfs"}
+            {r.min ?? "–"} – {r.max ?? "∞"} {r.units || "cfs"}
           </span>
         )}
       </div>
@@ -142,7 +142,7 @@ const SortableRiverRow: React.FC<SortableRiverRowProps> = ({
             type="number"
             placeholder="Min"
             defaultValue={r.min ?? ""}
-            onBlur={(e) => onUpdateRiver(r.id, { min: e.target.value ? Number(e.target.value) : null })}
+            onBlur={(e) => onUpdateRiver(r.id, { min: e.target.value !== "" ? Number(e.target.value) : null })}
             style={{ width: "60px", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
           />
           <span style={{ color: "var(--text-secondary)" }}>–</span>
@@ -150,7 +150,7 @@ const SortableRiverRow: React.FC<SortableRiverRowProps> = ({
             type="number"
             placeholder="Max"
             defaultValue={r.max ?? ""}
-            onBlur={(e) => onUpdateRiver(r.id, { max: e.target.value ? Number(e.target.value) : null })}
+            onBlur={(e) => onUpdateRiver(r.id, { max: e.target.value !== "" ? Number(e.target.value) : null })}
             style={{ width: "60px", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: "var(--surface)", color: "var(--text)" }}
           />
           <select
@@ -214,27 +214,43 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     if (!activeList) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIdx = activeList.rivers.findIndex(r => r.id === active.id);
-    const newIdx = activeList.rivers.findIndex(r => r.id === over.id);
+    const oldIdx = sortedRivers.findIndex(r => r.id === active.id);
+    const newIdx = sortedRivers.findIndex(r => r.id === over.id);
     if (oldIdx === -1 || newIdx === -1) return;
-    const reordered = arrayMove(activeList.rivers, oldIdx, newIdx).map((r, i) => ({ ...r, order: i }));
-    updateList(activeList.id, { rivers: reordered });
+    const reordered = arrayMove(sortedRivers, oldIdx, newIdx).map((r, i) => ({ ...r, order: i }));
+    try {
+      await updateList(activeList.id, { rivers: reordered });
+    } catch (e: any) {
+      await alert("Failed to save order: " + (e?.message || "Please try again."));
+    }
   };
 
-  const moveRiverToPosition = (fromIdx: number, toIdx: number) => {
+  const moveRiverToPosition = async (fromIdx: number, toIdx: number) => {
     if (!activeList) return;
-    const reordered = arrayMove(activeList.rivers, fromIdx, toIdx).map((r, i) => ({ ...r, order: i }));
-    updateList(activeList.id, { rivers: reordered });
+    const reordered = arrayMove(sortedRivers, fromIdx, toIdx).map((r, i) => ({ ...r, order: i }));
+    try {
+      await updateList(activeList.id, { rivers: reordered });
+    } catch (e: any) {
+      await alert("Failed to save order: " + (e?.message || "Please try again."));
+    }
   };
 
   const activeList = useMemo(() => {
     if (!targetList) return null;
     return myLists.find(l => l.id === targetList.id) || targetList;
   }, [myLists, targetList]);
+
+  const sortedRivers = useMemo(() => {
+    if (!activeList) return [];
+    return [...activeList.rivers].sort((a, b) => {
+      const diff = (a.order ?? 0) - (b.order ?? 0);
+      return diff !== 0 ? diff : String(a.id).localeCompare(String(b.id));
+    });
+  }, [activeList]);
 
   useEffect(() => {
     if (isOpen) {
@@ -337,6 +353,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
         "Status Updated"
       );
     } catch (e: any) {
+      setShowConfirmOverlay(false);
       await alert("Failed to update status: " + (e?.message || "Unknown error"));
     } finally {
       setToggling(false);
@@ -614,19 +631,16 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                 River Configurations ({activeList.rivers.length})
               </h4>
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                {(() => {
-                  const sortedRivers = [...activeList.rivers].sort((a, b) => a.order - b.order);
-                  return (
                 <SortableContext items={sortedRivers.map(r => r.id)} strategy={verticalListSortingStrategy}>
                   {sortedRivers.map((r, idx) => {
                     const masterRiver = rivers.find(mr => mr.id === r.id);
                     const rName = masterRiver ? masterRiver.name : "Unknown River";
                     return (
                       <SortableRiverRow
-                        key={r.id}
+                        key={r.id + "-" + idx}
                         river={r}
                         idx={idx}
-                        total={activeList.rivers.length}
+                        total={sortedRivers.length}
                         rName={rName}
                         canEditRivers={canEditRivers}
                         onPositionMove={moveRiverToPosition}
@@ -637,8 +651,6 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                     );
                   })}
                 </SortableContext>
-                  );
-                })()}
               </DndContext>
             </div>
           )}
