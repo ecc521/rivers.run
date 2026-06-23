@@ -25,33 +25,47 @@ function getRiverUrl(id: string, name: string, section: string | null): string {
     return `https://rivers.run/river/${id}/${slug}`;
 }
 
-export interface UserSubscriptionInfo {
-    email: string;
-    timeOfDay: string;
+export interface ListGroup {
+    listId: string;
+    listTitle: string;
     rivers: RiverCondition[];
 }
 
-export interface DigestSummary {
+export interface UserSubscriptionInfo {
+    email: string;
+    timeOfDay: string;
+    lists: ListGroup[];
+}
+
+export interface ListSummary {
+    listId: string;
+    listTitle: string;
     high: string[];
     running: string[];
     runningNames: string[];
     low: string[];
 }
 
+export interface DigestSummary {
+    lists: ListSummary[];
+}
+
 export async function fetchSubscribedUsers(env: Env, currentTime: number): Promise<Map<string, UserSubscriptionInfo>> {
     const digestQuery = `
-        SELECT 
-            target_user.user_id, 
-            u.email, 
+        SELECT
+            target_user.user_id,
+            target_user.list_id,
+            cl.title as list_title,
+            u.email,
             u.notifications_time_of_day,
-            c.river_id, 
-            r.name, 
+            c.river_id,
+            r.name,
             r.section,
-            r.flow_min, 
-            r.flow_max, 
+            r.flow_min,
+            r.flow_max,
             r.flow_unit,
-            r.gauges, 
-            c.custom_min, 
+            r.gauges,
+            c.custom_min,
             c.custom_max,
             c.custom_units
         FROM (
@@ -59,13 +73,14 @@ export async function fetchSubscribedUsers(env: Env, currentTime: number): Promi
             SELECT owner_id as user_id, id as list_id FROM community_lists WHERE notifications_enabled = 1
             UNION
             -- Subscribers to active lists
-            SELECT s.user_id, s.list_id FROM user_subscriptions s 
+            SELECT s.user_id, s.list_id FROM user_subscriptions s
             WHERE s.notifications_enabled = 1
         ) as target_user
+        JOIN community_lists cl ON target_user.list_id = cl.id
         JOIN community_list_rivers c ON target_user.list_id = c.list_id
         JOIN rivers r ON c.river_id = r.id
         JOIN users u ON target_user.user_id = u.user_id
-        WHERE u.notifications_enabled = 1 
+        WHERE u.notifications_enabled = 1
           AND u.email IS NOT NULL AND u.email != ''
           AND u.notifications_none_until <= ?
     `;
@@ -77,10 +92,16 @@ export async function fetchSubscribedUsers(env: Env, currentTime: number): Promi
             usersMap.set(row.user_id as string, {
                 email: row.email as string,
                 timeOfDay: (row.notifications_time_of_day as string) || "10:00",
-                rivers: []
+                lists: []
             });
         }
-        usersMap.get(row.user_id as string)!.rivers.push({
+        const userObj = usersMap.get(row.user_id as string)!;
+        let listGroup = userObj.lists.find(l => l.listId === (row.list_id as string));
+        if (!listGroup) {
+            listGroup = { listId: row.list_id as string, listTitle: row.list_title as string, rivers: [] };
+            userObj.lists.push(listGroup);
+        }
+        listGroup.rivers.push({
             id: row.river_id as string,
             name: row.name as string,
             section: row.section as string | null,
@@ -140,7 +161,7 @@ export function getReadingValue(reading: any, unit: string | null): number | und
     return val !== undefined ? Number(val) : undefined;
 }
 
-export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Record<string, any>): DigestSummary {
+export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Record<string, any>): Omit<ListSummary, 'listId' | 'listTitle'> {
     const high: string[] = [];
     const running: string[] = [];
     const runningNames: string[] = [];
@@ -178,27 +199,30 @@ export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Re
 }
 
 export function buildDigestEmailBody(summary: DigestSummary): { subject: string, html: string } | null {
-    const { high, running, runningNames, low } = summary;
-    const totalActive = high.length + running.length;
+    const { lists } = summary;
 
-    // Legacy behavior: Only email if something is active
-    if (totalActive === 0) {
-        return null;
-    }
+    const totalRunning = lists.reduce((n, l) => n + l.running.length, 0);
+    const totalHigh = lists.reduce((n, l) => n + l.high.length, 0);
+
+    if (totalRunning + totalHigh === 0) return null;
 
     let subject = "Rivers are running!";
-    if (running.length === 1 && high.length === 0) {
-        const rName = (runningNames?.[0] ?? '').split(':')[0].trim();
+    if (totalRunning === 1 && totalHigh === 0) {
+        const listWithRun = lists.find(l => l.running.length === 1);
+        const rName = (listWithRun?.runningNames[0] ?? '').split(':')[0].trim();
         subject = (rName.endsWith('Creek') ? '' : 'The ') + rName + " is running!";
-    } else if (running.length > 1) {
-        subject = `${running.length} rivers are running!`;
+    } else if (totalRunning > 1) {
+        subject = `${totalRunning} rivers are running!`;
     }
 
     let html = `<html><body>`;
-    if (high.length > 0) html += `<h3>Rivers that are Too High:</h3><ul>${high.join('')}</ul>`;
-    if (running.length > 0) html += `<h3>Rivers that are Running:</h3><ul>${running.join('')}</ul>`;
-    if (low.length > 0) html += `<h3>Rivers that are Too Low:</h3><ul>${low.join('')}</ul>`;
-    
+    for (const list of lists) {
+        const listUrl = `https://rivers.run/?list=${list.listId}`;
+        html += `<h3><a href="${listUrl}">${list.listTitle}</a></h3>`;
+        if (list.high.length > 0) html += `<strong>Too High:</strong><ul>${list.high.join('')}</ul>`;
+        if (list.running.length > 0) html += `<strong>Running:</strong><ul>${list.running.join('')}</ul>`;
+        if (list.low.length > 0) html += `<strong>Too Low:</strong><ul>${list.low.join('')}</ul>`;
+    }
     html += `<p><a href="https://rivers.run/favorites">View Your Lists on rivers.run</a></p>`;
     html += `<p>Click <a href="https://rivers.run/favorites">here</a> to manage your subscription.</p></body></html>`;
 
@@ -229,8 +253,14 @@ export async function processNotifications(env: Env, mergedData: Record<string, 
         const emailsPromises: Promise<any>[] = [];
 
         for (const [userId, userObj] of usersMap.entries()) {
-            const summary = evaluateRiverConditions(userObj.rivers, mergedData);
-            const emailData = buildDigestEmailBody(summary);
+            const listSummaries: ListSummary[] = [];
+            for (const list of userObj.lists) {
+                const result = evaluateRiverConditions(list.rivers, mergedData);
+                if (result.high.length + result.running.length + result.low.length > 0) {
+                    listSummaries.push({ listId: list.listId, listTitle: list.listTitle, ...result });
+                }
+            }
+            const emailData = buildDigestEmailBody({ lists: listSummaries });
             
             if (emailData) {
                 emailsPromises.push(

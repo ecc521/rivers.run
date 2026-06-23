@@ -94,6 +94,8 @@ describe('Daily Digest Notification Engine', () => {
         const mockEnv = createMockCloudflareEnv([
             {
                 user_id: 'user_A',
+                list_id: 'list_A',
+                list_title: 'Test List A',
                 email: 'test@example.com',
                 notifications_time_of_day: '10:00',
                 river_id: 'river_1',
@@ -133,6 +135,8 @@ describe('Daily Digest Notification Engine', () => {
         const mockEnv = createMockCloudflareEnv([
             {
                 user_id: 'user_B',
+                list_id: 'list_B',
+                list_title: 'Test List B',
                 email: 'runner@example.com',
                 notifications_time_of_day: '10:00',
                 river_id: 'river_2',
@@ -159,13 +163,15 @@ describe('Daily Digest Notification Engine', () => {
         const emailArgs = vi.mocked(sendEmail).mock.calls[0][0];
         expect(emailArgs.to).toBe('runner@example.com');
         expect(emailArgs.html).toContain('Running River');
-        expect(emailArgs.html).toContain('Rivers that are Running');
+        expect(emailArgs.html).toContain('<strong>Running:</strong>');
     });
 
     it('Test C: Customized Alert Thresholds', async () => {
         const mockEnv = createMockCloudflareEnv([
             {
                 user_id: 'user_C',
+                list_id: 'list_C',
+                list_title: 'Test List C',
                 email: 'custom@example.com',
                 notifications_time_of_day: '10:00',
                 river_id: 'river_3',
@@ -190,7 +196,7 @@ describe('Daily Digest Notification Engine', () => {
 
         expect(sendEmail).toHaveBeenCalledTimes(1);
         const emailArgs = vi.mocked(sendEmail).mock.calls[0][0];
-        expect(emailArgs.html).toContain('Rivers that are Running');
+        expect(emailArgs.html).toContain('<strong>Running:</strong>');
     });
 });
 
@@ -327,24 +333,39 @@ describe('Notification Helpers (Pure Unit Tests)', () => {
 
     describe('buildDigestEmailBody', () => {
         it('returns null if there are no active running/high rivers', () => {
-            const result = buildDigestEmailBody({ high: [], running: [], runningNames: [], low: ['<li>River</li>'] });
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: [], runningNames: [], low: ['<li>River</li>'] }] });
+            expect(result).toBeNull();
+        });
+
+        it('returns null for empty lists', () => {
+            const result = buildDigestEmailBody({ lists: [] });
             expect(result).toBeNull();
         });
 
         it('generates a singular subject for a single running river without Creek suffix', () => {
-            const result = buildDigestEmailBody({ high: [], running: ['<li>Colorado: 5000</li>'], runningNames: ['Colorado'], low: [] });
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'Colorado Runs', high: [], running: ['<li>Colorado: 5000</li>'], runningNames: ['Colorado'], low: [] }] });
             expect(result?.subject).toBe('The Colorado is running!');
             expect(result?.html).toContain('Colorado');
         });
 
         it('drops "The" for rivers ending in Creek', () => {
-            const result = buildDigestEmailBody({ high: [], running: ['<li>Clear Creek: 250</li>'], runningNames: ['Clear Creek'], low: [] });
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'Creek Runs', high: [], running: ['<li>Clear Creek: 250</li>'], runningNames: ['Clear Creek'], low: [] }] });
             expect(result?.subject).toBe('Clear Creek is running!');
         });
 
         it('generates a plural subject for multiple running rivers', () => {
-            const result = buildDigestEmailBody({ high: [], running: ['<li>R1</li>', '<li>R2</li>'], runningNames: ['R1', 'R2'], low: [] });
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: ['<li>R1</li>', '<li>R2</li>'], runningNames: ['R1', 'R2'], low: [] }] });
             expect(result?.subject).toBe('2 rivers are running!');
+        });
+
+        it('counts running rivers across multiple lists for subject', () => {
+            const result = buildDigestEmailBody({ lists: [
+                { listId: 'l1', listTitle: 'List One', high: [], running: ['<li>R1</li>'], runningNames: ['R1'], low: [] },
+                { listId: 'l2', listTitle: 'List Two', high: [], running: ['<li>R2</li>'], runningNames: ['R2'], low: [] },
+            ]});
+            expect(result?.subject).toBe('2 rivers are running!');
+            expect(result?.html).toContain('List One');
+            expect(result?.html).toContain('List Two');
         });
     });
 
