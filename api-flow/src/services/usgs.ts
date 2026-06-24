@@ -386,6 +386,9 @@ export const usgsProvider: GaugeProvider = {
     },
 
     async getFullSiteListing(env?: any): Promise<GaugeSite[]> {
+        if (!env?.USGS_API_KEY) {
+            console.warn("USGS Provider: USGS_API_KEY not set — requests will be unauthenticated and subject to lower rate limits");
+        }
         console.log("USGS Provider: Fetching active sites from latest-continuous...");
 
         const activeSites = await fetchActiveUSGSSites(env);
