@@ -32,7 +32,7 @@ export const providers: Record<string, GaugeProvider> = {
     "NWS": nwsProvider,
     "EC": ecProvider,
     "UK": ukProvider,
-    "ireland": irelandProvider
+    "IE": irelandProvider
 };
 
 const app = new OpenAPIHono<{ Bindings: Env }>();
