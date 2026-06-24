@@ -359,7 +359,8 @@ app.openapi(updateRiverRoute, async (c) => {
 
     // Prepare arrays
     const tagsStr = JSON.stringify(validated.tags || []);
-    const gaugesStr = JSON.stringify(validated.gauges || []);
+    const sortedGauges = [...(validated.gauges || [])].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
+    const gaugesStr = JSON.stringify(sortedGauges);
     const accessStr = JSON.stringify(validated.accessPoints || []);
 
     const flowUnit = validated.flow?.unit || "cfs";
@@ -822,7 +823,8 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     batch.push(c.env.DB.prepare("UPDATE river_suggestions SET status = 'resolved', resolution_note = ? WHERE suggestion_id = ?").bind(admin_notes || null, id));
     
     const tagsStr = JSON.stringify(validated.tags || []);
-    const gaugesStr = JSON.stringify(validated.gauges || []);
+    const sortedGauges = [...(validated.gauges || [])].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
+    const gaugesStr = JSON.stringify(sortedGauges);
     const accessStr = JSON.stringify(validated.accessPoints || []);
 
     const flowUnit = validated.flow?.unit || "cfs";

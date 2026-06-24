@@ -1,5 +1,6 @@
 import type { Env } from "../index";
 import { sendEmail } from "../email";
+import { normalizeGaugeId } from "../utils/formatting";
 
 export interface RiverCondition {
     id: string;
@@ -169,7 +170,8 @@ export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Re
 
     for (const river of rivers) {
         if (!river.gauges || river.gauges.length === 0) continue;
-        const primaryGaugeId = river.gauges[0].id;
+        const primaryGauge = river.gauges.find((g: any) => g.isPrimary) ?? river.gauges[0];
+        const primaryGaugeId = normalizeGaugeId(primaryGauge.id);
         const match = mergedData[primaryGaugeId];
         if (!match || !match.readings || match.readings.length === 0) continue;
         
