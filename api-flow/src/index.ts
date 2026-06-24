@@ -108,7 +108,7 @@ app.openapi(historyRoute, async (c) => {
         const provider = providers[prefix];
         if (!provider) return {};
         try {
-            const data = await provider.getHistory(ids, start, Date.now(), includeForecast, c.env);
+            const data = await provider.getHistory(ids, start, undefined, includeForecast, c.env);
             const normalized: Record<string, GaugeHistory> = {};
             Object.entries(data).forEach(([id, history]) => {
                 normalized[`${prefix}:${id}`] = toUnitSystemHistory(history, units as Units);
