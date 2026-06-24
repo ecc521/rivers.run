@@ -117,6 +117,9 @@ export function processUSGSResponse(features: any[]): Record<string, GaugeHistor
 async function fetchAllOGCFeatures(initialUrl: string, timeoutMs: number, env?: any): Promise<any[]> {
     const features: any[] = [];
     let nextUrl: string | null = initialUrl;
+    const headers = env?.USGS_API_KEY
+        ? { ...DEFAULT_HEADERS, 'X-Api-Key': env.USGS_API_KEY }
+        : DEFAULT_HEADERS;
 
     while (nextUrl) {
         let success = false;
@@ -126,7 +129,7 @@ async function fetchAllOGCFeatures(initialUrl: string, timeoutMs: number, env?: 
 
         while (!success && attempts <= MAX_RETRIES) {
             try {
-                const res = await fetchWithTimeout(currentUrl, { headers: DEFAULT_HEADERS }, timeoutMs);
+                const res = await fetchWithTimeout(currentUrl, { headers }, timeoutMs);
                 if (!res.ok) throw new Error(`USGS HTTP ${res.status}`);
 
                 const data = await res.json() as any;
@@ -245,9 +248,9 @@ async function fetchContinuousSites(
 const REGISTRY_FRESHNESS_MS = 14 * 24 * 60 * 60 * 1000;
 const METADATA_BATCH_SIZE = 200;
 
-async function fetchActiveUSGSSites(): Promise<Map<string, { lat: number; lon: number }>> {
+async function fetchActiveUSGSSites(env?: any): Promise<Map<string, { lat: number; lon: number }>> {
     const url = `${USGS_API_BASE}/latest-continuous/items?f=json&parameter_code=00060&limit=10000`;
-    const features = await fetchAllOGCFeatures(url, 600000);
+    const features = await fetchAllOGCFeatures(url, 600000, env);
 
     const cutoff = Date.now() - REGISTRY_FRESHNESS_MS;
     const active = new Map<string, { lat: number; lon: number }>();
@@ -270,7 +273,8 @@ async function fetchActiveUSGSSites(): Promise<Map<string, { lat: number; lon: n
 }
 
 async function fetchSiteMetadata(
-    siteIds: string[]
+    siteIds: string[],
+    env?: any
 ): Promise<Map<string, { name: string; section?: string; state?: string }>> {
     const metadata = new Map<string, { name: string; section?: string; state?: string }>();
     const batches: string[][] = [];
@@ -288,7 +292,7 @@ async function fetchSiteMetadata(
             const url = `${USGS_API_BASE}/monitoring-locations/items?f=json&id=${ids}&limit=${METADATA_BATCH_SIZE}`;
 
             try {
-                const features = await fetchAllOGCFeatures(url, 60000);
+                const features = await fetchAllOGCFeatures(url, 60000, env);
                 for (const feature of features) {
                     const props = feature.properties || {};
                     const num = props.monitoring_location_number || '';
@@ -381,10 +385,10 @@ export const usgsProvider: GaugeProvider = {
         return sites;
     },
 
-    async getFullSiteListing(): Promise<GaugeSite[]> {
+    async getFullSiteListing(env?: any): Promise<GaugeSite[]> {
         console.log("USGS Provider: Fetching active sites from latest-continuous...");
 
-        const activeSites = await fetchActiveUSGSSites();
+        const activeSites = await fetchActiveUSGSSites(env);
         console.log(`USGS Provider: ${activeSites.size} active sites (≤14 days), fetching metadata...`);
 
         if (activeSites.size === 0) {
@@ -393,7 +397,7 @@ export const usgsProvider: GaugeProvider = {
         }
 
         const siteIds = Array.from(activeSites.keys());
-        const metadata = await fetchSiteMetadata(siteIds);
+        const metadata = await fetchSiteMetadata(siteIds, env);
 
         const sites: GaugeSite[] = [];
         for (const [id, coords] of activeSites) {

@@ -76,7 +76,7 @@ export interface GaugeProvider {
      * Optional: Get a listing of ALL available gauge sites for this provider.
      * This is used for periodic registry compilation.
      */
-    getFullSiteListing?(): Promise<GaugeSite[]>;
+    getFullSiteListing?(env?: any): Promise<GaugeSite[]>;
 }
 
 /**

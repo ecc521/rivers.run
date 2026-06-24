@@ -25,6 +25,7 @@ import { syncUsgsReaches } from "./services/usgsReaches";
 export interface Env {
     FLOW_STORAGE: R2Bucket;
     DB: D1Database;
+    USGS_API_KEY?: string;
 }
 
 export const providers: Record<string, GaugeProvider> = {

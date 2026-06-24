@@ -29,7 +29,7 @@ export async function compileGaugeRegistry(env: Env, existingRegistry: Record<st
         if (provider.getFullSiteListing) {
             try {
                 // 1. Attempt to fetch new site list
-                const newSites = await provider.getFullSiteListing();
+                const newSites = await provider.getFullSiteListing(env);
                 
                 // 2. SUCCESS: Clear old entries for this provider and replace with new ones
                 const prefix = `${provider.id}:`;
