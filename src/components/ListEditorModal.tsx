@@ -30,6 +30,7 @@ interface SortableRiverRowProps {
   idx: number;
   total: number;
   rName: string;
+  rSection?: string;
   canEditRivers: boolean;
   onPositionMove: (fromIdx: number, toIdx: number) => void;
   onUpdateRiver: (riverId: string, updates: any) => void;
@@ -38,7 +39,7 @@ interface SortableRiverRowProps {
 }
 
 const SortableRiverRow: React.FC<SortableRiverRowProps> = ({
-  river: r, idx, total, rName, canEditRivers,
+  river: r, idx, total, rName, rSection, canEditRivers,
   onPositionMove, onUpdateRiver, onRemoveRiver,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: r.id });
@@ -120,6 +121,9 @@ const SortableRiverRow: React.FC<SortableRiverRowProps> = ({
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{ fontWeight: "bold", fontSize: "0.95em", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rName}</span>
+          {rSection && (
+            <span style={{ fontSize: "0.8em", color: "var(--text-muted)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "1px" }}>{rSection}</span>
+          )}
           {sensorLabel && (
             <span style={{ fontSize: "0.75em", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
               📍 {sensorLabel}
@@ -666,6 +670,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                   {sortedRivers.map((r, idx) => {
                     const masterRiver = rivers.find(mr => mr.id === r.id);
                     const rName = masterRiver ? masterRiver.name : "Unknown River";
+                    const rSection = masterRiver?.section;
                     return (
                       <SortableRiverRow
                         key={r.id + "-" + idx}
@@ -673,6 +678,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                         idx={idx}
                         total={sortedRivers.length}
                         rName={rName}
+                        rSection={rSection}
                         canEditRivers={canEditRivers}
                         onPositionMove={moveRiverToPosition}
                         onUpdateRiver={async (riverId, updates) => {
