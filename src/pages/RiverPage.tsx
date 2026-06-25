@@ -34,7 +34,7 @@ const RiverPage: React.FC = () => {
 
 
   const river = rivers.find((r) => r.id === decodedId);
-  const { isDarkMode, isColorBlindMode } = useSettings();
+  const { isDarkMode, isColorBlindMode, flowUnits } = useSettings();
   const { alert, promptReport } = useModal();
   const { user } = useAuth();
   const [scrubbedReading, setScrubbedReading] = useState<any | null>(null);
@@ -659,6 +659,18 @@ const RiverPage: React.FC = () => {
 
             if (nearby.length === 0) return null;
 
+            const getFlowTag = (r: RiverData): string | null => {
+              const useMetric = flowUnits === "metric";
+              if (useMetric) {
+                if (r.cms != null) return `${Math.round(r.cms)} cms`;
+                if (r.m != null) return `${(Math.round(r.m * 100) / 100)} m`;
+              } else {
+                if (r.cfs != null) return `${Math.round(r.cfs)} cfs`;
+                if (r.ft != null) return `${(Math.round(r.ft * 100) / 100)} ft`;
+              }
+              return null;
+            };
+
             return (
               <div style={{ marginTop: "60px", paddingTop: "40px", borderTop: "1px solid var(--border)" }}>
                 <h3 style={{ marginBottom: "20px" }}>{t("riverPage.otherNearby")}</h3>
@@ -695,18 +707,24 @@ const RiverPage: React.FC = () => {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px", marginBottom: "8px" }}>
                         <div style={{ fontWeight: "bold", fontSize: "0.95rem", lineHeight: "1.2" }}>{other.name}</div>
                         {other.running != null && (
-                            <div 
-                                style={{ 
-                                    width: "10px", 
-                                    height: "10px", 
-                                    borderRadius: "50%", 
-                                    backgroundColor: calculateColor(other.running, isDarkMode, isColorBlindMode),
-                                    boxShadow: "0 0 4px rgba(0,0,0,0.2)",
-                                    flexShrink: 0,
-                                    marginTop: "4px"
-                                }} 
-                                title={`Status: ${other.running}`}
-                            />
+                            <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0, marginTop: "3px" }}>
+                              {getFlowTag(other) && (
+                                <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 500, whiteSpace: "nowrap" }}>
+                                  {getFlowTag(other)}
+                                </span>
+                              )}
+                              <div
+                                  style={{
+                                      width: "10px",
+                                      height: "10px",
+                                      borderRadius: "50%",
+                                      backgroundColor: calculateColor(other.running, isDarkMode, isColorBlindMode),
+                                      boxShadow: "0 0 4px rgba(0,0,0,0.2)",
+                                      flexShrink: 0,
+                                  }}
+                                  title={`Status: ${other.running}`}
+                              />
+                            </div>
                         )}
                       </div>
                       <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
