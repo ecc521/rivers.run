@@ -126,6 +126,9 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  worker: {
+    format: 'iife',
+  },
   build: {
     target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
   },

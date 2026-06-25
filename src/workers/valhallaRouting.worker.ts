@@ -1,13 +1,7 @@
 /* eslint-disable */
 // @ts-nocheck
 // src/workers/valhallaRouting.worker.ts
-// Valhalla WASM routing Web Worker.
-//
-// The routing engine + tile mounting now live in the `valhalla-wasm` package.
-// This worker is just the wiring: load the Emscripten module, read tiles from
-// OPFS, and speak our RoutingRequest/RoutingResponse protocol. Tile download +
-// OPFS storage stays in src/utils/offlineMapEngine.ts.
-const WORKER_VERSION = 'v4.0-pkg';
+const WORKER_VERSION = 'v4.1-pkg';
 
 /// <reference lib="webworker" />
 
@@ -16,21 +10,35 @@ import { createRoutingEngine, createOpfsTarTileSourceFactory } from 'valhalla-wa
 
 (self as any).global = self;
 
-// Load the Emscripten loader; valhalla.js + valhalla.wasm are served at the root.
-// importScripts is unavailable in ESM workers (Vite dev); production bundles as classic worker so it works there.
-if (typeof importScripts === 'function') {
-  importScripts('/valhalla.js');
-} else {
-  console.warn('[valhallaRouting] ESM worker context (Vite dev): importScripts unavailable — routing requires a production build.');
-}
 declare const ValhallaModule: (opts?: any) => Promise<any>;
 
+// Classic workers (production ?worker IIFE bundle) support importScripts.
+// Module workers (Vite dev ?worker) define importScripts on WorkerGlobalScope
+// but throw TypeError when called — so we try first and fall back to fetch.
+//
+// The fetch fallback uses indirect eval `(0, eval)(code)`. Indirect eval always
+// runs in the global scope, so `var ValhallaModule = ...` in valhalla.js becomes
+// self.ValhallaModule, which the code below can reference as ValhallaModule.
+// valhalla.js has no top-level "use strict", so this is safe.
+let valhallaReady: Promise<void>;
+try {
+    importScripts('/valhalla.js');
+    valhallaReady = Promise.resolve();
+} catch (_e) {
+    valhallaReady = fetch('/valhalla.js')
+        .then(r => r.text())
+        .then(code => { (0, eval)(code); });
+}
+
 const route = createRoutingEngine({
-    initModule: () => ValhallaModule({
-        locateFile: (path: string) => `/${path}`,
-        print: (text: string) => console.log(`[Valhalla WASM] ${text}`),
-        printErr: (text: string) => console.warn(`[Valhalla WASM] ${text}`),
-    }),
+    initModule: async () => {
+        await valhallaReady;
+        return ValhallaModule({
+            locateFile: (path: string) => `/${path}`,
+            print: (text: string) => console.log(`[Valhalla WASM] ${text}`),
+            printErr: (text: string) => console.warn(`[Valhalla WASM] ${text}`),
+        });
+    },
     tileSourceFactory: createOpfsTarTileSourceFactory('offline_maps'),
     onProgress: (message: string) => self.postMessage({ success: false, progress: message }),
 });

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { RoutingRequest, RoutingResponse, RoutingInstruction, RoutingSummary } from '../workers/valhallaRoutingTypes';
 import { getDownloadedRegions, fetchMapRegions, downloadMapRegion, type MapRegion } from '../utils/offlineMapEngine';
+import RouteWorker from '../workers/valhallaRouting.worker.ts?worker';
 
 interface NavigationPanelProps {
     isOpen: boolean;
@@ -155,8 +156,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({ isOpen, onClos
 
             // Initialize worker if needed
             if (!workerRef.current) {
-                const workerUrl = new URL('../workers/valhallaRouting.worker.ts', import.meta.url);
-                workerRef.current = new Worker(workerUrl);
+                workerRef.current = new RouteWorker();
             }
 
             const request: RoutingRequest = { start, end, regions: routingRegions };

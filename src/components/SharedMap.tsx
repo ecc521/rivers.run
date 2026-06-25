@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Map, { Source, Layer, Popup, Marker } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -27,6 +27,7 @@ import { SearchOverlay } from "./SearchOverlay";
 import { ShareMapModal } from "./ShareMapModal";
 import { NavigationPanel } from "./NavigationPanel";
 import { MapSearchbar } from "./MapSearchbar";
+import type { MapSearchResult } from "./MapSearchbar";
 import { Capacitor } from '@capacitor/core';
 import { SystemBars } from '@capacitor/core';
 import { KeepAwake } from '@capacitor-community/keep-awake';
@@ -235,18 +236,58 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const [copiedRiverId, setCopiedRiverId] = useState<string | null>(null);
 
     const [isNavigating, setIsNavigating] = useState(false);
-    const [isAutoCenter, setIsAutoCenter] = useState(true);
+    const [isAutoCenter, setIsAutoCenter] = useState(false);
     const [navDestination, setNavDestination] = useState<[number, number] | null>(null);
     const [navRoute, setNavRoute] = useState<GeoJSON.LineString | null>(null);
     const [showUserLocationPopup, setShowUserLocationPopup] = useState(false);
     const [navDestinationPlace, setNavDestinationPlace] = useState<any>(null);
+    const [pinnedPlace, setPinnedPlace] = useState<MapSearchResult | null>(null);
+
+    // Stable reference — used as a dep inside NavigationPanel's useCallback/useEffect chain.
+    // Must not change on every render or it causes a routing re-trigger loop.
+    const handleRouteCalculated = useCallback((route: GeoJSON.LineString | null) => {
+        setNavRoute(route);
+        if (route && mapRef.current) {
+            setIsAutoCenter(false);
+            const coords = route.coordinates;
+            if (coords && coords.length > 0) {
+                let minLng = coords[0][0], maxLng = coords[0][0];
+                let minLat = coords[0][1], maxLat = coords[0][1];
+                for (const coord of coords) {
+                    if (coord[0] < minLng) minLng = coord[0];
+                    if (coord[0] > maxLng) maxLng = coord[0];
+                    if (coord[1] < minLat) minLat = coord[1];
+                    if (coord[1] > maxLat) maxLat = coord[1];
+                }
+                mapRef.current.fitBounds(
+                    [[minLng, minLat], [maxLng, maxLat]],
+                    { padding: { top: 100, bottom: 220, left: 60, right: 60 }, duration: 1000 }
+                );
+            }
+        }
+    }, []);
 
     useEffect(() => {
         if (isNavigating) {
-            setIsAutoCenter(true);
+            setIsAutoCenter(false);
             location.watchLocation();
             if (Capacitor.isNativePlatform()) {
                 KeepAwake.keepAwake().catch(console.warn);
+            }
+            // Zoom to show both user and destination. navDestination is set in the
+            // same batched update that flips isNavigating, so it's current here.
+            if (navDestination && mapRef.current) {
+                if (location.latitude && location.longitude) {
+                    mapRef.current.fitBounds(
+                        [
+                            [Math.min(navDestination[0], location.longitude), Math.min(navDestination[1], location.latitude)],
+                            [Math.max(navDestination[0], location.longitude), Math.max(navDestination[1], location.latitude)],
+                        ],
+                        { padding: { top: 80, bottom: 120, left: 60, right: 60 }, duration: 800, maxZoom: 13 }
+                    );
+                } else {
+                    mapRef.current.flyTo({ center: navDestination, zoom: 12, duration: 800 });
+                }
             }
         } else {
             location.clearWatch();
@@ -254,7 +295,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 KeepAwake.allowSleep().catch(console.warn);
             }
         }
-    }, [isNavigating]);
+    }, [isNavigating]); // intentional: navDestination/location are read from closure at fire time, not tracked
 
     useEffect(() => {
         if (isNavigating && isAutoCenter && location.latitude && location.longitude && mapRef.current) {
@@ -402,12 +443,17 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     // Calculate map circle data efficiently at top level
     const radiusCircleData = useMemo(() => {
         if (!searchQuery.distanceMax) return null;
-        const centerLon = (searchQuery.mapRadiusMode === "center" || !location.latitude || !location.longitude) 
-            ? mapCenter[1] 
-            : location.longitude;
-        const centerLat = (searchQuery.mapRadiusMode === "center" || !location.latitude || !location.longitude) 
-            ? mapCenter[0] 
-            : location.latitude;
+        let centerLon: number;
+        let centerLat: number;
+        if (searchQuery.mapRadiusMode === "center") {
+            centerLon = mapCenter[1];
+            centerLat = mapCenter[0];
+        } else {
+            // "location" mode — suppress the circle entirely if GPS is unavailable
+            if (!location.latitude || !location.longitude) return null;
+            centerLon = location.longitude;
+            centerLat = location.latitude;
+        }
         if (typeof centerLon !== 'number' || typeof centerLat !== 'number' || isNaN(centerLon) || isNaN(centerLat)) return null;
         return createGeoJSONCircle(centerLon, centerLat, searchQuery.distanceMax);
     }, [searchQuery.distanceMax, searchQuery.mapRadiusMode, mapCenter[0], mapCenter[1], location.latitude, location.longitude]);
@@ -917,9 +963,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             {(!hideSearchBar || isFullScreen) && (
                 <MapSearchbar
                     onSelect={(res) => {
-                        setNavDestination([res.lon, res.lat]);
-                        setNavDestinationPlace(res);
-                        setIsNavigating(true);
+                        setPinnedPlace(res);
+                        mapRef.current?.flyTo({ center: [res.lon, res.lat], zoom: Math.max(mapZoom, 13), duration: 800 });
                     }}
                 />
             )}
@@ -1298,16 +1343,16 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     </Source>
                 )}
 
-                {/* Navigation Destination Dot */}
-                {navDestination && isNavigating && (
-                    <Source 
-                        id="navigation-destination" 
-                        type="geojson" 
+                {/* Navigation Destination Dot — shown for pinned place or active navigation */}
+                {(navDestination && isNavigating) || pinnedPlace ? (
+                    <Source
+                        id="navigation-destination"
+                        type="geojson"
                         data={{
                             type: "Feature",
                             geometry: {
                                 type: "Point",
-                                coordinates: navDestination
+                                coordinates: isNavigating && navDestination ? navDestination : [pinnedPlace!.lon, pinnedPlace!.lat]
                             },
                             properties: {}
                         }}
@@ -1321,9 +1366,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 "circle-opacity": 0.5
                             }}
                         />
-                        <Layer 
-                            id="navigation-destination-layer" 
-                            type="circle" 
+                        <Layer
+                            id="navigation-destination-layer"
+                            type="circle"
                             paint={{
                                 "circle-radius": 6,
                                 "circle-color": "#ef4444",
@@ -1332,38 +1377,112 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                             }}
                         />
                     </Source>
-                )}
+                ) : null}
             </Map>
 
-            <NavigationPanel 
+            <NavigationPanel
                 isOpen={isNavigating}
-                onClose={() => setIsNavigating(false)}
+                onClose={() => {
+                    setIsNavigating(false);
+                    setPinnedPlace(null);
+                    setNavDestination(null);
+                    setNavDestinationPlace(null);
+                    setNavRoute(null);
+                }}
                 startCoord={location.longitude && location.latitude ? [location.longitude, location.latitude] : null}
                 endCoord={navDestination}
                 destinationRiver={selectedRiver}
                 destinationPlace={navDestinationPlace}
-                onRouteCalculated={(route) => {
-                    setNavRoute(route);
-                    if (route && mapRef.current) {
-                        setIsAutoCenter(false);
-                        const coords = route.coordinates;
-                        if (coords && coords.length > 0) {
-                            let minLng = coords[0][0], maxLng = coords[0][0];
-                            let minLat = coords[0][1], maxLat = coords[0][1];
-                            for (const coord of coords) {
-                                if (coord[0] < minLng) minLng = coord[0];
-                                if (coord[0] > maxLng) maxLng = coord[0];
-                                if (coord[1] < minLat) minLat = coord[1];
-                                if (coord[1] > maxLat) maxLat = coord[1];
-                            }
-                            mapRef.current.fitBounds(
-                                [[minLng, minLat], [maxLng, maxLat]],
-                                { padding: { top: 80, bottom: 50, left: 50, right: 50 }, duration: 1000 }
-                            );
-                        }
-                    }
-                }}
+                onRouteCalculated={handleRouteCalculated}
             />
+
+            {/* Pinned Place Card — shown after search result selection, before navigation starts */}
+            {pinnedPlace && !isNavigating && (
+                <div style={{
+                    position: "absolute",
+                    bottom: isFullScreen
+                        ? "calc(16px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))"
+                        : "16px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "calc(100% - 32px)",
+                    maxWidth: "420px",
+                    backgroundColor: "var(--surface)",
+                    borderRadius: "16px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+                    border: "1px solid var(--border)",
+                    padding: "14px 16px",
+                    zIndex: 2000,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                }}>
+                    <span style={{ fontSize: "24px", flexShrink: 0 }}>
+                        {pinnedPlace.type === "river" ? "🌊" : "📍"}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                            fontWeight: 600,
+                            fontSize: "15px",
+                            color: "var(--text)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                        }}>
+                            {pinnedPlace.name}
+                        </div>
+                        {pinnedPlace.description && (
+                            <div style={{
+                                fontSize: "12px",
+                                color: "var(--text-muted, #888)",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                marginTop: "2px",
+                            }}>
+                                {pinnedPlace.description}
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => {
+                            setNavDestination([pinnedPlace.lon, pinnedPlace.lat]);
+                            setNavDestinationPlace(pinnedPlace);
+                            setIsNavigating(true);
+                        }}
+                        style={{
+                            flexShrink: 0,
+                            backgroundColor: "var(--primary)",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "10px",
+                            padding: "8px 12px",
+                            fontWeight: 600,
+                            fontSize: "13px",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        🧭 Navigate
+                    </button>
+                    <button
+                        onClick={() => setPinnedPlace(null)}
+                        style={{
+                            flexShrink: 0,
+                            background: "none",
+                            border: "none",
+                            fontSize: "18px",
+                            color: "var(--text-muted, #888)",
+                            cursor: "pointer",
+                            padding: "4px",
+                            lineHeight: 1,
+                        }}
+                        aria-label="Dismiss"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
 
             {/* Universally Injected Selected River Sidebar */}
             {selectedRiver && (
