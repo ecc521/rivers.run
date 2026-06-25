@@ -14,7 +14,7 @@ export function parseNWSeries(data: any, observations: any[], minTime: number, m
 
     observations.forEach((obs: any) => {
         const rawTime = new Date(obs.validTime).getTime();
-        if (rawTime < minTime || rawTime > maxTime) return;
+        if (rawTime < minTime || (!isForecast && rawTime > maxTime)) return;
         
         // Align timestamps like USGS to Nearest 5 minutes
         const snappedTime = Math.round(rawTime / 300000) * 300000;
