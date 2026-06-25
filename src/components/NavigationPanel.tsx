@@ -156,7 +156,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({ isOpen, onClos
             // Initialize worker if needed
             if (!workerRef.current) {
                 const workerUrl = new URL('../workers/valhallaRouting.worker.ts', import.meta.url);
-                workerRef.current = new Worker(workerUrl.toString() + '?t=' + Date.now());
+                workerRef.current = new Worker(workerUrl);
             }
 
             const request: RoutingRequest = { start, end, regions: routingRegions };
