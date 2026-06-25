@@ -159,6 +159,7 @@ interface SharedMapProps {
     initialZoom?: number;
     focusRiver?: RiverData;
     height?: string; // Standard CSS dimension
+    hideSearchBar?: boolean;
 }
 
  
@@ -198,11 +199,12 @@ function createGeoJSONCircle(centerLon: number, centerLat: number, radiusInMiles
 }
 
 
-export const SharedMap: React.FC<SharedMapProps> = ({ 
-    initialCenter = [39.8283, -98.5795], 
-    initialZoom = 4, 
+export const SharedMap: React.FC<SharedMapProps> = ({
+    initialCenter = [39.8283, -98.5795],
+    initialZoom = 4,
     height = "calc(100vh - 60px)",
-    focusRiver
+    focusRiver,
+    hideSearchBar = false
 }) => {
     const { isColorBlindMode, isDarkMode } = useSettings();
     const { rivers } = useRivers();
@@ -911,14 +913,16 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 }
                 `}
             </style>
-            {/* MapSearchbar centered at the top */}
-            <MapSearchbar 
-                onSelect={(res) => {
-                    setNavDestination([res.lon, res.lat]);
-                    setNavDestinationPlace(res);
-                    setIsNavigating(true);
-                }} 
-            />
+            {/* MapSearchbar — hidden on mini map unless fullscreen */}
+            {(!hideSearchBar || isFullScreen) && (
+                <MapSearchbar
+                    onSelect={(res) => {
+                        setNavDestination([res.lon, res.lat]);
+                        setNavDestinationPlace(res);
+                        setIsNavigating(true);
+                    }}
+                />
+            )}
 
             {/* Filter Control next to Zoom Controls */}
             <div style={{

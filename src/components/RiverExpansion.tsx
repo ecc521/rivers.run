@@ -54,11 +54,12 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
                <>
                  {showMap ? (
                    <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", marginBottom: "15px" }}>
-                     <SharedMap 
+                     <SharedMap
                         focusRiver={displayRiver}
                         initialCenter={clickedPoint || [displayRiver.accessPoints[0].lat, displayRiver.accessPoints[0].lon]}
                         initialZoom={12}
                         height="350px"
+                        hideSearchBar
                      />
                    </div>
                  ) : (
