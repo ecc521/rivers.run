@@ -330,7 +330,9 @@ export const useRivers = (): UseRiversResult => {
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    const isStaleOnMount = !globalRiversCache || (globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000));
+    // Also fetch when globalLastFetchTime is null: bootstrap data has writeup/aw stripped for size,
+    // so a real API fetch is always needed to hydrate those fields even if the cached ts looks fresh.
+    const isStaleOnMount = !globalRiversCache || !globalLastFetchTime || (globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000));
     if (isStaleOnMount) {
         fetchRivers(false);
     }
