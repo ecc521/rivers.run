@@ -1240,3 +1240,15 @@ Those include name,section,skill,quality, and flow info*/
 .dark-theme .empty-state-view h2 {
     color: white;
 }
+
+/* Recharts Brush: ensure tick labels use theme text color */
+.recharts-brush-texts text {
+    fill: var(--text-secondary);
+}
+.recharts-brush-slide {
+    fill-opacity: 0.15;
+}
+.recharts-brush-traveller rect {
+    fill: var(--surface);
+    stroke: var(--text-secondary);
+}

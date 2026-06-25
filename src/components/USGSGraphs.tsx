@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Legend,
+  Brush,
 } from "recharts";
 import type { RiverData } from "../types/River";
 import { useSettings } from "../context/SettingsContext";
@@ -390,14 +391,14 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
           <div
             style={{
               width: "100%",
-              height: "330px",
+              height: "380px",
               backgroundColor: "var(--surface-hover)",
               borderRadius: "8px",
               border: "1px solid #CBD5E1",
               overflow: "hidden"
             }}
           >
-            <ResponsiveContainer width="100%" height={330} minWidth={1} debounce={100}>
+            <ResponsiveContainer width="100%" height={380} minWidth={1} debounce={100}>
               <LineChart
                 data={data}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
@@ -581,6 +582,14 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                     />
                   </>
                 )}
+                <Brush
+                  dataKey="dateTime"
+                  height={30}
+                  tickFormatter={formatDate}
+                  stroke="var(--border)"
+                  fill="var(--surface-hover)"
+                  travellerWidth={8}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
