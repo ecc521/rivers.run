@@ -22,7 +22,7 @@ const ListsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tabParam = searchParams.get("tab");
-  const activeTab = tabParam === "community" ? "community" : "mine";
+  const activeTab = tabParam ? (tabParam === "community" ? "community" : "mine") : (user ? "mine" : "community");
 
   const setActiveTab = (tab: "mine" | "community") => {
       setSearchParams({ tab });
@@ -247,42 +247,6 @@ const ListsPage: React.FC = () => {
                 📌
               </button>
 
-            {!isOwned && (
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (!user) { setAuthModalOpen(true); return; }
-                  const willStar = !isSubscribed(list.id);
-                  await toggleSubscription(list.id);
-                  if (willStar) {
-                      await alert(`"${list.title}" added to your Starred Lists. You can enable flow alerts with the bell icon, or set it as your default home screen search.`, "List Starred");
-                  } else {
-                      // If it was the default startup view, also remove it
-                      if (homePageDefaultSearch === `list:${list.id}`) {
-                          updateSetting("homePageDefaultSearch", null);
-                      }
-                  }
-                }}
-                title={isSubscribed(list.id) ? "Unstar List" : "Star List"}
-                style={{ 
-                  backgroundColor: isSubscribed(list.id) ? "var(--primary)" : "var(--surface-hover)", 
-                  border: "1px solid var(--border)", 
-                  borderRadius: "50%", 
-                  width: "36px", 
-                  height: "36px", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  cursor: "pointer",
-                  fontSize: "1.25em",
-                  color: isSubscribed(list.id) ? "var(--surface)" : "var(--text-muted)",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                }}
-              >
-                {isSubscribed(list.id) ? "★" : "☆"}
-              </button>
-            )}
-
             {isOwned && (
               <button
                 onClick={async (e) => {
@@ -290,15 +254,15 @@ const ListsPage: React.FC = () => {
                   handleToggleNotifications(list);
                 }}
                 title={list.notificationsEnabled ? "Disable Email Alerts" : "Enable Email Alerts"}
-                style={{ 
-                  backgroundColor: list.notificationsEnabled ? "var(--primary)" : "var(--surface-hover)", 
-                  border: "1px solid var(--border)", 
-                  borderRadius: "50%", 
-                  width: "36px", 
-                  height: "36px", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
+                style={{
+                  backgroundColor: list.notificationsEnabled ? "var(--primary)" : "var(--surface-hover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   cursor: "pointer",
                   fontSize: "1.1em",
                   color: list.notificationsEnabled ? "var(--surface)" : "var(--text-muted)",
@@ -316,15 +280,15 @@ const ListsPage: React.FC = () => {
                   handleToggleSubscriptionNotifications(list);
                 }}
                 title={subscribedListNotifications[list.id] ? "Disable Email Alerts" : "Enable Email Alerts"}
-                style={{ 
-                  backgroundColor: subscribedListNotifications[list.id] ? "var(--primary)" : "var(--surface-hover)", 
-                  border: "1px solid var(--border)", 
-                  borderRadius: "50%", 
-                  width: "36px", 
-                  height: "36px", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
+                style={{
+                  backgroundColor: subscribedListNotifications[list.id] ? "var(--primary)" : "var(--surface-hover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   cursor: "pointer",
                   fontSize: "1.1em",
                   color: subscribedListNotifications[list.id] ? "var(--surface)" : "var(--text-muted)",
@@ -332,6 +296,42 @@ const ListsPage: React.FC = () => {
                 }}
               >
                 {subscribedListNotifications[list.id] ? "🔔" : "🔕"}
+              </button>
+            )}
+
+            {!isOwned && (
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!user) { setAuthModalOpen(true); return; }
+                  const willStar = !isSubscribed(list.id);
+                  await toggleSubscription(list.id);
+                  if (willStar) {
+                      await alert(`"${list.title}" added to your Starred Lists. You can enable flow alerts with the bell icon, or set it as your default home screen search.`, "List Starred");
+                  } else {
+                      // If it was the default startup view, also remove it
+                      if (homePageDefaultSearch === `list:${list.id}`) {
+                          updateSetting("homePageDefaultSearch", null);
+                      }
+                  }
+                }}
+                title={isSubscribed(list.id) ? "Unstar List" : "Star List"}
+                style={{
+                  backgroundColor: isSubscribed(list.id) ? "var(--primary)" : "var(--surface-hover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontSize: "1.25em",
+                  color: isSubscribed(list.id) ? "var(--surface)" : "var(--text-muted)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                }}
+              >
+                {isSubscribed(list.id) ? "★" : "☆"}
               </button>
             )}
         </div>
