@@ -397,11 +397,11 @@ const Home: React.FC = () => {
   const handleViewChange = (view: "all" | string, listTitleToSet?: string) => {
     const params = new URLSearchParams(searchParams);
     if (view === "all") {
-      params.delete("list");
-      params.delete("state");
-      params.delete("country");
+      ["list","state","country","name","section","distanceMax","radiusMode",
+       "userLat","userLon","skillMin","skillMax","flowMin","flowMax",
+       "sortBy","sortReverse"].forEach(k => params.delete(k));
       setListTitle(null);
-      setSearchQuery(prev => ({ ...prev, listId: undefined, listData: undefined, state: undefined, country: undefined }));
+      setSearchQuery(prev => ({ ...defaultAdvancedSearchQuery, normalSearch: prev.normalSearch }));
     } else {
       params.set("list", view);
       if (listTitleToSet) setListTitle(listTitleToSet);
