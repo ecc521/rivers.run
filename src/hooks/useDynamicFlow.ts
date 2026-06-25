@@ -5,7 +5,7 @@ import { FLOW_API_URL } from "../services/api";
 import { useSettings } from "../context/SettingsContext";
 import { applyUnitSettingsToReadings } from "../utils/unitConversions";
 
-const dynamicFlowCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> }>();
+const dynamicFlowCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, { name: string; section?: string }> }>();
 const activeFetches = new Set<string>();
 
 /**
@@ -14,7 +14,7 @@ const activeFetches = new Set<string>();
  * Used primarily for the "Search Discovery" detailed view and River Details page.
  */
 export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null, skipFetch?: boolean) {
-  const [dynamicPayload, setDynamicPayload] = useState<{ gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, string> } | null>(null);
+  const [dynamicPayload, setDynamicPayload] = useState<{ gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, { name: string; section?: string }> } | null>(null);
   const settings = useSettings();
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
       activeFetches.add(cacheKey);
       try {
         const gaugeDataMap: Record<string, Map<number, any>> = {};
-        const siteNameMap: Record<string, string> = {};
+        const siteNameMap: Record<string, { name: string; section?: string }> = {};
 
         if (allGauges.length === 0) return;
 
@@ -73,7 +73,11 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
             if (!gaugeDataMap[gaugeId]) gaugeDataMap[gaugeId] = new Map();
             
             if (gaugeInfo.name && !siteNameMap[gaugeId]) {
-                siteNameMap[gaugeId] = gaugeInfo.section ? `${gaugeInfo.name} ${gaugeInfo.section}` : gaugeInfo.name;
+                // Skip bare station numbers (e.g. "01646500") — not a human-readable name
+                const isRawId = /^\d+$/.test(String(gaugeInfo.name).trim());
+                if (!isRawId) {
+                    siteNameMap[gaugeId] = { name: gaugeInfo.name, section: gaugeInfo.section };
+                }
             }
 
             if (gaugeInfo.readings) {
@@ -192,8 +196,13 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
     const names = dynamicPayload.gaugeNames;
     if (names && enriched.gauges) {
         enriched.gauges = enriched.gauges.map(g => {
-            if (names[g.id]) return { ...g, name: names[g.id] };
-            return g;
+            const info = names[g.id];
+            if (!info) return g;
+            return {
+                ...g,
+                name: g.name || info.name, // DB-curated names take priority
+                ...(!g.section && info.section ? { section: info.section } : {}),
+            };
         });
     }
     

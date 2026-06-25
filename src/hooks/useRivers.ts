@@ -46,8 +46,12 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
   if (river.gauges && Array.isArray(river.gauges)) {
       river.gauges.forEach((g: any) => {
           if (flowData[g.id]) {
-              if (flowData[g.id].name) g.name = String(flowData[g.id].name);
-              if (flowData[g.id].section) g.section = String(flowData[g.id].section);
+              const flowName = String(flowData[g.id].name || '');
+              // USGS OGC sometimes returns the raw station number as the name when the real name is missing
+              const isRawId = /^\d+$/.test(flowName.trim());
+              // DB-curated names take priority; only fill from flow API when absent and non-numeric
+              if (flowName && !g.name && !isRawId) g.name = flowName;
+              if (flowData[g.id].section && !g.section) g.section = String(flowData[g.id].section);
               if (flowData[g.id].readings) {
                   river.gaugeData![g.id] = applyUnitSettingsToReadings(flowData[g.id].readings, settings);
               }

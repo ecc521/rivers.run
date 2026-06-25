@@ -240,7 +240,8 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   const titleElement = (() => {
       const activeGauge = river.gauges?.find((g: any) => g.id === activeGaugeId);
       const name = activeGauge?.name || activeGaugeId;
-      
+      const section = activeGauge?.section;
+
       let link = undefined;
       if (activeGaugeId) {
         const parts = activeGaugeId.split(':');
@@ -253,10 +254,15 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
         }
       }
 
+      const label = <>
+        {name}
+        {section && <span style={{ fontWeight: "normal", color: "var(--text-muted)", fontSize: "0.85em" }}> · {section}</span>}
+      </>;
+
       if (link) {
-        return <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: "bold", color: "var(--text)", textDecoration: "none" }}>{name} <span style={{ fontSize: "1em", color: "var(--primary)" }}>↗</span></a>;
+        return <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: "bold", color: "var(--text)", textDecoration: "none" }}>{label} <span style={{ fontSize: "1em", color: "var(--primary)" }}>↗</span></a>;
       }
-      return <span style={{ fontWeight: "bold", color: "var(--text)" }}>{name}</span>;
+      return <span style={{ fontWeight: "bold", color: "var(--text)" }}>{label}</span>;
   })();
 
   return (
@@ -289,9 +295,8 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
           >
             {river.gauges.map((g) => {
               const label = (() => {
-                if (g.section) return g.section;
-                if (g.name) return g.name;
-                return g.id;
+                const base = g.name || g.id;
+                return g.section ? `${base} · ${g.section}` : base;
               })();
               return (
                 <option key={g.id} value={g.id}>
