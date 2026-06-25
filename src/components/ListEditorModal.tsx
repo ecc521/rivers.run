@@ -402,7 +402,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     create: "Create New List",
     edit: isOwner ? "Manage List" : "Details",
     copy: "Clone List",
-    shared: "Shared List Explorer"
+    shared: "List Details"
   }[mode];
 
   return (
