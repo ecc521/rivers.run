@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -33,6 +33,8 @@ export const DeveloperPortal: React.FC = () => {
     const [newKeyName, setNewKeyName] = useState("");
     const [generatedKey, setGeneratedKey] = useState<string | null>(null);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [copyLabel, setCopyLabel] = useState("Copy");
+    const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const loadDeveloperData = async () => {
         try {
@@ -70,7 +72,10 @@ export const DeveloperPortal: React.FC = () => {
             if (response && response.raw_key) {
                 setGeneratedKey(response.raw_key);
                 setNewKeyName("");
-                await loadDeveloperData();
+                // Optimistic update — key record is already in the response
+                if (response.key) {
+                    setKeys(prev => [...prev, response.key]);
+                }
             }
         } catch (e: any) {
             await alert(e.message || "Failed to generate API key.", "Error");
@@ -365,11 +370,11 @@ export const DeveloperPortal: React.FC = () => {
 
             {/* Generated Key Modal */}
             {generatedKey && (
-                <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", justifyContent: "center", alignItems: "center" }} onClick={() => setGeneratedKey(null)}>
+                <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", justifyContent: "center", alignItems: "center" }} onClick={() => { setGeneratedKey(null); setCopyLabel("Copy"); }}>
                     <div style={{ backgroundColor: "var(--surface)", padding: "24px", borderRadius: "12px", maxWidth: "500px", width: "90%", display: "flex", flexDirection: "column", gap: "15px", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
                         <h3 style={{ marginTop: 0, color: "var(--success)" }}>New API Key Created!</h3>
                         <p style={{ fontSize: "0.9em", margin: 0, lineHeight: "1.4" }}>
-                            <strong>Copy this key now.</strong> For security reasons, we hash developer keys on our servers. You will not be able to view this secret token again.
+                            <strong>Copy this key now.</strong> You will not be able to view it again.
                         </p>
                         
                         <div style={{ display: "flex", gap: "5px", marginTop: "10px" }}>
@@ -392,24 +397,28 @@ export const DeveloperPortal: React.FC = () => {
                             <button
                                 onClick={async () => {
                                     await navigator.clipboard.writeText(generatedKey);
-                                    await alert("Copied to clipboard!", "Success");
+                                    setCopyLabel("Copied!");
+                                    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+                                    copyTimeoutRef.current = setTimeout(() => setCopyLabel("Copy"), 2000);
                                 }}
                                 style={{
                                     padding: "10px",
-                                    backgroundColor: "var(--primary)",
+                                    backgroundColor: copyLabel === "Copied!" ? "var(--success)" : "var(--primary)",
                                     color: "var(--surface)",
                                     border: "none",
                                     borderRadius: "4px",
                                     cursor: "pointer",
-                                    fontWeight: "bold"
+                                    fontWeight: "bold",
+                                    transition: "background-color 0.2s",
+                                    minWidth: "70px"
                                 }}
                             >
-                                Copy
+                                {copyLabel}
                             </button>
                         </div>
 
                         <button
-                            onClick={() => setGeneratedKey(null)}
+                            onClick={() => { setGeneratedKey(null); setCopyLabel("Copy"); }}
                             style={{
                                 marginTop: "15px",
                                 padding: "10px",
