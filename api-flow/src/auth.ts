@@ -64,18 +64,22 @@ export const apiKeyFlowMiddleware = async (c: Context, next: Next) => {
         // 6. Asynchronous usage log update
         if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
             c.executionCtx.waitUntil((async () => {
-                const now = Math.floor(Date.now() / 1000);
-                await c.env.DB.batch([
-                    c.env.DB.prepare(`
-                        INSERT INTO api_usage (key_hash, date, endpoint_type, request_count)
-                        VALUES (?, ?, ?, 1)
-                        ON CONFLICT(key_hash, date, endpoint_type)
-                        DO UPDATE SET request_count = request_count + 1
-                    `).bind(hashed, today, "gauge-flow"),
-                    c.env.DB.prepare(`
-                        UPDATE api_keys SET last_used_at = ? WHERE key_hash = ?
-                    `).bind(now, hashed)
-                ]);
+                try {
+                    const now = Math.floor(Date.now() / 1000);
+                    await c.env.DB.batch([
+                        c.env.DB.prepare(`
+                            INSERT INTO api_usage (key_hash, date, endpoint_type, request_count)
+                            VALUES (?, ?, ?, 1)
+                            ON CONFLICT(key_hash, date, endpoint_type)
+                            DO UPDATE SET request_count = request_count + 1
+                        `).bind(hashed, today, "gauge-flow"),
+                        c.env.DB.prepare(`
+                            UPDATE api_keys SET last_used_at = ? WHERE key_hash = ?
+                        `).bind(now, hashed)
+                    ]);
+                } catch (e) {
+                    console.error("API usage log failed:", e);
+                }
             })());
         } else {
             const now = Math.floor(Date.now() / 1000);
