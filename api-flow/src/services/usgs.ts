@@ -4,6 +4,7 @@ import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
 
 let cachedReaches: Record<string, string> | null = null;
+let cachedRegistryNames: Record<string, { name: string; section?: string; state?: string }> | null = null;
 
 const USGS_API_BASE = "https://api.waterdata.usgs.gov/ogcapi/v0/collections";
 const PARAMETER_CODES = "00060,00065,00010,00011,00045";
@@ -62,7 +63,8 @@ export function processUSGSResponse(features: any[]): Record<string, GaugeHistor
         if (!rawId) continue;
 
         if (!usgsSites[rawId]) {
-            const formatted = formatGaugeName(props.monitoring_location_name || rawId, "USGS");
+            const rawName = props.monitoring_location_name;
+            const formatted = rawName ? formatGaugeName(rawName, "USGS") : { name: '', section: undefined };
             usgsSites[rawId] = {
                 id: rawId,
                 name: formatted.name,
@@ -304,7 +306,9 @@ async function fetchSiteMetadata(
                     const props = feature.properties || {};
                     const num = props.monitoring_location_number || '';
                     if (!num) continue;
-                    const formatted = formatGaugeName(props.monitoring_location_name || num, "USGS");
+                    const rawName = props.monitoring_location_name;
+                    if (!rawName) continue;
+                    const formatted = formatGaugeName(rawName, "USGS");
                     const stateCd = props.state_code;
                     metadata.set(num, {
                         name: formatted.name,
@@ -347,18 +351,53 @@ export const usgsProvider: GaugeProvider = {
     async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {
         const histories = await fetchContinuousSites(siteCodes, startTs, endTs, env);
 
-        if (!cachedReaches && env?.FLOW_STORAGE) {
-            try {
-                const reachesObject = await env.FLOW_STORAGE.get("usgs_reaches.json");
-                if (reachesObject) {
-                    cachedReaches = await reachesObject.json();
+        const missingNameIds = Object.keys(histories).filter(id => !histories[id].name);
+        const needsRegistry = missingNameIds.length > 0 && !cachedRegistryNames;
+
+        // Load both R2 files in parallel; either may already be cached from a prior request.
+        await Promise.all([
+            (async () => {
+                if (needsRegistry && env?.FLOW_STORAGE) {
+                    try {
+                        const regObj = await env.FLOW_STORAGE.get("gauge_registry.json");
+                        if (regObj) {
+                            const full = await regObj.json() as Record<string, any>;
+                            cachedRegistryNames = {};
+                            for (const [fullId, site] of Object.entries(full)) {
+                                if (fullId.startsWith("USGS:") && site.name) {
+                                    cachedRegistryNames[fullId.slice(5)] = { name: site.name, section: site.section, state: site.state };
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Failed to load gauge_registry.json from R2", e);
+                    }
                 }
-            } catch (e) {
-                console.warn("Failed to load usgs_reaches.json from R2", e);
+            })(),
+            (async () => {
+                if (!cachedReaches && env?.FLOW_STORAGE) {
+                    try {
+                        const reachesObject = await env.FLOW_STORAGE.get("usgs_reaches.json");
+                        if (reachesObject) cachedReaches = await reachesObject.json();
+                    } catch (e) {
+                        console.warn("Failed to load usgs_reaches.json from R2", e);
+                    }
+                }
+            })()
+        ]);
+
+        if (missingNameIds.length > 0 && cachedRegistryNames) {
+            for (const id of missingNameIds) {
+                const meta = cachedRegistryNames[id];
+                if (meta && histories[id]) {
+                    histories[id].name = meta.name;
+                    if (meta.section) histories[id].section = meta.section;
+                    if (meta.state && !histories[id].state) histories[id].state = meta.state;
+                }
             }
         }
-        const reaches = (cachedReaches || {}) as Record<string, string>;
 
+        const reaches = (cachedReaches || {}) as Record<string, string>;
         siteCodes.forEach((site) => {
             const history = histories[site];
             const reachId = reaches[site];

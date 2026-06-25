@@ -100,9 +100,9 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
                             Object.entries(data).forEach(([id, history]) => {
                                 const fullId = `${prefix}:${id}`;
                                 const existingName = mergedData[fullId]?.name;
-                                const newName = (typeof history.name === 'string' && history.name.toLowerCase() !== id.toLowerCase())
+                                const newName = (typeof history.name === 'string' && history.name && history.name.toLowerCase() !== id.toLowerCase())
                                     ? history.name
-                                    : (existingName || history.name);
+                                    : (existingName || history.name || id);
                                 mergedData[fullId] = {
                                     ...mergedData[fullId],
                                     ...history,

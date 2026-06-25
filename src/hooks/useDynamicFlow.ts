@@ -73,11 +73,7 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
             if (!gaugeDataMap[gaugeId]) gaugeDataMap[gaugeId] = new Map();
             
             if (gaugeInfo.name && !siteNameMap[gaugeId]) {
-                // Skip bare station numbers (e.g. "01646500") — not a human-readable name
-                const isRawId = /^\d+$/.test(String(gaugeInfo.name).trim());
-                if (!isRawId) {
-                    siteNameMap[gaugeId] = { name: gaugeInfo.name, section: gaugeInfo.section };
-                }
+                siteNameMap[gaugeId] = { name: gaugeInfo.name, section: gaugeInfo.section };
             }
 
             if (gaugeInfo.readings) {
