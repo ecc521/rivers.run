@@ -188,12 +188,10 @@ const ListsPage: React.FC = () => {
       otherLists = ownerLists.filter(l => l.id !== list.id);
     }
 
-    const buttonCount = user 
-      ? (isOwned 
-          ? 2 
-          : (isSubscribed(list.id) ? 3 : 2))
-      : 0;
-    const paddingRight = buttonCount > 0 ? `${buttonCount * 36 + (buttonCount - 1) * 8 + 20}px` : "0px";
+    const buttonCount = isOwned
+      ? 2
+      : (isSubscribed(list.id) ? 3 : 2);
+    const paddingRight = `${buttonCount * 36 + (buttonCount - 1) * 8 + 20}px`;
 
     return (
       <div
@@ -211,16 +209,16 @@ const ListsPage: React.FC = () => {
         }}
       >
         <div style={{ position: "absolute", top: "15px", right: "15px", display: "flex", gap: "8px" }}>
-            {user && (
-              <button
+            <button
                 onClick={async (e) => {
                   e.stopPropagation();
+                  if (!user) { setAuthModalOpen(true); return; }
                   const isSub = isSubscribed(list.id);
                   if (!isSub && !isOwned) {
                       await alert("You must star/subscribe to this list before setting it as your default startup view.", "Star First");
                       return;
                   }
-                  
+
                   const isDefault = homePageDefaultSearch === `list:${list.id}`;
                   if (isDefault) {
                       updateSetting("homePageDefaultSearch", null);
@@ -248,12 +246,12 @@ const ListsPage: React.FC = () => {
               >
                 📌
               </button>
-            )}
 
-            {user && !isOwned && (
+            {!isOwned && (
               <button
                 onClick={async (e) => {
                   e.stopPropagation();
+                  if (!user) { setAuthModalOpen(true); return; }
                   const willStar = !isSubscribed(list.id);
                   await toggleSubscription(list.id);
                   if (willStar) {
@@ -392,23 +390,19 @@ const ListsPage: React.FC = () => {
               {t("listsPage.viewList")}
             </button>
 
-            {user && (
-                <button
-                   onClick={() => handleEditList(list)}
-                   style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
-                >
-                   {isOwned ? t("listsPage.manageList") : t("listsPage.details")}
-                </button>
-            )}
+            <button
+               onClick={() => handleEditList(list)}
+               style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
+            >
+               {isOwned ? t("listsPage.manageList") : t("listsPage.details")}
+            </button>
 
-            {user && (
-                <button
-                   onClick={() => handleCopyList(list)}
-                   style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
-                >
-                   {t("listsPage.clone")}
-                </button>
-            )}
+            <button
+               onClick={() => { if (!user) { setAuthModalOpen(true); return; } handleCopyList(list); }}
+               style={{ padding: "8px 16px", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
+            >
+               {t("listsPage.clone")}
+            </button>
 
             <button
                onClick={async () => {
