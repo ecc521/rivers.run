@@ -200,8 +200,8 @@ async function fetchLatestBatch(siteCodes: string[], env?: any): Promise<Record<
 }
 
 // --- HISTORY (linked gauges sync + on-demand /history endpoint) ---
-// /continuous split parameters are documented but bugged: multi-site requests silently return
-// data only for the first site. Fetch one site at a time as a workaround.
+// /continuous supports comma-separated monitoring_location_id (same as latest-continuous).
+// Responses are paginated via next links; fetchAllOGCFeatures follows them automatically.
 
 async function fetchContinuousSites(
     siteCodes: string[],
@@ -215,13 +215,20 @@ async function fetchContinuousSites(
     const toISO = (ts: number) => new Date(ts).toISOString().replace(/\.\d{3}Z$/, 'Z');
     const datetime = `${toISO(startTs)}/${endTs ? toISO(endTs) : '..'}`;
 
+    const BATCH_SIZE = 10;
     const CONCURRENCY_LIMIT = 4;
-    let idx = 0;
 
+    const batches: string[][] = [];
+    for (let i = 0; i < validCodes.length; i += BATCH_SIZE) {
+        batches.push(validCodes.slice(i, i + BATCH_SIZE));
+    }
+
+    let batchIdx = 0;
     const worker = async () => {
-        while (idx < validCodes.length) {
-            const id = validCodes[idx++];
-            const url = `${USGS_API_BASE}/continuous/items?f=json&monitoring_location_id=USGS-${id}&parameter_code=${PARAMETER_CODES}&datetime=${datetime}&limit=10000`;
+        while (batchIdx < batches.length) {
+            const batch = batches[batchIdx++];
+            const ids = batch.map(id => `USGS-${id}`).join(',');
+            const url = `${USGS_API_BASE}/continuous/items?f=json&monitoring_location_id=${ids}&parameter_code=${PARAMETER_CODES}&datetime=${datetime}&limit=10000`;
 
             try {
                 const features = await fetchAllOGCFeatures(url, 90000, env);
@@ -229,9 +236,9 @@ async function fetchContinuousSites(
             } catch (e: unknown) {
                 const msg = e instanceof Error ? e.message : String(e);
                 if (env) {
-                    await logToD1(env, "WARN", "usgs", `continuous fetch failed for site ${id}: ${msg}`);
+                    await logToD1(env, "WARN", "usgs", `continuous fetch failed for ${batch.length} sites: ${msg}`);
                 } else {
-                    console.warn(`continuous fetch failed for site ${id}: ${msg}`);
+                    console.warn(`continuous fetch failed: ${msg}`);
                 }
             }
         }
