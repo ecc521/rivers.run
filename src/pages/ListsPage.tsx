@@ -42,6 +42,12 @@ const ListsPage: React.FC = () => {
     return map;
   }, [communityLists]);
 
+  const topCommunityLists = React.useMemo(() =>
+    communityLists
+      .filter(list => !subscribedListIds.includes(list.id) && list.ownerId !== user?.uid)
+      .slice(0, 10),
+  [communityLists, subscribedListIds, user?.uid]);
+
   const [editorModal, setEditorModal] = useState<{
     isOpen: boolean;
     mode: "create" | "edit" | "copy" | "shared";
@@ -472,9 +478,10 @@ const ListsPage: React.FC = () => {
             style={{ padding: "8px", borderRadius: "6px", fontSize: "1rem", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", minWidth: "200px" }}
          >
             <option value="null">{t("listsPage.noneDisplayAll")}</option>
-            {homePageDefaultSearch && homePageDefaultSearch !== "null" && 
+            {homePageDefaultSearch && homePageDefaultSearch !== "null" &&
               !myLists.some(l => `list:${l.id}` === homePageDefaultSearch) &&
-              !communityLists.filter(list => subscribedListIds.includes(list.id)).some(l => `list:${l.id}` === homePageDefaultSearch) && (
+              !communityLists.filter(list => subscribedListIds.includes(list.id)).some(l => `list:${l.id}` === homePageDefaultSearch) &&
+              !topCommunityLists.some(l => `list:${l.id}` === homePageDefaultSearch) && (
               <option value={homePageDefaultSearch}>{t("listsPage.currentStartupList")}</option>
             )}
             {user && (
@@ -488,6 +495,13 @@ const ListsPage: React.FC = () => {
                <optgroup label={t("listsPage.starredListsGroup")}>
                   {communityLists.filter(list => subscribedListIds.includes(list.id)).map(list => (
                      <option key={list.id} value={`list:${list.id}`}>{t("listsPage.listPrefix")}{list.title}</option>
+                  ))}
+               </optgroup>
+            )}
+            {topCommunityLists.length > 0 && (
+               <optgroup label="Top Community Lists">
+                  {topCommunityLists.map(list => (
+                     <option key={list.id} value={`list:${list.id}`}>{list.title}</option>
                   ))}
                </optgroup>
             )}
