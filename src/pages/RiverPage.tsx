@@ -180,13 +180,14 @@ const RiverPage: React.FC = () => {
   return (
     <div className="page-content river-page-container">
       <div className="river-page-card">
-        <div style={{ 
+        <div style={{
             position: "relative",
-            display: "flex", 
-            justifyContent: "center", 
-            alignItems: "center", 
-            gap: "clamp(40px, 10vw, 120px)", 
-            flexWrap: "wrap", 
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            columnGap: "clamp(40px, 10vw, 120px)",
+            rowGap: "24px",
+            flexWrap: "wrap",
             width: "100%",
             boxSizing: "border-box",
             padding: "50px 20px 20px 20px",
