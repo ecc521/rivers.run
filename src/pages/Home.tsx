@@ -74,7 +74,7 @@ const Home: React.FC = () => {
      }
   }, [isListOverlay, decodedId, navigate]);
 
-   const { rivers, loading: riversLoading, error: riversError, isGlobalStale, dataGeneratedAt, refresh } = useRivers();
+   const { rivers, loading: riversLoading, syncing: riversSyncing, error: riversError, isGlobalStale, dataGeneratedAt, refresh } = useRivers();
    const { syncError: listSyncError, refreshCloudState } = useLists();
    const [loading, setLoading] = useState(riversLoading && rivers.length === 0);
    const [error, setError] = useState<string | null>(null);
@@ -521,7 +521,7 @@ const Home: React.FC = () => {
             <span>
               {t("home.lastSynced", { mins: dataGeneratedAt ? Math.round((Date.now() - dataGeneratedAt) / 60000) : "?" })}
             </span>
-            {riversLoading ? (
+            {(riversLoading || riversSyncing) ? (
               <span style={{ fontStyle: "italic", fontWeight: "bold", marginLeft: "5px" }}>
                  {t("home.syncing")}
               </span>

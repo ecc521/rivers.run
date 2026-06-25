@@ -10,6 +10,7 @@ import { deriveRegionMap, type CountryCode, getCountryFromPrefix } from "../util
 interface UseRiversResult {
   rivers: RiverData[];
   loading: boolean;
+  syncing: boolean;
   error: string | null;
   isGlobalStale: boolean;
   dataGeneratedAt: number | null;
@@ -158,6 +159,7 @@ const BOOTSTRAP_KEY = "rivers_bootstrap_v1";
 export const useRivers = (): UseRiversResult => {
   const [rivers, setRivers] = useState<RiverData[]>(globalRiversCache || []);
   const [loading, setLoading] = useState(globalRiversCache === null ? true : globalLoading);
+  const [syncing, setSyncing] = useState(globalSyncing);
   const [error, setError] = useState<string | null>(globalError);
   const [dataGeneratedAt, setDataGeneratedAt] = useState<number | null>(globalDataGeneratedAt);
   const [lastFetchTime, setLastFetchTime] = useState<number | null>(globalLastFetchTime);
@@ -197,15 +199,19 @@ export const useRivers = (): UseRiversResult => {
         }
     }
 
-    // 5-minute heartbeat to re-calculate staleness banners
+    // 5-minute heartbeat: re-calculate staleness banners and proactively refresh if the tab is
+    // visible and data is > 15 min old. Skips when backgrounded — the visibility handler covers re-focus.
     const heartbeatId = setInterval(() => {
         setTick(t => t + 1);
+        const isStale = globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 15 * 60 * 1000);
+        if (isStale && document.visibilityState === 'visible') fetchRivers(false);
     }, 5 * 60 * 1000);
 
     // Subscribe to global state changes
     const handleUpdate = () => {
         setRivers(globalRiversCache || []);
         setLoading(globalLoading);
+        setSyncing(globalSyncing);
         setError(globalError);
         setDataGeneratedAt(globalDataGeneratedAt);
         setLastFetchTime(globalLastFetchTime);
@@ -320,10 +326,9 @@ export const useRivers = (): UseRiversResult => {
         };
     }
 
-    // Auto-fetch on refocus/visibility if data is > 15 mins old
     const handleVisibility = () => {
         if (document.visibilityState === 'visible') {
-            const isStale = !globalRiversCache || (globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000));
+            const isStale = !globalRiversCache || (globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 15 * 60 * 1000));
             if (isStale) {
                 fetchRivers(false);
             }
@@ -333,7 +338,7 @@ export const useRivers = (): UseRiversResult => {
 
     // Also fetch when globalLastFetchTime is null: bootstrap data has writeup/aw stripped for size,
     // so a real API fetch is always needed to hydrate those fields even if the cached ts looks fresh.
-    const isStaleOnMount = !globalRiversCache || !globalLastFetchTime || (globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 60 * 60 * 1000));
+    const isStaleOnMount = !globalRiversCache || !globalLastFetchTime || (globalDataGeneratedAt && (Date.now() - globalDataGeneratedAt > 15 * 60 * 1000));
     if (isStaleOnMount) {
         fetchRivers(false);
     }
@@ -353,15 +358,16 @@ export const useRivers = (): UseRiversResult => {
       window.location.reload();
   };
 
-  return { 
-    rivers, 
-    loading, 
-    error, 
-    isGlobalStale, 
-    dataGeneratedAt, 
-    lastFetchTime, 
+  return {
+    rivers,
+    loading,
+    syncing,
+    error,
+    isGlobalStale,
+    dataGeneratedAt,
+    lastFetchTime,
     stateToCountryMap: globalStateToCountryMap,
     availableStates,
-    refresh 
+    refresh
   };
 };
