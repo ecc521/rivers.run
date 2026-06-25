@@ -117,7 +117,14 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
 
         // Fire asynchronous fetches for NWM forecasts (NOAA reach API)
         const reachPromises = (Object.entries(data) as [string, any][])
-            .filter(([_, gaugeInfo]) => !!gaugeInfo.nwmReachId)
+            .filter(([_, gaugeInfo]) => {
+                if (!gaugeInfo.nwmReachId) return false;
+                // Skip NWM fetch if the gauge already has forecast data from /history (e.g. NWS)
+                const hasForecastsAlready = gaugeInfo.readings?.some(
+                    (r: any) => r.isForecast || r.cfsForecast != null || r.ftForecast != null
+                );
+                return !hasForecastsAlready;
+            })
             .map(async ([gaugeId, gaugeInfo]) => {
                 try {
                     const noaaRes = await fetch(`https://api.water.noaa.gov/nwps/v1/reaches/${gaugeInfo.nwmReachId}/streamflow`);
