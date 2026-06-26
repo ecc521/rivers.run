@@ -76,7 +76,7 @@ const GlobalNavBar: React.FC = () => {
             flexShrink: 0
           }}
         >
-          {isDev ? "RRunDev" : "Rivers.run"}
+          {isDev ? "Riv.RnDev" : "Rivers.run"}
         </Link>
 
         <div
