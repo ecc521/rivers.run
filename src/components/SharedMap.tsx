@@ -1276,7 +1276,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                     </button>
                                     <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
                                     <a
-                                        href={`https://www.google.com/maps/dir/?api=1&destination=${thePopupData!.lat},${thePopupData!.lon}`}
+                                        href={Capacitor.getPlatform() === 'android' ? `geo:${thePopupData!.lat},${thePopupData!.lon}` : `https://www.google.com/maps/dir/?api=1&destination=${thePopupData!.lat},${thePopupData!.lon}`}
                                         target="_blank"
                                         rel="noreferrer"
                                         style={{ display: "inline-block", fontWeight: "bold" }}
@@ -1625,7 +1625,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 </button>
                                 <br />
                                 <a
-                                    href={`https://www.google.com/maps/dir/?api=1&destination=${selectedAccessPoint.lat},${selectedAccessPoint.lon}`}
+                                    href={Capacitor.getPlatform() === 'android' ? `geo:${selectedAccessPoint.lat},${selectedAccessPoint.lon}` : `https://www.google.com/maps/dir/?api=1&destination=${selectedAccessPoint.lat},${selectedAccessPoint.lon}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     style={{ display: "inline-block", backgroundColor: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "7px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}
