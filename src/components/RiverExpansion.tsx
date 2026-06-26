@@ -60,6 +60,7 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
                         initialZoom={12}
                         height="350px"
                         hideSearchBar
+                        skipLocationRequest={true}
                      />
                    </div>
                  ) : (

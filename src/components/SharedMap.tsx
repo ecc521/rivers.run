@@ -161,6 +161,7 @@ interface SharedMapProps {
     focusRiver?: RiverData;
     height?: string; // Standard CSS dimension
     hideSearchBar?: boolean;
+    skipLocationRequest?: boolean;
 }
 
  
@@ -205,7 +206,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     initialZoom = 4,
     height = "calc(100vh - 60px)",
     focusRiver,
-    hideSearchBar = false
+    hideSearchBar = false,
+    skipLocationRequest = false
 }) => {
     const { isColorBlindMode, isDarkMode } = useSettings();
     const { rivers } = useRivers();
@@ -463,10 +465,10 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     useEffect(() => {
         // Automatically request hardware location permissions when rendering a map view
-        if (!location.latitude && !location.longitude && !location.loading && !location.error) {
+        if (!skipLocationRequest && !location.latitude && !location.longitude && !location.loading && !location.error) {
             location.requestLocation();
         }
-    }, []);
+    }, [skipLocationRequest]);
 
     const [hasFlippedToUserLocation, setHasFlippedToUserLocation] = useState(false);
     useEffect(() => {
