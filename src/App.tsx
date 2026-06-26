@@ -186,7 +186,7 @@ function App() {
           if (res.ok) {
             const remoteData = await res.json();
             const current = await CapacitorUpdater.current();
-            const currentVersion = current.bundle?.id || current.native;
+            const currentVersion = current.bundle?.version || current.native;
             
             console.log(`Current version: ${currentVersion}, Remote version: ${remoteData.version}`);
 
@@ -199,8 +199,12 @@ function App() {
                });
                
                console.log(`OTA update ${downloadedBundle.id} downloaded successfully. Setting for next boot.`);
-               // Set it to apply automatically upon next app cold start or backgrounding
-               CapacitorUpdater.next({ id: downloadedBundle.id });
+               // Apply on cold start or after 15+ minutes in background — not on brief suspensions
+               await CapacitorUpdater.next({ id: downloadedBundle.id });
+               CapacitorUpdater.setMultiDelay({ delayConditions: [
+                  { kind: 'kill' },
+                  { kind: 'background', value: '900000' },
+               ] });
             } else {
                console.log("No new OTA update available.");
             }
