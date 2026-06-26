@@ -132,13 +132,10 @@ export const MapSearchbar: React.FC<MapSearchbarProps> = ({ onSelect }) => {
 
     return (
         <div ref={containerRef} style={{
-            position: 'absolute',
-            top: 'calc(10px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 'calc(100% - 50px - 100px - 10px - 10px)',
+            position: 'relative',
+            width: '100%',
             maxWidth: '400px',
-            zIndex: 1500, // Behind river popups, above map controls
+            pointerEvents: 'auto', // re-enable clicks (parent wrapper disables them)
         }}>
             <div style={{
                 display: 'flex',

@@ -41,7 +41,7 @@ let basemapInstance: PMTiles | null = null;
 
 export const formatAccessName = (point: any) => {
     if (!point) return "Access";
-    
+
     // Default type labels based on the access point type
     const getTypeLabel = (type?: string) => {
         if (type === "put-in") return "Put-In";
@@ -107,7 +107,7 @@ const imageIconCache = new globalThis.Map<string, { imageData: ImageData, pixelR
 const getCachedCanvasImage = (letter: string, fillColor: string, opacity: number) => {
     const dpr = typeof window !== "undefined" ? (window.devicePixelRatio || 2) : 2;
     const finalDpr = Math.max(dpr, 2); // Baseline at least 2x
-    
+
     const key = `${letter}_${fillColor}_${opacity}_${finalDpr}`;
     if (imageIconCache.has(key)) {
         return imageIconCache.get(key)!;
@@ -117,37 +117,37 @@ const getCachedCanvasImage = (letter: string, fillColor: string, opacity: number
     canvas.width = 28 * finalDpr;
     canvas.height = 40 * finalDpr;
     const ctx = canvas.getContext("2d");
-    
+
     if (ctx) {
         ctx.scale(finalDpr, finalDpr);
         ctx.translate(2, 2);
 
         const p = new Path2D("M12 0C5.373 0 0 5.373 0 12c0 8.25 12 24 12 24s12-15.75 12-24C24 5.373 18.627 0 12 0z");
-        
+
         ctx.fillStyle = fillColor;
         ctx.globalAlpha = opacity;
         ctx.fill(p);
-        
+
         ctx.globalAlpha = 1.0;
         ctx.lineWidth = 1.5;
         ctx.strokeStyle = "#1e293b"; // Always dark, CSS invert will flip it for dark mode
         ctx.stroke(p);
-        
+
         ctx.fillStyle = "#ffffff";
         ctx.font = '900 14px sans-serif';
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        
+
         ctx.lineWidth = 2.5;
         ctx.strokeText(letter, 12, 13.5);
         ctx.fillText(letter, 12, 13.5);
-        
+
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const result = { imageData, pixelRatio: finalDpr };
         imageIconCache.set(key, result);
         return result;
     }
-    
+
     // Fallback if context is null
     const emptyCanvas = document.createElement("canvas");
     emptyCanvas.width = 1; emptyCanvas.height = 1;
@@ -164,7 +164,7 @@ interface SharedMapProps {
     skipLocationRequest?: boolean;
 }
 
- 
+
 
 function destination(lon: number, lat: number, distanceMiles: number, bearingDegrees: number): [number, number] {
     const R = 3959; // Earth's radius in miles
@@ -181,7 +181,7 @@ function destination(lon: number, lat: number, distanceMiles: number, bearingDeg
 
 function createGeoJSONCircle(centerLon: number, centerLat: number, radiusInMiles: number, points = 64): any {
     const coords = [];
-    for(let i=0; i<points; i++) {
+    for (let i = 0; i < points; i++) {
         const bearing = (i / points) * 360;
         coords.push(destination(centerLon, centerLat, radiusInMiles, bearing));
     }
@@ -216,7 +216,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     const { alert, promptReport } = useModal();
     const { user } = useAuth();
-    
+
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
 
@@ -224,7 +224,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const [selectedAccessPoint, setSelectedAccessPoint] = useState<any>(null);
     const [activePopupData, setActivePopupData] = useState<{ river: RiverData, point: any, lat: number, lon: number } | null>(null);
     const [hoverPopupData, setHoverPopupData] = useState<{ river: RiverData, point: any, lat: number, lon: number } | null>(null);
-    
+
     // Memoize the popup position to prevent react-leaflet from thrashing setLatLng on every render
     const popupPosition = useMemo(
         () => {
@@ -305,7 +305,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         }
     }, [isNavigating, isAutoCenter, location.latitude, location.longitude]);
 
-    
+
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -313,9 +313,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const urlLat = searchParams.get("lat");
     const urlLng = searchParams.get("lng");
     const urlZoom = searchParams.get("zoom");
-    
-    const mapInitialCenter: [number, number] = urlLat && urlLng 
-        ? [parseFloat(urlLat), parseFloat(urlLng)] 
+
+    const mapInitialCenter: [number, number] = urlLat && urlLng
+        ? [parseFloat(urlLat), parseFloat(urlLng)]
         : initialCenter;
     const mapInitialZoom = urlZoom ? parseInt(urlZoom) : initialZoom;
 
@@ -325,7 +325,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     // Stable references for the click handler to prevent Re-rendering 10k markers!
     const focusRiverRef = React.useRef(focusRiver);
     React.useEffect(() => { focusRiverRef.current = focusRiver; }, [focusRiver]);
-    
+
     const isFullScreenRef = React.useRef(false);
     React.useEffect(() => { isFullScreenRef.current = isFullScreen; }, [isFullScreen]);
 
@@ -370,7 +370,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const handleShare = async (e: React.MouseEvent, river: RiverData) => {
         e.preventDefault();
         const url = getRiverShareUrl(river);
-        
+
         if (Capacitor.isNativePlatform() && navigator.share) {
             try {
                 await navigator.share({
@@ -425,7 +425,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         }
         if (searchParams.get("name")) q.name = searchParams.get("name")!;
         if (searchParams.get("section")) q.section = searchParams.get("section")!;
-        
+
         if (searchParams.get("distanceMax")) {
             q.distanceMax = parseInt(searchParams.get("distanceMax")!);
             q.mapRadiusMode = (searchParams.get("radiusMode") as "current" | "center" | null) || "current";
@@ -438,7 +438,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         if (searchParams.get("flowMin")) q.flowMin = parseFloat(searchParams.get("flowMin")!);
         if (searchParams.get("flowMax")) q.flowMax = parseFloat(searchParams.get("flowMax")!);
         if (searchParams.get("favoritesOnly") === "true") q.favoritesOnly = true;
-        
+
         return q;
     });
 
@@ -518,9 +518,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         // triggers Immersive Mode which dynamically re-letterboxes the cutout area natively!
         if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
             if (isFullScreen) {
-                SystemBars.hide().catch(() => {});
+                SystemBars.hide().catch(() => { });
             } else {
-                SystemBars.show().catch(() => {});
+                SystemBars.show().catch(() => { });
             }
         }
     }, [isFullScreen]);
@@ -528,11 +528,11 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const toggleFullScreen = async () => {
         // Fallback for browsers without native Fullscreen API (e.g. old iOS)
         const canNativeFullscreen = !Capacitor.isNativePlatform() && ((document as any).fullscreenEnabled || (document as any).webkitFullscreenEnabled);
-        
+
         if (!isFullScreen) {
             if (mapContainerRef.current && canNativeFullscreen) {
                 if (mapContainerRef.current.requestFullscreen) {
-                    await mapContainerRef.current.requestFullscreen().catch(() => {});
+                    await mapContainerRef.current.requestFullscreen().catch(() => { });
                 } else if ((mapContainerRef.current as any).webkitRequestFullscreen) {
                     await (mapContainerRef.current as any).webkitRequestFullscreen();
                 }
@@ -543,7 +543,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         } else {
             if (canNativeFullscreen && ((document as any).fullscreenElement || (document as any).webkitFullscreenElement)) {
                 if ((document as any).exitFullscreen) {
-                    await (document as any).exitFullscreen().catch(() => {});
+                    await (document as any).exitFullscreen().catch(() => { });
                 } else if ((document as any).webkitExitFullscreen) {
                     await (document as any).webkitExitFullscreen();
                 }
@@ -596,7 +596,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     const angle = (2 * Math.PI * idx) / n;
                     const latOffset = OFFSET_RADIUS * Math.sin(angle);
                     const lonOffset = (OFFSET_RADIUS / Math.cos(centerLat * Math.PI / 180)) * Math.cos(angle);
-                    
+
                     finalPoints.push({
                         ...pt,
                         lat: centerLat + latOffset,
@@ -605,7 +605,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 });
             }
         });
-        
+
         return finalPoints;
     }, [rivers, searchQuery, isRiverInQuickList]);
 
@@ -651,15 +651,15 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     if (lon < minLon) minLon = lon;
                     if (lon > maxLon) maxLon = lon;
                 });
-                
+
                 const latPadding = (maxLat - minLat) * 0.1 || 0.01;
                 const lonPadding = (maxLon - minLon) * 0.1 || 0.01;
-                
+
                 mapRef.current?.fitBounds(
                     [
                         [minLon - lonPadding, minLat - latPadding],
                         [maxLon + lonPadding, maxLat + latPadding]
-                    ], 
+                    ],
                     { padding: 50, duration: 500, maxZoom: 14 }
                 );
             }
@@ -766,7 +766,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         throw fetchErr; // Re-throw if no cache either
                     }
                 }
-                
+
                 // Set the monolithic hybrid source
                 baseStyle.sources.protomaps.url = undefined;
                 baseStyle.sources.protomaps.tiles = ["hybrid://{z}/{x}/{y}"];
@@ -792,7 +792,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         features: gauges.map((pt: any) => ({
             type: "Feature",
             geometry: { type: "Point", coordinates: [pt.lon, pt.lat] },
-            properties: { 
+            properties: {
                 fillColor: "#df6af1",
                 riverId: pt.river.id,
                 pointIndex: gauges.indexOf(pt)
@@ -815,7 +815,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             return {
                 type: "Feature",
                 geometry: { type: "Point", coordinates: [pt.lon, pt.lat] },
-                properties: { 
+                properties: {
                     imageKey: `${letter}_${fillColor}_0.9_2`,
                     riverId: pt.river.id,
                     pointIndex: nonGauges.indexOf(pt),
@@ -908,12 +908,12 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     // Using true HTML5 Native Fullscreen where supported! 
     return (
-        <div 
+        <div
             ref={mapContainerCallbackRef}
             className={isFullScreen ? "map-fullscreen-container" : ""}
-            style={{ 
-                height: isFullScreen ? "100vh" : height, 
-                width: "100%", 
+            style={{
+                height: isFullScreen ? "100vh" : height,
+                width: "100%",
                 position: isFullScreen ? "fixed" : "relative",
                 top: isFullScreen ? 0 : "auto",
                 left: isFullScreen ? 0 : "auto",
@@ -959,32 +959,32 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 .custom-maplibre-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
                     border-left-color: var(--surface);
                 }
+                /* Balances the left Filter button so the search bar centers truly —
+                   only on wider screens. On phones it collapses to 0 so the search
+                   bar keeps its full width. Width matches the Filter button (85px). */
+                .map-top-spacer { flex-shrink: 0; width: 0; }
+                @media (min-width: 850px) { .map-top-spacer { width: 85px; } }
                 `}
             </style>
-            {/* MapSearchbar — hidden on mini map unless fullscreen */}
-            {(!hideSearchBar || isFullScreen) && (
-                <MapSearchbar
-                    onSelect={(res) => {
-                        setPinnedPlace(res);
-                        mapRef.current?.flyTo({ center: [res.lon, res.lat], zoom: Math.max(mapZoom, 13), duration: 800 });
-                    }}
-                />
-            )}
-
-            {/* Filter Control next to Zoom Controls */}
+            {/* Top control row: Filter (left) + Search (centered, fills remaining space).
+                Single flex row so the two can never overlap — the search bar shrinks instead. */}
             <div style={{
                 position: "absolute",
                 top: isFullScreen ? "calc(10px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))" : "10px",
-                left: isFullScreen ? "calc(50px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)))" : "50px", // Leaflet zoom controls are 10px from left and 34px wide
-                zIndex: 1000,
+                left: isFullScreen ? "calc(10px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)))" : "10px",
+                right: isFullScreen ? "calc(10px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))" : "10px",
+                zIndex: 1500, // above map controls; below river popups
                 display: "flex",
-                gap: "10px"
+                alignItems: "flex-start", // keep Filter pinned to top when the search dropdown expands
+                gap: "10px",
+                pointerEvents: "none", // let map gestures through the empty gaps; children re-enable
             }}>
                 <button
                     onClick={() => setIsFilterOpen(true)}
                     style={{
+                        flexShrink: 0,
                         padding: "8px 12px",
-                        width: "100px",
+                        width: "85px",
                         backgroundColor: "var(--surface)",
                         color: "var(--text)",
                         border: "2px solid var(--border)",
@@ -992,11 +992,31 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         cursor: "pointer",
                         fontWeight: "bold",
                         boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
-                        whiteSpace: "nowrap"
+                        whiteSpace: "nowrap",
+                        pointerEvents: "auto",
                     }}
                 >
                     Filter
                 </button>
+
+                {/* Search — hidden on mini map unless fullscreen. Fills remaining space,
+                    centered within it and capped at maxWidth inside MapSearchbar. */}
+                {(!hideSearchBar || isFullScreen) && (
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}>
+                        <MapSearchbar
+                            onSelect={(res) => {
+                                setPinnedPlace(res);
+                                mapRef.current?.flyTo({ center: [res.lon, res.lat], zoom: Math.max(mapZoom, 13), duration: 800 });
+                            }}
+                        />
+                    </div>
+                )}
+
+                {/* Invisible spacer: balances the Filter button so the search bar
+                    centers on desktop (≥600px); collapses to 0 on mobile. */}
+                {(!hideSearchBar || isFullScreen) && (
+                    <div className="map-top-spacer" aria-hidden="true" />
+                )}
             </div>
 
             {/* Bottom Right Controls: Share & Fullscreen */}
@@ -1028,7 +1048,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 >
                     🔗
                 </button>
-                <button 
+                <button
                     onClick={toggleFullScreen}
                     aria-label="Toggle Fullscreen"
                     style={{
@@ -1049,16 +1069,16 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 </button>
             </div>
 
-            <SearchOverlay 
-                isOpen={isFilterOpen} 
-                onClose={() => setIsFilterOpen(false)} 
-                query={searchQuery} 
-                setQuery={setSearchQuery} 
+            <SearchOverlay
+                isOpen={isFilterOpen}
+                onClose={() => setIsFilterOpen(false)}
+                query={searchQuery}
+                setQuery={setSearchQuery}
                 isMapMode={true}
                 portalTarget={portalTargetNode}
             />
 
-            <ShareMapModal 
+            <ShareMapModal
                 isOpen={isShareOpen}
                 onClose={() => setIsShareOpen(false)}
                 currentQuery={searchQuery}
@@ -1083,15 +1103,15 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             }}>
                 <label style={{ fontSize: "0.8em", fontWeight: "bold", margin: "0 0 4px 0", color: "var(--text)" }}>Weather Radar</label>
                 <div style={{ display: "flex", gap: "5px" }}>
-                    <button 
+                    <button
                         onClick={() => setRadarMode("off")}
                         style={{ padding: "4px 8px", fontSize: "0.85em", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: radarMode === "off" ? "var(--primary)" : "transparent", color: radarMode === "off" ? "white" : "var(--text)", cursor: "pointer" }}
                     >Off</button>
-                    <button 
+                    <button
                         onClick={() => setRadarMode("live")}
                         style={{ padding: "4px 8px", fontSize: "0.85em", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: radarMode === "live" ? "var(--primary)" : "transparent", color: radarMode === "live" ? "white" : "var(--text)", cursor: "pointer" }}
                     >Live</button>
-                    <button 
+                    <button
                         onClick={() => setRadarMode("60min")}
                         style={{ padding: "4px 8px", fontSize: "0.85em", borderRadius: "4px", border: "1px solid var(--border)", backgroundColor: radarMode === "60min" ? "var(--primary)" : "transparent", color: radarMode === "60min" ? "white" : "var(--text)", cursor: "pointer" }}
                     >60m Loop</button>
@@ -1123,7 +1143,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 </button>
             )}
 
-            <Map 
+            <Map
                 ref={mapRef}
                 {...viewState}
                 onLoad={() => setIsMapLoaded(true)}
@@ -1146,9 +1166,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
                 {gauges.length > 0 && (
                     <Source id="gauges" type="geojson" data={gaugesGeoJson}>
-                        <Layer 
-                            id="gauges-layer" 
-                            type="circle" 
+                        <Layer
+                            id="gauges-layer"
+                            type="circle"
                             paint={{
                                 "circle-radius": [
                                     "case",
@@ -1165,9 +1185,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
                 {nonGauges.length > 0 && (
                     <Source id="non-gauges" type="geojson" data={nonGaugesGeoJson}>
-                        <Layer 
-                            id="non-gauges-layer" 
-                            type="symbol" 
+                        <Layer
+                            id="non-gauges-layer"
+                            type="symbol"
                             layout={{
                                 "icon-image": ["get", "imageKey"],
                                 "icon-allow-overlap": true,
@@ -1187,12 +1207,12 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 {popupPosition && (activePopupData || hoverPopupData) && (() => {
                     const thePopupData = activePopupData || hoverPopupData;
                     const isHoverMode = !activePopupData && !!hoverPopupData;
-                    
+
                     const accessName = formatAccessName(thePopupData!.point);
 
                     return (
-                        <Popup 
-                            longitude={popupPosition[1]} 
+                        <Popup
+                            longitude={popupPosition[1]}
                             latitude={popupPosition[0]}
                             onClose={() => {
                                 setActivePopupData(null);
@@ -1203,29 +1223,29 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                             closeOnClick={true}
                             className="custom-maplibre-popup"
                         >
-                            <PopupEventManager 
+                            <PopupEventManager
                                 isHoverMode={isHoverMode}
                                 onEnter={handlePopupMouseEnter}
                                 onLeave={handlePopupMouseLeave}
                             >
                                 <strong>{accessName}</strong>
                                 <br />
-                                {thePopupData!.river.name} {thePopupData!.river.section ? `(${thePopupData!.river.section})` : ""}<br/>
+                                {thePopupData!.river.name} {thePopupData!.river.section ? `(${thePopupData!.river.section})` : ""}<br />
                                 {thePopupData!.river.flowInfo ? <span>{thePopupData!.river.flowInfo}</span> : null}
 
                                 <div style={{ marginTop: "8px" }}>
-                                    <button 
+                                    <button
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             handleStableMarkerClick(thePopupData!.river, thePopupData!.point, thePopupData!.lat, thePopupData!.lon);
                                         }}
-                                        style={{ 
-                                            display: "inline-block", 
-                                            fontWeight: "bold", 
-                                            background: "none", 
-                                            border: "none", 
-                                            color: "var(--primary)", 
+                                        style={{
+                                            display: "inline-block",
+                                            fontWeight: "bold",
+                                            background: "none",
+                                            border: "none",
+                                            color: "var(--primary)",
                                             cursor: "pointer",
                                             padding: 0,
                                             fontSize: "inherit"
@@ -1234,9 +1254,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                         View River Details
                                     </button>
                                     <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
-                                    <a 
-                                        href={`https://www.google.com/maps/dir/?api=1&destination=${thePopupData!.lat},${thePopupData!.lon}`} 
-                                        target="_blank" 
+                                    <a
+                                        href={`https://www.google.com/maps/dir/?api=1&destination=${thePopupData!.lat},${thePopupData!.lon}`}
+                                        target="_blank"
                                         rel="noreferrer"
                                         style={{ display: "inline-block", fontWeight: "bold" }}
                                     >
@@ -1260,7 +1280,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 setShowUserLocationPopup(true);
                             }}
                         >
-                            <div 
+                            <div
                                 title={`Your Current Location: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`}
                                 style={{
                                     width: 14,
@@ -1273,7 +1293,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 }}
                             />
                         </Marker>
-                        
+
                         {showUserLocationPopup && (
                             <Popup
                                 longitude={location.longitude}
@@ -1287,7 +1307,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 className="custom-maplibre-popup"
                             >
                                 <div style={{ padding: "4px 8px", textAlign: "center", color: "var(--text)" }}>
-                                    <strong>Your Location</strong><br/>
+                                    <strong>Your Location</strong><br />
                                     <span style={{ fontSize: "0.9em", color: "var(--text-secondary)" }}>
                                         {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
                                     </span>
@@ -1299,23 +1319,23 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
                 {/* Distance Radius Circle */}
                 {radiusCircleData && (
-                    <Source 
-                        id="radius-circle" 
-                        type="geojson" 
+                    <Source
+                        id="radius-circle"
+                        type="geojson"
                         data={radiusCircleData}
                     >
-                        <Layer 
-                            id="radius-circle-layer-fill" 
-                            type="fill" 
+                        <Layer
+                            id="radius-circle-layer-fill"
+                            type="fill"
                             source="radius-circle"
                             paint={{
                                 "fill-color": "#3b82f6",
                                 "fill-opacity": 0.1
                             }}
                         />
-                        <Layer 
-                            id="radius-circle-layer-line" 
-                            type="line" 
+                        <Layer
+                            id="radius-circle-layer-line"
+                            type="line"
                             source="radius-circle"
                             paint={{
                                 "line-color": "#3b82f6",
@@ -1326,14 +1346,14 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 )}
                 {/* Navigation Route Path */}
                 {navRoute && (
-                    <Source 
-                        id="navigation-route" 
-                        type="geojson" 
+                    <Source
+                        id="navigation-route"
+                        type="geojson"
                         data={{ type: "Feature", geometry: navRoute, properties: {} }}
                     >
-                        <Layer 
-                            id="navigation-route-layer" 
-                            type="line" 
+                        <Layer
+                            id="navigation-route-layer"
+                            type="line"
                             paint={{
                                 "line-color": "#3b82f6",
                                 "line-width": 5,
@@ -1361,9 +1381,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                             properties: {}
                         }}
                     >
-                        <Layer 
-                            id="navigation-destination-layer-halo" 
-                            type="circle" 
+                        <Layer
+                            id="navigation-destination-layer-halo"
+                            type="circle"
                             paint={{
                                 "circle-radius": 10,
                                 "circle-color": "#ffffff",
@@ -1567,80 +1587,80 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                             {selectedRiver.section ? `(${selectedRiver.section})` : ""}
                         </h2>
                     </div>
-                    
+
                     <div style={{ padding: "0 20px 20px 20px", color: "var(--text-secondary)" }}>
-                            {selectedAccessPoint && selectedAccessPoint.lat && (
-                                <div style={{ marginBottom: "15px" }}>
-                                    <button 
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            setNavDestinationPlace(null);
-                                            setNavDestination([selectedAccessPoint.lon as number, selectedAccessPoint.lat as number]);
-                                            setIsNavigating(true);
-                                        }}
-                                        style={{ display: "inline-block", backgroundColor: "var(--primary)", color: "#fff", padding: "8px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none", border: "none", cursor: "pointer", marginBottom: "8px" }}
-                                    >
-                                        🧭 Navigate Offline
-                                    </button>
-                                    <br />
-                                    <a 
-                                        href={`https://www.google.com/maps/dir/?api=1&destination=${selectedAccessPoint.lat},${selectedAccessPoint.lon}`} 
-                                        target="_blank" 
+                        {selectedAccessPoint && selectedAccessPoint.lat && (
+                            <div style={{ marginBottom: "15px" }}>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setNavDestinationPlace(null);
+                                        setNavDestination([selectedAccessPoint.lon as number, selectedAccessPoint.lat as number]);
+                                        setIsNavigating(true);
+                                    }}
+                                    style={{ display: "inline-block", backgroundColor: "var(--primary)", color: "#fff", padding: "8px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none", border: "none", cursor: "pointer", marginBottom: "8px" }}
+                                >
+                                    🧭 Navigate Offline
+                                </button>
+                                <br />
+                                <a
+                                    href={`https://www.google.com/maps/dir/?api=1&destination=${selectedAccessPoint.lat},${selectedAccessPoint.lon}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ display: "inline-block", backgroundColor: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "7px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}
+                                >
+                                    📍 Google Maps
+                                </a>
+                                <button
+                                    onClick={(e) => handleShare(e, selectedRiver)}
+                                    style={{
+                                        display: "inline-block",
+                                        backgroundColor: "transparent",
+                                        color: "var(--primary)",
+                                        border: "1px solid var(--primary)",
+                                        padding: "7px 12px",
+                                        borderRadius: "8px",
+                                        fontWeight: "bold",
+                                        marginLeft: "10px",
+                                        cursor: "pointer"
+                                    }}
+                                >
+                                    {copiedRiverId === selectedRiver.id ? "Copied!" : "📤 Share"}
+                                </button>
+
+                                {selectedRiver.aw && (
+                                    <a
+                                        href={`https://www.americanwhitewater.org/content/River/view/river-detail/${selectedRiver.aw}`}
+                                        target="_blank"
                                         rel="noreferrer"
-                                        style={{ display: "inline-block", backgroundColor: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "7px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}
-                                    >
-                                        📍 Google Maps
-                                    </a>
-                                    <button 
-                                        onClick={(e) => handleShare(e, selectedRiver)}
-                                        style={{ 
-                                            display: "inline-block", 
-                                            backgroundColor: "transparent", 
-                                            color: "var(--primary)", 
-                                            border: "1px solid var(--primary)", 
-                                            padding: "7px 12px", 
-                                            borderRadius: "8px", 
-                                            fontWeight: "bold", 
-                                            marginLeft: "10px", 
-                                            cursor: "pointer" 
+                                        style={{
+                                            display: "inline-block",
+                                            backgroundColor: "transparent",
+                                            color: "var(--primary)",
+                                            border: "1px solid var(--primary)",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontWeight: "bold",
+                                            marginLeft: "10px",
+                                            textDecoration: "none",
+                                            fontSize: "0.9rem"
                                         }}
                                     >
-                                        {copiedRiverId === selectedRiver.id ? "Copied!" : "📤 Share"}
-                                    </button>
-
-                                    {selectedRiver.aw && (
-                                        <a 
-                                            href={`https://www.americanwhitewater.org/content/River/view/river-detail/${selectedRiver.aw}`} 
-                                            target="_blank" 
-                                            rel="noreferrer"
-                                            style={{ 
-                                                display: "inline-block", 
-                                                backgroundColor: "transparent", 
-                                                color: "var(--primary)", 
-                                                border: "1px solid var(--primary)", 
-                                                padding: "7px 12px", 
-                                                borderRadius: "8px", 
-                                                fontWeight: "bold", 
-                                                marginLeft: "10px", 
-                                                textDecoration: "none",
-                                                fontSize: "0.9rem"
-                                            }}
-                                        >
-                                            AW
-                                        </a>
-                                    )}
+                                        AW
+                                    </a>
+                                )}
 
 
 
 
-                                </div>
-                            )}
+                            </div>
+                        )}
 
-                            <RiverExpansion 
-                                 key={selectedRiver.id}
-                                 river={selectedRiver} 
-                                 isMapOverlay={true} 
-                            />
+                        <RiverExpansion
+                            key={selectedRiver.id}
+                            river={selectedRiver}
+                            isMapOverlay={true}
+                        />
                     </div>
                 </div>
             )}
