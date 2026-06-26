@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
+import { serializeQueryToParams } from "../utils/SearchFilters";
 import { useLocation } from "../hooks/useLocation";
 import { FilterCheckbox } from "./FilterCheckbox";
 import { useLists } from "../context/ListsContext";
@@ -110,35 +111,9 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
   const getShareUrl = () => {
       const url = new URL(getShareBaseUrl(window.location.pathname));
-
-      const params = url.searchParams;
-
-      const setIfValid = (key: string, val: any, defaultVal?: any) => {
-          if (val !== undefined && val !== null && val !== defaultVal) {
-              params.set(key, val.toString());
-          }
-      };
-
-      setIfValid("search", localQuery.normalSearch);
-      setIfValid("name", localQuery.name);
-      setIfValid("section", localQuery.section);
-      setIfValid("list", localQuery.listId);
-      
-      if (localQuery.distanceMax) {
-          params.set("distanceMax", localQuery.distanceMax.toString());
-          setIfValid("radiusMode", localQuery.mapRadiusMode);
-          setIfValid("userLat", localQuery.userLat);
-          setIfValid("userLon", localQuery.userLon);
-      }
-
-      setIfValid("skillMin", localQuery.skillMin, 1);
-      setIfValid("skillMax", localQuery.skillMax, 8);
-      setIfValid("flowMin", localQuery.flowMin, 0);
-      setIfValid("flowMax", localQuery.flowMax, 4);
-      setIfValid("sortBy", localQuery.sortBy, "none");
-      
-      if (localQuery.sortReverse) params.set("sortReverse", "true");
-      
+      // Share links pin the exact radius origin (includeCoords) so the recipient
+      // sees the same area; region (country/state) is included here too.
+      url.search = serializeQueryToParams(localQuery, { includeCoords: true });
       return url.toString();
   };
   const shareUrl = getShareUrl();

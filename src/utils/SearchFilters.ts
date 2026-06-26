@@ -40,6 +40,122 @@ export const defaultAdvancedSearchQuery: AdvancedSearchQuery = {
   sortReverse: false,
 };
 
+// URL/query-string keys that express search intent. Used both for shareable
+// links and for the saved "home" startup view. Kept here so the parse/serialize
+// pair below and the Home page stay in sync.
+export const SEARCH_PARAM_KEYS = [
+  "search", "name", "section", "distanceMax", "radiusMode", "userLat", "userLon",
+  "skillMin", "skillMax", "flowMin", "flowMax", "sortBy", "sortReverse",
+  "country", "state", "list",
+] as const;
+
+// Serialize a query into a canonical (sorted) URL param string. Params are
+// sorted so two equivalent queries produce identical strings — this is what
+// makes the "is this view my home?" comparison reliable. By default the
+// live-location coords (userLat/userLon) are omitted so a "near me" view
+// recomputes against the user's current position rather than freezing; pass
+// { includeCoords: true } for share links that should pin an exact origin.
+export function serializeQueryToParams(
+  query: AdvancedSearchQuery,
+  opts: { includeCoords?: boolean } = {},
+): string {
+  const params = new URLSearchParams();
+  const set = (key: string, val: unknown, def?: unknown) => {
+    if (val !== undefined && val !== null && val !== "" && val !== def) {
+      params.set(key, String(val));
+    }
+  };
+
+  set("search", query.normalSearch);
+  set("name", query.name);
+  set("section", query.section);
+  set("list", query.listId);
+  if (query.distanceMax) {
+    params.set("distanceMax", String(query.distanceMax));
+    set("radiusMode", query.mapRadiusMode, "current");
+    if (opts.includeCoords) {
+      set("userLat", query.userLat);
+      set("userLon", query.userLon);
+    }
+  }
+  set("skillMin", query.skillMin, 1);
+  set("skillMax", query.skillMax, 8);
+  set("flowMin", query.flowMin, 0);
+  set("flowMax", query.flowMax, 4);
+  set("country", query.country);
+  set("state", query.state);
+  set("sortBy", query.sortBy, "none");
+  if (query.sortReverse) params.set("sortReverse", "true");
+
+  params.sort();
+  return params.toString();
+}
+
+// Parse a URLSearchParams (from the address bar or a saved home value) back into
+// an AdvancedSearchQuery, layered onto the defaults.
+export function parseParamsToQuery(params: URLSearchParams): AdvancedSearchQuery {
+  const q: AdvancedSearchQuery = { ...defaultAdvancedSearchQuery };
+
+  const search = params.get("search");
+  if (search) q.normalSearch = search;
+
+  const name = params.get("name");
+  if (name) q.name = name;
+
+  const section = params.get("section");
+  if (section) q.section = section;
+
+  const distMax = params.get("distanceMax");
+  if (distMax) {
+    q.distanceMax = parseInt(distMax);
+    q.mapRadiusMode = (params.get("radiusMode") as AdvancedSearchQuery["mapRadiusMode"]) || "current";
+    const lat = params.get("userLat");
+    const lon = params.get("userLon");
+    if (lat) q.userLat = parseFloat(lat);
+    if (lon) q.userLon = parseFloat(lon);
+  }
+
+  const sMin = params.get("skillMin");
+  if (sMin) q.skillMin = parseInt(sMin);
+  const sMax = params.get("skillMax");
+  if (sMax) q.skillMax = parseInt(sMax);
+  const fMin = params.get("flowMin");
+  if (fMin) q.flowMin = parseFloat(fMin);
+  const fMax = params.get("flowMax");
+  if (fMax) q.flowMax = parseFloat(fMax);
+
+  const sortBy = params.get("sortBy") as AdvancedSearchQuery["sortBy"];
+  if (sortBy) q.sortBy = sortBy;
+  else if (search) q.sortBy = "none";
+
+  const country = params.get("country");
+  if (country) q.country = country;
+  const state = params.get("state");
+  if (state) q.state = state;
+
+  const sortReverse = params.get("sortReverse");
+  if (sortReverse) q.sortReverse = sortReverse === "true";
+
+  const list = params.get("list");
+  if (list) q.listId = list;
+
+  return q;
+}
+
+// Normalize a stored homePageDefaultSearch value into a canonical param string
+// for comparison. Supports the generic "query:<params>" form as well as the
+// legacy "list:<id>" form (which predates arbitrary saved searches).
+export function normalizeHomeValue(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (value.startsWith("query:")) {
+    return serializeQueryToParams(parseParamsToQuery(new URLSearchParams(value.slice("query:".length))));
+  }
+  if (value.startsWith("list:")) {
+    return serializeQueryToParams(parseParamsToQuery(new URLSearchParams(`list=${value.slice("list:".length)}`)));
+  }
+  return null;
+}
+
 export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
   if (query.listId && query.listId.trim() !== "") return true;
   if (query.listData && query.listData.length > 0) return true;
@@ -59,6 +175,34 @@ export function hasActiveFilters(query: AdvancedSearchQuery): boolean {
   if (query.includeGauges !== undefined && query.includeGauges !== defaultAdvancedSearchQuery.includeGauges) return true;
   
   return false;
+}
+
+// Count the filters that actually REMOVE markers from the map. The distance
+// radius is deliberately excluded: on the map it never hides markers (it only
+// draws an indicator circle), so it is the neutral default, not a filter.
+// sortBy is excluded too — marker order is not visible. Used to badge the map's
+// Filter button so a filtered (or deep-linked) view isn't silently hiding rivers.
+export function countMapActiveFilters(query: AdvancedSearchQuery): number {
+  const d = defaultAdvancedSearchQuery;
+  const hasText = (v?: string) => !!v && v.trim() !== "";
+  // Each entry is one filter "category"; treating undefined as the default
+  // (?? d.x) avoids counting an unset field as an active filter.
+  const active: boolean[] = [
+    hasText(query.normalSearch),
+    hasText(query.name),
+    hasText(query.section),
+    hasText(query.state),
+    hasText(query.country) && query.country !== "global",
+    hasText(query.listId) || !!query.listData?.length,
+    !!query.favoritesOnly,
+    (query.skillMin ?? d.skillMin) !== d.skillMin || (query.skillMax ?? d.skillMax) !== d.skillMax,
+    (query.flowMin ?? d.flowMin) !== d.flowMin || (query.flowMax ?? d.flowMax) !== d.flowMax,
+    (query.includeUnknownSkill ?? d.includeUnknownSkill) !== d.includeUnknownSkill ||
+      (query.includeUnknownFlow ?? d.includeUnknownFlow) !== d.includeUnknownFlow ||
+      (query.includeDams ?? d.includeDams) !== d.includeDams ||
+      (query.includeGauges ?? d.includeGauges) !== d.includeGauges,
+  ];
+  return active.filter(Boolean).length;
 }
 
 function skillToNumber(skill: string | number): number {

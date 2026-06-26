@@ -17,6 +17,10 @@ import {
   filterRivers,
   defaultAdvancedSearchQuery,
   hasActiveFilters,
+  serializeQueryToParams,
+  parseParamsToQuery,
+  normalizeHomeValue,
+  SEARCH_PARAM_KEYS,
 } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useSettings } from "../context/SettingsContext";
@@ -36,7 +40,7 @@ const Home: React.FC = () => {
     description: "Real-time whitewater flow data, gauge maps, and river running status for over 250 rivers in the US, UK, Ireland, and Canada."
   });
   const { t } = useTranslation();
-  const { isDarkMode, isColorBlindMode } = useSettings();
+  const { isDarkMode, isColorBlindMode, homePageDefaultSearch, updateSetting } = useSettings();
   const { alert } = useModal();
   const { id } = useParams<{ id: string }>();
   const decodedId = id ? decodeURIComponent(id) : undefined;
@@ -103,61 +107,10 @@ const Home: React.FC = () => {
 
   const [searchParams] = useSearchParams();
 
-  // Search State
-  const [searchQuery, setSearchQuery] = useState<AdvancedSearchQuery>(() => {
-    const q = { ...defaultAdvancedSearchQuery };
-    const searchParamVal = searchParams.get("search");
-    if (searchParamVal) {
-      q.normalSearch = searchParamVal;
-    }
-    
-    const nameVal = searchParams.get("name");
-    if (nameVal) q.name = nameVal;
-    
-    const sectionVal = searchParams.get("section");
-    if (sectionVal) q.section = sectionVal;
-    
-    const distMax = searchParams.get("distanceMax");
-    if (distMax) {
-        q.distanceMax = parseInt(distMax);
-        q.mapRadiusMode = (searchParams.get("radiusMode") as "current" | "center" | "custom" | null) || "current";
-        const customLat = searchParams.get("userLat");
-        const customLon = searchParams.get("userLon");
-        if (customLat) q.userLat = parseFloat(customLat);
-        if (customLon) q.userLon = parseFloat(customLon);
-    }
-    
-
-    const sMin = searchParams.get("skillMin");
-    if (sMin) q.skillMin = parseInt(sMin);
-    
-    const sMax = searchParams.get("skillMax");
-    if (sMax) q.skillMax = parseInt(sMax);
-    
-    const fMin = searchParams.get("flowMin");
-    if (fMin) q.flowMin = parseFloat(fMin);
-    
-    const fMax = searchParams.get("flowMax");
-    if (fMax) q.flowMax = parseFloat(fMax);
-
-    const sortByVal = searchParams.get("sortBy") as AdvancedSearchQuery["sortBy"];
-    if (sortByVal) {
-      q.sortBy = sortByVal;
-    } else if (searchParamVal) {
-      q.sortBy = "none";
-    }
-
-    const countryVal = searchParams.get("country");
-    if (countryVal) q.country = countryVal;
-
-    const stateVal = searchParams.get("state");
-    if (stateVal) q.state = stateVal;
-
-    const sortReverseVal = searchParams.get("sortReverse");
-    if (sortReverseVal) q.sortReverse = sortReverseVal === "true";
-
-    return q;
-  });
+  // Search State — hydrate from URL params (list data itself loads async below)
+  const [searchQuery, setSearchQuery] = useState<AdvancedSearchQuery>(() =>
+    parseParamsToQuery(searchParams)
+  );
 
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [listTitle, setListTitle] = useState<string | null>(null);
@@ -186,8 +139,24 @@ const Home: React.FC = () => {
 
       const listParam = searchParams.get("list");
       let targetListId = listParam;
-      if (!targetListId && defaultSearch && defaultSearch.startsWith("list:")) {
+
+      // Apply the saved "home" startup view only when the URL carries no search
+      // intent of its own — a shared link or in-app navigation always wins.
+      const urlHasIntent = SEARCH_PARAM_KEYS.some((k) => searchParams.has(k));
+      if (!urlHasIntent && defaultSearch) {
+        if (defaultSearch.startsWith("query:")) {
+          const savedQuery = parseParamsToQuery(new URLSearchParams(defaultSearch.slice("query:".length)));
+          // Apply the non-list filters immediately; any embedded list loads below.
+          setSearchQuery((prev) => ({
+            ...savedQuery,
+            normalSearch: prev.normalSearch || savedQuery.normalSearch,
+            listData: prev.listData,
+          }));
+          if (savedQuery.listId) targetListId = savedQuery.listId;
+        } else if (defaultSearch.startsWith("list:")) {
+          // Legacy format: a bare list id saved before arbitrary queries existed.
           targetListId = defaultSearch.replace("list:", "");
+        }
       }
 
       if (targetListId) {
@@ -408,6 +377,30 @@ const Home: React.FC = () => {
       setSearchQuery(prev => ({ ...prev, listId: view }));
     }
     navigate(`/?${params.toString()}`);
+  };
+
+  // Does the currently-displayed view exactly match the saved startup ("home")?
+  // Normalizing both sides through the same serializer makes the comparison
+  // order-insensitive and tolerant of the legacy "list:" format.
+  const isCurrentViewHome =
+    !!homePageDefaultSearch &&
+    normalizeHomeValue(homePageDefaultSearch) === serializeQueryToParams(searchQuery);
+
+  const handleSetAsHome = () => {
+    const cleaned: AdvancedSearchQuery = { ...searchQuery };
+    // A "near me" home should track the user's live position, not freeze the
+    // coordinates captured when it was pinned.
+    if (cleaned.distanceMax) {
+      cleaned.mapRadiusMode = "current";
+      cleaned.userLat = undefined;
+      cleaned.userLon = undefined;
+    }
+    const params = serializeQueryToParams(cleaned);
+    updateSetting("homePageDefaultSearch", params ? `query:${params}` : null);
+  };
+
+  const handleClearHome = () => {
+    updateSetting("homePageDefaultSearch", null);
   };
 
   const handleCountryChange = (country: string) => {
@@ -647,24 +640,43 @@ const Home: React.FC = () => {
       )}
 
       {hasActiveFilters(searchQuery) && (
-         <div style={{ textAlign: "center", marginBottom: "15px" }}>
-            <span style={{ fontSize: "0.9em", color: "var(--text-muted)", fontStyle: "italic", marginRight: "10px" }}>
-                {t("home.customFiltersActive")}
-            </span>
-            <button 
+         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "14px", flexWrap: "wrap", marginBottom: "15px" }}>
+            {/* Transient: clear this session's filters */}
+            <button
                 onClick={() => handleViewChange("all")}
                 style={{
-                    padding: "4px 10px",
-                    backgroundColor: "var(--danger)",
-                    color: "var(--surface)",
+                    background: "none",
                     border: "none",
-                    borderRadius: "4px",
+                    padding: 0,
+                    color: "var(--text-muted)",
+                    textDecoration: "underline",
                     cursor: "pointer",
-                    fontSize: "0.85em",
-                    fontWeight: "bold"
+                    fontSize: "0.85em"
                 }}
             >
                 {t("home.clearFilters")}
+            </button>
+            {/* Persistent: pin (or unpin) this view as the startup home */}
+            <button
+                onClick={isCurrentViewHome ? handleClearHome : handleSetAsHome}
+                title={isCurrentViewHome ? t("home.unsetHomeTitle") : t("home.setHomeTitle")}
+                style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "5px 14px",
+                    borderRadius: "50px",
+                    border: "1px solid var(--primary)",
+                    backgroundColor: isCurrentViewHome ? "var(--primary)" : "transparent",
+                    color: isCurrentViewHome ? "#ffffff" : "var(--primary)",
+                    cursor: "pointer",
+                    fontSize: "0.85em",
+                    fontWeight: 600,
+                    transition: "all 0.2s"
+                }}
+            >
+                <span aria-hidden="true">{isCurrentViewHome ? "✓" : "⌂"}</span>
+                {isCurrentViewHome ? t("home.isYourHome") : t("home.setAsHome")}
             </button>
          </div>
       )}

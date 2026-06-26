@@ -42,12 +42,6 @@ const ListsPage: React.FC = () => {
     return map;
   }, [communityLists]);
 
-  const topCommunityLists = React.useMemo(() =>
-    communityLists
-      .filter(list => !subscribedListIds.includes(list.id) && list.ownerId !== user?.uid)
-      .slice(0, 10),
-  [communityLists, subscribedListIds, user?.uid]);
-
   const [editorModal, setEditorModal] = useState<{
     isOpen: boolean;
     mode: "create" | "edit" | "copy" | "shared";
@@ -466,47 +460,6 @@ const ListsPage: React.FC = () => {
            </button>
          </div>
 
-      {/* Startup View Setting Shortcut */}
-      <div style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", padding: "15px", marginBottom: "30px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "15px" }}>
-         <div>
-            <h3 style={{ margin: "0 0 5px 0", fontSize: "1.1em" }}>{t("listsPage.appStartupView")}</h3>
-            <p style={{ margin: 0, fontSize: "0.9em", color: "var(--text-muted)" }}>{t("listsPage.appStartupDesc")}</p>
-         </div>
-         <select
-            value={homePageDefaultSearch || "null"}
-            onChange={(e) => updateSetting("homePageDefaultSearch", e.target.value)}
-            style={{ padding: "8px", borderRadius: "6px", fontSize: "1rem", backgroundColor: "var(--surface-hover)", color: "var(--text)", border: "1px solid var(--border)", minWidth: "200px" }}
-         >
-            <option value="null">{t("listsPage.noneDisplayAll")}</option>
-            {homePageDefaultSearch && homePageDefaultSearch !== "null" &&
-              !myLists.some(l => `list:${l.id}` === homePageDefaultSearch) &&
-              !communityLists.filter(list => subscribedListIds.includes(list.id)).some(l => `list:${l.id}` === homePageDefaultSearch) &&
-              !topCommunityLists.some(l => `list:${l.id}` === homePageDefaultSearch) && (
-              <option value={homePageDefaultSearch}>{t("listsPage.currentStartupList")}</option>
-            )}
-            {user && (
-               <optgroup label={t("listsPage.myCustomListsGroup")}>
-                 {myLists.map(list => (
-                    <option key={list.id} value={`list:${list.id}`}>{t("listsPage.listPrefix")}{list.title}</option>
-                 ))}
-               </optgroup>
-            )}
-            {subscribedListIds.length > 0 && (
-               <optgroup label={t("listsPage.starredListsGroup")}>
-                  {communityLists.filter(list => subscribedListIds.includes(list.id)).map(list => (
-                     <option key={list.id} value={`list:${list.id}`}>{t("listsPage.listPrefix")}{list.title}</option>
-                  ))}
-               </optgroup>
-            )}
-            {topCommunityLists.length > 0 && (
-               <optgroup label="Top Community Lists">
-                  {topCommunityLists.map(list => (
-                     <option key={list.id} value={`list:${list.id}`}>{list.title}</option>
-                  ))}
-               </optgroup>
-            )}
-         </select>
-      </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         

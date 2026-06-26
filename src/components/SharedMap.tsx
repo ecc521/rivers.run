@@ -13,7 +13,7 @@ import { useLocation } from "../hooks/useLocation";
 import { WeatherRadarLayer } from "./WeatherRadarLayer";
 import { RiverExpansion } from "./RiverExpansion";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { filterRivers, defaultAdvancedSearchQuery } from "../utils/SearchFilters";
+import { filterRivers, parseParamsToQuery, countMapActiveFilters } from "../utils/SearchFilters";
 import type { AdvancedSearchQuery } from "../utils/SearchFilters";
 import { useModal } from "../context/ModalContext";
 import { useAuth } from "../context/AuthContext";
@@ -417,30 +417,23 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
 
     const [searchQuery, setSearchQuery] = useState<AdvancedSearchQuery>(() => {
-
-        const q: AdvancedSearchQuery = { ...defaultAdvancedSearchQuery };
+        const q = parseParamsToQuery(searchParams);
+        // Map default: search within 100mi of the user unless focused on a
+        // specific river or the URL already carries an explicit radius.
         if (!focusRiver && !searchParams.has("distanceMax")) {
             q.distanceMax = 100;
             q.mapRadiusMode = "current";
         }
-        if (searchParams.get("name")) q.name = searchParams.get("name")!;
-        if (searchParams.get("section")) q.section = searchParams.get("section")!;
-
-        if (searchParams.get("distanceMax")) {
-            q.distanceMax = parseInt(searchParams.get("distanceMax")!);
-            q.mapRadiusMode = (searchParams.get("radiusMode") as "current" | "center" | null) || "current";
-            if (searchParams.get("userLat")) q.userLat = parseFloat(searchParams.get("userLat")!);
-            if (searchParams.get("userLon")) q.userLon = parseFloat(searchParams.get("userLon")!);
-        }
-
-        if (searchParams.get("skillMin")) q.skillMin = parseInt(searchParams.get("skillMin")!);
-        if (searchParams.get("skillMax")) q.skillMax = parseInt(searchParams.get("skillMax")!);
-        if (searchParams.get("flowMin")) q.flowMin = parseFloat(searchParams.get("flowMin")!);
-        if (searchParams.get("flowMax")) q.flowMax = parseFloat(searchParams.get("flowMax")!);
+        // Map-only flag not covered by the shared parser.
         if (searchParams.get("favoritesOnly") === "true") q.favoritesOnly = true;
-
         return q;
     });
+
+    // Count marker-removing filters so the Filter button can warn when the map
+    // is showing a filtered subset. Suppressed on the focused mini-map (river
+    // page), where filtering isn't in play.
+    const mapFilterCount = focusRiver ? 0 : countMapActiveFilters(searchQuery);
+    const filtersActive = mapFilterCount > 0;
 
     // Calculate map circle data efficiently at top level
     const radiusCircleData = useMemo(() => {
@@ -979,25 +972,53 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 gap: "10px",
                 pointerEvents: "none", // let map gestures through the empty gaps; children re-enable
             }}>
-                <button
-                    onClick={() => setIsFilterOpen(true)}
-                    style={{
-                        flexShrink: 0,
-                        padding: "8px 12px",
-                        width: "85px",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--text)",
-                        border: "2px solid var(--border)",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        fontWeight: "bold",
-                        boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
-                        whiteSpace: "nowrap",
-                        pointerEvents: "auto",
-                    }}
-                >
-                    Filter
-                </button>
+                {/* Fixed-width wrapper so the floating count badge never shifts the
+                    balanced top-row layout. */}
+                <div style={{ position: "relative", flexShrink: 0, pointerEvents: "auto" }}>
+                    <button
+                        onClick={() => setIsFilterOpen(true)}
+                        aria-label={filtersActive ? `Filter (${mapFilterCount} active)` : "Filter"}
+                        style={{
+                            padding: "8px 12px",
+                            width: "85px",
+                            backgroundColor: filtersActive ? "var(--primary)" : "var(--surface)",
+                            color: filtersActive ? "#ffffff" : "var(--text)",
+                            border: filtersActive ? "2px solid var(--primary)" : "2px solid var(--border)",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                            boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        Filter
+                    </button>
+                    {filtersActive && (
+                        <span
+                            aria-hidden="true"
+                            style={{
+                                position: "absolute",
+                                top: "-7px",
+                                right: "-7px",
+                                minWidth: "20px",
+                                height: "20px",
+                                padding: "0 5px",
+                                boxSizing: "border-box",
+                                borderRadius: "10px",
+                                backgroundColor: "var(--surface)",
+                                color: "var(--primary)",
+                                border: "2px solid var(--primary)",
+                                fontSize: "0.72rem",
+                                fontWeight: 800,
+                                lineHeight: "16px",
+                                textAlign: "center",
+                                boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                            }}
+                        >
+                            {mapFilterCount}
+                        </span>
+                    )}
+                </div>
 
                 {/* Search — hidden on mini map unless fullscreen. Fills remaining space,
                     centered within it and capped at maxWidth inside MapSearchbar. */}
