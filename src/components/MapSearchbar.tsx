@@ -161,7 +161,7 @@ export const MapSearchbar: React.FC<MapSearchbarProps> = ({ onSelect }) => {
                         outline: 'none',
                         background: 'transparent',
                         width: '100%',
-                        fontSize: '14px',
+                        fontSize: '16px',
                         color: 'var(--text, #333)',
                     }}
                 />
