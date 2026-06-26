@@ -1,10 +1,13 @@
 # Rivers.run — Fastlane Configuration
 #
-# fastlane uploads the Android bundle and all store metadata. iOS binaries are
-# still uploaded by hand (Xcode/Transporter); fastlane only pushes iOS metadata.
+# fastlane uploads the binaries (you export the IPA / build the AAB) and all
+# store metadata. It does not build/sign the binaries — archive in Xcode and
+# Generate Signed Bundle in Android Studio, then point these lanes at the output.
 #
 # Lanes:
-#   fastlane ios metadata          — Push iOS listing + release notes to App Store Connect
+#   fastlane ios metadata          — Push iOS listing + release notes (creates the version if needed)
+#   fastlane ios release ipa:<path>
+#                                  — Upload an exported IPA + listing/notes to App Store Connect
 #   fastlane ios fetch             — Pull current live iOS metadata back into metadata/ios
 #   fastlane android metadata      — Push the Play Store listing (descriptions only)
 #   fastlane android release aab:<path>
@@ -20,23 +23,56 @@
 
 default_platform(:ios)
 
+# App Store Connect API key, built from env vars (shared by all iOS lanes).
+def asc_api_key
+  app_store_connect_api_key(
+    key_id: ENV["ASC_KEY_ID"],
+    issuer_id: ENV["ASC_ISSUER_ID"],
+    key_filepath: File.expand_path(ENV["ASC_KEY_FILEPATH"]),
+    in_house: false
+  )
+end
+
+# The iOS marketing version, read from the native project (source of truth).
+# deliver uses this to create the App Store version if it doesn't exist, else edit it.
+def ios_app_version
+  pbxproj = File.expand_path("../ios/App/App.xcodeproj/project.pbxproj", __dir__)
+  File.read(pbxproj)[/MARKETING_VERSION = ([0-9.]+);/, 1]
+end
+
 # ── iOS ──────────────────────────────────────────────────────────────────────────
 
 platform :ios do
 
-  desc "Upload metadata (descriptions, keywords, release notes) to App Store Connect"
+  desc "Push iOS listing + release notes to App Store Connect (creates the version if needed)"
   lane :metadata do
-    api_key = app_store_connect_api_key(
-      key_id: ENV["ASC_KEY_ID"],
-      issuer_id: ENV["ASC_ISSUER_ID"],
-      key_filepath: File.expand_path(ENV["ASC_KEY_FILEPATH"]),
-      in_house: false
-    )
     deliver(
-      api_key: api_key,
+      api_key: asc_api_key,
+      app_version: ios_app_version,
       skip_binary_upload: true,
       skip_screenshots: true,
-      skip_app_version_update: true,
+      skip_app_version_update: false,  # create the version if missing, otherwise edit it
+      metadata_path: "./metadata/ios",
+      force: true,
+      precheck_include_in_app_purchases: false
+    )
+  end
+
+  desc "Upload an exported IPA + listing/release notes to App Store Connect (creates the version if needed)"
+  lane :release do |options|
+    ipa = options[:ipa] || ENV["IOS_IPA_PATH"]
+    UI.user_error!(
+      "Provide the exported IPA path, e.g.\n" \
+      "  fastlane ios release ipa:build/RiversRun.ipa"
+    ) unless ipa
+
+    deliver(
+      api_key: asc_api_key,
+      ipa: File.expand_path(ipa),
+      app_version: ios_app_version,
+      skip_binary_upload: false,
+      skip_screenshots: true,
+      skip_app_version_update: false,
       metadata_path: "./metadata/ios",
       force: true,
       precheck_include_in_app_purchases: false
@@ -45,14 +81,8 @@ platform :ios do
 
   desc "Download current live metadata from App Store Connect to metadata/ios/en-US/"
   lane :fetch do
-    api_key = app_store_connect_api_key(
-      key_id: ENV["ASC_KEY_ID"],
-      issuer_id: ENV["ASC_ISSUER_ID"],
-      key_filepath: File.expand_path(ENV["ASC_KEY_FILEPATH"]),
-      in_house: false
-    )
     deliver(
-      api_key: api_key,
+      api_key: asc_api_key,
       skip_binary_upload: true,
       skip_screenshots: true,
       run_precheck_before_submit: false,
