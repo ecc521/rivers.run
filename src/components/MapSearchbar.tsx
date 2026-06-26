@@ -136,7 +136,7 @@ export const MapSearchbar: React.FC<MapSearchbarProps> = ({ onSelect }) => {
             top: 'calc(10px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '90%',
+            width: 'calc(100% - 50px - 100px - 10px - 10px)',
             maxWidth: '400px',
             zIndex: 3000, // Above everything
         }}>
@@ -144,15 +144,15 @@ export const MapSearchbar: React.FC<MapSearchbarProps> = ({ onSelect }) => {
                 display: 'flex',
                 alignItems: 'center',
                 backgroundColor: 'var(--surface, #fff)',
-                borderRadius: '24px',
-                padding: '8px 16px',
+                borderRadius: '20px',
+                padding: '6px 12px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 border: '1px solid var(--border, #eee)',
             }}>
-                <span style={{ marginRight: '8px', fontSize: '18px', color: 'var(--text-muted, #888)' }}>🔍</span>
-                <input 
-                    type="text" 
-                    placeholder="Search places or rivers..." 
+                <span style={{ marginRight: '6px', fontSize: '16px', color: 'var(--text-muted, #888)', flexShrink: 0 }}>🔍</span>
+                <input
+                    type="text"
+                    placeholder="Search places or rivers..."
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     onFocus={() => setIsFocused(true)}
@@ -161,16 +161,16 @@ export const MapSearchbar: React.FC<MapSearchbarProps> = ({ onSelect }) => {
                         outline: 'none',
                         background: 'transparent',
                         width: '100%',
-                        fontSize: '16px',
+                        fontSize: '14px',
                         color: 'var(--text, #333)',
                     }}
                 />
                 {query && (
-                    <button 
+                    <button
                         onClick={() => { setQuery(''); setResults([]); }}
                         style={{
-                            background: 'none', border: 'none', fontSize: '16px',
-                            cursor: 'pointer', color: 'var(--text-muted, #888)'
+                            background: 'none', border: 'none', fontSize: '14px',
+                            cursor: 'pointer', color: 'var(--text-muted, #888)', flexShrink: 0, padding: '4px'
                         }}
                     >✕</button>
                 )}

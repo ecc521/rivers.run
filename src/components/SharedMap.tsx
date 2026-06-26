@@ -984,13 +984,15 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     onClick={() => setIsFilterOpen(true)}
                     style={{
                         padding: "8px 12px",
+                        width: "100px",
                         backgroundColor: "var(--surface)",
                         color: "var(--text)",
                         border: "2px solid var(--border)",
                         borderRadius: "8px",
                         cursor: "pointer",
                         fontWeight: "bold",
-                        boxShadow: "0 2px 5px rgba(0,0,0,0.3)"
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
+                        whiteSpace: "nowrap"
                     }}
                 >
                     Filter
@@ -1402,30 +1404,30 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             {pinnedPlace && !isNavigating && (
                 <div style={{
                     position: "absolute",
-                    bottom: isFullScreen
-                        ? "calc(16px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))"
-                        : "16px",
+                    top: isFullScreen
+                        ? "calc(60px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))"
+                        : "60px",
                     left: "50%",
                     transform: "translateX(-50%)",
-                    width: "calc(100% - 32px)",
-                    maxWidth: "420px",
+                    width: "calc(100% - 50px - 100px - 10px - 10px)",
+                    maxWidth: "400px",
                     backgroundColor: "var(--surface)",
-                    borderRadius: "16px",
+                    borderRadius: "12px",
                     boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
                     border: "1px solid var(--border)",
-                    padding: "14px 16px",
+                    padding: "12px 14px",
                     zIndex: 2000,
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
                 }}>
-                    <span style={{ fontSize: "24px", flexShrink: 0 }}>
+                    <span style={{ fontSize: "20px", flexShrink: 0 }}>
                         {pinnedPlace.type === "river" ? "🌊" : "📍"}
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
                             fontWeight: 600,
-                            fontSize: "15px",
+                            fontSize: "14px",
                             color: "var(--text)",
                             whiteSpace: "nowrap",
                             overflow: "hidden",
@@ -1435,12 +1437,12 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         </div>
                         {pinnedPlace.description && (
                             <div style={{
-                                fontSize: "12px",
+                                fontSize: "11px",
                                 color: "var(--text-muted, #888)",
                                 whiteSpace: "nowrap",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
-                                marginTop: "2px",
+                                marginTop: "1px",
                             }}>
                                 {pinnedPlace.description}
                             </div>
@@ -1457,10 +1459,10 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                             backgroundColor: "var(--primary)",
                             color: "#fff",
                             border: "none",
-                            borderRadius: "10px",
-                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            padding: "6px 10px",
                             fontWeight: 600,
-                            fontSize: "13px",
+                            fontSize: "12px",
                             cursor: "pointer",
                             whiteSpace: "nowrap",
                         }}
