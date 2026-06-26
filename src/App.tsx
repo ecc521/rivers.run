@@ -7,19 +7,18 @@ import GlobalNavBar from "./components/GlobalNavBar";
 import Home from "./pages/Home";
 import MapPage from "./pages/MapPage";
 import SettingsPage from "./pages/Settings";
-
-import Clubs from "./pages/Clubs";
-import FAQ from "./pages/FAQ";
-import DeveloperPage from "./pages/Developer";
-import TermsOfService from "./pages/legal/TermsOfService";
-import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
-import Disclaimer from "./pages/legal/Disclaimer";
+import ListsPage from "./pages/ListsPage";
 
 import { useEffect, Suspense, lazy } from "react";
 
+const Clubs = lazy(() => import("./pages/Clubs"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const DeveloperPage = lazy(() => import("./pages/Developer"));
+const TermsOfService = lazy(() => import("./pages/legal/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
+const Disclaimer = lazy(() => import("./pages/legal/Disclaimer"));
 const RiverEditor = lazy(() => import("./pages/RiverEditor"));
-import AdminQueue from "./pages/AdminQueue";
-import ListsPage from "./pages/ListsPage";
+const AdminQueue = lazy(() => import("./pages/AdminQueue"));
 import { ReloadPrompt } from "./components/ReloadPrompt";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import Footer from "./components/Footer";
@@ -145,19 +144,19 @@ function App() {
                       <Route path="/map" element={<MapPage />} />
                       <Route path="/lists" element={<ListsPage />} />
                       <Route path="/lists/:id" element={<Home />} />
-                      <Route path="/clubs" element={<Clubs />} />
+                      <Route path="/clubs" element={<Suspense fallback={<div className="page-content center"><h2>Loading Clubs...</h2></div>}><Clubs /></Suspense>} />
                       <Route path="/favorites" element={<ListsPage />} />
-                      <Route path="/faq" element={<FAQ />} />
+                      <Route path="/faq" element={<Suspense fallback={<div className="page-content center"><h2>Loading FAQ...</h2></div>}><FAQ /></Suspense>} />
                       <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="/api" element={<DeveloperPage />} />
+                      <Route path="/api" element={<Suspense fallback={<div className="page-content center"><h2>Loading API Docs...</h2></div>}><DeveloperPage /></Suspense>} />
                       <Route path="/create" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
                       <Route path="/edit/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
-                      <Route path="/admin" element={<AdminQueue />} />
+                      <Route path="/admin" element={<Suspense fallback={<div className="page-content center"><h2>Loading Admin...</h2></div>}><AdminQueue /></Suspense>} />
                       <Route path="/suggest/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
                       <Route path="/review/:queueId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Interface...</h2></div>}><RiverEditor /></Suspense>} />
-                      <Route path="/terms" element={<TermsOfService />} />
-                      <Route path="/privacy" element={<PrivacyPolicy />} />
-                      <Route path="/disclaimer" element={<Disclaimer />} />
+                      <Route path="/terms" element={<Suspense fallback={<div className="page-content center"><h2>Loading...</h2></div>}><TermsOfService /></Suspense>} />
+                      <Route path="/privacy" element={<Suspense fallback={<div className="page-content center"><h2>Loading...</h2></div>}><PrivacyPolicy /></Suspense>} />
+                      <Route path="/disclaimer" element={<Suspense fallback={<div className="page-content center"><h2>Loading...</h2></div>}><Disclaimer /></Suspense>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </ErrorBoundary>
