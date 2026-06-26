@@ -21,7 +21,15 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios metadata
 ```
 
-Upload metadata (descriptions, keywords, release notes) to App Store Connect
+Push iOS listing + release notes to App Store Connect (creates the version if needed)
+
+### ios release
+
+```sh
+[bundle exec] fastlane ios release
+```
+
+Upload an exported IPA + listing/release notes to App Store Connect (creates the version if needed)
 
 ### ios fetch
 
@@ -42,7 +50,15 @@ Download current live metadata from App Store Connect to metadata/ios/en-US/
 [bundle exec] fastlane android metadata
 ```
 
-Upload metadata (descriptions, release notes) to Google Play
+Update the Play Store listing only (descriptions etc. — no release notes, no binary)
+
+### android release
+
+```sh
+[bundle exec] fastlane android release
+```
+
+Upload a signed AAB + release notes to Production as a DRAFT (review & publish in the Console)
 
 ----
 
