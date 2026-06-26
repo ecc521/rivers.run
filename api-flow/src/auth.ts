@@ -1,6 +1,32 @@
 import type { Context, Next } from "hono";
 
 /**
+ * True if an Origin/Referer header points at localhost or a private LAN address
+ * (RFC 1918). These can never be commercial third-party sites, and the header is
+ * trivially forgeable anyway, so we let them bypass API-key auth for local dev.
+ */
+function isLocalOrPrivateOrigin(value: string | undefined): boolean {
+    if (!value) return false;
+    let host: string;
+    try {
+        host = new URL(value).hostname;
+    } catch {
+        return false;
+    }
+    if (host === "localhost") return true;
+
+    const octets = host.split(".").map(Number);
+    if (octets.length !== 4 || octets.some(o => !Number.isInteger(o) || o < 0 || o > 255)) {
+        return false;
+    }
+    const [a, b] = octets;
+    return a === 127 ||                         // 127.0.0.0/8  loopback
+           a === 10 ||                          // 10.0.0.0/8   private
+           (a === 172 && b >= 16 && b <= 31) || // 172.16.0.0/12 private
+           (a === 192 && b === 168);            // 192.168.0.0/16 private
+}
+
+/**
  * Computes the SHA-256 hash of a string, returning a hex-encoded string.
  */
 export async function hashKey(rawKey: string): Promise<string> {
@@ -20,12 +46,12 @@ export const apiKeyFlowMiddleware = async (c: Context, next: Next) => {
     // 1. Allow official webapp bypass (Origin & Referer check)
     const origin = c.req.header("Origin");
     const referer = c.req.header("Referer");
-    const isOfficialOrigin = origin === "https://rivers.run" || 
+    const isOfficialOrigin = origin === "https://rivers.run" ||
                              (origin && (origin.endsWith(".rivers.run") || origin.startsWith("capacitor://")));
-    const isOfficialReferer = referer === "https://rivers.run/" || 
+    const isOfficialReferer = referer === "https://rivers.run/" ||
                               (referer && (referer.includes(".rivers.run/") || referer.startsWith("capacitor://")));
-    const isLocalDev = (origin && /^https?:\/\/localhost(:\d+)?$/.test(origin)) || 
-                       (referer && /^https?:\/\/localhost(:\d+)?(\/|$)/.test(referer));
+
+    const isLocalDev = isLocalOrPrivateOrigin(origin) || isLocalOrPrivateOrigin(referer);
 
     if (isOfficialOrigin || isOfficialReferer || isLocalDev) {
         return await next();
