@@ -1,1 +1,9 @@
-Rivers.run v5 — a major update! Custom river lists, new bottom navigation bar, and a significantly smaller app size. Maps and flow graphs cache more reliably for offline use. Better flow notification delivery. Bug fixes for shared links and data export.
+Rivers.run v5 — a major update!
+
+• Custom river lists — build and organize paddling lists by region, difficulty, or trip plan
+• New bottom navigation bar for quick access to Map, Search, Lists, and Settings
+• Significantly smaller app size — faster downloads and less storage
+• Maps and flow graphs load faster and cache more reliably for offline use
+• Better flow notification delivery
+• Fixed river detail pages loading from shared links
+• Data export now includes all your saved rivers

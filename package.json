@@ -1,7 +1,7 @@
 {
   "name": "rivers-run",
   "private": true,
-  "version": "4.0.0",
+  "version": "5.0.0",
   "type": "module",
   "workspaces": [
     "api",
@@ -21,16 +21,16 @@
   "dependencies": {
     "@capacitor-community/in-app-review": "^8.0.0",
     "@capacitor-community/keep-awake": "^8.0.1",
-    "@capacitor-firebase/analytics": "^8.2.0",
-    "@capacitor-firebase/authentication": "^8.2.0",
+    "@capacitor-firebase/analytics": "^8.3.0",
+    "@capacitor-firebase/authentication": "^8.3.0",
     "@capacitor/app": "^8.1.0",
-    "@capacitor/core": "^8.3.0",
+    "@capacitor/core": "^8.4.0",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/geolocation": "^8.2.0",
-    "@capacitor/keyboard": "^8.0.3",
+    "@capacitor/keyboard": "^8.0.5",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
-    "@capgo/capacitor-updater": "^8.45.9",
+    "@capgo/capacitor-updater": "^8.49.4",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -55,10 +55,10 @@
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1039.0",
-    "@capacitor/android": "^8.3.0",
+    "@capacitor/android": "^8.4.0",
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^8.3.0",
-    "@capacitor/ios": "^8.3.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
     "@cloudflare/vite-plugin": "^1.32.3",
     "@cloudflare/workers-types": "^4.20260416.2",
     "@eslint/js": "^10.0.1",
@@ -75,7 +75,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "eslint-plugin-sonarjs": "^4.0.2",
     "globals": "^17.5.0",
-    "happy-dom": "20.9.0",
+    "happy-dom": "^20.10.6",
     "jscpd": "^4.0.9",
     "prettier": "^3.8.3",
     "typescript": "~6.0.2",
@@ -83,7 +83,7 @@
     "vite": "^8.0.8",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.4",
-    "wrangler": "^4.83.0"
+    "wrangler": "^4.102.0"
   },
   "browserslist": [
     "ios_saf >= 15",
