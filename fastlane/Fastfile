@@ -1,24 +1,22 @@
 # Rivers.run — Fastlane Configuration
-# Metadata-only setup. No binary builds or screenshot uploads (yet).
 #
-# Usage:
-#   fastlane ios metadata      — Upload iOS metadata to App Store Connect
-#   fastlane ios fetch          — Download current live metadata from App Store Connect
-#   fastlane android metadata  — Upload Android metadata to Google Play
+# fastlane uploads the Android bundle and all store metadata. iOS binaries are
+# still uploaded by hand (Xcode/Transporter); fastlane only pushes iOS metadata.
 #
-# Setup (one-time):
-#   1. Install fastlane: brew install fastlane
-#   2. iOS: Generate an App Store Connect API key
-#      - App Store Connect → Users & Access → Integrations → App Store Connect API
-#      - Click "+" to generate a key with "App Manager" role
-#      - Download the .p8 file → save to fastlane/AuthKey.p8
-#      - Note the Key ID and Issuer ID → fill in below
-#   3. Android: Create a Google Play service account
-#      - Google Cloud Console → IAM → Service Accounts → Create
-#      - Grant "Service Account User" role
-#      - Google Play Console → Setup → API Access → link the service account
-#      - Grant "Release manager" or "Admin" permission to the service account
-#      - Download JSON key → save to fastlane/play-store-key.json
+# Lanes:
+#   fastlane ios metadata          — Push iOS listing + release notes to App Store Connect
+#   fastlane ios fetch             — Pull current live iOS metadata back into metadata/ios
+#   fastlane android metadata      — Push the Play Store listing (descriptions only)
+#   fastlane android release aab:<path>
+#                                  — Upload a signed AAB + release notes to Production
+#                                    as a DRAFT for you to review & publish in the Console
+#
+# Required environment variables:
+#   iOS      ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_FILEPATH (.p8), FASTLANE_APPLE_ID
+#   Android  PLAY_JSON_KEY_FILE  (e.g. ~/Documents/Keys/play-store-rivers-run.json)
+#
+# Play service account needs: "Manage store presence" (metadata) and
+# "Release to production, exclude devices, and use Play App Signing" (release lane).
 
 default_platform(:ios)
 
@@ -68,14 +66,34 @@ end
 
 platform :android do
 
-  desc "Upload metadata (descriptions, release notes) to Google Play"
+  desc "Update the Play Store listing only (descriptions etc. — no release notes, no binary)"
   lane :metadata do
     supply(
       skip_upload_apk: true,
       skip_upload_aab: true,
+      skip_upload_changelogs: true,   # release notes ride with the AAB in `release`
       skip_upload_images: true,
       skip_upload_screenshots: true,
-      skip_upload_changelogs: false,
+      metadata_path: "./metadata/android"
+    )
+  end
+
+  desc "Upload a signed AAB + release notes to Production as a DRAFT (review & publish in the Console)"
+  lane :release do |options|
+    aab = options[:aab] || ENV["ANDROID_AAB_PATH"]
+    UI.user_error!(
+      "Provide the signed AAB path, e.g.\n" \
+      "  fastlane android release aab:android/app/release/app-release.aab"
+    ) unless aab
+
+    supply(
+      aab: File.expand_path(aab),
+      skip_upload_apk: true,
+      skip_upload_metadata: true,     # store listing is handled by the `metadata` lane
+      skip_upload_changelogs: false,  # attach the version's release notes
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "draft",        # uploads only — you publish manually from the Console
       metadata_path: "./metadata/android"
     )
   end
