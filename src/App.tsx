@@ -30,6 +30,38 @@ import { recordAppOpen } from "./utils/appReview";
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { Browser } from '@capacitor/browser';
+
+// On Android, target="_blank" links open Chrome and suspend the WebView, losing navigation state.
+// Instead, intercept external clicks and open them in an in-app browser overlay.
+function ExternalLinkHandler() {
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest("a") as HTMLAnchorElement | null;
+      if (!anchor) return;
+
+      const href = anchor.getAttribute("href");
+      if (!href) return;
+
+      const isExternal = href.startsWith("http://") || href.startsWith("https://");
+      if (!isExternal) return;
+
+      e.preventDefault();
+      Browser.open({ url: href, presentationStyle: "popover" }).catch(() => {
+        // Fallback for older binaries without the Browser plugin
+        window.open(href, "_blank");
+      });
+    };
+
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
+
+  return null;
+}
 
 function DeepLinkHandler() {
   const navigate = useNavigate();
@@ -38,7 +70,7 @@ function DeepLinkHandler() {
     if (Capacitor.isNativePlatform()) {
       // Handle deep links when app is already running
       const listener = CapacitorApp.addListener('appUrlOpen', data => {
-        console.log('App opened with URL:', data.url);
+        console.log('[DeepLink] appUrlOpen fired — url:', data.url, '| current route:', window.location.pathname);
         try {
           const url = new URL(data.url);
           const internalPath = url.pathname + url.search;
@@ -50,8 +82,8 @@ function DeepLinkHandler() {
 
       // Handle cold launch deep links
       CapacitorApp.getLaunchUrl().then(ret => {
+        console.log('[DeepLink] getLaunchUrl result:', ret?.url ?? '(none)', '| current route:', window.location.pathname);
         if (ret && ret.url) {
-          console.log('App cold launched with URL:', ret.url);
           try {
             const url = new URL(ret.url);
             const internalPath = url.pathname + url.search;
@@ -129,8 +161,9 @@ function App() {
     // Check if this is a production build pointing to dev APIs
     if (!import.meta.env.DEV) {
       const isDevAPI = API_URL.includes("localhost") || FLOW_API_URL.includes("localhost");
-      if (isDevAPI) {
-        console.error("🚨 PRODUCTION BUILD MISCONFIGURED: Pointing to dev API endpoints! Do not release this build.");
+      const isDevServer = window.location.hostname === "localhost" || window.location.hostname === "10.0.2.2";
+      if (isDevAPI || isDevServer) {
+        console.error("🚨 PRODUCTION BUILD MISCONFIGURED: Pointing to dev API endpoints or local dev server! Do not release this build.");
         setShowMisconfiguredModal(true);
       }
     }
@@ -143,7 +176,8 @@ function App() {
       // Notify Capgo the app boots successfully
       CapacitorUpdater.notifyAppReady();
 
-      // Check for OTA updates
+      // Check for OTA updates (skip in dev to avoid clobbering the dev session)
+      if (import.meta.env.DEV) return;
       const checkUpdate = async () => {
         try {
           console.log("Checking for OTA updates...");
@@ -191,6 +225,7 @@ function App() {
             <ModalProvider>
               <Router>
                 <DeepLinkHandler />
+                <ExternalLinkHandler />
                 <div
                   style={{
                     minHeight: "100vh",

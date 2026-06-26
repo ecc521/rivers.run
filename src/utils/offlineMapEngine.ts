@@ -99,9 +99,8 @@ const ensureMapDirectory = async () => {
                 directory: Directory.Data,
                 recursive: true
             });
-        } catch (_e) {
-            console.debug("Directory likely exists", _e);
-            // Directory likely exists
+        } catch {
+            // Directory already exists, which is fine
         }
     }
 };

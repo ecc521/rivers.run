@@ -1,5 +1,4 @@
-Rivers.run v5 — a major update!
-
+• Fixed app resetting after returning from external links
 • Custom river lists — build and organize paddling lists by region, difficulty, or trip plan
 • New bottom navigation bar for quick access to Map, Search, Lists, and Settings
 • Significantly smaller app size — faster downloads and less storage
