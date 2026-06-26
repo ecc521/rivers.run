@@ -3,7 +3,24 @@ import { auth } from "../firebase";
 export const API_URL = import.meta.env.VITE_API_BASE_URL || "https://api.rivers.run";
 export const FLOW_API_URL = import.meta.env.VITE_FLOW_API_URL || "https://flow.rivers.run";
 
-export const isDev = import.meta.env.DEV;
+function isPrivateHost(url: string): boolean {
+    try {
+        const h = new URL(url).hostname;
+        return h === "localhost" ||
+            h.startsWith("10.") ||
+            h.startsWith("192.168.") ||
+            /^172\.(1[6-9]|2\d|3[01])\./.test(h);
+    } catch { return false; }
+}
+
+const isDevHost = typeof window !== "undefined" && isPrivateHost(window.location.href);
+const isDevAPI = isPrivateHost(API_URL) || isPrivateHost(FLOW_API_URL);
+
+if (!import.meta.env.DEV && isDevAPI) {
+    console.error("🚨 PRODUCTION BUILD MISCONFIGURED: Pointing to dev API endpoints! Do not release this build.");
+}
+
+export const isDev = import.meta.env.DEV || isDevHost || isDevAPI;
 
 
 /**

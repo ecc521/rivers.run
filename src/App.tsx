@@ -9,8 +9,7 @@ import MapPage from "./pages/MapPage";
 import SettingsPage from "./pages/Settings";
 import ListsPage from "./pages/ListsPage";
 
-import { useEffect, Suspense, lazy, useState } from "react";
-import { API_URL, FLOW_API_URL } from "./services/api";
+import { useEffect, Suspense, lazy } from "react";
 
 const Clubs = lazy(() => import("./pages/Clubs"));
 const FAQ = lazy(() => import("./pages/FAQ"));
@@ -105,69 +104,8 @@ function DeepLinkHandler() {
   return null;
 }
 
-function ProdMisconfiguredModal({ onDismiss }: Readonly<{ onDismiss: () => void }>) {
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10000,
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '24px',
-        borderRadius: '8px',
-        maxWidth: '400px',
-        textAlign: 'center',
-        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-        border: '2px solid #dc2626',
-      }}>
-        <h2 style={{ color: '#dc2626', margin: '0 0 12px 0' }}>
-          Production Build Misconfigured
-        </h2>
-        <p style={{ color: '#666', margin: '0 0 20px 0', fontSize: '14px', lineHeight: '1.5' }}>
-          This is a production build configured to dev API endpoints. <strong>DO NOT RELEASE THIS BUILD.</strong>
-        </p>
-        <button
-          onClick={onDismiss}
-          style={{
-            backgroundColor: '#dc2626',
-            color: 'white',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: '6px',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-          }}
-        >
-          Dismiss
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function App() {
-  const [showMisconfiguredModal, setShowMisconfiguredModal] = useState(false);
-
-  useEffect(() => {
-    // Check if this is a production build pointing to dev APIs
-    if (!import.meta.env.DEV) {
-      const isDevAPI = API_URL.includes("localhost") || FLOW_API_URL.includes("localhost");
-      const isDevServer = window.location.hostname === "localhost" || window.location.hostname === "10.0.2.2";
-      if (isDevAPI || isDevServer) {
-        console.error("🚨 PRODUCTION BUILD MISCONFIGURED: Pointing to dev API endpoints or local dev server! Do not release this build.");
-        setShowMisconfiguredModal(true);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     recordAppOpen();
@@ -222,8 +160,7 @@ function App() {
 
   return (
     <>
-      {showMisconfiguredModal && <ProdMisconfiguredModal onDismiss={() => setShowMisconfiguredModal(false)} />}
-      <AuthProvider>
+<AuthProvider>
         <SettingsProvider>
           <ListsProvider>
             <ModalProvider>
