@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { AuthModal } from "./AuthModal";
 import { ProfileMenu } from "./ProfileMenu";
+import { isDev } from "../services/api";
 
 const GlobalNavBar: React.FC = () => {
   const { t } = useTranslation();
@@ -70,12 +71,12 @@ const GlobalNavBar: React.FC = () => {
           style={{
             fontWeight: 700,
             fontSize: "1.25rem",
-            color: "white",
+            color: isDev ? "#ef4444" : "white",
             textDecoration: "none",
             flexShrink: 0
           }}
         >
-          Rivers.run
+          {isDev ? "RRunDev" : "Rivers.run"}
         </Link>
 
         <div
