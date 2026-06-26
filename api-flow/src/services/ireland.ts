@@ -37,7 +37,7 @@ export const irelandProvider: GaugeProvider = {
 
         while (!success && attempts <= MAX_RETRIES) {
             try {
-                const res = await fetchWithTimeout("https://waterlevel.ie/geojson/latest/", { headers: DEFAULT_HEADERS }, 30000);
+                const res = await fetchWithTimeout("https://waterlevel.ie/geojson/latest/", { headers: DEFAULT_HEADERS }, 60000);
                 if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status}`);
                 
                 const data: any = await res.json();
