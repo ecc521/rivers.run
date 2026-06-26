@@ -138,7 +138,7 @@ export const MapSearchbar: React.FC<MapSearchbarProps> = ({ onSelect }) => {
             transform: 'translateX(-50%)',
             width: 'calc(100% - 50px - 100px - 10px - 10px)',
             maxWidth: '400px',
-            zIndex: 3000, // Above everything
+            zIndex: 1500, // Behind river popups, above map controls
         }}>
             <div style={{
                 display: 'flex',
