@@ -21,6 +21,6 @@
     "@types/nodemailer": "^8.0.1",
     "typescript": "~6.0.2",
     "vitest": "^4.1.4",
-    "wrangler": "^4.102.0"
+    "wrangler": "^4.105.0"
   }
 }
