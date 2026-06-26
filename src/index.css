@@ -173,15 +173,13 @@ a:hover {
     max-height: 75vh;
 }
 /*★☆⬆⬇*/
-/*Make sure I have the two star images being the same size, and arrows that look how I want, in a font.*/
-/*
-https://fonts.googleapis.com/css?family=Noto Sans HK&text=★☆⬆⬇
-*/
+/* Noto Sans HK subset: ★☆⬆⬇ — ensures consistent rendering cross-platform */
 @font-face {
   font-family: 'Noto Sans HK';
   font-style: normal;
   font-weight: 400;
-  src: url("data:font/woff2;base64,d09GMk9UVE8AAAS8AAwAAAAAB3AAAARyAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAADYYfBmAOCABsATYCJAMMBAYFg3AHIBckGAwbngbIxIfezXqTMKFXUuXYs0pqhtiq0FV6KojVwtF0XWqyvyciMsAg//+949rat3AsDSzl9vu3sTbOZZ0vFgc0xrY+YBhg4JSWbTW1MLxcFk6VDIFOB0KIcZOqqWf6+gc613ecEYoM9voSUwdOryBDFWR4WK6qIEcI2EcF9jHx2EEdb5XF3O7crZWAIe6W60vpqFxdCeRfk2vpJQtLrHeF3ABso1xPSi2DnpCLL9+1f+i6J1aq8W2JWCSqKXarzdkOmuu1ecryoOoPKc1RTYsvsFi2bNli9o1qzAG1z9JiVq5zoRIbUHyKlvAFQ33qbI+ihhWPqkZ6Q8ra/oBZVNxKQulcr7iusfLgY6wNhvq1mLbttsfrWBXrj/h92sD0Bzyh/lAiFgAIFQjtJCIEgIAAFAIhJZUVZERurIBSCQjflFeQ0R6l4gtEsRxUAMFZGCdVZAUJc/mx1B/fn/9Y+R+PpboeMz74B5dNqXvTO7P3Ssn6zKUm/nayg6ZKJX535hyT8UPmcrPP67NWvymoZm9nOmjWmvqDWKaD/zfFG9IF5K60VUyfkxw0jfO/9Vxg39IjEhf4t5T/fURid3AfF/n3Y0PsHhZk9/Pd2vA4X/HfK/075n2m7cSI5knrJdEDi4N9S/rc0tJ/dyS/ilH8zdYjdxcLsLh6emuSUfUONV3Ynu2hohhrf1K9i7Mps7TEZJ34/TFmX9CzzXP8rHZWua32OeSjzSsauPyboMb3zLN5e8wxfcG/NsU3b/7niL20MvPU/59O0eHW6ibCv2Zcis6XvX5G5EreTV7KVIxL/KXkq/ylzKi12y0+nPmPPm/jK5JX8y8yVfOWQxH7KnMp+Sipv7svhD5TMg8PSa4VvGm6Zvk6Wbzl+nVw0Ipeld574v4mPSWy6Zsc9hfcY7vlElu/5xFdAFD8kE6BoEIaE8wCsL6XIJbCT1X2CgSJyLlM6L3u8Xg+WNdI2vRjPHwV0R4lyWTnRm4hQLXxmvAqkT8YmxlcbxBRV0EBIKeStgg7NFOkQgdAotenzeaCRtkkq9lHm3exGRQSyNjT3cEGOAI0SIgRoM3jbmVVHPiUACdFhvrRk0X8Fovjj6uSH5L07TF1mDv/RENeXhiAYnFy/NfflUyzLzMl+ZIifUxMtI+KPCKIRDbjCWdH1N2SBAoTPZ9GdwICfNLcigpNJqUhAMRFEItbg0V6dLKII4jyRhHo43y2GE0AUGjTEsQAWWDCAABKIIQ4NHDMG3u2FGSoSiMACL9ZgAzZBhQYVZ8KHfsh2Yj06cAZC6wfRCx8SOAchJPZFKvIV2GGGNfYtRFRDYBZtJs3mMcNGNJf5ffChB6ENxWGEsBWhvZELw91wwYX5cBxv+h544YUHC6/sVwuxHKvgxQqsntXsaVIICuGms5dbYYMT7a28C83z+csRhAr/tRI1P1fYEofM8Mlgvv9MHyxo8XrxOxiYPwA7olxSCvJvTv6CuHl39kIiUIFaYCEWog52") format('woff2');
+  src: url("data:font/woff2;base64,d09GMgABAAAAAAPIABAAAAAABygAAANvAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGx4cQAZgP1NUQVQuAEQRCAqDAIIsCw4AATYCJAMSBCAFhGoHIBckGA4bqwXIBB76uqr3M7PEkXJmd1tioaFClpq8Lcwb4bgL5f9z77iTUP6XcEp/tF63Nq21KPS1aVEnjzhS7EMc9srsQABmDgtbRFNLlwcjCpwrmfT1LVTDoMdPM0KbSzOkRJe0aVJigbk4KdOBuQApM4GVOVL6T4zdrshfiIvQgXSONESWzlAgJigQzXHJImGZVMycmvF1lVM2781fqG9q6KUONdMgLyTPgi7lLKFOuYWhPiYdk77sXqtHIDDuELv9rsNI69HYikh9EjJ6JHERjyeWkJeSawK7kUd4FPLIZ8RYn1NT9JmGfe9XU3SZ+mQy+e2n/33wfz+dVSsQySSOGHoG6/14YBitl/WA4kOHZqn/lxVZlmWH44DJ5DW49ImoXdMMG45IRB/dZmp4d3Bq72hQ2EYtw9uWYdue0v37bB4fXq/Hs8fv93r3+Xx+v/CYfT4z/DVRs4hqmBXrsoVwRFh0ttD6L+ovFx6uvmpn/NnqqwrSnx/dqb5q/NmC6quoOv6jcvCNuX716NtH31bn+g++oUzM9iqzvRyTi43TvRPGQy8v9GiH3z38rrbQc+hl48RNJwcVyVdyebz09rS4c7jl3Mi5keEWZ1q89PbL474SKaQ8Xn7fgSnp4FTZfXS/eLfsOdVzqny3tYur8+/OyBaeuLlbktB/4r8rOumo+s0oy79URr+4JzU73PX1JQ9/8O/ef36xLBjeHvpXUP7dj8pZ/38Dlkf+3fvfp5aFF9BZ8hyVYb4B+ReWO4UbubG9pJc28fzdqZbXxNLLOxWTGLhOjKWsYL9oYiXsooSVqeN3ViGNt1gdCcKsnpOpY+wUYXUL8S/2+dGIEyXGilu5wgIV5ArblgmxRJwFVhjl6CI+OkMO8ywRJZdeWuiih3lW8N1BAsyxTBudZDOARpRVZgiwhA9NlMe+Ps8cKgXkkEceRWTTRgGVxGZAqI3WRHV+ZQ755FOGmVkCTDO5R2MEjQ00nYpxtIRiSsijcCd2VYQqalNnrL78eppooJfK00zJzbUipRHS90h5KK8jx1Qg9qrUE2ae4BkWpd061u1QDoF25NzL/llySScLlXXib6U7E5bvNrOGRlhAyw2qVnI9BJidfVsqg8yzyhIhpFRmkf+cM3kqzbSqhRPx6//Wv61Jlvw3OvWvksBdyAtUUslJFAA=") format('woff2');
+  unicode-range: U+2605-2606, U+2B06-2B07;
 }
 
 /*position: relative is on container (riverspan:nth-child(5)).*/
@@ -588,7 +586,7 @@ Those include name,section,skill,quality, and flow info*/
 .trend-arrow {
     font-family: 'Noto Sans HK', Arial, Helvetica, sans-serif;
     font-weight: bold;
-    font-size: 1.25em; /* Make the arrow fatter and stand out more */
+    font-size: 1.15em;
     line-height: 1;
     flex-shrink: 0;
     margin-left: 0; /* 0px space next to flow on small screens */
