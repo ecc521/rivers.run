@@ -441,8 +441,7 @@ export const usgsProvider: GaugeProvider = {
         console.log(`USGS Provider: ${activeSites.size} active sites (≤14 days), fetching metadata...`);
 
         if (activeSites.size === 0) {
-            console.error("USGS Provider: No active sites returned — aborting registry build");
-            return [];
+            throw new Error("USGS Provider: No active sites returned from latest-continuous — OGC API may be down or rate-limited");
         }
 
         const siteIds = Array.from(activeSites.keys());

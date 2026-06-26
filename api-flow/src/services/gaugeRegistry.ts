@@ -31,7 +31,10 @@ export async function compileGaugeRegistry(env: Env, existingRegistry: Record<st
                 // 1. Attempt to fetch new site list
                 const newSites = await provider.getFullSiteListing(env);
                 
-                // 2. SUCCESS: Clear old entries for this provider and replace with new ones
+                // 2. SUCCESS: Clear old entries for this provider and replace with new ones.
+                // Guard: never wipe existing entries if the new listing is empty — treat as a
+                // silent failure so the catch block's preserve logic applies instead.
+                if (newSites.length === 0) throw new Error(`${provider.id}: getFullSiteListing returned 0 sites`);
                 const prefix = `${provider.id}:`;
                 Object.keys(gaugeRegistry).forEach(k => {
                     if (k.startsWith(prefix)) delete gaugeRegistry[k];

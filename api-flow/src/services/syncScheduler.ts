@@ -62,7 +62,7 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
             const gid = fullId.includes(":") ? fullId.split(":")[1] : fullId;
             mergedData[fullId] = {
                 id: gid,
-                name: fullId, // Fallback name
+                name: '',
                 readings: []
             };
         }
@@ -102,7 +102,7 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
                                 const existingName = mergedData[fullId]?.name;
                                 const newName = (typeof history.name === 'string' && history.name && history.name.toLowerCase() !== id.toLowerCase())
                                     ? history.name
-                                    : (existingName || history.name || id);
+                                    : (existingName || history.name || '');
                                 mergedData[fullId] = {
                                     ...mergedData[fullId],
                                     ...history,
@@ -131,7 +131,7 @@ export async function performDataSync(env: Env, registryMetadata: Record<string,
                                 } else {
                                     mergedData[fullId] = {
                                         id,
-                                        name: registryMetadata[fullId]?.name || id,
+                                        name: registryMetadata[fullId]?.name || '',
                                         lat: sanitizeCoordinate(registryMetadata[fullId]?.lat),
                                         lon: sanitizeCoordinate(registryMetadata[fullId]?.lon),
                                         readings: [reading]
