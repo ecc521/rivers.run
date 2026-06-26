@@ -1,3 +1,12 @@
+// @vitest-environment jsdom
+//
+// This suite runs under jsdom instead of the project-wide happy-dom default.
+// DOMPurify 3.4.8+ walks the DOM with createNodeIterator for template scrubbing,
+// and happy-dom's createNodeIterator implementation is incomplete — it makes
+// DOMPurify silently strip wrapper elements while leaking <script> bodies as text.
+// That is a happy-dom bug, not a sanitizer regression: under jsdom (and every real
+// browser) DOMPurify sanitizes correctly. jsdom's spec-complete DOM is what we want
+// to validate the production behavior against.
 import { describe, it, expect } from "vitest";
 import { sanitizeHtml } from "./sanitizeHtml";
 
