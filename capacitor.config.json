@@ -14,6 +14,9 @@
     },
     "SystemBars": {
       "insetsHandling": "css"
+    },
+    "CapacitorUpdater": {
+      "autoUpdate": false
     }
   },
   "server": {
