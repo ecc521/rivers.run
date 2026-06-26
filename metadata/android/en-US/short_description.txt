@@ -1,1 +1,1 @@
-Real-time river gauges, whitewater maps & offline flow data for paddlers.
+Real-time river gauges, offline maps & navigation for whitewater paddlers.

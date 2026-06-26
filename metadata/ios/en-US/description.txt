@@ -1,32 +1,41 @@
-Water levels, notifications, and paddling information at your fingertips. Rivers.run includes information on over 10,000 rivers and creeks across the US, Canada, and UK/Ireland.
+Real-time river levels and crowdsourced paddling beta for whitewater paddlers. Rivers.run covers 10,000+ rivers and creeks across the US, Canada, and the UK & Ireland.
 
-Rivers.run is your guide to whitewater (and flatwater) paddling, matching real-time gauge data with crowdsourced expertise. With data sourced from USGS, Environment Canada, and UK/Ireland gauges, rivers.run takes the guesswork out of river levels with flow notifications, color coding, and easy to use search & sort tools.
+Match live gauge data with hard-won local knowledge: flow color-coding, rapid-by-rapid descriptions, access points, and difficulty ratings, all in one place. Flow data comes straight from government gauges — USGS, Environment Canada, and the UK & Ireland — alongside NOAA forecasts. River descriptions, access points, and runnable levels are crowdsourced by the paddling community.
 
 KEY FEATURES
 
-Interactive Map & Weather
-Discover local rivers, view live weather radar (US), and tap any run to see live gauge information, access points, and rapid descriptions.
+Live Flows & Forecasts
+See current levels from USGS, Environment Canada, UK, and Ireland gauges, with simple low/runnable/high color coding. Dig into 28-day history graphs and NOAA forecasts to plan ahead. Switch freely between imperial and metric (CFS/CMS, ft/m, °F/°C).
 
-Works Offline
-Crucial for remote put-ins and deep canyons, rivers.run is designed to work offline. Cache your favorites, maps, and flow graphs before you leave — the app stays fully functional in dead zones.
+Interactive Map & Weather Radar
+Discover nearby rivers, view live weather radar (US), and tap any run for gauge readings, access points, and rapid descriptions.
 
-Advanced Search & Filtering
-Find your next trip by filtering rivers by current water levels, difficulty class, location, distance, custom tags, and more.
+Offline Navigation (USA-only)
+Easy, free state-by-state map downloads keep you oriented when your signal disappears. Find put-ins and take-outs, get directions, and follow your live GPS location with no cell service at all — your favorites, lists, and saved flows come along too.
 
-Custom Lists & Favorites
-Build and organize your own river lists by region, difficulty, or trip plan.
+Powerful Search & Filtering
+Find your next trip by water level, difficulty class, distance, region, custom tags, and more — then sort by what's running right now.
 
-Flow Notifications
-Set alerts for your favorite runs and get notified when flows hit your preferred range.
+Flow Alerts That Find Rare Runs
+Star the runs you care about and get an alert the moment they come into your preferred range — perfect for creeks that only run a few days a year. Prefer the big picture? Switch to a daily email digest of conditions, delivered at a time you choose.
+
+Custom Lists & Sync
+Build river lists by region, difficulty, or trip plan, and sync them across all your devices.
+
+Apple Watch
+Sync your lists to the companion Apple Watch app and check levels from the trailhead.
 
 Community-Driven
-Can't find your favorite local creek? Don't agree with a runnable level? Our database is crowdsourced, allowing you to easily contribute and improve the map for fellow paddlers.
+Can't find your local creek? Disagree with a runnable level? The map is crowdsourced: anyone can suggest edits, new access points, or a fresh run write-up, and our moderators review every change to keep it accurate.
+
+Built for Everyone
+Dark mode and a colorblind-friendly palette come standard.
 
 Rivers.run is free, open-source, and built by paddlers for paddlers.
 
-River flows are subject to change and conditions can vary rapidly. Always exercise caution, wear appropriate safety gear, and verify local conditions before paddling.
+River flows change and conditions can vary rapidly. Always exercise caution, wear appropriate safety gear, and verify local conditions before paddling.
 
-Need assistance or have feedback? Reach out to support@rivers.run
+Need help or have feedback? Reach out to support@rivers.run
 
 Privacy Policy: https://rivers.run/privacy
 Terms of Service: https://rivers.run/terms

@@ -1,1 +1,1 @@
-Check river levels before you paddle! Real-time gauge data from 10,000+ stations across the US, Canada, and UK/Ireland — with full offline support.
+Real-time levels for 10,000+ rivers across the US, Canada & UK/Ireland. Color-coded flows, NOAA forecasts, custom alerts, and free offline maps (US) for the gorge.

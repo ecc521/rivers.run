@@ -1,1 +1,1 @@
-whitewater,kayak,river,gauge,flow,rafting,paddling,canoe,water level,creek,USGS,streamflow
+whitewater,kayak,river,gauge,flow,rafting,paddling,canoe,water level,creek,USGS,offline maps,rapids
