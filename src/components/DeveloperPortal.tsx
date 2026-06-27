@@ -36,19 +36,19 @@ export const DeveloperPortal: React.FC = () => {
     const [copyLabel, setCopyLabel] = useState("Copy");
     const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const loadDeveloperData = async () => {
+    const loadDeveloperData = async (showLoader = true) => {
         try {
-            setLoading(true);
+            if (showLoader) setLoading(true);
             const [fetchedKeys, fetchedUsage] = await Promise.all([
-                fetchAPI("/developer/keys"),
-                fetchAPI("/developer/usage")
+                fetchAPI(`/developer/keys?_=${Date.now()}`),
+                fetchAPI(`/developer/usage?_=${Date.now()}`)
             ]);
             setKeys(fetchedKeys || []);
             setUsage(fetchedUsage || []);
         } catch (e: any) {
             console.error("Failed to load developer keys/telemetry:", e);
         } finally {
-            setLoading(false);
+            if (showLoader) setLoading(false);
         }
     };
 
@@ -95,8 +95,7 @@ export const DeveloperPortal: React.FC = () => {
             await fetchAPI(`/developer/keys/${encodeURIComponent(key.key_hash)}`, {
                 method: "DELETE"
             });
-            await alert("The API key has been revoked and deleted.", "Key Revoked");
-            await loadDeveloperData();
+            await loadDeveloperData(false);
         } catch (e: any) {
             await alert(e.message || "Failed to revoke key.", "Error");
         }
