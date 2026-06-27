@@ -131,7 +131,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const createList = async (title: string, description: string, isPublished: boolean, rivers: { id: string; order: number }[] = []) => {
     if (!user) return null;
-    const limit = isModerator ? 500 : 5;
+    const limit = isModerator ? 500 : 20;
     if (myLists.length >= limit) {
        throw new Error(`You have reached the maximum limit of ${limit} custom lists.`);
     }

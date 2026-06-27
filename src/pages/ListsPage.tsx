@@ -102,7 +102,7 @@ const ListsPage: React.FC = () => {
   }
 
   const handleCreateList = async () => {
-    const limit = isModerator ? 500 : 5;
+    const limit = isModerator ? 500 : 20;
     if (myLists.length >= limit) {
       await alert(`You have reached the limit of ${limit} custom lists.`);
       return;
@@ -127,7 +127,7 @@ const ListsPage: React.FC = () => {
   };
 
   const handleCopyList = async (list: UserList) => {
-    const limit = isModerator ? 500 : 5;
+    const limit = isModerator ? 500 : 20;
     if (myLists.length >= limit) {
       await alert(`You have reached the limit of ${limit} custom lists. You cannot clone another list until you delete one of your own.`);
       return;
@@ -483,12 +483,12 @@ const ListsPage: React.FC = () => {
                 <>
                   {myLists.length > 0 && (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px", marginBottom: "10px" }}>
-                         <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>{t("listsPage.myListsTitle", { count: myLists.length, limit: isModerator ? t("listsPage.unlimited") : "5" })}</h3>
+                         <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>{t("listsPage.myListsTitle", { count: myLists.length, limit: isModerator ? t("listsPage.unlimited") : "20" })}</h3>
                       </div>
                   )}
 
                   {myLists.map(l => renderListCard(l))}
-                  {myLists.length < (isModerator ? 500 : 5) && (
+                  {myLists.length < (isModerator ? 500 : 20) && (
                       <button onClick={handleCreateList} style={{ padding: "15px", border: "2px dashed var(--border)", borderRadius: "8px", backgroundColor: "transparent", color: "var(--primary)", fontWeight: "bold", fontSize: "1.1em", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "5px" }}>
                          <span>+</span> {t("listsPage.createNewList")}
                       </button>
