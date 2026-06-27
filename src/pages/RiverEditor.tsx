@@ -151,6 +151,22 @@ export default function RiverEditor() {
 
       if (authLoading) return;
       if (!isReviewMode && isNewFromURL && !restoreId) {
+        const gaugeId = searchParams.get('gaugeId');
+        const name = searchParams.get('name');
+        const section = searchParams.get('section');
+        const country = searchParams.get('country');
+        const state = searchParams.get('state');
+
+        if (gaugeId || name || section || country || state) {
+          setRiverData((prev: any) => ({
+            ...prev,
+            name: name || "",
+            section: section || "",
+            countries: country || "US",
+            states: state || "",
+            gauges: gaugeId ? [{ id: gaugeId.toUpperCase().replace(/\s+/g, ''), isPrimary: true }] : []
+          }));
+        }
         setLoading(false);
         return;
       }

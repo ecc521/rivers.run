@@ -315,7 +315,9 @@ const RiverPage: React.FC = () => {
             opacity: 0.9
           }}>
             <Link 
-              to={`/edit/${river.id}`}
+              to={river.isGauge 
+                ? `/create?gaugeId=${encodeURIComponent(river.id)}&name=${encodeURIComponent(river.name)}&section=${encodeURIComponent(river.section || "")}&country=${encodeURIComponent(river.countries || "")}&state=${encodeURIComponent(river.states || "")}`
+                : `/edit/${river.id}`}
               style={{
                 display: "inline-block",
                 fontSize: "0.85rem",
@@ -337,7 +339,7 @@ const RiverPage: React.FC = () => {
                 e.currentTarget.style.borderColor = "var(--border)";
               }}
             >
-              {t("riverPage.editRiver")}
+              {river.isGauge ? t("riverPage.suggestRiver") : t("riverPage.editRiver")}
             </Link>
 
             <button 
