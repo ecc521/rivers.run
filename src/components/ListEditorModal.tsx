@@ -423,20 +423,19 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
       }}
       onClick={onClose}
     >
-      <div
+      <form
+        onSubmit={handleSave}
         style={{
           backgroundColor: "var(--surface)",
-          padding: "24px",
           borderRadius: "12px",
           maxWidth: "550px",
           width: "95%",
           maxHeight: "90vh",
-          overflowY: "auto",
           boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
           display: "flex",
           flexDirection: "column",
-          gap: "20px",
-          boxSizing: "border-box"
+          boxSizing: "border-box",
+          position: "relative"
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -489,6 +488,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
               </p>
               <div style={{ display: "flex", gap: "12px", width: "100%" }}>
                 <button 
+                  type="button"
                   onClick={() => setShowConfirmOverlay(false)}
                   disabled={toggling}
                   style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: "bold", fontSize: "0.9rem" }}
@@ -496,6 +496,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                   Cancel
                 </button>
                 <button 
+                  type="button"
                   onClick={confirmTogglePublish}
                   disabled={toggling}
                   style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "none", backgroundColor: activeList.isPublished ? "var(--danger)" : "var(--primary)", color: "white", cursor: "pointer", fontWeight: "bold", fontSize: "0.9rem" }}
@@ -507,17 +508,18 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "24px 24px 16px 24px", flexShrink: 0 }}>
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "1.5rem" }}>
             {modalTitle}
             </h3>
             {(mode === "edit" || mode === "shared") && !!activeList && (
                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                 <button onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
+                 <button type="button" onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
                    <span style={{ fontSize: "1.1em" }}>🔗</span> {Capacitor.isNativePlatform() ? "Share List" : "Copy Link"}
                  </button>
                  {mode === "edit" && isOwner && (
                    <button
+                     type="button"
                      onClick={handleTogglePublish}
                      disabled={toggling}
                      style={{
@@ -535,7 +537,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                    </button>
                  )}
                  {!!user && (
-                   <button onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
+                   <button type="button" onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
                      ⌚️ Sync Watch
                    </button>
                  )}
@@ -552,34 +554,36 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             )}
         </div>
 
-        {isAdminEditing && !!activeList && (
-          <div style={{ backgroundColor: "rgba(217, 119, 6, 0.12)", border: "1px solid #d97706", borderRadius: "8px", padding: "10px 14px", color: "#d97706", fontSize: "0.85rem", fontWeight: 600 }}>
-            ⚠️ Editing as Admin — List owner ({activeList.author || "another user"}) may be notified.
-          </div>
-        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", overflowY: "auto", padding: "8px 24px 20px 24px", flex: 1 }}>
+          {isAdminEditing && !!activeList && (
+            <div style={{ backgroundColor: "rgba(217, 119, 6, 0.12)", border: "1px solid #d97706", borderRadius: "8px", padding: "10px 14px", color: "#d97706", fontSize: "0.85rem", fontWeight: 600 }}>
+              ⚠️ Editing as Admin — List owner ({activeList.author || "another user"}) may be notified.
+            </div>
+          )}
 
-        {mode === "shared" && !isAdminEditing && !!activeList && (
-           <div style={{ display: "flex", gap: "10px", paddingBottom: "10px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
-             {user && onCopySharedList && (
-                 <button
-                    onClick={handleDuplicateList}
-                    style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
-                 >
-                    Import to My Lists
-                 </button>
-             )}
-             {!user && (
-                 <button
-                    onClick={() => { setAuthModalOpen(true); }}
-                    style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
-                  >
-                     Sign in to Save
-                  </button>
-              )}
-           </div>
-        )}
+          {mode === "shared" && !isAdminEditing && !!activeList && (
+             <div style={{ display: "flex", gap: "10px", paddingBottom: "10px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
+               {user && onCopySharedList && (
+                   <button
+                      type="button"
+                      onClick={handleDuplicateList}
+                      style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
+                   >
+                      Import to My Lists
+                   </button>
+               )}
+               {!user && (
+                   <button
+                      type="button"
+                      onClick={() => { setAuthModalOpen(true); }}
+                      style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
+                    >
+                       Sign in to Save
+                    </button>
+                )}
+             </div>
+          )}
 
-        <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
             <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
               List Name <span style={{ color: 'var(--danger)' }}>*</span>
@@ -707,98 +711,93 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
               </DndContext>
             </div>
           )}
+        </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
-            {(() => {
-              if (mode === "shared" && !isAdminEditing && targetList) {
-                return (
-                  <button
-                    type="button"
-                    onClick={handleReport}
-                    style={{
-                      padding: "4px 8px",
-                      backgroundColor: "transparent",
-                      border: "none",
-                      color: "var(--text-muted)",
-                      cursor: "pointer",
-                      fontSize: "0.85rem",
-                      textDecoration: "underline"
-                    }}
-                  >
-                    🚩 Report a Problem
-                  </button>
-                );
-              }
-              if (isOwner) {
-                return (
-                  <button
-                    type="button"
-                    onClick={handleDeleteList}
-                    style={{
-                      padding: "10px 24px",
-                      backgroundColor: "transparent",
-                      color: "var(--danger)",
-                      border: "1px solid var(--danger)",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    Delete List
-                  </button>
-                );
-              }
-              return <div></div>;
-            })()}
-            
-            {activeList && (
-              <div style={{ position: "absolute", bottom: "10px", right: "24px", opacity: 0.4, fontSize: "0.7rem", pointerEvents: "none", color: "var(--text-muted)" }}>
-                List ID: {activeList.id}
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={saving}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "transparent",
-                  border: "1px solid var(--border)",
-                  color: "var(--text)",
-                  borderRadius: "8px",
-                  cursor: saving ? "not-allowed" : "pointer",
-                  fontWeight: 600,
-                  transition: "all 0.2s",
-                }}
-              >
-                {!canEdit ? "Close" : "Cancel"}
-              </button>
-            {canEdit && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: "1px solid var(--border)", backgroundColor: "var(--surface)", borderBottomLeftRadius: "12px", borderBottomRightRadius: "12px", position: "relative", flexShrink: 0 }}>
+          {(() => {
+            if (mode === "shared" && !isAdminEditing && targetList) {
+              return (
                 <button
+                  type="button"
+                  onClick={handleReport}
+                  style={{
+                    padding: "4px 8px",
+                    backgroundColor: "transparent",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    fontSize: "0.85rem",
+                    textDecoration: "underline"
+                  }}
+                >
+                  🚩 Report a Problem
+                </button>
+              );
+            }
+            if (isOwner) {
+              return (
+                <button
+                  type="button"
+                  onClick={handleDeleteList}
+                  style={{
+                    padding: "10px 24px",
+                    backgroundColor: "transparent",
+                    color: "var(--danger)",
+                    border: "1px solid var(--danger)",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Delete List
+                </button>
+              );
+            }
+            return <div></div>;
+          })()}
+          
+
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "transparent",
+                border: "1px solid var(--border)",
+                color: "var(--text)",
+                borderRadius: "8px",
+                cursor: saving ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                transition: "all 0.2s",
+              }}
+            >
+              {!canEdit ? "Close" : "Cancel"}
+            </button>
+            {canEdit && (
+              <button
                 type="submit"
                 disabled={saving || !title.trim()}
                 style={{
-                    padding: "10px 24px",
-                    backgroundColor: "var(--primary)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: (saving || !title.trim()) ? "not-allowed" : "pointer",
-                    fontWeight: 600,
-                    transition: "all 0.2s",
-                    boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.4)",
-                    opacity: (saving || !title.trim()) ? 0.7 : 1
+                  padding: "10px 24px",
+                  backgroundColor: "var(--primary)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: (saving || !title.trim()) ? "not-allowed" : "pointer",
+                  fontWeight: 600,
+                  transition: "all 0.2s",
+                  boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.4)",
+                  opacity: (saving || !title.trim()) ? 0.7 : 1
                 }}
-                >
+              >
                 {saving ? "Saving..." : mode === "create" ? "Create List" : mode === "copy" ? "Clone List" : "Save Settings"}
-                </button>
+              </button>
             )}
           </div>
         </div>
-      </form>
       {activeList && (
         <WatchSyncModal 
           isOpen={showWatchSync} 
@@ -806,7 +805,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
           listId={activeList.id} 
         />
       )}
-    </div>
+    </form>
     <style>{`
       @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
