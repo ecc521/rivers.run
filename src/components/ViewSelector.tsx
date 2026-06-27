@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { getStateName, getRegionName } from "../utils/regions";
 import { useLists } from "../context/ListsContext";
 import { useCommunityLists } from "../hooks/useCommunityLists";
-import { useAuth } from "../context/AuthContext";
 
 interface ViewSelectorProps {
   regionLabel: string;
@@ -35,7 +34,6 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
 
   const { myLists, subscribedListIds } = useLists();
   const { lists: communityLists } = useCommunityLists();
-  const { user } = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -67,12 +65,10 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
     return communityLists.filter(list => subscribedListIds.includes(list.id));
   }, [communityLists, subscribedListIds]);
 
-  // Top community lists (excluding own/subscribed lists, showing top 10)
+  // Top community lists (showing top 10)
   const topCommunityLists = useMemo(() => {
-    return communityLists
-      .filter(list => !subscribedListIds.includes(list.id) && list.ownerId !== user?.uid)
-      .slice(0, 10);
-  }, [communityLists, subscribedListIds, user?.uid]);
+    return communityLists.slice(0, 10);
+  }, [communityLists]);
 
   const handleToggle = (tab: "view" | "region" | "state") => {
     if (isOpen && activeTab === tab) {

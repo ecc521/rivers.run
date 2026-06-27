@@ -6,7 +6,6 @@ import { useLocation } from "../hooks/useLocation";
 import { FilterCheckbox } from "./FilterCheckbox";
 import { useLists } from "../context/ListsContext";
 import { useCommunityLists } from "../hooks/useCommunityLists";
-import { useAuth } from "../context/AuthContext";
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import { getShareBaseUrl } from "../utils/url";
@@ -35,7 +34,6 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const location = useLocation();
   const { myLists, subscribedListIds } = useLists();
   const { lists: communityLists } = useCommunityLists();
-  const { user } = useAuth();
 
   const userCustomLists = React.useMemo(() => {
     return myLists.filter(l => l.title !== "Favorites");
@@ -46,10 +44,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   }, [communityLists, subscribedListIds]);
 
   const topCommunityLists = React.useMemo(() => {
-    return communityLists
-      .filter(list => !subscribedListIds.includes(list.id) && list.ownerId !== user?.uid)
-      .slice(0, 5);
-  }, [communityLists, subscribedListIds, user?.uid]);
+    return communityLists.slice(0, 5);
+  }, [communityLists]);
   useEffect(() => {
     setLocalQuery(query);
   }, [query, isOpen]);
