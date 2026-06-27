@@ -208,7 +208,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const [toggling, setToggling] = useState(false);
   const [showWatchSync, setShowWatchSync] = useState(false);
   
-  const { user, isAdmin, setAuthModalOpen, privacySettings, updatePrivacySettings, d1DisplayName } = useAuth();
+  const { user, isAdmin, setAuthModalOpen, privacySettings, updatePrivacySettings } = useAuth();
   const [adminEditMode, setAdminEditMode] = useState(false);
   const [localRivers, setLocalRivers] = useState<UserList["rivers"] | null>(null);
   const { myLists, updateRiverInList, removeRiverFromList, updateList, deleteList } = useLists();
@@ -508,14 +508,14 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "24px 24px 16px 24px", flexShrink: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 24px 16px 24px", flexShrink: 0, flexWrap: "wrap", gap: "12px 20px" }}>
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "1.5rem" }}>
             {modalTitle}
             </h3>
             {(mode === "edit" || mode === "shared") && !!activeList && (
                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                  <button type="button" onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
-                   <span style={{ fontSize: "1.1em" }}>🔗</span> {Capacitor.isNativePlatform() ? "Share List" : "Copy Link"}
+                   <span style={{ fontSize: "1.1em" }}>🔗</span> Share
                  </button>
                  {mode === "edit" && isOwner && (
                    <button
@@ -533,12 +533,12 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                        transition: "all 0.2s ease"
                      }}
                    >
-                     {activeList.isPublished ? "🔒 Make Unlisted" : "🌍 Publish to Feed"}
+                     {activeList.isPublished ? "🔒 Unlist" : "🌍 Publish"}
                    </button>
                  )}
                  {!!user && (
-                   <button type="button" onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
-                     ⌚️ Sync Watch
+                   <button type="button" onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
+                     <span>⌚️</span> Sync Watch
                    </button>
                  )}
                  {mode === "shared" && isAdmin && !isOwner && !adminEditMode && (
@@ -582,6 +582,40 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                     </button>
                 )}
              </div>
+          )}
+
+          {canEdit && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", backgroundColor: "var(--surface-hover)", borderRadius: "8px", border: "1px solid var(--border)", marginBottom: "4px" }}>
+              <span style={{ fontWeight: "bold", fontSize: "0.95rem", color: "var(--text)" }}>
+                Show username on lists
+              </span>
+              <label style={{ position: "relative", display: "inline-block", width: "44px", height: "24px", cursor: "pointer", flexShrink: 0 }}>
+                <input
+                  type="checkbox"
+                  checked={!privacySettings.hidePublicName}
+                  onChange={(e) => updatePrivacySettings(!e.target.checked)}
+                  style={{ opacity: 0, width: 0, height: 0 }}
+                />
+                <span style={{
+                  position: "absolute",
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: !privacySettings.hidePublicName ? "var(--primary)" : "var(--border)",
+                  transition: "0.3s",
+                  borderRadius: "24px"
+                }}>
+                  <span style={{
+                    position: "absolute",
+                    height: "18px", width: "18px",
+                    left: !privacySettings.hidePublicName ? "23px" : "3px",
+                    bottom: "3px",
+                    backgroundColor: "white",
+                    transition: "0.3s",
+                    borderRadius: "50%",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.15)"
+                  }} />
+                </span>
+              </label>
+            </div>
           )}
 
           <div>
@@ -640,30 +674,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                 />
             )}
           </div>
-
-          {canEdit && activeList?.isPublished && (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px", padding: "12px", backgroundColor: "var(--surface-hover)", borderRadius: "8px", border: "1px solid var(--border)", flexWrap: "wrap" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: "bold", fontSize: "0.95rem" }}>
-                <input
-                  type="checkbox"
-                  id="modalHidePublicNameCheck"
-                  checked={privacySettings.hidePublicName}
-                  onChange={(e) => updatePrivacySettings(e.target.checked)}
-                />
-                Hide my name on community lists
-              </label>
-              {privacySettings.hidePublicName ? (
-                <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginLeft: "auto" }}>
-                  (Showing as: Anonymous Paddler)
-                </span>
-              ) : (
-                <span style={{ fontSize: "0.85rem", color: "var(--primary)", marginLeft: "auto" }}>
-                  (Showing as: {d1DisplayName || "Community Paddler"})
-                </span>
-              )}
-            </div>
-          )}
-
+          
+          
           {activeList && activeList.rivers && (
             <div style={{ marginTop: "10px", borderTop: "1px solid var(--border)", paddingTop: "15px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <h4 style={{ margin: 0, fontSize: "0.95em", color: "var(--text-secondary)", textTransform: "uppercase" }}>
