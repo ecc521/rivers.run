@@ -223,8 +223,9 @@ export const useRivers = (): UseRiversResult => {
       // Guard: Never fetch concurrently
       if (globalLoading || globalSyncing) return;
 
-      const isFresh = globalLastFetchTime && (Date.now() - globalLastFetchTime < 15 * 60 * 1000);
-      if (!force && isFresh && globalRiversCache) {
+      const fetchIsRecent = globalLastFetchTime && (Date.now() - globalLastFetchTime < 15 * 60 * 1000);
+      const serverDataFresh = !globalDataGeneratedAt || (Date.now() - globalDataGeneratedAt < 15 * 60 * 1000);
+      if (!force && fetchIsRecent && serverDataFresh && globalRiversCache) {
           return;
       }
       
@@ -316,15 +317,17 @@ export const useRivers = (): UseRiversResult => {
       }
     };
 
-    // Service Worker Broadcast Listener
-    let updateChannel: BroadcastChannel | null = null;
-    if (typeof BroadcastChannel !== 'undefined') {
-        updateChannel = new BroadcastChannel('flow-data-updates');
-        updateChannel.onmessage = (_event) => {
+    // Service Worker message listener (Workbox 7 uses client.postMessage, not BroadcastChannel)
+    const handleSWMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'CACHE_UPDATED' &&
+            event.data?.meta === 'workbox-broadcast-update' &&
+            event.data?.payload?.cacheName === 'flow-data-cache-v2') {
             console.log("Service Worker broadcast: Fresh flow data available. Refreshing UI...");
             setTimeout(() => fetchRivers(true), 100);
-        };
-    }
+        }
+    };
+    // eslint-disable-next-line compat/compat
+    navigator.serviceWorker?.addEventListener('message', handleSWMessage);
 
     const handleVisibility = () => {
         if (document.visibilityState === 'visible') {
@@ -347,7 +350,8 @@ export const useRivers = (): UseRiversResult => {
         fetchSubscribers.delete(handleUpdate);
         clearInterval(heartbeatId);
         document.removeEventListener('visibilitychange', handleVisibility);
-        updateChannel?.close();
+        // eslint-disable-next-line compat/compat
+        navigator.serviceWorker?.removeEventListener('message', handleSWMessage);
     };
   }, []);
 
