@@ -224,7 +224,7 @@ a:hover {
 
 .riverWriteup {
 	overflow-wrap: break-word;
-	word-break: normal;
+	word-break: break-word;
 }
 
 .riverWriteup pre {
