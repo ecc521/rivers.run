@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useModal } from "../../context/ModalContext";
+import { openOrNavigate } from "../../utils/openOrNavigate";
 
 export default function ReportsAdminTab() {
   const { user } = useAuth();
   const { confirm, alert } = useModal();
+  const navigate = useNavigate();
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,14 +70,12 @@ export default function ReportsAdminTab() {
             <p style={{ margin: 0 }}>{r.reason}</p>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-            <a 
-              href={r.type === "list" ? `/?list=${r.target_id}` : `/river/${r.target_id}`} 
-              target="_blank" 
-              rel="noreferrer"
-              style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "6px", color: "var(--text)", textDecoration: "none" }}
+            <button
+              onClick={() => openOrNavigate(r.type === "list" ? `/?list=${r.target_id}` : `/river/${r.target_id}`, navigate)}
+              style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "6px", color: "var(--text)", backgroundColor: "transparent", cursor: "pointer", textDecoration: "none" }}
             >
               View Content
-            </a>
+            </button>
             <button 
               onClick={() => handleResolve(r.report_id)}
               style={{ padding: "6px 12px", backgroundColor: "var(--success)", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}

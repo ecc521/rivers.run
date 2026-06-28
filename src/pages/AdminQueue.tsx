@@ -3,6 +3,7 @@ import { fetchAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useModal } from "../context/ModalContext";
+import { openOrNavigate } from "../utils/openOrNavigate";
 
 // Modular Admin Components
 import AdminTabs from "../components/admin/AdminTabs";
@@ -77,7 +78,7 @@ export default function AdminQueue() {
   };
 
   const handleReview = (queueId: string) => {
-    window.open(`/review/${queueId}`, "_blank");
+    openOrNavigate(`/review/${queueId}`, navigate);
   };
 
   if (authLoading) {
