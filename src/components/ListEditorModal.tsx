@@ -204,8 +204,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [saving, setSaving] = useState(false);
-  const [showConfirmOverlay, setShowConfirmOverlay] = useState(false);
-  const [toggling, setToggling] = useState(false);
+  const [localIsPublished, setLocalIsPublished] = useState(false);
+  const [localHidePublicName, setLocalHidePublicName] = useState(false);
   const [showWatchSync, setShowWatchSync] = useState(false);
   
   const { user, isAdmin, setAuthModalOpen, privacySettings, updatePrivacySettings } = useAuth();
@@ -276,6 +276,8 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
       setDescription(initialDescription);
       setAdminEditMode(false);
       setLocalRivers(null);
+      setLocalIsPublished(targetList?.isPublished ?? false);
+      setLocalHidePublicName(privacySettings.hidePublicName);
     }
   }, [isOpen, initialTitle, initialDescription]);
   if (!isOpen) return null;
@@ -291,10 +293,16 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     if ('preventDefault' in e) e.preventDefault();
     if (mode === "shared" && !isAdminEditing) { onClose(); return; }
     if (!title.trim()) return;
-    
+
     setSaving(true);
     try {
       await onSave(title, description);
+      if (mode === "edit" && isOwner && activeList && localIsPublished !== activeList.isPublished) {
+        await updateList(activeList.id, { isPublished: localIsPublished });
+      }
+      if (localHidePublicName !== privacySettings.hidePublicName) {
+        await updatePrivacySettings(localHidePublicName);
+      }
       onClose();
     } catch (err: unknown) {
       console.error(err);
@@ -354,33 +362,6 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     }
   };
 
-  const handleTogglePublish = () => {
-    if (activeList && mode === "edit" && isOwner) {
-      setShowConfirmOverlay(true);
-    }
-  };
-
-  const confirmTogglePublish = async () => {
-    if (!activeList) return;
-    setToggling(true);
-    try {
-      const newState = !activeList.isPublished;
-      await updateList(activeList.id, { isPublished: newState });
-      setShowConfirmOverlay(false);
-      await alert(
-        newState 
-          ? "List is now Public! It will appear in the community feed for others to discover." 
-          : "List is now Unlisted. It has been removed from the public community feed.",
-        "Status Updated"
-      );
-    } catch (e: any) {
-      setShowConfirmOverlay(false);
-      await alert("Failed to update status: " + (e?.message || "Unknown error"));
-    } finally {
-      setToggling(false);
-    }
-  };
-
   const handleDeleteList = async () => {
     if (!activeList) return;
     if (await confirm("Are you sure you want to delete this list? This cannot be undone.", "Delete List")) {
@@ -405,6 +386,23 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
     shared: "List Details"
   }[mode];
 
+  const hasUnsavedChanges = canEdit && (
+    title !== initialTitle ||
+    description !== initialDescription ||
+    (mode === "edit" && isOwner && localIsPublished !== (activeList?.isPublished ?? false)) ||
+    localHidePublicName !== privacySettings.hidePublicName
+  );
+
+  const handleClose = async () => {
+    if (hasUnsavedChanges) {
+      if (await confirm("Discard unsaved changes?", "Discard Changes")) {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
+
   return (
     <div
       style={{
@@ -421,7 +419,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
         alignItems: "center",
         boxSizing: "border-box"
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <form
         onSubmit={handleSave}
@@ -439,75 +437,6 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {showConfirmOverlay && !!activeList && (
-          <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(15, 23, 42, 0.6)",
-            backdropFilter: "blur(2px)",
-            borderRadius: "12px",
-            zIndex: 200,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "20px",
-            boxSizing: "border-box",
-            animation: "fadeIn 0.2s ease"
-          }}
-          onClick={(e) => { e.stopPropagation(); setShowConfirmOverlay(false); }}
-          >
-            <div 
-              style={{
-                backgroundColor: "var(--surface)",
-                padding: "24px",
-                borderRadius: "12px",
-                maxWidth: "340px",
-                width: "100%",
-                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.4)",
-                border: "1px solid var(--border)",
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center"
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ fontSize: "2.5rem", marginBottom: "16px" }}>
-                {activeList.isPublished ? "🔒" : "🌍"}
-              </div>
-              <h3 style={{ margin: "0 0 10px 0", color: "var(--text)", fontSize: "1.2rem" }}>
-                {activeList.isPublished ? "Make List Unlisted?" : "Publish List to Community?"}
-              </h3>
-              <p style={{ margin: "0 0 24px 0", color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: "1.5" }}>
-                {activeList.isPublished 
-                  ? "This will hide the list from the public community feed. People with the link can still view it." 
-                  : "This will publish your list to the public community feed for anyone to search and discover."}
-              </p>
-              <div style={{ display: "flex", gap: "12px", width: "100%" }}>
-                <button 
-                  type="button"
-                  onClick={() => setShowConfirmOverlay(false)}
-                  disabled={toggling}
-                  style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text)", cursor: "pointer", fontWeight: "bold", fontSize: "0.9rem" }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="button"
-                  onClick={confirmTogglePublish}
-                  disabled={toggling}
-                  style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "none", backgroundColor: activeList.isPublished ? "var(--danger)" : "var(--primary)", color: "white", cursor: "pointer", fontWeight: "bold", fontSize: "0.9rem" }}
-                >
-                  {toggling ? "..." : "Confirm"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 24px 16px 24px", flexShrink: 0, flexWrap: "wrap", gap: "12px 20px" }}>
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "1.5rem" }}>
             {modalTitle}
@@ -517,25 +446,6 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                  <button type="button" onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
                    <span style={{ fontSize: "1.1em" }}>🔗</span> Share
                  </button>
-                 {mode === "edit" && isOwner && (
-                   <button
-                     type="button"
-                     onClick={handleTogglePublish}
-                     disabled={toggling}
-                     style={{
-                       padding: "6px 12px",
-                       backgroundColor: activeList.isPublished ? "var(--surface-hover)" : "var(--primary)",
-                       border: "1px solid var(--border)",
-                       color: activeList.isPublished ? "var(--text)" : "white",
-                       borderRadius: "6px",
-                       cursor: toggling ? "not-allowed" : "pointer",
-                       fontWeight: "bold",
-                       transition: "all 0.2s ease"
-                     }}
-                   >
-                     {activeList.isPublished ? "🔒 Unlist" : "🌍 Publish"}
-                   </button>
-                 )}
                  {!!user && (
                    <button type="button" onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
                      <span>⌚️</span> Sync Watch
@@ -585,36 +495,78 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
           )}
 
           {canEdit && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", backgroundColor: "var(--surface-hover)", borderRadius: "8px", border: "1px solid var(--border)", marginBottom: "4px" }}>
-              <span style={{ fontWeight: "bold", fontSize: "0.95rem", color: "var(--text)" }}>
-                Show username on lists
-              </span>
-              <label style={{ position: "relative", display: "inline-block", width: "44px", height: "24px", cursor: "pointer", flexShrink: 0 }}>
-                <input
-                  type="checkbox"
-                  checked={!privacySettings.hidePublicName}
-                  onChange={(e) => updatePrivacySettings(!e.target.checked)}
-                  style={{ opacity: 0, width: 0, height: 0 }}
-                />
-                <span style={{
-                  position: "absolute",
-                  top: 0, left: 0, right: 0, bottom: 0,
-                  backgroundColor: !privacySettings.hidePublicName ? "var(--primary)" : "var(--border)",
-                  transition: "0.3s",
-                  borderRadius: "24px"
-                }}>
-                  <span style={{
-                    position: "absolute",
-                    height: "18px", width: "18px",
-                    left: !privacySettings.hidePublicName ? "23px" : "3px",
-                    bottom: "3px",
-                    backgroundColor: "white",
-                    transition: "0.3s",
-                    borderRadius: "50%",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.15)"
-                  }} />
-                </span>
-              </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "4px" }}>
+              {mode === "edit" && isOwner && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", backgroundColor: "var(--surface-hover)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                  <div>
+                    <span style={{ fontWeight: "bold", fontSize: "0.95rem", color: "var(--text)", display: "block" }}>
+                      Show in Community Tab
+                    </span>
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                      Let anyone discover this list in the community feed
+                    </span>
+                  </div>
+                  <label style={{ position: "relative", display: "inline-block", width: "44px", height: "24px", cursor: "pointer", flexShrink: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={localIsPublished}
+                      onChange={(e) => setLocalIsPublished(e.target.checked)}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: "absolute",
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: localIsPublished ? "var(--primary)" : "var(--border)",
+                      transition: "0.3s",
+                      borderRadius: "24px"
+                    }}>
+                      <span style={{
+                        position: "absolute",
+                        height: "18px", width: "18px",
+                        left: localIsPublished ? "23px" : "3px",
+                        bottom: "3px",
+                        backgroundColor: "white",
+                        transition: "0.3s",
+                        borderRadius: "50%",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.15)"
+                      }} />
+                    </span>
+                  </label>
+                </div>
+              )}
+              {mode === "edit" && isOwner && localIsPublished && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", backgroundColor: "var(--surface-hover)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                  <span style={{ fontWeight: "bold", fontSize: "0.95rem", color: "var(--text)" }}>
+                    Show username on lists
+                  </span>
+                  <label style={{ position: "relative", display: "inline-block", width: "44px", height: "24px", cursor: "pointer", flexShrink: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={!localHidePublicName}
+                      onChange={(e) => setLocalHidePublicName(!e.target.checked)}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: "absolute",
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: !localHidePublicName ? "var(--primary)" : "var(--border)",
+                      transition: "0.3s",
+                      borderRadius: "24px"
+                    }}>
+                      <span style={{
+                        position: "absolute",
+                        height: "18px", width: "18px",
+                        left: !localHidePublicName ? "23px" : "3px",
+                        bottom: "3px",
+                        backgroundColor: "white",
+                        transition: "0.3s",
+                        borderRadius: "50%",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.15)"
+                      }} />
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
           )}
 
@@ -773,7 +725,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
           <div style={{ display: "flex", gap: "12px" }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={saving}
               style={{
                 padding: "10px 20px",
@@ -805,7 +757,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                   opacity: (saving || !title.trim()) ? 0.7 : 1
                 }}
               >
-                {saving ? "Saving..." : mode === "create" ? "Create List" : mode === "copy" ? "Clone List" : "Save Settings"}
+                {saving ? "Saving..." : mode === "create" ? "Create List" : mode === "copy" ? "Clone List" : "Save Changes"}
               </button>
             )}
           </div>
