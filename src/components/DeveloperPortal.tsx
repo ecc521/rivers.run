@@ -128,7 +128,7 @@ export const DeveloperPortal: React.FC = () => {
         <div style={{ width: "100%", color: "var(--text)" }}>
             <div style={{ display: "flex", gap: "30px", flexFlow: "row wrap", alignItems: "flex-start" }}>
                 {/* Left Panel - Console / Key Management or Sign-In Callout */}
-                <div style={{ flex: "2 1 500px", display: "flex", flexDirection: "column", gap: "25px" }}>
+                <div style={{ flex: "2 1 500px", minWidth: 0, display: "flex", flexDirection: "column", gap: "25px" }}>
                     {!user ? (
                         <div style={{
                             backgroundColor: "var(--surface)",
@@ -325,9 +325,9 @@ export const DeveloperPortal: React.FC = () => {
                         </div>
 
                         <div style={{ padding: "15px", backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px" }}>
-                            <h4 style={{ margin: "0 0 5px 0", fontSize: "0.95em" }}>Internal Gauge & Flow API</h4>
+                            <h4 style={{ margin: "0 0 5px 0", fontSize: "0.95em" }}>Gauge & Flow API</h4>
                             <p style={{ margin: "0 0 12px 0", fontSize: "0.8em", color: "var(--text-muted)", lineHeight: "1.4" }}>
-                                Access high-performance historical gauge data, USGS/NWS/Canada/UK providers, and raw flow readings.
+                                Access historical and real-time gauge readings from USGS, NWS, Environment Canada, UK, and more.
                             </p>
                             <a href="https://flow.rivers.run/docs" target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary)", fontWeight: "bold", fontSize: "0.85em", textDecoration: "none" }}>
                                 View Flow API Docs &rarr;
