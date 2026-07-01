@@ -244,6 +244,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const [showUserLocationPopup, setShowUserLocationPopup] = useState(false);
     const [navDestinationPlace, setNavDestinationPlace] = useState<any>(null);
     const [pinnedPlace, setPinnedPlace] = useState<MapSearchResult | null>(null);
+    const [manualStartCoord, setManualStartCoord] = useState<[number, number] | null>(null);
+    const [isPickingStart, setIsPickingStart] = useState(false);
+    const [pendingStartCoord, setPendingStartCoord] = useState<[number, number] | null>(null);
 
     // Stable reference — used as a dep inside NavigationPanel's useCallback/useEffect chain.
     // Must not change on every render or it causes a routing re-trigger loop.
@@ -871,6 +874,10 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     }, [nonGaugesGeoJson, dynamicStyle]); // Re-run when style loads
 
     const handleMapClick = React.useCallback((e: any) => {
+        if (isPickingStart) {
+            setPendingStartCoord([e.lngLat.lng, e.lngLat.lat]);
+            return;
+        }
         const feature = e.features && e.features[0];
         if (feature) {
             const isGauge = feature.layer.id === 'gauges-layer';
@@ -882,7 +889,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             setHoverPopupData(null);
             setShowUserLocationPopup(false);
         }
-    }, [gauges, nonGauges, handleStableMarkerClick]);
+    }, [gauges, nonGauges, handleStableMarkerClick, isPickingStart]);
 
     const handleMapMouseMove = React.useCallback((e: any) => {
         const feature = e.features && e.features[0];
@@ -898,8 +905,11 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         }
     }, [gauges, nonGauges, handleStableMarkerMouseOver, handleStableMarkerMouseOut]);
 
+    // Manual start point (set via tap-on-map) takes priority over live GPS.
+    const effectiveStartCoord: [number, number] | null = manualStartCoord
+        ?? (location.longitude && location.latitude ? [location.longitude, location.latitude] : null);
 
-    // Using true HTML5 Native Fullscreen where supported! 
+    // Using true HTML5 Native Fullscreen where supported!
     return (
         <div
             ref={mapContainerCallbackRef}
@@ -1177,7 +1187,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     setMapZoom(evt.viewState.zoom);
                 }}
                 mapStyle={dynamicStyle}
-                style={{ width: "100%", height: "100%" }}
+                style={{ width: "100%", height: "100%", cursor: isPickingStart ? "crosshair" : undefined }}
                 interactiveLayerIds={['gauges-layer', 'non-gauges-layer']}
                 onClick={handleMapClick}
                 onMouseMove={handleMapMouseMove}
@@ -1449,7 +1459,59 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                         />
                     </Source>
                 ) : null}
+
+                {/* Pending manual start point — dropped while picking, awaiting confirmation */}
+                {pendingStartCoord && (
+                    <Marker longitude={pendingStartCoord[0]} latitude={pendingStartCoord[1]} anchor="bottom">
+                        <div style={{ fontSize: "32px", lineHeight: 1, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.4))" }}>📍</div>
+                    </Marker>
+                )}
             </Map>
+
+            {/* Tap-to-set-start-point flow */}
+            {isPickingStart && (
+                <div style={{
+                    position: "absolute",
+                    bottom: isFullScreen ? "calc(24px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))" : "24px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 1600,
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text)",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    maxWidth: "90vw",
+                }}>
+                    <span style={{ fontWeight: "bold", whiteSpace: "nowrap" }}>
+                        {pendingStartCoord ? "Set this as your starting point?" : "📍 Tap the map to set your starting point"}
+                    </span>
+                    {pendingStartCoord && (
+                        <button
+                            onClick={() => {
+                                setManualStartCoord(pendingStartCoord);
+                                setIsPickingStart(false);
+                                setPendingStartCoord(null);
+                            }}
+                            style={{ padding: "6px 14px", backgroundColor: "var(--primary)", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", whiteSpace: "nowrap" }}
+                        >
+                            Confirm
+                        </button>
+                    )}
+                    <button
+                        onClick={() => {
+                            setIsPickingStart(false);
+                            setPendingStartCoord(null);
+                        }}
+                        style={{ padding: "6px 14px", backgroundColor: "transparent", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            )}
 
             <NavigationPanel
                 isOpen={isNavigating}
@@ -1459,8 +1521,19 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                     setNavDestination(null);
                     setNavDestinationPlace(null);
                     setNavRoute(null);
+                    setManualStartCoord(null);
+                    setIsPickingStart(false);
+                    setPendingStartCoord(null);
                 }}
-                startCoord={location.longitude && location.latitude ? [location.longitude, location.latitude] : null}
+                startCoord={effectiveStartCoord}
+                isManualStart={manualStartCoord !== null}
+                onRequestManualStart={() => setIsPickingStart(true)}
+                onUseCurrentLocation={() => {
+                    setManualStartCoord(null);
+                    location.requestLocation();
+                }}
+                locationLoading={location.loading}
+                locationError={location.error}
                 endCoord={navDestination}
                 destinationRiver={selectedRiver}
                 destinationPlace={navDestinationPlace}
@@ -1555,8 +1628,9 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 </div>
             )}
 
-            {/* Universally Injected Selected River Sidebar */}
-            {selectedRiver && (
+            {/* Universally Injected Selected River Sidebar — hidden while navigating so it can't
+                overlap the centered NavigationPanel; reappears automatically when nav closes. */}
+            {selectedRiver && !isNavigating && (
                 <div
                     className="river-details-sidebar"
                     style={{

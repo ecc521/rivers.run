@@ -12,7 +12,19 @@ interface NavigationPanelProps {
     destinationRiver?: import('../types/River').RiverData | null;
     destinationPlace?: import('./MapSearchbar').MapSearchResult | null;
     onRouteCalculated: (route: GeoJSON.LineString | null) => void;
+    isManualStart?: boolean;
+    onRequestManualStart?: () => void;
+    onUseCurrentLocation?: () => void;
+    locationLoading?: boolean;
+    locationError?: string | null;
 }
+
+const smallButtonStyle: React.CSSProperties = {
+    padding: '4px 10px', fontSize: '0.78rem', fontWeight: 600,
+    backgroundColor: 'transparent', border: '1px solid var(--primary, #2563eb)',
+    color: 'var(--primary, #2563eb)', borderRadius: '14px', cursor: 'pointer',
+    whiteSpace: 'nowrap', flexShrink: 0,
+};
 
 /** Round coords to 4 decimal places (~11m precision) to avoid re-routing on tiny GPS jitters */
 function coordKey(coord: [number, number] | null): string {
@@ -82,7 +94,7 @@ function maneuverIcon(type: number): string {
     }
 }
 
-export const NavigationPanel: React.FC<NavigationPanelProps> = ({ isOpen, onClose, startCoord, endCoord, destinationRiver, destinationPlace, onRouteCalculated }) => {
+export const NavigationPanel: React.FC<NavigationPanelProps> = ({ isOpen, onClose, startCoord, endCoord, destinationRiver, destinationPlace, onRouteCalculated, isManualStart, onRequestManualStart, onUseCurrentLocation, locationLoading, locationError }) => {
     const [instructions, setInstructions] = useState<RoutingInstruction[]>([]);
     const [summary, setSummary] = useState<RoutingSummary | null>(null);
     const [isCalculating, setIsCalculating] = useState(false);
@@ -229,8 +241,15 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({ isOpen, onClos
             debounceTimerRef.current = setTimeout(() => {
                 calculateRoute(startCoord, endCoord);
             }, 500);
+        } else if (!endCoord) {
+            // Shouldn't normally happen — the caller always sets a destination before opening.
+            setError("Missing destination.");
+            setIsExpanded(true);
         } else {
-            setError("Missing start or end coordinates.");
+            // Missing start (GPS not ready/denied) — communicated via the From/To row's
+            // status text and Retry/Set-on-map actions, not a redundant banner.
+            setError(null);
+            setIsExpanded(true);
         }
     }, [isOpen, coordKey(startCoord), coordKey(endCoord), calculateRoute]);
 
@@ -267,12 +286,29 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({ isOpen, onClos
 
     if (!isOpen) return null;
 
+    const fromLabel = isManualStart
+        ? 'Custom start point'
+        : locationLoading
+            ? 'Locating you…'
+            : locationError
+                ? 'Location unavailable'
+                : startCoord
+                    ? 'Your Location'
+                    : 'Waiting for GPS…';
+
+    const riverSectionSuffix = destinationRiver?.section ? ` (${destinationRiver.section})` : '';
+    const toLabel = destinationPlace?.description
+        || (destinationRiver ? `${destinationRiver.name}${riverSectionSuffix}` : 'Destination');
+
     return (
         <div style={{
             position: 'absolute',
             top: '80px',
-            left: '12px',
-            right: '12px',
+            left: 0,
+            right: 0,
+            margin: '0 auto',
+            width: 'calc(100% - 24px)',
+            maxWidth: '560px',
             backgroundColor: 'var(--surface, #fff)',
             borderRadius: '16px',
             boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
@@ -350,6 +386,37 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({ isOpen, onClos
             {/* Content (only visible if expanded) */}
             {isExpanded && (
                 <>
+                    {/* From / To */}
+                    <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border, #e0e0e0)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
+                            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#3b82f6', flexShrink: 0 }} />
+                            <span style={{
+                                flex: 1, minWidth: 0, fontSize: '0.9rem',
+                                fontWeight: (isManualStart || locationError) ? 700 : 400,
+                                color: (locationError && !isManualStart) ? '#dc2626' : 'inherit',
+                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            }}>
+                                {fromLabel}
+                            </span>
+                            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                {!isManualStart && locationError && onUseCurrentLocation && (
+                                    <button onClick={onUseCurrentLocation} style={smallButtonStyle}>Retry</button>
+                                )}
+                                {isManualStart && onUseCurrentLocation ? (
+                                    <button onClick={onUseCurrentLocation} style={smallButtonStyle}>Use GPS</button>
+                                ) : onRequestManualStart ? (
+                                    <button onClick={onRequestManualStart} style={smallButtonStyle}>Set on map</button>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
+                            <span style={{ fontSize: '12px', flexShrink: 0, width: '10px', textAlign: 'center' }}>📍</span>
+                            <span style={{ flex: 1, minWidth: 0, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {toLabel}
+                            </span>
+                        </div>
+                    </div>
+
                     {/* Trip Summary */}
                     {summary && !isCalculating && !error && (
                         <div style={{
