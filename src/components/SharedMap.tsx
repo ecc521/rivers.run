@@ -1275,14 +1275,40 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                         View River Details
                                     </button>
                                     <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
-                                    <a
-                                        href={Capacitor.getPlatform() === 'android' ? `geo:${thePopupData!.lat},${thePopupData!.lon}` : `https://www.google.com/maps/dir/?api=1&destination=${thePopupData!.lat},${thePopupData!.lon}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        style={{ display: "inline-block", fontWeight: "bold" }}
-                                    >
-                                        Google Maps <span style={{ fontSize: "0.8em" }}>↗</span>
-                                    </a>
+                                    {Capacitor.getPlatform() === 'ios' ? (
+                                        <>
+                                            <a
+                                                href={`maps://?daddr=${thePopupData!.lat},${thePopupData!.lon}&dirflg=d`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{ display: "inline-block", fontWeight: "bold" }}
+                                            >
+                                                Apple Maps <span style={{ fontSize: "0.8em" }}>↗</span>
+                                            </a>
+                                            <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
+                                            <a
+                                                href={`https://www.google.com/maps/dir/?api=1&destination=${thePopupData!.lat},${thePopupData!.lon}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{ display: "inline-block", fontWeight: "bold" }}
+                                            >
+                                                Google Maps <span style={{ fontSize: "0.8em" }}>↗</span>
+                                            </a>
+                                        </>
+                                    ) : (
+                                        <a
+                                            href={
+                                                Capacitor.getPlatform() === 'android'
+                                                    ? `geo:0,0?q=${thePopupData!.lat},${thePopupData!.lon}(${encodeURIComponent(accessName)})`
+                                                    : `https://www.google.com/maps/dir/?api=1&destination=${thePopupData!.lat},${thePopupData!.lon}`
+                                            }
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            style={{ display: "inline-block", fontWeight: "bold" }}
+                                        >
+                                            Google Maps <span style={{ fontSize: "0.8em" }}>↗</span>
+                                        </a>
+                                    )}
                                 </div>
                             </PopupEventManager>
                         </Popup>
@@ -1624,14 +1650,39 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                     🧭 Navigate Offline
                                 </button>
                                 <br />
-                                <a
-                                    href={Capacitor.getPlatform() === 'android' ? `geo:${selectedAccessPoint.lat},${selectedAccessPoint.lon}` : `https://www.google.com/maps/dir/?api=1&destination=${selectedAccessPoint.lat},${selectedAccessPoint.lon}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    style={{ display: "inline-block", backgroundColor: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "7px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}
-                                >
-                                    📍 Google Maps
-                                </a>
+                                {Capacitor.getPlatform() === 'ios' ? (
+                                    <>
+                                        <a
+                                            href={`maps://?daddr=${selectedAccessPoint.lat},${selectedAccessPoint.lon}&dirflg=d`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            style={{ display: "inline-block", backgroundColor: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "7px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none", marginRight: "8px" }}
+                                        >
+                                            📍 Apple Maps
+                                        </a>
+                                        <a
+                                            href={`https://www.google.com/maps/dir/?api=1&destination=${selectedAccessPoint.lat},${selectedAccessPoint.lon}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            style={{ display: "inline-block", backgroundColor: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "7px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}
+                                        >
+                                            📍 Google Maps
+                                        </a>
+                                    </>
+                                ) : (
+                                    <a
+                                        href={
+                                            Capacitor.getPlatform() === 'android'
+                                                ? `geo:0,0?q=${selectedAccessPoint.lat},${selectedAccessPoint.lon}(${encodeURIComponent(formatAccessName(selectedAccessPoint))})`
+                                                : `https://www.google.com/maps/dir/?api=1&destination=${selectedAccessPoint.lat},${selectedAccessPoint.lon}`
+                                        }
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        style={{ display: "inline-block", backgroundColor: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "7px 12px", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}
+                                    >
+                                        📍 Google Maps
+                                    </a>
+                                )}
                                 <button
                                     onClick={(e) => handleShare(e, selectedRiver)}
                                     style={{
