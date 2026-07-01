@@ -240,7 +240,10 @@ export const useRivers = (): UseRiversResult => {
       const timeoutId = setTimeout(() => {
           if (globalLoading && (!globalRiversCache || force)) {
               globalLoading = false;
-              globalError = "Request timed out. Please try again or check your connection.";
+              // Only surface an error page if we have no cached data to fall back on.
+              if (!globalRiversCache || globalRiversCache.length === 0) {
+                  globalError = "Request timed out. Please try again or check your connection.";
+              }
               notifySubscribers();
           }
           if (globalSyncing) {
@@ -310,7 +313,13 @@ export const useRivers = (): UseRiversResult => {
 
       } catch (err: unknown) {
         clearTimeout(timeoutId);
-        globalError = err instanceof Error ? err.message : "An error occurred";
+        // If we already have cached rivers, keep showing them (marked stale) instead of
+        // replacing the UI with an error page — this is the offline-first fallback path.
+        if (!globalRiversCache || globalRiversCache.length === 0) {
+          globalError = err instanceof Error ? err.message : "An error occurred";
+        } else {
+          console.warn("Failed to refresh rivers, continuing with cached data:", err);
+        }
         globalLoading = false;
         globalSyncing = false;
         notifySubscribers();
