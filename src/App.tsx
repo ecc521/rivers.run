@@ -48,6 +48,12 @@ function ExternalLinkHandler() {
       const isExternal = href.startsWith("http://") || href.startsWith("https://");
       if (!isExternal) return;
 
+      // Let Google Maps links fall through to native handling so iOS/Android
+      // universal links can open the Google Maps app directly, instead of
+      // trapping it in the in-app browser overlay.
+      const isGoogleMaps = href.includes("google.com/maps") || href.includes("maps.google.com");
+      if (isGoogleMaps) return;
+
       e.preventDefault();
       Browser.open({ url: href, presentationStyle: "popover" }).catch(() => {
         // Fallback for older binaries without the Browser plugin
