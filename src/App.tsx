@@ -111,6 +111,9 @@ function DeepLinkHandler() {
 }
 
 
+const OTA_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const OTA_LAST_CHECK_KEY = "ota_last_check_ts";
+
 function App() {
 
   useEffect(() => {
@@ -122,7 +125,11 @@ function App() {
 
       // Check for OTA updates (skip in dev to avoid clobbering the dev session)
       if (import.meta.env.DEV) return;
-      const checkUpdate = async () => {
+      const checkUpdate = async (force = false) => {
+        const lastCheck = Number(localStorage.getItem(OTA_LAST_CHECK_KEY) || 0);
+        if (!force && Date.now() - lastCheck < OTA_CHECK_INTERVAL_MS) return;
+        localStorage.setItem(OTA_LAST_CHECK_KEY, String(Date.now()));
+
         try {
           console.log("Checking for OTA updates...");
           // Bypass cache to always query the live edge manifest
@@ -131,17 +138,25 @@ function App() {
             const remoteData = await res.json();
             const current = await CapacitorUpdater.current();
             const currentVersion = current.bundle?.version || current.native;
-            
+
             console.log(`Current version: ${currentVersion}, Remote version: ${remoteData.version}`);
 
             // If there's a new version available
             if (remoteData.version && remoteData.version !== currentVersion) {
+               // Skip re-downloading if this version is already staged for next boot —
+               // current() only reflects the running bundle, not a pending next() one.
+               const nextBundle = await CapacitorUpdater.getNextBundle();
+               if (nextBundle?.version === remoteData.version) {
+                  console.log(`OTA update ${remoteData.version} already staged for next boot.`);
+                  return;
+               }
+
                console.log(`Downloading OTA update ${remoteData.version} from ${remoteData.url}...`);
                const downloadedBundle = await CapacitorUpdater.download({
                   version: remoteData.version,
                   url: remoteData.url,
                });
-               
+
                console.log(`OTA update ${downloadedBundle.id} downloaded successfully. Setting for next boot.`);
                // Apply on cold start or after 15+ minutes in background — not on brief suspensions
                await CapacitorUpdater.next({ id: downloadedBundle.id });
@@ -159,8 +174,13 @@ function App() {
            console.error("Failed to check for OTA update:", error);
         }
       };
-      
-      checkUpdate();
+
+      checkUpdate(true);
+
+      const resumeListener = CapacitorApp.addListener('resume', () => checkUpdate());
+      return () => {
+        resumeListener.then(h => h.remove());
+      };
     }
   }, []);
 
