@@ -1946,9 +1946,9 @@ app.openapi(generateSyncCodeRoute, async (c) => {
     const body = await c.req.json();
     const { listId } = body;
 
-    // Verify user owns the list
-    const list = await c.env.DB.prepare("SELECT id FROM community_lists WHERE id = ? AND owner_id = ?").bind(listId, user.user_id).first();
-    if (!list) return c.json({ error: "List not found or permission denied" }, 404);
+    // Allow syncing lists the user owns, or any published (shared) list
+    const list = await c.env.DB.prepare("SELECT id FROM community_lists WHERE id = ? AND (owner_id = ? OR is_published = 1)").bind(listId, user.user_id).first();
+    if (!list) return c.json({ error: "List not found" }, 404);
 
     // Generate 5-digit numeric code securely
     const randomBuffer = new Uint32Array(1);
