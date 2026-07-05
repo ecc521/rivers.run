@@ -440,7 +440,7 @@ a:hover {
 
 #legend {
 	display: block;
-	z-index: 10;
+	z-index: 20;
 	position: sticky;
 	top: 0;
 	color: black;
@@ -807,7 +807,7 @@ Those include name,section,skill,quality, and flow info*/
     padding:10px;
     border:0;
     position: relative;
-    z-index: 20;
+    z-index: 10;
 }
 
 #topbar:hover {
