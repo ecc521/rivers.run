@@ -122,7 +122,7 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Fetch true state from API natively when network online
+  // Fetch true state from API when network online
   useEffect(() => {
     if (!user || loading) return;
     pullCloudState();

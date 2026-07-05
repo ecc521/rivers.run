@@ -511,7 +511,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     useEffect(() => {
         // Only manipulate the native StatusBar on iOS because hiding it on Android 
-        // triggers Immersive Mode which dynamically re-letterboxes the cutout area natively!
+        // triggers Immersive Mode which dynamically re-letterboxes the cutout area!
         if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
             if (isFullScreen) {
                 SystemBars.hide().catch(() => { });

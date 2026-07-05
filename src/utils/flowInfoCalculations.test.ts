@@ -85,15 +85,15 @@ describe("flowInfoCalculations", () => {
   });
 
   describe("calculateColor", () => {
-    it("returns string color for min value natively", () => {
+    it("returns string color for min value", () => {
       expect(calculateColor(0, false)).toBe("hsl(0,100%,74%)"); // Redish
     });
 
-    it("returns string color for mid value natively", () => {
+    it("returns string color for mid value", () => {
       expect(calculateColor(2, false)).toBe("hsl(120,100%,70%)"); // Green
     });
 
-    it("returns blue-ish string color for max value natively", () => {
+    it("returns blue-ish string color for max value", () => {
       expect(calculateColor(4, false)).toBe("hsl(240,100%,80%)");
     });
     
@@ -106,7 +106,7 @@ describe("flowInfoCalculations", () => {
        expect(calculateColor(4, false, true)).toBe("rgb(153,153,255)");
     });
     
-    it("handles dark mode lightness inversion natively", () => {
+    it("handles dark mode lightness inversion", () => {
        expect(calculateColor(2, true)).toBe("hsl(120,100%,22%)"); // Deep green for dark mode instead of light green
     });
 

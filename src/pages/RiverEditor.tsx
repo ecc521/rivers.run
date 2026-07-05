@@ -486,8 +486,8 @@ export default function RiverEditor() {
         await alert("River permanently deleted.");
         navigate("/admin");
     } catch (e: unknown) {
-        if (e instanceof Error) await alert(`Failed to delete river natively: ${e.message}`);
-        else await alert('Failed to delete river natively');
+        if (e instanceof Error) await alert(`Failed to delete river: ${e.message}`);
+        else await alert('Failed to delete river');
         setSaving(false);
     }
   };

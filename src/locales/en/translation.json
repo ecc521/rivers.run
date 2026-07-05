@@ -14,7 +14,7 @@
       "default": "Default (No)",
       "no": "No",
       "yes": "Yes",
-      "description": "Color blind mode alters the primary flow color indicators natively embedded everywhere, as well as line-colors on Flow charts."
+      "description": "Color blind mode alters the primary flow color indicators embedded everywhere, as well as line-colors on Flow charts."
     },
     "units": {
       "title": "Units",
@@ -254,7 +254,7 @@
     "loadingStarred": "Loading starred lists...",
     "noStarredLists": "You haven't starred any community lists.",
     "searchPlaceholder": "Search by list name, description, or author...",
-    "loadingCommunity": "Loading community lists natively...",
+    "loadingCommunity": "Loading community lists...",
     "noCommunityMatch": "No published lists match your search criteria.",
     "noCommunityYet": "No community lists published yet!",
     "listPrefix": "List: ",

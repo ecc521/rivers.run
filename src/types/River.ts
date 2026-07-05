@@ -56,10 +56,10 @@ export interface RiverData {
   /** Current active cubic feet per second directly read from the live gauge telemetry */
   cfs?: number;
   
-  /** Current active feet stage natively read from the gauge telemetry */
+  /** Current active feet stage read from the gauge telemetry */
   ft?: number;
   
-  /** Metric variation of stage natively aggregated if applicable */
+  /** Metric variation of stage aggregated if applicable */
   m?: number;
   
   /** Metric variation of volume native telemetry */
@@ -80,7 +80,7 @@ export interface RiverData {
   /** Manual hover/scrub integer override injected by the UI Graph charts to simulate historical flow states visually into component bounds */
   latestReading?: number;
   
-  /** Flag used by the map to identify instances that natively just represent standalone gauge sensors instead of actual valid river runs */
+  /** Flag used by the map to identify instances that just represent standalone gauge sensors instead of actual valid river runs */
   isGauge?: boolean;
 
   /** Flag indicating the latest gauge reading is older than the 3H staleness threshold */

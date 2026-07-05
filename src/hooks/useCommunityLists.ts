@@ -66,7 +66,7 @@ export const useCommunityLists = (): UseCommunityListsResult => {
         
         const data: CommunityListPayload[] = await res.json();
         
-        // Sort descending natively!
+        // Sort descending!
         data.sort((a, b) => (b.subscribes || 0) - (a.subscribes || 0));
 
         globalListsCache = data;

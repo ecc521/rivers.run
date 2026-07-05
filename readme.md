@@ -1,6 +1,6 @@
 # Rivers.run
 
-**Rivers.run** is a offline-first Progressive Web App (PWA) designed specifically for whitewater kayakers, rafters, and paddlers. It natively consolidates user-curated river descriptions, rapid characteristics, and access points alongside heavily optimized live streamgage data from the USGS (United States Geological Survey) and the Meteorological Service of Canada.
+**Rivers.run** is a offline-first Progressive Web App (PWA) designed specifically for whitewater kayakers, rafters, and paddlers. It consolidates user-curated river descriptions, rapid characteristics, and access points alongside heavily optimized live streamgage data from the USGS (United States Geological Survey) and the Meteorological Service of Canada.
 
 ## Why it Exists
 When you're paddling deep in a river gorge or traversing a remote forested access road, cell service is historically non-existent. Rivers.run is fundamentally architected to overcome this: it aggressively caches river bounds, topographical map tiles, flow graphs, and user favorites directly to local device storage. If you load the app up before you leave internet service, the entire application remains fully functional and instantly accessible even offline in the wilderness.
@@ -15,7 +15,7 @@ The project has recently undergone a massive migration to a modern, fully server
 - **PWA Service Workers:** Robust resource caching for offline gorge accessibility.
 
 ### Backend (Serverless)
-- **Cloudflare D1 (SQLite):** Harmonizes the 464+ natively curated river descriptions and user-generated lists with SQL-backed integrity and edge-optimized latency.
+- **Cloudflare D1 (SQLite):** Harmonizes the 464+ curated river descriptions and user-generated lists with SQL-backed integrity and edge-optimized latency.
 - **Cloudflare Workers (Hono):** High-performance TypeScript API services built on Hono.
     - **`rivers-run-api`**: Handles core CRUD operations, user lists, and administrative data review.
     - **`api-flow`**: An isolated, unbound worker that polls and cleanses global gauge telemetry from agency APIs (USGS, Canada, UK, OPW) on a 15-minute `CronTrigger`.

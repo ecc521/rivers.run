@@ -32,7 +32,7 @@ let cachedKeys: any = null;
 let cachedKeyTime = 0;
 
 async function getGooglePublicKeys() {
-    if (cachedKeys && Date.now() - cachedKeyTime < 1000 * 60 * 60 * 6) { // Cache for 6 hours natively
+    if (cachedKeys && Date.now() - cachedKeyTime < 1000 * 60 * 60 * 6) { // Cache for 6 hours
          return cachedKeys;
     }
     const res = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
@@ -95,7 +95,7 @@ export const firebaseAuthMiddleware = async (c: Context, next: Next) => {
          return c.json({ error: "Malformed ID Token." }, 401);
     }
     
-    // Check expiration natively
+    // Check expiration
     if (Date.now() / 1000 > payload.exp) {
          return c.json({ error: "Token expired." }, 401);
     }
@@ -147,7 +147,7 @@ export const firebaseAuthMiddleware = async (c: Context, next: Next) => {
     }
 };
 
-// Simple explicit gatekeepers executing natively using D1 role states
+// Simple explicit gatekeepers using D1 role states
 export const requireAdmin = async (c: Context, next: Next) => {
     const user = c.get("user");
     if (!user || (user.d1Role !== 'admin' && user.d1Role !== 'super-admin')) {
