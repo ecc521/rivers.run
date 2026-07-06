@@ -16,14 +16,68 @@ export default defineConfig({
       globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,pmtiles,json,woff2}'],
       maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       runtimeCaching: [
+        // Explicit allowlist, not a wildcard — Workbox caches by URL only (ignores
+        // Authorization), so a blanket rule would silently cache auth-gated/live
+        // endpoints too. Everything not listed here falls through to the network;
+        // the API also sends its own Cache-Control as a second layer of defense.
         {
-          urlPattern: /^https:\/\/api\.rivers\.run\/.*/i,
+          urlPattern: /^https:\/\/api\.rivers\.run\/rivers(\?.*)?$/i,
           handler: 'StaleWhileRevalidate',
           options: {
-            cacheName: 'api-metadata-cache',
+            cacheName: 'rivers-metadata-cache',
             expiration: {
-              maxEntries: 100,
-              maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              maxEntries: 10,
+              maxAgeSeconds: 60 * 60 * 24 // mirrors the server's stale-while-revalidate=86400
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        },
+        {
+          urlPattern: /^https:\/\/api\.rivers\.run\/rivers\/[^/]+(\?.*)?$/i,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'rivers-metadata-cache',
+            expiration: {
+              maxEntries: 60,
+              maxAgeSeconds: 60 * 60 * 24 // mirrors the server's stale-while-revalidate=86400
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        },
+        {
+          // Prefer live data, but don't hang on a bad-but-connected network (lie-fi) —
+          // fall back to cache after 2s while the live fetch keeps running in the background.
+          urlPattern: /^https:\/\/api\.rivers\.run\/community\/lists(\?.*)?$/i,
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'community-lists-cache',
+            networkTimeoutSeconds: 2,
+            expiration: {
+              maxEntries: 3,
+              maxAgeSeconds: 60 * 60 * 24 // mirrors the server's stale-while-revalidate=86400
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        },
+        {
+          // /lists/{id} is public (the ID is the sharing capability) — unlike bare
+          // /lists, which is auth-gated "my lists" and stays no-store (see api/src/index.ts).
+          urlPattern: /^https:\/\/api\.rivers\.run\/lists\/[^/]+(\?.*)?$/i,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'lists-detail-cache',
+            expiration: {
+              maxEntries: 30,
+              maxAgeSeconds: 60 * 60 * 24 // mirrors the server's stale-while-revalidate=86400
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
             }
           }
         },
@@ -41,35 +95,9 @@ export default defineConfig({
               options: {}
             }
           }
-        },
-        {
-          urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/rivers-run\.appspot\.com\/o\/public%2F(rivers|gauges)\.json/i,
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: 'flow-data-cache',
-            expiration: {
-              maxEntries: 10,
-              maxAgeSeconds: 60 * 60 * 24 * 7 // Keep for up to a week just in case of long offline
-            },
-            cacheableResponse: {
-              statuses: [0, 200]
-            }
-          }
-        },
-        {
-          urlPattern: /^https:\/\/rivers\.run\/riverdata\.json$/i,
-          handler: 'StaleWhileRevalidate',
-          options: {
-            cacheName: 'river-data-cache',
-            expiration: {
-              maxEntries: 10,
-              maxAgeSeconds: 60 * 60 * 24 * 30 // Keep static river data for up to a month
-            },
-            cacheableResponse: {
-              statuses: [0, 200]
-            }
-          }
         }
+        // (Removed dead rules for firebasestorage.googleapis.com and riverdata.json —
+        // neither is used or referenced anywhere in this app.)
       ]
     },
     manifest: {
