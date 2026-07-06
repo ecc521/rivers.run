@@ -30,6 +30,21 @@ interface LinkConflict {
 
 type AuthView = 'options' | 'email_signin' | 'email_signup' | 'forgot_password' | 'link_conflict';
 
+// Human-readable labels for the Firebase sign-in method identifiers this app
+// links against. Unrecognized methods (e.g. a provider we don't support in
+// this UI) fall back to the raw identifier rather than disappearing silently.
+const LINK_METHOD_LABELS: Record<string, string> = {
+  'google.com': 'Google',
+  'apple.com': 'Apple',
+  'password': 'email/password',
+};
+
+// True when the user closed the popup / canceled the native sheet themselves,
+// as opposed to an actual auth failure.
+function isUserCancellation(e: any): boolean {
+  return e?.code === 'auth/popup-closed-by-user' || (e instanceof Error && e.message.toLowerCase().includes('cancel'));
+}
+
 // Fires a lightweight analytics event so an unhandled auth error is visible in
 // Firebase Analytics even though we can't ask the user for diagnostic details.
 function logAuthFallback(code: string, provider: string) {
@@ -142,7 +157,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       await finishPendingLink();
       onClose();
     } catch (e: any) {
-      if (e?.code === 'auth/popup-closed-by-user' || (e instanceof Error && e.message.toLowerCase().includes('cancel'))) {
+      if (isUserCancellation(e)) {
         console.log("Authentication canceled by user.");
         setLoading(false);
         return;
@@ -195,7 +210,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       await finishPendingLink();
       onClose();
     } catch (e: any) {
-      if (e?.code === 'auth/popup-closed-by-user' || (e instanceof Error && e.message.toLowerCase().includes('cancel'))) {
+      if (isUserCancellation(e)) {
         console.log("Authentication canceled by user.");
         setLoading(false);
         return;
@@ -458,9 +473,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.95rem", textAlign: "left" }}>
               An account already exists for <strong>{linkConflict.email}</strong> using{' '}
-              {linkConflict.methods.includes('google.com') && 'Google'}
-              {linkConflict.methods.includes('google.com') && linkConflict.methods.includes('password') && ' or '}
-              {linkConflict.methods.includes('password') && 'email/password'}
+              {linkConflict.methods
+                .map((m) => LINK_METHOD_LABELS[m] ?? m)
+                .join(' or ')}
               . Sign in that way to connect this to your account.
             </p>
 
@@ -472,6 +487,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   style={{ width: "24px", height: "24px" }}
                 />
                 Continue with Google
+              </button>
+            )}
+
+            {linkConflict.methods.includes('apple.com') && (
+              <button onClick={handleAppleSignIn} style={{...buttonStyle, backgroundColor: "var(--text)", color: "var(--surface)", borderColor: "var(--border)"}} disabled={loading}>
+                <svg style={{ width: "22px", height: "22px", fill: "white" }} viewBox="0 0 384 512">
+                  <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+                </svg>
+                Continue with Apple
               </button>
             )}
 
