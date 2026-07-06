@@ -1,23 +1,45 @@
 import React, { useState } from "react";
-import { 
-  signInWithPopup, 
-  GoogleAuthProvider, 
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
   OAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  signInWithCredential
+  signInWithCredential,
+  linkWithCredential,
+  fetchSignInMethodsForEmail,
+  type AuthCredential
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { logEvent } from "firebase/analytics";
+import { auth, analytics } from "../firebase";
 import { Capacitor } from "@capacitor/core";
 import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
+import { FirebaseAnalytics } from "@capacitor-firebase/analytics";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type AuthView = 'options' | 'email_signin' | 'email_signup' | 'forgot_password';
+interface LinkConflict {
+  email: string;
+  methods: string[];
+  pendingCredential: AuthCredential;
+}
+
+type AuthView = 'options' | 'email_signin' | 'email_signup' | 'forgot_password' | 'link_conflict';
+
+// Fires a lightweight analytics event so an unhandled auth error is visible in
+// Firebase Analytics even though we can't ask the user for diagnostic details.
+function logAuthFallback(code: string, provider: string) {
+  const params = { code, provider };
+  if (Capacitor.isNativePlatform()) {
+    FirebaseAnalytics.logEvent({ name: "auth_fallback_error", params }).catch(() => {});
+  } else if (analytics) {
+    logEvent(analytics, "auth_fallback_error", params);
+  }
+}
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -29,6 +51,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [linkConflict, setLinkConflict] = useState<LinkConflict | null>(null);
 
   // Reset state when modal closes or opens
   React.useEffect(() => {
@@ -39,21 +62,74 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setEmail("");
       setPassword("");
       setLoading(false);
+      setLinkConflict(null);
     }
   }, [isOpen]);
+
+  // Sets a plain, screenshot-able fallback message for any auth error we don't have
+  // a specific recovery flow for, and logs it so we can see it happened without
+  // relying on the user to describe it.
+  const showFallbackError = (e: any, provider: string) => {
+    const code = (e && typeof e === 'object' && 'code' in e) ? e.code : 'unknown';
+    console.error("Unhandled authentication error:", e);
+    logAuthFallback(code, provider);
+    setErrorText(
+      `Something went wrong signing in (error: ${code}). Please take a screenshot of this ` +
+      `message and email it to support@rivers.run so we can help.`
+    );
+  };
+
+  // Checks for the "account already exists with a different credential" conflict and,
+  // if found, switches to the linking flow instead of failing outright.
+  const tryResolveAccountConflict = async (e: any, localCredential?: AuthCredential): Promise<boolean> => {
+    if (!(e && typeof e === 'object' && e.code === 'auth/account-exists-with-different-credential')) {
+      return false;
+    }
+    const conflictEmail: string | undefined = e.customData?.email;
+    const pendingCredential = localCredential
+      ?? OAuthProvider.credentialFromError(e)
+      ?? GoogleAuthProvider.credentialFromError(e);
+    if (!conflictEmail || !pendingCredential) {
+      return false;
+    }
+    const methods = await fetchSignInMethodsForEmail(auth, conflictEmail);
+    if (methods.length === 0) {
+      return false;
+    }
+    setLinkConflict({ email: conflictEmail, methods, pendingCredential });
+    setEmail(conflictEmail);
+    setView('link_conflict');
+    return true;
+  };
+
+  // After successfully signing in with the ORIGINAL provider during a linking flow,
+  // attaches the credential that triggered the conflict to that same account.
+  const finishPendingLink = async () => {
+    if (!linkConflict || !auth.currentUser) return;
+    await linkWithCredential(auth.currentUser, linkConflict.pendingCredential);
+    setLinkConflict(null);
+  };
 
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
       setErrorText(null);
-      
+
       if (Capacitor.isNativePlatform()) {
         // Use Native Firebase Auth Plugin for Capacitor to bypass CORS/iframe issues
         const result = await FirebaseAuthentication.signInWithGoogle();
         const idToken = result.credential?.idToken;
         if (idToken) {
            const credential = GoogleAuthProvider.credential(idToken);
-           await signInWithCredential(auth, credential);
+           try {
+             await signInWithCredential(auth, credential);
+           } catch (inner: any) {
+             if (await tryResolveAccountConflict(inner, credential)) {
+               setLoading(false);
+               return;
+             }
+             throw inner;
+           }
         } else {
            throw new Error("Failed to retrieve Google ID Token.");
         }
@@ -62,19 +138,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
       }
+
+      await finishPendingLink();
       onClose();
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        const msg = e.message.toLowerCase();
-        if (msg.includes('cancel') || ('code' in e && (e as any).code === 'auth/popup-closed-by-user')) {
-          console.log("Authentication canceled by user.");
-        } else {
-          console.error("Authentication Error:", e.message);
-          setErrorText("Failed to authenticate: " + e.message);
-        }
-      } else {
-        setErrorText("Failed to authenticate: An unknown error occurred.");
+    } catch (e: any) {
+      if (e?.code === 'auth/popup-closed-by-user' || (e instanceof Error && e.message.toLowerCase().includes('cancel'))) {
+        console.log("Authentication canceled by user.");
+        setLoading(false);
+        return;
       }
+      if (await tryResolveAccountConflict(e)) {
+        setLoading(false);
+        return;
+      }
+      showFallbackError(e, 'google.com');
       setLoading(false);
     }
   };
@@ -83,11 +160,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       setLoading(true);
       setErrorText(null);
-      
+
       if (Capacitor.isNativePlatform()) {
         const result = await FirebaseAuthentication.signInWithApple();
         const idToken = result.credential?.idToken;
-        // Apple provider sometimes needs multiple fields or raw nonces depending on the config, 
+        // Apple provider sometimes needs multiple fields or raw nonces depending on the config,
         // but idToken works as the bare minimum.
         if (idToken) {
            const provider = new OAuthProvider('apple.com');
@@ -95,7 +172,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
              idToken: idToken,
              rawNonce: result.credential?.nonce // Pass nonce to validate token
            });
-           await signInWithCredential(auth, credential);
+           try {
+             await signInWithCredential(auth, credential);
+           } catch (inner: any) {
+             if (await tryResolveAccountConflict(inner, credential)) {
+               setLoading(false);
+               return;
+             }
+             throw inner;
+           }
         } else {
            throw new Error("Failed to retrieve Apple ID Token.");
         }
@@ -106,19 +191,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         provider.addScope('name');
         await signInWithPopup(auth, provider);
       }
+
+      await finishPendingLink();
       onClose();
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        const msg = e.message.toLowerCase();
-        if (msg.includes('cancel') || ('code' in e && (e as any).code === 'auth/popup-closed-by-user')) {
-          console.log("Authentication canceled by user.");
-        } else {
-          console.error("Authentication Error:", e.message);
-          setErrorText("Failed to authenticate: " + e.message);
-        }
-      } else {
-        setErrorText("Failed to authenticate: An unknown error occurred.");
+    } catch (e: any) {
+      if (e?.code === 'auth/popup-closed-by-user' || (e instanceof Error && e.message.toLowerCase().includes('cancel'))) {
+        console.log("Authentication canceled by user.");
+        setLoading(false);
+        return;
       }
+      if (await tryResolveAccountConflict(e)) {
+        setLoading(false);
+        return;
+      }
+      showFallbackError(e, 'apple.com');
       setLoading(false);
     }
   };
@@ -133,17 +219,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setLoading(true);
       setErrorText(null);
       await signInWithEmailAndPassword(auth, email, password);
+      await finishPendingLink();
       onClose();
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error("Authentication Error:", e.message);
-        if ('code' in e && e.code === 'auth/invalid-credential') {
-          setErrorText("Incorrect email or password.");
-        } else {
-          setErrorText(e.message);
-        }
+    } catch (err: any) {
+      if (err?.code === 'auth/invalid-credential') {
+        setErrorText("Incorrect email or password.");
       } else {
-         setErrorText("An unknown error occurred.");
+        showFallbackError(err, 'password');
       }
       setLoading(false);
     }
@@ -164,18 +246,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setErrorText(null);
       await createUserWithEmailAndPassword(auth, email, password);
       onClose();
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error("Authentication Error:", e.message);
-        if ('code' in e && (e as any).code === 'auth/email-already-in-use') {
-          setErrorText("An account with this email already exists.");
-        } else if ('code' in e && (e as any).code === 'auth/weak-password') {
-          setErrorText("Password should be at least 6 characters.");
-        } else {
-          setErrorText(e.message);
-        }
+    } catch (err: any) {
+      if (err?.code === 'auth/email-already-in-use') {
+        setErrorText("An account with this email already exists.");
+      } else if (err?.code === 'auth/weak-password') {
+        setErrorText("Password should be at least 6 characters.");
       } else {
-        setErrorText("An unknown error occurred.");
+        showFallbackError(err, 'password_signup');
       }
       setLoading(false);
     }
@@ -194,13 +271,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       await sendPasswordResetEmail(auth, email);
       setSuccessText("Password reset email sent! Check your inbox.");
       setLoading(false);
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error("Reset Error:", e.message);
-        setErrorText(e.message);
-      } else {
-        setErrorText("An unknown error occurred.");
-      }
+    } catch (err: any) {
+      showFallbackError(err, 'password_reset');
       setLoading(false);
     }
   };
@@ -334,6 +406,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           {view === 'email_signin' && "Sign In"}
           {view === 'email_signup' && "Create Account"}
           {view === 'forgot_password' && "Reset Password"}
+          {view === 'link_conflict' && "Connect Your Account"}
         </h2>
 
         {view === 'options' && (
@@ -378,6 +451,51 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </svg>
               Sign in with Email
             </button>
+          </div>
+        )}
+
+        {view === 'link_conflict' && linkConflict && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.95rem", textAlign: "left" }}>
+              An account already exists for <strong>{linkConflict.email}</strong> using{' '}
+              {linkConflict.methods.includes('google.com') && 'Google'}
+              {linkConflict.methods.includes('google.com') && linkConflict.methods.includes('password') && ' or '}
+              {linkConflict.methods.includes('password') && 'email/password'}
+              . Sign in that way to connect this to your account.
+            </p>
+
+            {linkConflict.methods.includes('google.com') && (
+              <button onClick={handleGoogleSignIn} style={buttonStyle} disabled={loading}>
+                <img
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="Google"
+                  style={{ width: "24px", height: "24px" }}
+                />
+                Continue with Google
+              </button>
+            )}
+
+            {linkConflict.methods.includes('password') && (
+              <form onSubmit={handleEmailSignIn} style={{ display: "flex", flexDirection: "column" }}>
+                <input
+                   type="email"
+                   value={email}
+                   readOnly
+                   style={{...inputStyle, backgroundColor: "var(--surface-hover)", color: "var(--text-secondary)"}}
+                />
+                <input
+                   type="password"
+                   placeholder="Password"
+                   value={password}
+                   onChange={(e) => setPassword(e.target.value)}
+                   style={inputStyle}
+                   required
+                />
+                <button type="submit" style={primaryButtonStyle} disabled={loading}>
+                  {loading ? "Connecting..." : "Sign In & Connect"}
+                </button>
+              </form>
+            )}
           </div>
         )}
 
