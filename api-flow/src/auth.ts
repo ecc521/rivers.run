@@ -1,4 +1,5 @@
 import type { Context, Next } from "hono";
+import { toHex } from "./utils/hex";
 
 /**
  * True if an Origin/Referer header points at localhost or a private LAN address
@@ -33,9 +34,7 @@ export async function hashKey(rawKey: string): Promise<string> {
     const encoder = new TextEncoder();
     const data = encoder.encode(rawKey);
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    return Array.from(new Uint8Array(hashBuffer))
-        .map(b => b.toString(16).padStart(2, "0"))
-        .join("");
+    return toHex(hashBuffer);
 }
 
 /**

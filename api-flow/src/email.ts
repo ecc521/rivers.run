@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import { logToD1 } from './utils/logger';
 
-export async function sendEmail({ env, to, subject, html }: { env: any, to: string, subject: string, html: string }) {
+export async function sendEmail({ env, to, subject, html, headers }: { env: any, to: string, subject: string, html: string, headers?: Record<string, string> }) {
     if (!env || !env.GMAIL_APP_PASSWORD) {
         await logToD1(env, "WARN", "email", "Emails not configured: Missing GMAIL_APP_PASSWORD secret.");
         return { success: false, error: "Missing config" };
@@ -22,7 +22,8 @@ export async function sendEmail({ env, to, subject, html }: { env: any, to: stri
             from: '"Rivers.run" <email.rivers.run@gmail.com>',
             to,
             subject,
-            html
+            html,
+            headers
         });
         await logToD1(env, "INFO", "email", `Email sent to ${to}: ${info.messageId}`);
         return { success: true, messageId: info.messageId };

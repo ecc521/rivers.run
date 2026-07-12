@@ -21,11 +21,15 @@ import { generateSitemap } from "./services/sitemap";
 import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
 import { syncUsgsReaches } from "./services/usgsReaches";
+import { verifyUnsubscribeToken } from "./utils/unsubscribeToken";
+import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError } from "./templates/unsubscribeConfirmation";
 
 export interface Env {
     FLOW_STORAGE: R2Bucket;
     DB: D1Database;
     USGS_API_KEY?: string;
+    GMAIL_APP_PASSWORD?: string;
+    UNSUBSCRIBE_SECRET?: string;
 }
 
 export const providers: Record<string, GaugeProvider> = {
@@ -41,7 +45,7 @@ const app = new OpenAPIHono<{ Bindings: Env }>();
 // Middlewares
 app.use("*", cors({
     origin: "*",
-    allowMethods: ["GET", "OPTIONS"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "x-api-key", "X-API-Key"],
     exposeHeaders: ["Content-Length", "X-Knative-Response-Contained"],
     maxAge: 86400,
@@ -209,6 +213,45 @@ app.openapi(gaugeRoute, async (c) => {
     } catch (_e) {
         console.error("Gauge history fetch failed", _e);
         return c.json({ error: "Fetch failed" }, 500);
+    }
+});
+
+// Unauthenticated one-click unsubscribe target for List-Unsubscribe / List-Unsubscribe-Post
+// (RFC 8058), verifying an HMAC-signed token and flipping the same global
+// `users.notifications_enabled` flag the in-app notification settings toggle uses.
+//
+// GET never mutates - corporate email security gateways and link-safety scanners routinely
+// pre-fetch every URL in an email (including the List-Unsubscribe header target) before a
+// human opens the message, so a verified GET only renders a confirm step. POST performs the
+// actual mutation, used both by Gmail's silent one-click and by that confirm page's own form.
+app.on(["GET", "POST"], "/unsubscribe", async (c) => {
+    try {
+        const uid = c.req.query("uid");
+        const iat = Number(c.req.query("iat"));
+        const sig = c.req.query("sig") ?? "";
+
+        if (!uid || !c.env.UNSUBSCRIBE_SECRET || !(await verifyUnsubscribeToken(c.env.UNSUBSCRIBE_SECRET, uid, iat, sig))) {
+            return c.html(renderUnsubscribeError(), 400);
+        }
+
+        if (c.req.method === "GET") {
+            return c.html(renderUnsubscribeConfirmPrompt({ actionUrl: c.req.url }));
+        }
+
+        const user = await c.env.DB.prepare("SELECT email FROM users WHERE user_id = ?").bind(uid).first<{ email: string }>();
+        if (!user) {
+            return c.html(renderUnsubscribeError(), 400);
+        }
+
+        await c.env.DB.prepare("UPDATE users SET notifications_enabled = 0 WHERE user_id = ?").bind(uid).run();
+
+        const ageDays = Math.floor((Date.now() / 1000 - iat) / 86400);
+        await logToD1(c.env, "INFO", "email", `Unsubscribed ${uid} via signed link (${ageDays}d old)`);
+
+        return c.html(renderUnsubscribeConfirmation({ email: user.email, listsUrl: "https://rivers.run/lists" }));
+    } catch (e) {
+        console.error("Unsubscribe route failed:", e);
+        return c.html(renderUnsubscribeError(), 500);
     }
 });
 

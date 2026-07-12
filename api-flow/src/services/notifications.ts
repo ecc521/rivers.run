@@ -1,6 +1,8 @@
 import type { Env } from "../index";
 import { sendEmail } from "../email";
 import { normalizeGaugeId } from "../utils/formatting";
+import { signUnsubscribeToken, buildUnsubscribeUrl } from "../utils/unsubscribeToken";
+import { logToD1 } from "../utils/logger";
 
 export interface RiverCondition {
     id: string;
@@ -250,7 +252,11 @@ export async function processNotifications(env: Env, mergedData: Record<string, 
         const currentTime = Math.floor(nowMs / 1000);
 
         const usersMap = await fetchSubscribedUsers(env, currentTime);
-        
+
+        if (!env.UNSUBSCRIBE_SECRET) {
+            await logToD1(env, "WARN", "email", "Digest emails sending without List-Unsubscribe headers: Missing UNSUBSCRIBE_SECRET secret.");
+        }
+
         const updates: any[] = [];
         const emailsPromises: Promise<any>[] = [];
 
@@ -263,10 +269,19 @@ export async function processNotifications(env: Env, mergedData: Record<string, 
                 }
             }
             const emailData = buildDigestEmailBody({ lists: listSummaries });
-            
+
             if (emailData) {
+                let headers: Record<string, string> | undefined;
+                if (env.UNSUBSCRIBE_SECRET) {
+                    const sig = await signUnsubscribeToken(env.UNSUBSCRIBE_SECRET, userId, currentTime);
+                    const unsubscribeUrl = buildUnsubscribeUrl("https://flow.rivers.run", userId, currentTime, sig);
+                    headers = {
+                        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+                        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                    };
+                }
                 emailsPromises.push(
-                    sendEmail({ env, to: userObj.email, subject: emailData.subject, html: emailData.html })
+                    sendEmail({ env, to: userObj.email, subject: emailData.subject, html: emailData.html, headers })
                 );
             }
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiFlow from '../index';
 import { sendEmail } from '../email';
 import { evaluateRiverConditions, buildDigestEmailBody, calculateNextTriggerTime, RiverCondition } from '../services/notifications';
+import { verifyUnsubscribeToken } from '../utils/unsubscribeToken';
 
 import * as registry from '../services/gaugeRegistry';
 import { usgsProvider } from '../services/usgs';
@@ -23,7 +24,7 @@ vi.mock('../services/usgs', () => ({
     }
 }));
 
-function createMockCloudflareEnv(dbRows: any[], siteData: Record<string, any>) {
+function createMockCloudflareEnv(dbRows: any[], siteData: Record<string, any>, unsubscribeSecret?: string) {
     // Tell the loop to process these gauges by returning them in the registry
     vi.mocked(registry.compileGaugeRegistry).mockResolvedValue(siteData as any);
     
@@ -51,6 +52,7 @@ function createMockCloudflareEnv(dbRows: any[], siteData: Record<string, any>) {
     });
 
     return {
+        UNSUBSCRIBE_SECRET: unsubscribeSecret,
         DB: {
             prepare: vi.fn().mockImplementation((query: string) => ({
                 bind: vi.fn().mockReturnValue({
@@ -197,6 +199,82 @@ describe('Daily Digest Notification Engine', () => {
         expect(sendEmail).toHaveBeenCalledTimes(1);
         const emailArgs = vi.mocked(sendEmail).mock.calls[0][0];
         expect(emailArgs.html).toContain('<strong>Running:</strong>');
+    });
+
+    it('Test D: List-Unsubscribe headers are attached with a verifiable token when UNSUBSCRIBE_SECRET is set', async () => {
+        const mockEnv = createMockCloudflareEnv([
+            {
+                user_id: 'user_D',
+                list_id: 'list_D',
+                list_title: 'Test List D',
+                email: 'runner@example.com',
+                notifications_time_of_day: '10:00',
+                river_id: 'river_4',
+                name: 'Unsub River',
+                section: null,
+                flow_min: 500,
+                flow_max: 1000,
+                flow_unit: 'cfs',
+                gauges: JSON.stringify([{ id: 'USGS:4' }]),
+                custom_min: null,
+                custom_max: null,
+                custom_units: null
+            }
+        ], {
+            "USGS:4": {
+                id: "USGS:4", name: "Test Gauge", lat: 0, lon: 0,
+                readings: [{ cfs: 750, timestamp: Date.now() }]
+            }
+        }, 'test-unsubscribe-secret');
+
+        await apiFlow.scheduled(dummyEvent as any, mockEnv as any, mockCtx as any);
+
+        expect(sendEmail).toHaveBeenCalledTimes(1);
+        const emailArgs = vi.mocked(sendEmail).mock.calls[0][0];
+        expect(emailArgs.headers?.['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
+
+        const match = emailArgs.headers?.['List-Unsubscribe']?.match(/^<(.+)>$/);
+        expect(match).toBeTruthy();
+        const url = new URL(match![1]);
+        expect(url.pathname).toBe('/unsubscribe');
+        const uid = url.searchParams.get('uid')!;
+        const iat = Number(url.searchParams.get('iat'));
+        const sig = url.searchParams.get('sig')!;
+        expect(uid).toBe('user_D');
+        await expect(verifyUnsubscribeToken('test-unsubscribe-secret', uid, iat, sig)).resolves.toBe(true);
+    });
+
+    it('Test E: Digest still sends without List-Unsubscribe headers when UNSUBSCRIBE_SECRET is unset', async () => {
+        const mockEnv = createMockCloudflareEnv([
+            {
+                user_id: 'user_E',
+                list_id: 'list_E',
+                list_title: 'Test List E',
+                email: 'runner2@example.com',
+                notifications_time_of_day: '10:00',
+                river_id: 'river_5',
+                name: 'No Secret River',
+                section: null,
+                flow_min: 500,
+                flow_max: 1000,
+                flow_unit: 'cfs',
+                gauges: JSON.stringify([{ id: 'USGS:5' }]),
+                custom_min: null,
+                custom_max: null,
+                custom_units: null
+            }
+        ], {
+            "USGS:5": {
+                id: "USGS:5", name: "Test Gauge", lat: 0, lon: 0,
+                readings: [{ cfs: 750, timestamp: Date.now() }]
+            }
+        }); // no unsubscribeSecret passed
+
+        await apiFlow.scheduled(dummyEvent as any, mockEnv as any, mockCtx as any);
+
+        expect(sendEmail).toHaveBeenCalledTimes(1);
+        const emailArgs = vi.mocked(sendEmail).mock.calls[0][0];
+        expect(emailArgs.headers).toBeUndefined();
     });
 });
 

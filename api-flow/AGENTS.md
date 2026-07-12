@@ -1,10 +1,16 @@
 # api-flow
 
-This isolated Cloudflare Worker handles gauge (hydro-data) scraping and proxying. It
-contains **no authentication layer and no user-facing database queries** — it is a
-clean separation from `api/`. Built on Hono (`OpenAPIHono`). Entry point: `src/index.ts`.
-Deployed to `flow.rivers.run`. Provider integrations live in `src/services/` (USGS,
-Canada, UK, Ireland, NWS).
+This isolated Cloudflare Worker handles gauge (hydro-data) scraping and proxying, and is
+mostly a clean separation from `api/` — **no authentication layer, no general user-facing
+database queries.** The one exception is the digest/unsubscribe email pipeline (see
+`src/services/notifications.ts` and the `/unsubscribe` route in `src/index.ts`), which
+reads and writes a narrow set of `users` columns (`email`, `notifications_*`) directly
+against the same D1 database `api/` uses, bound independently in this worker's own
+`wrangler.toml`. The `/unsubscribe` route is intentionally unauthenticated (it must work
+with no login, per RFC 8058 one-click unsubscribe) and is instead gated by an HMAC-signed
+token — see `src/utils/unsubscribeToken.ts`. Built on Hono (`OpenAPIHono`). Entry point:
+`src/index.ts`. Deployed to `flow.rivers.run`. Provider integrations live in
+`src/services/` (USGS, Canada, UK, Ireland, NWS).
 
 ## 1. CORS Proxying & Network Constraints
 

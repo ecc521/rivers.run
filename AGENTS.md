@@ -19,7 +19,8 @@ toolchain and are linted/tested together:
 - **`api/`** — `rivers-run-api` Cloudflare Worker (Hono). Core CRUD, user lists, admin
   review. Backed by Cloudflare D1 (SQLite) + Firebase Auth. See [api/CLAUDE.md](api/CLAUDE.md).
 - **`api-flow/`** — `api-flow` Cloudflare Worker. Isolated gauge-telemetry scraping and
-  CORS proxying; no auth or user DB. See [api-flow/CLAUDE.md](api-flow/CLAUDE.md).
+  CORS proxying; no auth layer. Its digest/unsubscribe email pipeline is the one exception
+  that reads/writes `users` in D1 directly. See [api-flow/CLAUDE.md](api-flow/CLAUDE.md).
 - **`applewatch/`** — standalone native watchOS (Swift) project with its own git repo.
   See [applewatch/CLAUDE.md](applewatch/CLAUDE.md).
 
