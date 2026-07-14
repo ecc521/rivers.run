@@ -278,7 +278,7 @@ export const ecProvider: GaugeProvider = {
                                  section: formatted.section,
                                  lon: feat.geometry?.coordinates?.[0] || 0,
                                  lat: feat.geometry?.coordinates?.[1] || 0,
-                                 state: feat.properties?.PROVINCE_TERRITORY_CODE || getProvincesForSite(site)[0],
+                                 state: feat.properties?.PROV_TERR_STATE_LOC || getProvincesForSite(site)[0],
                                  country: "CA"
                              });
                          }
@@ -332,7 +332,7 @@ export const ecProvider: GaugeProvider = {
                         section: formatted.section,
                         lat,
                         lon,
-                        state: formatStateCode(props.PROVINCE_TERRITORY_CODE, "EC"),
+                        state: formatStateCode(props.PROV_TERR_STATE_LOC, "EC"),
                         country: "CA"
                     });
                 }

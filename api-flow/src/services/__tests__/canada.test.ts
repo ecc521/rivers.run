@@ -91,7 +91,7 @@ SHORT_ROW`;
                             properties: {
                                 STATION_NUMBER: "08MG005",
                                 STATION_NAME: "Test Station Canada",
-                                PROVINCE_TERRITORY_CODE: "BC"
+                                PROV_TERR_STATE_LOC: "BC"
                             },
                             geometry: {
                                 coordinates: [-122.456, 49.123]
@@ -101,7 +101,7 @@ SHORT_ROW`;
                             properties: {
                                 STATION_NUMBER: "01AF009",
                                 STATION_NAME: "Another Station",
-                                PROVINCE_TERRITORY_CODE: "NB"
+                                PROV_TERR_STATE_LOC: "NB"
                             },
                             geometry: {
                                 coordinates: [-66.000, 45.000]
