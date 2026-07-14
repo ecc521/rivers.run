@@ -8,6 +8,7 @@ import { useModal } from "../context/ModalContext";
 import { useSEO } from "../hooks/useSEO";
 import { ListEditorModal } from "../components/ListEditorModal";
 import { AuthorHoverCard } from "../components/AuthorHoverCard";
+import { NotificationPreferencesBar } from "../components/NotificationPreferencesBar";
 import { getShareBaseUrl } from "../utils/url";
 import { Capacitor } from "@capacitor/core";
 import { useTranslation } from "react-i18next";
@@ -30,6 +31,12 @@ const ListsPage: React.FC = () => {
 
   const { lists: communityLists, loading: communityLoading } = useCommunityLists();
   const [searchQuery, setSearchQuery] = useState("");
+
+  const activeAlertListCount = React.useMemo(() => {
+    const ownedActive = myLists.filter(l => l.notificationsEnabled).length;
+    const subscribedActive = communityLists.filter(l => subscribedListIds.includes(l.id) && subscribedListNotifications[l.id]).length;
+    return ownedActive + subscribedActive;
+  }, [myLists, communityLists, subscribedListIds, subscribedListNotifications]);
 
   const listsByOwner = React.useMemo(() => {
     const map = new Map<string, UserList[]>();
@@ -481,6 +488,8 @@ const ListsPage: React.FC = () => {
                 </div>
              ) : (
                 <>
+                  <NotificationPreferencesBar user={user} activeListCount={activeAlertListCount} />
+
                   {myLists.length > 0 && (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px", marginBottom: "10px" }}>
                          <h3 style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.95em", letterSpacing: "1px" }}>{t("listsPage.myListsTitle", { count: myLists.length, limit: isModerator ? t("listsPage.unlimited") : "20" })}</h3>

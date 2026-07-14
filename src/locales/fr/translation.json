@@ -268,7 +268,15 @@
     "pinnedToSensors": "Épinglé à des capteurs spécifiques lors de l'ajout.",
     "stars": "Étoiles",
     "by": "Par ",
-    "private": "Privé"
+    "private": "Privé",
+    "notifBarLoading": "Chargement des préférences d'e-mail...",
+    "notifBarOn": "Les alertes par e-mail sont activées pour {{count}} liste(s)",
+    "notifBarOff": "Les alertes par e-mail sont désactivées",
+    "notifBarOffDesc": "Vous ne recevrez plus d'alertes ni de résumés par e-mail tant que vous ne les aurez pas réactivés.",
+    "notifBarManage": "Gérer",
+    "notifBarTurnOffAll": "Tout désactiver",
+    "notifBarTurnOnAll": "Réactiver",
+    "notifBarTurnOffConfirm": "Désactiver toutes les alertes par e-mail ? Vous pourrez les réactiver à tout moment."
   },
   "riverPage": {
     "reportPrompt": "Veuillez expliquer le problème avec les données pour {{riverName}} :",

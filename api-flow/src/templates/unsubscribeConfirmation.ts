@@ -159,7 +159,7 @@ export function renderUnsubscribeConfirmation({ email, listsUrl }: { email: stri
         badgeColor: "var(--success-text)",
         bodyHtml: `<strong>${safeEmail}</strong> won't get river alerts or list digest emails from rivers.run anymore. No further action is needed.`,
         actionsHtml: `<div class="actions"><a href="${safeListsUrl}">View your lists</a></div>`,
-        footnote: "Changed your mind? Log in at rivers.run and re-enable email alerts from Settings."
+        footnote: "Changed your mind? Log in at rivers.run/lists and turn email alerts back on."
     });
 }
 
@@ -172,7 +172,7 @@ export function renderUnsubscribeError(): string {
         badgeColor: "var(--danger-text)",
         bodyHtml: "We couldn't verify this unsubscribe link. It may have been altered, or the account it points to no longer exists.",
         actionsHtml: `<div class="actions"><a href="https://rivers.run">Go to rivers.run</a></div>`,
-        footnote: "You can also disable email alerts by logging in and visiting Settings."
+        footnote: "You can also disable email alerts by logging in at rivers.run/lists."
     });
 }
 
@@ -187,7 +187,7 @@ export function renderUnsubscribeServerError(): string {
         badgeColor: "var(--danger-text)",
         bodyHtml: "We couldn't process your unsubscribe just now. This is a temporary problem on our end, not a problem with your link — please try again in a few minutes.",
         actionsHtml: `<div class="actions"><a href="https://rivers.run">Go to rivers.run</a></div>`,
-        footnote: "Still stuck? You can turn off email alerts anytime by logging in at rivers.run and visiting Settings."
+        footnote: "Still stuck? You can turn off email alerts anytime by logging in at rivers.run/lists."
     });
 }
 

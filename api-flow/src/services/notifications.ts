@@ -202,7 +202,7 @@ export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Re
     return { high, running, runningNames, low };
 }
 
-export function buildDigestEmailBody(summary: DigestSummary): { subject: string, html: string } | null {
+export function buildDigestEmailBody(summary: DigestSummary, unsubscribeUrl: string | null): { subject: string, html: string } | null {
     const { lists } = summary;
 
     const totalRunning = lists.reduce((n, l) => n + l.running.length, 0);
@@ -227,8 +227,18 @@ export function buildDigestEmailBody(summary: DigestSummary): { subject: string,
         if (list.running.length > 0) html += `<strong>Running:</strong><ul>${list.running.join('')}</ul>`;
         if (list.low.length > 0) html += `<strong>Too Low:</strong><ul>${list.low.join('')}</ul>`;
     }
-    html += `<p><a href="https://rivers.run/favorites">View Your Lists on rivers.run</a></p>`;
-    html += `<p>Click <a href="https://rivers.run/favorites">here</a> to manage your subscription.</p></body></html>`;
+    html += `<p><a href="https://rivers.run/lists">View Your Lists on rivers.run</a></p>`;
+
+    // Two distinct footer links, matching the two things a recipient might actually want:
+    // fine-tune (which lists/times) vs. get off this list entirely. "Manage" always works
+    // since it just points at the (login-gated) app; "Unsubscribe" only renders when we
+    // have a signed token to offer - see the UNSUBSCRIBE_SECRET guard in processNotifications.
+    html += `<p style="margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">`;
+    html += `<a href="https://rivers.run/lists" style="color:#3b82f6;text-decoration:none;">Manage your notifications</a>`;
+    if (unsubscribeUrl) {
+        html += ` &nbsp;·&nbsp; <a href="${unsubscribeUrl}" style="color:#64748b;text-decoration:none;">Unsubscribe from all notifications</a>`;
+    }
+    html += `</p></body></html>`;
 
     return { subject, html };
 }
@@ -268,18 +278,20 @@ export async function processNotifications(env: Env, mergedData: Record<string, 
                     listSummaries.push({ listId: list.listId, listTitle: list.listTitle, ...result });
                 }
             }
-            const emailData = buildDigestEmailBody({ lists: listSummaries });
+            let unsubscribeUrl: string | null = null;
+            let headers: Record<string, string> | undefined;
+            if (env.UNSUBSCRIBE_SECRET) {
+                const sig = await signUnsubscribeToken(env.UNSUBSCRIBE_SECRET, userId, currentTime);
+                unsubscribeUrl = buildUnsubscribeUrl("https://flow.rivers.run", userId, currentTime, sig);
+                headers = {
+                    "List-Unsubscribe": `<${unsubscribeUrl}>`,
+                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                };
+            }
+
+            const emailData = buildDigestEmailBody({ lists: listSummaries }, unsubscribeUrl);
 
             if (emailData) {
-                let headers: Record<string, string> | undefined;
-                if (env.UNSUBSCRIBE_SECRET) {
-                    const sig = await signUnsubscribeToken(env.UNSUBSCRIBE_SECRET, userId, currentTime);
-                    const unsubscribeUrl = buildUnsubscribeUrl("https://flow.rivers.run", userId, currentTime, sig);
-                    headers = {
-                        "List-Unsubscribe": `<${unsubscribeUrl}>`,
-                        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
-                    };
-                }
                 emailsPromises.push(
                     sendEmail({ env, to: userObj.email, subject: emailData.subject, html: emailData.html, headers })
                 );

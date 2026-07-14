@@ -268,7 +268,15 @@
     "pinnedToSensors": "Pinned to specific sensors at time of addition.",
     "stars": "Stars",
     "by": "By ",
-    "private": "Private"
+    "private": "Private",
+    "notifBarLoading": "Loading email preferences...",
+    "notifBarOn": "Email alerts are on for {{count}} list(s)",
+    "notifBarOff": "Email alerts are turned off",
+    "notifBarOffDesc": "You won't get any river alerts or list digest emails until you turn this back on.",
+    "notifBarManage": "Manage",
+    "notifBarTurnOffAll": "Turn off all",
+    "notifBarTurnOnAll": "Turn back on",
+    "notifBarTurnOffConfirm": "Turn off all email alerts? You can turn them back on anytime."
   },
   "riverPage": {
     "reportPrompt": "Please explain the problem with the data for {{riverName}}:",

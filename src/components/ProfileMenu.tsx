@@ -19,86 +19,31 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
   const { alert, confirm } = useModal();
   const { privacySettings, updatePrivacySettings } = useAuth();
   const [settingsLoading, setSettingsLoading] = useState(true);
-  const [config, setConfig] = useState<any>({});
   const [displayName, setDisplayName] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [nameSaveMsg, setNameSaveMsg] = useState("");
-  const [localTime, setLocalTime] = useState("");
-  const [localDate, setLocalDate] = useState("");
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [emailSettingsExpanded, setEmailSettingsExpanded] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    const fetchConfig = async () => {
+    const fetchDisplayName = async () => {
       setSettingsLoading(true);
       try {
         const settings = await fetchAPI("/user/settings");
         if (settings) {
-          const n = settings.notifications || {};
-          
-          setConfig({
-             ...n
-          });
-
           if (settings.displayName) {
              setDisplayName(settings.displayName);
           } else if (user.displayName) {
              setDisplayName(user.displayName);
           }
-
-          if (n.timeOfDay) {
-            const [h, m] = n.timeOfDay.split(":").map(Number);
-            const d = new Date();
-            d.setUTCHours(h, m, 0, 0);
-            const localH = String(d.getHours()).padStart(2, "0");
-            const localM = String(d.getMinutes()).padStart(2, "0");
-            setLocalTime(`${localH}:${localM}`);
-          }
-
-          if (n.noneUntil && n.noneUntil > Date.now()) {
-            setLocalDate(new Date(n.noneUntil).toISOString().split("T")[0]);
-          } else {
-            setLocalDate("");
-          }
         }
       } catch (e) {
-        console.error("Failed to fetch notification settings:", e);
+        console.error("Failed to fetch profile settings:", e);
       } finally {
         setSettingsLoading(false);
       }
     };
-    fetchConfig();
+    fetchDisplayName();
   }, [user]);
-
-  const updateConfig = async (newProps: any) => {
-    if (!user) return;
-    const merged = { ...config, ...newProps };
-    setConfig(merged);
-    
-    const payload: any = { notifications: {} };
-    const settingsJson: any = {};
-    
-    if (merged.enabled !== undefined) payload.notifications.enabled = merged.enabled;
-    if (merged.noneUntil !== undefined) payload.notifications.noneUntil = merged.noneUntil;
-    if (merged.timeOfDay !== undefined) payload.notifications.timeOfDay = merged.timeOfDay;
-    if (merged.reviewQueueAlerts !== undefined) payload.notifications.reviewQueueAlerts = merged.reviewQueueAlerts;
-
-    
-    if (Object.keys(settingsJson).length > 0) payload.settings_json = settingsJson;
-
-    setSavingSettings(true);
-    try {
-      await fetchAPI("/user/settings", {
-        method: "PATCH",
-        body: JSON.stringify(payload)
-      });
-    } catch (err) {
-      console.error("Failed to save settings:", err);
-    } finally {
-      setSavingSettings(false);
-    }
-  };
 
   const saveDisplayName = async () => {
     if (!user || !displayName.trim()) return;
@@ -118,40 +63,6 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
     } finally {
       setSavingName(false);
     }
-  };
-
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalTime(e.target.value);
-  };
-
-  const handleTimeBlur = () => {
-    if (!localTime) return;
-    const [h, m] = localTime.split(":");
-    const simDate = new Date();
-    simDate.setHours(Number(h), Number(m), 0, 0);
-
-    const utcH = String(simDate.getUTCHours()).padStart(2, "0");
-    const utcM = String(simDate.getUTCMinutes()).padStart(2, "0");
-    updateConfig({ timeOfDay: `${utcH}:${utcM}` });
-  };
-
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalDate(e.target.value);
-  };
-
-  const handleDateBlur = () => {
-    if (!localDate) {
-      updateConfig({ noneUntil: 0 });
-    } else {
-      const timeTarget = localTime || "08:00"; // Fixed: fallback to 08:00
-      const blockTime = new Date(`${localDate}T${timeTarget}`).getTime();
-      updateConfig({ noneUntil: blockTime });
-    }
-  };
-
-  const handleClearDate = () => {
-    setLocalDate("");
-    updateConfig({ noneUntil: 0 });
   };
 
   const handleDownloadData = async () => {
@@ -283,124 +194,14 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, setIsDropdownOpe
           </div>
 
           <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", cursor: "pointer", color: "var(--text)" }}>
-            <input 
+            <input
               type="checkbox"
               checked={privacySettings.hidePublicName}
               onChange={(e) => updatePrivacySettings(e.target.checked)}
-              disabled={savingSettings}
               style={{ cursor: "pointer" }}
             />
             {t("profileMenu.keepPrivate")}
           </label>
-
-          <div style={{ borderTop: "1px solid var(--border)", paddingTop: "10px", marginTop: "4px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div 
-              onClick={() => setEmailSettingsExpanded(!emailSettingsExpanded)}
-              style={{ 
-                display: "flex", 
-                justifyContent: "space-between", 
-                alignItems: "center", 
-                cursor: "pointer", 
-                fontWeight: "bold", 
-                fontSize: "0.85rem", 
-                color: "var(--text-secondary)",
-                padding: "4px 0"
-              }}
-            >
-              <span>{t("profileMenu.emailAlerts")}</span>
-              <span>{emailSettingsExpanded ? "▲" : "▼"}</span>
-            </div>
-
-            {emailSettingsExpanded && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", cursor: "pointer", color: "var(--text)" }}>
-                  <input 
-                    type="checkbox"
-                    checked={config.enabled !== false}
-                    onChange={(e) => updateConfig({ enabled: e.target.checked, noneUntil: 0 })}
-                    disabled={savingSettings}
-                    style={{ cursor: "pointer" }}
-                  />
-                  {t("profileMenu.receiveDigests")}
-                </label>
-                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginLeft: "22px", display: "block", marginTop: "-4px" }}>
-                  {t("profileMenu.digestsDesc")}
-                </span>
-
-                {config.enabled !== false && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "22px", marginTop: "4px" }}>
-                    <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                      {t("profileMenu.deliveryTime")}
-                      <input 
-                        type="time"
-                        value={localTime}
-                        onChange={handleTimeChange}
-                        onBlur={handleTimeBlur}
-                        disabled={savingSettings}
-                        style={{
-                          padding: "4px 6px",
-                          borderRadius: "4px",
-                          border: "1px solid var(--border)",
-                          fontSize: "0.8rem",
-                          backgroundColor: "var(--surface-hover)",
-                          color: "var(--text)",
-                          width: "90px"
-                        }}
-                      />
-                    </label>
-
-                    <div style={{ borderTop: "1px dashed var(--border)", margin: "4px 0" }}></div>
-
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                      <span>{t("profileMenu.snoozeUntil")}</span>
-                      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                        <input 
-                          type="date"
-                          min={new Date().toISOString().split("T")[0]}
-                          value={localDate}
-                          onChange={handleDateChange}
-                          onBlur={handleDateBlur}
-                          disabled={savingSettings}
-                          style={{
-                            padding: "4px 6px",
-                            borderRadius: "4px",
-                            border: "1px solid var(--border)",
-                            fontSize: "0.8rem",
-                            backgroundColor: "var(--surface-hover)",
-                            color: "var(--text)",
-                            flexGrow: 1,
-                            width: "100%"
-                          }}
-                        />
-                        {localDate && (
-                          <button
-                            onClick={handleClearDate}
-                            disabled={savingSettings}
-                            style={{
-                              padding: "4px 8px",
-                              backgroundColor: "transparent",
-                              color: "var(--danger)",
-                              border: "1px solid var(--danger)",
-                              borderRadius: "4px",
-                              fontSize: "0.75rem",
-                              cursor: "pointer"
-                            }}
-                          >
-                            {t("profileMenu.clear")}
-                          </button>
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                )}
-                {savingSettings && (
-                  <span style={{ fontSize: "0.7rem", color: "var(--primary)", marginLeft: "22px", fontStyle: "italic" }}>
-                    {t("profileMenu.savingChanges")}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
         </>
       )}
 

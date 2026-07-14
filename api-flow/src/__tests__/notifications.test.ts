@@ -411,28 +411,28 @@ describe('Notification Helpers (Pure Unit Tests)', () => {
 
     describe('buildDigestEmailBody', () => {
         it('returns null if there are no active running/high rivers', () => {
-            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: [], runningNames: [], low: ['<li>River</li>'] }] });
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: [], runningNames: [], low: ['<li>River</li>'] }] }, null);
             expect(result).toBeNull();
         });
 
         it('returns null for empty lists', () => {
-            const result = buildDigestEmailBody({ lists: [] });
+            const result = buildDigestEmailBody({ lists: [] }, null);
             expect(result).toBeNull();
         });
 
         it('generates a singular subject for a single running river without Creek suffix', () => {
-            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'Colorado Runs', high: [], running: ['<li>Colorado: 5000</li>'], runningNames: ['Colorado'], low: [] }] });
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'Colorado Runs', high: [], running: ['<li>Colorado: 5000</li>'], runningNames: ['Colorado'], low: [] }] }, null);
             expect(result?.subject).toBe('The Colorado is running!');
             expect(result?.html).toContain('Colorado');
         });
 
         it('drops "The" for rivers ending in Creek', () => {
-            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'Creek Runs', high: [], running: ['<li>Clear Creek: 250</li>'], runningNames: ['Clear Creek'], low: [] }] });
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'Creek Runs', high: [], running: ['<li>Clear Creek: 250</li>'], runningNames: ['Clear Creek'], low: [] }] }, null);
             expect(result?.subject).toBe('Clear Creek is running!');
         });
 
         it('generates a plural subject for multiple running rivers', () => {
-            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: ['<li>R1</li>', '<li>R2</li>'], runningNames: ['R1', 'R2'], low: [] }] });
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: ['<li>R1</li>', '<li>R2</li>'], runningNames: ['R1', 'R2'], low: [] }] }, null);
             expect(result?.subject).toBe('2 rivers are running!');
         });
 
@@ -440,10 +440,28 @@ describe('Notification Helpers (Pure Unit Tests)', () => {
             const result = buildDigestEmailBody({ lists: [
                 { listId: 'l1', listTitle: 'List One', high: [], running: ['<li>R1</li>'], runningNames: ['R1'], low: [] },
                 { listId: 'l2', listTitle: 'List Two', high: [], running: ['<li>R2</li>'], runningNames: ['R2'], low: [] },
-            ]});
+            ]}, null);
             expect(result?.subject).toBe('2 rivers are running!');
             expect(result?.html).toContain('List One');
             expect(result?.html).toContain('List Two');
+        });
+
+        it('always includes a "manage your notifications" link', () => {
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: ['<li>R1</li>'], runningNames: ['R1'], low: [] }] }, null);
+            expect(result?.html).toContain('href="https://rivers.run/lists"');
+            expect(result?.html).toContain('Manage your notifications');
+        });
+
+        it('includes a distinct "unsubscribe from all" link when a signed URL is provided', () => {
+            const unsubscribeUrl = 'https://flow.rivers.run/unsubscribe?uid=user_1&iat=1700000000&sig=abc123';
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: ['<li>R1</li>'], runningNames: ['R1'], low: [] }] }, unsubscribeUrl);
+            expect(result?.html).toContain(`href="${unsubscribeUrl}"`);
+            expect(result?.html).toContain('Unsubscribe from all notifications');
+        });
+
+        it('omits the unsubscribe link entirely when no signed URL is available', () => {
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: ['<li>R1</li>'], runningNames: ['R1'], low: [] }] }, null);
+            expect(result?.html).not.toContain('Unsubscribe from all notifications');
         });
     });
 
