@@ -337,12 +337,13 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             setSelectedRiver(river);
             setSelectedAccessPoint(point);
         } else {
-            if (river.id !== focusRiverRef.current.id) {
-                navigate(`/river/${river.id}`, { replace: true, state: { clickedLat: lat, clickedLon: lon } });
-            }
+            // Never navigate on the marker click itself — a mis-tap on a densely
+            // packed mini-map would otherwise yank the user off the page they're
+            // reading with no way back. Always just show the popup; navigating to
+            // a different river is a deliberate action via "View River Details" below.
             setActivePopupData({ river, point, lat, lon });
         }
-    }, [navigate]);
+    }, []);
 
     const hoverTimeoutRef = React.useRef<any>(null);
 
@@ -508,6 +509,19 @@ export const SharedMap: React.FC<SharedMapProps> = ({
             document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
         };
     }, []);
+
+    // Clicking a marker sets different state depending on isFullScreen (see
+    // handleStableMarkerClick), so a selection made in one mode doesn't make
+    // sense carried into the other — e.g. a small mini-map popup left over
+    // after expanding to fullscreen, or the full detail panel cramped into a
+    // 350px mini-map after exiting. Reset on every transition, including the
+    // native Esc-key exit path (which only updates isFullScreen, not these).
+    useEffect(() => {
+        setSelectedRiver(null);
+        setSelectedAccessPoint(null);
+        setActivePopupData(null);
+        setHoverPopupData(null);
+    }, [isFullScreen]);
 
     useEffect(() => {
         // Only manipulate the native StatusBar on iOS because hiding it on Android 
@@ -800,7 +814,16 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         type: "FeatureCollection",
         features: nonGauges.map((pt: any) => {
             const isValidRunning = typeof pt.river.running === 'number' && !isNaN(pt.river.running);
-            const colorStr = calculateColor(isValidRunning ? pt.river.running : null, false, isColorBlindMode);
+            // Quantize so nearby flow ratios share a color/imageKey — calculateColor's hue is
+            // continuous, so without this every river with a distinct flow ratio gets its own
+            // canvas icon. At today's data scale this caps ~70 unique values to ~32 (not a fix
+            // for an observed slowdown — measured, neither number is where real cost lives) —
+            // this is cheap insurance against unbounded growth if the river count scales up
+            // materially, not a response to a current bottleneck. 100 buckets over the 0-4
+            // range costs nothing today (still under the current unique-value count) while
+            // capping the long-term worst case.
+            const quantizedRunning = isValidRunning ? Math.round(pt.river.running * 25) / 25 : null;
+            const colorStr = calculateColor(quantizedRunning, false, isColorBlindMode);
             const fillColor = colorStr || "#9ca3af";
             const getAccessLetter = (pt: any) => {
                 if (pt?.type === "put-in") return "P";
@@ -1265,26 +1288,30 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                                 {thePopupData!.river.flowInfo ? <span>{thePopupData!.river.flowInfo}</span> : null}
 
                                 <div style={{ marginTop: "8px" }}>
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            handleStableMarkerClick(thePopupData!.river, thePopupData!.point, thePopupData!.lat, thePopupData!.lon);
-                                        }}
-                                        style={{
-                                            display: "inline-block",
-                                            fontWeight: "bold",
-                                            background: "none",
-                                            border: "none",
-                                            color: "var(--primary)",
-                                            cursor: "pointer",
-                                            padding: 0,
-                                            fontSize: "inherit"
-                                        }}
-                                    >
-                                        View River Details
-                                    </button>
-                                    <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
+                                    {focusRiver && thePopupData!.river.id !== focusRiver.id && (
+                                        <>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    navigate(`/river/${thePopupData!.river.id}`, { replace: true, state: { clickedLat: thePopupData!.lat, clickedLon: thePopupData!.lon } });
+                                                }}
+                                                style={{
+                                                    display: "inline-block",
+                                                    fontWeight: "bold",
+                                                    background: "none",
+                                                    border: "none",
+                                                    color: "var(--primary)",
+                                                    cursor: "pointer",
+                                                    padding: 0,
+                                                    fontSize: "inherit"
+                                                }}
+                                            >
+                                                View River Details
+                                            </button>
+                                            <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
+                                        </>
+                                    )}
                                     {Capacitor.getPlatform() === 'ios' ? (
                                         <>
                                             <a
