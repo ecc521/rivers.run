@@ -205,7 +205,8 @@ export default function RiverEditor() {
            syncInputs(proposed);
            
            try {
-             const live = await fetchAPI(`/rivers/${suggestion.river_id}`, {}, user);
+             // no-store: the editor must never render a cached (possibly stale) river.
+             const live = await fetchAPI(`/rivers/${suggestion.river_id}`, { cache: 'no-store' }, user);
              setLiveData(live);
            } catch {
              console.log("No existing live data for this suggestion.");
@@ -215,11 +216,11 @@ export default function RiverEditor() {
             const proposed = suggestion.proposed_changes;
             syncInputs(proposed);
             try {
-              const live = await fetchAPI(`/rivers/${proposed.id || riverId}`, {}, user);
+              const live = await fetchAPI(`/rivers/${proposed.id || riverId}`, { cache: 'no-store' }, user);
               setLiveData(live);
             } catch {}
          } else {
-            const live = await fetchAPI(`/rivers/${riverId}`, {}, user);
+            const live = await fetchAPI(`/rivers/${riverId}`, { cache: 'no-store' }, user);
             setLiveData(live);
             if (!isDirty) syncInputs(live);
          }

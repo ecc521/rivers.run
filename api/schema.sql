@@ -45,6 +45,29 @@ CREATE TABLE rivers (
 );
 
 -- ==========================================
+-- 1b. TABLE VERSION COUNTERS (cheap cache validators / ETags)
+-- ==========================================
+-- A per-table monotonic edit counter maintained by triggers. Lets read endpoints
+-- emit a cheap ETag and answer If-None-Match with a 304 without rebuilding the full
+-- response (skips SELECT * + row formatting + serialization). Complete by construction:
+-- the DB bumps the counter on ANY insert/update/delete — including out-of-band raw SQL —
+-- so the validator can never miss a change the way an application-level log could.
+CREATE TABLE IF NOT EXISTS table_versions (
+    name TEXT PRIMARY KEY,
+    version INTEGER NOT NULL DEFAULT 0
+);
+INSERT OR IGNORE INTO table_versions (name, version) VALUES ('rivers', 0);
+
+CREATE TRIGGER IF NOT EXISTS rivers_version_insert AFTER INSERT ON rivers
+BEGIN UPDATE table_versions SET version = version + 1 WHERE name = 'rivers'; END;
+
+CREATE TRIGGER IF NOT EXISTS rivers_version_update AFTER UPDATE ON rivers
+BEGIN UPDATE table_versions SET version = version + 1 WHERE name = 'rivers'; END;
+
+CREATE TRIGGER IF NOT EXISTS rivers_version_delete AFTER DELETE ON rivers
+BEGIN UPDATE table_versions SET version = version + 1 WHERE name = 'rivers'; END;
+
+-- ==========================================
 -- 2. AUDIT HISTORY (Strict Diff-Based History)
 -- ==========================================
 CREATE TABLE river_audit_log (

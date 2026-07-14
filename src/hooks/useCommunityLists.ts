@@ -57,7 +57,7 @@ export const useCommunityLists = (): UseCommunityListsResult => {
       }, 15000);
 
       try {
-        const listsDataUrl = `${API_URL}/community/lists`;
+        const listsDataUrl = `${API_URL}/community/lists?limit=100`;
         const res = await fetch(listsDataUrl);
 
         if (!res.ok) {

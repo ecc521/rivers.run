@@ -160,10 +160,9 @@ const Home: React.FC = () => {
       }
 
       if (targetListId) {
-        setLoading(true);
-        
         // Attempt to load from cache immediately to guarantee offline UX
         const cachedListStr = await persistentStorage.get(`saved_list_${targetListId}`);
+        const hadCache = !!cachedListStr;
         if (cachedListStr) {
             try {
                 const cachedData = JSON.parse(cachedListStr);
@@ -174,6 +173,10 @@ const Home: React.FC = () => {
             }
         }
 
+        // Once cache has painted the UI, don't gate loading on the network refresh
+        // below — only block on it when there's nothing to show yet.
+        if (!hadCache) setLoading(true);
+
         try {
             const data = await fetchAPI(`/lists/${targetListId}`);
             if (data) {
@@ -181,7 +184,7 @@ const Home: React.FC = () => {
                setListTitle(data.title);
                // Save it for offline
                await persistentStorage.set(`saved_list_${targetListId}`, JSON.stringify(data));
-            } else if (!cachedListStr) {
+            } else if (!hadCache) {
                let foundOffline = false;
                const customListsCache = await persistentStorage.get("my_custom_lists");
                if (customListsCache) {
@@ -204,11 +207,11 @@ const Home: React.FC = () => {
         } catch (err: unknown) {
             if (err instanceof Error) console.error("Failed to load list from network, trying to rely on cache", err.message);
             // If network failed and we have no cache, clear the filter so they see something
-            if (!cachedListStr) {
+            if (!hadCache) {
                setSearchQuery((prev) => ({ ...prev, listId: undefined, listData: undefined }));
             }
         } finally {
-            setLoading(false);
+            if (!hadCache) setLoading(false);
         }
       }
     }

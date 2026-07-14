@@ -34,20 +34,8 @@ export default defineConfig({
             }
           }
         },
-        {
-          urlPattern: /^https:\/\/api\.rivers\.run\/rivers\/[^/]+(\?.*)?$/i,
-          handler: 'StaleWhileRevalidate',
-          options: {
-            cacheName: 'rivers-metadata-cache',
-            expiration: {
-              maxEntries: 60,
-              maxAgeSeconds: 60 * 60 * 24 // mirrors the server's stale-while-revalidate=86400
-            },
-            cacheableResponse: {
-              statuses: [0, 200]
-            }
-          }
-        },
+        // No rule for /rivers/{id} — its only consumer (RiverEditor) needs guaranteed-
+        // current data, so it bypasses the worker; the API sends `must-revalidate`.
         {
           // Prefer live data, but don't hang on a bad-but-connected network (lie-fi) —
           // fall back to cache after 2s while the live fetch keeps running in the background.
@@ -69,9 +57,10 @@ export default defineConfig({
           // /lists/{id} is public (the ID is the sharing capability) — unlike bare
           // /lists, which is auth-gated "my lists" and stays no-store (see api/src/index.ts).
           urlPattern: /^https:\/\/api\.rivers\.run\/lists\/[^/]+(\?.*)?$/i,
-          handler: 'StaleWhileRevalidate',
+          handler: 'NetworkFirst',
           options: {
             cacheName: 'lists-detail-cache',
+            networkTimeoutSeconds: 2,
             expiration: {
               maxEntries: 30,
               maxAgeSeconds: 60 * 60 * 24 // mirrors the server's stale-while-revalidate=86400

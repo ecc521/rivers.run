@@ -44,6 +44,17 @@ app.use("*", cors({
     allowHeaders: ["Content-Type", "Authorization", "x-api-key", "X-API-Key"]
 }));
 
+// Explicit no-store for auth-gated/always-live endpoints, rather than relying on absent-header defaults.
+const noStore = async (c: any, next: any) => {
+    await next();
+    c.header("Cache-Control", "private, no-store");
+};
+app.use("/user/settings", noStore);
+app.use("/developer/*", noStore);
+app.use("/admin/*", noStore);
+app.use("/rivers/:id/history", noStore);
+// /lists (bare) sets no-store inline in its own handler instead — /lists/{id} is public/cached, see below.
+
 // Global error handler
 app.onError((err, c) => {
     if (err instanceof z.ZodError) {
@@ -69,6 +80,7 @@ const getRiversRoute = createRoute({
             content: { 'application/json': { schema: z.array(RiverSchema).openapi({ type: 'array' }) } },
             description: 'The list of rivers',
         },
+        304: { description: 'Not Modified (If-None-Match matched the current dataset version)' },
     },
 });
 
@@ -154,14 +166,39 @@ const formatRiverRow = (row: any) => {
 };
 
 app.openapi(getRiversRoute, async (c) => {
+    // Browse data has no hard freshness requirement — the editor uses /rivers/{id}
+    // (now no-store), not this bulk endpoint. Short max-age + SWR gives instant paint
+    // and background refresh, and never blocks offline (unlike must-revalidate).
+    const cacheControl = "public, max-age=300, stale-while-revalidate=86400";
+
+    // Cheap validator: a trigger-maintained per-table edit counter (table_versions)
+    // lets us answer If-None-Match with a 304 without running SELECT * + formatting the
+    // whole payload. Read the version BEFORE the body so the ETag can only ever lag the
+    // body (→ a harmless extra fetch), never lead it (→ a false 304 hiding a change).
+    let etag: string | null = null;
+    try {
+        const versionRow = await c.env.DB.prepare(
+            "SELECT version FROM table_versions WHERE name = 'rivers'"
+        ).first<{ version: number }>();
+        if (versionRow) {
+            etag = `W/"rivers-${versionRow.version}"`;
+            if (c.req.header("If-None-Match") === etag) {
+                c.header("Cache-Control", cacheControl);
+                c.header("ETag", etag);
+                return c.body(null, 304);
+            }
+        }
+    } catch {
+        // table_versions absent (e.g. pre-migration) — skip the validator, serve normally.
+    }
+
     const { results: riversResults } = await c.env.DB.prepare("SELECT * FROM rivers").all();
 
     const rivers = (riversResults as any[]).map(row => formatRiverRow(row));
-    
-    // Explicit aggressive caching header to push the massive load physically onto Cloudflare Edge Nodes
-    // stale-while-revalidate=86400 allows serving old content while refetching in the background
-    c.header("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=86400");
-    
+
+    c.header("Cache-Control", cacheControl);
+    if (etag) c.header("ETag", etag);
+
     return c.json(rivers);
 });
 
@@ -194,6 +231,10 @@ app.openapi(getRiverRoute, async (c) => {
     const row = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(id).first();
 
     if (!row) return c.json({ error: "River not found" }, 404);
+
+    // Public data, but the editor flow (the only caller of this endpoint) needs
+    // guaranteed-current state — always revalidate rather than serving a cached copy.
+    c.header("Cache-Control", "public, max-age=0, must-revalidate");
     return c.json(formatRiverRow(row));
 });
 
@@ -296,13 +337,29 @@ const deleteRiverRoute = createRoute({
     responses: {
         200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Deleted' },
         401: { description: 'Unauthorized' },
-        403: { description: 'Forbidden' }
+        403: { description: 'Forbidden' },
+        404: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'River not found' }
     }
 });
 
 app.openapi(deleteRiverRoute, async (c) => {
     const id = c.req.param("id");
-    await c.env.DB.prepare("DELETE FROM rivers WHERE id = ?").bind(id).run();
+    const user = c.get("user");
+
+    // Snapshot the full row before deleting. Deletes are rare, so storing the whole row
+    // (rather than a diff, which can't restore anything) makes any deletion recoverable
+    // from the audit log — the intended safeguard against an admin deleting in error or bad faith.
+    const snapshot = await c.env.DB.prepare("SELECT * FROM rivers WHERE id = ?").bind(id).first();
+    if (!snapshot) return c.json({ error: "River not found" }, 404);
+
+    const now = Math.floor(Date.now() / 1000);
+    await c.env.DB.batch([
+        c.env.DB.prepare("DELETE FROM rivers WHERE id = ?").bind(id),
+        c.env.DB.prepare(
+            "INSERT INTO river_audit_log (river_id, action_type, changed_by, diff_patch, changed_at) VALUES (?, 'DELETE', ?, ?, ?)"
+        ).bind(id, user.user_id, JSON.stringify(snapshot), now)
+    ]);
+
     return c.json({ success: true });
 });
 
@@ -1147,7 +1204,7 @@ app.openapi(getCommunityListsRoute, async (c) => {
     });
 
     // 4. Aggressive CDN Cache (10 min browser, 1 hour edge, 24 hour stale)
-    c.header("Cache-Control", "public, max-age=600, s-maxage=3600, stale-while-revalidate=86400");
+    c.header("Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
     
     return c.json(result);
 });
@@ -1202,6 +1259,9 @@ app.openapi(getListsRoute, async (c) => {
             customUnits: m.custom_units
         });
     }
+
+    // Individual lists (/lists/{id}) are still cached — this one isn't.
+    c.header("Cache-Control", "private, no-store");
 
     return c.json(lists.map(l => {
         const listObj = {
@@ -1441,7 +1501,10 @@ app.openapi(getListByIdRoute, async (c) => {
 
     const list = listRaw.results[0] as any;
     if (!list) return c.json({ error: "List not found" }, 404);
-    
+
+    // Unlisted-by-default sharing: the ID is the capability, so this is public/cacheable.
+    c.header("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
+
     let isAnon = false;
     if (list.user_settings_json) {
         try {

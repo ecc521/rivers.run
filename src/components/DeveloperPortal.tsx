@@ -40,13 +40,14 @@ export const DeveloperPortal: React.FC = () => {
         try {
             if (showLoader) setLoading(true);
             const [fetchedKeys, fetchedUsage] = await Promise.all([
-                fetchAPI(`/developer/keys?_=${Date.now()}`),
-                fetchAPI(`/developer/usage?_=${Date.now()}`)
+                fetchAPI(`/developer/keys`),
+                fetchAPI(`/developer/usage`)
             ]);
             setKeys(fetchedKeys || []);
             setUsage(fetchedUsage || []);
         } catch (e: any) {
             console.error("Failed to load developer keys/telemetry:", e);
+            await alert("Couldn't load developer data. This page requires an internet connection.", "Error");
         } finally {
             if (showLoader) setLoading(false);
         }
