@@ -115,6 +115,22 @@ const Home: React.FC = () => {
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [listTitle, setListTitle] = useState<string | null>(null);
 
+  // Decoupled from searchQuery.normalSearch so typing stays instant — the
+  // expensive filterRivers() pass over ~15k rivers is debounced instead of
+  // running on every keystroke.
+  const [searchInputValue, setSearchInputValue] = useState(searchQuery.normalSearch || "");
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setSearchInputValue(searchQuery.normalSearch || "");
+  }, [searchQuery.normalSearch]);
+
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     if (searchParams.get("searchExpanded") === "true") {
       setIsAdvancedSearchOpen(true);
@@ -314,13 +330,6 @@ const Home: React.FC = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [filteredRivers.length, isRiverOverlay]);
-
-  useEffect(() => {
-
-    // Debugging only
-    const gaugeCount = rivers.filter(r => r.isGauge).length;
-    console.log("TOTAL GAUGES IN RIVERS:", gaugeCount, "TOTAL RIVERS:", rivers.length);
-  }, [rivers]);
 
   const renderedRiverItems = useMemo(() => {
     return filteredRivers.slice(0, displayCount).map((river, index) => (
@@ -569,29 +578,34 @@ const Home: React.FC = () => {
           type="text"
           aria-label="Type in the box to search for a river"
           placeholder={t("home.searchPlaceholder")}
-          value={searchQuery.normalSearch || ""}
+          value={searchInputValue}
           onChange={(e) => {
-            const hasText = e.target.value.trim().length > 0;
-            // When typing starts (hasText), default to relevance sort ("none"). 
-            // When cleared, revert back to alphabetical. 
-            // Preserve explicit sorts only if they manually clicked a sort header. 
-            // Since there's no easy way to know if they manually clicked vs just had the default,
-            // we will strictly follow: "typing resets any sorting".
-            setSearchQuery((prev) => {
-              let nextSort = prev.sortBy;
-              if (hasText) {
-                nextSort = "none";
-              } else if (prev.sortBy === "none") {
-                nextSort = prev.listId ? undefined : "alphabetical";
-              }
-              
-              return { 
-                ...prev, 
-                normalSearch: e.target.value,
-                sortBy: nextSort
-              };
-            });
+            const value = e.target.value;
+            setSearchInputValue(value);
 
+            if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+            searchDebounceRef.current = setTimeout(() => {
+              const hasText = value.trim().length > 0;
+              // When typing starts (hasText), default to relevance sort ("none").
+              // When cleared, revert back to alphabetical.
+              // Preserve explicit sorts only if they manually clicked a sort header.
+              // Since there's no easy way to know if they manually clicked vs just had the default,
+              // we will strictly follow: "typing resets any sorting".
+              setSearchQuery((prev) => {
+                let nextSort = prev.sortBy;
+                if (hasText) {
+                  nextSort = "none";
+                } else if (prev.sortBy === "none") {
+                  nextSort = prev.listId ? undefined : "alphabetical";
+                }
+
+                return {
+                  ...prev,
+                  normalSearch: value,
+                  sortBy: nextSort
+                };
+              });
+            }, 200);
           }}
           style={{
             flex: 1,

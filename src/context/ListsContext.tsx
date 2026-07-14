@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { persistentStorage } from "../utils/persistentStorage";
 import { fetchAPI } from "../services/api";
@@ -221,6 +221,10 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, user);
   };
 
+  // Not wrapped in useCallback: nothing depends on this function's identity
+  // (it's only ever called inline, e.g. isSubscribed(list.id) in JSX), so
+  // memoizing it would add nothing — see isRiverInQuickList below for the
+  // actual justified case (it's a useMemo dependency in Home.tsx/SharedMap.tsx).
   const isSubscribed = (listId: string) => subscribedListIds.includes(listId);
 
   const addRiverToList = async (listId: string, river: any) => {
@@ -283,13 +287,13 @@ export const ListsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await updateList(listId, { rivers: newRivers });
   };
 
-  const isRiverInQuickList = (riverId: string, quickActionPref: string | null) => {
+  const isRiverInQuickList = useCallback((riverId: string, quickActionPref: string | null) => {
     let targetId: string | null = null;
     if (quickActionPref && quickActionPref.startsWith("list:")) targetId = quickActionPref.split(":")[1];
-    
+
     if (!targetId) return false;
     return myLists.find(l => l.id === targetId)?.rivers.some(r => r.id === riverId) || false;
-  };
+  }, [myLists]);
 
   const toggleRiverInQuickList = async (river: any, quickActionPref: string | null): Promise<string | null> => {
       if (!user) return null;
