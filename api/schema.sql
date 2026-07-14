@@ -179,7 +179,7 @@ CREATE TABLE users (
     notifications_none_until INTEGER DEFAULT 0,
     notifications_time_of_day TEXT DEFAULT '08:00',
     alerts_review_queue INTEGER DEFAULT 0,
-    updated_at INTEGER NOT NULL
+    updated_at INTEGER NOT NULL  -- Unix seconds, e.g. Math.floor(Date.now() / 1000)
 );
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
