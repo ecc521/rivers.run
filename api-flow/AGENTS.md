@@ -49,6 +49,28 @@ not re-add it.
   outage), previous readings are recovered from the existing `sitedata.json` so the
   payload never regresses to empty.
 
+## 4. Required Secrets
+
+Cloudflare Worker secrets are never listed in `wrangler.toml` (that file only holds
+bindings/config) - so if this worker is ever redeployed from scratch, these need to be
+set explicitly, since there's nothing else in the repo that will tell you they're missing
+(code guards them and fails silently rather than crashing):
+
+- `GMAIL_APP_PASSWORD` — Gmail app password for `email.rivers.run@gmail.com`, used by
+  `src/email.ts` to send the digest email. `api/` sends its own separate emails and
+  needs its own independently-set copy of this same secret.
+- `UNSUBSCRIBE_SECRET` — HMAC signing key for one-click unsubscribe tokens
+  (`src/utils/unsubscribeToken.ts`). Rotating or losing this invalidates every
+  unsubscribe link already sent in past digest emails.
+- `USGS_API_KEY` (optional) — raises USGS API rate limits; the worker falls back to
+  unauthenticated USGS requests if unset.
+
+Set with `wrangler secret put <NAME> --config api-flow/wrangler.toml`, always passing
+`--config` explicitly. This repo has multiple `wrangler.toml`/`wrangler.jsonc` files
+(this one, `api/wrangler.toml`, and the root `wrangler.jsonc` for the frontend static
+site); `wrangler` does not reliably resolve to the one matching your current directory,
+so an unqualified `wrangler secret put` can silently land on the wrong Worker.
+
 ## Commands
 
 Lint and test from the repository root (`npm run lint`, `npm test`). Within this

@@ -28,6 +28,12 @@ Processed gauge data is persisted to Cloudflare R2 (`flowdata` bucket); river/li
 lives in D1 (`rivers-db`). Firebase is the identity provider, verified offline at the
 edge with Web Crypto (no `firebase-admin`).
 
+Required Cloudflare Worker secrets per service are documented in each service's
+AGENTS.md (`api/AGENTS.md`, `api-flow/AGENTS.md`) — the root `wrangler.jsonc` (frontend
+static site) needs none. Always pass `--config <path-to-wrangler.toml>` explicitly on
+`wrangler secret`/`deploy` commands — this repo has three separate Wrangler configs, and
+`wrangler` does not reliably resolve to the one matching your current directory.
+
 ## Commands
 
 Run from the **repository root** (npm workspaces):
