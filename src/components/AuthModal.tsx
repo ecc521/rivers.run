@@ -107,6 +107,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     if (!conflictEmail || !pendingCredential) {
       return false;
     }
+    // NOTE: this link flow depends on Firebase "Email Enumeration Protection" being OFF
+    // for this project. With it ON, fetchSignInMethodsForEmail always returns [] by design
+    // (to prevent account enumeration), so every conflict would fall through to the support
+    // fallback and silently kill account linking. As of 2026-07 it is intentionally OFF.
+    // Verify: Firebase Console → Authentication → Settings → User actions, or the Identity
+    // Platform config field emailPrivacyConfig.enableImprovedEmailPrivacy.
     const methods = await fetchSignInMethodsForEmail(auth, conflictEmail);
     if (methods.length === 0) {
       return false;
@@ -119,10 +125,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   // After successfully signing in with the ORIGINAL provider during a linking flow,
   // attaches the credential that triggered the conflict to that same account.
+  // Must not throw: the user is already authenticated by the time we reach here, so a
+  // link failure degrades to a silent (logged) no-op rather than the generic
+  // "email support" fallback, which would wrongly imply sign-in itself failed.
   const finishPendingLink = async () => {
-    if (!linkConflict || !auth.currentUser) return;
-    await linkWithCredential(auth.currentUser, linkConflict.pendingCredential);
-    setLinkConflict(null);
+    const pending = linkConflict;
+    if (!pending || !auth.currentUser) return;
+    // Only link if the account we just authenticated is the one the conflict was for.
+    // Guards against a stranded linkConflict (e.g. user backed out of the link view then
+    // signed in as a different account) grafting the credential onto the wrong user.
+    if (auth.currentUser.email?.toLowerCase() !== pending.email.toLowerCase()) {
+      setLinkConflict(null);
+      return;
+    }
+    try {
+      await linkWithCredential(auth.currentUser, pending.pendingCredential);
+    } catch (err: any) {
+      // e.g. credential-already-in-use / provider-already-linked / expired credential.
+      // The user is validly signed in regardless; just record that the provider didn't attach.
+      logAuthFallback(err?.code ?? 'unknown', 'link');
+    } finally {
+      setLinkConflict(null);
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -391,6 +415,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 setView('options');
                 setErrorText(null);
                 setSuccessText(null);
+                setLinkConflict(null); // don't strand a pending link credential (see finishPendingLink)
              }}
              style={{
                position: "absolute",
