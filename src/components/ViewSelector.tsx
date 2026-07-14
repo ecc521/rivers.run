@@ -185,35 +185,41 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
                 >
                   All Countries
                 </div>
-                <div 
-                  className={`view-dropdown-item ${regionLabel === "United States" ? "selected" : ""}`} 
-                  onClick={() => { onSelectRegion("usa"); setIsOpen(false); }}
+                <div
+                  className={`view-dropdown-item ${regionLabel === "United States" ? "selected" : ""}`}
+                  onClick={() => { onSelectRegion("US"); setIsOpen(false); }}
                 >
                   United States
                 </div>
-                <div 
-                  className={`view-dropdown-item ${regionLabel === "Canada" ? "selected" : ""}`} 
-                  onClick={() => { onSelectRegion("ec"); setIsOpen(false); }}
+                <div
+                  className={`view-dropdown-item ${regionLabel === "Canada" ? "selected" : ""}`}
+                  onClick={() => { onSelectRegion("CA"); setIsOpen(false); }}
                 >
                   Canada
                 </div>
-                <div 
-                  className={`view-dropdown-item ${regionLabel === "UK / Ireland" ? "selected" : ""}`} 
-                  onClick={() => { onSelectRegion("uk_ireland"); setIsOpen(false); }}
+                <div
+                  className={`view-dropdown-item ${regionLabel === "United Kingdom" ? "selected" : ""}`}
+                  onClick={() => { onSelectRegion("GB"); setIsOpen(false); }}
                 >
-                  UK / Ireland
+                  United Kingdom
+                </div>
+                <div
+                  className={`view-dropdown-item ${regionLabel === "Ireland" ? "selected" : ""}`}
+                  onClick={() => { onSelectRegion("IE"); setIsOpen(false); }}
+                >
+                  Ireland
                 </div>
               </>
             )}
 
             {activeTab === "state" && (
               <>
-                <div className="view-dropdown-header">{currentCountry === "ec" ? "Provinces" : "All States"}</div>
-                <div 
-                  className={`view-dropdown-item ${!stateLabel ? "selected" : ""}`} 
+                <div className="view-dropdown-header">{currentCountry === "CA" ? "Provinces" : "All States"}</div>
+                <div
+                  className={`view-dropdown-item ${!stateLabel ? "selected" : ""}`}
                   onClick={() => { onSelectState(null); setIsOpen(false); }}
                 >
-                  {currentCountry === "ec" ? "All Provinces" : "All States"}
+                  {currentCountry === "CA" ? "All Provinces" : "All States"}
                 </div>
                 {statesToShow.map((st: string) => (
                   <div 

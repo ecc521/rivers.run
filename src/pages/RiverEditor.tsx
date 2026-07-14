@@ -14,7 +14,7 @@ import { useSettings } from "../context/SettingsContext";
 import { AuthModal } from "../components/AuthModal";
 import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { useModal } from "../context/ModalContext";
-import { ALL_STATE_CODES, getStateName, getCountryISOStaticName } from "../utils/regions";
+import { ALL_COUNTRY_CODES, getStateName, getStatesForCountry, getCountryName } from "../utils/regions";
 import { RiverHistoryPanel } from "../components/RiverHistoryPanel";
 import { RiverHistoryComparison } from "../components/RiverHistoryComparison";
 import { reconstructHistoricalState } from "../utils/historyUtils";
@@ -848,7 +848,15 @@ export default function RiverEditor() {
   );
 }
 
-const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = ({ riverData, updateRiverData }) => (
+const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = ({ riverData, updateRiverData }) => {
+  // States/subdivisions scoped to the countries already selected above — a
+  // river spanning multiple countries (e.g. a US/CA border run) sees the
+  // union of both countries' subdivisions.
+  const availableStateCodes: string[] = Array.from(new Set(
+    String(riverData.countries || "").split(',').map((c: string) => c.trim()).filter(Boolean).flatMap((c: string) => getStatesForCountry(c))
+  ));
+
+  return (
   <>
     <div style={{ display: 'flex', gap: '15px' }}>
       <div style={{ flex: 2 }}>
@@ -925,9 +933,9 @@ const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = (
           }} 
         >
            <option value="" disabled>Add Country...</option>
-          {["US", "CA", "GB", "IE", "FR", "DE", "NZ", "AU", "MX", "CR", "CO", "PE", "EC", "CL", "ZA", "IT", "CH", "AT", "NO", "ES"].filter(st => !(riverData.countries || "").includes(st)).map(st => (
+          {ALL_COUNTRY_CODES.filter(st => !(riverData.countries || "").includes(st)).map(st => (
             <option key={st} value={st}>
-              {st} - {getCountryISOStaticName(st)}
+              {st} - {getCountryName(st)}
             </option>
           ))}
         </select>
@@ -936,8 +944,8 @@ const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = (
         <label style={{fontWeight: 'bold', display: 'block'}}>State/Region</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginBottom: riverData.states ? "5px" : "0" }}>
           {riverData.states?.split(',').map((s: string) => s.trim()).filter(Boolean).map((s: string) => (
-            <span 
-              key={s} 
+            <span
+              key={s}
               style={{ backgroundColor: "var(--primary)", color: "white", padding: "2px 6px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
               onClick={() => {
                 const newState = riverData.states!.split(',').map((st: string) => st.trim()).filter((st: string) => st !== s).join(', ');
@@ -950,8 +958,8 @@ const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = (
           ))}
         </div>
         <select
-          style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
-          value="" 
+          style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+          value=""
           onChange={e => {
              if (e.target.value) {
                const curr = riverData.states?.split(',').map((s: string) => s.trim()).filter(Boolean) || [];
@@ -960,10 +968,10 @@ const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = (
                  updateRiverData({...riverData, states: curr.join(', ')});
                }
              }
-          }} 
+          }}
         >
            <option value="" disabled>Add State...</option>
-          {ALL_STATE_CODES.filter(st => !(riverData.states || "").includes(st)).map(st => (
+          {availableStateCodes.filter((st: string) => !(riverData.states || "").includes(st)).map((st: string) => (
             <option key={st} value={st}>
               {st} - {getStateName(st)}
             </option>
@@ -1005,7 +1013,8 @@ const RiverDetailsEditor: React.FC<{ riverData: any, updateRiverData: any }> = (
          </div>
     </div>
   </>
-);
+  );
+};
 
 const RiverGaugesEditor: React.FC<{ riverData: any, updateRiverData: any }> = ({ riverData, updateRiverData }) => (
   <div style={{ backgroundColor: 'var(--surface-hover)', padding: '15px', borderRadius: '5px', marginTop: '15px' }}>

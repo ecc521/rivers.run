@@ -1,5 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { normalizeGaugeId } from "./utils/formatting";
+import { validateCountries, validateStates } from "./utils/regions";
 
 // Shared common components - now with explicit OpenAPI types
 const limitString = (max: number) => z.string().max(max, `Must be under ${max} characters`).optional().nullable().openapi({ type: 'string' });
@@ -52,6 +53,13 @@ export const RiverEditorPayload = z.object({
   dam: z.boolean().optional().nullable().openapi({ type: 'boolean' }),
   aw: limitString(50),
   submitterEmail: z.string().email("Invalid email").optional().nullable().openapi({ type: 'string' })
+}).superRefine((data, ctx) => {
+  if (!validateCountries(data.countries)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["countries"], message: "Must be a comma-separated list of known country codes" });
+  }
+  if (!validateStates(data.states, data.countries)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["states"], message: "Each state must be a valid subdivision of one of the selected countries" });
+  }
 }).openapi({ type: 'object', description: 'Payload for creating or updating a river' });
 
 export type RiverEditInput = z.infer<typeof RiverEditorPayload>;

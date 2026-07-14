@@ -78,7 +78,7 @@ const Home: React.FC = () => {
      }
   }, [isListOverlay, decodedId, navigate]);
 
-   const { rivers, loading: riversLoading, syncing: riversSyncing, error: riversError, isGlobalStale, dataGeneratedAt, refresh } = useRivers();
+   const { rivers, loading: riversLoading, syncing: riversSyncing, error: riversError, isGlobalStale, dataGeneratedAt, availableStatesByCountry, refresh } = useRivers();
    const { syncError: listSyncError, refreshCloudState } = useLists();
    const [loading, setLoading] = useState(riversLoading && rivers.length === 0);
    const [error, setError] = useState<string | null>(null);
@@ -255,24 +255,15 @@ const Home: React.FC = () => {
     return result;
   }, [rivers, searchQuery, isRiverInQuickList]);
   
+  // Server-precomputed — no per-render walk over the full river list needed.
   const availableStates = useMemo(() => {
-    const states = new Set<string>();
-    rivers.forEach(r => {
-      if (r.states) {
-        r.states.toUpperCase().split(/[ ,]+/).filter(Boolean).forEach(s => {
-          if (searchQuery.country) {
-            const countryCodes = DEFAULT_STATE_MAP[s];
-            if (countryCodes && countryCodes.includes(searchQuery.country as any)) {
-              states.add(s);
-            }
-          } else {
-            states.add(s);
-          }
-        });
-      }
-    });
-    return Array.from(states).sort((a, b) => a.localeCompare(b));
-  }, [rivers, searchQuery.country]);
+    if (searchQuery.country) {
+      return availableStatesByCountry[searchQuery.country] || [];
+    }
+    const allStates = new Set<string>();
+    Object.values(availableStatesByCountry).forEach(states => states.forEach(s => allStates.add(s)));
+    return Array.from(allStates).sort((a, b) => a.localeCompare(b));
+  }, [availableStatesByCountry, searchQuery.country]);
 
   // Infinite Scroll State - Purely internal, no session storage needed because we never unmount!
   const [displayCount, setDisplayCount] = useState(100);
@@ -452,7 +443,7 @@ const Home: React.FC = () => {
     navigate(`/?${params.toString()}`);
   };
 
-  const regionPrefix = getCountryName(searchQuery.country || "global");
+  const regionPrefix = getCountryName(searchQuery.country);
   const viewLabel = listTitle || (searchQuery.favoritesOnly ? "Favorites" : "Full List");
 
   let emptyStateTitle = t("home.noRiversTitle");

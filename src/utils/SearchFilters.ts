@@ -129,7 +129,13 @@ export function parseParamsToQuery(params: URLSearchParams): AdvancedSearchQuery
   else if (search) q.sortBy = "none";
 
   const country = params.get("country");
-  if (country) q.country = country;
+  if (country) {
+    // Legacy pre-rename values (bookmarked/shared links predating the
+    // canonical ISO country codes). "uk_ireland" has no single successor
+    // since it's been split into GB/IE, so it maps to "all countries".
+    const legacyMap: Record<string, string | undefined> = { usa: "US", ec: "CA", uk_ireland: undefined };
+    q.country = country.toLowerCase() in legacyMap ? legacyMap[country.toLowerCase()] : country;
+  }
   const state = params.get("state");
   if (state) q.state = state;
 

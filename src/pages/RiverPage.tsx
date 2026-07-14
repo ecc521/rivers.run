@@ -229,7 +229,7 @@ const RiverPage: React.FC = () => {
                 &#8592; {t("riverPage.results")}
             </span>
             {(() => {
-              const countries = Array.from(getRiverCountries(river)).filter(c => c !== "global");
+              const countries = Array.from(getRiverCountries(river));
               if (countries.length === 0) return null;
               const firstCountry = countries[0];
               return (

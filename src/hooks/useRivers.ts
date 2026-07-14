@@ -5,7 +5,7 @@ import { fetchAPI, fetchFlowData } from "../services/api";
 import { useSettings } from "../context/SettingsContext";
 import { applyUnitSettings, applyUnitSettingsToReadings } from "../utils/unitConversions";
 
-import { deriveRegionMap, type CountryCode, getCountryFromPrefix } from "../utils/regions";
+import { deriveRegionMap, getCountryFromPrefix } from "../utils/regions";
 
 interface UseRiversResult {
   rivers: RiverData[];
@@ -15,8 +15,8 @@ interface UseRiversResult {
   isGlobalStale: boolean;
   dataGeneratedAt: number | null;
   lastFetchTime: number | null;
-  stateToCountryMap: Map<string, Set<CountryCode>> | null;
-  availableStates: string[];
+  availableCountries: string[];
+  availableStatesByCountry: Record<string, string[]>;
   refresh: () => Promise<void>;
 }
 
@@ -27,9 +27,36 @@ let globalLastFetchTime: number | null = null;
 let globalLoading = false;
 let globalSyncing = false;
 let globalError: string | null = null;
-let globalStateToCountryMap: Map<string, Set<CountryCode>> | null = null;
-let globalAvailableStates: string[] = [];
+let globalAvailableCountries: string[] = [];
+let globalAvailableStatesByCountry: Record<string, string[]> = {};
 const fetchSubscribers: Set<() => void> = new Set();
+
+/**
+ * @deprecated Client-side fallback only, for when `/rivers/regions` hasn't
+ * shipped yet or is unreachable. The server now precomputes this from the
+ * rivers table directly. Scheduled for removal 2026-07-03 once the server
+ * endpoint has had a burn-in period.
+ */
+function deriveAvailableRegionsFallback(rivers: RiverData[]): { availableCountries: string[]; availableStatesByCountry: Record<string, string[]> } {
+  console.warn("[useRivers] Falling back to client-side region derivation — /rivers/regions was unavailable. This path is deprecated.");
+  const stateToCountryMap = deriveRegionMap(rivers);
+  const availableCountries = new Set<string>();
+  const availableStatesByCountry: Record<string, string[]> = {};
+
+  stateToCountryMap.forEach((countries, state) => {
+    countries.forEach(country => {
+      availableCountries.add(country);
+      if (!availableStatesByCountry[country]) availableStatesByCountry[country] = [];
+      availableStatesByCountry[country].push(state);
+    });
+  });
+
+  for (const states of Object.values(availableStatesByCountry)) {
+    states.sort((a, b) => a.localeCompare(b));
+  }
+
+  return { availableCountries: Array.from(availableCountries).sort((a, b) => a.localeCompare(b)), availableStatesByCountry };
+}
 
 const notifySubscribers = () => {
     fetchSubscribers.forEach(fn => fn());
@@ -163,7 +190,8 @@ export const useRivers = (): UseRiversResult => {
   const [error, setError] = useState<string | null>(globalError);
   const [dataGeneratedAt, setDataGeneratedAt] = useState<number | null>(globalDataGeneratedAt);
   const [lastFetchTime, setLastFetchTime] = useState<number | null>(globalLastFetchTime);
-  const [availableStates, setAvailableStates] = useState<string[]>(globalAvailableStates);
+  const [availableCountries, setAvailableCountries] = useState<string[]>(globalAvailableCountries);
+  const [availableStatesByCountry, setAvailableStatesByCountry] = useState<Record<string, string[]>>(globalAvailableStatesByCountry);
   const [tick, setTick] = useState(0); // 5-minute heartbeat trigger
   const settings = useSettings();
 
@@ -183,14 +211,19 @@ export const useRivers = (): UseRiversResult => {
                 if (parsed.rivers && parsed.ts) {
                     globalRiversCache = parsed.rivers;
                     globalDataGeneratedAt = parsed.ts;
-                    
-                    // Re-calculate derived region data on bootstrap
-                    globalStateToCountryMap = deriveRegionMap(globalRiversCache!);
-                    globalAvailableStates = Array.from(new Set(globalRiversCache!.flatMap(r => (r.states || "").split(/[ ,]+/).filter(Boolean).map(s => s.toUpperCase())))).sort((a, b) => a.localeCompare(b));
+
+                    // Bootstrap happens once at cold start, before the live /rivers/regions
+                    // fetch below has a chance to land — bridge that gap with the deprecated
+                    // client-side derivation rather than showing empty dropdowns momentarily.
+                    // eslint-disable-next-line sonarjs/deprecation -- sanctioned fallback call site
+                    const bootstrapRegions = deriveAvailableRegionsFallback(globalRiversCache!);
+                    globalAvailableCountries = bootstrapRegions.availableCountries;
+                    globalAvailableStatesByCountry = bootstrapRegions.availableStatesByCountry;
 
                     setRivers(globalRiversCache!);
                     setDataGeneratedAt(globalDataGeneratedAt);
-                    setAvailableStates(globalAvailableStates);
+                    setAvailableCountries(globalAvailableCountries);
+                    setAvailableStatesByCountry(globalAvailableStatesByCountry);
                     setLoading(false);
                 }
             } catch {
@@ -215,7 +248,8 @@ export const useRivers = (): UseRiversResult => {
         setError(globalError);
         setDataGeneratedAt(globalDataGeneratedAt);
         setLastFetchTime(globalLastFetchTime);
-        setAvailableStates(globalAvailableStates);
+        setAvailableCountries(globalAvailableCountries);
+        setAvailableStatesByCountry(globalAvailableStatesByCountry);
     };
     fetchSubscribers.add(handleUpdate);
 
@@ -253,10 +287,14 @@ export const useRivers = (): UseRiversResult => {
       }, 15000);
 
       try {
-        const [data, flowData] = await Promise.all([
+        const [data, flowData, regions] = await Promise.all([
           fetchAPI("/rivers"),
           fetchFlowData().catch(e => {
             console.warn("Failed to fetch flow data, continuing with offline/placeholder state:", e);
+            return null;
+          }),
+          fetchAPI("/rivers/regions").catch(e => {
+            console.warn("Failed to fetch precomputed river regions, will fall back to client-side derivation:", e);
             return null;
           })
         ]);
@@ -282,10 +320,18 @@ export const useRivers = (): UseRiversResult => {
         globalRiversCache = processedData;
         globalDataGeneratedAt = genTime;
         globalLastFetchTime = Date.now();
-        
-        // Re-calculate derived region data
-        globalStateToCountryMap = deriveRegionMap(processedData);
-        globalAvailableStates = (Array.from(new Set(processedData.flatMap((r: any) => (r.states || "").split(/[ ,]+/).filter(Boolean).map((s: string) => s.toUpperCase())))) as string[]).sort((a, b) => a.localeCompare(b));
+
+        // Prefer the server's precomputed regions; only fall back to the
+        // deprecated client-side derivation if the endpoint was unreachable.
+        if (regions && regions.availableCountries && regions.availableStatesByCountry) {
+          globalAvailableCountries = regions.availableCountries;
+          globalAvailableStatesByCountry = regions.availableStatesByCountry;
+        } else {
+          // eslint-disable-next-line sonarjs/deprecation -- sanctioned fallback call site
+          const fallback = deriveAvailableRegionsFallback(processedData);
+          globalAvailableCountries = fallback.availableCountries;
+          globalAvailableStatesByCountry = fallback.availableStatesByCountry;
+        }
 
         globalLoading = false;
         globalSyncing = false;
@@ -379,8 +425,8 @@ export const useRivers = (): UseRiversResult => {
     isGlobalStale,
     dataGeneratedAt,
     lastFetchTime,
-    stateToCountryMap: globalStateToCountryMap,
-    availableStates,
+    availableCountries,
+    availableStatesByCountry,
     refresh
   };
 };

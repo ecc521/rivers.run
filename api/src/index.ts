@@ -18,6 +18,7 @@ import { sendEmail } from "./email";
 import { logToD1 } from "./utils/logger";
 import { generateRawKey, hashKey } from "./utils/apiKey";
 import { normalizeGaugeId } from "./utils/formatting";
+import { computeAvailableRegions } from "./utils/regions";
 
 
 
@@ -200,6 +201,30 @@ app.openapi(getRiversRoute, async (c) => {
     if (etag) c.header("ETag", etag);
 
     return c.json(rivers);
+});
+
+const getRiverRegionsRoute = createRoute({
+    middleware: [apiKeyMetadataMiddleware],
+    method: 'get',
+    path: '/rivers/regions',
+    summary: 'Countries and states currently present in river data',
+    description: 'Precomputed so the client never has to derive this from the full river list. availableStatesByCountry keys are only countries that currently have states/provinces defined for them.',
+    responses: {
+        200: {
+            content: { 'application/json': { schema: z.object({
+                availableCountries: z.array(z.string()).openapi({ type: 'array' }),
+                availableStatesByCountry: z.record(z.array(z.string())).openapi({ type: 'object' })
+            }) } },
+            description: 'Countries and per-country states with at least one river',
+        },
+    },
+});
+
+app.openapi(getRiverRegionsRoute, async (c) => {
+    const { results } = await c.env.DB.prepare("SELECT countries, states FROM rivers").all();
+
+    c.header("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=86400");
+    return c.json(computeAvailableRegions(results as any[]));
 });
 
 const getRiverRoute = createRoute({
