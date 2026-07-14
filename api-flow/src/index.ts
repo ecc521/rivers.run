@@ -22,7 +22,7 @@ import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
 import { syncUsgsReaches } from "./services/usgsReaches";
 import { verifyUnsubscribeToken } from "./utils/unsubscribeToken";
-import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError } from "./templates/unsubscribeConfirmation";
+import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError, renderUnsubscribeServerError } from "./templates/unsubscribeConfirmation";
 
 export interface Env {
     FLOW_STORAGE: R2Bucket;
@@ -45,7 +45,11 @@ const app = new OpenAPIHono<{ Bindings: Env }>();
 // Middlewares
 app.use("*", cors({
     origin: "*",
-    allowMethods: ["GET", "POST", "OPTIONS"],
+    // POST is intentionally NOT advertised here: the only POST route (/unsubscribe) is hit
+    // server-to-server by the mail provider (RFC 8058 one-click) and by a same-origin form,
+    // neither of which is CORS-governed. Keeping POST out avoids opening cross-origin POST
+    // to every api-flow route by default.
+    allowMethods: ["GET", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "x-api-key", "X-API-Key"],
     exposeHeaders: ["Content-Length", "X-Knative-Response-Contained"],
     maxAge: 86400,
@@ -251,7 +255,7 @@ app.on(["GET", "POST"], "/unsubscribe", async (c) => {
         return c.html(renderUnsubscribeConfirmation({ email: user.email, listsUrl: "https://rivers.run/lists" }));
     } catch (e) {
         console.error("Unsubscribe route failed:", e);
-        return c.html(renderUnsubscribeError(), 500);
+        return c.html(renderUnsubscribeServerError(), 500);
     }
 });
 

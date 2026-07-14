@@ -176,6 +176,21 @@ export function renderUnsubscribeError(): string {
     });
 }
 
+// Distinct from renderUnsubscribeError: this is for a transient server/DB failure, where
+// the link IS valid and the user should retry - not be told (wrongly) that their link is bad.
+export function renderUnsubscribeServerError(): string {
+    return card({
+        pageTitle: "rivers.run — Something went wrong",
+        title: "Something went wrong",
+        badgeIcon: WARNING_ICON,
+        badgeBg: "var(--danger-bg)",
+        badgeColor: "var(--danger-text)",
+        bodyHtml: "We couldn't process your unsubscribe just now. This is a temporary problem on our end, not a problem with your link — please try again in a few minutes.",
+        actionsHtml: `<div class="actions"><a href="https://rivers.run">Go to rivers.run</a></div>`,
+        footnote: "Still stuck? You can turn off email alerts anytime by logging in at rivers.run and visiting Settings."
+    });
+}
+
 // GET requests aren't trusted to mutate state on their own - corporate email security
 // gateways and link scanners routinely pre-fetch every URL in an email, including the
 // List-Unsubscribe header target, before a human ever opens the message. So a verified

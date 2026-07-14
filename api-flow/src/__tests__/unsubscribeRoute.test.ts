@@ -183,7 +183,10 @@ describe('POST /unsubscribe', () => {
 
         expect(res.status).toBe(500);
         const body = await res.text();
-        expect(body).toContain("This link isn't valid");
+        // A transient DB failure must NOT tell the user their link is invalid — it's a
+        // server error and the link is fine, so they should be prompted to retry.
+        expect(body).toContain("Something went wrong");
+        expect(body).not.toContain("This link isn't valid");
         expect(updateCalls).toEqual([]);
     });
 });
