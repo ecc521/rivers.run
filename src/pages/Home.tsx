@@ -373,7 +373,8 @@ const Home: React.FC = () => {
        "userLat","userLon","skillMin","skillMax","flowMin","flowMax",
        "sortBy","sortReverse"].forEach(k => params.delete(k));
       setListTitle(null);
-      setSearchQuery(prev => ({ ...defaultAdvancedSearchQuery, normalSearch: prev.normalSearch }));
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      setSearchQuery({ ...defaultAdvancedSearchQuery, normalSearch: searchInputValue });
     } else {
       params.set("list", view);
       if (listTitleToSet) setListTitle(listTitleToSet);
@@ -390,7 +391,7 @@ const Home: React.FC = () => {
     normalizeHomeValue(homePageDefaultSearch) === serializeQueryToParams(searchQuery);
 
   const handleSetAsHome = () => {
-    const cleaned: AdvancedSearchQuery = { ...searchQuery };
+    const cleaned: AdvancedSearchQuery = { ...searchQuery, normalSearch: searchInputValue };
     // A "near me" home should track the user's live position, not freeze the
     // coordinates captured when it was pinned.
     if (cleaned.distanceMax) {

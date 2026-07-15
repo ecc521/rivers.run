@@ -233,6 +233,19 @@ function getTagsArray(tags: string | string[] | undefined): string[] {
   return [tags];
 }
 
+// Populates the _searchString/_lowerName/_lowerSection/_searchTags cache fields
+// that matchNormalSearch/getSearchRelevanceScore read (see BREADCRUMB comment on
+// RiverData). Call once per river when data is fetched/enriched, not per search —
+// these strings are otherwise rebuilt from scratch on every keystroke.
+export function computeSearchCache(r: RiverData): void {
+  const tags = getTagsArray(r.tags);
+  const gaugeNames = r.gauges ? r.gauges.map(g => g.name || "").filter(Boolean) : [];
+  r._lowerName = String(r.name || "").toLowerCase();
+  r._lowerSection = String(r.section || "").toLowerCase();
+  r._searchTags = [...tags, r.isGauge ? "gauge" : "", ...gaugeNames].join(" ").toLowerCase();
+  r._searchString = [r.name || "", r.section || "", ...tags, r.isGauge ? "gauge" : "", ...gaugeNames].join(" ").toLowerCase();
+}
+
 
 function matchNormalSearch(r: RiverData, terms: string[]): boolean {
   if (terms.length === 0) return true;
@@ -419,17 +432,21 @@ export function filterRivers(
   } else {
     // If no explicit sort and no list constraint, sort rivers above gauges
     // Prioritize full word matches in search
-    const mapped = list.map((r, i) => ({ 
-      index: i, 
+    const hasGaugeTerm = terms.indexOf("gauge") !== -1;
+    const mapped = list.map((r, i) => ({
+      index: i,
       value: r,
-      score: getSearchRelevanceScore(r, terms, termRegexes)
+      score: getSearchRelevanceScore(r, terms, termRegexes),
+      // Precomputed once per item (uses the cache if computeSearchCache already
+      // ran) instead of re-lowercasing both names on every O(n log n) comparison.
+      lowerName: r._lowerName || String(r.name || "").toLowerCase(),
     }));
     mapped.sort((a, b) => {
       const aGauge = !!a.value.isGauge;
       const bGauge = !!b.value.isGauge;
 
       // 1. Strictly Rivers above Gauges (ONLY IF "gauge" is NOT in search terms)
-      if (terms.indexOf("gauge") === -1) {
+      if (!hasGaugeTerm) {
         if (!aGauge && bGauge) return -1;
         if (aGauge && !bGauge) return 1;
       }
@@ -438,17 +455,15 @@ export function filterRivers(
       if (a.score !== b.score) {
         return b.score - a.score;
       }
-      
+
       // 3. Tiebreaker: Rivers above Gauges (Fallthrough)
       if (!aGauge && bGauge) return -1;
       if (aGauge && !bGauge) return 1;
-      
+
       // 4. Alphabetical fallback when no search terms, otherwise preserve order
       if (terms.length === 0) {
-        const aName = String(a.value.name || "").toLowerCase();
-        const bName = String(b.value.name || "").toLowerCase();
-        if (aName < bName) return -1;
-        if (aName > bName) return 1;
+        if (a.lowerName < b.lowerName) return -1;
+        if (a.lowerName > b.lowerName) return 1;
       }
       return a.index - b.index;
     });

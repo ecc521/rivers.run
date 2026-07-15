@@ -4,6 +4,7 @@ import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { fetchAPI, fetchFlowData } from "../services/api";
 import { useSettings } from "../context/SettingsContext";
 import { applyUnitSettings, applyUnitSettingsToReadings } from "../utils/unitConversions";
+import { computeSearchCache } from "../utils/SearchFilters";
 
 import { deriveRegionMap, getCountryFromPrefix } from "../utils/regions";
 
@@ -128,6 +129,7 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
         else if (latest.ft !== undefined) river.flowInfo = `${Math.round(latest.ft * 100) / 100}ft`;
     }
   }
+  computeSearchCache(river);
   return river;
 };
 
@@ -161,7 +163,7 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
    const finalLat = typeof lat === 'string' ? parseFloat(lat) : lat;
    const finalLon = typeof lon === 'string' ? parseFloat(lon) : lon;
 
-   return {
+   const standaloneGauge = {
        id: gaugeId,
        name: String(gData.name || gaugeId),
        section: String(gData.section || ""),
@@ -179,6 +181,8 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
        accessPoints: !isNaN(finalLat) && !isNaN(finalLon) ? [{lat: finalLat, lon: finalLon, name: "Gauge Marker", type: "other"}] : undefined,
        skill: "?" // Standalone gauges have no rated skill
    } as unknown as RiverData;
+   computeSearchCache(standaloneGauge);
+   return standaloneGauge;
 };
 
 const BOOTSTRAP_KEY = "rivers_bootstrap_v1";
