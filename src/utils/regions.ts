@@ -170,22 +170,118 @@ export function getRiverCountries(river: RiverData): Set<CountryCode> {
 }
 
 /**
- * Derives a mapping of states to the countries they belong to based on the
- * provided river data. This is the client-side fallback path for when the
- * server hasn't yet shipped a precomputed available-states list.
+ * Derives a mapping of states to the countries they actually belong to,
+ * across every river and standalone gauge currently loaded (tens of
+ * thousands of entries at real scale, mostly standalone gauges). Deliberately
+ * doesn't reuse getRiverCountries here: that function's per-call Set()
+ * allocation and WeakMap cache are wasted work at this scale, since
+ * standalone gauge objects are rebuilt fresh on every fetch and never hit
+ * the cache. Each state is validated against CANONICAL_REGIONS for the
+ * specific country it's being attributed to, so a gauge whose provider
+ * metadata reports a bordering country's state code (e.g. a Canadian gauge
+ * near the Maine border reporting state "ME") can't get attributed to the
+ * wrong country.
  */
 export function deriveRegionMap(rivers: RiverData[]): Map<string, Set<CountryCode>> {
   const stateToCountryMap = new Map<string, Set<CountryCode>>();
-  rivers.forEach(river => {
-    const countries = getRiverCountries(river);
-    const states = (river.states || "").toUpperCase().split(/[ ,]+/).filter(Boolean);
-    states.forEach(s => {
-      if (!stateToCountryMap.has(s)) {
-        stateToCountryMap.set(s, new Set<CountryCode>());
+
+  const addPair = (state: string, country: string) => {
+    const bucket = CANONICAL_REGIONS[country as CountryCode];
+    if (!bucket || !(state in bucket)) return;
+    let countrySet = stateToCountryMap.get(state);
+    if (!countrySet) {
+      countrySet = new Set<CountryCode>();
+      stateToCountryMap.set(state, countrySet);
+    }
+    countrySet.add(country as CountryCode);
+  };
+
+  // Scratch arrays reused across iterations instead of allocated per-river —
+  // at ~15k entries, a closure or array literal allocated inside the loop
+  // body is the dominant cost, not the string/lookup work itself.
+  let states: string[] = [];
+  const countries: string[] = [];
+
+  for (const river of rivers) {
+    const statesRaw = river.states;
+    if (!statesRaw) continue;
+    const countriesRaw = river.countries;
+
+    // Fast path: a single state token and a single explicit country token —
+    // true for every standalone gauge and effectively every schema-validated
+    // curated river — resolves with no array allocation at all. This is the
+    // path ~15k of ~15k rows take in practice.
+    if (
+      countriesRaw &&
+      statesRaw.indexOf(",") === -1 && statesRaw.indexOf(" ") === -1 &&
+      countriesRaw.indexOf(",") === -1 && countriesRaw.indexOf(" ") === -1
+    ) {
+      addPair(statesRaw.toUpperCase(), countriesRaw.toUpperCase());
+      continue;
+    }
+
+    // General path: multi-country/multi-state rivers, or a row missing an
+    // explicit countries value (rare — legacy data predating that field's
+    // write-side requirement) that needs the state-implied/gauge-prefix
+    // fallback signals.
+    if (statesRaw.indexOf(",") === -1 && statesRaw.indexOf(" ") === -1) {
+      states.length = 1;
+      states[0] = statesRaw.toUpperCase();
+    } else {
+      states = statesRaw.toUpperCase().split(/[ ,]+/).filter(Boolean);
+      if (states.length === 0) continue;
+    }
+
+    // This river's country set — same three signals as getRiverCountries
+    // (explicit field, state-implied, gauge-prefix-implied), almost always a
+    // single entry, so a plain reused array beats allocating a Set per row.
+    countries.length = 0;
+
+    if (countriesRaw) {
+      if (countriesRaw.indexOf(",") === -1 && countriesRaw.indexOf(" ") === -1) {
+        const c = countriesRaw.toUpperCase();
+        if (!countries.includes(c)) countries.push(c);
+      } else {
+        const tokens = countriesRaw.toUpperCase().split(/[ ,]+/);
+        for (const c of tokens) {
+          if (c && !countries.includes(c)) countries.push(c);
+        }
       }
-      const countrySet = stateToCountryMap.get(s)!;
-      countries.forEach(c => countrySet.add(c));
-    });
-  });
+    }
+
+    // State-implied and gauge-prefix-implied country are fallbacks for the
+    // rare row missing an explicit `countries` value (legacy data predating
+    // that field's write-side requirement) — every standalone gauge and every
+    // schema-validated curated river already has it set, so skipping these
+    // loops whenever countries is already non-empty avoids paying their cost
+    // on effectively all ~15k rows just to re-derive what's already known.
+    if (countries.length === 0) {
+      for (const s of states) {
+        const implied = DEFAULT_STATE_MAP[s];
+        if (!implied) continue;
+        for (const c of implied) {
+          if (!countries.includes(c)) countries.push(c);
+        }
+      }
+    }
+    if (countries.length === 0) {
+      const gauges = river.gauges;
+      if (gauges) {
+        for (const g of gauges) {
+          const c = getCountryFromPrefix(g.id);
+          if (c && !countries.includes(c)) countries.push(c);
+        }
+      }
+    }
+
+    if (countries.length === 0) continue;
+
+    for (const state of states) {
+      for (const country of countries) {
+        addPair(state, country);
+      }
+    }
+  }
+
   return stateToCountryMap;
 }

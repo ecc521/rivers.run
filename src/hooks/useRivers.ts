@@ -33,13 +33,17 @@ let globalAvailableStatesByCountry: Record<string, string[]> = {};
 const fetchSubscribers: Set<() => void> = new Set();
 
 /**
- * @deprecated Client-side fallback only, for when `/rivers/regions` hasn't
- * shipped yet or is unreachable. The server now precomputes this from the
- * rivers table directly. Scheduled for removal 2026-07-03 once the server
- * endpoint has had a burn-in period.
+ * Computes which countries/states are actually present across the loaded
+ * rivers and standalone gauges. A prior version of this fetched a
+ * server-precomputed `/rivers/regions` endpoint instead, since walking the
+ * full ~15k-entry dataset client-side was measured at ~100ms+ (the endpoint
+ * only ever covered the curated rivers table anyway, missing the ~15k
+ * standalone provider gauges entirely). deriveRegionMap was rewritten to
+ * avoid the per-item allocations that caused that cost, bringing this down
+ * to single-digit ms, so it's simpler to just compute it directly from data
+ * already in memory — no extra request, no offline-cache gap to manage.
  */
-function deriveAvailableRegionsFallback(rivers: RiverData[]): { availableCountries: string[]; availableStatesByCountry: Record<string, string[]> } {
-  console.warn("[useRivers] Falling back to client-side region derivation — /rivers/regions was unavailable. This path is deprecated.");
+function computeAvailableRegions(rivers: RiverData[]): { availableCountries: string[]; availableStatesByCountry: Record<string, string[]> } {
   const stateToCountryMap = deriveRegionMap(rivers);
   const availableCountries = new Set<string>();
   const availableStatesByCountry: Record<string, string[]> = {};
@@ -216,11 +220,7 @@ export const useRivers = (): UseRiversResult => {
                     globalRiversCache = parsed.rivers;
                     globalDataGeneratedAt = parsed.ts;
 
-                    // Bootstrap happens once at cold start, before the live /rivers/regions
-                    // fetch below has a chance to land — bridge that gap with the deprecated
-                    // client-side derivation rather than showing empty dropdowns momentarily.
-                    // eslint-disable-next-line sonarjs/deprecation -- sanctioned fallback call site
-                    const bootstrapRegions = deriveAvailableRegionsFallback(globalRiversCache!);
+                    const bootstrapRegions = computeAvailableRegions(globalRiversCache!);
                     globalAvailableCountries = bootstrapRegions.availableCountries;
                     globalAvailableStatesByCountry = bootstrapRegions.availableStatesByCountry;
 
@@ -291,14 +291,10 @@ export const useRivers = (): UseRiversResult => {
       }, 15000);
 
       try {
-        const [data, flowData, regions] = await Promise.all([
+        const [data, flowData] = await Promise.all([
           fetchAPI("/rivers"),
           fetchFlowData().catch(e => {
             console.warn("Failed to fetch flow data, continuing with offline/placeholder state:", e);
-            return null;
-          }),
-          fetchAPI("/rivers/regions").catch(e => {
-            console.warn("Failed to fetch precomputed river regions, will fall back to client-side derivation:", e);
             return null;
           })
         ]);
@@ -325,17 +321,9 @@ export const useRivers = (): UseRiversResult => {
         globalDataGeneratedAt = genTime;
         globalLastFetchTime = Date.now();
 
-        // Prefer the server's precomputed regions; only fall back to the
-        // deprecated client-side derivation if the endpoint was unreachable.
-        if (regions && regions.availableCountries && regions.availableStatesByCountry) {
-          globalAvailableCountries = regions.availableCountries;
-          globalAvailableStatesByCountry = regions.availableStatesByCountry;
-        } else {
-          // eslint-disable-next-line sonarjs/deprecation -- sanctioned fallback call site
-          const fallback = deriveAvailableRegionsFallback(processedData);
-          globalAvailableCountries = fallback.availableCountries;
-          globalAvailableStatesByCountry = fallback.availableStatesByCountry;
-        }
+        const regions = computeAvailableRegions(processedData);
+        globalAvailableCountries = regions.availableCountries;
+        globalAvailableStatesByCountry = regions.availableStatesByCountry;
 
         globalLoading = false;
         globalSyncing = false;

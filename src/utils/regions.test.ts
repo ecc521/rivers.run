@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getRiverCountries } from "./regions";
+import { getRiverCountries, deriveRegionMap } from "./regions";
 import type { RiverData } from "../types/River";
 
 describe("regions", () => {
@@ -68,6 +68,66 @@ describe("regions", () => {
       const countries = getRiverCountries(river);
       expect(countries.has("FR")).toBe(true);
       expect(countries.size).toBe(1);
+    });
+  });
+
+  describe("deriveRegionMap", () => {
+    it("attributes a simple single-state, single-country row correctly (fast path)", () => {
+      const map = deriveRegionMap([{ states: "KY", countries: "US" } as RiverData]);
+      expect(map.get("KY")?.has("US")).toBe(true);
+      expect(map.size).toBe(1);
+    });
+
+    it("rejects a state that doesn't actually belong to the row's country, even if a gauge implies that country", () => {
+      // Regression test: a gauge whose provider metadata reports a bordering
+      // country's state code (e.g. a Canadian EC gauge reporting state "ME")
+      // must not attribute Maine to Canada — "ME" isn't a valid CA province.
+      const river = {
+        states: "ME",
+        countries: "CA",
+        gauges: [{ id: "EC:12345" }]
+      } as any as RiverData;
+      const map = deriveRegionMap([river]);
+      expect(map.get("ME")?.has("CA")).toBeFalsy();
+    });
+
+    it("handles a genuine multi-country border river across both countries' valid states", () => {
+      const river = { states: "WA, BC", countries: "US, CA" } as RiverData;
+      const map = deriveRegionMap([river]);
+      expect(map.get("WA")?.has("US")).toBe(true);
+      expect(map.get("BC")?.has("CA")).toBe(true);
+      // Cross-attribution should still be rejected even in the multi-value case
+      expect(map.get("WA")?.has("CA")).toBeFalsy();
+      expect(map.get("BC")?.has("US")).toBeFalsy();
+    });
+
+    it("falls back to gauge-prefix-implied country when countries is missing", () => {
+      const river = { states: "ON", gauges: [{ id: "EC:12345" }] } as any as RiverData;
+      const map = deriveRegionMap([river]);
+      expect(map.get("ON")?.has("CA")).toBe(true);
+    });
+
+    it("falls back to state-implied country when countries is missing and there's no gauge", () => {
+      const river = { states: "VA" } as RiverData;
+      const map = deriveRegionMap([river]);
+      expect(map.get("VA")?.has("US")).toBe(true);
+    });
+
+    it("ignores rows with no states value", () => {
+      const map = deriveRegionMap([{ states: "", countries: "US" } as RiverData]);
+      expect(map.size).toBe(0);
+    });
+
+    it("unions multiple rows into the same state bucket", () => {
+      const rivers = [
+        { states: "CO", countries: "US" } as RiverData,
+        { states: "CO", countries: "US" } as RiverData,
+        { states: "ON", countries: "CA" } as RiverData,
+      ];
+      const map = deriveRegionMap(rivers);
+      expect(map.get("CO")?.has("US")).toBe(true);
+      expect(map.get("ON")?.has("CA")).toBe(true);
+      expect(map.size).toBe(2);
     });
   });
 });
