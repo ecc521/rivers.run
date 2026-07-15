@@ -153,5 +153,16 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom', // Better for React/DOM testing than plain node
     exclude: ['node_modules', 'dist', '.git', 'api', 'api-flow', 'functions', 'tests'],
+    // api/ and api-flow/ need `environment: 'node'` (they're Workers, not
+    // DOM code) — a single Vitest run can't mix environments in one project,
+    // so they're declared as separate projects here instead. This makes
+    // `npm test` from the root genuinely cover all three workspaces in one
+    // command/report, rather than relying on each CI step to remember to
+    // `cd` into them separately.
+    projects: [
+      { extends: true, test: { name: 'web' } },
+      'api/vitest.config.ts',
+      'api-flow/vitest.config.ts',
+    ],
   },
 })

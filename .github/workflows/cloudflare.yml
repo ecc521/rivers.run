@@ -25,10 +25,7 @@ jobs:
         run: npm run lint
 
       - name: Test Suite
-        run: |
-          npm test
-          (cd api && npm test)
-          (cd api-flow && npm test)
+        run: npm test
 
       - name: Build Frontend
         run: npm run build
