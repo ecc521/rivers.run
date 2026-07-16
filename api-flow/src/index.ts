@@ -238,13 +238,13 @@ app.on(["GET", "POST"], "/unsubscribe", async (c) => {
             return c.html(renderUnsubscribeError(), 400);
         }
 
-        if (c.req.method === "GET") {
-            return c.html(renderUnsubscribeConfirmPrompt({ actionUrl: c.req.url }));
-        }
-
         const user = await c.env.DB.prepare("SELECT email FROM users WHERE user_id = ?").bind(uid).first<{ email: string }>();
         if (!user) {
             return c.html(renderUnsubscribeError(), 400);
+        }
+
+        if (c.req.method === "GET") {
+            return c.html(renderUnsubscribeConfirmPrompt({ actionUrl: c.req.url, email: user.email }));
         }
 
         await c.env.DB.prepare("UPDATE users SET notifications_enabled = 0 WHERE user_id = ?").bind(uid).run();

@@ -196,15 +196,16 @@ export function renderUnsubscribeServerError(): string {
 // List-Unsubscribe header target, before a human ever opens the message. So a verified
 // GET renders this confirm step instead of unsubscribing directly; only a real POST
 // (Gmail's silent one-click, or this page's own form submission) does the mutation.
-export function renderUnsubscribeConfirmPrompt({ actionUrl }: { actionUrl: string }): string {
+export function renderUnsubscribeConfirmPrompt({ actionUrl, email }: { actionUrl: string, email: string }): string {
     const safeActionUrl = escapeHtml(actionUrl);
+    const safeEmail = escapeHtml(email);
     return card({
         pageTitle: "rivers.run — Confirm unsubscribe",
         title: "Unsubscribe from rivers.run emails?",
         badgeIcon: MAIL_ICON,
         badgeBg: "var(--info-bg)",
         badgeColor: "var(--primary)",
-        bodyHtml: "Click below to stop river alerts and list digest emails. This works from any device - you don't need to log in.",
+        bodyHtml: `Click below to stop river alerts and list digest emails for <strong>${safeEmail}</strong>. This works from any device - you don't need to log in.`,
         actionsHtml: `<form method="POST" action="${safeActionUrl}"><button type="submit" class="confirm-button">Confirm unsubscribe</button></form>`,
         footnote: "If you didn't mean to open this link, you can safely close this page - nothing has changed yet."
     });
