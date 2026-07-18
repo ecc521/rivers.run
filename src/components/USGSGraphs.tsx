@@ -30,11 +30,13 @@ const getUnit = (dataKey: string) => {
   if (dataKey === "cms") return "cms";
   if (dataKey === "feet" || dataKey === "ft") return "ft";
   if (dataKey === "m" || dataKey === "meters") return "m";
-  if (dataKey === "temp") return "°F";
+  if (dataKey === "temp_f") return "°F";
+  if (dataKey === "temp_c") return "°C";
+  if (dataKey === "precip_mm") return "mm";
   return "in";
 };
 
-const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, volumeColor, stageColor, tempColor, precipColor, forecastSource }: any) => {
+const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, tempKey, precipKey, volumeColor, stageColor, tempColor, precipColor, forecastSource }: any) => {
   if (active && payload && payload.length) {
     const rowData = payload[0].payload;
     const items: { name: string, value: any, color: string, dataKey: string }[] = [];
@@ -66,18 +68,18 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
         dataKey: stageKey 
       });
     } else if (activeTab === "temp") {
-      items.push({ 
-        name: "Temperature", 
-        value: rowData.temp, 
-        color: tempColor, 
-        dataKey: "temp" 
+      items.push({
+        name: "Temperature",
+        value: rowData[tempKey],
+        color: tempColor,
+        dataKey: tempKey
       });
     } else if (activeTab === "precip") {
-      items.push({ 
-        name: "Precipitation", 
-        value: rowData.precip, 
-        color: precipColor, 
-        dataKey: "precip" 
+      items.push({
+        name: "Precipitation",
+        value: rowData[precipKey],
+        color: precipColor,
+        dataKey: precipKey
       });
     }
 
@@ -161,7 +163,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
      let anchorTime = rawData[rawData.length - 1].dateTime;
      for (let i = rawData.length - 1; i >= 0; i--) {
        const d = rawData[i];
-       if (d.cfs != null || d.ft != null || d.cms != null || d.m != null || d.temp != null || d.precip != null) {
+       if (d.cfs != null || d.ft != null || d.cms != null || d.m != null || d.temp_f != null || d.temp_c != null || d.precip_in != null || d.precip_mm != null) {
          anchorTime = d.dateTime;
          break;
        }
@@ -175,11 +177,13 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
 
   // Detect available datasets
   const hasFlow = data.some((d) => d.cfs != null || d.ft != null || d.cms != null || d.m != null || d.cfsForecast != null || d.ftForecast != null);
-  const hasTemp = data.some((d) => d.temp != null);
-  const hasPrecip = data.some((d) => d.precip != null);
+  const hasTemp = data.some((d) => d.temp_f != null || d.temp_c != null);
+  const hasPrecip = data.some((d) => d.precip_in != null || d.precip_mm != null);
 
   const flowKey = data.some((d) => d.cfs != null || d.cfsForecast != null) ? "cfs" : "cms";
   const stageKey = data.some((d) => d.ft != null || d.ftForecast != null) ? "ft" : "m";
+  const tempKey = data.some((d) => d.temp_f != null) ? "temp_f" : "temp_c";
+  const precipKey = data.some((d) => d.precip_in != null) ? "precip_in" : "precip_mm";
 
   type TabType = "flow" | "temp" | "precip";
   let defaultTab: TabType = "precip";
@@ -199,7 +203,8 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
     for (let i = data.length - 1; i >= 0; i--) {
       const pt = data[i];
       const currentTime = pt.dateTime;
-      if (pt.precip) sum += pt.precip;
+      const val = pt[precipKey];
+      if (val) sum += val;
 
       if (
         halfDay === undefined &&
@@ -213,12 +218,14 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
         fullDay = Math.round(sum * 1000) / 1000;
     }
     const finalSum = Math.round(sum * 1000) / 1000;
+    const unit = precipKey === "precip_mm" ? "mm" : `"`;
+    const fmt = (v: number) => precipKey === "precip_mm" ? `${v} ${unit}` : `${v}${unit}`;
     if (fullDay !== undefined)
-      return `Last 24 hours: ${fullDay}"   Last 12 hours: ${halfDay}"`;
+      return `Last 24 hours: ${fmt(fullDay)}   Last 12 hours: ${fmt(halfDay!)}`;
     if (halfDay !== undefined)
-      return `Last 12 hours: ${halfDay}"   Total: ${finalSum}"`;
-    return `Total Precipitation: ${finalSum}"`;
-  }, [data, hasPrecip]);
+      return `Last 12 hours: ${fmt(halfDay)}   Total: ${fmt(finalSum)}`;
+    return `Total Precipitation: ${fmt(finalSum)}`;
+  }, [data, hasPrecip, precipKey]);
 
   const hasNoData = !data || data.length === 0 || (!hasFlow && !hasTemp && !hasPrecip);
 
@@ -232,6 +239,15 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   }
   
   const tempColor = isDarkMode ? "#00AAFF" : "red";
+  const tempGradientTop = "#FF0000";
+  const tempGradientBottom = "#0000FF";
+  const tempGradientTextStyle: React.CSSProperties = {
+    backgroundImage: `linear-gradient(180deg, ${tempGradientTop} 0%, ${tempGradientBottom} 100%)`,
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    color: "transparent",
+    WebkitTextFillColor: "transparent",
+  };
   const precipColor = "#0099FF";
   const axisColor = "var(--text-secondary)";
 
@@ -322,9 +338,9 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                         >Flow</button>
                     )}
                     {hasTemp && (
-                        <button 
+                        <button
                             onClick={() => setUserTab("temp")}
-                            style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: activeTab === "temp" ? "var(--primary)" : "transparent", color: activeTab === "temp" ? "#fff" : "var(--text)" }}
+                            style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: activeTab === "temp" ? "var(--primary)" : "transparent", ...tempGradientTextStyle }}
                         >Temp</button>
                     )}
                     {hasPrecip && (
@@ -416,6 +432,12 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                   if (onScrub) onScrub(null);
                 }}
               >
+                <defs>
+                  <linearGradient id="tempLineGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={tempGradientTop} />
+                    <stop offset="100%" stopColor={tempGradientBottom} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="var(--border)"
@@ -431,8 +453,10 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                     <CustomTooltip 
                         isDarkMode={isDarkMode} 
                         activeTab={activeTab} 
-                        flowKey={flowKey} 
-                        stageKey={stageKey} 
+                        flowKey={flowKey}
+                        stageKey={stageKey}
+                        tempKey={tempKey}
+                        precipKey={precipKey}
                         volumeColor={volumeColor}
                         stageColor={stageColor}
                         tempColor={tempColor}
@@ -556,9 +580,9 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                     />
                     <Line
                       type="monotone"
-                      dataKey="temp"
-                      name="Temperature"
-                      stroke={tempColor}
+                      dataKey={tempKey}
+                      name={tempKey === "temp_f" ? "Temperature (°F)" : "Temperature (°C)"}
+                      stroke="url(#tempLineGradient)"
                       dot={false}
                       strokeWidth={4}
                       animationDuration={200}
@@ -577,8 +601,8 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                     />
                     <Line
                       type="monotone"
-                      dataKey="precip"
-                      name="Precipitation"
+                      dataKey={precipKey}
+                      name={precipKey === "precip_in" ? "Precipitation (in)" : "Precipitation (mm)"}
                       stroke={precipColor}
                       dot={false}
                       strokeWidth={4}

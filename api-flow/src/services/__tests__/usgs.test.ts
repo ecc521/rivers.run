@@ -104,6 +104,14 @@ describe('USGS Service', () => {
             expect((result['03451500'].readings[0] as any).temp).toBeUndefined();
         });
 
+        it('should convert Celsius to Fahrenheit when unit_of_measure has no space (real OGC API format)', () => {
+            const features = [
+                makeFeature({ parameter_code: "00010", time: "2026-04-15T12:00:00Z", value: "10", unit_of_measure: "degC" }),
+            ];
+            const result = processUSGSResponse(features);
+            expect(result['03451500'].readings[0].temp_f).toBe(50);
+        });
+
         it('should strip USGS- prefix from monitoring_location_id', () => {
             const features = [
                 makeFeature({ monitoring_location_id: "USGS-03451500", parameter_code: "00060", time: "2026-04-15T12:00:00Z", value: "800", unit_of_measure: "ft^3/s" }),

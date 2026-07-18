@@ -109,8 +109,10 @@ export interface GaugeReading {
   ft?: number;
   m?: number;
   cms?: number;
-  temp?: number;
-  precip?: number;
+  temp_f?: number;
+  temp_c?: number;
+  precip_in?: number;
+  precip_mm?: number;
   forecast?: boolean;
   cfsForecast?: number;
   ftForecast?: number;

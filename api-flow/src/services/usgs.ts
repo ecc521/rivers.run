@@ -28,10 +28,13 @@ const FIPS_TO_STATE: Record<string, string> = {
 function mapUnitToProperty(unitCode: string): { property: keyof GaugeReading | undefined; celsius: boolean } {
     // Normalize: lowercase, replace Unicode superscript ³, collapse whitespace
     const unit = unitCode.toLowerCase().replace(/³/g, '^3').replace(/\s+/g, ' ').trim();
+    // Also compare with whitespace fully stripped: the OGC API returns "degC"/"degF"
+    // (no space) while some legacy sources used "deg C"/"deg F" (with space).
+    const compact = unit.replace(/\s+/g, '');
     if (unit === 'ft^3/s' || unit === 'ft3/s') return { property: 'cfs', celsius: false };
     if (unit === 'ft') return { property: 'ft', celsius: false };
-    if (unit === 'deg c' || unit === 'degrees celsius') return { property: 'temp_f', celsius: true };
-    if (unit === 'deg f' || unit === 'degrees fahrenheit') return { property: 'temp_f', celsius: false };
+    if (compact === 'degc' || unit === 'degrees celsius') return { property: 'temp_f', celsius: true };
+    if (compact === 'degf' || unit === 'degrees fahrenheit') return { property: 'temp_f', celsius: false };
     if (unit === 'in') return { property: 'precip_in', celsius: false };
     return { property: undefined, celsius: false };
 }
