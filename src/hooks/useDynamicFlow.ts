@@ -126,9 +126,24 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
                 return !hasForecastsAlready;
             })
             .map(async ([gaugeId, gaugeInfo]) => {
+                const url = `https://api.water.noaa.gov/nwps/v1/reaches/${gaugeInfo.nwmReachId}/streamflow`;
+                const maxAttempts = 3;
                 try {
-                    const noaaRes = await fetch(`https://api.water.noaa.gov/nwps/v1/reaches/${gaugeInfo.nwmReachId}/streamflow`);
-                    if (!noaaRes.ok) return;
+                    let noaaRes: Response | undefined;
+                    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                        try {
+                            noaaRes = await fetch(url);
+                            if (noaaRes.ok) break;
+                            // 4xx is not transient (bad reach id, etc.) - retrying won't help
+                            if (noaaRes.status < 500) break;
+                        } catch {
+                            // CORS-masked 5xx gateway errors throw rather than resolving with a status;
+                            // treat like a failed attempt since we can't inspect the status here
+                            noaaRes = undefined;
+                        }
+                        if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 500 * attempt));
+                    }
+                    if (!noaaRes || !noaaRes.ok) return;
                     const noaaData = await noaaRes.json();
                     
                     const points = noaaData.mediumRange?.mean?.data || [];
