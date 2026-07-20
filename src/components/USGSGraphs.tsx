@@ -241,13 +241,6 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   const tempColor = isDarkMode ? "#00AAFF" : "red";
   const tempGradientTop = "#FF0000";
   const tempGradientBottom = "#0000FF";
-  const tempGradientTextStyle: React.CSSProperties = {
-    backgroundImage: `linear-gradient(180deg, ${tempGradientTop} 0%, ${tempGradientBottom} 100%)`,
-    WebkitBackgroundClip: "text",
-    backgroundClip: "text",
-    color: "transparent",
-    WebkitTextFillColor: "transparent",
-  };
   const precipColor = "#0099FF";
   const axisColor = "var(--text-secondary)";
 
@@ -340,7 +333,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                     {hasTemp && (
                         <button
                             onClick={() => setUserTab("temp")}
-                            style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: activeTab === "temp" ? "var(--primary)" : "transparent", ...tempGradientTextStyle }}
+                            style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: activeTab === "temp" ? "var(--primary)" : "transparent", color: activeTab === "temp" ? "#fff" : "var(--text)" }}
                         >Temp</button>
                     )}
                     {hasPrecip && (
