@@ -261,8 +261,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       await finishPendingLink();
       onClose();
     } catch (err: any) {
-      if (err?.code === 'auth/invalid-credential') {
-        setErrorText("Incorrect email or password.");
+      if (err?.code === 'auth/invalid-credential' || err?.code === 'auth/wrong-password') {
+        setErrorText("Incorrect password. Please try again or reset your password.");
+      } else if (err?.code === 'auth/user-not-found') {
+        setErrorText("No account found with that email.");
       } else {
         showFallbackError(err, 'password');
       }
