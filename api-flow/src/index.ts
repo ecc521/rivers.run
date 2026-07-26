@@ -51,7 +51,13 @@ app.use("*", cors({
     // to every api-flow route by default.
     allowMethods: ["GET", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "x-api-key", "X-API-Key"],
-    exposeHeaders: ["Content-Length", "X-Knative-Response-Contained"],
+    // ETag must be exposed for workbox-broadcast-update: it compares this header between
+    // the old and new cached /flowdata response to decide whether to notify open tabs that
+    // fresh data is available. Without it listed here, the browser hides ETag from JS on
+    // this cross-origin response entirely, so the comparison always finds nothing to compare
+    // and silently assumes the response is unchanged — tabs then only pick up new data via
+    // the visibility-change/heartbeat fallback in useRivers.ts, not the SW's own broadcast.
+    exposeHeaders: ["Content-Length", "X-Knative-Response-Contained", "ETag"],
     maxAge: 86400,
 }));
 
