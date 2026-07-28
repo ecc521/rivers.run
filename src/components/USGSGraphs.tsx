@@ -244,6 +244,30 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   const precipColor = "#0099FF";
   const axisColor = "var(--text-secondary)";
 
+  // YAxis width defaults to fitting ~4-digit values; widen it for larger readings
+  // (e.g. flood-stage CFS in the tens of thousands) so the leading digit isn't clipped.
+  const getAxisWidth = (values: (number | null | undefined)[]) => {
+    let maxAbs = 0;
+    for (const v of values) {
+      if (v != null && !isNaN(v)) maxAbs = Math.max(maxAbs, Math.abs(v));
+    }
+    const digits = maxAbs > 0 ? Math.floor(Math.log10(maxAbs)) + 1 : 1;
+    return digits <= 4 ? 45 : 45 + (digits - 4) * 9;
+  };
+
+  const isStageThreshold = river.flow?.unit === "ft" || river.flow?.unit === "m";
+  const thresholds = [river.flow?.min, river.flow?.low, river.flow?.mid, river.flow?.high, river.flow?.max];
+  const flowAxisWidth = useMemo(
+    () => getAxisWidth([...data.map((d) => d[flowKey]), ...(isStageThreshold ? [] : thresholds)]),
+    [data, flowKey, isStageThreshold, river.flow]
+  );
+  const stageAxisWidth = useMemo(
+    () => getAxisWidth([...data.map((d) => d[stageKey]), ...(isStageThreshold ? thresholds : [])]),
+    [data, stageKey, isStageThreshold, river.flow]
+  );
+  const tempAxisWidth = useMemo(() => getAxisWidth(data.map((d) => d[tempKey])), [data, tempKey]);
+  const precipAxisWidth = useMemo(() => getAxisWidth(data.map((d) => d[precipKey])), [data, precipKey]);
+
   const metricOptionsCount = (hasFlow ? 1 : 0) + (hasTemp ? 1 : 0) + (hasPrecip ? 1 : 0);
 
   const titleElement = (() => {
@@ -466,7 +490,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                       stroke={volumeColor}
                       tick={{ fill: volumeColor, fontSize: 18 }}
                       offset={10}
-                      width={45}
+                      width={flowAxisWidth}
                       domain={["auto", "auto"]}
                     />
                     <YAxis
@@ -475,7 +499,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                       stroke={stageColor}
                       tick={{ fill: stageColor, fontSize: 18 }}
                       offset={10}
-                      width={45}
+                      width={stageAxisWidth}
                       domain={["auto", "auto"]}
                     />
                     <Line
@@ -568,7 +592,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                     <YAxis
                       stroke={tempColor}
                       tick={{ fill: tempColor, fontSize: 18 }}
-                      width={45}
+                      width={tempAxisWidth}
                       domain={["auto", "auto"]}
                     />
                     <Line
@@ -589,7 +613,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                     <YAxis
                       stroke={precipColor}
                       tick={{ fill: precipColor, fontSize: 18 }}
-                      width={45}
+                      width={precipAxisWidth}
                       domain={[0, "auto"]}
                     />
                     <Line
