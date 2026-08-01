@@ -6,8 +6,8 @@ import { logToD1 } from '../utils/logger';
 let cachedReaches: Record<string, string> | null = null;
 let cachedRegistryNames: Record<string, { name: string; section?: string; state?: string }> | null = null;
 
-const USGS_API_BASE = "https://api.waterdata.usgs.gov/ogcapi/v0/collections";
-const PARAMETER_CODES = "00060,00065,00010,00011,00045";
+export const USGS_API_BASE = "https://api.waterdata.usgs.gov/ogcapi/v0/collections";
+export const PARAMETER_CODES = "00060,00065,00010,00011,00045";
 
 const FIPS_TO_STATE: Record<string, string> = {
     "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA",
@@ -48,8 +48,11 @@ function finalizeSiteReadings(usgsSites: Record<string, GaugeHistory>) {
             site.readings = timestamps
                 .map(ts => readingMap.get(ts)!)
                 .filter(r => {
+                    // 'approved'/'srcModified' are provenance, not measurements:
+                    // a reading carrying only those is still an empty reading.
                     const keys = Object.keys(r);
-                    return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
+                    return keys.some(k => k !== 'dateTime' && k !== 'isForecast'
+                                       && k !== 'approved' && k !== 'srcModified');
                 });
             delete (site as any)._readingMap;
         }
@@ -111,6 +114,17 @@ export function processUSGSResponse(features: any[]): Record<string, GaugeHistor
             readingMap.set(snappedTime, reading);
         }
         (reading as any)[property] = value;
+
+        // Provenance for the history store. `approval_status` flips from
+        // Provisional to Approved when USGS publishes the record, which is
+        // itself a revision signal; `last_modified` drives the ingest cursor.
+        if (props.approval_status === 'Approved') reading.approved = true;
+        if (props.last_modified) {
+            const modified = new Date(props.last_modified).getTime();
+            if (!isNaN(modified) && modified > (reading.srcModified ?? 0)) {
+                reading.srcModified = modified;
+            }
+        }
     }
 
     finalizeSiteReadings(usgsSites);
@@ -119,7 +133,7 @@ export function processUSGSResponse(features: any[]): Record<string, GaugeHistor
 
 // --- FETCH HELPERS ---
 
-async function fetchAllOGCFeatures(initialUrl: string, timeoutMs: number, env?: any): Promise<any[]> {
+export async function fetchOGCFeatures(initialUrl: string, timeoutMs: number, env?: any): Promise<any[]> {
     const features: any[] = [];
     let nextUrl: string | null = initialUrl;
     const headers = env?.USGS_API_KEY
@@ -187,7 +201,7 @@ async function fetchLatestBatch(siteCodes: string[], env?: any): Promise<Record<
             const url = `${USGS_API_BASE}/latest-continuous/items?f=json&monitoring_location_id=${ids}&parameter_code=${PARAMETER_CODES}&limit=1000`;
 
             try {
-                const features = await fetchAllOGCFeatures(url, 90000, env);
+                const features = await fetchOGCFeatures(url, 90000, env);
                 Object.assign(allSites, processUSGSResponse(features));
             } catch (e: unknown) {
                 const msg = e instanceof Error ? e.message : String(e);
@@ -206,7 +220,7 @@ async function fetchLatestBatch(siteCodes: string[], env?: any): Promise<Record<
 
 // --- HISTORY (linked gauges sync + on-demand /history endpoint) ---
 // /continuous supports comma-separated monitoring_location_id (same as latest-continuous).
-// Responses are paginated via next links; fetchAllOGCFeatures follows them automatically.
+// Responses are paginated via next links; fetchOGCFeatures follows them automatically.
 
 async function fetchContinuousSites(
     siteCodes: string[],
@@ -236,7 +250,7 @@ async function fetchContinuousSites(
             const url = `${USGS_API_BASE}/continuous/items?f=json&monitoring_location_id=${ids}&parameter_code=${PARAMETER_CODES}&datetime=${datetime}&limit=10000`;
 
             try {
-                const features = await fetchAllOGCFeatures(url, 90000, env);
+                const features = await fetchOGCFeatures(url, 90000, env);
                 Object.assign(allSites, processUSGSResponse(features));
             } catch (e: unknown) {
                 const msg = e instanceof Error ? e.message : String(e);
@@ -262,7 +276,7 @@ const METADATA_BATCH_SIZE = 200;
 
 async function fetchActiveUSGSSites(env?: any): Promise<Map<string, { lat: number; lon: number }>> {
     const url = `${USGS_API_BASE}/latest-continuous/items?f=json&parameter_code=00060&limit=10000`;
-    const features = await fetchAllOGCFeatures(url, 600000, env);
+    const features = await fetchOGCFeatures(url, 600000, env);
 
     const cutoff = Date.now() - REGISTRY_FRESHNESS_MS;
     const active = new Map<string, { lat: number; lon: number }>();
@@ -304,7 +318,7 @@ async function fetchSiteMetadata(
             const url = `${USGS_API_BASE}/monitoring-locations/items?f=json&id=${ids}&limit=${METADATA_BATCH_SIZE}`;
 
             try {
-                const features = await fetchAllOGCFeatures(url, 60000, env);
+                const features = await fetchOGCFeatures(url, 60000, env);
                 for (const feature of features) {
                     const props = feature.properties || {};
                     const num = props.monitoring_location_number || '';
@@ -349,6 +363,14 @@ export const usgsProvider: GaugeProvider = {
             }
         }
         return latest;
+    },
+
+    // latest-continuous already returns per-parameter records that
+    // fetchLatestBatch assembles into histories; getLatest then discards all
+    // but the newest. The history store wants them all, and this is the exact
+    // same request either way.
+    async getLatestHistories(siteCodes: string[], env?: any): Promise<Record<string, GaugeHistory>> {
+        return fetchLatestBatch(siteCodes, env);
     },
 
     async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {

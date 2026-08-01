@@ -20,6 +20,8 @@ import { normalizeGaugeId } from "./utils/formatting";
 import { generateSitemap } from "./services/sitemap";
 import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
+import { runIngestCycle, projectSitedata, readLinkedGaugeIds, runDailyMaintenance } from "./services/flowSync";
+import { readSeries } from "./services/flowStore";
 import { syncUsgsReaches } from "./services/usgsReaches";
 import { verifyUnsubscribeToken } from "./utils/unsubscribeToken";
 import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError, renderUnsubscribeServerError } from "./templates/unsubscribeConfirmation";
@@ -27,6 +29,12 @@ import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUn
 export interface Env {
     FLOW_STORAGE: R2Bucket;
     DB: D1Database;
+    /**
+     * Flow history store — separate D1 database (see wrangler.toml). Optional
+     * so the worker degrades to the pre-store live-fetch path rather than
+     * crashing if the binding is missing.
+     */
+    FLOW_DB?: D1Database;
     USGS_API_KEY?: string;
     GMAIL_APP_PASSWORD?: string;
     UNSUBSCRIBE_SECRET?: string;
@@ -79,12 +87,20 @@ const historyRoute = createRoute({
             units: z.string().openapi({ param: { name: 'units', in: 'query', required: false } }).optional().default('default'),
             days: z.string().openapi({ param: { name: 'days', in: 'query', required: false } }).optional().default('7'),
             forecast: z.string().optional().openapi({ param: { name: 'forecast', in: 'query', required: false }, example: 'true' }),
+            since: z.string().optional().openapi({
+                param: { name: 'since', in: 'query', required: false },
+                example: '1780000000000',
+                description: 'Epoch ms. Returns only readings newer than this, for clients that already hold a window and want the delta.'
+            }),
         })
     },
     responses: {
-        200: { 
-            description: 'Gauge history map', 
-            content: { 'application/json': { schema: GenericObjectSchema } } 
+        200: {
+            description: 'Gauge history map',
+            content: { 'application/json': { schema: GenericObjectSchema } }
+        },
+        304: {
+            description: 'Not modified (ETag matched)'
         },
         400: {
             description: 'Invalid Request (Safety Limits Exceeded)',
@@ -94,30 +110,50 @@ const historyRoute = createRoute({
 });
 
 app.openapi(historyRoute, async (c) => {
-    const { gauges: gaugeString, units, days, forecast } = c.req.valid('query') as any;
+    const { gauges: gaugeString, units, days, forecast, since } = c.req.valid('query') as any;
     const gauges = gaugeString.split(",")
         .map((g: string) => normalizeGaugeId(g))
         .filter((g: string) => g.includes(":"));
-    
+
     // Safety Limits
     if (gauges.length > 10) {
         return c.json({ error: "Too many gauges. Max 10 per request." }, 400);
     }
-    
+
     const durationDays = parseInt(days) || 7;
     if (durationDays > 30) {
         return c.json({ error: "Duration too long. Max 30 days." }, 400);
     }
 
+    const now = Date.now();
+    const windowStart = now - (durationDays * 24 * 60 * 60 * 1000);
+    const sinceTs = Number(since);
+    // `since` narrows the window but can never widen it past the 30-day cap.
+    const start = Number.isFinite(sinceTs) && sinceTs > windowStart ? sinceTs + 1 : windowStart;
+    const includeForecast = forecast === "true";
+
+    // Prefer the history store: a river-detail view used to trigger a live
+    // 28-day USGS fetch on every load. Gauges the store does not know about
+    // (and forecast requests, which must be fresh) still go to the provider.
+    let stored: Record<string, GaugeHistory> = {};
+    if (c.env.FLOW_DB) {
+        try {
+            stored = await readSeries(c.env.FLOW_DB, gauges, start, now);
+        } catch (e) {
+            console.error("Flow store read failed, falling back to live fetch:", e);
+            stored = {};
+        }
+    }
+
+    const needsLive = gauges.filter((g: string) =>
+        includeForecast || !stored[g] || stored[g].readings.length === 0);
+
     const providerGroups: Record<string, string[]> = {};
-    gauges.forEach((g: string) => {
+    needsLive.forEach((g: string) => {
         const [prefix, id] = g.split(":");
         if (!providerGroups[prefix]) providerGroups[prefix] = [];
         providerGroups[prefix].push(id);
     });
-
-    const start = Date.now() - (durationDays * 24 * 60 * 60 * 1000);
-    const includeForecast = forecast === "true";
 
     const promises = Object.entries(providerGroups).map(async ([prefix, ids]) => {
         const provider = providers[prefix];
@@ -126,7 +162,7 @@ app.openapi(historyRoute, async (c) => {
             const data = await provider.getHistory(ids, start, undefined, includeForecast, c.env);
             const normalized: Record<string, GaugeHistory> = {};
             Object.entries(data).forEach(([id, history]) => {
-                normalized[`${prefix}:${id}`] = toUnitSystemHistory(history, units as Units);
+                normalized[`${prefix}:${id}`] = history;
             });
             return normalized;
         } catch (_e) {
@@ -135,10 +171,70 @@ app.openapi(historyRoute, async (c) => {
         }
     });
 
-    const results = await Promise.all(promises);
-    const merged = Object.assign({}, ...results);
-    return c.json(merged, 200);
+    const live: Record<string, GaugeHistory> = Object.assign({}, ...(await Promise.all(promises)));
+
+    // Merge live over stored by timestamp so a forecast request keeps its
+    // stored observations and gains forecast rows, rather than replacing one
+    // with the other.
+    const merged: Record<string, GaugeHistory> = {};
+    for (const gaugeId of new Set<string>([...Object.keys(stored), ...Object.keys(live)])) {
+        const base = stored[gaugeId];
+        const fresh = live[gaugeId];
+
+        if (!base) { merged[gaugeId] = fresh; continue; }
+        if (!fresh) { merged[gaugeId] = base; continue; }
+
+        const byTime = new Map<number, any>();
+        for (const r of base.readings) byTime.set(r.dateTime, r);
+        for (const r of fresh.readings) {
+            byTime.set(r.dateTime, r.isForecast ? r : { ...byTime.get(r.dateTime), ...r });
+        }
+
+        merged[gaugeId] = {
+            ...base,
+            ...fresh,
+            name: base.name || fresh.name,
+            readings: [...byTime.values()].sort((a, b) => a.dateTime - b.dateTime),
+        };
+    }
+
+    const converted: Record<string, GaugeHistory> = {};
+    for (const [gaugeId, history] of Object.entries(merged)) {
+        converted[gaugeId] = toUnitSystemHistory(history, units as Units);
+    }
+
+    // Weak ETag over the served content so a repeat view can 304. Cheap to
+    // compute and stable: the newest timestamp plus the reading count fully
+    // characterises an append-only window.
+    const signature = Object.entries(converted)
+        .map(([id, h]) => {
+            const last = h.readings.length > 0 ? h.readings[h.readings.length - 1].dateTime : 0;
+            return `${id}:${h.readings.length}:${last}`;
+        })
+        .sort((a, b) => a.localeCompare(b))
+        .join("|");
+    const etag = `W/"${signature.length}-${hashSignature(signature)}"`;
+
+    if (c.req.header("If-None-Match") === etag) {
+        c.header("ETag", etag);
+        c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+        return c.body(null, 304);
+    }
+
+    c.header("ETag", etag);
+    c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    return c.json(converted, 200);
 });
+
+/** FNV-1a. Not security-relevant — just a compact, stable ETag discriminator. */
+function hashSignature(input: string): string {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < input.length; i++) {
+        hash ^= input.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash.toString(16);
+}
 
 const flowdataRoute = createRoute({
     middleware: [apiKeyFlowMiddleware],
@@ -213,9 +309,24 @@ app.openapi(gaugeRoute, async (c) => {
     const provider = providers[prefix];
     if (!provider) return c.json({ error: "Provider not found" }, 404);
 
+    // 6 hours of history populates charts/tables adequately.
+    const start = Date.now() - 21600000;
+    const gaugeId = normalizeGaugeId(`${prefix}:${id}`);
+
+    if (c.env.FLOW_DB) {
+        try {
+            const stored = await readSeries(c.env.FLOW_DB, [gaugeId], start, Date.now());
+            const history = stored[gaugeId];
+            if (history && history.readings.length > 0) {
+                return c.json(toUnitSystemHistory(history, units as Units), 200);
+            }
+        } catch (e) {
+            console.error("Flow store read failed, falling back to live fetch:", e);
+        }
+    }
+
     try {
-        // Fetch 6 hours (21600000 ms) of history to populate charts/tables adequately
-        const historyMap = await provider.getHistory([id], Date.now() - 21600000, Date.now(), undefined, c.env);
+        const historyMap = await provider.getHistory([id], start, Date.now(), undefined, c.env);
         const history = historyMap[id];
         if (!history) return c.json({ error: "Gauge not found" }, 404);
 
@@ -332,29 +443,73 @@ export default {
             }
 
 
-            // 1. Fetch Gauges
-            const mergedData = await performDataSync(env, registryMetadata, providers);
+            // 1. Fetch gauges.
+            //
+            // With FLOW_DB bound, readings are ingested into the durable history
+            // store and sitedata.json is projected back out of it. Without it,
+            // fall back to the original stateless path so a missing binding
+            // degrades rather than breaks.
+            let mergedData: Record<string, any>;
 
-            // Resiliency pass: If a gauge failed to fetch readings (e.g. USGS partial outage),
-            // attempt to preserve its previous readings from the existing sitedata.json so the 
-            // frontend can still display stale data instead of wiping it completely.
-            try {
-                const previousObject = await env.FLOW_STORAGE.get("sitedata.json");
-                if (previousObject) {
-                    const previousData = await previousObject.json() as Record<string, any>;
-                    let recoveredCount = 0;
-                    for (const [key, gauge] of Object.entries(mergedData)) {
-                        if (gauge.readings && gauge.readings.length === 0 && previousData[key] && previousData[key].readings?.length > 0) {
-                            gauge.readings = previousData[key].readings;
-                            recoveredCount++;
+            if (env.FLOW_DB) {
+                const syncStart = Date.now();
+                const stats = await runIngestCycle(env, env.FLOW_DB, registryMetadata, providers);
+                const linkedIds = await readLinkedGaugeIds(env);
+                mergedData = await projectSitedata(env.FLOW_DB, registryMetadata, linkedIds);
+
+                if (isDailyMaintenance) {
+                    const maint = await runDailyMaintenance(env, env.FLOW_DB, providers);
+                    await logToD1(env, "INFO", "maintenance",
+                        `Store maintenance: repaired ${maint.repaired} readings for gap-flagged gauges` +
+                        (maint.revisions
+                            ? `; USGS revisions checked ${maint.revisions.fetched}, ` +
+                              `${maint.revisions.unseen} new, ` +
+                              `${maint.revisions.overlapping.length} overlapping retention (cursors reset)`
+                            : "; revision poll unavailable"));
+                }
+
+                await logToD1(env, "INFO", "sync",
+                    `Store ingest: ${stats.readingsStored} readings across ` +
+                    `${stats.linked} linked / ${stats.registry} registry gauges in ` +
+                    `${((Date.now() - syncStart) / 1000).toFixed(1)}s ` +
+                    `(cursors advanced ${stats.cursorsAdvanced}, capped ${stats.capped.length}, ` +
+                    `cold deferred ${stats.deferred}, pruned ${stats.pruned}, errors ${stats.errors}).`);
+
+                if (stats.capped.length > 0) {
+                    // A held cursor means a large historical rewrite is still
+                    // draining; it resumes next cycle rather than being skipped.
+                    await logToD1(env, "WARN", "sync",
+                        `Per-cycle record cap tripped for ${stats.capped.length} gauge(s): ` +
+                        `${stats.capped.slice(0, 5).join(", ")}. Cursors held for resume.`);
+                }
+            } else {
+                mergedData = await performDataSync(env, registryMetadata, providers);
+
+                // Resiliency pass: if a gauge failed to fetch readings (e.g. USGS partial outage),
+                // recover its previous readings from the existing sitedata.json so the frontend
+                // shows stale data rather than nothing.
+                //
+                // This exists only because the legacy path has no durable store. The FLOW_DB
+                // branch above needs no equivalent: a failed provider fetch simply adds no new
+                // readings, and the ones already stored are still served.
+                try {
+                    const previousObject = await env.FLOW_STORAGE.get("sitedata.json");
+                    if (previousObject) {
+                        const previousData = await previousObject.json() as Record<string, any>;
+                        let recoveredCount = 0;
+                        for (const [key, gauge] of Object.entries(mergedData)) {
+                            if (gauge.readings && gauge.readings.length === 0 && previousData[key] && previousData[key].readings?.length > 0) {
+                                gauge.readings = previousData[key].readings;
+                                recoveredCount++;
+                            }
+                        }
+                        if (recoveredCount > 0) {
+                            await logToD1(env, "INFO", "sync", `Recovered stale readings for ${recoveredCount} gauges due to provider API failures.`);
                         }
                     }
-                    if (recoveredCount > 0) {
-                        await logToD1(env, "INFO", "sync", `Recovered stale readings for ${recoveredCount} gauges due to provider API failures.`);
-                    }
+                } catch (e) {
+                    console.warn("Failed to merge previous sitedata for outage resilience", e);
                 }
-            } catch (e) {
-                console.warn("Failed to merge previous sitedata for outage resilience", e);
             }
 
             // Save to storage using buffered construction for R2 compatibility

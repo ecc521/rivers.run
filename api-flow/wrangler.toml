@@ -15,11 +15,26 @@ strict_port = true
 binding = "FLOW_STORAGE"
 bucket_name = "flowdata"
 
-# Optional: Bind D1 dynamically if we need to query rivers mapping 
+# Optional: Bind D1 dynamically if we need to query rivers mapping
 [[d1_databases]]
 binding = "DB"
 database_name = "rivers-db"
 database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
+
+# Flow history store: 30 days of readings for every gauge.
+#
+# Deliberately a SEPARATE database from rivers-db. A D1 database is
+# single-threaded, so the ~15k-row write burst this takes every 15 minutes
+# would contend directly with live user CRUD from api/ if it shared one.
+#
+# Not yet created — run this, then paste the id below:
+#   npx wrangler d1 create flow-db
+#   npx wrangler d1 execute flow-db --remote --config api-flow/wrangler.toml \
+#     --file api-flow/migrations/2026-08-01_flow_history_store.sql
+[[d1_databases]]
+binding = "FLOW_DB"
+database_name = "flow-db"
+database_id = "REPLACE_WITH_FLOW_DB_ID"
   
 [[routes]]
 pattern = "flow.rivers.run"
