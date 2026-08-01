@@ -38,7 +38,37 @@ Note: there is **no** `usage_model = "unbound"` in `wrangler.toml`. Cloudflare W
 Standard Pricing now applies extended limits to cron fetch loops automatically, so do
 not re-add it.
 
-## 3. Caching & Return Signatures
+## 3. Flow History Store (`FLOW_DB`)
+
+30 days of readings for **every** gauge live in `flow-db`, a D1 database bound
+separately from `DB`/`rivers-db`. Keep them separate: a D1 database is
+single-threaded, and this takes a ~15k-row write burst every 15 minutes that
+would otherwise contend with live user CRUD from `api/`.
+
+The binding is **optional in code**. With `FLOW_DB` unbound the worker falls
+back to the original stateless path (`performDataSync` + the `sitedata.json`
+resiliency pass), so a missing binding degrades rather than breaks. `wrangler.toml`
+ships a placeholder `database_id`; see [docs/flow-history-store.md](../docs/flow-history-store.md)
+for the two commands that create and migrate it.
+
+Things that will bite you if you edit this area:
+
+- **`json_each`, not multi-row VALUES.** D1 caps a query at 100 bound
+  parameters, so every bulk write passes one JSON parameter. Batches are sorted
+  by `(gauge_key, ts)` before insert — `gauge_readings` is `WITHOUT ROWID` and
+  clustered on that key.
+- **The `CROSS JOIN` in `LATEST_ALL_SQL` is load-bearing.** It pins the join
+  order; a plain JOIN makes SQLite full-scan the fact table (166ms vs 2.5ms at
+  500k rows, growing with total readings). A test asserts the query plan.
+- **`last_modified` is tier-A only.** It is the only USGS revision signal, but
+  it does not scale past ~10 sites per request (25 sites ~48s, 100+ is
+  server-cancelled). See `usgsIncremental.ts` for the measured numbers.
+- **Request size scales with sites × window**, not sites alone — `MAX_SITE_DAYS`
+  exists because 10 cold-start gauges over 30 days is ~66MB in one request.
+- Tier B ingest adds **no** provider requests: it keeps what the existing bulk
+  `getLatest` calls already return. `getLatestHistories` is the hook for that.
+
+## 4. Caching & Return Signatures
 
 - Endpoints return statically shaped `{ [gaugeId]: { readings: [...] } }` payloads that
   mirror the legacy Firebase Storage JSON keys, so the frontend `useRivers.ts` hook
@@ -49,7 +79,7 @@ not re-add it.
   outage), previous readings are recovered from the existing `sitedata.json` so the
   payload never regresses to empty.
 
-## 4. Required Secrets
+## 5. Required Secrets
 
 Cloudflare Worker secrets are never listed in `wrangler.toml` (that file only holds
 bindings/config) - so if this worker is ever redeployed from scratch, these need to be
