@@ -164,7 +164,7 @@ export default function RiverEditor() {
             section: section || "",
             countries: country || "US",
             states: state || "",
-            gauges: gaugeId ? [{ id: gaugeId.toUpperCase().replace(/\s+/g, ''), isPrimary: true }] : []
+            gauges: gaugeId ? [{ id: gaugeId.trim().replace(/\s+/g, ''), isPrimary: true }] : []
           }));
         }
         setLoading(false);
@@ -294,7 +294,7 @@ export default function RiverEditor() {
       });
       
       const parsedGauges = (riverData.gauges || []).map((g: any) => {
-         let sanitized = g.id.trim().toUpperCase().replace(/\s+/g, '');
+         let sanitized = g.id.trim().replace(/\s+/g, '');
          if (!sanitized.includes(':') && sanitized.length > 0) sanitized = "USGS:" + sanitized;
          return { ...g, id: sanitized };
       }).filter((g: any) => g.id && g.id.includes(":") && g.id.split(":")[1].trim().length > 0);
