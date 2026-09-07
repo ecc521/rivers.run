@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchAPI } from '../../services/api';
+import { formatLogDateTime } from '../../utils/dateFormat';
 
 export default function SystemAdminTab() {
   const [riverLogs, setRiverLogs] = useState<any[]>([]);
@@ -73,10 +74,15 @@ export default function SystemAdminTab() {
     setLoadingWorker(true);
     try {
       const response = await fetchAPI(`/admin/worker-logs?offset=${offset}`);
+      const newLogs = response.results.map((log: any) => ({
+          ...log,
+          timestamp: log.timestamp * 1000
+      }));
+
       if (offset === 0) {
-        setWorkerLogs(response.results);
+        setWorkerLogs(newLogs);
       } else {
-        setWorkerLogs(prev => [...prev, ...response.results]);
+        setWorkerLogs(prev => [...prev, ...newLogs]);
       }
       setWorkerNextOffset(response.nextOffset);
     } catch (e: any) {
@@ -111,7 +117,7 @@ export default function SystemAdminTab() {
             columns={['Time', 'Level', 'Component', 'Message']}
             renderRow={(log) => (
                 <tr key={log.id} style={{ borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
-                    <td style={{ padding: '8px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(log.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td style={{ padding: '8px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatLogDateTime(log.timestamp)}</td>
                     <td style={{ padding: '8px 12px' }}>
                         <span style={{ 
                             padding: '2px 6px', 
@@ -156,7 +162,7 @@ export default function SystemAdminTab() {
             columns={['Time', 'Editor', 'Action', 'Target River']}
             renderRow={(log) => (
                 <tr key={`${log.id}-${log.timestamp}`} style={{ borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
-                    <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td style={{ padding: '8px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatLogDateTime(log.timestamp)}</td>
                     <td style={{ padding: '8px 12px' }}>
                         {log.adminUid ? (
                             <span 
@@ -209,7 +215,7 @@ export default function SystemAdminTab() {
             columns={['Time', 'Admin', 'Action', 'Details']}
             renderRow={(log) => (
                 <tr key={`${log.id}-${log.timestamp}`} style={{ borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
-                    <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td style={{ padding: '8px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatLogDateTime(log.timestamp)}</td>
                     <td style={{ padding: '8px 12px' }}>
                         {log.adminUid ? (
                             <span 
