@@ -82,6 +82,60 @@ describe("flowInfoCalculations", () => {
         } as unknown as RiverData;
         expect(calculateRelativeFlow(riverAllNull)).toBeNull();
     });
+
+    it("interpolates stage-height (ft) sublinearly via sqrt-of-difference, matching the exact expected value", () => {
+        // CASE: New River Gorge Bug Regression
+        // Stage height (ft/m) is read against an arbitrary gauge datum, so 0 and
+        // negative thresholds are normal (this river's own min is -2). Log-
+        // interpolating raw ft values breaks on Math.log(0)/Math.log(negative),
+        // which used to produce NaN here — and NaN silently failed every
+        // search-filter comparison, making the river vanish from the site
+        // entirely despite having otherwise-valid data. The replacement curve is
+        // sqrt(current - low) / sqrt(high - low), applied per segment.
+        const thresholds = { min: -2, low: 0, mid: 3, high: 8, max: null };
+
+        // Between low (0) and mid (3): 1 + sqrt(2.57 - 0) / sqrt(3 - 0)
+        const midSegment = calculateRelativeFlow({ ft: 2.57, flow: { unit: "ft", ...thresholds } } as unknown as RiverData);
+        expect(midSegment).toBeCloseTo(1 + Math.sqrt(2.57) / Math.sqrt(3), 6);
+        expect(midSegment).toBeCloseTo(1.925563, 6);
+
+        // Exactly at the low threshold: ratio is 0, so the segment base (1) alone.
+        const atLow = calculateRelativeFlow({ ft: 0, flow: { unit: "ft", ...thresholds } } as unknown as RiverData);
+        expect(atLow).toBe(1);
+
+        // Exactly at the mid threshold: ratio is 1 (sqrt(3)/sqrt(3)), so 1 + 1 = 2.
+        const atMid = calculateRelativeFlow({ ft: 3, flow: { unit: "ft", ...thresholds } } as unknown as RiverData);
+        expect(atMid).toBe(2);
+
+        // Between a negative min (-2) and the 0 low threshold: sqrt(1) / sqrt(2),
+        // no segment base since this is the first (minrun-lowflow) segment.
+        const belowZero = calculateRelativeFlow({ ft: -1, flow: { unit: "ft", ...thresholds } } as unknown as RiverData);
+        expect(belowZero).toBeCloseTo(Math.sqrt(1) / Math.sqrt(2), 6);
+        expect(belowZero).toBeCloseTo(0.707107, 6);
+    });
+
+    it("keeps log-scale interpolation for cfs, matching the exact expected value (unaffected by the ft sublinear change)", () => {
+        const river = {
+          cfs: 250,
+          flow: { unit: "cfs", min: 100, low: 200, mid: 500, high: 1000, max: 2000 }
+        } as unknown as RiverData;
+        // Same as the "calculates relative ratio accurately between low and mid"
+        // case above — pinned again here to make explicit that the ft-specific
+        // branch doesn't change cfs behavior.
+        expect(calculateRelativeFlow(river)).toBeCloseTo(1.2435, 3);
+    });
+
+    it("falls back to a linear (not log) cfs ratio when a threshold is non-positive, with an exact expected value", () => {
+        // A "min" of 0 cfs is a real scenario (e.g. a gauge during drought).
+        // Math.log(0) would be -Infinity/NaN, so this segment falls back to a
+        // plain linear ratio instead: (current - low) / (high - low).
+        const river = {
+          cfs: 50,
+          flow: { unit: "cfs", min: -10, low: 0, mid: 100, high: 200, max: 400 }
+        } as unknown as RiverData;
+        // Between low (0) and mid (100): 1 + (50 - 0) / (100 - 0) = 1.5 exactly.
+        expect(calculateRelativeFlow(river)).toBe(1.5);
+    });
   });
 
   describe("calculateColor", () => {

@@ -281,7 +281,12 @@ function matchSkill(r: RiverData, query: AdvancedSearchQuery): boolean {
 function matchFlow(r: RiverData, query: AdvancedSearchQuery): boolean {
   if (query.flowMin !== undefined && query.flowMax !== undefined) {
     if (r.dam && query.includeDams) return true;
-    if (r.running === undefined) return !!query.includeUnknownFlow;
+    // A bad threshold config (e.g. a 0 or negative "low" on a stage-height river)
+    // can make calculateRelativeFlow produce NaN. NaN fails every numeric
+    // comparison below, so without this check a river with otherwise-fine data
+    // would silently vanish from every default search instead of being treated
+    // as "flow unknown" like a river with no running value at all.
+    if (r.running === undefined || Number.isNaN(r.running)) return !!query.includeUnknownFlow;
     return r.running >= query.flowMin! && r.running <= query.flowMax!;
   }
   return true;

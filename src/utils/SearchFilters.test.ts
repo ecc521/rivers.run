@@ -110,6 +110,24 @@ describe("SearchFilters", () => {
       expect(results.some(r => r.id === "s2")).toBe(true);
     });
 
+    it("treats a NaN running value the same as unknown flow, instead of failing every comparison", () => {
+      // CASE: New River Gorge Bug Regression
+      // A bad threshold config used to make calculateRelativeFlow produce NaN.
+      // Since NaN fails every numeric comparison, that river would silently
+      // disappear from every default search (flowMin/flowMax are always set)
+      // instead of being treated like any other river with no flow data.
+      const nanRiver = { id: "nan1", name: "Broken Threshold River", running: NaN } as RiverData;
+
+      const defaultResults = filterRivers([nanRiver], defaultAdvancedSearchQuery);
+      expect(defaultResults.length).toBe(1);
+
+      const excludeUnknown = filterRivers([nanRiver], {
+        ...defaultAdvancedSearchQuery,
+        includeUnknownFlow: false,
+      });
+      expect(excludeUnknown.length).toBe(0);
+    });
+
     it("filters by distance (lambert projection approximation)", () => {
       // User is right at the Lower Green put-in
       const query: AdvancedSearchQuery = {

@@ -90,10 +90,32 @@ export function calculateRelativeFlow(river: RiverData): number | null {
   const parsedValues = calculateParsedThresholds(thresholds);
   const [minrun, lowflow, midflow, highflow, maxrun] = parsedValues;
 
+  // Stage height (ft/m) is read against an arbitrary, site-specific gauge
+  // datum: it can be negative, zero, or positive, and only the *differences*
+  // between readings carry any meaning — unlike cfs/cms, which are a real
+  // physical rate where order-of-magnitude differences are what paddlers
+  // actually feel, so log-interpolation stays meaningful there.
+  const isStageHeight = river.flow.unit === "ft" || river.flow.unit === "m";
+
   const calculateRatio = (low: number, high: number, current: number) => {
-    return (
-      (Math.log(current) - Math.log(low)) / (Math.log(high) - Math.log(low))
-    );
+    const span = high - low;
+    // Misconfigured/duplicate thresholds (span <= 0) would otherwise divide
+    // by zero; split the difference rather than propagate NaN/Infinity.
+    if (span <= 0) return 0.5;
+
+    if (isStageHeight) {
+      // Math.log() of a non-positive stage height is NaN/-Infinity, so we
+      // can't log-interpolate raw values here. sqrt of the difference gives
+      // the same kind of gentle, sublinear compression log gave us for cfs,
+      // but it's defined for every real-valued threshold.
+      return Math.sqrt(Math.max(0, current - low)) / Math.sqrt(span);
+    }
+
+    // cfs/cms should very rarely be non-positive (e.g. a "min" of 0 cfs
+    // during drought), but guard it the same way rather than risk the exact
+    // NaN-from-log(0) bug this function used to have.
+    if (low <= 0 || current <= 0) return (current - low) / span;
+    return (Math.log(current) - Math.log(low)) / (Math.log(high) - Math.log(low));
   };
 
   if (minrun !== undefined && flowLevel <= minrun) return 0;
