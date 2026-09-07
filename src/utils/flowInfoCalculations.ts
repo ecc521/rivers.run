@@ -1,7 +1,22 @@
 import type { RiverData } from "../types/River";
 
-// Used for converting flow values logarithmically between thresholds
-function logDist(low: number, high: number, ratio: number = 0.5): number {
+// Volume (cfs/cms) is a physical rate: always positive, and scaled
+// logarithmically because order of magnitude is what paddlers actually feel.
+// Stage height (ft/m) is read against an arbitrary gauge datum, so it can be
+// zero or negative and only the differences between readings mean anything —
+// it is scaled linearly, and Math.log() would give NaN for it anyway.
+export function isStageHeightUnit(unit: string | undefined): boolean {
+  return unit === "ft" || unit === "m";
+}
+
+// Used for spacing missing thresholds between two known ones
+function logDist(low: number, high: number, ratio: number = 0.5, linear = false): number {
+  if (linear) {
+    const bottom = Math.min(low, high);
+    const top = Math.max(low, high);
+    return bottom + (top - bottom) * ratio;
+  }
+
   let lowLog = Math.log10(low);
   let highLog = Math.log10(high);
   if (lowLog > highLog) {
@@ -15,6 +30,7 @@ function logDist(low: number, high: number, ratio: number = 0.5): number {
 function calculateArrayPosition(
   arr: (number | undefined)[],
   pos: number,
+  linear: boolean,
 ): number | undefined {
   const negativeOptions: number[] = [];
   const positiveOptions: number[] = [];
@@ -43,28 +59,36 @@ function calculateArrayPosition(
   
   const numerator = pos - Math.min(bottomPos, topPos);
 
-  return logDist(arr[topPos]!, arr[bottomPos]!, numerator / denominator);
+  return logDist(arr[topPos]!, arr[bottomPos]!, numerator / denominator, linear);
 }
 
-// Helper to dynamically calculate descending array configurations
-export function calculateParsedThresholds(thresholds: (any)[]): (number | undefined)[] {
+// Helper to dynamically calculate ascending array configurations. Everything it
+// returns is finite and strictly increasing, whatever the stored river config
+// looks like, so callers never have to handle a duplicate or backwards pair.
+export function calculateParsedThresholds(
+  thresholds: (any)[],
+  unit: string | undefined,
+): (number | undefined)[] {
+  const linear = isStageHeightUnit(unit);
   let parsedValues: (number | undefined)[] = thresholds.map(() => undefined);
   let currentMax: number | undefined;
 
   for (let i = 0; i < thresholds.length; i++) {
     const rawValue = thresholds[i];
     const value = (rawValue !== undefined && rawValue !== null && rawValue !== "") ? Number(rawValue) : undefined;
-    if (value !== undefined && !isNaN(value)) {
-      if (currentMax !== undefined && value < currentMax) continue; 
-      parsedValues[i] = currentMax = value;
-    }
+    if (value === undefined || isNaN(value)) continue;
+    // A volume river can't run at 0 cfs, and log scaling is undefined there.
+    if (!linear && value <= 0) continue;
+    // Thresholds must strictly increase; drop any that doesn't.
+    if (currentMax !== undefined && value <= currentMax) continue;
+    parsedValues[i] = currentMax = value;
   }
 
-  // Interplate missing logarithmic zones based off surrounding metrics cleanly
+  // Interpolate missing zones based off surrounding metrics cleanly
   parsedValues = parsedValues.map((val, index) =>
-    val !== undefined ? val : calculateArrayPosition(parsedValues, index),
+    val !== undefined ? val : calculateArrayPosition(parsedValues, index, linear),
   );
-  
+
   return parsedValues;
 }
 
@@ -87,18 +111,17 @@ export function calculateRelativeFlow(river: RiverData): number | null {
     river.flow.max
   ];
 
-  const parsedValues = calculateParsedThresholds(thresholds);
+  const parsedValues = calculateParsedThresholds(thresholds, river.flow.unit);
   const [minrun, lowflow, midflow, highflow, maxrun] = parsedValues;
 
-  // Stage height (ft/m) is measured against an arbitrary gauge datum, so zero
-  // and negative thresholds are normal and Math.log() would yield NaN. Only the
-  // differences carry meaning there, so interpolate linearly.
-  const isStageHeight = river.flow.unit === "ft" || river.flow.unit === "m";
+  const isStageHeight = isStageHeightUnit(river.flow.unit);
 
   const calculateRatio = (low: number, high: number, current: number) => {
     const span = high - low;
-    if (span <= 0) return 0.5; // duplicate/misconfigured thresholds
-    if (isStageHeight || low <= 0 || current <= 0) return (current - low) / span;
+    // Should not happen: calculateParsedThresholds guarantees strictly increasing
+    // values, and positive ones for volume units.
+    if (span <= 0) return 0.5;
+    if (isStageHeight) return (current - low) / span;
     return (Math.log(current) - Math.log(low)) / (Math.log(high) - Math.log(low));
   };
 

@@ -123,7 +123,7 @@ const RiverPage: React.FC = () => {
       pillRiver.flow.mid,
       pillRiver.flow.high,
       pillRiver.flow.max
-    ]);
+    ], pillRiver.flow.unit);
   }, [pillRiver]);
 
   const formatInterpolated = (val: number) => {

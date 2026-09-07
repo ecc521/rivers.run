@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateRelativeFlow, calculateColor, calculateTrend } from "./flowInfoCalculations";
+import { calculateRelativeFlow, calculateColor, calculateTrend, calculateParsedThresholds } from "./flowInfoCalculations";
 import type { RiverData } from "../types/River";
 
 describe("flowInfoCalculations", () => {
@@ -104,13 +104,68 @@ describe("flowInfoCalculations", () => {
         expect(calculateRelativeFlow(river)).toBeCloseTo(1.2435, 3);
     });
 
-    it("falls back to a linear cfs ratio when a threshold is non-positive", () => {
-        // A "min" of 0 cfs is real (e.g. a gauge during drought), and log(0) is -Infinity.
+    it("ignores non-positive cfs thresholds rather than log-scaling them", () => {
+        // A river can't run at 0 cfs, so those thresholds are dropped and
+        // refilled by interpolation (min 25, low 50) instead of reaching log(0).
         const river = {
           cfs: 50,
           flow: { unit: "cfs", min: -10, low: 0, mid: 100, high: 200, max: 400 }
         } as unknown as RiverData;
-        expect(calculateRelativeFlow(river)).toBe(1.5);
+        expect(calculateRelativeFlow(river)).toBe(1); // exactly at the refilled low
+    });
+
+    it("scores a stage-height river with a non-positive threshold and a missing one", () => {
+        // The missing mid used to interpolate to NaN via Math.log10(0), which
+        // made this river's whole score NaN.
+        const river = {
+          ft: 5,
+          flow: { unit: "ft", min: -2, low: 0, mid: null, high: 8, max: null }
+        } as unknown as RiverData;
+        expect(calculateRelativeFlow(river)).toBe(2.25); // mid fills in at 4
+    });
+  });
+
+  describe("calculateParsedThresholds", () => {
+    it("drops duplicate and out-of-order thresholds, then refills the gap", () => {
+        // Duplicates would give calculateRatio a zero span to divide by. The
+        // dropped slot is re-interpolated, so no gap is left behind.
+        const geometricMid = Math.sqrt(200 * 400); // 282.84
+        for (const raw of [[100, 200, 200, 400, 800], [100, 200, 50, 400, 800]]) {
+          const parsed = calculateParsedThresholds(raw, "cfs");
+          expect(parsed[2]).toBeCloseTo(geometricMid, 6);
+          expect([parsed[0], parsed[1], parsed[3], parsed[4]]).toEqual([100, 200, 400, 800]);
+        }
+    });
+
+    it("keeps negative stage-height thresholds and spaces the gaps linearly", () => {
+        expect(calculateParsedThresholds([-2, 0, null, 8, null], "ft")).toEqual([-2, 0, 4, 8, 12]);
+    });
+
+    it("drops non-positive thresholds for volume units only", () => {
+        expect(calculateParsedThresholds([0, 100, 200, 400, 800], "cfs")[0]).toBeLessThan(100);
+        expect(calculateParsedThresholds([0, 100, 200, 400, 800], "cfs")[0]).toBeGreaterThan(0);
+        expect(calculateParsedThresholds([0, 1, 2, 4, 8], "m")[0]).toBe(0);
+    });
+
+    it("always returns strictly increasing, finite values", () => {
+        // calculateRatio relies on this: a zero span there is unreachable.
+        const candidates = [-5, -1, 0, 0.5, 3, 100, null, ""];
+        let configs: any[][] = [[]];
+        for (let slot = 0; slot < 5; slot++) {
+          configs = configs.flatMap(config => candidates.map(v => [...config, v]));
+        }
+
+        for (const unit of ["cfs", "cms", "ft", "m"]) {
+          const isVolume = !["ft", "m"].includes(unit);
+          for (const config of configs) {
+            const defined = calculateParsedThresholds(config, unit)
+              .filter((v): v is number => v !== undefined);
+            const increasing = defined.every((v, i) => i === 0 || v > defined[i - 1]);
+            const valid = defined.every(v => Number.isFinite(v) && (!isVolume || v > 0));
+            expect({ config, unit, increasing, valid })
+              .toEqual({ config, unit, increasing: true, valid: true });
+          }
+        }
     });
   });
 
