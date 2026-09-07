@@ -4,6 +4,7 @@ import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { FLOW_API_URL } from "../services/api";
 import { useSettings } from "../context/SettingsContext";
 import { applyUnitSettingsToReadings } from "../utils/unitConversions";
+import { getStaleThresholdMs } from "../utils/staleness";
 
 const dynamicFlowCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, { name: string; section?: string }> }>();
 const activeFetches = new Set<string>();
@@ -232,7 +233,7 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
 
     if (latest) {
         const ageInMs = (dataGeneratedAt || Date.now()) - latest.dateTime;
-        enriched.isReadingStale = ageInMs > 2 * 60 * 60 * 1000;
+        enriched.isReadingStale = ageInMs > getStaleThresholdMs(primaryGaugeID);
 
         enriched.cfs = latest.cfs ?? enriched.cfs;
         const ftValue = latest.ft;

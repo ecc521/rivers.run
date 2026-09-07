@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import type { RiverData } from "../types/River";
 import { useSettings } from "../context/SettingsContext";
+import { getStaleThresholdMs } from "../utils/staleness";
 
 interface Props {
   river: RiverData;
@@ -138,11 +139,11 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
          }
      }
      if (!latestActualReading) return false;
-     
-     // 2-hour relative staleness rule: Reading must be within 2 hours of the sync generation
+
+     // Relative staleness rule: reading must be within threshold of the sync generation
      const syncTime = dataGeneratedAt || Date.now();
-     return (syncTime - latestActualReading.dateTime) > 2 * 60 * 60 * 1000;
-  }, [rawData, dataGeneratedAt]);
+     return (syncTime - latestActualReading.dateTime) > getStaleThresholdMs(activeGaugeId);
+  }, [rawData, dataGeneratedAt, activeGaugeId]);
 
   const hasForecastData = useMemo(() => {
     return rawData.some((d: any) => d.cfsForecast != null || d.ftForecast != null || d.forecast === true);

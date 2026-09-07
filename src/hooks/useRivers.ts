@@ -7,6 +7,7 @@ import { applyUnitSettings, applyUnitSettingsToReadings } from "../utils/unitCon
 import { computeSearchCache } from "../utils/SearchFilters";
 
 import { deriveRegionMap, getCountryFromPrefix } from "../utils/regions";
+import { getStaleThresholdMs } from "../utils/staleness";
 
 interface UseRiversResult {
   rivers: RiverData[];
@@ -91,10 +92,10 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
 
   if (gaugeRecord && gaugeRecord.readings && gaugeRecord.readings.length > 0) {
     const rawLatest = gaugeRecord.readings[gaugeRecord.readings.length - 1];
-    
-    // 2-hour relative staleness rule: Reading must be within 2 hours of the sync generation
+
+    // Relative staleness rule: reading must be within threshold of the sync generation
     const readingAgeFromSync = (flowData.generatedAt || Date.now()) - rawLatest.dateTime;
-    if (readingAgeFromSync > 2 * 60 * 60 * 1000) {
+    if (readingAgeFromSync > getStaleThresholdMs(activeGaugeId)) {
         river.isReadingStale = true;
     }
 
@@ -143,9 +144,9 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
 
    const rawLatest = gData.readings[gData.readings.length - 1];
 
-   // 2-hour relative staleness rule
+   // Relative staleness rule
    const readingAgeFromSync = (gaugeData.generatedAt || Date.now()) - rawLatest.dateTime;
-   const isStale = readingAgeFromSync > 2 * 60 * 60 * 1000;
+   const isStale = readingAgeFromSync > getStaleThresholdMs(gaugeId);
 
    const latest = applyUnitSettings(rawLatest, settings);
    const { flowUnits } = settings;

@@ -4,6 +4,7 @@ import { ecProvider } from './canada';
 import { ukProvider } from './uk';
 import { irelandProvider } from './ireland';
 import { nwsProvider } from './nws';
+import { usaceProvider } from './usace';
 import { logToD1 } from '../utils/logger';
 import { normalizeGaugeId } from '../utils/formatting';
 import type { Env } from '../index';
@@ -12,7 +13,8 @@ const providers: GaugeProvider[] = [
     usgsProvider,
     ecProvider,
     ukProvider,
-    irelandProvider
+    irelandProvider,
+    usaceProvider
 ];
 
 /**

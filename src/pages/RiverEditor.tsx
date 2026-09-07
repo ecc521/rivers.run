@@ -1151,16 +1151,18 @@ const GaugeItem: React.FC<{
         <option value="USGS">USGS</option>
         <option value="EC">Environment Canada (EC)</option>
         <option value="NWS">NWS / Weather.gov</option>
+        <option value="USACE">USACE Reservoir (Lake Level)</option>
       </select>
 
-      <input 
-        type="text" 
-        style={{ flex: 1, padding: '8px', boxSizing: 'border-box' }} 
+      <input
+        type="text"
+        style={{ flex: 1, padding: '8px', boxSizing: 'border-box' }}
         placeholder={(() => {
           if (agency === "USGS") return "e.g., 01646500";
           if (agency === "EC") return "e.g., 08MA002";
+          if (agency === "USACE") return "e.g., LRH.Summersville-Lake";
           return "e.g., LINC2";
-        })()} 
+        })()}
         value={code} 
         onChange={(e) => onUpdate({ id: `${agency}:${e.target.value}` })}
       />
