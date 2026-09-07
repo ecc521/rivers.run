@@ -210,8 +210,13 @@ const gaugeRoute = createRoute({
 });
 
 app.openapi(gaugeRoute, async (c) => {
-    const { prefix, id } = c.req.valid('param');
+    const rawParams = c.req.valid('param');
     const { units } = c.req.valid('query') as any;
+    // Normalize the prefix the same way historyRoute/gaugeRegistry do, so a
+    // non-canonically-cased prefix (e.g. "usace") still resolves - the id half
+    // (after the ":") is passed through untouched, since providers like USACE use
+    // case-sensitive location slugs there.
+    const [prefix, id] = normalizeGaugeId(`${rawParams.prefix}:${rawParams.id}`).split(":");
     const provider = providers[prefix];
     if (!provider) return c.json({ error: "Provider not found" }, 404);
 

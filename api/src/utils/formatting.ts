@@ -5,7 +5,7 @@ export function normalizeGaugeId(val: string): string {
     const cleaned = val.trim().replace(/\s+/g, "");
     if (cleaned.includes(":")) {
         const [prefix, id] = cleaned.split(":");
-        const normalizedPrefix = ["USGS", "NWS", "EC", "UK", "ireland"].find(
+        const normalizedPrefix = ["USGS", "NWS", "EC", "UK", "ireland", "USACE"].find(
             p => p.toLowerCase() === prefix.toLowerCase()
         ) || prefix;
         return `${normalizedPrefix}:${id}`;
