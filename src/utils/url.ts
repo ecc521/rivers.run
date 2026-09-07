@@ -37,3 +37,14 @@ export const getRiverShareUrl = (river: { id: string | number, name: string, sec
     const prefix = river.isGauge ? '/gauge/' : '/river/';
     return getShareBaseUrl(`${prefix}${river.id}/${slug}`);
 };
+
+/**
+ * Generates a full shareable URL for a list's detail page (title, description,
+ * river count, Clone action) — matches the /lists/{id}/{slug} shape emitted by
+ * the sitemap generator in api-flow/src/services/sitemap.ts.
+ */
+export const getListShareUrl = (list: { id: string, title: string }) => {
+    const slug = slugify(list.title);
+    const path = slug ? `/lists/${list.id}/${slug}` : `/lists/${list.id}`;
+    return getShareBaseUrl(path);
+};

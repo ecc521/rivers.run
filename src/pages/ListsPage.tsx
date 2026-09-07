@@ -9,7 +9,7 @@ import { useSEO } from "../hooks/useSEO";
 import { ListEditorModal } from "../components/ListEditorModal";
 import { AuthorHoverCard } from "../components/AuthorHoverCard";
 import { NotificationPreferencesBar } from "../components/NotificationPreferencesBar";
-import { getShareBaseUrl } from "../utils/url";
+import { getListShareUrl } from "../utils/url";
 import { Capacitor } from "@capacitor/core";
 import { useTranslation } from "react-i18next";
 
@@ -413,7 +413,7 @@ const ListsPage: React.FC = () => {
 
             <button
                onClick={async () => {
-                  const url = `${getShareBaseUrl("/")}?list=${list.id}`;
+                  const url = getListShareUrl(list);
                   if (Capacitor.isNativePlatform() && navigator.share) {
                       try {
                           await navigator.share({

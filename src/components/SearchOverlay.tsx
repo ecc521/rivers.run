@@ -208,62 +208,60 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
             gap: "20px",
           }}
         >
-          {!localQuery.listId && (
-            <div style={{...getSectionStyle(), backgroundColor: "var(--surface-hover)", padding: "15px", borderRadius: "8px", border: "1px solid var(--border)"}}>
-              <label style={getLabelStyle()}>Sharable Link to This Search</label>
-              <div style={{ display: "flex", gap: "10px", marginTop: "5px" }}>
-                <input 
-                    type="text" 
-                    readOnly 
-                    value={shareUrl}
-                    style={{
-                        flex: 1,
-                        padding: "8px 12px",
-                        borderRadius: "8px",
-                        border: "1px solid var(--border)",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--text)",
-                        fontSize: "0.85rem"
-                    }}
-                />
-                <button 
-                    onClick={async () => {
-                        if (Capacitor.isNativePlatform() && navigator.share) {
-                            try {
-                                await navigator.share({
-                                    title: "Rivers.run Search Results",
-                                    url: shareUrl
-                                });
-                            } catch (err) {
-                                console.warn("Share failed", err);
-                            }
-                        } else {
-                            try {
-                                await navigator.clipboard.writeText(shareUrl);
-                                setCopied(true);
-                                setTimeout(() => setCopied(false), 2000);
-                            } catch (err) {
-                                console.error("Failed to copy", err);
-                            }
-                        }
-                    }}
-                    style={{
-                        padding: "8px 16px",
-                        borderRadius: "8px",
-                        border: "none",
-                        backgroundColor: copied ? "var(--success, #10b981)" : "var(--primary)",
-                        color: "white",
-                        fontWeight: "bold",
-                        cursor: "pointer",
-                        fontSize: "0.85rem",
-                        transition: "all 0.2s"
-                    }}
-                >
-                    {copied ? "Copied!" : (Capacitor.isNativePlatform() ? "Share" : "Copy")}
-                </button>
-              </div>
+          <div style={{...getSectionStyle(), backgroundColor: "var(--surface-hover)", padding: "15px", borderRadius: "8px", border: "1px solid var(--border)"}}>
+            <label style={getLabelStyle()}>Sharable Link to This Search</label>
+            <div style={{ display: "flex", gap: "10px", marginTop: "5px" }}>
+              <input
+                  type="text"
+                  readOnly
+                  value={shareUrl}
+                  style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border)",
+                      backgroundColor: "var(--surface)",
+                      color: "var(--text)",
+                      fontSize: "0.85rem"
+                  }}
+              />
+              <button
+                  onClick={async () => {
+                      if (Capacitor.isNativePlatform() && navigator.share) {
+                          try {
+                              await navigator.share({
+                                  title: "Rivers.run Search Results",
+                                  url: shareUrl
+                              });
+                          } catch (err) {
+                              console.warn("Share failed", err);
+                          }
+                      } else {
+                          try {
+                              await navigator.clipboard.writeText(shareUrl);
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                          } catch (err) {
+                              console.error("Failed to copy", err);
+                          }
+                      }
+                  }}
+                  style={{
+                      padding: "8px 16px",
+                      borderRadius: "8px",
+                      border: "none",
+                      backgroundColor: copied ? "var(--success, #10b981)" : "var(--primary)",
+                      color: "white",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                      transition: "all 0.2s"
+                  }}
+              >
+                  {copied ? "Copied!" : (Capacitor.isNativePlatform() ? "Share" : "Copy")}
+              </button>
             </div>
-          )}
+          </div>
 
           <div style={getSectionStyle()}>
             <label style={getLabelStyle()}>River Name Contains</label>

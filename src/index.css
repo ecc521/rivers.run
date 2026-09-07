@@ -1276,3 +1276,19 @@ Those include name,section,skill,quality, and flow info*/
     fill: var(--surface);
     stroke: var(--text-secondary);
 }
+
+/* Copy-link button label: short form on narrow phones, full form once there's room. */
+.copylink-label-full {
+    display: none;
+}
+.copylink-label-short {
+    display: inline;
+}
+@media screen and (min-width: 360px) {
+    .copylink-label-full {
+        display: inline;
+    }
+    .copylink-label-short {
+        display: none;
+    }
+}

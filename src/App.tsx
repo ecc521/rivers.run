@@ -210,7 +210,7 @@ function App() {
                         <Route path="/gauge/:id/:slug?" element={<Home />} />
                         <Route path="/map" element={<MapPage />} />
                         <Route path="/lists" element={<ListsPage />} />
-                        <Route path="/lists/:id" element={<Home />} />
+                        <Route path="/lists/:id/:slug?" element={<Home />} />
                         <Route path="/clubs" element={<Suspense fallback={<div className="page-content center"><h2>Loading Clubs...</h2></div>}><Clubs /></Suspense>} />
                         <Route path="/favorites" element={<ListsPage />} />
                         <Route path="/faq" element={<Suspense fallback={<div className="page-content center"><h2>Loading FAQ...</h2></div>}><FAQ /></Suspense>} />

@@ -9,7 +9,10 @@ import { useSearchParams, useParams, useLocation as useRouterLocation, useNaviga
 import { fetchAPI } from "../services/api";
 import { useRivers } from "../hooks/useRivers";
 import { useLists, type UserList } from "../context/ListsContext";
+import { useAuth } from "../context/AuthContext";
 import { ListEditorModal } from "../components/ListEditorModal";
+import { getShareBaseUrl } from "../utils/url";
+import { Capacitor } from "@capacitor/core";
 import {
   calculateColor,
 } from "../utils/flowInfoCalculations";
@@ -52,7 +55,9 @@ const Home: React.FC = () => {
 
   const [sharedList, setSharedList] = useState<UserList | null>(null);
   const [showListModal, setShowListModal] = useState(false);
-  const { createList } = useLists();
+  const [listEditorMode, setListEditorMode] = useState<"shared" | "copy">("shared");
+  const { createList, myLists } = useLists();
+  const { isModerator } = useAuth();
 
   useEffect(() => {
      if (isListOverlay && decodedId) {
@@ -61,6 +66,7 @@ const Home: React.FC = () => {
                 const data = await fetchAPI(`/lists/${decodedId}`);
                 if (data) {
                    setSharedList(data as UserList);
+                   setListEditorMode("shared");
                    setShowListModal(true);
                 } else {
                    await alert("This list could not be found. It may have been deleted.");
@@ -75,6 +81,7 @@ const Home: React.FC = () => {
      } else {
         setShowListModal(false);
         setSharedList(null);
+        setListEditorMode("shared");
      }
   }, [isListOverlay, decodedId, navigate]);
 
@@ -114,6 +121,7 @@ const Home: React.FC = () => {
 
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [listTitle, setListTitle] = useState<string | null>(null);
+  const [viewLinkCopied, setViewLinkCopied] = useState(false);
 
   // Decoupled from searchQuery.normalSearch so typing stays instant — the
   // expensive filterRivers() pass over ~15k rivers is debounced instead of
@@ -407,6 +415,29 @@ const Home: React.FC = () => {
     updateSetting("homePageDefaultSearch", null);
   };
 
+  const handleCopyViewLink = async () => {
+    const cleaned: AdvancedSearchQuery = { ...searchQuery, normalSearch: searchInputValue };
+    const url = new URL(getShareBaseUrl("/"));
+    url.search = serializeQueryToParams(cleaned, { includeCoords: true });
+    const shareUrl = url.toString();
+
+    if (Capacitor.isNativePlatform() && navigator.share) {
+      try {
+        await navigator.share({ title: "Rivers.run", url: shareUrl });
+      } catch (err) {
+        console.warn("Share failed", err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setViewLinkCopied(true);
+        setTimeout(() => setViewLinkCopied(false), 2000);
+      } catch (err) {
+        console.error("Failed to copy link", err);
+      }
+    }
+  };
+
   const handleCountryChange = (country: string) => {
     const params = new URLSearchParams(searchParams);
     params.delete("state"); // Clear state when switching country
@@ -687,6 +718,35 @@ const Home: React.FC = () => {
                 <span aria-hidden="true">{isCurrentViewHome ? "✓" : "⌂"}</span>
                 {isCurrentViewHome ? t("home.isYourHome") : t("home.setAsHome")}
             </button>
+            {/* Copy a link to this exact search/list view */}
+            <button
+                onClick={handleCopyViewLink}
+                title={t("home.copyLinkTitle")}
+                style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "5px 14px",
+                    borderRadius: "50px",
+                    border: "1px solid var(--primary)",
+                    backgroundColor: viewLinkCopied ? "var(--primary)" : "transparent",
+                    color: viewLinkCopied ? "#ffffff" : "var(--primary)",
+                    cursor: "pointer",
+                    fontSize: "0.85em",
+                    fontWeight: 600,
+                    transition: "all 0.2s"
+                }}
+            >
+                <span aria-hidden="true">🔗</span>
+                {viewLinkCopied ? (
+                    t("home.linkCopied")
+                ) : (
+                    <>
+                        <span className="copylink-label-short">{t("home.copyLinkShort")}</span>
+                        <span className="copylink-label-full">{t("home.copyLink")}</span>
+                    </>
+                )}
+            </button>
          </div>
       )}
 
@@ -754,26 +814,31 @@ const Home: React.FC = () => {
       {showListModal && sharedList && (
          <ListEditorModal
             isOpen={showListModal}
-            mode="shared"
-            initialTitle={sharedList.title}
+            mode={listEditorMode}
+            initialTitle={listEditorMode === "copy" ? `Clone of ${sharedList.title}` : sharedList.title}
             initialDescription={sharedList.description}
             targetList={sharedList}
             onClose={() => {
               setShowListModal(false);
               navigate(`/?list=${sharedList.id}`);
             }}
-            onSave={async () => {}}
-            onCopySharedList={async (list) => {
+            onSave={async (title, description) => {
                try {
-                  const newId = await createList(`Copy of ${list.title}`, list.description || "", false, list.rivers);
-                  if (newId) {
-                      await alert("Successfully imported list to your lists!");
-                      setShowListModal(false);
-                      navigate(`/lists`);
-                  }
+                  await createList(title, description, false, sharedList.rivers);
+                  await alert("List cloned successfully! It is now in 'My Lists'.");
+                  setShowListModal(false);
+                  navigate(`/lists`);
                } catch (e: any) {
                   await alert(e.message);
                }
+            }}
+            onCopySharedList={async (_list) => {
+               const limit = isModerator ? 500 : 20;
+               if (myLists.length >= limit) {
+                  await alert(`You have reached the limit of ${limit} custom lists. You cannot clone another list until you delete one of your own.`);
+                  return;
+               }
+               setListEditorMode("copy");
             }}
          />
       )}

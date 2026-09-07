@@ -4,7 +4,7 @@ import { useRivers } from "../hooks/useRivers";
 import { useAuth } from "../context/AuthContext";
 import { useModal } from "../context/ModalContext";
 import { fetchAPI } from "../services/api";
-import { getShareBaseUrl } from "../utils/url";
+import { getListShareUrl } from "../utils/url";
 import { WatchSyncModal } from "./WatchSyncModal";
 import { Capacitor } from "@capacitor/core";
 import {
@@ -315,7 +315,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
 
   const handleCopyLink = async () => {
      if (targetList) {
-        const url = `${getShareBaseUrl("/")}?list=${targetList.id}`;
+        const url = getListShareUrl(targetList);
 
         if (Capacitor.isNativePlatform() && navigator.share) {
             try {
@@ -444,7 +444,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
             {(mode === "edit" || mode === "shared") && !!activeList && (
                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                  <button type="button" onClick={handleCopyLink} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
-                   <span style={{ fontSize: "1.1em" }}>🔗</span> Share
+                   <span style={{ fontSize: "1.1em" }}>🔗</span> Share List
                  </button>
                  {!!user && (
                    <button type="button" onClick={() => setShowWatchSync(true)} style={{ padding: "6px 12px", backgroundColor: "var(--surface-hover)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -479,7 +479,7 @@ export const ListEditorModal: React.FC<ListEditorModalProps> = ({
                       onClick={handleDuplicateList}
                       style={{ padding: "10px 16px", backgroundColor: "var(--primary)", border: "none", color: "white", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", flex: 1 }}
                    >
-                      Import to My Lists
+                      Clone
                    </button>
                )}
                {!user && (
