@@ -102,8 +102,8 @@ describe('Sitemap Generation Engine', () => {
         expect(xml).toContain('<loc>https://rivers.run/river/gauge-river/ohiopyle-gauge</loc>');
 
         // Verify Standalone Gauges (0.4)
-        expect(xml).toContain('<loc>https://rivers.run/gauge/USGS:03081500/yough-river-at-ohiopyle</loc>');
-        expect(xml).toContain('<loc>https://rivers.run/gauge/UK:1234/thames-at-london</loc>');
+        expect(xml).toContain('<loc>https://rivers.run/gauge/USGS%3A03081500/yough-river-at-ohiopyle</loc>');
+        expect(xml).toContain('<loc>https://rivers.run/gauge/UK%3A1234/thames-at-london</loc>');
         expect(xml).toContain('<priority>0.4</priority>');
 
         // Verify Playlists (0.5)

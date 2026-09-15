@@ -40,14 +40,14 @@ export async function generateSitemap(env: Env, registryMetadata: Record<string,
             let slug = slugify(river.name);
             if (river.section) slug += '-' + slugify(river.section);
             const prefix = '/river'; // Records in 'rivers' table are curated rivers
-            xml += `  <url>\n    <loc>${SITE_URL}${prefix}/${river.id}/${slug}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+            xml += `  <url>\n    <loc>${SITE_URL}${prefix}/${encodeURIComponent(river.id)}/${slug}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         }
 
         // Standalone Gauges (Priority 0.4)
         for (const [fullId, meta] of Object.entries(registryMetadata)) {
             if (curatedRiverIdsSet.has(fullId)) continue; 
             const slug = slugify(meta.name || fullId);
-            xml += `  <url>\n    <loc>${SITE_URL}/gauge/${fullId}/${slug}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.4</priority>\n  </url>\n`;
+            xml += `  <url>\n    <loc>${SITE_URL}/gauge/${encodeURIComponent(fullId)}/${slug}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.4</priority>\n  </url>\n`;
         }
 
         // Public Lists (Priority 0.5)
