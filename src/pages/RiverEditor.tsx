@@ -50,7 +50,8 @@ export default function RiverEditor() {
   useSEO({
     title: isReviewMode ? "Review Contribution" : isNew ? "Create River Entry" : "Edit River Entry",
     description: "Manage river entries and gauge associations on Rivers.run.",
-    canonical: "https://rivers.run/create"
+    canonical: "https://rivers.run/create",
+    noindex: !!(riverId || queueId)
   });
 
   const stableRandomId = useMemo(() => {
