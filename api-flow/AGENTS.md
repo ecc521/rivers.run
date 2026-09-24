@@ -40,33 +40,70 @@ not re-add it.
 
 ## 3. Flow History Store (`FLOW_DB`)
 
-30 days of readings for **every** gauge live in `flow-db`, a D1 database bound
-separately from `DB`/`rivers-db`. Keep them separate: a D1 database is
-single-threaded, and this takes a ~15k-row write burst every 15 minutes that
-would otherwise contend with live user CRUD from `api/`.
+30 days of observations for every gauge live in `flow-db`, a D1 database kept separate
+from `rivers-db` so ingest never contends with user CRUD. The binding is optional in
+code: unbound, the worker uses the old stateless path (`performDataSync`). Schema:
+`migrations/2026-08-01_flow_history_store.sql`. `wrangler.toml` ships a placeholder
+`database_id`; create the database, paste its id, then apply the migration:
 
-The binding is **optional in code**. With `FLOW_DB` unbound the worker falls
-back to the original stateless path (`performDataSync` + the `sitedata.json`
-resiliency pass), so a missing binding degrades rather than breaks. `wrangler.toml`
-ships a placeholder `database_id`; see [docs/flow-history-store.md](../docs/flow-history-store.md)
-for the two commands that create and migrate it.
+```bash
+npx wrangler d1 create flow-db
+npx wrangler d1 execute flow-db --remote --config api-flow/wrangler.toml --file api-flow/migrations/2026-08-01_flow_history_store.sql
+```
 
-Things that will bite you if you edit this area:
+**Ring buffer.** `gauge_readings` has one row per (gauge, 15-minute slot), with
+`slot = floor(ts / 15 min) mod 3072` (32 days). A new reading overwrites the slot's
+previous lap, so retention needs no DELETEs (D1 bills deleted rows as writes). Every
+read must filter `ts >= now - 30d`. A slot keeps the reading closest to its start.
+`ts` is the slot start; `off` is the source reading's offset in seconds, and served
+readings use `ts + off`.
 
-- **`json_each`, not multi-row VALUES.** D1 caps a query at 100 bound
-  parameters, so every bulk write passes one JSON parameter. Batches are sorted
-  by `(gauge_key, ts)` before insert — `gauge_readings` is `WITHOUT ROWID` and
-  clustered on that key.
-- **The `CROSS JOIN` in `LATEST_ALL_SQL` is load-bearing.** It pins the join
-  order; a plain JOIN makes SQLite full-scan the fact table (166ms vs 2.5ms at
-  500k rows, growing with total readings). A test asserts the query plan.
-- **`last_modified` is tier-A only.** It is the only USGS revision signal, but
-  it does not scale past ~10 sites per request (25 sites ~48s, 100+ is
-  server-cancelled). See `usgsIncremental.ts` for the measured numbers.
-- **Request size scales with sites × window**, not sites alone — `MAX_SITE_DAYS`
-  exists because 10 cold-start gauges over 30 days is ~66MB in one request.
-- Tier B ingest adds **no** provider requests: it keeps what the existing bulk
-  `getLatest` calls already return. `getLatestHistories` is the hook for that.
+**Guarded writes.** D1 bills rows written, so every upsert (`flowStore.ts`) has a
+`WHERE` that makes an unchanged row a no-op. Replaying a batch must write 0 rows;
+tests assert this. `gauge_sync_state` and `sync_meta` are also only written on change.
+Bulk writes pass one JSON parameter through `json_each` (D1 allows 100 bound
+parameters). Reads use `CROSS JOIN` plus a slot range so they seek the primary key.
+
+**Ingest** (`flowSync.ts`, `usgsIngest.ts`), every 15 minutes:
+
+- USGS, all registry gauges, 200 sites per request: a `datetime=<now-6h>/..` window
+  sweep every cycle; an hourly revision sweep (`last_modified` since a global cursor,
+  bounded by `datetime=<now-30d>/..`, cursor advanced only if every batch completed);
+  and backfill (failed windows first, then 7 days, then 30) chunked to 100 site-days
+  per request. Backfill and revisions stop when `X-RateLimit-Remaining` falls below
+  300. `FLOW_BACKFILL_MAX_REQUESTS` caps backfill requests per cycle (default 100).
+- EC: province CSVs over the last 3h (widened after missed cycles, up to 24h).
+- NWS: stageflow over the same window; forecast rows go to `sitedata.json`, never the store.
+- UK, IE: latest-only bulk calls; river-linked gauges also fetch 3h of history.
+
+`/history` and `/gauge` serve from the store only when `gauge_sync_state` says it
+covers the whole request (USGS after backfill, EC/NWS from first sight, never UK/IE).
+Otherwise they fetch live. With `forecast=true`, stored gauges fetch only forecasts live.
+
+`node api-flow/tools/estimate-writes.mjs` projects monthly rows written from the
+per-cycle counts logged in local `worker_logs`.
+
+### Model snapshot (`model/usgs_hourly.json.gz` in R2)
+
+Written by the cycle in the first quarter of each UTC hour (`modelSnapshot.ts`).
+Gzipped JSON:
+
+| key | meaning |
+|---|---|
+| `version` | `1` |
+| `generated_at` | ms epoch |
+| `start` | ms epoch label of hour index 0 |
+| `hours`, `step_ms` | `192`, `3600000` |
+| `sites` | USGS site numbers (no prefix), sorted; row `i` of every array below |
+| `discharge_cfs`, `stage_ft` | `sites x hours` hourly means, `null` where no data |
+| `discharge_n`, `stage_n` | `sites x hours` count of readings in each mean (0 to 4) |
+
+Hour `H` (label `start + i * step_ms`) is the mean of the stored readings with
+`H <= ts < H + 1h`, matching pandas `resample("h").mean()` with left labels. The store
+keeps one reading per 15-minute slot, so a full hour has 4. The last hour is the
+current one and is partial. Sentinels (`<= -999999`) are excluded. Every registry USGS
+gauge is listed, even with no data. In Python:
+`np.array(snap["discharge_cfs"], dtype=float)` turns `null` into `nan`.
 
 ## 4. Caching & Return Signatures
 
@@ -75,9 +112,8 @@ Things that will bite you if you edit this area:
   needs no adaptation. Preserve this shape when editing flow payloads in `src/index.ts`.
 - Responses set `Cache-Control` (e.g. `max-age=300`, stale-while-revalidate) and support
   conditional 304 responses. Processed data is persisted to the R2 `flowdata` bucket.
-- The sync includes a resiliency pass: if a gauge fails to fetch (e.g. USGS partial
-  outage), previous readings are recovered from the existing `sitedata.json` so the
-  payload never regresses to empty.
+- The sync includes a resiliency pass: a gauge with no recent reading keeps its
+  readings from the existing `sitedata.json`, so the payload never regresses to empty.
 
 ## 5. Required Secrets
 
