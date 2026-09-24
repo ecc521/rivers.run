@@ -22,13 +22,12 @@ database_name = "rivers-db"
 database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
 
 # Flow history store (see AGENTS.md). Separate from rivers-db so ingest writes
-# never contend with user CRUD. Unbound for now: the store ingest exceeded the
-# 128 MB isolate limit in production, and unbound the worker uses the stateless
-# path (performDataSync). Rebind once the ingest fits.
-# [[d1_databases]]
-# binding = "FLOW_DB"
-# database_name = "flow-db"
-# database_id = "bfdbdd5a-5626-4593-98f6-927ba2f682a4"
+# never contend with user CRUD. Unbound, the worker falls back to the stateless
+# path (performDataSync).
+[[d1_databases]]
+binding = "FLOW_DB"
+database_name = "flow-db"
+database_id = "bfdbdd5a-5626-4593-98f6-927ba2f682a4"
 
 # Forecast model container (src/services/flowModel.ts). One instance, run by
 # the hourly FORECAST_CRON; it reaches R2 only through the Worker. The image is
@@ -36,7 +35,7 @@ database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
 # tagged with that repo's commit; see AGENTS.md to update it.
 [[containers]]
 class_name = "FlowModel"
-image = "registry.cloudflare.com/55098d8696658ea1ee4ec73ae57d1741/flow-serving:78d6d3e"
+image = "registry.cloudflare.com/55098d8696658ea1ee4ec73ae57d1741/flow-serving:6133fdf"
 max_instances = 1
 instance_type = "standard-2"
 
