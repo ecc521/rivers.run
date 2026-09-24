@@ -22,12 +22,11 @@ database_name = "rivers-db"
 database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
 
 # Flow history store (see AGENTS.md). Separate from rivers-db so ingest writes
-# never contend with user CRUD. Placeholder id: create the database and apply
-# the migration before deploying (commands in AGENTS.md).
+# never contend with user CRUD.
 [[d1_databases]]
 binding = "FLOW_DB"
 database_name = "flow-db"
-database_id = "REPLACE_WITH_FLOW_DB_ID"
+database_id = "bfdbdd5a-5626-4593-98f6-927ba2f682a4"
 
 # Forecast model container (src/services/flowModel.ts). One instance, run by
 # the hourly FORECAST_CRON; it reaches R2 only through the Worker.
