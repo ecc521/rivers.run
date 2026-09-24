@@ -1,44 +1,63 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createTestD1, type TestD1 } from "./helpers/d1Sqlite";
-import { resolveGaugeKeys, upsertReadings } from "../services/flowStore";
+import { resolveGaugeKeys, upsertSlots, extendCoverage, markRepair, slotStartOf } from "../services/flowStore";
 
-const NOW = 1_779_999_900_000;
-const SNAP = 300_000;
+const NOW = 1_780_002_000_000;
+const SLOT = 900_000;
+const DAY = 86_400_000;
 
 let db: TestD1;
 let app: any;
 let liveCalls: string[];
 
-/**
- * The live provider path is stubbed at the module boundary so these tests can
- * assert *which* source answered — the whole point of the change is that a
- * river-detail view stops hitting USGS.
- */
+// Stub the live providers at the module boundary so tests can see which source answered.
 vi.mock("../services/usgs", async (importOriginal) => {
     const actual = await importOriginal<any>();
     return {
         ...actual,
         usgsProvider: {
             ...actual.usgsProvider,
-            async getHistory(ids: string[], startTs: number, _e?: number, forecast?: boolean) {
+            async getHistory(ids: string[], _s: number, _e?: number, forecast?: boolean) {
                 liveCalls.push(`USGS:${ids.join(",")}${forecast ? ":forecast" : ""}`);
-                return Object.fromEntries(ids.map(id => [id, {
-                    id, name: `Live ${id}`,
-                    readings: forecast
-                        ? [{ dateTime: NOW + SNAP, cfs: 500, isForecast: true }]
-                        : [{ dateTime: NOW, cfs: 999 }],
-                }]));
+                return Object.fromEntries(ids.map(id => [id, { id, name: `Live ${id}`, readings: [{ dateTime: NOW, cfs: 999 }] }]));
+            },
+        },
+    };
+});
+vi.mock("../services/uk", async (importOriginal) => {
+    const actual = await importOriginal<any>();
+    return {
+        ...actual,
+        ukProvider: {
+            ...actual.ukProvider,
+            async getHistory(ids: string[]) {
+                liveCalls.push(`UK:${ids.join(",")}`);
+                return {};
+            },
+        },
+    };
+});
+vi.mock("../services/nws", async (importOriginal) => {
+    const actual = await importOriginal<any>();
+    return {
+        ...actual,
+        nwsProvider: {
+            ...actual.nwsProvider,
+            async getHistory(ids: string[]) {
+                liveCalls.push(`NWS:${ids.join(",")}:history`);
+                return {};
+            },
+            async getForecast(ids: string[]) {
+                liveCalls.push(`NWS:${ids.join(",")}:forecast-only`);
+                return Object.fromEntries(ids.map(id => [id, { id, name: id, readings: [{ dateTime: NOW + 6 * SLOT, ft: 9, isForecast: true }] }]));
             },
         },
     };
 });
 
 beforeEach(async () => {
-    // The route derives its window from Date.now(); pin it so the fixed
-    // timestamps below fall inside the requested range.
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
-
     liveCalls = [];
     db = createTestD1();
     vi.resetModules();
@@ -48,144 +67,127 @@ afterEach(() => { db.close(); vi.useRealTimers(); vi.clearAllMocks(); });
 
 const env = () => ({ FLOW_DB: db, DB: db, FLOW_STORAGE: {} } as any);
 
-const get = (path: string, headers: Record<string, string> = {}) =>
-    app.fetch(new Request(`https://flow.rivers.run${path}`, {
-        headers: { Origin: "https://rivers.run", ...headers },
-    }), env());
+const get = (path: string, headers: Record<string, string> = {}, host = "https://flow.rivers.run") =>
+    app.fetch(new Request(`${host}${path}`, { headers: { Origin: "https://rivers.run", ...headers } }), env());
 
-async function seed(gaugeId: string, readings: Array<{ ts: number; cfs: number }>) {
-    const keys = await resolveGaugeKeys(db, [{
-        gaugeId, provider: gaugeId.split(":")[0], tier: "linked", name: "Stored Gauge",
-    }]);
-    await upsertReadings(db, readings.map(r => ({ gaugeId, ts: r.ts, cfs: r.cfs })), keys, NOW);
+/** Stores readings and marks the gauge covered for 30 days unless told otherwise. */
+async function seed(gaugeId: string, readings: Array<{ ts: number; cfs?: number; ft?: number }>, covered = true) {
+    const { keys } = await resolveGaugeKeys(db, [{ gaugeId, provider: gaugeId.split(":")[0], name: "Stored Gauge" }]);
+    await upsertSlots(db, readings.map(r => ({
+        gaugeId, ts: r.ts, off: 0, cfs: r.cfs ?? null, ft: r.ft ?? null, cms: null, m: null,
+        temp_f: null, precip_in: null, approved: false,
+    })), keys);
+    if (covered) await extendCoverage(db, [keys.get(gaugeId)!], slotStartOf(NOW - 30 * DAY));
+    return keys.get(gaugeId)!;
 }
 
 describe("GET /history", () => {
-    it("serves a stored gauge without touching the provider", async () => {
-        await seed("USGS:03451500", [
-            { ts: NOW - 2 * SNAP, cfs: 100 },
-            { ts: NOW - SNAP, cfs: 110 },
-            { ts: NOW, cfs: 120 },
-        ]);
-
+    it("serves a covered gauge from the store without touching the provider", async () => {
+        await seed("USGS:03451500", [{ ts: NOW - 2 * SLOT, cfs: 100 }, { ts: NOW - SLOT, cfs: 110 }, { ts: NOW, cfs: 120 }]);
         const res = await get("/history?gauges=USGS:03451500&days=28");
         expect(res.status).toBe(200);
-
         const body = await res.json();
+        expect(body["USGS:03451500"]).toMatchObject({ id: "03451500", name: "Stored Gauge" });
         expect(body["USGS:03451500"].readings.map((r: any) => r.cfs)).toEqual([100, 110, 120]);
         expect(liveCalls).toEqual([]);
     });
 
-    it("preserves the legacy payload shape", async () => {
+    it("goes live when stored coverage does not span the request", async () => {
+        const key = await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }], false);
+        await extendCoverage(db, [key], NOW - 2 * DAY);
+        await get("/history?gauges=USGS:03451500&days=7");
+        expect(liveCalls).toEqual(["USGS:03451500"]);
+
+        liveCalls = [];
+        await get("/history?gauges=USGS:03451500&days=1");
+        expect(liveCalls).toEqual([]);
+    });
+
+    it("goes live while a repair is pending", async () => {
+        const key = await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }]);
+        await markRepair(db, [key], NOW - DAY);
+        await get("/history?gauges=USGS:03451500");
+        expect(liveCalls).toEqual(["USGS:03451500"]);
+    });
+
+    it("never serves latest-only providers from the store", async () => {
+        await seed("UK:123", [{ ts: NOW, cfs: 1 }]);
+        const res = await get("/history?gauges=UK:123&days=1");
+        expect(res.status).toBe(200);
+        expect(liveCalls).toEqual(["UK:123"]);
+    });
+
+    it("with forecast=true fetches only forecasts live for stored gauges", async () => {
         await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }]);
-        const body = await (await get("/history?gauges=USGS:03451500")).json();
+        await seed("NWS:ABCD1", [{ ts: NOW - SLOT, ft: 2 }, { ts: NOW, ft: 3 }]);
+        const body = await (await get("/history?gauges=USGS:03451500,NWS:ABCD1&forecast=true")).json();
 
-        expect(body["USGS:03451500"]).toMatchObject({ id: "03451500", name: "Stored Gauge" });
-        expect(Array.isArray(body["USGS:03451500"].readings)).toBe(true);
-        expect(body["USGS:03451500"].readings[0]).toEqual({ dateTime: NOW, cfs: 120 });
+        expect(liveCalls).toEqual(["NWS:ABCD1:forecast-only"]);
+        expect(body["USGS:03451500"].readings).toEqual([{ dateTime: NOW, cfs: 120 }]);
+        expect(body["NWS:ABCD1"].readings.map((r: any) => [r.ft ?? r.ftForecast, !!r.isForecast])).toEqual([[2, false], [3, false], [9, true]]);
     });
 
-    it("falls back to the provider for an unknown gauge", async () => {
-        const body = await (await get("/history?gauges=USGS:99999999")).json();
-
-        expect(liveCalls).toEqual(["USGS:99999999"]);
-        expect(body["USGS:99999999"].readings[0].cfs).toBe(999);
-    });
-
-    it("mixes stored and live gauges in one response", async () => {
-        await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }]);
-        const body = await (await get("/history?gauges=USGS:03451500,USGS:99999999")).json();
-
-        expect(liveCalls).toEqual(["USGS:99999999"]);
-        expect(body["USGS:03451500"].readings[0].cfs).toBe(120);
-        expect(body["USGS:99999999"].readings[0].cfs).toBe(999);
-    });
-
-    it("keeps stored observations when forecasts are requested", async () => {
-        // Forecasts must be fresh, so they stay on the live path — but asking
-        // for them must not discard the stored history.
-        await seed("USGS:03451500", [{ ts: NOW - SNAP, cfs: 100 }, { ts: NOW, cfs: 120 }]);
-        const body = await (await get("/history?gauges=USGS:03451500&forecast=true")).json();
-
-        expect(liveCalls).toEqual(["USGS:03451500:forecast"]);
-        const readings = body["USGS:03451500"].readings;
-        expect(readings.filter((r: any) => !r.isForecast).map((r: any) => r.cfs)).toEqual([100, 120]);
-        expect(readings.some((r: any) => r.isForecast)).toBe(true);
-    });
-
-    it("returns only the delta for ?since=", async () => {
-        await seed("USGS:03451500", [
-            { ts: NOW - 3 * SNAP, cfs: 1 },
-            { ts: NOW - 2 * SNAP, cfs: 2 },
-            { ts: NOW - SNAP, cfs: 3 },
-            { ts: NOW, cfs: 4 },
-        ]);
-
-        const body = await (await get(`/history?gauges=USGS:03451500&since=${NOW - 2 * SNAP}`)).json();
-        expect(body["USGS:03451500"].readings.map((r: any) => r.cfs)).toEqual([3, 4]);
+    it("returns readings from ?since= inclusive", async () => {
+        await seed("USGS:03451500", [1, 2, 3, 4].map(i => ({ ts: NOW - (4 - i) * SLOT, cfs: i })));
+        const body = await (await get(`/history?gauges=USGS:03451500&since=${NOW - 2 * SLOT}`)).json();
+        expect(body["USGS:03451500"].readings.map((r: any) => r.cfs)).toEqual([2, 3, 4]);
     });
 
     it("ignores a ?since= older than the requested window", async () => {
-        await seed("USGS:03451500", [{ ts: NOW, cfs: 4 }]);
-        const res = await get(`/history?gauges=USGS:03451500&days=1&since=${NOW - 400 * 86400000}`);
-        expect(res.status).toBe(200);
+        await seed("USGS:03451500", [{ ts: NOW - 2 * DAY, cfs: 3 }, { ts: NOW, cfs: 4 }]);
+        const res = await get(`/history?gauges=USGS:03451500&days=1&since=${NOW - 400 * DAY}`);
         expect((await res.json())["USGS:03451500"].readings).toHaveLength(1);
     });
 
-    it("304s when the ETag matches", async () => {
+    it("304s on a matching ETag and changes it when a value is revised", async () => {
         await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }]);
-
         const first = await get("/history?gauges=USGS:03451500");
-        const etag = first.headers.get("ETag");
-        expect(etag).toBeTruthy();
-
-        const second = await get("/history?gauges=USGS:03451500", { "If-None-Match": etag! });
+        const etag = first.headers.get("ETag")!;
+        const second = await get("/history?gauges=USGS:03451500", { "If-None-Match": etag });
         expect(second.status).toBe(304);
         expect(await second.text()).toBe("");
+
+        await seed("USGS:03451500", [{ ts: NOW, cfs: 125 }]);
+        const revised = await get("/history?gauges=USGS:03451500", { "If-None-Match": etag });
+        expect(revised.status).toBe(200);
+        expect(revised.headers.get("ETag")).not.toBe(etag);
     });
 
-    it("changes the ETag when a new reading lands", async () => {
-        await seed("USGS:03451500", [{ ts: NOW - SNAP, cfs: 100 }]);
-        const before = (await get("/history?gauges=USGS:03451500")).headers.get("ETag");
-
-        await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }]);
-        const after = (await get("/history?gauges=USGS:03451500")).headers.get("ETag");
-
-        expect(after).not.toBe(before);
-    });
-
-    it("still enforces the existing safety limits", async () => {
+    it("still enforces the safety limits", async () => {
         const many = Array.from({ length: 11 }, (_, i) => `USGS:${i}`).join(",");
         expect((await get(`/history?gauges=${many}`)).status).toBe(400);
         expect((await get("/history?gauges=USGS:1&days=45")).status).toBe(400);
     });
 
     it("falls back to live when the store read throws", async () => {
-        const broken = {
-            prepare: () => { throw new Error("D1 unavailable"); },
-            batch: async () => [],
-        } as any;
-
-        const res = await app.fetch(
-            new Request("https://flow.rivers.run/history?gauges=USGS:03451500", {
-                headers: { Origin: "https://rivers.run" },
-            }),
-            { FLOW_DB: broken, DB: db, FLOW_STORAGE: {} } as any
-        );
-
+        const broken = { prepare: () => { throw new Error("D1 unavailable"); }, batch: async () => [] } as any;
+        const res = await app.fetch(new Request("https://flow.rivers.run/history?gauges=USGS:03451500", {
+            headers: { Origin: "https://rivers.run" },
+        }), { FLOW_DB: broken, DB: db, FLOW_STORAGE: {} } as any);
         expect(res.status).toBe(200);
         expect(liveCalls).toEqual(["USGS:03451500"]);
     });
 
     it("works with no FLOW_DB bound at all", async () => {
-        const res = await app.fetch(
-            new Request("https://flow.rivers.run/history?gauges=USGS:03451500", {
-                headers: { Origin: "https://rivers.run" },
-            }),
-            { DB: db, FLOW_STORAGE: {} } as any
-        );
-
+        const res = await app.fetch(new Request("https://flow.rivers.run/history?gauges=USGS:03451500", {
+            headers: { Origin: "https://rivers.run" },
+        }), { DB: db, FLOW_STORAGE: {} } as any);
         expect(res.status).toBe(200);
         expect(liveCalls).toEqual(["USGS:03451500"]);
+    });
+});
+
+describe("GET /gauge/{prefix}/{id}", () => {
+    it("uses the store only when covered", async () => {
+        await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }]);
+        const res = await get("/gauge/USGS/03451500");
+        expect((await res.json()).readings).toEqual([{ dateTime: NOW, cfs: 120 }]);
+        expect(liveCalls).toEqual([]);
+    });
+});
+
+describe("GET /seed-local-r2", () => {
+    it("is not available outside localhost", async () => {
+        expect((await get("/seed-local-r2")).status).toBe(404);
     });
 });

@@ -20,8 +20,8 @@ import { normalizeGaugeId } from "./utils/formatting";
 import { generateSitemap } from "./services/sitemap";
 import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
-import { runIngestCycle, projectSitedata, readLinkedGaugeIds, runDailyMaintenance } from "./services/flowSync";
-import { readSeries } from "./services/flowStore";
+import { runIngestCycle, projectSitedata, readLinkedGaugeIds, rowsWrittenByCycle, storeCovers } from "./services/flowSync";
+import { readSeries, readSyncState } from "./services/flowStore";
 import { syncUsgsReaches } from "./services/usgsReaches";
 import { verifyUnsubscribeToken } from "./utils/unsubscribeToken";
 import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError, renderUnsubscribeServerError } from "./templates/unsubscribeConfirmation";
@@ -29,12 +29,10 @@ import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUn
 export interface Env {
     FLOW_STORAGE: R2Bucket;
     DB: D1Database;
-    /**
-     * Flow history store — separate D1 database (see wrangler.toml). Optional
-     * so the worker degrades to the pre-store live-fetch path rather than
-     * crashing if the binding is missing.
-     */
+    /** Flow history store (see api-flow/AGENTS.md). Optional: unbound means the legacy path. */
     FLOW_DB?: D1Database;
+    /** Optional per-cycle cap on USGS backfill requests (e.g. for local runs). */
+    FLOW_BACKFILL_MAX_REQUESTS?: string;
     USGS_API_KEY?: string;
     GMAIL_APP_PASSWORD?: string;
     UNSUBSCRIBE_SECRET?: string;
@@ -129,72 +127,66 @@ app.openapi(historyRoute, async (c) => {
     const windowStart = now - (durationDays * 24 * 60 * 60 * 1000);
     const sinceTs = Number(since);
     // `since` narrows the window but can never widen it past the 30-day cap.
-    const start = Number.isFinite(sinceTs) && sinceTs > windowStart ? sinceTs + 1 : windowStart;
+    const start = Number.isFinite(sinceTs) && sinceTs > windowStart ? sinceTs : windowStart;
     const includeForecast = forecast === "true";
 
-    // Prefer the history store: a river-detail view used to trigger a live
-    // 28-day USGS fetch on every load. Gauges the store does not know about
-    // (and forecast requests, which must be fresh) still go to the provider.
+    // Serve from the store only where its coverage spans the whole request.
     let stored: Record<string, GaugeHistory> = {};
+    let fromStore = new Set<string>();
     if (c.env.FLOW_DB) {
         try {
-            stored = await readSeries(c.env.FLOW_DB, gauges, start, now);
+            const state = await readSyncState(c.env.FLOW_DB, gauges);
+            fromStore = new Set(gauges.filter((g: string) => storeCovers(g, state.get(g), start)));
+            if (fromStore.size > 0) stored = await readSeries(c.env.FLOW_DB, [...fromStore], start, now, now);
         } catch (e) {
             console.error("Flow store read failed, falling back to live fetch:", e);
             stored = {};
+            fromStore = new Set();
         }
     }
 
-    const needsLive = gauges.filter((g: string) =>
-        includeForecast || !stored[g] || stored[g].readings.length === 0);
+    const groupByProvider = (ids: string[]) => {
+        const groups: Record<string, string[]> = {};
+        for (const g of ids) {
+            const [prefix, id] = g.split(":");
+            if (!groups[prefix]) groups[prefix] = [];
+            groups[prefix].push(id);
+        }
+        return groups;
+    };
 
-    const providerGroups: Record<string, string[]> = {};
-    needsLive.forEach((g: string) => {
-        const [prefix, id] = g.split(":");
-        if (!providerGroups[prefix]) providerGroups[prefix] = [];
-        providerGroups[prefix].push(id);
-    });
+    const liveGroups = groupByProvider(gauges.filter((g: string) => !fromStore.has(g)));
+    const forecastGroups = includeForecast ? groupByProvider([...fromStore]) : {};
 
-    const promises = Object.entries(providerGroups).map(async ([prefix, ids]) => {
+    const fetchGroup = async (prefix: string, ids: string[], forecastOnly: boolean) => {
         const provider = providers[prefix];
-        if (!provider) return {};
+        if (!provider || (forecastOnly && !provider.getForecast)) return {};
         try {
-            const data = await provider.getHistory(ids, start, undefined, includeForecast, c.env);
+            const data = forecastOnly
+                ? await provider.getForecast!(ids, c.env)
+                : await provider.getHistory(ids, start, undefined, includeForecast, c.env);
             const normalized: Record<string, GaugeHistory> = {};
-            Object.entries(data).forEach(([id, history]) => {
-                normalized[`${prefix}:${id}`] = history;
-            });
+            for (const [id, history] of Object.entries(data)) normalized[`${prefix}:${id}`] = history;
             return normalized;
         } catch (_e) {
             console.error(`Provider ${prefix} history fetch failed:`, _e);
             return {};
         }
-    });
+    };
 
-    const live: Record<string, GaugeHistory> = Object.assign({}, ...(await Promise.all(promises)));
+    const [live, forecasts] = await Promise.all([
+        Promise.all(Object.entries(liveGroups).map(([p, ids]) => fetchGroup(p, ids, false)))
+            .then(parts => Object.assign({}, ...parts) as Record<string, GaugeHistory>),
+        Promise.all(Object.entries(forecastGroups).map(([p, ids]) => fetchGroup(p, ids, true)))
+            .then(parts => Object.assign({}, ...parts) as Record<string, GaugeHistory>),
+    ]);
 
-    // Merge live over stored by timestamp so a forecast request keeps its
-    // stored observations and gains forecast rows, rather than replacing one
-    // with the other.
-    const merged: Record<string, GaugeHistory> = {};
-    for (const gaugeId of new Set<string>([...Object.keys(stored), ...Object.keys(live)])) {
-        const base = stored[gaugeId];
-        const fresh = live[gaugeId];
-
-        if (!base) { merged[gaugeId] = fresh; continue; }
-        if (!fresh) { merged[gaugeId] = base; continue; }
-
-        const byTime = new Map<number, any>();
-        for (const r of base.readings) byTime.set(r.dateTime, r);
-        for (const r of fresh.readings) {
-            byTime.set(r.dateTime, r.isForecast ? r : { ...byTime.get(r.dateTime), ...r });
-        }
-
-        merged[gaugeId] = {
-            ...base,
-            ...fresh,
-            name: base.name || fresh.name,
-            readings: [...byTime.values()].sort((a, b) => a.dateTime - b.dateTime),
+    const merged: Record<string, GaugeHistory> = { ...live };
+    for (const [gaugeId, history] of Object.entries(stored)) {
+        const future = forecasts[gaugeId]?.readings ?? [];
+        merged[gaugeId] = future.length === 0 ? history : {
+            ...history,
+            readings: [...history.readings, ...future].sort((a, b) => a.dateTime - b.dateTime),
         };
     }
 
@@ -203,30 +195,19 @@ app.openapi(historyRoute, async (c) => {
         converted[gaugeId] = toUnitSystemHistory(history, units as Units);
     }
 
-    // Weak ETag over the served content so a repeat view can 304. Cheap to
-    // compute and stable: the newest timestamp plus the reading count fully
-    // characterises an append-only window.
-    const signature = Object.entries(converted)
-        .map(([id, h]) => {
-            const last = h.readings.length > 0 ? h.readings[h.readings.length - 1].dateTime : 0;
-            return `${id}:${h.readings.length}:${last}`;
-        })
-        .sort((a, b) => a.localeCompare(b))
-        .join("|");
-    const etag = `W/"${signature.length}-${hashSignature(signature)}"`;
-
-    if (c.req.header("If-None-Match") === etag) {
-        c.header("ETag", etag);
-        c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
-        return c.body(null, 304);
-    }
-
+    // Weak ETag over the full body, so a revised value changes it too.
+    const body = JSON.stringify(converted);
+    const etag = `W/"${body.length}-${hashSignature(body)}"`;
     c.header("ETag", etag);
     c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
-    return c.json(converted, 200);
+
+    if (c.req.header("If-None-Match") === etag) {
+        return c.body(null, 304);
+    }
+    return c.body(body, 200, { "Content-Type": "application/json" });
 });
 
-/** FNV-1a. Not security-relevant — just a compact, stable ETag discriminator. */
+/** FNV-1a. Not security-relevant; a compact, stable ETag discriminator. */
 function hashSignature(input: string): string {
     let hash = 0x811c9dc5;
     for (let i = 0; i < input.length; i++) {
@@ -315,10 +296,13 @@ app.openapi(gaugeRoute, async (c) => {
 
     if (c.env.FLOW_DB) {
         try {
-            const stored = await readSeries(c.env.FLOW_DB, [gaugeId], start, Date.now());
-            const history = stored[gaugeId];
-            if (history && history.readings.length > 0) {
-                return c.json(toUnitSystemHistory(history, units as Units), 200);
+            const state = await readSyncState(c.env.FLOW_DB, [gaugeId]);
+            if (storeCovers(gaugeId, state.get(gaugeId), start)) {
+                const stored = await readSeries(c.env.FLOW_DB, [gaugeId], start, Date.now());
+                const history = stored[gaugeId];
+                if (history && history.readings.length > 0) {
+                    return c.json(toUnitSystemHistory(history, units as Units), 200);
+                }
             }
         } catch (e) {
             console.error("Flow store read failed, falling back to live fetch:", e);
@@ -376,20 +360,39 @@ app.on(["GET", "POST"], "/unsubscribe", async (c) => {
     }
 });
 
+/**
+ * Local dev only: copies production sitedata.json into local R2 and, if
+ * missing, derives gauge_registry.json from it so the first cron run skips
+ * the multi-minute registry recompile.
+ */
 app.get("/seed-local-r2", async (c) => {
+    const host = new URL(c.req.url).hostname;
+    if (host !== "localhost" && host !== "127.0.0.1") return c.text("Not found", 404);
     try {
-        console.log("Seeding local R2 storage from production flow.rivers.run...");
-        const res = await fetch("https://flow.rivers.run/sitedata.json");
-        if (!res.ok) throw new Error(`Failed to fetch production sitedata: ${res.statusText}`);
-        const sitedata = await res.json();
-        const body = JSON.stringify(sitedata);
-        
-        await c.env.FLOW_STORAGE.put("sitedata.json", body, {
+        const res = await fetch("https://flow.rivers.run/flowdata", {
+            headers: { Origin: "https://rivers.run" },
+        });
+        if (!res.ok) throw new Error(`Failed to fetch production sitedata: ${res.status} ${res.statusText}`);
+        const sitedata = await res.json() as Record<string, any>;
+        await c.env.FLOW_STORAGE.put("sitedata.json", JSON.stringify(sitedata), {
             httpMetadata: { contentType: "application/json" }
         });
-        
-        console.log("Successfully seeded sitedata.json locally!");
-        return c.text("Local R2 seed successful!");
+
+        let registryNote = "existing gauge_registry.json kept";
+        if (!(await c.env.FLOW_STORAGE.head("gauge_registry.json"))) {
+            const registry: Record<string, any> = {};
+            for (const [id, gauge] of Object.entries(sitedata)) {
+                if (!gauge || typeof gauge !== "object" || !id.includes(":")) continue;
+                const meta: Record<string, any> = { ...gauge, id };
+                delete meta.readings;
+                registry[id] = meta;
+            }
+            await c.env.FLOW_STORAGE.put("gauge_registry.json", JSON.stringify(registry), {
+                httpMetadata: { contentType: "application/json" }
+            });
+            registryNote = `gauge_registry.json derived (${Object.keys(registry).length} gauges)`;
+        }
+        return c.text(`Local R2 seed successful; ${registryNote}.`);
     } catch (e: any) {
         console.error("Local R2 seeding failed:", e);
         return c.text(`Seeding failed: ${e.message}`, 500);
@@ -453,35 +456,34 @@ export default {
 
             if (env.FLOW_DB) {
                 const syncStart = Date.now();
-                const stats = await runIngestCycle(env, env.FLOW_DB, registryMetadata, providers);
+                const now = syncStart;
                 const linkedIds = await readLinkedGaugeIds(env);
-                mergedData = await projectSitedata(env.FLOW_DB, registryMetadata, linkedIds);
+                const cap = Number(env.FLOW_BACKFILL_MAX_REQUESTS);
+                const stats = await runIngestCycle(env, env.FLOW_DB, registryMetadata, providers, now, {
+                    linkedIds,
+                    backfillRequests: Number.isFinite(cap) && env.FLOW_BACKFILL_MAX_REQUESTS ? cap : undefined,
+                });
 
-                if (isDailyMaintenance) {
-                    const maint = await runDailyMaintenance(env, env.FLOW_DB, providers);
-                    await logToD1(env, "INFO", "maintenance",
-                        `Store maintenance: repaired ${maint.repaired} readings for gap-flagged gauges` +
-                        (maint.revisions
-                            ? `; USGS revisions checked ${maint.revisions.fetched}, ` +
-                              `${maint.revisions.unseen} new, ` +
-                              `${maint.revisions.overlapping.length} overlapping retention (cursors reset)`
-                            : "; revision poll unavailable"));
+                let previous: Record<string, any> | null = null;
+                try {
+                    const obj = await env.FLOW_STORAGE.get("sitedata.json");
+                    if (obj) previous = await obj.json() as Record<string, any>;
+                } catch (e) {
+                    console.warn("Failed to read previous sitedata.json", e);
                 }
+                mergedData = await projectSitedata(env.FLOW_DB, registryMetadata, linkedIds, stats.forecasts, previous, now);
 
+                const written = rowsWrittenByCycle(stats);
+                const u = stats.usgs;
                 await logToD1(env, "INFO", "sync",
-                    `Store ingest: ${stats.readingsStored} readings across ` +
-                    `${stats.linked} linked / ${stats.registry} registry gauges in ` +
-                    `${((Date.now() - syncStart) / 1000).toFixed(1)}s ` +
-                    `(cursors advanced ${stats.cursorsAdvanced}, capped ${stats.capped.length}, ` +
-                    `cold deferred ${stats.deferred}, pruned ${stats.pruned}, errors ${stats.errors}).`);
+                    `Store ingest in ${((Date.now() - syncStart) / 1000).toFixed(1)}s: ` +
+                    `rows written ${Object.values(written).reduce((a, b) => a + b, 0)}, ` +
+                    `USGS requests ${u?.requests ?? 0} (window ${u?.windowBatches ?? 0} batches, ` +
+                    `${u?.windowFailed ?? 0} failed; revision ${u?.revision ?? "n/a"}; ` +
+                    `backfill ${u?.backfillRequests ?? 0} ${u?.backfillStopped ?? ""}), ` +
+                    `rate remaining ${u?.rateRemaining ?? "?"}, errors ${stats.errors}.`,
+                    { cycleAt: now, written, usgs: u, providerRows: stats.providerRows });
 
-                if (stats.capped.length > 0) {
-                    // A held cursor means a large historical rewrite is still
-                    // draining; it resumes next cycle rather than being skipped.
-                    await logToD1(env, "WARN", "sync",
-                        `Per-cycle record cap tripped for ${stats.capped.length} gauge(s): ` +
-                        `${stats.capped.slice(0, 5).join(", ")}. Cursors held for resume.`);
-                }
             } else {
                 mergedData = await performDataSync(env, registryMetadata, providers);
 

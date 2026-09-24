@@ -17,14 +17,6 @@ export interface GaugeReading {
     isForecast?: boolean;
     forecastSource?: string;
     state?: string;
-    /**
-     * Provenance, used by the history store — NOT part of any API response.
-     * `toUnitSystem` rebuilds each reading from a fixed field list, so these
-     * are dropped before anything is served.
-     */
-    approved?: boolean;
-    /** Provider's `last_modified`, ms. Drives the USGS revision cursor. */
-    srcModified?: number;
 }
 
 export interface GaugeHistory {
@@ -69,20 +61,14 @@ export interface GaugeProvider {
     getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>>;
 
     /**
-     * Optional: same bulk request as getLatest, but returning every reading the
-     * provider's bulk endpoint happened to include rather than collapsing to
-     * the newest one.
-     *
-     * This exists because several providers already hand us more than we used:
-     * Environment Canada's province files are *hourly* CSVs containing many
-     * hours per station, and getLatest threw all but the last row away. Keeping
-     * them costs no extra request and makes that provider's history gap-proof.
-     *
-     * Providers whose bulk endpoint genuinely returns only a latest value (UK's
-     * `readings?latest=true`, Ireland) should leave this undefined; the caller
-     * falls back to wrapping getLatest.
+     * Optional: the bulk request behind getLatest, keeping every reading at or
+     * after `sinceTs` instead of only the newest. The history store uses it
+     * for providers whose bulk files carry many hours (Environment Canada).
      */
-    getLatestHistories?(siteCodes: string[], env?: any): Promise<Record<string, GaugeHistory>>;
+    getLatestHistories?(siteCodes: string[], env?: any, sinceTs?: number): Promise<Record<string, GaugeHistory>>;
+
+    /** Optional: forecast rows only (isForecast: true), for gauges served from the store. */
+    getForecast?(siteCodes: string[], env?: any): Promise<Record<string, GaugeHistory>>;
 
     /** 
      * Get historical (or forecast) readings between startTs and endTs.

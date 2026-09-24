@@ -71,6 +71,14 @@ export const nwsProvider: GaugeProvider = {
         return results;
     },
 
+    async getForecast(siteCodes: string[], env?: any): Promise<Record<string, GaugeHistory>> {
+        const histories = await this.getHistory(siteCodes, Date.now(), undefined, true, env);
+        for (const history of Object.values(histories)) {
+            history.readings = history.readings.filter(r => r.isForecast);
+        }
+        return histories;
+    },
+
     async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {
         const maxTime = endTs ?? Date.now();
         const results: Record<string, GaugeHistory> = {};

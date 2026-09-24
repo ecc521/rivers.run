@@ -48,11 +48,8 @@ function finalizeSiteReadings(usgsSites: Record<string, GaugeHistory>) {
             site.readings = timestamps
                 .map(ts => readingMap.get(ts)!)
                 .filter(r => {
-                    // 'approved'/'srcModified' are provenance, not measurements:
-                    // a reading carrying only those is still an empty reading.
                     const keys = Object.keys(r);
-                    return keys.some(k => k !== 'dateTime' && k !== 'isForecast'
-                                       && k !== 'approved' && k !== 'srcModified');
+                    return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
                 });
             delete (site as any)._readingMap;
         }
@@ -114,17 +111,6 @@ export function processUSGSResponse(features: any[]): Record<string, GaugeHistor
             readingMap.set(snappedTime, reading);
         }
         (reading as any)[property] = value;
-
-        // Provenance for the history store. `approval_status` flips from
-        // Provisional to Approved when USGS publishes the record, which is
-        // itself a revision signal; `last_modified` drives the ingest cursor.
-        if (props.approval_status === 'Approved') reading.approved = true;
-        if (props.last_modified) {
-            const modified = new Date(props.last_modified).getTime();
-            if (!isNaN(modified) && modified > (reading.srcModified ?? 0)) {
-                reading.srcModified = modified;
-            }
-        }
     }
 
     finalizeSiteReadings(usgsSites);
@@ -133,47 +119,82 @@ export function processUSGSResponse(features: any[]): Record<string, GaugeHistor
 
 // --- FETCH HELPERS ---
 
-export async function fetchOGCFeatures(initialUrl: string, timeoutMs: number, env?: any): Promise<any[]> {
-    const features: any[] = [];
+export interface OGCPagesResult {
+    /** False if any page failed after retries; the caller got a prefix only. */
+    complete: boolean;
+    pages: number;
+    /** Last X-RateLimit-Remaining seen, or null if the header was absent. */
+    rateRemaining: number | null;
+    error?: string;
+}
+
+/**
+ * Follows OGC `next` links, handing each page's features to `onPage`.
+ * Never throws for HTTP or network failures; `complete` says whether every
+ * page arrived. A 429 is not retried, since retrying only burns budget.
+ */
+export async function fetchOGCPages(
+    initialUrl: string,
+    timeoutMs: number,
+    env: any,
+    onPage: (features: any[]) => void | Promise<void>
+): Promise<OGCPagesResult> {
+    const result: OGCPagesResult = { complete: true, pages: 0, rateRemaining: null };
     let nextUrl: string | null = initialUrl;
     const headers = env?.USGS_API_KEY
         ? { ...DEFAULT_HEADERS, 'X-Api-Key': env.USGS_API_KEY }
         : DEFAULT_HEADERS;
+    const MAX_RETRIES = 2;
 
     while (nextUrl) {
-        let success = false;
+        const currentUrl: string = nextUrl;
         let attempts = 0;
-        const MAX_RETRIES = 2;
-        const currentUrl = nextUrl;
+        let data: any = null;
 
-        while (!success && attempts <= MAX_RETRIES) {
+        while (data === null) {
             try {
                 const res = await fetchWithTimeout(currentUrl, { headers }, timeoutMs);
+                const remaining = res.headers.get('x-ratelimit-remaining');
+                if (remaining !== null && remaining !== '' && !isNaN(Number(remaining))) {
+                    result.rateRemaining = Number(remaining);
+                }
+                result.pages++;
+                if (res.status === 429) {
+                    attempts = MAX_RETRIES;
+                    throw new Error('USGS HTTP 429');
+                }
                 if (!res.ok) throw new Error(`USGS HTTP ${res.status}`);
-
-                const data = await res.json() as any;
-                features.push(...(data.features || []));
-
-                const nextLink = (data.links || []).find((l: any) => l.rel === 'next');
-                nextUrl = nextLink?.href || null;
-                success = true;
+                data = await res.json();
             } catch (e: unknown) {
                 attempts++;
-                const msg = e instanceof Error ? e.message : String(e);
                 if (attempts > MAX_RETRIES) {
+                    result.complete = false;
+                    result.error = e instanceof Error ? e.message : String(e);
                     if (env) {
-                        await logToD1(env, "WARN", "usgs", `OGC fetch failed after ${attempts} attempts: ${msg}`, { url: nextUrl ?? '' });
+                        await logToD1(env, "WARN", "usgs", `OGC fetch failed after ${attempts} attempts: ${result.error}`);
                     } else {
-                        console.warn(`OGC fetch failed: ${msg}`);
+                        console.warn(`OGC fetch failed: ${result.error}`);
                     }
-                    nextUrl = null;
-                } else {
-                    await new Promise(r => setTimeout(r, attempts * 3000));
+                    return result;
                 }
+                await new Promise(r => setTimeout(r, attempts * 3000));
             }
         }
+
+        await onPage(Array.isArray(data.features) ? data.features : []);
+        const nextLink = (data.links || []).find((l: any) => l.rel === 'next');
+        nextUrl = nextLink?.href || null;
     }
 
+    return result;
+}
+
+/** Collects every page. Failures are logged and yield whatever arrived. */
+export async function fetchOGCFeatures(initialUrl: string, timeoutMs: number, env?: any): Promise<any[]> {
+    const features: any[] = [];
+    await fetchOGCPages(initialUrl, timeoutMs, env, page => {
+        for (const f of page) features.push(f);
+    });
     return features;
 }
 
@@ -363,14 +384,6 @@ export const usgsProvider: GaugeProvider = {
             }
         }
         return latest;
-    },
-
-    // latest-continuous already returns per-parameter records that
-    // fetchLatestBatch assembles into histories; getLatest then discards all
-    // but the newest. The history store wants them all, and this is the exact
-    // same request either way.
-    async getLatestHistories(siteCodes: string[], env?: any): Promise<Record<string, GaugeHistory>> {
-        return fetchLatestBatch(siteCodes, env);
     },
 
     async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {

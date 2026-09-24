@@ -217,19 +217,13 @@ export const ecProvider: GaugeProvider = {
     },
 
     /**
-     * Same province CSV downloads as getLatest, but returning every reading in
-     * the file instead of only the newest.
-     *
-     * dd.weather.gc.ca serves `*_hourly_hydrometric.csv` — each province file
-     * already contains many hours per station. getLatest parsed all of it and
-     * kept one row. Widening the window to 24h and keeping the rest costs no
-     * extra request and is what makes Canada's stored history gap-proof: a
-     * missed cycle is backfilled by the next one automatically, which is not
-     * true for the latest-only providers.
+     * Same province CSVs as getLatest, keeping every reading since `sinceTs`
+     * (default 3h). Each file holds about a day per station, so a missed
+     * cycle can be recovered by widening the window.
      */
-    async getLatestHistories(siteCodes: string[], _env?: any): Promise<Record<string, GaugeHistory>> {
-        const startTs = Date.now() - (1000 * 60 * 60 * 24); // 24h, vs 6h for getLatest
-        const endTs = Date.now() + 1000 * 60 * 60 * 24;     // buffer for clock skew
+    async getLatestHistories(siteCodes: string[], _env?: any, sinceTs?: number): Promise<Record<string, GaugeHistory>> {
+        const startTs = sinceTs ?? Date.now() - 3 * 60 * 60 * 1000;
+        const endTs = Date.now() + 1000 * 60 * 60 * 24; // clock-skew buffer; the store drops future rows
         const results: Record<string, GaugeHistory> = {};
 
         if (siteCodes.length <= 10) {

@@ -1,58 +1,57 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createTestD1, type TestD1 } from "../../__tests__/helpers/d1Sqlite";
 import {
-    runIngestCycle,
-    projectSitedata,
-    buildDimensions,
-    historiesToReadings,
+    runIngestCycle, projectSitedata, buildDimensions, historiesToReadings, providerWindow,
+    storeCovers, rowsWrittenByCycle,
 } from "../flowSync";
-import { countReadings, readSeries } from "../flowStore";
+import { countReadings, readSeries, readProviderSyncState, resolveGaugeKeys, upsertSlots, slotStartOf } from "../flowStore";
 import type { GaugeProvider, GaugeHistory } from "../provider";
 
-const NOW = 1_779_999_900_000;
-const SNAP = 300_000;
+const usgsCalls: any[] = [];
+vi.mock("../usgsIngest", async (importOriginal) => {
+    const actual = await importOriginal<any>();
+    return {
+        ...actual,
+        runUsgsCycle: async (input: any) => {
+            usgsCalls.push(input);
+            return { requests: 0, rowsWritten: { window: 0, revision: 0, backfill: 0, state: 0 } };
+        },
+    };
+});
+
+const NOW = 1_780_002_000_000 + 20 * 60_000; // not an hourly cycle
+const MIN = 60_000;
 const HOUR = 3_600_000;
+const DAY = 86_400_000;
 
 let db: TestD1;
-beforeEach(() => { db = createTestD1(); });
+beforeEach(() => { db = createTestD1(); usgsCalls.length = 0; });
 afterEach(() => { db.close(); });
 
-/** Minimal Env stub: only the rivers query and logging are exercised. */
 const makeEnv = (linkedGaugeIds: string[]) => ({
     DB: {
         prepare: (sql: string) => ({
             bind: () => ({ run: async () => ({}), all: async () => ({ results: [] }) }),
-            all: async () => {
-                if (sql.includes("FROM rivers")) {
-                    return { results: [{ gauges: JSON.stringify(linkedGaugeIds.map(id => ({ id }))) }] };
-                }
-                return { results: [] };
-            },
-            run: async () => ({}),
-            first: async () => null,
+            all: async () => sql.includes("FROM rivers")
+                ? { results: [{ gauges: JSON.stringify(linkedGaugeIds.map(id => ({ id }))) }] }
+                : { results: [] },
         }),
-        batch: async () => [],
     },
 } as any);
 
-const history = (id: string, readings: any[]): GaugeHistory =>
-    ({ id, name: `Gauge ${id}`, readings });
+const history = (id: string, readings: any[]): GaugeHistory => ({ id, name: `Gauge ${id}`, readings });
 
-/** Provider stub recording which methods were called. */
-function stubProvider(id: string, impl: Partial<GaugeProvider> = {}): GaugeProvider & { calls: string[] } {
-    const calls: string[] = [];
+function stubProvider(id: string, impl: Partial<GaugeProvider> = {}): GaugeProvider & { calls: any[] } {
+    const calls: any[] = [];
     return {
-        id,
-        preferredUnits: "imperial",
-        capabilities: { hasForecast: false, hasSiteListing: false },
-        calls,
+        id, preferredUnits: "imperial", capabilities: { hasForecast: false, hasSiteListing: false }, calls,
         async getLatest(codes: string[]) {
-            calls.push("getLatest");
-            return Object.fromEntries(codes.map((c: string) => [c, { dateTime: NOW, cfs: 10 }]));
+            calls.push(["getLatest", codes]);
+            return Object.fromEntries(codes.map(c => [c, { dateTime: NOW - 10 * MIN, cfs: 10 }]));
         },
-        async getHistory(codes: string[]) {
-            calls.push("getHistory");
-            return Object.fromEntries(codes.map((c: string) => [c, history(c, [{ dateTime: NOW, cfs: 20 }])]));
+        async getHistory(codes: string[], start: number, _end?: number, forecast?: boolean) {
+            calls.push(["getHistory", codes, start, forecast]);
+            return Object.fromEntries(codes.map(c => [c, history(c, [{ dateTime: NOW - 10 * MIN, cfs: 20 }])]));
         },
         async getSiteListing() { return []; },
         ...impl,
@@ -60,215 +59,149 @@ function stubProvider(id: string, impl: Partial<GaugeProvider> = {}): GaugeProvi
 }
 
 describe("buildDimensions", () => {
-    it("marks linked gauges tier A and everything else tier B", () => {
+    it("merges registry and linked gauges and attaches NWM reach ids", () => {
         const dims = buildDimensions(
-            { "USGS:1": { name: "One" }, "USGS:2": { name: "Two" } },
-            ["USGS:1"]
-        );
-        expect(dims.find(d => d.gaugeId === "USGS:1")!.tier).toBe("linked");
-        expect(dims.find(d => d.gaugeId === "USGS:2")!.tier).toBe("registry");
-    });
-
-    it("includes a linked gauge that is not yet in the registry", () => {
-        const dims = buildDimensions({}, ["USGS:999"]);
-        expect(dims).toHaveLength(1);
-        expect(dims[0]).toMatchObject({ gaugeId: "USGS:999", tier: "linked", provider: "USGS" });
-    });
-
-    it("normalizes casing so a lowercase link matches its registry entry", () => {
-        const dims = buildDimensions({ "USGS:1": { name: "One" } }, ["usgs:1"]);
-        expect(dims).toHaveLength(1);
-        expect(dims[0].tier).toBe("linked");
-    });
-
-    it("excludes the removed streambeam and virtual prefixes", () => {
-        const dims = buildDimensions(
-            { "USGS:1": {}, "streambeam:1": {}, "VIRTUAL:1": {}, "virtual:2": {} },
-            []
-        );
-        expect(dims.map(d => d.gaugeId)).toEqual(["USGS:1"]);
+            { "USGS:1": { name: "One", lat: "35.1" }, "virtual:x": {} },
+            ["usgs:1", "EC:2"],
+            { "1": "12345" });
+        expect(dims).toEqual([
+            expect.objectContaining({ gaugeId: "USGS:1", name: "One", lat: 35.1, nwmReachId: "12345" }),
+            expect.objectContaining({ gaugeId: "EC:2", provider: "EC" }),
+        ]);
     });
 });
 
 describe("historiesToReadings", () => {
-    it("prefixes ids and skips forecast rows", () => {
-        const out = historiesToReadings("EC", {
-            "05BB001": history("05BB001", [
-                { dateTime: NOW, cms: 12 },
-                { dateTime: NOW + HOUR, cmsForecast: 15, isForecast: true },
-            ]),
-        });
-        expect(out).toHaveLength(1);
-        expect(out[0]).toMatchObject({ gaugeId: "EC:05BB001", ts: NOW, cms: 12 });
+    it("splits forecast rows off instead of storing them", () => {
+        const forecasts: Record<string, any[]> = {};
+        const out = historiesToReadings("NWS", {
+            ABC: history("ABC", [{ dateTime: NOW, ft: 1 }, { dateTime: NOW + HOUR, ft: 2, isForecast: true }]),
+        }, forecasts);
+        expect(out).toEqual([expect.objectContaining({ gaugeId: "NWS:ABC", ts: NOW, ft: 1 })]);
+        expect(forecasts["NWS:ABC"]).toHaveLength(1);
+    });
+});
+
+describe("providerWindow", () => {
+    it("widens after misses and flags a gap past 24h", () => {
+        expect(providerWindow(null, NOW)).toEqual({ from: slotStartOf(NOW - 3 * HOUR), gap: false });
+        expect(providerWindow(NOW - 5 * HOUR, NOW).from).toBe(slotStartOf(NOW - 5 * HOUR - 15 * MIN));
+        expect(providerWindow(NOW - 2 * DAY, NOW)).toEqual({ from: slotStartOf(NOW - DAY), gap: true });
     });
 });
 
 describe("runIngestCycle", () => {
-    it("keeps EVERY reading a bulk endpoint returns, not just the newest", async () => {
-        // Environment Canada's hourly province CSVs already contain many hours
-        // per station; getLatest threw all but one row away.
+    it("stores a windowed provider, records coverage, and writes nothing on replay", async () => {
         const ec = stubProvider("EC", {
-            async getLatestHistories(codes: string[]) {
+            async getLatestHistories(codes: string[], _env?: any, since?: number) {
+                ec.calls.push(["getLatestHistories", codes, since]);
                 return Object.fromEntries(codes.map(c => [c, history(c, [
-                    { dateTime: NOW - 2 * HOUR, cms: 10 },
-                    { dateTime: NOW - HOUR, cms: 11 },
-                    { dateTime: NOW, cms: 12 },
+                    { dateTime: NOW - 30 * MIN, cms: 1 }, { dateTime: NOW - 25 * MIN, cms: 1.1 }, { dateTime: NOW - 10 * MIN, cms: 2 },
                 ])]));
             },
         });
+        const registry = { "EC:A": { name: "A" }, "EC:B": { name: "B" } };
 
-        await runIngestCycle(makeEnv([]), db, { "EC:05BB001": { name: "Bow" } }, { EC: ec }, NOW);
+        const first = await runIngestCycle(makeEnv([]), db, registry, { EC: ec }, NOW);
+        expect(ec.calls[0][2]).toBe(slotStartOf(NOW - 3 * HOUR));
+        expect(await countReadings(db)).toBe(4); // 5-min readings collapse to 15-min slots
+        expect(rowsWrittenByCycle(first)).toMatchObject({ dimensions: 2, providers: 4 });
 
-        expect(await countReadings(db)).toBe(3);
-        const series = await readSeries(db, ["EC:05BB001"], 0);
-        expect(series["EC:05BB001"].readings.map(r => r.cms)).toEqual([10, 11, 12]);
+        const cov = await readProviderSyncState(db, "EC");
+        expect(cov.get("EC:A")!.coverageStart).toBe(slotStartOf(NOW - 3 * HOUR));
+
+        const again = await runIngestCycle(makeEnv([]), db, registry, { EC: ec }, NOW);
+        expect(rowsWrittenByCycle(again)).toEqual({
+            dimensions: 0, providers: 0, state: 0, usgsWindow: 0, usgsRevision: 0, usgsBackfill: 0,
+        });
     });
 
-    it("falls back to wrapping getLatest for latest-only providers", async () => {
-        // UK's readings?latest=true genuinely returns one value per station.
-        const uk = stubProvider("UK");
-        await runIngestCycle(makeEnv([]), db, { "UK:1234": { name: "Dee" } }, { UK: uk }, NOW);
-
-        expect(uk.calls).toContain("getLatest");
-        expect(await countReadings(db)).toBe(1);
-    });
-
-    it("accumulates history across cycles without re-fetching it", async () => {
-        // This is the core of the design: poll latest, append, and 30 days
-        // builds itself with no backfill for tier B.
-        const uk = stubProvider("UK", {
-            async getLatest(codes: string[]) {
-                return Object.fromEntries(codes.map(c => [c, { dateTime: tick, m: 1 }]));
+    it("keeps NWS forecasts in memory and stores only observations", async () => {
+        const nws = stubProvider("NWS", {
+            async getHistory(codes: string[], _s: number, _e?: number, forecast?: boolean) {
+                nws.calls.push(["getHistory", forecast]);
+                return Object.fromEntries(codes.map(c => [c, history(c, [
+                    { dateTime: NOW - 10 * MIN, ft: 3 }, { dateTime: NOW + HOUR, ft: 4, isForecast: true },
+                ])]));
             },
         });
-
-        let tick = NOW - 3 * SNAP;
-        const registry = { "UK:1234": { name: "Dee" } };
-        for (let i = 0; i < 4; i++) {
-            await runIngestCycle(makeEnv([]), db, registry, { UK: uk }, NOW);
-            tick += SNAP;
-        }
-
-        expect(await countReadings(db)).toBe(4);
-        const series = await readSeries(db, ["UK:1234"], 0);
-        expect(series["UK:1234"].readings.map(r => r.dateTime))
-            .toEqual([NOW - 3 * SNAP, NOW - 2 * SNAP, NOW - SNAP, NOW]);
-    });
-
-    it("routes linked gauges through getHistory and registry gauges through getLatest", async () => {
-        const uk = stubProvider("UK");
-        await runIngestCycle(
-            makeEnv(["UK:linked"]), db,
-            { "UK:linked": { name: "A" }, "UK:other": { name: "B" } },
-            { UK: uk }, NOW
-        );
-
-        expect(uk.calls).toContain("getHistory");
-        expect(uk.calls).toContain("getLatest");
-
-        const linked = await readSeries(db, ["UK:linked"], 0);
-        expect(linked["UK:linked"].readings[0].cfs).toBe(20); // getHistory value
-    });
-
-    it("isolates a failing provider without losing the others", async () => {
-        const broken = stubProvider("UK", {
-            async getLatest() { throw new Error("EA outage"); },
-        });
-        const healthy = stubProvider("IE");
-
-        const stats = await runIngestCycle(
-            makeEnv([]), db,
-            { "UK:1": {}, "IE:2": {} },
-            { UK: broken, IE: healthy }, NOW
-        );
-
-        expect(stats.errors).toBeGreaterThan(0);
+        const stats = await runIngestCycle(makeEnv(["NWS:XYZ"]), db, {}, { NWS: nws }, NOW);
+        expect(nws.calls).toEqual([["getHistory", true]]);
+        expect(stats.forecasts["NWS:XYZ"]).toEqual([{ dateTime: NOW + HOUR, ft: 4, isForecast: true }]);
         expect(await countReadings(db)).toBe(1);
-        expect((await readSeries(db, ["IE:2"], 0))["IE:2"]).toBeTruthy();
     });
 
-    it("retains stored readings through a total provider outage", async () => {
-        // The durability win: the legacy path had to recover readings from the
-        // previous sitedata.json because nothing persisted them.
+    it("uses history for linked latest-only gauges and getLatest for the rest", async () => {
         const uk = stubProvider("UK");
-        const registry = { "UK:1234": {} };
-        await runIngestCycle(makeEnv([]), db, registry, { UK: uk }, NOW);
-        expect(await countReadings(db)).toBe(1);
-
-        const dead = stubProvider("UK", {
-            async getLatest() { throw new Error("total outage"); },
-        });
-        await runIngestCycle(makeEnv([]), db, registry, { UK: dead }, NOW + SNAP);
-
-        expect(await countReadings(db)).toBe(1);
-        const projected = await projectSitedata(db, registry, [], NOW + SNAP);
-        expect(projected["UK:1234"].readings).toHaveLength(1);
+        await runIngestCycle(makeEnv(["UK:L"]), db, { "UK:L": {}, "UK:R": {} }, { UK: uk }, NOW);
+        expect(uk.calls.map(c => [c[0], c[1]])).toEqual([["getHistory", ["L"]], ["getLatest", ["R"]]]);
+        expect(await countReadings(db)).toBe(2);
     });
 
-    it("records sync state so the next cycle can run incrementally", async () => {
-        const uk = stubProvider("UK");
-        await runIngestCycle(makeEnv([]), db, { "UK:1234": {} }, { UK: uk }, NOW);
-
-        const row = db.query(
-            "SELECT s.last_obs_ts, s.fail_count FROM gauge_sync_state s")[0];
-        expect(row.last_obs_ts).toBe(NOW);
-        expect(row.fail_count).toBe(0);
+    it("hands every USGS gauge to the USGS sweeps in one list", async () => {
+        await runIngestCycle(makeEnv(["USGS:2"]), db, { "USGS:1": {}, "USGS:2": {} }, { USGS: stubProvider("USGS") }, NOW,
+            { backfillRequests: 7 });
+        expect(usgsCalls).toHaveLength(1);
+        expect(usgsCalls[0].siteIds.sort()).toEqual(["1", "2"]);
+        expect(usgsCalls[0]).toMatchObject({ runRevision: false, backfillRequests: 7 });
     });
 
-    it("ignores gauges whose provider is not registered", async () => {
-        const stats = await runIngestCycle(
-            makeEnv([]), db, { "NOPE:1": {}, "UK:2": {} }, { UK: stubProvider("UK") }, NOW);
-
-        expect(stats.errors).toBe(0);
+    it("isolates a failing provider", async () => {
+        const bad = stubProvider("UK", { async getLatest() { throw new Error("down"); } });
+        const good = stubProvider("IE");
+        const env = makeEnv([]);
+        const stats = await runIngestCycle(env, db, { "UK:1": {}, "IE:1": {} }, { UK: bad, IE: good }, NOW);
+        expect(stats.errors).toBe(1);
         expect(await countReadings(db)).toBe(1);
     });
 });
 
 describe("projectSitedata", () => {
-    it("preserves the legacy payload shape", async () => {
-        const uk = stubProvider("UK");
-        const registry = {
-            "UK:1234": { name: "Dee", lat: 53.1, lon: -3.2, state: "Wales", country: "UK", section: "Upper" },
-        };
-        await runIngestCycle(makeEnv([]), db, registry, { UK: uk }, NOW);
+    it("builds latest, linked windows, forecasts and falls back to the previous entry", async () => {
+        const { keys } = await resolveGaugeKeys(db, ["USGS:1", "USGS:2", "UK:9"].map(id => ({ gaugeId: id, provider: id.split(":")[0] })));
+        const row = (gaugeId: string, ts: number, cfs: number) =>
+            ({ gaugeId, ts, off: 0, cfs, ft: null, cms: null, m: null, temp_f: null, precip_in: null, approved: false });
+        const t = slotStartOf(NOW);
+        await upsertSlots(db, [row("USGS:1", t - 30 * MIN, 1), row("USGS:1", t - 15 * MIN, 2), row("USGS:1", t, 3), row("USGS:2", t, 5)], keys);
 
-        const out = await projectSitedata(db, registry, [], NOW);
-        expect(out["UK:1234"]).toMatchObject({
-            id: "1234", name: "Dee", lat: 53.1, lon: -3.2,
-            state: "Wales", country: "UK", section: "Upper",
-        });
-        expect(out["UK:1234"].readings).toEqual([{ dateTime: NOW, cfs: 10 }]);
+        const out = await projectSitedata(db,
+            { "USGS:1": { name: "One" }, "USGS:2": { name: "Two" }, "UK:9": { name: "Nine" } },
+            ["USGS:1"],
+            { "USGS:1": [{ dateTime: t + HOUR, cfs: 9, isForecast: true }] },
+            { "UK:9": { readings: [{ dateTime: t - DAY, cfs: 7 }, { dateTime: t + HOUR, cfs: 8, isForecast: true }] } },
+            NOW);
+
+        expect(out["USGS:1"].readings.map((r: any) => r.cfs)).toEqual([1, 2, 3, 9]);
+        expect(out["USGS:2"].readings).toEqual([{ dateTime: t, cfs: 5 }]);
+        expect(out["UK:9"].readings).toEqual([{ dateTime: t - DAY, cfs: 7 }]);
+        expect(out["USGS:1"].name).toBe("One");
+    });
+});
+
+describe("storeCovers", () => {
+    const start = NOW - 7 * DAY;
+    it("requires coverage back to the start and no pending repair", () => {
+        expect(storeCovers("USGS:1", { coverageStart: start - DAY, repairFrom: null }, start)).toBe(true);
+        expect(storeCovers("USGS:1", { coverageStart: start + DAY, repairFrom: null }, start)).toBe(false);
+        expect(storeCovers("USGS:1", { coverageStart: start - DAY, repairFrom: NOW - HOUR }, start)).toBe(false);
+        expect(storeCovers("USGS:1", undefined, start)).toBe(false);
     });
 
-    it("gives registry gauges latest-only and linked gauges a recent window", async () => {
-        // sitedata.json is the offline bootstrap; putting 30 days in it would
-        // balloon a 3.4MB artifact. The full history lives behind /history.
-        const uk = stubProvider("UK", {
-            async getHistory(codes: string[]) {
-                return Object.fromEntries(codes.map(c => [c, history(c, [
-                    { dateTime: NOW - 2 * SNAP, cfs: 1 },
-                    { dateTime: NOW - SNAP, cfs: 2 },
-                    { dateTime: NOW, cfs: 3 },
-                ])]));
+    it("never serves latest-only providers from the store", () => {
+        expect(storeCovers("UK:1", { coverageStart: 0, repairFrom: null }, start)).toBe(false);
+        expect(storeCovers("EC:1", { coverageStart: 0, repairFrom: null }, start)).toBe(true);
+    });
+});
+
+describe("readSeries integration", () => {
+    it("returns stored EC readings after a cycle", async () => {
+        const ec = stubProvider("EC", {
+            async getLatestHistories(codes: string[]) {
+                return Object.fromEntries(codes.map(c => [c, history(c, [{ dateTime: NOW - 10 * MIN, cms: 2 }])]));
             },
         });
-
-        const registry = { "UK:linked": {}, "UK:reg": {} };
-        await runIngestCycle(makeEnv(["UK:linked"]), db, registry, { UK: uk }, NOW);
-
-        const out = await projectSitedata(db, registry, ["UK:linked"], NOW);
-        expect(out["UK:linked"].readings).toHaveLength(3);
-        expect(out["UK:reg"].readings).toHaveLength(1);
-    });
-
-    it("emits registry gauges with an empty readings array when unseen", async () => {
-        const out = await projectSitedata(db, { "UK:never": { name: "X" } }, [], NOW);
-        expect(out["UK:never"].readings).toEqual([]);
-    });
-
-    it("excludes dead prefixes that still appear in the registry", async () => {
-        const out = await projectSitedata(
-            db, { "UK:1": {}, "streambeam:1": {}, "VIRTUAL:1": {} }, [], NOW);
-        expect(Object.keys(out)).toEqual(["UK:1"]);
+        await runIngestCycle(makeEnv([]), db, { "EC:A": {} }, { EC: ec }, NOW);
+        const series = await readSeries(db, ["EC:A"], NOW - HOUR, NOW, NOW);
+        expect(series["EC:A"].readings).toEqual([{ dateTime: NOW - 10 * MIN, cms: 2 }]);
     });
 });

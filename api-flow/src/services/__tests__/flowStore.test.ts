@@ -1,481 +1,284 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestD1, type TestD1 } from "../../__tests__/helpers/d1Sqlite";
 import {
-    resolveGaugeKeys,
-    lookupGaugeKeys,
-    upsertReadings,
-    readSeries,
-    readLatestAll,
-    readSyncState,
-    writeSyncState,
-    pruneSlice,
-    currentPruneSlice,
-    refreshObsCounts,
-    findGapGauges,
-    countReadings,
-    LATEST_ALL_SQL,
-    isStorableGaugeId,
-    snapTimestamp,
-    RETENTION_MS,
-    PRUNE_SLICES,
-    type GaugeDimension,
-    type StoredReading,
+    resolveGaugeKeys, lookupGaugeKeys, upsertSlots, reduceToSlots, readSeries, readLatest,
+    readHourlySums, readSyncState, readProviderSyncState, extendCoverage, initCoverage,
+    resetProviderCoverage, markRepair, markProviderRepair, clearRepair, getMeta, setMeta,
+    countReadings, slotRanges, slotIndexOf, isStorableGaugeId, LATEST_SQL,
+    SLOT_MS, SLOTS, RETENTION_MS, FUTURE_SKEW_MS,
+    type GaugeDimension, type ObservedReading, type SlotRow,
 } from "../flowStore";
 
-// Fixed clock, deliberately aligned to a 5-minute boundary so expectations can
-// be written against NOW directly without snapTimestamp shifting them.
-const NOW = 1_779_999_900_000;
+// Hour-aligned so slot and hour expectations can be written against NOW.
+const NOW = 1_780_002_000_000;
+const MIN = 60_000;
 const HOUR = 3_600_000;
 const DAY = 86_400_000;
 
 let db: TestD1;
-
-const dim = (gaugeId: string, over: Partial<GaugeDimension> = {}): GaugeDimension => ({
-    gaugeId,
-    provider: gaugeId.split(":")[0],
-    tier: "registry",
-    ...over,
-});
-
 beforeEach(() => { db = createTestD1(); });
 afterEach(() => { db.close(); });
 
+const dim = (gaugeId: string, over: Partial<GaugeDimension> = {}): GaugeDimension =>
+    ({ gaugeId, provider: gaugeId.split(":")[0], ...over });
+
+const row = (gaugeId: string, ts: number, over: Partial<SlotRow> = {}): SlotRow => ({
+    gaugeId, ts, off: 0, cfs: null, ft: null, cms: null, m: null, temp_f: null, precip_in: null,
+    approved: false, ...over,
+});
+
+async function keysFor(...ids: string[]) {
+    return (await resolveGaugeKeys(db, ids.map(id => dim(id)))).keys;
+}
+
+const stored = () => db.query("SELECT slot, ts, off, cfs, ft FROM gauge_readings ORDER BY gauge_key, slot");
+
 describe("gauge id filtering", () => {
-    it("rejects removed streambeam and virtual prefixes in either casing", () => {
+    it("rejects dead prefixes and ids without a provider", () => {
         expect(isStorableGaugeId("streambeam:1")).toBe(false);
-        expect(isStorableGaugeId("virtual:1")).toBe(false);
         expect(isStorableGaugeId("VIRTUAL:1")).toBe(false);
+        expect(isStorableGaugeId("03451500")).toBe(false);
         expect(isStorableGaugeId("USGS:03451500")).toBe(true);
     });
+});
 
-    it("rejects ids without a provider prefix", () => {
-        expect(isStorableGaugeId("03451500")).toBe(false);
-        expect(isStorableGaugeId("")).toBe(false);
+describe("slotRanges", () => {
+    it("returns one range inside the ring", () => {
+        const [[a, b]] = slotRanges(NOW - HOUR, NOW);
+        expect(b - a).toBe(4);
+        expect(b).toBe(slotIndexOf(NOW));
+    });
+
+    it("splits a range that wraps past slot 0", () => {
+        const base = Math.ceil(NOW / SLOT_MS / SLOTS) * SLOTS * SLOT_MS; // slot 0
+        expect(slotRanges(base - 2 * SLOT_MS, base + SLOT_MS)).toEqual([[SLOTS - 2, SLOTS - 1], [0, 1]]);
+    });
+
+    it("covers the whole ring for spans of a ring or more", () => {
+        expect(slotRanges(NOW - 40 * DAY, NOW)).toEqual([[0, SLOTS - 1]]);
     });
 });
 
-describe("resolveGaugeKeys", () => {
-    it("assigns stable keys and normalizes casing to one row", async () => {
-        const first = await resolveGaugeKeys(db, [dim("USGS:03451500"), dim("EC:05BB001")]);
-        expect(first.size).toBe(2);
+describe("reduceToSlots", () => {
+    const r = (ts: number, over: Partial<ObservedReading> = {}): ObservedReading =>
+        ({ gaugeId: "EC:1", ts, cms: 1, ...over });
 
-        // 'usgs:' is the same gauge as 'USGS:' — must not create a second row.
-        const second = await resolveGaugeKeys(db, [dim("usgs:03451500")]);
-        expect(second.get("USGS:03451500")).toBe(first.get("USGS:03451500"));
-        expect(db.query("SELECT COUNT(*) AS n FROM gauges")[0].n).toBe(2);
+    it("keeps the reading closest to the slot start", () => {
+        const rows = reduceToSlots([r(NOW + 10 * MIN, { cms: 3 }), r(NOW + 5 * MIN, { cms: 2 }), r(NOW - 5 * MIN)], { now: NOW + HOUR });
+        const slot = rows.find(x => x.ts === NOW)!;
+        expect(slot).toMatchObject({ off: 300, cms: 2 });
+        expect(rows).toHaveLength(2);
     });
 
-    it("drops dead prefixes rather than storing them", async () => {
-        const keys = await resolveGaugeKeys(db, [
-            dim("USGS:1"), dim("streambeam:9"), dim("VIRTUAL:7"),
-        ]);
-        expect(keys.size).toBe(1);
-        expect(db.query("SELECT COUNT(*) AS n FROM gauges")[0].n).toBe(1);
+    it("merges parameters reported at the same timestamp", () => {
+        const rows = reduceToSlots([r(NOW, { cms: 5, m: undefined }), r(NOW, { cms: undefined, m: 1.5 })], { now: NOW });
+        expect(rows).toEqual([expect.objectContaining({ ts: NOW, cms: 5, m: 1.5 })]);
     });
 
-    it("never blanks existing metadata with a null from a later poll", async () => {
-        await resolveGaugeKeys(db, [dim("USGS:1", { name: "Nantahala", state: "NC", lat: 35.3 })]);
-        await resolveGaugeKeys(db, [dim("USGS:1")]); // reading-only poll, no metadata
-
-        const row = db.query("SELECT name, state, lat FROM gauges WHERE gauge_id='USGS:1'")[0];
-        expect(row.name).toBe("Nantahala");
-        expect(row.state).toBe("NC");
-        expect(row.lat).toBeCloseTo(35.3);
-    });
-
-    it("promotes registry to linked but never demotes back", async () => {
-        await resolveGaugeKeys(db, [dim("USGS:1", { tier: "registry" })]);
-        await resolveGaugeKeys(db, [dim("USGS:1", { tier: "linked" })]);
-        expect(db.query("SELECT tier FROM gauges WHERE gauge_id='USGS:1'")[0].tier).toBe("linked");
-
-        await resolveGaugeKeys(db, [dim("USGS:1", { tier: "registry" })]);
-        expect(db.query("SELECT tier FROM gauges WHERE gauge_id='USGS:1'")[0].tier).toBe("linked");
+    it("drops future, expired, empty and leading partial-slot readings", () => {
+        const rows = reduceToSlots([
+            r(NOW + FUTURE_SKEW_MS + MIN),
+            r(NOW - RETENTION_MS - SLOT_MS),
+            r(NOW, { cms: undefined }),
+            r(NOW - 2 * HOUR + 7 * MIN),   // slot starts before the window
+            r(NOW - HOUR),
+        ], { now: NOW, windowStart: NOW - 2 * HOUR + 15 * MIN });
+        expect(rows.map(x => x.ts)).toEqual([NOW - HOUR]);
     });
 });
 
-describe("upsertReadings", () => {
-    const seed = async (ids: string[]) => resolveGaugeKeys(db, ids.map(i => dim(i)));
-
-    it("stores readings and is idempotent on replay", async () => {
-        const keys = await seed(["USGS:1"]);
-        const readings: StoredReading[] = [
-            { gaugeId: "USGS:1", ts: NOW - HOUR, cfs: 100, ft: 2.1 },
-            { gaugeId: "USGS:1", ts: NOW, cfs: 120, ft: 2.4 },
-        ];
-
-        expect(await upsertReadings(db, readings, keys, NOW)).toBe(2);
-        expect(await countReadings(db)).toBe(2);
-
-        await upsertReadings(db, readings, keys, NOW);
-        expect(await countReadings(db)).toBe(2);
+describe("upsertSlots (ring buffer)", () => {
+    it("writes nothing when an identical batch is replayed", async () => {
+        const keys = await keysFor("USGS:1", "USGS:2");
+        const rows = Array.from({ length: 40 }, (_, i) => row(i % 2 ? "USGS:1" : "USGS:2", NOW - i * SLOT_MS, { cfs: 100 + i, ft: 2 }));
+        expect(await upsertSlots(db, rows, keys)).toBe(40);
+        expect(await upsertSlots(db, rows, keys)).toBe(0);
     });
 
-    it("overwrites a revised value at an existing timestamp", async () => {
-        const keys = await seed(["USGS:1"]);
-        await upsertReadings(db, [{ gaugeId: "USGS:1", ts: NOW, cfs: 100, srcModified: 1 }], keys, NOW);
-        await upsertReadings(db, [{ gaugeId: "USGS:1", ts: NOW, cfs: 875, srcModified: 2 }], keys, NOW);
+    it("never lets an older generation overwrite a newer one", async () => {
+        const keys = await keysFor("USGS:1");
+        await upsertSlots(db, [row("USGS:1", NOW, { cfs: 10 })], keys);
+        const stale = NOW - SLOTS * SLOT_MS; // same slot, previous lap
+        expect(await upsertSlots(db, [row("USGS:1", stale, { cfs: 99 })], keys)).toBe(0);
+        expect(stored()).toEqual([expect.objectContaining({ ts: NOW, cfs: 10 })]);
+    });
 
-        const row = db.query("SELECT cfs, src_modified FROM gauge_readings")[0];
-        expect(row.cfs).toBe(875);
-        expect(row.src_modified).toBe(2);
+    it("overwrites a slot on wrap without leaking old columns", async () => {
+        const keys = await keysFor("USGS:1");
+        const old = NOW - SLOTS * SLOT_MS;
+        await upsertSlots(db, [row("USGS:1", old, { cfs: 10, ft: 3 })], keys);
+        expect(await upsertSlots(db, [row("USGS:1", NOW, { cfs: 20 })], keys)).toBe(1);
+        expect(stored()).toEqual([{ slot: slotIndexOf(NOW), ts: NOW, off: 0, cfs: 20, ft: null }]);
         expect(await countReadings(db)).toBe(1);
     });
 
-    it("merges partial parameter updates instead of nulling siblings", async () => {
-        // USGS returns 00060 and 00065 as separate features; a later batch
-        // carrying only temperature must not erase the flow already stored.
-        const keys = await seed(["USGS:1"]);
-        await upsertReadings(db, [{ gaugeId: "USGS:1", ts: NOW, cfs: 100, ft: 2.0 }], keys, NOW);
-        await upsertReadings(db, [{ gaugeId: "USGS:1", ts: NOW, temp_f: 54.2 }], keys, NOW);
-
-        const row = db.query("SELECT cfs, ft, temp_f FROM gauge_readings")[0];
-        expect(row.cfs).toBe(100);
-        expect(row.ft).toBe(2.0);
-        expect(row.temp_f).toBeCloseTo(54.2);
+    it("replaces a slot with a reading closer to its start, and ignores farther ones", async () => {
+        const keys = await keysFor("USGS:1");
+        await upsertSlots(db, [row("USGS:1", NOW, { off: 300, cfs: 5 })], keys);
+        expect(await upsertSlots(db, [row("USGS:1", NOW, { off: 600, cfs: 6 })], keys)).toBe(0);
+        expect(await upsertSlots(db, [row("USGS:1", NOW, { off: 0, cfs: 4 })], keys)).toBe(1);
+        expect(stored()[0]).toMatchObject({ off: 0, cfs: 4 });
     });
 
-    it("snaps timestamps to 5-minute buckets so a gauge's parameters collide", async () => {
-        // USGS reports 00060 and 00065 as separate features whose timestamps
-        // can differ by a minute or two; they must land in one reading.
-        const keys = await seed(["USGS:1"]);
-        await upsertReadings(db, [
-            { gaugeId: "USGS:1", ts: NOW, cfs: 1 },
-            { gaugeId: "USGS:1", ts: NOW + 120_000, ft: 2 },
-        ], keys, NOW);
-
-        expect(await countReadings(db)).toBe(1);
-        expect(snapTimestamp(NOW + 120_000)).toBe(NOW);
-
-        const row = db.query("SELECT cfs, ft FROM gauge_readings")[0];
-        expect(row.cfs).toBe(1);
-        expect(row.ft).toBe(2);
-
-        // Beyond half a bucket it is genuinely a different observation.
-        expect(snapTimestamp(NOW + 180_000)).toBe(NOW + SNAP);
+    it("merges a partial revision of the same reading and writes once", async () => {
+        const keys = await keysFor("USGS:1");
+        await upsertSlots(db, [row("USGS:1", NOW, { cfs: 5, ft: 1 })], keys);
+        expect(await upsertSlots(db, [row("USGS:1", NOW, { cfs: 7 })], keys)).toBe(1);
+        expect(stored()[0]).toMatchObject({ cfs: 7, ft: 1 });
+        expect(await upsertSlots(db, [row("USGS:1", NOW, { cfs: 7 })], keys)).toBe(0);
     });
 
-    it("drops readings beyond the retention horizon", async () => {
-        const keys = await seed(["USGS:1"]);
-        const stored = await upsertReadings(db, [
-            { gaugeId: "USGS:1", ts: NOW - RETENTION_MS - DAY, cfs: 1 },
-            { gaugeId: "USGS:1", ts: NOW - DAY, cfs: 2 },
-        ], keys, NOW);
-
-        expect(stored).toBe(1);
-        expect(await countReadings(db)).toBe(1);
+    it("writes when approval flips, and not when it would flip back", async () => {
+        const keys = await keysFor("USGS:1");
+        await upsertSlots(db, [row("USGS:1", NOW, { cfs: 5 })], keys);
+        expect(await upsertSlots(db, [row("USGS:1", NOW, { cfs: 5, approved: true })], keys)).toBe(1);
+        expect(await upsertSlots(db, [row("USGS:1", NOW, { cfs: 5, approved: false })], keys)).toBe(0);
     });
 
-    it("drops readings for gauges that have no dimension row", async () => {
-        const keys = await seed(["USGS:1"]);
-        const stored = await upsertReadings(db, [{ gaugeId: "USGS:999", ts: NOW, cfs: 5 }], keys, NOW);
-        expect(stored).toBe(0);
-        expect(await countReadings(db)).toBe(0);
+    it("skips gauges without a key", async () => {
+        expect(await upsertSlots(db, [row("USGS:404", NOW, { cfs: 1 })], new Map())).toBe(0);
     });
 
-    it("drops rows carrying no measurement at all", async () => {
-        const keys = await seed(["USGS:1"]);
-        expect(await upsertReadings(db, [{ gaugeId: "USGS:1", ts: NOW }], keys, NOW)).toBe(0);
-    });
-
-    it("stays within D1's 100-bound-parameter limit for a 15k-reading cycle", async () => {
-        // The harness throws if any statement binds >100 params, so simply
-        // completing this proves the json_each batching holds at real scale.
+    it("stays within D1's 100-parameter limit for a large batch", async () => {
         const ids = Array.from({ length: 500 }, (_, i) => `USGS:${i}`);
-        const keys = await seed(ids);
-
-        const readings: StoredReading[] = [];
-        for (const id of ids) {
-            for (let t = 0; t < 30; t++) {
-                readings.push({ gaugeId: id, ts: NOW - t * SNAP, cfs: 100 + t, ft: 2 + t / 100 });
-            }
-        }
-        expect(readings.length).toBe(15_000);
-
-        expect(await upsertReadings(db, readings, keys, NOW)).toBe(15_000);
-        expect(await countReadings(db)).toBe(15_000);
-    });
-
-    it("emits batches sorted by (gauge_key, ts)", async () => {
-        // Sorted insertion is what keeps the clustered B-tree from thrashing.
-        const ids = ["USGS:3", "USGS:1", "USGS:2"];
-        const keys = await seed(ids);
-
-        const captured: string[] = [];
-        const spy = {
-            ...db,
-            prepare(sql: string) {
-                const stmt = db.prepare(sql);
-                if (!sql.includes("INSERT INTO gauge_readings")) return stmt;
-                return {
-                    bind: (...args: unknown[]) => {
-                        captured.push(args[0] as string);
-                        return (stmt as any).bind(...args);
-                    },
-                } as any;
-            },
-        } as unknown as TestD1;
-
-        await upsertReadings(spy, [
-            { gaugeId: "USGS:2", ts: NOW, cfs: 1 },
-            { gaugeId: "USGS:1", ts: NOW, cfs: 1 },
-            { gaugeId: "USGS:3", ts: NOW - SNAP, cfs: 1 },
-            { gaugeId: "USGS:1", ts: NOW - SNAP, cfs: 1 },
-        ], keys, NOW);
-
-        const rows = JSON.parse(captured[0]) as Array<{ k: number; t: number }>;
-        const sorted = [...rows].sort((a, b) => (a.k - b.k) || (a.t - b.t));
-        expect(rows).toEqual(sorted);
+        const keys = await keysFor(...ids);
+        const rows = ids.flatMap(id => Array.from({ length: 24 }, (_, i) => row(id, NOW - i * SLOT_MS, { cfs: i })));
+        expect(await upsertSlots(db, rows, keys)).toBe(12_000);
     });
 });
 
-const SNAP = 300_000;
+describe("reads", () => {
+    it("exclude slots older than the retention horizon", async () => {
+        const keys = await keysFor("USGS:1");
+        const expired = NOW - RETENTION_MS - DAY; // still physically in the ring
+        await upsertSlots(db, [row("USGS:1", expired, { cfs: 1 }), row("USGS:1", NOW, { cfs: 2 })], keys);
+        expect(await countReadings(db)).toBe(2);
 
-describe("readSeries", () => {
-    it("returns the live-provider payload shape with readings ascending", async () => {
-        const keys = await resolveGaugeKeys(db, [
-            dim("USGS:03451500", { name: "Hominy Creek", section: "Lower", state: "NC", lat: 35.5, lon: -82.6 }),
+        const series = await readSeries(db, ["USGS:1"], NOW - 40 * DAY, NOW, NOW);
+        expect(series["USGS:1"].readings.map(r => r.cfs)).toEqual([2]);
+
+        const sums = await readHourlySums(db, ["USGS:1"], expired - HOUR, NOW + HOUR, NOW);
+        expect([...sums.get("USGS:1")!.keys()]).toEqual([NOW]);
+    });
+
+    it("readSeries returns real timestamps in order across a wrap", async () => {
+        const keys = await keysFor("USGS:1");
+        const zero = Math.ceil(NOW / SLOT_MS / SLOTS) * SLOTS * SLOT_MS;
+        await upsertSlots(db, [
+            row("USGS:1", zero, { cfs: 3 }),
+            row("USGS:1", zero - SLOT_MS, { off: 120, cfs: 2 }),
+            row("USGS:1", zero - 2 * SLOT_MS, { cfs: 1 }),
+        ], keys);
+        const series = await readSeries(db, ["USGS:1"], zero - HOUR, zero, zero);
+        expect(series["USGS:1"].readings).toEqual([
+            { dateTime: zero - 2 * SLOT_MS, cfs: 1 },
+            { dateTime: zero - SLOT_MS + 120_000, cfs: 2 },
+            { dateTime: zero, cfs: 3 },
         ]);
-        await upsertReadings(db, [
-            { gaugeId: "USGS:03451500", ts: NOW, cfs: 300 },
-            { gaugeId: "USGS:03451500", ts: NOW - 2 * SNAP, cfs: 100 },
-            { gaugeId: "USGS:03451500", ts: NOW - SNAP, cfs: 200 },
-        ], keys, NOW);
-
-        const out = await readSeries(db, ["USGS:03451500"], NOW - DAY);
-        const hist = out["USGS:03451500"];
-
-        expect(hist.id).toBe("03451500");
-        expect(hist.name).toBe("Hominy Creek");
-        expect(hist.section).toBe("Lower");
-        expect(hist.state).toBe("NC");
-        expect(hist.lat).toBeCloseTo(35.5);
-        expect(hist.readings.map(r => r.cfs)).toEqual([100, 200, 300]);
-        expect(hist.readings.map(r => r.dateTime)).toEqual([NOW - 2 * SNAP, NOW - SNAP, NOW]);
     });
 
-    it("honors the start bound so ?since= returns only the delta", async () => {
-        const keys = await resolveGaugeKeys(db, [dim("USGS:1")]);
-        await upsertReadings(db, [
-            { gaugeId: "USGS:1", ts: NOW - 3 * HOUR, cfs: 1 },
-            { gaugeId: "USGS:1", ts: NOW - 2 * HOUR, cfs: 2 },
-            { gaugeId: "USGS:1", ts: NOW, cfs: 3 },
-        ], keys, NOW);
-
-        const delta = await readSeries(db, ["USGS:1"], NOW - HOUR);
-        expect(delta["USGS:1"].readings.map(r => r.cfs)).toEqual([3]);
+    it("readLatest returns the newest reading per gauge within the window", async () => {
+        const keys = await keysFor("USGS:1", "USGS:2", "USGS:3");
+        await upsertSlots(db, [
+            row("USGS:1", NOW - SLOT_MS, { cfs: 1 }), row("USGS:1", NOW, { cfs: 2 }),
+            row("USGS:2", NOW - 2 * HOUR, { cfs: 3 }),
+            row("USGS:3", NOW - 13 * HOUR, { cfs: 4 }),
+        ], keys);
+        const latest = await readLatest(db, 12 * HOUR, NOW);
+        expect(latest).toEqual({
+            "USGS:1": { dateTime: NOW, cfs: 2 },
+            "USGS:2": { dateTime: NOW - 2 * HOUR, cfs: 3 },
+        });
     });
 
-    it("omits unknown gauges so the caller can fall back to a live fetch", async () => {
-        const keys = await resolveGaugeKeys(db, [dim("USGS:1")]);
-        await upsertReadings(db, [{ gaugeId: "USGS:1", ts: NOW, cfs: 1 }], keys, NOW);
-
-        const out = await readSeries(db, ["USGS:1", "UK:9999"], NOW - DAY);
-        expect(Object.keys(out)).toEqual(["USGS:1"]);
-    });
-
-    it("omits null measurements rather than emitting undefined keys", async () => {
-        const keys = await resolveGaugeKeys(db, [dim("EC:05BB001")]);
-        await upsertReadings(db, [{ gaugeId: "EC:05BB001", ts: NOW, cms: 12.5, m: 1.2 }], keys, NOW);
-
-        const reading = (await readSeries(db, ["EC:05BB001"], NOW - DAY))["EC:05BB001"].readings[0];
-        expect(reading).toEqual({ dateTime: NOW, cms: 12.5, m: 1.2 });
-        expect("cfs" in reading).toBe(false);
-    });
-});
-
-describe("readLatestAll", () => {
-    it("returns exactly the newest reading per gauge", async () => {
-        const keys = await resolveGaugeKeys(db, [dim("USGS:1"), dim("USGS:2")]);
-        await upsertReadings(db, [
-            { gaugeId: "USGS:1", ts: NOW - HOUR, cfs: 10 },
-            { gaugeId: "USGS:1", ts: NOW, cfs: 99 },
-            { gaugeId: "USGS:2", ts: NOW - 2 * HOUR, cfs: 5 },
-        ], keys, NOW);
-
-        const latest = await readLatestAll(db);
-        expect(latest["USGS:1"].cfs).toBe(99);
-        expect(latest["USGS:1"].dateTime).toBe(NOW);
-        expect(latest["USGS:2"].cfs).toBe(5);
-    });
-
-    it("omits gauges that have no readings yet", async () => {
-        await resolveGaugeKeys(db, [dim("USGS:1")]);
-        expect(await readLatestAll(db)).toEqual({});
+    it("readHourlySums sums per left-labelled hour and ignores sentinels", async () => {
+        const keys = await keysFor("USGS:1");
+        await upsertSlots(db, [
+            row("USGS:1", NOW - HOUR, { cfs: 10, ft: 1 }),
+            row("USGS:1", NOW - HOUR + SLOT_MS, { cfs: 20 }),
+            row("USGS:1", NOW - HOUR + 2 * SLOT_MS, { cfs: -999999, ft: 3 }),
+            row("USGS:1", NOW, { cfs: 5 }),
+        ], keys);
+        const sums = (await readHourlySums(db, ["USGS:1"], NOW - HOUR, NOW + HOUR, NOW)).get("USGS:1")!;
+        expect(sums.get(NOW - HOUR)).toEqual({ cfsSum: 30, cfsN: 2, ftSum: 4, ftN: 2 });
+        expect(sums.get(NOW)).toEqual({ cfsSum: 5, cfsN: 1, ftSum: 0, ftN: 0 });
     });
 });
 
 describe("query plans", () => {
-    const planOf = (sql: string, ...params: unknown[]): string[] =>
-        db.query<{ detail: string }>("EXPLAIN QUERY PLAN " + sql, ...params).map(r => r.detail);
+    const plan = (sql: string, ...params: unknown[]) =>
+        db.query(`EXPLAIN QUERY PLAN ${sql}`, ...params).map((r: any) => r.detail as string);
 
-    it("never full-scans gauge_readings when projecting latest-per-gauge", async () => {
-        // This runs every 15 minutes over the whole fact table. Without the
-        // CROSS JOIN pinning the join order, SQLite drives from gauge_readings
-        // and scans it: 166ms vs 2.5ms at 500k rows, and it grows with total
-        // readings rather than gauge count. At ~40M rows that is ~11s against
-        // D1's 30-second query limit.
-        await resolveGaugeKeys(db, [dim("USGS:1")]);
-        const plan = planOf(LATEST_ALL_SQL);
+    it("latest-per-gauge seeks readings by primary key", () => {
+        const details = plan(LATEST_SQL, 0, 10, 0);
+        expect(details.some(d => /SEARCH r USING PRIMARY KEY/.test(d))).toBe(true);
+        expect(details.some(d => /^SCAN r\b/.test(d))).toBe(false);
+    });
+});
 
-        expect(plan.some(d => /SEARCH r USING PRIMARY KEY/.test(d))).toBe(true);
-        expect(plan.some(d => /^SCAN r\b/.test(d))).toBe(false);
+describe("resolveGaugeKeys", () => {
+    it("assigns stable keys and writes nothing when metadata is unchanged", async () => {
+        const dims = [dim("USGS:1", { name: "A", lat: 1.5 }), dim("EC:05BB001", { name: "B" })];
+        const first = await resolveGaugeKeys(db, dims);
+        expect(first.written).toBe(2);
+        const again = await resolveGaugeKeys(db, dims);
+        expect(again.written).toBe(0);
+        expect([...again.keys]).toEqual([...first.keys]);
     });
 
-    it("seeks rather than scans when reading one gauge's window", async () => {
-        await resolveGaugeKeys(db, [dim("USGS:1")]);
-        const plan = planOf(`
-            SELECT g.gauge_id AS gauge_id, r.ts, r.cfs
-              FROM gauges g
-              JOIN json_each(?1) j ON g.gauge_id = j.value
-              JOIN gauge_readings r ON r.gauge_key = g.gauge_key
-             WHERE r.ts >= ?2 AND r.ts <= ?3
-             ORDER BY g.gauge_key, r.ts
-        `, JSON.stringify(["USGS:1"]), 0, NOW);
-
-        expect(plan.some(d => /SEARCH r USING PRIMARY KEY \(gauge_key=\? AND ts>\? AND ts<\?\)/.test(d))).toBe(true);
+    it("writes only on a real change and never blanks with null", async () => {
+        await resolveGaugeKeys(db, [dim("USGS:1", { name: "A" })]);
+        expect((await resolveGaugeKeys(db, [dim("USGS:1")])).written).toBe(0);
+        expect((await resolveGaugeKeys(db, [dim("USGS:1", { name: "B" })])).written).toBe(1);
+        expect(db.query("SELECT name FROM gauges")).toEqual([{ name: "B" }]);
     });
 
-    it("prunes by primary key, which is why no index on ts is needed", async () => {
-        await resolveGaugeKeys(db, [dim("USGS:1")]);
-        const plan = planOf(`
-            DELETE FROM gauge_readings
-             WHERE gauge_key IN (SELECT gauge_key FROM gauges WHERE gauge_key % ?1 = ?2)
-               AND ts < ?3
-        `, PRUNE_SLICES, 0, NOW);
-
-        expect(plan.some(d => /SEARCH gauge_readings USING PRIMARY KEY/.test(d))).toBe(true);
-        expect(plan.some(d => /^SCAN gauge_readings\b/.test(d))).toBe(false);
+    it("drops dead prefixes and normalizes casing", async () => {
+        const { keys } = await resolveGaugeKeys(db, [dim("usgs:1"), dim("virtual:x")]);
+        expect([...keys.keys()]).toEqual(["USGS:1"]);
+        expect((await lookupGaugeKeys(db, ["USGS:1", "USGS:2"])).size).toBe(1);
     });
 });
 
 describe("sync state", () => {
-    it("preserves fields omitted from a partial update", async () => {
-        const keys = await resolveGaugeKeys(db, [dim("USGS:1")]);
-
-        await writeSyncState(db, [{ gaugeId: "USGS:1", cursorModified: 5000, lastObsTs: NOW }], keys);
-        await writeSyncState(db, [{ gaugeId: "USGS:1", obsCount24h: 90 }], keys);
-
-        const state = (await readSyncState(db, ["USGS:1"])).get("USGS:1")!;
-        expect(state.cursorModified).toBe(5000);
-        expect(state.lastObsTs).toBe(NOW);
-        expect(state.obsCount24h).toBe(90);
+    it("extendCoverage only moves backward and skips no-ops", async () => {
+        const keys = await keysFor("USGS:1");
+        const k = keys.get("USGS:1")!;
+        expect(await extendCoverage(db, [k], NOW - DAY)).toBe(1);
+        expect(await extendCoverage(db, [k], NOW)).toBe(0);
+        expect(await extendCoverage(db, [k], NOW - DAY)).toBe(0);
+        expect(await extendCoverage(db, [k], NOW - 2 * DAY)).toBe(1);
+        expect((await readSyncState(db, ["USGS:1"])).get("USGS:1")!.coverageStart).toBe(NOW - 2 * DAY);
     });
 
-    it("moves last_obs_ts forward only, and coverage_start backward only", async () => {
-        const keys = await resolveGaugeKeys(db, [dim("USGS:1")]);
-
-        await writeSyncState(db, [{ gaugeId: "USGS:1", lastObsTs: NOW, coverageStart: NOW - DAY }], keys);
-        // A late/out-of-order batch must not rewind progress.
-        await writeSyncState(db, [{ gaugeId: "USGS:1", lastObsTs: NOW - HOUR, coverageStart: NOW }], keys);
-
-        const state = (await readSyncState(db, ["USGS:1"])).get("USGS:1")!;
-        expect(state.lastObsTs).toBe(NOW);
-        expect(state.coverageStart).toBe(NOW - DAY);
-
-        // Backfill reaching further into the past does move coverage_start.
-        await writeSyncState(db, [{ gaugeId: "USGS:1", coverageStart: NOW - 10 * DAY }], keys);
-        expect((await readSyncState(db, ["USGS:1"])).get("USGS:1")!.coverageStart).toBe(NOW - 10 * DAY);
+    it("initCoverage sets only missing coverage; reset moves it forward", async () => {
+        const keys = await keysFor("EC:1", "EC:2");
+        await extendCoverage(db, [keys.get("EC:1")!], NOW - 5 * DAY);
+        expect(await initCoverage(db, [...keys.values()], NOW - HOUR)).toBe(1);
+        expect(await resetProviderCoverage(db, "EC", NOW - 2 * HOUR)).toBe(1);
+        const state = await readProviderSyncState(db, "EC");
+        expect(state.get("EC:1")!.coverageStart).toBe(NOW - 2 * HOUR);
+        expect(state.get("EC:2")!.coverageStart).toBe(NOW - HOUR);
     });
 
-    it("clears a stale error on a successful cycle", async () => {
-        const keys = await resolveGaugeKeys(db, [dim("USGS:1")]);
-        await writeSyncState(db, [{ gaugeId: "USGS:1", failCount: 3, lastError: "timeout" }], keys);
-        expect(db.query("SELECT last_error FROM gauge_sync_state")[0].last_error).toBe("timeout");
-
-        await writeSyncState(db, [{ gaugeId: "USGS:1", failCount: 0, lastError: null, lastSuccessAt: NOW }], keys);
-        const row = db.query("SELECT last_error, fail_count FROM gauge_sync_state")[0];
-        expect(row.last_error).toBe(null);
-        expect(row.fail_count).toBe(0);
-    });
-});
-
-describe("pruning", () => {
-    it("deletes only beyond the horizon, and only within its own slice", async () => {
-        // Two gauges whose keys fall in different slices.
-        const ids = Array.from({ length: PRUNE_SLICES + 1 }, (_, i) => `USGS:${i}`);
-        const keys = await resolveGaugeKeys(db, ids.map(i => dim(i)));
-
-        const first = ids[0];
-        const other = ids[1];
-        const readings: StoredReading[] = [];
-        for (const id of [first, other]) {
-            readings.push({ gaugeId: id, ts: NOW - RETENTION_MS + HOUR, cfs: 1 }); // inside
-            readings.push({ gaugeId: id, ts: NOW, cfs: 2 });                        // inside
-        }
-        await upsertReadings(db, readings, keys, NOW);
-
-        // Age the store forward so the older rows fall out of retention.
-        const later = NOW + 2 * HOUR;
-        const firstKey = keys.get(first)!;
-        const deleted = await pruneSlice(db, firstKey % PRUNE_SLICES, later);
-
-        expect(deleted).toBe(1);
-        const remainingFirst = db.query(
-            "SELECT COUNT(*) AS n FROM gauge_readings WHERE gauge_key = ?", firstKey)[0].n;
-        const remainingOther = db.query(
-            "SELECT COUNT(*) AS n FROM gauge_readings WHERE gauge_key = ?", keys.get(other)!)[0].n;
-
-        expect(remainingFirst).toBe(1);   // pruned
-        expect(remainingOther).toBe(2);   // different slice, untouched
+    it("markRepair keeps the earliest point and clearRepair needs covering", async () => {
+        const keys = await keysFor("USGS:1", "USGS:2");
+        const [k1, k2] = [keys.get("USGS:1")!, keys.get("USGS:2")!];
+        expect(await markRepair(db, [k1], NOW - HOUR)).toBe(1);
+        expect(await markRepair(db, [k1], NOW)).toBe(0);
+        expect(await markProviderRepair(db, "USGS", NOW - 2 * HOUR)).toBe(2);
+        expect(await clearRepair(db, [k1, k2], NOW - HOUR)).toBe(0);
+        expect(await clearRepair(db, [k1], NOW - 3 * HOUR)).toBe(1);
+        const state = await readProviderSyncState(db, "USGS");
+        expect(state.get("USGS:1")!.repairFrom).toBeNull();
+        expect(state.get("USGS:2")!.repairFrom).toBe(NOW - 2 * HOUR);
     });
 
-    it("covers every gauge exactly once per full rotation", async () => {
-        const ids = Array.from({ length: 200 }, (_, i) => `USGS:${i}`);
-        const keys = await resolveGaugeKeys(db, ids.map(i => dim(i)));
-
-        const covered = new Set<number>();
-        for (let slice = 0; slice < PRUNE_SLICES; slice++) {
-            for (const key of keys.values()) {
-                if (key % PRUNE_SLICES === slice) covered.add(key);
-            }
-        }
-        expect(covered.size).toBe(ids.length);
-    });
-
-    it("advances the slice with wall-clock time and wraps", () => {
-        const slice = currentPruneSlice(NOW);
-        expect(slice).toBeGreaterThanOrEqual(0);
-        expect(slice).toBeLessThan(PRUNE_SLICES);
-        expect(currentPruneSlice(NOW + 15 * 60 * 1000)).toBe((slice + 1) % PRUNE_SLICES);
-        expect(currentPruneSlice(NOW + PRUNE_SLICES * 15 * 60 * 1000)).toBe(slice);
-    });
-});
-
-describe("gap detection", () => {
-    it("flags gauges with depressed 24h counts and leaves healthy ones alone", async () => {
-        const keys = await resolveGaugeKeys(db, [dim("USGS:healthy"), dim("USGS:gappy")]);
-
-        const readings: StoredReading[] = [];
-        for (let i = 0; i < 90; i++) {
-            readings.push({ gaugeId: "USGS:healthy", ts: NOW - i * SNAP * 3, cfs: 1 });
-        }
-        for (let i = 0; i < 5; i++) {
-            readings.push({ gaugeId: "USGS:gappy", ts: NOW - i * SNAP * 3, cfs: 1 });
-        }
-        await upsertReadings(db, readings, keys, NOW);
-        await refreshObsCounts(db, NOW + SNAP);
-
-        const gappy = await findGapGauges(db, 50, 10);
-        expect(gappy.map(g => g.gaugeId)).toEqual(["USGS:gappy"]);
-        expect(gappy[0].provider).toBe("USGS");
-    });
-
-    it("respects the limit so a bad day cannot queue unbounded repair work", async () => {
-        const ids = Array.from({ length: 40 }, (_, i) => `USGS:${i}`);
-        const keys = await resolveGaugeKeys(db, ids.map(i => dim(i)));
-        await upsertReadings(db, ids.map(id => ({ gaugeId: id, ts: NOW, cfs: 1 })), keys, NOW);
-        await refreshObsCounts(db, NOW);
-
-        expect((await findGapGauges(db, 50, 10)).length).toBe(10);
-    });
-});
-
-describe("lookupGaugeKeys", () => {
-    it("returns only known gauges and does not create rows", async () => {
-        await resolveGaugeKeys(db, [dim("USGS:1")]);
-        const keys = await lookupGaugeKeys(db, ["USGS:1", "USGS:2"]);
-
-        expect([...keys.keys()]).toEqual(["USGS:1"]);
-        expect(db.query("SELECT COUNT(*) AS n FROM gauges")[0].n).toBe(1);
+    it("setMeta writes only when the value changes", async () => {
+        expect(await getMeta(db, "x")).toBeNull();
+        expect(await setMeta(db, "x", 5)).toBe(1);
+        expect(await setMeta(db, "x", 5)).toBe(0);
+        expect(await setMeta(db, "x", 6)).toBe(1);
+        expect(await getMeta(db, "x")).toBe(6);
     });
 });

@@ -2,49 +2,30 @@ import type { GaugeHistory, GaugeReading } from "./provider";
 import { normalizeGaugeId } from "../utils/formatting";
 
 /**
- * Persistence layer for the flow history store (the `FLOW_DB` D1 database).
+ * Persistence for the flow history store (`FLOW_DB`).
  *
- * Two constraints drive nearly every choice in this file:
+ * `gauge_readings` is a ring buffer: each gauge has SLOTS fixed 15-minute
+ * slots, and a new reading overwrites the slot's previous generation. Nothing
+ * is ever deleted, and every read filters on `ts` so expired slots are
+ * invisible.
  *
- * 1. **D1 caps a query at 100 bound parameters.** A naive multi-row INSERT
- *    manages ~10 rows per statement, which is useless when a sync cycle writes
- *    ~15k readings. Every bulk operation here therefore passes its payload as a
- *    *single* JSON parameter and unpacks it with `json_each`. The bound value
- *    is not part of the SQL text, so the 100KB statement limit does not apply to
- *    it — but we still chunk (see MAX_JSON_BYTES) to stay well under D1's 2MB
- *    maximum value size.
- *
- * 2. **`gauge_readings` is WITHOUT ROWID, clustered on (gauge_key, ts).** Reads
- *    ("30 days for one gauge") are sequential range scans, but writes land at
- *    ~15k scattered insertion points. Sorting each batch by (gauge_key, ts)
- *    before insert makes the B-tree traversal monotonic instead of thrashing
- *    pages, and is the single most important write-path detail here.
+ * Bulk operations pass one JSON parameter unpacked with `json_each`, because
+ * D1 caps a query at 100 bound parameters. Every upsert is guarded so an
+ * unchanged row costs no write (D1 bills rows written).
  */
 
-/** Rolling retention horizon. 30 days is for inference, not training. */
+export const SLOT_MS = 15 * 60 * 1000;
+/** 32 days of slots: two days of slack beyond RETENTION_MS. */
+export const SLOTS = 32 * 96;
 export const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+/** Readings further in the future than this are dropped as bad clocks. */
+export const FUTURE_SKEW_MS = 5 * 60 * 1000;
 
-/**
- * Pruning is spread across this many cycles (96 = one 15-minute cycle per
- * 24h). A bulk `DELETE WHERE ts < ?` would need a secondary index on ts —
- * which on a WITHOUT ROWID table duplicates the full primary key — and would
- * still scan ~40M rows against D1's 30-second query limit. Deleting a rotating
- * slice of gauges instead rides the primary key and needs no extra index.
- */
-export const PRUNE_SLICES = 96;
-
-/** Chunk size for json_each payloads. Well under D1's 2MB max value size. */
 const MAX_JSON_BYTES = 400_000;
-
-/** Readings are snapped to 5-minute buckets so providers agree on timestamps. */
-export const SNAP_MS = 300_000;
-
-export type GaugeTier = "linked" | "registry";
 
 export interface GaugeDimension {
     gaugeId: string;
     provider: string;
-    tier: GaugeTier;
     name?: string;
     section?: string;
     state?: string;
@@ -54,7 +35,8 @@ export interface GaugeDimension {
     nwmReachId?: string;
 }
 
-export interface StoredReading {
+/** One observation at its real timestamp, before slotting. */
+export interface ObservedReading {
     gaugeId: string;
     ts: number;
     cfs?: number;
@@ -64,52 +46,106 @@ export interface StoredReading {
     temp_f?: number;
     precip_in?: number;
     approved?: boolean;
-    srcModified?: number;
 }
 
-export interface SyncState {
-    gaugeKey: number;
-    cursorModified: number | null;
-    lastObsTs: number | null;
-    coverageStart: number | null;
-    obsCount24h: number | null;
-    lastSuccessAt: number | null;
-    failCount: number;
+/** One ring-buffer row: the chosen reading for a (gauge, slot). */
+export interface SlotRow {
+    gaugeId: string;
+    /** Slot start, ms. */
+    ts: number;
+    /** Offset of the source reading from the slot start, seconds. */
+    off: number;
+    cfs: number | null;
+    ft: number | null;
+    cms: number | null;
+    m: number | null;
+    temp_f: number | null;
+    precip_in: number | null;
+    approved: boolean;
 }
 
-/** Providers whose gauges we deliberately never store. */
 const DEAD_PREFIXES = new Set(["streambeam", "virtual"]);
 
-/**
- * `streambeam:` gauges were removed and `virtual:` gauges are gone (future
- * custom gauges will be model-derived rather than scraped) — but both still
- * appear in the live sitedata.json, so this filter is load-bearing today.
- */
+/** `streambeam:` and `virtual:` gauges still appear in sitedata but are never stored. */
 export function isStorableGaugeId(gaugeId: string): boolean {
     if (typeof gaugeId !== "string" || !gaugeId.includes(":")) return false;
     const prefix = gaugeId.split(":")[0].toLowerCase();
     return !DEAD_PREFIXES.has(prefix) && prefix.length > 0;
 }
 
-export function snapTimestamp(ts: number): number {
-    return Math.round(ts / SNAP_MS) * SNAP_MS;
+export const slotStartOf = (ts: number): number => Math.floor(ts / SLOT_MS) * SLOT_MS;
+export const slotIndexOf = (ts: number): number => Math.floor(ts / SLOT_MS) % SLOTS;
+
+/**
+ * Slot-index ranges covering slot starts in [start, end]. At most two, since
+ * the ring wraps; a span of a full ring or more is the whole ring.
+ */
+export function slotRanges(start: number, end: number): Array<[number, number]> {
+    const first = Math.floor(start / SLOT_MS);
+    const last = Math.floor(end / SLOT_MS);
+    if (last < first) return [];
+    if (last - first + 1 >= SLOTS) return [[0, SLOTS - 1]];
+    const a = first % SLOTS;
+    const b = last % SLOTS;
+    return a <= b ? [[a, b]] : [[a, SLOTS - 1], [0, b]];
 }
 
 const num = (v: unknown): number | null =>
     typeof v === "number" && Number.isFinite(v) ? v : null;
 
+const VALUE_COLS = ["cfs", "ft", "cms", "m", "temp_f", "precip_in"] as const;
+
+export interface ReduceOptions {
+    now: number;
+    /** Fetch window start. Slots starting before it are partial and dropped. */
+    windowStart?: number;
+}
+
 /**
- * Splits `items` into chunks whose JSON serialization stays under
- * MAX_JSON_BYTES, returning the serialized string for each chunk.
+ * Collapses readings to one row per (gauge, slot), keeping the reading closest
+ * to the slot start. Readings at the same timestamp are merged. Drops future,
+ * expired, empty and leading-edge partial-slot readings.
  */
+export function reduceToSlots(readings: Iterable<ObservedReading>, opts: ReduceOptions): SlotRow[] {
+    const horizon = opts.now - RETENTION_MS;
+    const maxTs = opts.now + FUTURE_SKEW_MS;
+    const best = new Map<string, SlotRow>();
+
+    for (const r of readings) {
+        if (!Number.isFinite(r.ts) || r.ts > maxTs) continue;
+        const ts = slotStartOf(r.ts);
+        if (ts < horizon) continue;
+        if (opts.windowStart !== undefined && ts < opts.windowStart) continue;
+
+        const values = {
+            cfs: num(r.cfs), ft: num(r.ft), cms: num(r.cms), m: num(r.m),
+            temp_f: num(r.temp_f), precip_in: num(r.precip_in),
+        };
+        if (VALUE_COLS.every(c => values[c] === null)) continue;
+
+        const off = Math.round((r.ts - ts) / 1000);
+        const key = `${r.gaugeId}|${ts}`;
+        const prev = best.get(key);
+
+        if (!prev || off < prev.off) {
+            best.set(key, { gaugeId: r.gaugeId, ts, off, ...values, approved: r.approved === true });
+        } else if (off === prev.off) {
+            for (const c of VALUE_COLS) if (prev[c] === null) prev[c] = values[c];
+            prev.approved = prev.approved && r.approved === true;
+        }
+    }
+
+    return [...best.values()];
+}
+
+/** Splits items into JSON arrays that each serialize under MAX_JSON_BYTES. */
 function chunkAsJson<T>(items: T[]): string[] {
     const out: string[] = [];
     let current: string[] = [];
-    let size = 2; // enclosing brackets
+    let size = 2;
 
     for (const item of items) {
         const encoded = JSON.stringify(item);
-        // +1 for the separating comma
         if (current.length > 0 && size + encoded.length + 1 > MAX_JSON_BYTES) {
             out.push(`[${current.join(",")}]`);
             current = [];
@@ -123,245 +159,219 @@ function chunkAsJson<T>(items: T[]): string[] {
     return out;
 }
 
+/** Rows written according to D1's meta; the test harness reports `changes`. */
+function writtenOf(res: { meta?: any } | undefined): number {
+    const meta = res?.meta ?? {};
+    return Number(meta.rows_written ?? meta.changes ?? 0);
+}
+
+async function runBatch(db: D1Database, statements: D1PreparedStatement[]): Promise<number> {
+    if (statements.length === 0) return 0;
+    const results = await db.batch(statements);
+    return results.reduce((sum, r) => sum + writtenOf(r), 0);
+}
+
+async function selectKeys(db: D1Database, ids: string[]): Promise<Map<string, number>> {
+    const keys = new Map<string, number>();
+    for (const chunk of chunkAsJson(ids)) {
+        const { results } = await db.prepare(`
+            SELECT g.gauge_key AS k, g.gauge_id AS i
+              FROM gauges g
+              JOIN json_each(?1) j ON g.gauge_id = j.value
+        `).bind(chunk).all<{ k: number; i: string }>();
+        for (const row of results ?? []) keys.set(row.i, row.k);
+    }
+    return keys;
+}
+
 // --- DIMENSION ---
 
 /**
- * Upserts gauge dimension rows and returns a gauge_id -> gauge_key map for
- * every gauge requested.
- *
- * Metadata is only overwritten when the incoming value is non-null, so a
- * provider that returns a reading without a name cannot blank out a name we
- * already resolved from the registry.
+ * Upserts gauge rows and returns gauge_id -> gauge_key for every storable
+ * gauge. A row is rewritten only when a non-null incoming value differs, so a
+ * provider that omits a name cannot blank one, and an unchanged registry
+ * costs nothing.
  */
 export async function resolveGaugeKeys(
     db: D1Database,
     gauges: GaugeDimension[]
-): Promise<Map<string, number>> {
+): Promise<{ keys: Map<string, number>; written: number }> {
     const wanted = gauges.filter(g => isStorableGaugeId(g.gaugeId));
-    const keys = new Map<string, number>();
-    if (wanted.length === 0) return keys;
+    if (wanted.length === 0) return { keys: new Map(), written: 0 };
 
     const payload = wanted.map(g => ({
         i: normalizeGaugeId(g.gaugeId),
         p: g.provider,
-        tr: g.tier,
-        n: g.name ?? null,
-        sc: g.section ?? null,
-        st: g.state ?? null,
-        c: g.country ?? null,
+        n: g.name || null,
+        sc: g.section || null,
+        st: g.state || null,
+        c: g.country || null,
         la: num(g.lat),
         lo: num(g.lon),
-        r: g.nwmReachId ?? null,
+        r: g.nwmReachId || null,
     }));
 
-    const now = Date.now();
-    for (const chunk of chunkAsJson(payload)) {
-        await db.prepare(`
-            INSERT INTO gauges (gauge_id, provider, tier, name, section, state,
-                                country, lat, lon, nwm_reach_id, updated_at)
-            SELECT j.value->>'$.i', j.value->>'$.p', j.value->>'$.tr',
-                   j.value->>'$.n', j.value->>'$.sc', j.value->>'$.st',
-                   j.value->>'$.c', j.value->>'$.la', j.value->>'$.lo',
-                   j.value->>'$.r', ?2
-              FROM json_each(?1) j
-             WHERE true   -- disambiguates ON CONFLICT from a JOIN..ON for the parser
-            ON CONFLICT(gauge_id) DO UPDATE SET
-                provider     = excluded.provider,
-                -- never demote a linked gauge back to registry
-                tier         = CASE WHEN gauges.tier = 'linked' THEN 'linked'
-                                    ELSE excluded.tier END,
-                name         = COALESCE(excluded.name, gauges.name),
-                section      = COALESCE(excluded.section, gauges.section),
-                state        = COALESCE(excluded.state, gauges.state),
-                country      = COALESCE(excluded.country, gauges.country),
-                lat          = COALESCE(excluded.lat, gauges.lat),
-                lon          = COALESCE(excluded.lon, gauges.lon),
-                nwm_reach_id = COALESCE(excluded.nwm_reach_id, gauges.nwm_reach_id),
-                updated_at   = excluded.updated_at
-        `).bind(chunk, now).run();
-    }
+    const changed = (col: string) =>
+        `(excluded.${col} IS NOT NULL AND excluded.${col} IS NOT gauges.${col})`;
 
-    const ids = wanted.map(g => normalizeGaugeId(g.gaugeId));
-    for (const chunk of chunkAsJson(ids)) {
-        const { results } = await db.prepare(`
-            SELECT g.gauge_key AS k, g.gauge_id AS i
-              FROM gauges g
-              JOIN json_each(?1) j ON g.gauge_id = j.value
-        `).bind(chunk).all<{ k: number; i: string }>();
-        for (const row of results ?? []) keys.set(row.i, row.k);
-    }
+    const statements = chunkAsJson(payload).map(chunk => db.prepare(`
+        INSERT INTO gauges (gauge_id, provider, name, section, state, country, lat, lon, nwm_reach_id)
+        SELECT j.value->>'$.i', j.value->>'$.p', j.value->>'$.n', j.value->>'$.sc',
+               j.value->>'$.st', j.value->>'$.c', j.value->>'$.la', j.value->>'$.lo',
+               j.value->>'$.r'
+          FROM json_each(?1) j
+         WHERE true
+        ON CONFLICT(gauge_id) DO UPDATE SET
+            provider     = excluded.provider,
+            name         = COALESCE(excluded.name, gauges.name),
+            section      = COALESCE(excluded.section, gauges.section),
+            state        = COALESCE(excluded.state, gauges.state),
+            country      = COALESCE(excluded.country, gauges.country),
+            lat          = COALESCE(excluded.lat, gauges.lat),
+            lon          = COALESCE(excluded.lon, gauges.lon),
+            nwm_reach_id = COALESCE(excluded.nwm_reach_id, gauges.nwm_reach_id)
+        WHERE excluded.provider IS NOT gauges.provider
+           OR ${["name", "section", "state", "country", "lat", "lon", "nwm_reach_id"].map(changed).join(" OR ")}
+    `).bind(chunk));
 
-    return keys;
+    const written = await runBatch(db, statements);
+    const keys = await selectKeys(db, payload.map(p => p.i));
+    return { keys, written };
 }
 
-/** Looks up existing keys without writing. Unknown gauges are simply absent. */
-export async function lookupGaugeKeys(
-    db: D1Database,
-    gaugeIds: string[]
-): Promise<Map<string, number>> {
-    const keys = new Map<string, number>();
+/** Looks up existing keys without writing. Unknown gauges are absent. */
+export async function lookupGaugeKeys(db: D1Database, gaugeIds: string[]): Promise<Map<string, number>> {
     const ids = gaugeIds.filter(isStorableGaugeId).map(normalizeGaugeId);
-    if (ids.length === 0) return keys;
-
-    for (const chunk of chunkAsJson(ids)) {
-        const { results } = await db.prepare(`
-            SELECT g.gauge_key AS k, g.gauge_id AS i
-              FROM gauges g
-              JOIN json_each(?1) j ON g.gauge_id = j.value
-        `).bind(chunk).all<{ k: number; i: string }>();
-        for (const row of results ?? []) keys.set(row.i, row.k);
-    }
-    return keys;
+    return ids.length === 0 ? new Map() : selectKeys(db, ids);
 }
 
 // --- READINGS ---
 
+const sameReading = "excluded.ts = gauge_readings.ts AND excluded.off = gauge_readings.off";
+const mergeCol = (col: string) =>
+    `${col} = CASE WHEN ${sameReading} THEN COALESCE(excluded.${col}, gauge_readings.${col}) ELSE excluded.${col} END`;
+const colDiffers = (col: string) =>
+    `(excluded.${col} IS NOT NULL AND excluded.${col} IS NOT gauge_readings.${col})`;
+
 /**
- * Upserts readings. Idempotent by construction: the (gauge_key, ts) primary key
- * plus ON CONFLICT DO UPDATE means re-polling costs nothing and a *revised*
- * reading simply overwrites the value we held. That is what makes the whole
- * ingest design safe to re-run.
- *
- * Readings outside the retention horizon, or for gauges with no dimension row,
- * are dropped rather than silently creating orphans.
- *
- * @returns the number of readings actually submitted.
+ * The ring-buffer upsert. A slot is overwritten by a newer generation (larger
+ * ts), by a closer reading in the same slot (smaller off), or by changed
+ * values for the same reading, merged column-wise so a partial revision keeps
+ * the other parameters. Anything else is a no-op and writes nothing.
  */
-export async function upsertReadings(
+export const UPSERT_READINGS_SQL = `
+    INSERT INTO gauge_readings
+          (gauge_key, slot, ts, off, cfs, ft, cms, m, temp_f, precip_in, approved)
+    SELECT j.value->>'$.k', j.value->>'$.s', j.value->>'$.t', j.value->>'$.o',
+           j.value->>'$.cfs', j.value->>'$.ft', j.value->>'$.cms', j.value->>'$.m',
+           j.value->>'$.tf', j.value->>'$.pi', j.value->>'$.a'
+      FROM json_each(?1) j
+     WHERE true
+    ON CONFLICT(gauge_key, slot) DO UPDATE SET
+        ${VALUE_COLS.map(mergeCol).join(",\n        ")},
+        approved = CASE WHEN ${sameReading}
+                        THEN MAX(excluded.approved, gauge_readings.approved)
+                        ELSE excluded.approved END,
+        ts  = excluded.ts,
+        off = excluded.off
+    WHERE excluded.ts > gauge_readings.ts
+       OR (excluded.ts = gauge_readings.ts AND (
+              excluded.off < gauge_readings.off
+           OR (excluded.off = gauge_readings.off AND (
+                  ${VALUE_COLS.map(colDiffers).join("\n               OR ")}
+               OR excluded.approved > gauge_readings.approved))))
+`;
+
+/**
+ * Writes slot rows. Rows for gauges without a key are skipped.
+ * @returns rows D1 reports as written (0 for a pure replay).
+ */
+export async function upsertSlots(
     db: D1Database,
-    readings: StoredReading[],
-    keys: Map<string, number>,
-    now: number = Date.now()
+    rows: SlotRow[],
+    keys: Map<string, number>
 ): Promise<number> {
-    const horizon = now - RETENTION_MS;
-
-    const rows: Array<{
-        k: number; t: number;
-        cfs: number | null; ft: number | null; cms: number | null; m: number | null;
-        tf: number | null; pi: number | null; a: number; lm: number | null;
-    }> = [];
-
-    for (const r of readings) {
-        const key = keys.get(normalizeGaugeId(r.gaugeId));
-        if (key === undefined) continue;
-        if (!Number.isFinite(r.ts)) continue;
-
-        const ts = snapTimestamp(r.ts);
-        if (ts < horizon) continue;
-
-        const cfs = num(r.cfs), ft = num(r.ft), cms = num(r.cms), m = num(r.m);
-        const tf = num(r.temp_f), pi = num(r.precip_in);
-        // A row carrying no measurement at all is noise, not an observation.
-        if (cfs === null && ft === null && cms === null && m === null && tf === null && pi === null) {
-            continue;
-        }
-
-        rows.push({
-            k: key, t: ts, cfs, ft, cms, m, tf, pi,
+    const payload: Array<Record<string, number | null>> = [];
+    for (const r of rows) {
+        const k = keys.get(normalizeGaugeId(r.gaugeId));
+        if (k === undefined) continue;
+        payload.push({
+            k, s: slotIndexOf(r.ts), t: r.ts, o: r.off,
+            cfs: r.cfs, ft: r.ft, cms: r.cms, m: r.m, tf: r.temp_f, pi: r.precip_in,
             a: r.approved ? 1 : 0,
-            lm: num(r.srcModified),
         });
     }
+    if (payload.length === 0) return 0;
 
-    if (rows.length === 0) return 0;
-
-    // Sort into primary-key order so the clustered B-tree is walked
-    // monotonically rather than thrashed across ~15k scattered pages.
-    rows.sort((a, b) => (a.k - b.k) || (a.t - b.t));
-
-    const chunks = chunkAsJson(rows);
-    const statements = chunks.map(chunk => db.prepare(`
-        INSERT INTO gauge_readings
-              (gauge_key, ts, cfs, ft, cms, m, temp_f, precip_in, approved, src_modified)
-        SELECT j.value->>'$.k', j.value->>'$.t',
-               j.value->>'$.cfs', j.value->>'$.ft', j.value->>'$.cms', j.value->>'$.m',
-               j.value->>'$.tf', j.value->>'$.pi', j.value->>'$.a', j.value->>'$.lm'
-          FROM json_each(?1) j
-         WHERE true   -- disambiguates ON CONFLICT from a JOIN..ON for the parser
-        ON CONFLICT(gauge_key, ts) DO UPDATE SET
-               cfs          = COALESCE(excluded.cfs, gauge_readings.cfs),
-               ft           = COALESCE(excluded.ft, gauge_readings.ft),
-               cms          = COALESCE(excluded.cms, gauge_readings.cms),
-               m            = COALESCE(excluded.m, gauge_readings.m),
-               temp_f       = COALESCE(excluded.temp_f, gauge_readings.temp_f),
-               precip_in    = COALESCE(excluded.precip_in, gauge_readings.precip_in),
-               approved     = excluded.approved,
-               src_modified = excluded.src_modified
-    `).bind(chunk));
-
-    await db.batch(statements);
-    return rows.length;
+    // Primary-key order keeps the clustered B-tree walk monotonic.
+    payload.sort((a, b) => (a.k! - b.k!) || (a.s! - b.s!));
+    return runBatch(db, chunkAsJson(payload).map(chunk => db.prepare(UPSERT_READINGS_SQL).bind(chunk)));
 }
-
-/** Column list shared by the series and latest readers. */
-const READING_COLS = `r.ts AS ts, r.cfs AS cfs, r.ft AS ft, r.cms AS cms,
-                      r.m AS m, r.temp_f AS temp_f, r.precip_in AS precip_in,
-                      r.approved AS approved`;
 
 interface ReadingRow {
     gauge_id: string;
     ts: number;
+    off: number;
     cfs: number | null;
     ft: number | null;
     cms: number | null;
     m: number | null;
     temp_f: number | null;
     precip_in: number | null;
-    approved: number;
 }
 
+const READING_COLS = `g.gauge_id AS gauge_id, r.ts AS ts, r.off AS off, r.cfs AS cfs,
+                      r.ft AS ft, r.cms AS cms, r.m AS m, r.temp_f AS temp_f,
+                      r.precip_in AS precip_in`;
+
+/** Served readings carry the source reading's real time, not the slot start. */
 function rowToReading(row: ReadingRow): GaugeReading {
-    const reading: GaugeReading = { dateTime: row.ts };
-    if (row.cfs !== null) reading.cfs = row.cfs;
-    if (row.ft !== null) reading.ft = row.ft;
-    if (row.cms !== null) reading.cms = row.cms;
-    if (row.m !== null) reading.m = row.m;
-    if (row.temp_f !== null) reading.temp_f = row.temp_f;
-    if (row.precip_in !== null) reading.precip_in = row.precip_in;
+    const reading: GaugeReading = { dateTime: row.ts + row.off * 1000 };
+    for (const c of VALUE_COLS) if (row[c] !== null) (reading as any)[c] = row[c];
     return reading;
 }
 
 /**
- * Reads stored history for the given gauges, in the same
- * `{ [gaugeId]: GaugeHistory }` shape the live provider path returns — so the
- * serving layer can swap between them without the frontend noticing.
- *
- * Gauges with no dimension row are simply absent from the result; the caller
- * is expected to fall back to a live fetch for those.
+ * Stored readings for the given gauges with slot starts in [startTs, endTs],
+ * clipped to the retention horizon, in the live providers' GaugeHistory shape.
+ * Gauges with no readings in range are absent.
  */
 export async function readSeries(
     db: D1Database,
     gaugeIds: string[],
     startTs: number,
-    endTs?: number
+    endTs: number,
+    now: number = Date.now()
 ): Promise<Record<string, GaugeHistory>> {
     const ids = gaugeIds.filter(isStorableGaugeId).map(normalizeGaugeId);
     if (ids.length === 0) return {};
 
-    const idJson = JSON.stringify(ids);
-    const end = endTs ?? Number.MAX_SAFE_INTEGER;
+    const start = slotStartOf(Math.max(startTs, now - RETENTION_MS));
+    const rows: ReadingRow[] = [];
+    for (const chunk of chunkAsJson(ids)) {
+        for (const [a, b] of slotRanges(start, endTs)) {
+            // CROSS JOIN pins gauges as the outer loop so readings are a
+            // primary-key seek per gauge, never a table scan.
+            const { results } = await db.prepare(`
+                SELECT ${READING_COLS}
+                  FROM gauges g
+                  JOIN json_each(?1) j ON g.gauge_id = j.value
+                 CROSS JOIN gauge_readings r
+                    ON r.gauge_key = g.gauge_key AND r.slot BETWEEN ?2 AND ?3
+                 WHERE r.ts >= ?4 AND r.ts <= ?5
+            `).bind(chunk, a, b, start, endTs).all<ReadingRow>();
+            for (const row of results ?? []) rows.push(row);
+        }
+    }
+    rows.sort((x, y) => x.ts - y.ts);
 
-    const { results } = await db.prepare(`
-        SELECT g.gauge_id AS gauge_id, ${READING_COLS}
-          FROM gauges g
-          JOIN json_each(?1) j ON g.gauge_id = j.value
-          JOIN gauge_readings r ON r.gauge_key = g.gauge_key
-         WHERE r.ts >= ?2 AND r.ts <= ?3
-         ORDER BY g.gauge_key, r.ts
-    `).bind(idJson, startTs, end).all<ReadingRow>();
-
-    const meta = await readGaugeMeta(db, ids);
+    const meta = rows.length > 0 ? await readGaugeMeta(db, ids) : new Map();
     const out: Record<string, GaugeHistory> = {};
-
-    for (const row of results ?? []) {
+    for (const row of rows) {
         let history = out[row.gauge_id];
         if (!history) {
             const m = meta.get(row.gauge_id);
-            history = {
-                id: row.gauge_id.split(":")[1] ?? row.gauge_id,
-                name: m?.name ?? "",
-                readings: [],
-            };
+            history = { id: row.gauge_id.split(":")[1] ?? row.gauge_id, name: m?.name ?? "", readings: [] };
             if (m?.section) history.section = m.section;
             if (m?.state) history.state = m.state;
             if (m?.country) history.country = m.country;
@@ -372,43 +382,28 @@ export async function readSeries(
         }
         history.readings.push(rowToReading(row));
     }
-
     return out;
 }
 
-interface MetaRow {
-    gauge_id: string; name: string | null; section: string | null;
-    state: string | null; country: string | null;
-    lat: number | null; lon: number | null; nwm_reach_id: string | null;
-}
-
-export async function readGaugeMeta(
-    db: D1Database,
-    gaugeIds: string[]
-): Promise<Map<string, {
+export interface GaugeMeta {
     name?: string; section?: string; state?: string; country?: string;
     lat?: number; lon?: number; nwmReachId?: string;
-}>> {
-    const out = new Map<string, any>();
-    const ids = gaugeIds.filter(isStorableGaugeId).map(normalizeGaugeId);
-    if (ids.length === 0) return out;
+}
 
+export async function readGaugeMeta(db: D1Database, gaugeIds: string[]): Promise<Map<string, GaugeMeta>> {
+    const out = new Map<string, GaugeMeta>();
+    const ids = gaugeIds.filter(isStorableGaugeId).map(normalizeGaugeId);
     for (const chunk of chunkAsJson(ids)) {
         const { results } = await db.prepare(`
-            SELECT g.gauge_id, g.name, g.section, g.state, g.country,
-                   g.lat, g.lon, g.nwm_reach_id
+            SELECT g.gauge_id, g.name, g.section, g.state, g.country, g.lat, g.lon, g.nwm_reach_id
               FROM gauges g
               JOIN json_each(?1) j ON g.gauge_id = j.value
-        `).bind(chunk).all<MetaRow>();
-
+        `).bind(chunk).all<any>();
         for (const r of results ?? []) {
             out.set(r.gauge_id, {
-                name: r.name ?? undefined,
-                section: r.section ?? undefined,
-                state: r.state ?? undefined,
-                country: r.country ?? undefined,
-                lat: r.lat ?? undefined,
-                lon: r.lon ?? undefined,
+                name: r.name ?? undefined, section: r.section ?? undefined,
+                state: r.state ?? undefined, country: r.country ?? undefined,
+                lat: r.lat ?? undefined, lon: r.lon ?? undefined,
                 nwmReachId: r.nwm_reach_id ?? undefined,
             });
         }
@@ -417,237 +412,220 @@ export async function readGaugeMeta(
 }
 
 /**
- * Latest stored reading for every gauge, used to project sitedata.json every
- * cycle.
- *
- * `CROSS JOIN` here is load-bearing and must not be "simplified" to a plain
- * JOIN. It is SQLite's documented way to pin the join order, forcing `gauges`
- * (~15k rows) to be the outer loop with an index seek into `gauge_readings`.
- * Left to its own devices the planner drives from `gauge_readings` instead and
- * does a full `SCAN r` over the whole fact table. Measured on 500k rows:
- * 166ms scanning vs 2.5ms seeking — and the scan grows with total readings, so
- * at ~40M rows it would be ~11s every 15 minutes, against D1's 30s query limit.
- *
- * The correlated MAX is preferred over joining `gauge_sync_state.last_obs_ts`
- * (equally fast) because it stays correct if that bookkeeping ever drifts.
- *
- * There is a regression test asserting this query plan contains no table scan.
+ * Newest stored reading per gauge within the last `windowMs`, for every
+ * gauge. Uses SQLite's bare-column MAX() so each row is read once.
  */
-export const LATEST_ALL_SQL = `
-        SELECT g.gauge_id AS gauge_id, ${READING_COLS}
-          FROM gauges g
-          CROSS JOIN gauge_readings r ON r.gauge_key = g.gauge_key
-           AND r.ts = (SELECT MAX(ts) FROM gauge_readings WHERE gauge_key = g.gauge_key)
+export const LATEST_SQL = `
+    SELECT g.gauge_id AS gauge_id, MAX(r.ts) AS ts, r.off AS off, r.cfs AS cfs,
+           r.ft AS ft, r.cms AS cms, r.m AS m, r.temp_f AS temp_f, r.precip_in AS precip_in
+      FROM gauges g
+     CROSS JOIN gauge_readings r
+        ON r.gauge_key = g.gauge_key AND r.slot BETWEEN ?1 AND ?2
+     WHERE r.ts >= ?3
+     GROUP BY g.gauge_key
 `;
 
-export async function readLatestAll(
-    db: D1Database
-): Promise<Record<string, GaugeReading & { gaugeId: string }>> {
-    const { results } = await db.prepare(LATEST_ALL_SQL).all<ReadingRow>();
+export async function readLatest(
+    db: D1Database,
+    windowMs: number,
+    now: number = Date.now()
+): Promise<Record<string, GaugeReading>> {
+    const start = slotStartOf(now - windowMs);
+    const best = new Map<string, ReadingRow>();
+    for (const [a, b] of slotRanges(start, now)) {
+        const { results } = await db.prepare(LATEST_SQL).bind(a, b, start).all<ReadingRow>();
+        for (const row of results ?? []) {
+            const prev = best.get(row.gauge_id);
+            if (!prev || row.ts > prev.ts) best.set(row.gauge_id, row);
+        }
+    }
+    const out: Record<string, GaugeReading> = {};
+    for (const [id, row] of best) out[id] = rowToReading(row);
+    return out;
+}
 
-    const out: Record<string, GaugeReading & { gaugeId: string }> = {};
-    for (const row of results ?? []) {
-        out[row.gauge_id] = { ...rowToReading(row), gaugeId: row.gauge_id };
+export interface HourlySums {
+    cfsSum: number; cfsN: number; ftSum: number; ftN: number;
+}
+
+/**
+ * Per-hour sums and counts of cfs and ft for hours in [startHourTs, endHourTs).
+ * Keyed by gauge id, then by hour start (ms). USGS sentinels are excluded.
+ */
+export async function readHourlySums(
+    db: D1Database,
+    gaugeIds: string[],
+    startHourTs: number,
+    endHourTs: number,
+    now: number = Date.now()
+): Promise<Map<string, Map<number, HourlySums>>> {
+    const out = new Map<string, Map<number, HourlySums>>();
+    const ids = gaugeIds.map(normalizeGaugeId);
+    // Clip to retention; a partially clipped hour still reports its count.
+    startHourTs = Math.max(startHourTs, slotStartOf(now - RETENTION_MS));
+    for (const chunk of chunkAsJson(ids)) {
+        for (const [a, b] of slotRanges(startHourTs, endHourTs - 1)) {
+            const { results } = await db.prepare(`
+                SELECT g.gauge_id AS gauge_id, r.ts / 3600000 AS h,
+                       SUM(CASE WHEN r.cfs > -999999 THEN r.cfs END) AS cfs_sum,
+                       COUNT(CASE WHEN r.cfs > -999999 THEN r.cfs END) AS cfs_n,
+                       SUM(CASE WHEN r.ft > -999999 THEN r.ft END) AS ft_sum,
+                       COUNT(CASE WHEN r.ft > -999999 THEN r.ft END) AS ft_n
+                  FROM gauges g
+                  JOIN json_each(?1) j ON g.gauge_id = j.value
+                 CROSS JOIN gauge_readings r
+                    ON r.gauge_key = g.gauge_key AND r.slot BETWEEN ?2 AND ?3
+                 WHERE r.ts >= ?4 AND r.ts < ?5
+                 GROUP BY g.gauge_id, h
+            `).bind(chunk, a, b, startHourTs, endHourTs).all<any>();
+            for (const row of results ?? []) {
+                let perHour = out.get(row.gauge_id);
+                if (!perHour) {
+                    perHour = new Map();
+                    out.set(row.gauge_id, perHour);
+                }
+                const hourTs = Number(row.h) * 3_600_000;
+                const prev = perHour.get(hourTs) ?? { cfsSum: 0, cfsN: 0, ftSum: 0, ftN: 0 };
+                prev.cfsSum += row.cfs_sum ?? 0;
+                prev.cfsN += row.cfs_n ?? 0;
+                prev.ftSum += row.ft_sum ?? 0;
+                prev.ftN += row.ft_n ?? 0;
+                perHour.set(hourTs, prev);
+            }
+        }
     }
     return out;
 }
 
 // --- SYNC STATE ---
 
-export async function readSyncState(
-    db: D1Database,
-    gaugeIds: string[]
-): Promise<Map<string, SyncState>> {
+export interface SyncState {
+    gaugeKey: number;
+    coverageStart: number | null;
+    repairFrom: number | null;
+}
+
+/** Sync state for every gauge of one provider, keyed by gauge id. */
+export async function readProviderSyncState(db: D1Database, provider: string): Promise<Map<string, SyncState>> {
+    const { results } = await db.prepare(`
+        SELECT g.gauge_id AS gauge_id, g.gauge_key AS gauge_key,
+               s.coverage_start AS coverage_start, s.repair_from AS repair_from
+          FROM gauges g
+          LEFT JOIN gauge_sync_state s ON s.gauge_key = g.gauge_key
+         WHERE g.provider = ?1
+    `).bind(provider).all<any>();
+    const out = new Map<string, SyncState>();
+    for (const r of results ?? []) {
+        out.set(r.gauge_id, { gaugeKey: r.gauge_key, coverageStart: r.coverage_start ?? null, repairFrom: r.repair_from ?? null });
+    }
+    return out;
+}
+
+/** Sync state for specific gauges. Gauges without a gauges row are absent. */
+export async function readSyncState(db: D1Database, gaugeIds: string[]): Promise<Map<string, SyncState>> {
     const out = new Map<string, SyncState>();
     const ids = gaugeIds.filter(isStorableGaugeId).map(normalizeGaugeId);
-    if (ids.length === 0) return out;
-
     for (const chunk of chunkAsJson(ids)) {
         const { results } = await db.prepare(`
-            SELECT g.gauge_id AS gauge_id, s.*
+            SELECT g.gauge_id AS gauge_id, g.gauge_key AS gauge_key,
+                   s.coverage_start AS coverage_start, s.repair_from AS repair_from
               FROM gauges g
               JOIN json_each(?1) j ON g.gauge_id = j.value
               LEFT JOIN gauge_sync_state s ON s.gauge_key = g.gauge_key
         `).bind(chunk).all<any>();
-
         for (const r of results ?? []) {
-            if (r.gauge_key == null) continue;
-            out.set(r.gauge_id, {
-                gaugeKey: r.gauge_key,
-                cursorModified: r.cursor_modified ?? null,
-                lastObsTs: r.last_obs_ts ?? null,
-                coverageStart: r.coverage_start ?? null,
-                obsCount24h: r.obs_count_24h ?? null,
-                lastSuccessAt: r.last_success_at ?? null,
-                failCount: r.fail_count ?? 0,
-            });
+            out.set(r.gauge_id, { gaugeKey: r.gauge_key, coverageStart: r.coverage_start ?? null, repairFrom: r.repair_from ?? null });
         }
     }
     return out;
 }
 
-export interface SyncStateUpdate {
-    gaugeId: string;
-    cursorModified?: number | null;
-    lastObsTs?: number | null;
-    coverageStart?: number | null;
-    obsCount24h?: number | null;
-    lastSuccessAt?: number | null;
-    failCount?: number;
-    lastError?: string | null;
+/**
+ * Moves coverage_start back to `from` (never forward). Used when a backfill
+ * fetch completes. Writes only rows that actually change.
+ */
+export async function extendCoverage(db: D1Database, gaugeKeys: number[], from: number): Promise<number> {
+    if (gaugeKeys.length === 0) return 0;
+    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
+        INSERT INTO gauge_sync_state (gauge_key, coverage_start)
+        SELECT j.value, ?2 FROM json_each(?1) j WHERE true
+        ON CONFLICT(gauge_key) DO UPDATE SET coverage_start = excluded.coverage_start
+        WHERE gauge_sync_state.coverage_start IS NULL
+           OR gauge_sync_state.coverage_start > excluded.coverage_start
+    `).bind(chunk, from)));
+}
+
+/** Sets coverage_start only where none exists yet. */
+export async function initCoverage(db: D1Database, gaugeKeys: number[], from: number): Promise<number> {
+    if (gaugeKeys.length === 0) return 0;
+    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
+        INSERT INTO gauge_sync_state (gauge_key, coverage_start)
+        SELECT j.value, ?2 FROM json_each(?1) j WHERE true
+        ON CONFLICT(gauge_key) DO UPDATE SET coverage_start = excluded.coverage_start
+        WHERE gauge_sync_state.coverage_start IS NULL
+    `).bind(chunk, from)));
 }
 
 /**
- * Upserts sync bookkeeping.
- *
- * A field left `undefined` on the update is encoded as SQL NULL and preserved
- * by COALESCE, so a cursor advance and a coverage advance can be issued
- * independently without clobbering each other. Two fields have directional
- * semantics rather than last-write-wins:
- *
- *  - `last_obs_ts` only ever moves *forward* (newest reading seen).
- *  - `coverage_start` only ever moves *backward* (backfill reaching further
- *    into the past).
- *
- * `last_error` is the exception: it is written verbatim, so a successful cycle
- * passing `lastError: null` clears a stale error.
+ * Coverage broke: readings are only known complete from `from` onward. Moves
+ * coverage_start forward to `from` for every gauge of the provider.
  */
-export async function writeSyncState(
-    db: D1Database,
-    updates: SyncStateUpdate[],
-    keys: Map<string, number>
-): Promise<void> {
-    const rows = updates
-        .map(u => {
-            const key = keys.get(normalizeGaugeId(u.gaugeId));
-            if (key === undefined) return null;
-            return {
-                k: key,
-                cm: u.cursorModified ?? null,
-                lo: u.lastObsTs ?? null,
-                cs: u.coverageStart ?? null,
-                oc: u.obsCount24h ?? null,
-                ls: u.lastSuccessAt ?? null,
-                fc: u.failCount ?? null,
-                er: u.lastError ?? null,
-            };
-        })
-        .filter((r): r is NonNullable<typeof r> => r !== null);
-
-    if (rows.length === 0) return;
-    rows.sort((a, b) => a.k - b.k);
-
-    const statements = chunkAsJson(rows).map(chunk => db.prepare(`
-        INSERT INTO gauge_sync_state
-              (gauge_key, cursor_modified, last_obs_ts, coverage_start,
-               obs_count_24h, last_success_at, fail_count, last_error)
-        SELECT j.value->>'$.k', j.value->>'$.cm', j.value->>'$.lo',
-               j.value->>'$.cs', j.value->>'$.oc', j.value->>'$.ls',
-               COALESCE(j.value->>'$.fc', 0), j.value->>'$.er'
-          FROM json_each(?1) j
-         WHERE true   -- disambiguates ON CONFLICT from a JOIN..ON for the parser
-        ON CONFLICT(gauge_key) DO UPDATE SET
-            cursor_modified = COALESCE(excluded.cursor_modified,
-                                       gauge_sync_state.cursor_modified),
-            last_obs_ts     = CASE
-                                WHEN excluded.last_obs_ts IS NULL
-                                    THEN gauge_sync_state.last_obs_ts
-                                WHEN gauge_sync_state.last_obs_ts IS NULL
-                                    THEN excluded.last_obs_ts
-                                ELSE MAX(gauge_sync_state.last_obs_ts,
-                                         excluded.last_obs_ts)
-                              END,
-            coverage_start  = CASE
-                                WHEN excluded.coverage_start IS NULL
-                                    THEN gauge_sync_state.coverage_start
-                                WHEN gauge_sync_state.coverage_start IS NULL
-                                    THEN excluded.coverage_start
-                                ELSE MIN(gauge_sync_state.coverage_start,
-                                         excluded.coverage_start)
-                              END,
-            obs_count_24h   = COALESCE(excluded.obs_count_24h,
-                                       gauge_sync_state.obs_count_24h),
-            last_success_at = COALESCE(excluded.last_success_at,
-                                       gauge_sync_state.last_success_at),
-            fail_count      = COALESCE(excluded.fail_count,
-                                       gauge_sync_state.fail_count),
-            last_error      = excluded.last_error
-    `).bind(chunk));
-
-    await db.batch(statements);
-}
-
-// --- MAINTENANCE ---
-
-/**
- * Deletes readings beyond the retention horizon for one rotating slice of
- * gauges. Called once per cycle with an advancing sliceIndex so every gauge is
- * pruned once per day.
- *
- * `gauge_key IN (subquery)` on the *leading* primary-key column compiles to a
- * seek per gauge rather than a table scan, which is why this needs no index on
- * ts.
- */
-export async function pruneSlice(
-    db: D1Database,
-    sliceIndex: number,
-    now: number = Date.now()
-): Promise<number> {
-    const horizon = now - RETENTION_MS;
-    const slice = ((sliceIndex % PRUNE_SLICES) + PRUNE_SLICES) % PRUNE_SLICES;
-
+export async function resetProviderCoverage(db: D1Database, provider: string, from: number): Promise<number> {
     const res = await db.prepare(`
-        DELETE FROM gauge_readings
-         WHERE gauge_key IN (SELECT gauge_key FROM gauges WHERE gauge_key % ?1 = ?2)
-           AND ts < ?3
-    `).bind(PRUNE_SLICES, slice, horizon).run();
-
-    return res.meta?.changes ?? 0;
+        UPDATE gauge_sync_state SET coverage_start = ?2
+         WHERE coverage_start < ?2
+           AND gauge_key IN (SELECT gauge_key FROM gauges WHERE provider = ?1)
+    `).bind(provider, from).run();
+    return writtenOf(res);
 }
 
-/** Slice index derived from wall-clock time, so it advances on its own. */
-export function currentPruneSlice(now: number = Date.now()): number {
-    return Math.floor(now / (15 * 60 * 1000)) % PRUNE_SLICES;
+/** Records that readings from `from` onward need a refetch. Keeps the earliest. */
+export async function markRepair(db: D1Database, gaugeKeys: number[], from: number): Promise<number> {
+    if (gaugeKeys.length === 0) return 0;
+    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
+        INSERT INTO gauge_sync_state (gauge_key, repair_from)
+        SELECT j.value, ?2 FROM json_each(?1) j WHERE true
+        ON CONFLICT(gauge_key) DO UPDATE SET repair_from = excluded.repair_from
+        WHERE gauge_sync_state.repair_from IS NULL
+           OR gauge_sync_state.repair_from > excluded.repair_from
+    `).bind(chunk, from)));
 }
 
-/**
- * Recomputes the rolling 24h observation count per gauge. A count well below
- * the gauge's own norm is the signal that a cycle was missed, which drives
- * selective repair — the counterweight to tier B's latest-only ingest.
- */
-export async function refreshObsCounts(
-    db: D1Database,
-    now: number = Date.now()
-): Promise<void> {
-    await db.prepare(`
-        INSERT INTO gauge_sync_state (gauge_key, obs_count_24h, fail_count)
-        SELECT r.gauge_key, COUNT(*), 0
-          FROM gauge_readings r
-         WHERE r.ts >= ?1
-         GROUP BY r.gauge_key
-        ON CONFLICT(gauge_key) DO UPDATE SET obs_count_24h = excluded.obs_count_24h
-    `).bind(now - 24 * 60 * 60 * 1000).run();
+/** Same as markRepair for every gauge of a provider. */
+export async function markProviderRepair(db: D1Database, provider: string, from: number): Promise<number> {
+    const res = await db.prepare(`
+        INSERT INTO gauge_sync_state (gauge_key, repair_from)
+        SELECT gauge_key, ?2 FROM gauges WHERE provider = ?1
+        ON CONFLICT(gauge_key) DO UPDATE SET repair_from = excluded.repair_from
+        WHERE gauge_sync_state.repair_from IS NULL
+           OR gauge_sync_state.repair_from > excluded.repair_from
+    `).bind(provider, from).run();
+    return writtenOf(res);
 }
 
-/**
- * Gauges whose last 24h of observations fall below `threshold`, oldest-synced
- * first. These get a targeted datetime re-fetch rather than a blanket backfill.
- */
-export async function findGapGauges(
-    db: D1Database,
-    threshold: number,
-    limit: number
-): Promise<Array<{ gaugeId: string; provider: string; lastObsTs: number | null }>> {
-    const { results } = await db.prepare(`
-        SELECT g.gauge_id AS gaugeId, g.provider AS provider, s.last_obs_ts AS lastObsTs
-          FROM gauge_sync_state s
-          JOIN gauges g ON g.gauge_key = s.gauge_key
-         WHERE COALESCE(s.obs_count_24h, 0) < ?1
-         ORDER BY COALESCE(s.last_success_at, 0) ASC
-         LIMIT ?2
-    `).bind(threshold, limit).all<{ gaugeId: string; provider: string; lastObsTs: number | null }>();
+/** Clears repair_from where a completed fetch starting at `coveredFrom` covers it. */
+export async function clearRepair(db: D1Database, gaugeKeys: number[], coveredFrom: number): Promise<number> {
+    if (gaugeKeys.length === 0) return 0;
+    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
+        UPDATE gauge_sync_state SET repair_from = NULL
+         WHERE repair_from IS NOT NULL AND repair_from >= ?2
+           AND gauge_key IN (SELECT value FROM json_each(?1))
+    `).bind(chunk, coveredFrom)));
+}
 
-    return results ?? [];
+// --- META ---
+
+export async function getMeta(db: D1Database, key: string): Promise<number | null> {
+    const row = await db.prepare(`SELECT v FROM sync_meta WHERE k = ?1`).bind(key).first<{ v: number | null }>();
+    return row?.v ?? null;
+}
+
+export async function setMeta(db: D1Database, key: string, value: number): Promise<number> {
+    const res = await db.prepare(`
+        INSERT INTO sync_meta (k, v) VALUES (?1, ?2)
+        ON CONFLICT(k) DO UPDATE SET v = excluded.v WHERE sync_meta.v IS NOT excluded.v
+    `).bind(key, value).run();
+    return writtenOf(res);
 }
 
 export async function countReadings(db: D1Database): Promise<number> {
