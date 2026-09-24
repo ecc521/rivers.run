@@ -29,10 +29,12 @@ database_name = "flow-db"
 database_id = "bfdbdd5a-5626-4593-98f6-927ba2f682a4"
 
 # Forecast model container (src/services/flowModel.ts). One instance, run by
-# the hourly FORECAST_CRON; it reaches R2 only through the Worker.
+# the hourly FORECAST_CRON; it reaches R2 only through the Worker. The image is
+# built in flow_predictions (serving/) and pushed to Cloudflare's registry,
+# tagged with that repo's commit; see AGENTS.md to update it.
 [[containers]]
 class_name = "FlowModel"
-image = "./container/Dockerfile"
+image = "registry.cloudflare.com/55098d8696658ea1ee4ec73ae57d1741/flow-serving:53daf64"
 max_instances = 1
 instance_type = "standard-2"
 

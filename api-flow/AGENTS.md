@@ -134,8 +134,15 @@ gauge is listed, even with no data. In Python:
 
 The model runs in a Cloudflare Container, one instance, started by the `10 * * * *`
 cron (after the `:00` cycle has written the snapshot). Its image is built in the
-flow_predictions repo (`serving/`, tag `flow-serving`); `container/Dockerfile` only
-does `FROM flow-serving:latest`, so build that image before `wrangler deploy`.
+flow_predictions repo (`serving/`) and pushed to Cloudflare's registry, so a deploy
+(including CI) needs no Docker. To ship a new model image, from flow_predictions:
+
+```bash
+docker build --platform linux/amd64 -f serving/Dockerfile -t flow-serving:<commit> .
+npx wrangler containers push flow-serving:<commit>
+```
+
+then set `image` in `wrangler.toml` to the pushed `registry.cloudflare.com/...` reference.
 A pass takes about 1 to 3 minutes and writes to R2 under `model/`.
 
 The container has no R2 credentials. It does plain HTTP to `http://flow.r2/<key>`,
