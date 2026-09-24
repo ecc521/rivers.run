@@ -54,9 +54,10 @@ npx wrangler d1 execute flow-db --remote --config api-flow/wrangler.toml --file 
 **Ring buffer.** `gauge_readings` has one row per (gauge, 15-minute slot), with
 `slot = floor(ts / 15 min) mod 3072` (32 days). A new reading overwrites the slot's
 previous lap, so retention needs no DELETEs (D1 bills deleted rows as writes). Every
-read must filter `ts >= now - 30d`. A slot keeps the reading closest to its start.
-`ts` is the slot start; `off` is the source reading's offset in seconds, and served
-readings use `ts + off`.
+read must filter `ts >= now - 30d`. A slot keeps the reading closest to its start
+(parameters it lacks are filled from other readings in the slot). `ts` is the slot
+start; `off` is the source reading's offset in seconds. Served readings use
+`ts + off` rounded to 5 minutes, the same convention as the live USGS and NWS parsers.
 
 **Guarded writes.** D1 bills rows written, so every upsert (`flowStore.ts`) has a
 `WHERE` that makes an unchanged row a no-op. Replaying a batch must write 0 rows;
@@ -64,21 +65,36 @@ tests assert this. `gauge_sync_state` and `sync_meta` are also only written on c
 Bulk writes pass one JSON parameter through `json_each` (D1 allows 100 bound
 parameters). Reads use `CROSS JOIN` plus a slot range so they seek the primary key.
 
-**Ingest** (`flowSync.ts`, `usgsIngest.ts`), every 15 minutes:
+**Ingest** (`flowSync.ts`, `usgsIngest.ts`), on the `*/15` trigger only (the daily
+and weekly crons also fire at 00:00 and must not start a second ingest):
 
 - USGS, all registry gauges, 200 sites per request: a `datetime=<now-6h>/..` window
   sweep every cycle; an hourly revision sweep (`last_modified` since a global cursor,
   bounded by `datetime=<now-30d>/..`, cursor advanced only if every batch completed);
   and backfill (failed windows first, then 7 days, then 30) chunked to 100 site-days
-  per request. Backfill and revisions stop when `X-RateLimit-Remaining` falls below
-  300. `FLOW_BACKFILL_MAX_REQUESTS` caps backfill requests per cycle (default 100).
-- EC: province CSVs over the last 3h (widened after missed cycles, up to 24h).
-- NWS: stageflow over the same window; forecast rows go to `sitedata.json`, never the store.
+  per request. Pages are upserted as they arrive. Backfill and revisions stop when
+  `X-RateLimit-Remaining` falls below 300; a revision sweep also stops at 120 pages,
+  and a cursor more than a day old becomes datetime repair. A failing backfill group
+  is split; a lone failing site backs off (`fail_count`, `retry_at`).
+  `FLOW_BACKFILL_MAX_REQUESTS` caps backfill requests per cycle (default 100).
+- EC, NWS: the whole province file or gauge series, one unit at a time
+  (`getBulkHistories`). A failed unit marks its gauges for repair; coverage is set per
+  gauge from its earliest reading and restarts after a gap longer than the unit
+  holds. NWS forecast rows go to `sitedata.json`, never the store.
 - UK, IE: latest-only bulk calls; river-linked gauges also fetch 3h of history.
 
 `/history` and `/gauge` serve from the store only when `gauge_sync_state` says it
-covers the whole request (USGS after backfill, EC/NWS from first sight, never UK/IE).
-Otherwise they fetch live. With `forecast=true`, stored gauges fetch only forecasts live.
+covers the whole request with no pending repair (USGS after backfill, EC/NWS from
+first sight, never UK/IE) and the provider ingested within 45 minutes. Otherwise
+they fetch live. With `forecast=true`, stored gauges fetch only forecasts live.
+`sitedata.json` is written before the hourly model snapshot is built.
+
+Known gaps, not yet handled:
+
+- A value USGS deletes stays stored: upserts never null a column, and a missing
+  record is indistinguishable from an unchanged one.
+- `approved` is unreliable (a partial revision or duplicate series can set it from
+  one parameter's record). Nothing reads it yet.
 
 `node api-flow/tools/estimate-writes.mjs` projects monthly rows written from the
 per-cycle counts logged in local `worker_logs`.
