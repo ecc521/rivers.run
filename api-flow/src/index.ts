@@ -24,8 +24,7 @@ import { runIngestCycle, projectSitedata, readLinkedGaugeIds, rowsWrittenByCycle
 import { readSeries, readSyncState, getMeta } from "./services/flowStore";
 import { isHourlyCycle } from "./services/usgsIngest";
 import { writeUsgsHourlySnapshot } from "./services/modelSnapshot";
-import { syncUsgsReaches } from "./services/usgsReaches";
-import { FlowModel, FORECAST_CRON, MODEL_STORAGE_ORIGIN, handleModelStorage, readForecasts, resolveNwsToUsgs, runForecastModel } from "./services/flowModel";
+import { FlowModel, FORECAST_CRON, MODEL_STORAGE_ORIGIN, NWS_USGS_KEY, handleModelStorage, readForecasts, readNwsUsgsMap, runForecastModel, syncNwsUsgsMap } from "./services/flowModel";
 import { verifyUnsubscribeToken } from "./utils/unsubscribeToken";
 import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError, renderUnsubscribeServerError } from "./templates/unsubscribeConfirmation";
 
@@ -41,6 +40,8 @@ export interface Env {
     UNSUBSCRIBE_SECRET?: string;
     /** The forecast model container (services/flowModel.ts). Optional: unbound skips model runs. */
     FLOW_MODEL?: DurableObjectNamespace<FlowModel>;
+    /** "1" enables the local-only dev routes; set in .dev.vars, never in production. */
+    LOCAL_DEV_ROUTES?: string;
 }
 
 export { FlowModel };
@@ -350,7 +351,7 @@ const forecastRoute = createRoute({
     method: 'get',
     path: '/forecast',
     summary: 'Model flow forecasts',
-    description: 'Latest rivers.run model forecast (hourly q10/q50/q90 cfs, 168 h) for up to 20 gauges: USGS ids, or NWS forecast points that sit on a USGS gauge (their entry adds usgsSite). Gauges without a recent forecast are omitted.',
+    description: 'Latest rivers.run model forecast (hourly q10/q50/q90 cfs, 168 h, plus ft10/ft50/ft90 stage where the gauge has a USGS rating) for up to 20 gauges: USGS ids, or river-linked NWS forecast points that sit on a USGS gauge (their entry adds usgsSite). Gauges without a recent forecast are omitted.',
     request: {
         query: z.object({
             gauges: z.string().openapi({ param: { name: 'gauges', in: 'query', required: true }, example: 'USGS:03451500' }),
@@ -367,11 +368,12 @@ app.openapi(forecastRoute, async (c) => {
     const ids = [...new Set(gauges.split(",").map(g => normalizeGaugeId(g.trim())).filter(Boolean))];
     if (ids.length > 20) return c.json({ error: "At most 20 gauges per request" }, 400);
     // An NWS forecast point gets the forecast of the USGS gauge it sits on.
-    const nwsToUsgs = await resolveNwsToUsgs(c.env.FLOW_STORAGE, ids.filter(id => id.startsWith("NWS:")).map(id => id.slice(4)));
+    const nwsToUsgs = ids.some(id => id.startsWith("NWS:")) ? await readNwsUsgsMap(c.env.FLOW_STORAGE) : {};
     const siteOf = new Map<string, string>();
     for (const id of ids) {
-        if (id.startsWith("USGS:")) siteOf.set(id, id.slice(5));
-        else if (id.startsWith("NWS:") && nwsToUsgs[id.slice(4)]) siteOf.set(id, nwsToUsgs[id.slice(4)]);
+        const [prefix, rest] = [id.slice(0, id.indexOf(":")), id.slice(id.indexOf(":") + 1)];
+        const usgs = prefix === "USGS" ? rest : prefix === "NWS" && nwsToUsgs[rest];
+        if (usgs) siteOf.set(id, usgs);
     }
     const found = await readForecasts(c.env.FLOW_STORAGE, [...new Set(siteOf.values())]);
     const now = Date.now();
@@ -423,16 +425,21 @@ app.on(["GET", "POST"], "/unsubscribe", async (c) => {
     }
 });
 
+/** Local dev routes need LOCAL_DEV_ROUTES=1 (.dev.vars) and a local hostname. */
+function isLocalDevRequest(c: { env: Env; req: { url: string } }, hosts: string[]): boolean {
+    return c.env.LOCAL_DEV_ROUTES === "1" && hosts.includes(new URL(c.req.url).hostname);
+}
+
 /**
  * Local dev only: the model container's R2 bridge over a normal route, for
  * running the container with `docker run` (wrangler dev cannot start it on
  * OrbStack). Point SERVING_STORAGE at http://host.docker.internal:8787/__model-storage/model.
  */
 app.all("/__model-storage/*", async (c) => {
-    const url = new URL(c.req.url);
-    if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1" && url.hostname !== "host.docker.internal") {
+    if (!isLocalDevRequest(c, ["localhost", "127.0.0.1", "host.docker.internal"])) {
         return c.text("Not found", 404);
     }
+    const url = new URL(c.req.url);
     const target = new URL(url.pathname.replace(/^\/__model-storage/, "") + url.search, MODEL_STORAGE_ORIGIN);
     return handleModelStorage(new Request(target, c.req.raw), c.env.FLOW_STORAGE);
 });
@@ -443,8 +450,7 @@ app.all("/__model-storage/*", async (c) => {
  * the multi-minute registry recompile.
  */
 app.get("/seed-local-r2", async (c) => {
-    const host = new URL(c.req.url).hostname;
-    if (host !== "localhost" && host !== "127.0.0.1") return c.text("Not found", 404);
+    if (!isLocalDevRequest(c, ["localhost", "127.0.0.1"])) return c.text("Not found", 404);
     try {
         const res = await fetch("https://flow.rivers.run/flowdata", {
             headers: { Origin: "https://rivers.run" },
@@ -584,9 +590,19 @@ export default {
                 } catch (_e) {
                     console.error("CRITICAL: Registry compilation failed or timed out.", _e);
                 }
+            }
 
-                // Sync USGS to NWM reaches mapping
-                await syncUsgsReaches(env);
+            // NWS forecast point -> USGS site for /forecast: daily, or at once when missing.
+            if (Object.keys(registryMetadata).length > 0) {
+                try {
+                    if (isDailyMaintenance || !(await env.FLOW_STORAGE.head(NWS_USGS_KEY))) {
+                        const linked = await readLinkedGaugeIds(env);
+                        const n = await syncNwsUsgsMap(env.FLOW_STORAGE, registryMetadata, linked, ids => nwsProvider.getSiteListing(ids));
+                        await logToD1(env, "INFO", "registry", `NWS to USGS map: ${n} forecast points on a USGS gauge.`);
+                    }
+                } catch (e: any) {
+                    await logToD1(env, "WARN", "registry", `NWS to USGS map failed: ${e?.message || e}`);
+                }
             }
 
 

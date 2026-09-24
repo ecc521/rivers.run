@@ -15,7 +15,7 @@ export const ReadingSchema = z.object({
   precip_in: z.number().optional().openapi({ example: 0.25, description: 'Precipitation in inches' }),
   precip_mm: z.number().optional().openapi({ example: 6.35, description: 'Precipitation in millimeters' }),
   isForecast: z.boolean().optional().openapi({ example: true, description: 'Whether this point represents a forecasted value' }),
-  forecastSource: z.string().optional().openapi({ example: 'NWM', description: 'Source model of the forecast' })
+  forecastSource: z.string().optional().openapi({ example: 'NWS', description: 'Source of the forecast' })
 }).openapi({ type: 'object', description: 'A single sensor reading' });
 
 export const HistorySchema = z.object({
@@ -23,7 +23,6 @@ export const HistorySchema = z.object({
   name: z.string().optional().openapi({ example: "French Broad River at Marshall, NC" }),
   section: z.string().optional().openapi({ example: "Section 9" }),
   readings: z.array(ReadingSchema),
-  nwmReachId: z.string().optional().openapi({ example: "6929014", description: "NWM Reach ID for client-side forecasts" })
 }).openapi({ type: 'object', description: 'Historical readings for a gauge' });
 
 export const SiteSchema = z.object({

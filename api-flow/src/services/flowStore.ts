@@ -32,7 +32,6 @@ export interface GaugeDimension {
     country?: string;
     lat?: number;
     lon?: number;
-    nwmReachId?: string;
 }
 
 /** One observation at its real timestamp, before slotting. */
@@ -213,17 +212,15 @@ export async function resolveGaugeKeys(
         c: g.country || null,
         la: num(g.lat),
         lo: num(g.lon),
-        r: g.nwmReachId || null,
     }));
 
     const changed = (col: string) =>
         `(excluded.${col} IS NOT NULL AND excluded.${col} IS NOT gauges.${col})`;
 
     const statements = chunkAsJson(payload).map(chunk => db.prepare(`
-        INSERT INTO gauges (gauge_id, provider, name, section, state, country, lat, lon, nwm_reach_id)
+        INSERT INTO gauges (gauge_id, provider, name, section, state, country, lat, lon)
         SELECT j.value->>'$.i', j.value->>'$.p', j.value->>'$.n', j.value->>'$.sc',
-               j.value->>'$.st', j.value->>'$.c', j.value->>'$.la', j.value->>'$.lo',
-               j.value->>'$.r'
+               j.value->>'$.st', j.value->>'$.c', j.value->>'$.la', j.value->>'$.lo'
           FROM json_each(?1) j
          WHERE true
         ON CONFLICT(gauge_id) DO UPDATE SET
@@ -233,10 +230,9 @@ export async function resolveGaugeKeys(
             state        = COALESCE(excluded.state, gauges.state),
             country      = COALESCE(excluded.country, gauges.country),
             lat          = COALESCE(excluded.lat, gauges.lat),
-            lon          = COALESCE(excluded.lon, gauges.lon),
-            nwm_reach_id = COALESCE(excluded.nwm_reach_id, gauges.nwm_reach_id)
+            lon          = COALESCE(excluded.lon, gauges.lon)
         WHERE excluded.provider IS NOT gauges.provider
-           OR ${["name", "section", "state", "country", "lat", "lon", "nwm_reach_id"].map(changed).join(" OR ")}
+           OR ${["name", "section", "state", "country", "lat", "lon"].map(changed).join(" OR ")}
     `).bind(chunk));
 
     const written = await runBatch(db, statements);
@@ -394,7 +390,6 @@ export async function readSeries(
             if (m?.country) history.country = m.country;
             if (m?.lat != null) history.lat = m.lat;
             if (m?.lon != null) history.lon = m.lon;
-            if (m?.nwmReachId) history.nwmReachId = m.nwmReachId;
             out[row.gauge_id] = history;
         }
         history.readings.push(rowToReading(row));
@@ -404,7 +399,7 @@ export async function readSeries(
 
 export interface GaugeMeta {
     name?: string; section?: string; state?: string; country?: string;
-    lat?: number; lon?: number; nwmReachId?: string;
+    lat?: number; lon?: number;
 }
 
 export async function readGaugeMeta(db: D1Database, gaugeIds: string[]): Promise<Map<string, GaugeMeta>> {
@@ -412,7 +407,7 @@ export async function readGaugeMeta(db: D1Database, gaugeIds: string[]): Promise
     const ids = gaugeIds.filter(isStorableGaugeId).map(normalizeGaugeId);
     for (const chunk of chunkAsJson(ids)) {
         const { results } = await db.prepare(`
-            SELECT g.gauge_id, g.name, g.section, g.state, g.country, g.lat, g.lon, g.nwm_reach_id
+            SELECT g.gauge_id, g.name, g.section, g.state, g.country, g.lat, g.lon
               FROM gauges g
               JOIN json_each(?1) j ON g.gauge_id = j.value
         `).bind(chunk).all<any>();
@@ -421,7 +416,6 @@ export async function readGaugeMeta(db: D1Database, gaugeIds: string[]): Promise
                 name: r.name ?? undefined, section: r.section ?? undefined,
                 state: r.state ?? undefined, country: r.country ?? undefined,
                 lat: r.lat ?? undefined, lon: r.lon ?? undefined,
-                nwmReachId: r.nwm_reach_id ?? undefined,
             });
         }
     }

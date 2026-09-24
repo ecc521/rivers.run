@@ -29,7 +29,6 @@ export interface GaugeHistory {
     lon?: number;
     readings: GaugeReading[];
     units?: string; 
-    nwmReachId?: string;
 }
 
 
@@ -41,6 +40,8 @@ export interface GaugeSite {
     lon: number;
     state?: string;
     country?: string;
+    /** NWS only: the USGS site the forecast point sits on (null: none). */
+    usgsId?: string | null;
 }
 
 

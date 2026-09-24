@@ -3,7 +3,6 @@ import { formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
 
-let cachedReaches: Record<string, string> | null = null;
 let cachedRegistryNames: Record<string, { name: string; section?: string; state?: string }> | null = null;
 
 export const USGS_API_BASE = "https://api.waterdata.usgs.gov/ogcapi/v0/collections";
@@ -400,37 +399,23 @@ export const usgsProvider: GaugeProvider = {
         const missingNameIds = Object.keys(histories).filter(id => !histories[id].name);
         const needsRegistry = missingNameIds.length > 0 && !cachedRegistryNames;
 
-        // Load both R2 files in parallel; either may already be cached from a prior request.
-        await Promise.all([
-            (async () => {
-                if (needsRegistry && env?.FLOW_STORAGE) {
-                    try {
-                        const regObj = await env.FLOW_STORAGE.get("gauge_registry.json");
-                        if (regObj) {
-                            const full = await regObj.json() as Record<string, any>;
-                            cachedRegistryNames = {};
-                            for (const [fullId, site] of Object.entries(full)) {
-                                if (fullId.startsWith("USGS:") && site.name) {
-                                    cachedRegistryNames[fullId.slice(5)] = { name: site.name, section: site.section, state: site.state };
-                                }
-                            }
+        // May already be cached from a prior request.
+        if (needsRegistry && env?.FLOW_STORAGE) {
+            try {
+                const regObj = await env.FLOW_STORAGE.get("gauge_registry.json");
+                if (regObj) {
+                    const full = await regObj.json() as Record<string, any>;
+                    cachedRegistryNames = {};
+                    for (const [fullId, site] of Object.entries(full)) {
+                        if (fullId.startsWith("USGS:") && site.name) {
+                            cachedRegistryNames[fullId.slice(5)] = { name: site.name, section: site.section, state: site.state };
                         }
-                    } catch (e) {
-                        console.warn("Failed to load gauge_registry.json from R2", e);
                     }
                 }
-            })(),
-            (async () => {
-                if (!cachedReaches && env?.FLOW_STORAGE) {
-                    try {
-                        const reachesObject = await env.FLOW_STORAGE.get("usgs_reaches.json");
-                        if (reachesObject) cachedReaches = await reachesObject.json();
-                    } catch (e) {
-                        console.warn("Failed to load usgs_reaches.json from R2", e);
-                    }
-                }
-            })()
-        ]);
+            } catch (e) {
+                console.warn("Failed to load gauge_registry.json from R2", e);
+            }
+        }
 
         if (missingNameIds.length > 0 && cachedRegistryNames) {
             for (const id of missingNameIds) {
@@ -442,15 +427,6 @@ export const usgsProvider: GaugeProvider = {
                 }
             }
         }
-
-        const reaches = (cachedReaches || {}) as Record<string, string>;
-        siteCodes.forEach((site) => {
-            const history = histories[site];
-            const reachId = reaches[site];
-            if (history && reachId) {
-                history.nwmReachId = reachId;
-            }
-        });
 
         return histories;
     },

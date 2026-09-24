@@ -189,7 +189,8 @@ export const nwsProvider: GaugeProvider = {
                                       lat: data.latitude,
                                       lon: data.longitude,
                                       state: formatStateCode(data.state?.abbreviation, "NWS"),
-                                      country: "US"
+                                      country: "US",
+                                      usgsId: /^\d{8,15}$/.test(data.usgsId ?? "") ? data.usgsId : null,
                                   });
                              }
                          }

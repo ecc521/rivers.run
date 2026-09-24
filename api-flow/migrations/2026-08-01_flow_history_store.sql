@@ -14,8 +14,7 @@ CREATE TABLE IF NOT EXISTS gauges (
     state        TEXT,
     country      TEXT,
     lat          REAL,
-    lon          REAL,
-    nwm_reach_id TEXT
+    lon          REAL
 );
 
 /*

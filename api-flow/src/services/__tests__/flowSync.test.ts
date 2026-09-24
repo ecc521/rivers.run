@@ -59,13 +59,12 @@ function stubProvider(id: string, impl: Partial<GaugeProvider> = {}): GaugeProvi
 }
 
 describe("buildDimensions", () => {
-    it("merges registry and linked gauges and attaches NWM reach ids", () => {
+    it("merges registry and linked gauges", () => {
         const dims = buildDimensions(
             { "USGS:1": { name: "One", lat: "35.1" }, "virtual:x": {} },
-            ["usgs:1", "EC:2"],
-            { "1": "12345" });
+            ["usgs:1", "EC:2"]);
         expect(dims).toEqual([
-            expect.objectContaining({ gaugeId: "USGS:1", name: "One", lat: 35.1, nwmReachId: "12345" }),
+            expect.objectContaining({ gaugeId: "USGS:1", name: "One", lat: 35.1 }),
             expect.objectContaining({ gaugeId: "EC:2", provider: "EC" }),
         ]);
     });

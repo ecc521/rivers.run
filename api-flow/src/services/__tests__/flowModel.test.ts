@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { gzipSync } from "node:zlib";
-import { handleModelStorage, readForecasts, resolveNwsToUsgs, shardOf, shardKey, NWS_USGS_KEY } from "../flowModel";
+import { clearNwsUsgsCache, handleModelStorage, readForecasts, readNwsUsgsMap, shardOf, shardKey, syncNwsUsgsMap, NWS_USGS_KEY } from "../flowModel";
 
 /** In-memory R2 with the calls flowModel.ts makes; list pages 2 keys at a time. */
 function memoryBucket() {
@@ -60,6 +60,10 @@ describe("handleModelStorage", () => {
         expect(await res.json()).toEqual({ keys: ["weather/cycles/a.npz", "weather/cycles/b.npz", "weather/cycles/c.npz"] });
     });
 
+    it("lets the container write its ratings", async () => {
+        expect((await call(bucket, "PUT", "model/ratings/ratings.json.gz", "x")).status).toBe(204);
+    });
+
     it("keeps the container inside model/ and the snapshot read-only", async () => {
         bucket.data.set("sitedata.json", new Uint8Array([1]));
         bucket.data.set("model/usgs_hourly.json.gz", new Uint8Array([1]));
@@ -84,25 +88,50 @@ describe("readForecasts", () => {
         expect(Object.keys(out)).toEqual(["03451500"]);
         expect(out["03451500"]).toMatchObject({ issueTime: 1, stepMs: 3_600_000, reliability: "good", obsCfs: 1050, q50: [1000] });
     });
+
+    it("passes stage through only where the gauge has a rating", async () => {
+        const bucket = memoryBucket();
+        const head = { issue_time: 1, cycle: 2, start: 3, step_ms: 3_600_000, hours: 168, units: "cfs", calibrated: true, model: {} };
+        const rated = { reliability: "good", obs_cfs: 1, q10: [9], q50: [10], q90: [11], ft10: [1.1], ft50: [1.2], ft90: [null] };
+        const plain = { reliability: "good", obs_cfs: 1, q10: [9], q50: [10], q90: [11] };
+        for (const [site, g] of [["03451500", rated], ["0211139110", plain]] as const) {
+            bucket.data.set(shardKey(shardOf(site)), gzipSync(JSON.stringify({ ...head, gauges: { [site]: g } })));
+        }
+        const out = await readForecasts(bucket as unknown as R2Bucket, ["03451500", "0211139110"]);
+        expect(out["03451500"]).toMatchObject({ ft10: [1.1], ft50: [1.2], ft90: [null] });
+        expect(out["0211139110"]).not.toHaveProperty("ft50");
+    });
 });
 
-describe("resolveNwsToUsgs", () => {
-    afterEach(() => { vi.unstubAllGlobals(); });
+describe("syncNwsUsgsMap", () => {
+    beforeEach(() => { clearNwsUsgsCache(); });
+    const read = (bucket: ReturnType<typeof memoryBucket>) => JSON.parse(new TextDecoder().decode(bucket.data.get(NWS_USGS_KEY)));
 
-    it("looks each id up once, remembering misses but not transient failures", async () => {
+    it("takes usgsId from the registry, else the previous map, else a lookup, including newly linked gauges", async () => {
         const bucket = memoryBucket();
-        const fetchMock = vi.fn(async (url: string) => {
-            if (url.endsWith("/MARN7")) return Response.json({ lid: "MARN7", usgsId: "03453500" });
-            if (url.endsWith("/NOUS1")) return Response.json({ lid: "NOUS1", usgsId: "" });
-            return new Response("", { status: 503 });
-        });
-        vi.stubGlobal("fetch", fetchMock);
+        bucket.data.set(NWS_USGS_KEY, new TextEncoder().encode(JSON.stringify({ OLDX1: "01234567", GONE1: "07654321" })));
+        const registry = {
+            "NWS:MARN7": { usgsId: "03453500" },
+            "NWS:NOUS1": { usgsId: null },
+            "NWS:OLDX1": {},
+            "NWS:NEWX1": {},
+            "NWS:DOWN1": {},
+            "USGS:03451500": {},
+        };
+        const listSites = vi.fn(async (ids: string[]) =>
+            ids.filter(id => id !== "DOWN1").map(id => ({ id, name: id, lat: 0, lon: 0, usgsId: "02222222" })));
 
-        expect(await resolveNwsToUsgs(bucket as unknown as R2Bucket, ["MARN7", "NOUS1", "DOWN1"])).toEqual({ MARN7: "03453500" });
-        expect(JSON.parse(new TextDecoder().decode(bucket.data.get(NWS_USGS_KEY)))).toEqual({ MARN7: "03453500", NOUS1: null });
+        expect(await syncNwsUsgsMap(bucket as unknown as R2Bucket, registry, ["NWS:MARN7", "NWS:LINK1", "USGS:1"], listSites)).toBe(4);
+        expect(listSites).toHaveBeenCalledWith(["NEWX1", "DOWN1", "LINK1"]);
+        expect(read(bucket)).toEqual({ LINK1: "02222222", MARN7: "03453500", NEWX1: "02222222", NOUS1: null, OLDX1: "01234567" });
+        expect(await readNwsUsgsMap(bucket as unknown as R2Bucket)).toEqual(read(bucket));
+    });
 
-        fetchMock.mockClear();
-        expect(await resolveNwsToUsgs(bucket as unknown as R2Bucket, ["MARN7", "NOUS1", "DOWN1"])).toEqual({ MARN7: "03453500" });
-        expect(fetchMock).toHaveBeenCalledTimes(1); // only DOWN1 again
+    it("writes only on change", async () => {
+        const bucket = memoryBucket();
+        const registry = { "NWS:MARN7": { usgsId: "03453500" } };
+        await syncNwsUsgsMap(bucket as unknown as R2Bucket, registry, [], async () => []);
+        await syncNwsUsgsMap(bucket as unknown as R2Bucket, registry, [], async () => []);
+        expect(bucket.put).toHaveBeenCalledTimes(1);
     });
 });

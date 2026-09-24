@@ -195,8 +195,18 @@ describe("GET /gauge/{prefix}/{id}", () => {
     });
 });
 
-describe("GET /seed-local-r2", () => {
-    it("is not available outside localhost", async () => {
+describe("local dev routes", () => {
+    const withFlag = (path: string, host: string) =>
+        app.fetch(new Request(`${host}${path}`), { ...env(), LOCAL_DEV_ROUTES: "1", FLOW_STORAGE: { get: async () => null } });
+
+    it("are not available outside localhost", async () => {
         expect((await get("/seed-local-r2")).status).toBe(404);
+        expect((await withFlag("/__model-storage/model/usgs_hourly.json.gz", "https://flow.rivers.run")).status).toBe(404);
+    });
+
+    it("need LOCAL_DEV_ROUTES even on localhost", async () => {
+        expect((await get("/__model-storage/model/usgs_hourly.json.gz", {}, "http://localhost:8787")).status).toBe(404);
+        expect((await withFlag("/__model-storage/model/usgs_hourly.json.gz", "http://localhost:8787")).status).toBe(404);
+        expect((await withFlag("/__model-storage/sitedata.json", "http://localhost:8787")).status).toBe(403);
     });
 });

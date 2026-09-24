@@ -1,6 +1,6 @@
 import { Container, getContainer } from "@cloudflare/containers";
 import type { Env } from "../index";
-import { fetchWithTimeout, DEFAULT_HEADERS } from "../utils/timeout";
+import type { GaugeSite } from "./provider";
 
 /**
  * The flow forecast model: a Cloudflare Container (image built in the
@@ -12,14 +12,16 @@ import { fetchWithTimeout, DEFAULT_HEADERS } from "../utils/timeout";
  *
  *   model/usgs_hourly.json.gz        input, written by modelSnapshot.ts
  *   model/weather/...                rolling GFS store, the container's own
+ *   model/ratings/ratings.json.gz    USGS stage-discharge tables, the container's own
  *   model/forecasts/latest.json.gz   every gauge; shards/<xx>.json.gz per shard
+ *   model/nws_usgs.json              NWS forecast point -> USGS site, from the registry
  */
 
 /** Hourly model run, after the :00 cycle has written the USGS snapshot. */
 export const FORECAST_CRON = "10 * * * *";
 
 export const MODEL_PREFIX = "model/";
-const WRITABLE = ["model/weather/", "model/forecasts/"];
+const WRITABLE = ["model/weather/", "model/ratings/", "model/forecasts/"];
 export const FORECAST_PREFIX = "model/forecasts/";
 export const N_SHARDS = 256;
 const STORAGE_HOST = "flow.r2";
@@ -45,7 +47,7 @@ export const shardKey = (shard: number) => `${FORECAST_PREFIX}shards/${shard.toS
 /**
  * GET/PUT/DELETE http://flow.r2/<key>, and GET http://flow.r2/<prefix>?list=<rest>
  * returning {"keys": [...]} relative to <prefix>. Reads are limited to model/,
- * writes to its weather/ and forecasts/ subtrees.
+ * writes to its weather/, ratings/ and forecasts/ subtrees.
  */
 export async function handleModelStorage(req: Request, bucket: R2Bucket): Promise<Response> {
     const url = new URL(req.url);
@@ -132,6 +134,10 @@ export interface GaugeForecast {
     q10: number[];
     q50: number[];
     q90: number[];
+    /** Stage (ft) by the gauge's USGS rating; absent without one, null outside its range. */
+    ft10?: (number | null)[];
+    ft50?: (number | null)[];
+    ft90?: (number | null)[];
 }
 
 async function readShard(bucket: R2Bucket, shard: number): Promise<any | null> {
@@ -159,45 +165,64 @@ export async function readForecasts(bucket: R2Bucket, sites: string[]): Promise<
                 issueTime: doc.issue_time, cycle: doc.cycle, start: doc.start, stepMs: doc.step_ms,
                 hours: doc.hours, units: doc.units, calibrated: doc.calibrated, model: doc.model,
                 reliability: g.reliability, obsCfs: g.obs_cfs, q10: g.q10, q50: g.q50, q90: g.q90,
+                ...(g.ft50 ? { ft10: g.ft10, ft50: g.ft50, ft90: g.ft90 } : {}),
             };
         }
     }));
     return out;
 }
 
-/** NWS forecast point id to the USGS site it sits on (null: none), filled on demand. */
+/** NWS forecast point id to the USGS site it sits on (null: none). */
 export const NWS_USGS_KEY = "model/nws_usgs.json";
+const NWS_USGS_TTL_MS = 10 * 60 * 1000;
+let nwsUsgsCache: { at: number; map: Record<string, string | null> } | null = null;
 
-async function lookupNwsUsgs(lid: string): Promise<string | null | undefined> {
-    try {
-        const res = await fetchWithTimeout(`https://api.water.noaa.gov/nwps/v1/gauges/${lid}`, { headers: DEFAULT_HEADERS }, 15000);
-        if (res.status === 404) return null;
-        if (!res.ok) return undefined;
-        const data: any = await res.json();
-        return /^\d{8,15}$/.test(data?.usgsId ?? "") ? data.usgsId : null;
-    } catch {
-        return undefined; // transient: try again on a later request
-    }
+/** The NWS-to-USGS map, cached per isolate for a few minutes. */
+export async function readNwsUsgsMap(bucket: R2Bucket, now = Date.now()): Promise<Record<string, string | null>> {
+    if (nwsUsgsCache && now - nwsUsgsCache.at < NWS_USGS_TTL_MS) return nwsUsgsCache.map;
+    const obj = await bucket.get(NWS_USGS_KEY);
+    const map: Record<string, string | null> = obj ? await obj.json() : {};
+    nwsUsgsCache = { at: now, map };
+    return map;
+}
+
+export function clearNwsUsgsCache(): void {
+    nwsUsgsCache = null;
 }
 
 /**
- * USGS site for each NWS forecast point id, from NWPS gauge metadata. Answers
- * are kept in R2 (including "no USGS site"), so each id is looked up once.
+ * Rebuilds the map for the NWS gauges rivers link to: the registry's (compiled
+ * weekly, with each one's NWPS `usgsId`) plus any linked since. A gauge without
+ * a registry `usgsId` keeps its previous answer, else is looked up with
+ * `listSites` (NWPS gauge metadata); a failed lookup is retried on the next run.
+ * Writes only on change; returns the number of NWS gauges with a USGS site.
  */
-export async function resolveNwsToUsgs(bucket: R2Bucket, lids: string[]): Promise<Record<string, string>> {
-    if (lids.length === 0) return {};
+export async function syncNwsUsgsMap(
+    bucket: R2Bucket,
+    registry: Record<string, any>,
+    linkedIds: string[],
+    listSites: (ids: string[]) => Promise<GaugeSite[]>,
+): Promise<number> {
     const obj = await bucket.get(NWS_USGS_KEY);
-    const known: Record<string, string | null> = obj ? await obj.json() : {};
-    const missing = lids.filter(l => !(l in known));
-    let changed = false;
-    await Promise.all(missing.map(async lid => {
-        const usgs = await lookupNwsUsgs(lid);
-        if (usgs !== undefined) { known[lid] = usgs; changed = true; }
-    }));
-    if (changed) {
-        await bucket.put(NWS_USGS_KEY, JSON.stringify(known), { httpMetadata: { contentType: "application/json" } });
+    const prev: Record<string, string | null> = obj ? await obj.json() : {};
+    const next: Record<string, string | null> = {};
+    const missing: string[] = [];
+    const ids = new Set([...Object.keys(registry), ...linkedIds].filter(id => id.startsWith("NWS:")));
+    for (const id of ids) {
+        const lid = id.slice(4);
+        const entry = registry[id];
+        if (entry?.usgsId !== undefined) next[lid] = entry.usgsId || null;
+        else if (lid in prev) next[lid] = prev[lid];
+        else missing.push(lid);
     }
-    const out: Record<string, string> = {};
-    for (const lid of lids) if (known[lid]) out[lid] = known[lid] as string;
-    return out;
+    if (missing.length > 0) {
+        for (const site of await listSites(missing)) next[site.id] = site.usgsId || null;
+    }
+    const sorted = (m: Record<string, string | null>) => JSON.stringify(m, Object.keys(m).sort((a, b) => a.localeCompare(b)));
+    const body = sorted(next);
+    if (body !== sorted(prev)) {
+        await bucket.put(NWS_USGS_KEY, body, { httpMetadata: { contentType: "application/json" } });
+        nwsUsgsCache = null;
+    }
+    return Object.values(next).filter(Boolean).length;
 }

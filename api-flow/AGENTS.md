@@ -45,8 +45,9 @@ not re-add it.
 30 days of observations for every gauge live in `flow-db`, a D1 database kept separate
 from `rivers-db` so ingest never contends with user CRUD. The binding is optional in
 code: unbound, the worker uses the old stateless path (`performDataSync`). Schema:
-`migrations/2026-08-01_flow_history_store.sql`. `wrangler.toml` ships a placeholder
-`database_id`; create the database, paste its id, then apply the migration:
+`migrations/2026-08-01_flow_history_store.sql`, applied to the production database on
+2026-09-24. To recreate it from scratch, create the database, put its id in
+`wrangler.toml`, then apply the migration:
 
 ```bash
 npx wrangler d1 create flow-db
@@ -139,23 +140,25 @@ A pass takes about 1 to 3 minutes and writes to R2 under `model/`.
 
 The container has no R2 credentials. It does plain HTTP to `http://flow.r2/<key>`,
 answered by the class's outbound handler from `FLOW_STORAGE`: reads anywhere under
-`model/`, writes only under `model/weather/` and `model/forecasts/`. This needs
+`model/`, writes only under `model/weather/`, `model/ratings/` and `model/forecasts/`. This needs
 `ContainerProxy` exported from `index.ts`.
 
 Outputs: `model/forecasts/latest.json.gz` (every gauge), `archive/<YYYYMMDDHH>.json.gz`,
 `summary.json`, and 256 shards `shards/<xx>.json.gz`. A site's shard is FNV-1a 32 of its
 site number mod 256 (`shardOf`, identical to `serving/run.py`). `GET /forecast?gauges=`
-reads the shards (up to 20 ids, forecasts older than 24 h omitted); format in
-flow_predictions `serving/README.md`. An `NWS:` id gets the forecast of the USGS gauge
-it sits on (entry adds `usgsSite`), from NWPS gauge metadata `usgsId`, cached in
-`model/nws_usgs.json` (misses included) so each id is looked up once.
+reads the shards (up to 20 ids, forecasts older than 24 h omitted); entries carry
+`ft10/ft50/ft90` stage where the gauge has a USGS rating. Format in flow_predictions
+`serving/README.md`. An `NWS:` id gets the forecast of the USGS gauge it sits on (entry
+adds `usgsSite`), from `model/nws_usgs.json`: river-linked NWS gauges to their NWPS
+`usgsId`, rebuilt from the registry and linked gauges by the daily cron (or any cron when missing). A
+request never calls NWPS or writes R2.
 
 Local: `wrangler dev` cannot start the container on OrbStack (its egress proxy sidecar
 exits with `setsockoptint: protocol not available`). Run api-flow with
 `npx wrangler dev -c api-flow/wrangler.toml --enable-containers=false --local-upstream localhost:8787`
 and the container with `docker run`, pointing `SERVING_STORAGE` at
-`http://host.docker.internal:8787/__model-storage/model` (a localhost-only route over
-the same handler) and `SERVING_SNAPSHOT` at `.../model/usgs_hourly.json.gz`; then
+`http://host.docker.internal:8787/__model-storage/model` (a local-only route over
+the same handler; it and `/seed-local-r2` need `LOCAL_DEV_ROUTES=1` in `.dev.vars`) and `SERVING_SNAPSHOT` at `.../model/usgs_hourly.json.gz`; then
 `curl -X POST localhost:8080/run`.
 
 ## 4. Caching & Return Signatures

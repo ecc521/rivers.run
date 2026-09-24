@@ -138,15 +138,12 @@ export function historiesToReadings(
     return out;
 }
 
-/** Dimension rows from the registry plus linked gauges, with NWM reach ids. */
+/** Dimension rows from the registry plus linked gauges. */
 export function buildDimensions(
     registryMetadata: Record<string, any>,
-    linkedIds: string[],
-    reaches: Record<string, string> = {}
+    linkedIds: string[]
 ): GaugeDimension[] {
     const dims = new Map<string, GaugeDimension>();
-    const reachFor = (gaugeId: string) =>
-        gaugeId.startsWith("USGS:") ? reaches[gaugeId.slice(5)] : undefined;
 
     for (const [rawId, meta] of Object.entries(registryMetadata)) {
         const gaugeId = normalizeGaugeId(rawId);
@@ -160,24 +157,14 @@ export function buildDimensions(
             country: meta?.country || undefined,
             lat: sanitizeCoordinate(meta?.lat),
             lon: sanitizeCoordinate(meta?.lon),
-            nwmReachId: reachFor(gaugeId),
         });
     }
     for (const raw of linkedIds) {
         const gaugeId = normalizeGaugeId(raw);
         if (!isStorableGaugeId(gaugeId) || dims.has(gaugeId)) continue;
-        dims.set(gaugeId, { gaugeId, provider: gaugeId.split(":")[0], nwmReachId: reachFor(gaugeId) });
+        dims.set(gaugeId, { gaugeId, provider: gaugeId.split(":")[0] });
     }
     return [...dims.values()];
-}
-
-async function loadReaches(env: Env): Promise<Record<string, string>> {
-    try {
-        const obj = await env.FLOW_STORAGE?.get("usgs_reaches.json");
-        return obj ? await obj.json() as Record<string, string> : {};
-    } catch {
-        return {};
-    }
 }
 
 type IngestCtx = { env: Env; db: D1Database; keys: Map<string, number>; now: number; stats: SyncStats };
@@ -311,7 +298,7 @@ export async function runIngestCycle(
     opts: { linkedIds?: string[]; backfillRequests?: number } = {}
 ): Promise<SyncStats> {
     const linkedIds = opts.linkedIds ?? await readLinkedGaugeIds(env);
-    const dimensions = buildDimensions(registryMetadata, linkedIds, await loadReaches(env));
+    const dimensions = buildDimensions(registryMetadata, linkedIds);
     const { keys, written } = await resolveGaugeKeys(db, dimensions);
     const linkedSet = new Set(linkedIds.map(normalizeGaugeId));
 
@@ -451,7 +438,6 @@ export async function projectSitedata(
                 e.state ??= history.state;
                 e.lat ??= history.lat;
                 e.lon ??= history.lon;
-                if (history.nwmReachId) e.nwmReachId = history.nwmReachId;
             }
             const readings = fetched.get(gaugeId) ?? history?.readings ?? [];
             if (readings.length === 0) continue;
