@@ -5,7 +5,6 @@ import {
     planHistoryRequest,
     DELTA_OVERLAP_MS,
     trimToWindow,
-    collectReachIds,
     seedFromCache,
     isForecastReading,
     HISTORY_DAYS,
@@ -167,10 +166,3 @@ describe("trimToWindow", () => {
     });
 });
 
-describe("collectReachIds", () => {
-    it("keeps cached reach ids for gauges a delta response omitted", () => {
-        expect(collectReachIds({ "USGS:1": "111", "USGS:2": "222" }, { "USGS:2": { nwmReachId: "999" } }))
-            .toEqual({ "USGS:1": "111", "USGS:2": "999" });
-        expect(collectReachIds(undefined, { "USGS:3": {} })).toEqual({});
-    });
-});

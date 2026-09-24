@@ -4,13 +4,14 @@ import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { FLOW_API_URL } from "../services/api";
 import { useSettings } from "../context/SettingsContext";
 import { applyUnitSettingsToReadings } from "../utils/unitConversions";
-import { planHistoryRequest, seedFromCache, trimToWindow, collectReachIds } from "../utils/flowDelta";
+import { planHistoryRequest, seedFromCache, trimToWindow } from "../utils/flowDelta";
+import { fetchModelForecasts, mergeModelForecast, type ModelForecast } from "../utils/modelForecast";
 
 const dynamicFlowCache = new Map<string, {
   lastFetchedMs: number;
   gaugeData: Record<string, GaugeReading[]>;
   gaugeNames?: Record<string, { name: string; section?: string }>;
-  reachIds?: Record<string, string>;
+  modelForecasts?: Record<string, ModelForecast>;
 }>();
 const activeFetches = new Set<string>();
 
@@ -21,7 +22,11 @@ const activeFetches = new Set<string>();
  * Used primarily for the "Search Discovery" detailed view and River Details page.
  */
 export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null, skipFetch?: boolean) {
-  const [dynamicPayload, setDynamicPayload] = useState<{ gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, { name: string; section?: string }> } | null>(null);
+  const [dynamicPayload, setDynamicPayload] = useState<{
+    gaugeData: Record<string, GaugeReading[]>;
+    gaugeNames?: Record<string, { name: string; section?: string }>;
+    modelForecasts?: Record<string, ModelForecast>;
+  } | null>(null);
   const settings = useSettings();
 
   useEffect(() => {
@@ -44,8 +49,8 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
     const newlyFetched = cached && (Date.now() - cached.lastFetchedMs < 15 * 60 * 1000);
 
     if (hasThirtyDays && newlyFetched && cached) {
-       if (!dynamicPayload || dynamicPayload.gaugeData !== cached.gaugeData || dynamicPayload.gaugeNames !== cached.gaugeNames) {
-           setDynamicPayload({ gaugeData: cached.gaugeData, gaugeNames: cached.gaugeNames });
+       if (!dynamicPayload || dynamicPayload.gaugeData !== cached.gaugeData || dynamicPayload.gaugeNames !== cached.gaugeNames || dynamicPayload.modelForecasts !== cached.modelForecasts) {
+           setDynamicPayload({ gaugeData: cached.gaugeData, gaugeNames: cached.gaugeNames, modelForecasts: cached.modelForecasts });
        }
        return;
     }
@@ -71,6 +76,10 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
         const cachedForDelta = dynamicFlowCache.get(cacheKey);
         const { params, resumeFrom } = planHistoryRequest(allGauges, cachedForDelta);
 
+        // Model forecasts load alongside /history and never throw.
+        let modelForecasts = cachedForDelta?.modelForecasts;
+        const forecastPromise = fetchModelForecasts(FLOW_API_URL, allGauges, modelForecasts);
+
         const res = await fetch(`${FLOW_API_URL}/history?${params}`);
 
         if (!res.ok) {
@@ -86,7 +95,6 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
             seedFromCache(gaugeDataMap, cachedForDelta.gaugeData);
             Object.assign(siteNameMap, cachedForDelta.gaugeNames ?? {});
         }
-        const reachIds = collectReachIds(resumeFrom > 0 ? cachedForDelta?.reachIds : undefined, data);
         
         for (const [gaugeId, gaugeInfo] of Object.entries(data) as [string, any][]) {
             if (!gaugeDataMap[gaugeId]) gaugeDataMap[gaugeId] = new Map();
@@ -127,76 +135,18 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
                 mergedGaugeData[gaugeId] = trimToWindow(mergedSorted as GaugeReading[]);
             }
 
-            dynamicFlowCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap, reachIds });
-            setDynamicPayload({ gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
+            dynamicFlowCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap, modelForecasts });
+            setDynamicPayload({ gaugeData: mergedGaugeData, gaugeNames: siteNameMap, modelForecasts });
         };
 
         // Render historical data instantly!
         updatePayload();
 
-        // Fire asynchronous fetches for NWM forecasts (NOAA reach API) for
-        // every gauge with a reach, including ones a delta response omitted.
-        const reachPromises = Object.entries(reachIds)
-            .filter(([gaugeId]) => {
-                if (!gaugeDataMap[gaugeId]) return false;
-                // Skip NWM fetch if the gauge already has forecast data from /history (e.g. NWS)
-                const hasForecastsAlready = (data as any)[gaugeId]?.readings?.some(
-                    (r: any) => r.isForecast || r.cfsForecast != null || r.ftForecast != null
-                );
-                return !hasForecastsAlready;
-            })
-            .map(async ([gaugeId, reachId]) => {
-                const url = `https://api.water.noaa.gov/nwps/v1/reaches/${reachId}/streamflow`;
-                const maxAttempts = 3;
-                try {
-                    let noaaRes: Response | undefined;
-                    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                        try {
-                            noaaRes = await fetch(url);
-                            if (noaaRes.ok) break;
-                            // 4xx is not transient (bad reach id, etc.) - retrying won't help
-                            if (noaaRes.status < 500) break;
-                        } catch {
-                            // CORS-masked 5xx gateway errors throw rather than resolving with a status;
-                            // treat like a failed attempt since we can't inspect the status here
-                            noaaRes = undefined;
-                        }
-                        if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 500 * attempt));
-                    }
-                    if (!noaaRes || !noaaRes.ok) return;
-                    const noaaData = await noaaRes.json();
-                    
-                    const points = noaaData.mediumRange?.mean?.data || [];
-                    const parsedForecast: GaugeReading[] = points.map((pt: any) => {
-                        const flowVal = Number(pt.flow);
-                        return {
-                            dateTime: new Date(pt.validTime).getTime(),
-                            cfsForecast: Math.round(flowVal * 100) / 100,
-                            isForecast: true,
-                            forecastSource: "NWM"
-                        };
-                    });
-                    
-                    const map = gaugeDataMap[gaugeId];
-                    if (map) {
-                        parsedForecast.forEach((fc) => {
-                            if (!map.has(fc.dateTime)) {
-                                map.set(fc.dateTime, fc);
-                            }
-                        });
-                    }
-                } catch (e) {
-                    console.warn(`Failed to fetch NWM forecast for reach ${reachId}:`, e);
-                }
-            });
-
-        if (reachPromises.length > 0) {
-            await Promise.all(reachPromises);
-            if (isMounted) {
-                // Re-render once NWM forecasts are fetched successfully!
-                updatePayload();
-            }
-        }
+        // Swap in the forecasts without rebuilding (and re-animating) the readings.
+        modelForecasts = await forecastPromise;
+        const entry = dynamicFlowCache.get(cacheKey);
+        if (entry) dynamicFlowCache.set(cacheKey, { ...entry, modelForecasts });
+        if (isMounted) setDynamicPayload(prev => prev && { ...prev, modelForecasts });
 
       } catch (err: unknown) {
         if (isMounted && err instanceof Error) console.error("Dynamic Gauge Fetch Error:", err.message);
@@ -219,10 +169,15 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
     
     const enriched = { ...river };
     const convertedGaugeData: Record<string, GaugeReading[]> = {};
+    const forecasts = dynamicPayload.modelForecasts ?? {};
     for (const [gaugeId, readings] of Object.entries(dynamicPayload.gaugeData)) {
-        convertedGaugeData[gaugeId] = applyUnitSettingsToReadings(readings, settings);
+        convertedGaugeData[gaugeId] = mergeModelForecast(
+            applyUnitSettingsToReadings(readings, settings), forecasts[gaugeId], settings?.flowUnits);
     }
     enriched.gaugeData = { ...(enriched.gaugeData || {}), ...convertedGaugeData };
+    enriched.modelForecasts = Object.fromEntries(Object.entries(forecasts)
+        .filter(([gaugeId]) => dynamicPayload.gaugeData[gaugeId])
+        .map(([gaugeId, f]) => [gaugeId, { issueTime: f.issueTime, reliability: f.reliability }]));
     
     const names = dynamicPayload.gaugeNames;
     if (names && enriched.gauges) {

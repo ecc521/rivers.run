@@ -77,6 +77,9 @@ export interface RiverData {
   /** Represents historical telemetry mapped specifically by internal gaugeId strings representing the precise physical sensor datasets sequentially over time */
   gaugeData?: Record<string, GaugeReading[]>;
 
+  /** Rivers.run model forecast age and reliability per gauge id (detail views only) */
+  modelForecasts?: Record<string, ModelForecastInfo>;
+
   /** Manual hover/scrub integer override injected by the UI Graph charts to simulate historical flow states visually into component bounds */
   latestReading?: number;
   
@@ -103,6 +106,15 @@ export interface GaugeMetadata {
   lon: number;
 }
 
+export type ModelReliability = "good" | "fair" | "poor" | "unknown" | null;
+
+/** What the graph caption needs about a gauge's model forecast. */
+export interface ModelForecastInfo {
+  /** Last observed hour the model used */
+  issueTime: number;
+  reliability: ModelReliability;
+}
+
 export interface GaugeReading {
   dateTime: number; // UTC ms
   cfs?: number;
@@ -114,9 +126,17 @@ export interface GaugeReading {
   precip_in?: number;
   precip_mm?: number;
   forecast?: boolean;
+  isForecast?: boolean;
   cfsForecast?: number;
   ftForecast?: number;
   forecastSource?: string;
+  /** Rivers.run model forecast: median, and the 10th to 90th percentile range. */
+  cfsModel?: number;
+  cfsModelLow?: number;
+  cfsModelHigh?: number;
+  cmsModel?: number;
+  cmsModelLow?: number;
+  cmsModelHigh?: number;
 }
 
 export interface Gauge {

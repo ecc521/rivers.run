@@ -116,18 +116,3 @@ export function trimToWindow(readings: GaugeReading[], now: number = Date.now())
     const cutoff = now - HISTORY_DAYS * 24 * 60 * 60 * 1000;
     return readings.filter(r => isForecastReading(r) || r.dateTime >= cutoff);
 }
-
-/**
- * NWM reach ids for every gauge we know one for: from this response, else
- * from the cache (a delta response omits gauges with nothing new).
- */
-export function collectReachIds(
-    cached: Record<string, string> | undefined,
-    data: Record<string, { nwmReachId?: string }>
-): Record<string, string> {
-    const out: Record<string, string> = { ...(cached ?? {}) };
-    for (const [gaugeId, info] of Object.entries(data ?? {})) {
-        if (info?.nwmReachId) out[gaugeId] = info.nwmReachId;
-    }
-    return out;
-}
