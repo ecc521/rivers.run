@@ -430,7 +430,7 @@ async function ingestToStore(env: Env, db: D1Database, registryMetadata: Record<
     } catch (e) {
         console.warn("Failed to read previous sitedata.json", e);
     }
-    const merged = await projectSitedata(db, registryMetadata, linkedIds, stats.forecasts, previous, now, stats.latest);
+    const merged = await projectSitedata(db, registryMetadata, linkedIds, stats.forecasts, previous, now, stats.latest, stats.fetched);
 
     const written = rowsWrittenByCycle(stats);
     const u = stats.usgs;

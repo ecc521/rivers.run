@@ -82,6 +82,9 @@ and weekly crons also fire at 00:00 and must not start a second ingest):
   gauge from its earliest reading and restarts after a gap longer than the unit
   holds. NWS forecast rows go to `sitedata.json`, never the store.
 - UK, IE: latest-only bulk calls; river-linked gauges also fetch 3h of history.
+  UK is fetched every cycle but stored only on the hourly cycle (`isHourlyCycle`),
+  one reading per gauge per hour, to save D1 writes. `sitedata.json` takes UK
+  readings from the fetch, falling back to the store.
 
 `/history` and `/gauge` serve from the store only when `gauge_sync_state` says it
 covers the whole request with no pending repair (USGS after backfill, EC/NWS from
@@ -97,7 +100,8 @@ Known gaps, not yet handled:
   one parameter's record). Nothing reads it yet.
 
 `node api-flow/tools/estimate-writes.mjs` projects monthly rows written from the
-per-cycle counts logged in local `worker_logs`.
+per-cycle counts logged in local `worker_logs`. Measure whole hours, since EC and
+UK write in one cycle of four. Workers Paid includes 50M rows written a month.
 
 ### Model snapshot (`model/usgs_hourly.json.gz` in R2)
 

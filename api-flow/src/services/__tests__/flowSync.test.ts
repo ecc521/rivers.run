@@ -158,10 +158,48 @@ describe("runIngestCycle", () => {
     });
 
     it("uses history for linked latest-only gauges and getLatest for the rest", async () => {
-        const uk = stubProvider("UK");
-        await runIngestCycle(makeEnv(["UK:L"]), db, { "UK:L": {}, "UK:R": {} }, { UK: uk }, NOW);
-        expect(uk.calls.map(c => [c[0], c[1]])).toEqual([["getHistory", ["L"]], ["getLatest", ["R"]]]);
+        const ie = stubProvider("IE");
+        await runIngestCycle(makeEnv(["IE:L"]), db, { "IE:L": {}, "IE:R": {} }, { IE: ie }, NOW);
+        expect(ie.calls.map(c => [c[0], c[1]])).toEqual([["getHistory", ["L"]], ["getLatest", ["R"]]]);
         expect(await countReadings(db)).toBe(2);
+    });
+
+    it("fetches UK every cycle but stores it only on the hourly cycle, one reading per gauge per hour", async () => {
+        const H = 1_780_002_000_000; // an hour boundary
+        const quarterly = (from: number, to: number) => {
+            const out = [];
+            for (let ts = slotStartOf(from) + 15 * MIN; ts <= to; ts += 15 * MIN) out.push({ dateTime: ts, m: ts / MIN % 97 });
+            return out;
+        };
+        let clock = 0;
+        const uk = stubProvider("UK", {
+            async getLatest(codes: string[]) {
+                return Object.fromEntries(codes.map(c => [c, { dateTime: slotStartOf(clock), m: 1 }]));
+            },
+            async getHistory(codes: string[], start: number, end?: number) {
+                return Object.fromEntries(codes.map(c => [c, history(c, quarterly(start, end!))]));
+            },
+        });
+        const registry = { "UK:L": {}, "UK:R": {} };
+        const cycle = (at: number) => { clock = at; return runIngestCycle(makeEnv(["UK:L"]), db, registry, { UK: uk }, at); };
+
+        for (const at of [H + 20 * MIN, H + 35 * MIN, H + 50 * MIN]) {
+            const stats = await cycle(at);
+            expect(stats.providerRows.UK).toBe(0);
+            expect(stats.latest.get("UK:R")!.ts).toBe(slotStartOf(at));
+            expect(stats.fetched.at(-1)).toMatchObject({ gaugeId: "UK:L", ts: slotStartOf(at) });
+        }
+        expect(await countReadings(db)).toBe(0);
+
+        const hourly = await cycle(H + HOUR + 5 * MIN);
+        expect(hourly.providerRows.UK).toBe(5);
+        const stored = await readSeries(db, ["UK:L", "UK:R"], H - 3 * HOUR, clock, clock);
+        expect(stored["UK:L"].readings.map(r => r.dateTime)).toEqual([H - 105 * MIN, H - HOUR, H, H + HOUR]);
+        expect(stored["UK:R"].readings.map(r => r.dateTime)).toEqual([H + HOUR]);
+
+        expect((await cycle(H + HOUR + 5 * MIN)).providerRows.UK).toBe(0);
+        expect((await cycle(H + HOUR + 20 * MIN)).providerRows.UK).toBe(0);
+        expect(await countReadings(db)).toBe(5);
     });
 
     it("hands every USGS gauge to the USGS sweeps in one list", async () => {
@@ -211,6 +249,16 @@ describe("projectSitedata", () => {
         const out = await projectSitedata(db, { "USGS:1": {}, "USGS:2": {} }, ["USGS:2"], {}, null, NOW, fetched);
         expect(out["USGS:1"].readings).toEqual([{ dateTime: t + 10 * MIN, cfs: 4 }]);
         expect(out["USGS:2"].readings).toEqual([{ dateTime: t, cfs: 5 }]);
+    });
+
+    it("takes a linked gauge's window from fetched readings over the store", async () => {
+        const { keys } = await resolveGaugeKeys(db, [{ gaugeId: "UK:9", provider: "UK" }]);
+        await upsertSlots(db, [row("UK:9", t - HOUR, 1)], keys);
+        const fetched = [30, 15, 0].map((m, i) => ({ gaugeId: "UK:9", ts: t - m * MIN, m: i }));
+        const out = await projectSitedata(db, { "UK:9": {} }, ["UK:9"], {}, null, NOW, new Map(), fetched);
+        expect(out["UK:9"].readings).toEqual([
+            { dateTime: t - 30 * MIN, m: 0 }, { dateTime: t - 15 * MIN, m: 1 }, { dateTime: t, m: 2 },
+        ]);
     });
 
     it("keeps dead-prefix linked gauges with their previous readings and skips store-only gauges", async () => {

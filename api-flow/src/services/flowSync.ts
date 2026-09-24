@@ -5,8 +5,8 @@ import { normalizeGaugeId } from "../utils/formatting";
 import { withTimeout } from "../utils/timeout";
 import {
     resolveGaugeKeys, upsertSlots, reduceToSlots, readSeries, readLatest, readSyncState,
-    markRepair, writeCoverage, getMeta, setMeta, slotStartOf, servedTime, isStorableGaugeId,
-    SLOT_MS, type GaugeDimension, type ObservedReading, type CoverageUpdate,
+    markRepair, writeCoverage, getMeta, setMeta, slotStartOf, servedTime, isStorableGaugeId, rowToReading,
+    SLOT_MS, type GaugeDimension, type ObservedReading, type CoverageUpdate, type SlotRow,
 } from "./flowStore";
 import { runUsgsCycle, isHourlyCycle, META_WINDOW_OK, type UsgsCycleStats } from "./usgsIngest";
 
@@ -18,6 +18,8 @@ import { runUsgsCycle, isHourlyCycle, META_WINDOW_OK, type UsgsCycleStats } from
  *    unit at a time. Coverage is tracked per gauge, and a failed unit marks
  *    its gauges for repair. NWS forecast rows go to sitedata.json only.
  *  - UK, IE: latest-only bulk calls; linked gauges also get a 3h history.
+ *    UK is fetched every cycle but stored only on the hourly cycle, one
+ *    reading per gauge per hour; sitedata.json uses the fetch directly.
  */
 
 const LINKED_HISTORY_MS = 3 * 60 * 60 * 1000;
@@ -26,11 +28,15 @@ const PROJECTION_WINDOW_MS = 3 * 60 * 60 * 1000;
 /** Latest reading lookback for sitedata.json; older gauges keep their previous entry. */
 const LATEST_WINDOW_MS = 12 * 60 * 60 * 1000;
 const PROVIDER_TIMEOUT_MS = 600_000;
+const HOUR_MS = 60 * 60 * 1000;
 /** /history trusts the store only if its provider ingested this recently. */
 export const FRESH_INGEST_MS = 45 * 60 * 1000;
 
 /** Providers ingested unit by unit with coverage tracking. */
 export const BULK_PROVIDERS = new Set(["EC", "NWS"]);
+
+/** Latest-only providers stored only on the hourly cycle, one reading per gauge per hour. */
+export const HOURLY_STORE_PROVIDERS = new Set(["UK"]);
 
 /** The sync_meta key holding a provider's last successful ingest. */
 export const ingestMetaKey = (prefix: string) => prefix === "USGS" ? META_WINDOW_OK : `ok_at:${prefix}`;
@@ -64,6 +70,8 @@ export interface SyncStats {
     forecasts: Record<string, GaugeReading[]>;
     /** Newest reading fetched this cycle per gauge id, for sitedata.json. */
     latest: Map<string, ObservedReading>;
+    /** Linked-gauge history fetched this cycle for HOURLY_STORE_PROVIDERS, for sitedata.json. */
+    fetched: ObservedReading[];
 }
 
 /** Every gauge id referenced by a curated river. */
@@ -249,7 +257,21 @@ async function ingestBulkProvider(ctx: IngestCtx, prefix: string, provider: Gaug
     if (anyOk) ctx.stats.rowsWritten.state += await setMeta(ctx.db, ingestMetaKey(prefix), ctx.now);
 }
 
-/** Latest-only providers: bulk latest for all, plus 3h of history for linked gauges. */
+/** Per gauge and hour, the row closest to the hour start. */
+function oneRowPerHour(rows: SlotRow[]): SlotRow[] {
+    const best = new Map<string, SlotRow>();
+    for (const r of rows) {
+        const key = `${r.gaugeId}|${Math.floor(r.ts / HOUR_MS)}`;
+        const prev = best.get(key);
+        if (!prev || r.ts + r.off * 1000 < prev.ts + prev.off * 1000) best.set(key, r);
+    }
+    return [...best.values()];
+}
+
+/**
+ * Latest-only providers: bulk latest for all, plus 3h of history for linked
+ * gauges. HOURLY_STORE_PROVIDERS fetch every cycle but write only hourly.
+ */
 async function ingestLatestOnly(
     ctx: IngestCtx, prefix: string, provider: GaugeProvider, group: { linked: string[]; registry: string[] }
 ): Promise<void> {
@@ -259,13 +281,19 @@ async function ingestLatestOnly(
         for (const r of historiesToReadings(prefix, histories)) readings.push(r);
     };
     if (group.linked.length > 0) push(await provider.getHistory(group.linked, now - LINKED_HISTORY_MS, now, false, env));
+    const linkedReadings = readings.length;
     if (group.registry.length > 0) {
         const latest = await provider.getLatest(group.registry, env);
         push(Object.fromEntries(Object.entries(latest).map(([id, reading]) =>
             [id, { id, name: "", readings: [reading] } as GaugeHistory])));
     }
     noteLatest(stats.latest, readings, now);
-    const written = await upsertSlots(db, reduceToSlots(readings, { now }), keys);
+    let rows = reduceToSlots(readings, { now });
+    if (HOURLY_STORE_PROVIDERS.has(prefix)) {
+        for (let i = 0; i < linkedReadings; i++) stats.fetched.push(readings[i]);
+        rows = isHourlyCycle(now) ? oneRowPerHour(rows) : [];
+    }
+    const written = await upsertSlots(db, rows, keys);
     stats.providerRows[prefix] = written;
     stats.rowsWritten.providers += written;
 }
@@ -290,7 +318,7 @@ export async function runIngestCycle(
     const stats: SyncStats = {
         gauges: dimensions.length, linked: linkedSet.size,
         rowsWritten: { dimensions: written, providers: 0, state: 0 },
-        providerRows: {}, usgs: null, errors: 0, forecasts: {}, latest: new Map(),
+        providerRows: {}, usgs: null, errors: 0, forecasts: {}, latest: new Map(), fetched: [],
     };
 
     const groups: Record<string, { linked: string[]; registry: string[] }> = {};
@@ -349,14 +377,27 @@ function toServedReading(r: ObservedReading): GaugeReading {
     return out;
 }
 
+/** Fetched readings slotted like the store, per gauge, over the projection window. */
+function servedWindows(readings: ObservedReading[], now: number): Map<string, GaugeReading[]> {
+    const out = new Map<string, GaugeReading[]>();
+    const windowStart = slotStartOf(now - PROJECTION_WINDOW_MS);
+    for (const row of reduceToSlots(readings, { now, windowStart }).sort((a, b) => a.ts - b.ts)) {
+        const list = out.get(row.gaugeId);
+        if (list) list.push(rowToReading(row));
+        else out.set(row.gaugeId, [rowToReading(row)]);
+    }
+    return out;
+}
+
 /**
  * Projects sitedata.json: every registry and river-linked gauge (including
  * dead prefixes, which keep their previous readings), each with its newest
  * reading, linked gauges with 3h of history plus live forecast rows. The
  * newest reading prefers what this cycle fetched, since the store keeps the
- * reading closest to each slot start. A gauge with nothing recent keeps its
- * entry from the previous sitedata.json. Gauges known only to the store are
- * left out.
+ * reading closest to each slot start. Linked gauges with `fetchedSeries`
+ * readings take their window from those instead of the store (UK is stored
+ * hourly). A gauge with nothing recent keeps its entry from the previous
+ * sitedata.json. Gauges known only to the store are left out.
  */
 export async function projectSitedata(
     db: D1Database,
@@ -365,7 +406,8 @@ export async function projectSitedata(
     forecasts: Record<string, GaugeReading[]>,
     previous: Record<string, any> | null,
     now: number = Date.now(),
-    fetchedLatest: Map<string, ObservedReading> = new Map()
+    fetchedLatest: Map<string, ObservedReading> = new Map(),
+    fetchedSeries: ObservedReading[] = []
 ): Promise<Record<string, any>> {
     const merged: Record<string, any> = {};
 
@@ -399,17 +441,20 @@ export async function projectSitedata(
     const storable = linked.filter(isStorableGaugeId);
     if (storable.length > 0) {
         const series = await readSeries(db, storable, now - PROJECTION_WINDOW_MS, now, now);
+        const fetched = servedWindows(fetchedSeries, now);
         for (const gaugeId of storable) {
             const e = merged[gaugeId];
             const history = series[gaugeId];
-            if (!history || history.readings.length === 0) continue;
-            e.name = e.name || history.name;
-            e.section ??= history.section;
-            e.state ??= history.state;
-            e.lat ??= history.lat;
-            e.lon ??= history.lon;
-            if (history.nwmReachId) e.nwmReachId = history.nwmReachId;
-            const readings = history.readings;
+            if (history) {
+                e.name = e.name || history.name;
+                e.section ??= history.section;
+                e.state ??= history.state;
+                e.lat ??= history.lat;
+                e.lon ??= history.lon;
+                if (history.nwmReachId) e.nwmReachId = history.nwmReachId;
+            }
+            const readings = fetched.get(gaugeId) ?? history?.readings ?? [];
+            if (readings.length === 0) continue;
             const latest = newest[gaugeId];
             if (latest && latest.dateTime > readings[readings.length - 1].dateTime) readings.push(latest);
             e.readings = readings;

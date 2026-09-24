@@ -5,8 +5,8 @@
 // Usage, from the repo root, after a few local cycles 15 minutes apart:
 //   node api-flow/tools/estimate-writes.mjs
 // The first logged cycle is skipped: it loads the whole window, not one step.
-// Cover at least an hour: EC files update hourly, so its writes land in one
-// cycle of four.
+// Cover whole hours: EC files update hourly and UK is stored only on the
+// hourly cycle, so each lands in one cycle of four.
 
 import { execFileSync } from "node:child_process";
 
@@ -47,6 +47,7 @@ for (const { at, d } of rows) {
 const steady = rows.slice(1);
 const elapsedCycles = steady.reduce((a, r, i) => a + (r.d.cycleAt - rows[i].d.cycleAt) / 900_000, 0);
 const perCycle = steady.reduce((a, r) => a + recurring(r.d.written), 0) / elapsedCycles;
+if (Math.round(elapsedCycles) % 4 !== 0) console.error("Warning: the measured span is not whole hours; hourly writes are over or under counted.");
 const revisions = rows.filter(r => r.d.usgs?.revision === "ran").map(r => r.d.written.usgsRevision);
 const perRevision = revisions.length ? revisions.reduce((a, b) => a + b, 0) / revisions.length : 0;
 const backfill = rows.reduce((a, r) => a + r.d.written.usgsBackfill, 0);

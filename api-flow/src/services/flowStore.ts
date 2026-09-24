@@ -341,7 +341,8 @@ const READING_COLS = `g.gauge_id AS gauge_id, r.ts AS ts, r.off AS off, r.cfs AS
 export const SERVED_SNAP_MS = 300_000;
 export const servedTime = (ts: number): number => Math.round(ts / SERVED_SNAP_MS) * SERVED_SNAP_MS;
 
-function rowToReading(row: ReadingRow): GaugeReading {
+/** A stored or slotted row as a served reading. */
+export function rowToReading(row: Pick<ReadingRow, "ts" | "off" | (typeof VALUE_COLS)[number]>): GaugeReading {
     const reading: GaugeReading = { dateTime: servedTime(row.ts + row.off * 1000) };
     for (const c of VALUE_COLS) if (row[c] !== null) (reading as any)[c] = row[c];
     return reading;
