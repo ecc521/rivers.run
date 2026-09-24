@@ -20,8 +20,8 @@ import { normalizeGaugeId } from "./utils/formatting";
 import { generateSitemap } from "./services/sitemap";
 import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
-import { runIngestCycle, projectSitedata, readLinkedGaugeIds, rowsWrittenByCycle, storeCovers } from "./services/flowSync";
-import { readSeries, readSyncState } from "./services/flowStore";
+import { runIngestCycle, projectSitedata, readLinkedGaugeIds, rowsWrittenByCycle, storeCovers, ingestMetaKey } from "./services/flowSync";
+import { readSeries, readSyncState, getMeta } from "./services/flowStore";
 import { isHourlyCycle } from "./services/usgsIngest";
 import { writeUsgsHourlySnapshot } from "./services/modelSnapshot";
 import { syncUsgsReaches } from "./services/usgsReaches";
@@ -138,7 +138,9 @@ app.openapi(historyRoute, async (c) => {
     if (c.env.FLOW_DB) {
         try {
             const state = await readSyncState(c.env.FLOW_DB, gauges);
-            fromStore = new Set(gauges.filter((g: string) => storeCovers(g, state.get(g), start)));
+            const ingestedAt = await readIngestTimes(c.env.FLOW_DB, gauges);
+            fromStore = new Set(gauges.filter((g: string) =>
+                storeCovers(g, state.get(g), start, ingestedAt.get(g.split(":")[0]) ?? null, now)));
             if (fromStore.size > 0) stored = await readSeries(c.env.FLOW_DB, [...fromStore], start, now, now);
         } catch (e) {
             console.error("Flow store read failed, falling back to live fetch:", e);
@@ -208,6 +210,15 @@ app.openapi(historyRoute, async (c) => {
     }
     return c.body(body, 200, { "Content-Type": "application/json" });
 });
+
+/** Last successful ingest time per provider prefix among the given gauges. */
+async function readIngestTimes(db: D1Database, gaugeIds: string[]): Promise<Map<string, number | null>> {
+    const out = new Map<string, number | null>();
+    for (const prefix of new Set(gaugeIds.map(g => g.split(":")[0]))) {
+        out.set(prefix, await getMeta(db, ingestMetaKey(prefix)));
+    }
+    return out;
+}
 
 /** FNV-1a. Not security-relevant; a compact, stable ETag discriminator. */
 function hashSignature(input: string): string {
@@ -299,7 +310,8 @@ app.openapi(gaugeRoute, async (c) => {
     if (c.env.FLOW_DB) {
         try {
             const state = await readSyncState(c.env.FLOW_DB, [gaugeId]);
-            if (storeCovers(gaugeId, state.get(gaugeId), start)) {
+            const ingestedAt = (await readIngestTimes(c.env.FLOW_DB, [gaugeId])).get(gaugeId.split(":")[0]) ?? null;
+            if (storeCovers(gaugeId, state.get(gaugeId), start, ingestedAt, Date.now())) {
                 const stored = await readSeries(c.env.FLOW_DB, [gaugeId], start, Date.now());
                 const history = stored[gaugeId];
                 if (history && history.readings.length > 0) {
@@ -402,6 +414,58 @@ app.get("/seed-local-r2", async (c) => {
 });
 
 
+/** One store ingest cycle, returning the projected sitedata.json content. */
+async function ingestToStore(env: Env, db: D1Database, registryMetadata: Record<string, any>, now: number): Promise<Record<string, any>> {
+    const linkedIds = await readLinkedGaugeIds(env);
+    const cap = Number(env.FLOW_BACKFILL_MAX_REQUESTS);
+    const stats = await runIngestCycle(env, db, registryMetadata, providers, now, {
+        linkedIds,
+        backfillRequests: Number.isFinite(cap) && env.FLOW_BACKFILL_MAX_REQUESTS ? cap : undefined,
+    });
+
+    let previous: Record<string, any> | null = null;
+    try {
+        const obj = await env.FLOW_STORAGE.get("sitedata.json");
+        if (obj) previous = await obj.json() as Record<string, any>;
+    } catch (e) {
+        console.warn("Failed to read previous sitedata.json", e);
+    }
+    const merged = await projectSitedata(db, registryMetadata, linkedIds, stats.forecasts, previous, now, stats.latest);
+
+    const written = rowsWrittenByCycle(stats);
+    const u = stats.usgs;
+    await logToD1(env, "INFO", "sync",
+        `Store ingest in ${((Date.now() - now) / 1000).toFixed(1)}s: ` +
+        `rows written ${Object.values(written).reduce((a, b) => a + b, 0)}, ` +
+        `USGS requests ${u?.requests ?? 0} (window ${u?.windowBatches ?? 0} batches, ` +
+        `${u?.windowFailed ?? 0} failed; revision ${u?.revision ?? "n/a"}; ` +
+        `backfill ${u?.backfillRequests ?? 0} ${u?.backfillStopped ?? ""}), ` +
+        `rate remaining ${u?.rateRemaining ?? "?"}, errors ${stats.errors}.`,
+        { cycleAt: now, written, usgs: u, providerRows: stats.providerRows });
+    return merged;
+}
+
+/** Legacy path: a gauge whose fetch failed keeps its previous readings. */
+async function recoverFromPreviousSitedata(env: Env, mergedData: Record<string, any>): Promise<void> {
+    try {
+        const previousObject = await env.FLOW_STORAGE.get("sitedata.json");
+        if (!previousObject) return;
+        const previousData = await previousObject.json() as Record<string, any>;
+        let recoveredCount = 0;
+        for (const [key, gauge] of Object.entries(mergedData)) {
+            if (gauge.readings && gauge.readings.length === 0 && previousData[key] && previousData[key].readings?.length > 0) {
+                gauge.readings = previousData[key].readings;
+                recoveredCount++;
+            }
+        }
+        if (recoveredCount > 0) {
+            await logToD1(env, "INFO", "sync", `Recovered stale readings for ${recoveredCount} gauges due to provider API failures.`);
+        }
+    } catch (e) {
+        console.warn("Failed to merge previous sitedata for outage resilience", e);
+    }
+}
+
 export default {
     fetch: app.fetch,
 
@@ -448,97 +512,42 @@ export default {
             }
 
 
-            // 1. Fetch gauges.
-            //
-            // With FLOW_DB bound, readings are ingested into the durable history
-            // store and sitedata.json is projected back out of it. Without it,
-            // fall back to the original stateless path so a missing binding
-            // degrades rather than breaks.
-            let mergedData: Record<string, any>;
+            // The daily and weekly crons fire at 00:00 alongside */15; only
+            // the 15-minute trigger (or a manual run) ingests.
+            const isSyncCycle = !event.cron || event.cron === "*/15 * * * *";
+            let snapshotSites: string[] | null = null;
+            const snapshotAt = Date.now();
 
-            if (env.FLOW_DB) {
-                const syncStart = Date.now();
-                const now = syncStart;
-                const linkedIds = await readLinkedGaugeIds(env);
-                const cap = Number(env.FLOW_BACKFILL_MAX_REQUESTS);
-                const stats = await runIngestCycle(env, env.FLOW_DB, registryMetadata, providers, now, {
-                    linkedIds,
-                    backfillRequests: Number.isFinite(cap) && env.FLOW_BACKFILL_MAX_REQUESTS ? cap : undefined,
-                });
+            if (isSyncCycle) {
+                // 1. Fetch gauges. With FLOW_DB bound, readings go to the history
+                // store and sitedata.json is projected from it; otherwise the
+                // original stateless path runs.
+                let mergedData: Record<string, any>;
 
-                let previous: Record<string, any> | null = null;
-                try {
-                    const obj = await env.FLOW_STORAGE.get("sitedata.json");
-                    if (obj) previous = await obj.json() as Record<string, any>;
-                } catch (e) {
-                    console.warn("Failed to read previous sitedata.json", e);
-                }
-                mergedData = await projectSitedata(env.FLOW_DB, registryMetadata, linkedIds, stats.forecasts, previous, now);
-
-                const written = rowsWrittenByCycle(stats);
-                const u = stats.usgs;
-                await logToD1(env, "INFO", "sync",
-                    `Store ingest in ${((Date.now() - syncStart) / 1000).toFixed(1)}s: ` +
-                    `rows written ${Object.values(written).reduce((a, b) => a + b, 0)}, ` +
-                    `USGS requests ${u?.requests ?? 0} (window ${u?.windowBatches ?? 0} batches, ` +
-                    `${u?.windowFailed ?? 0} failed; revision ${u?.revision ?? "n/a"}; ` +
-                    `backfill ${u?.backfillRequests ?? 0} ${u?.backfillStopped ?? ""}), ` +
-                    `rate remaining ${u?.rateRemaining ?? "?"}, errors ${stats.errors}.`,
-                    { cycleAt: now, written, usgs: u, providerRows: stats.providerRows });
-
-                if (isHourlyCycle(now)) {
-                    try {
-                        const siteIds = Object.keys(registryMetadata)
+                if (env.FLOW_DB) {
+                    mergedData = await ingestToStore(env, env.FLOW_DB, registryMetadata, snapshotAt);
+                    if (isHourlyCycle(snapshotAt)) {
+                        snapshotSites = Object.keys(registryMetadata)
                             .map(normalizeGaugeId)
                             .filter(id => id.startsWith("USGS:"))
                             .map(id => id.slice(5));
-                        const snap = await writeUsgsHourlySnapshot(env, env.FLOW_DB, siteIds, now);
-                        await logToD1(env, "INFO", "sync",
-                            `Model snapshot: ${snap.sites} sites, ${snap.jsonBytes} bytes JSON, ${snap.gzBytes} gzipped.`);
-                    } catch (e: any) {
-                        await logToD1(env, "ERROR", "sync", `Model snapshot failed: ${e?.message || e}`);
                     }
+                } else {
+                    mergedData = await performDataSync(env, registryMetadata, providers);
+                    await recoverFromPreviousSitedata(env, mergedData);
                 }
-            } else {
-                mergedData = await performDataSync(env, registryMetadata, providers);
 
-                // Resiliency pass: if a gauge failed to fetch readings (e.g. USGS partial outage),
-                // recover its previous readings from the existing sitedata.json so the frontend
-                // shows stale data rather than nothing.
-                //
-                // This exists only because the legacy path has no durable store. The FLOW_DB
-                // branch above needs no equivalent: a failed provider fetch simply adds no new
-                // readings, and the ones already stored are still served.
-                try {
-                    const previousObject = await env.FLOW_STORAGE.get("sitedata.json");
-                    if (previousObject) {
-                        const previousData = await previousObject.json() as Record<string, any>;
-                        let recoveredCount = 0;
-                        for (const [key, gauge] of Object.entries(mergedData)) {
-                            if (gauge.readings && gauge.readings.length === 0 && previousData[key] && previousData[key].readings?.length > 0) {
-                                gauge.readings = previousData[key].readings;
-                                recoveredCount++;
-                            }
-                        }
-                        if (recoveredCount > 0) {
-                            await logToD1(env, "INFO", "sync", `Recovered stale readings for ${recoveredCount} gauges due to provider API failures.`);
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Failed to merge previous sitedata for outage resilience", e);
-                }
+                // Save to storage using buffered construction for R2 compatibility
+                const syncBuffer = stringifyJSONObject(mergedData, { generatedAt: Date.now() });
+
+                await env.FLOW_STORAGE.put("sitedata.json", syncBuffer, {
+                    httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=300" }
+                });
+                await logToD1(env, "INFO", "sync", `Successfully updated sitedata.json (${Object.keys(mergedData).length} gauges).`);
+
+                // 2. Process Notifications
+                await processNotifications(env, mergedData, _ctx);
             }
-
-            // Save to storage using buffered construction for R2 compatibility
-            const syncBuffer = stringifyJSONObject(mergedData, { generatedAt: Date.now() });
-
-            await env.FLOW_STORAGE.put("sitedata.json", syncBuffer, {
-                httpMetadata: { contentType: "application/json", cacheControl: "public, max-age=300" }
-            });
-            await logToD1(env, "INFO", "sync", `Successfully updated sitedata.json (${Object.keys(mergedData).length} gauges).`);
-
-            // 2. Process Notifications
-            await processNotifications(env, mergedData, _ctx);
 
             // 3. Update Sitemap
             if (isDailyMaintenance) {
@@ -549,6 +558,21 @@ export default {
             // 4. Cleanup
             await pruneLogs(env);
             
+            // 5. Model snapshot last: sitedata.json is already safe if this
+            // runs out of memory or time.
+            if (snapshotSites && env.FLOW_DB) {
+                // Drop the registry (~15k gauges) before building the snapshot.
+                // eslint-disable-next-line sonarjs/no-dead-store
+                registryMetadata = {};
+                try {
+                    const snap = await writeUsgsHourlySnapshot(env, env.FLOW_DB, snapshotSites, snapshotAt);
+                    await logToD1(env, "INFO", "sync",
+                        `Model snapshot: ${snap.sites} sites, ${snap.jsonBytes} bytes JSON, ${snap.gzBytes} gzipped.`);
+                } catch (e: any) {
+                    await logToD1(env, "ERROR", "sync", `Model snapshot failed: ${e?.message || e}`);
+                }
+            }
+
             const totalDuration = (Date.now() - startTs) / 1000;
             await logToD1(env, "INFO", "sync", `Background sync completed successfully in ${totalDuration.toFixed(1)}s.`);
 

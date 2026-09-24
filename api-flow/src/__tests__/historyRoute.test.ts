@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createTestD1, type TestD1 } from "./helpers/d1Sqlite";
-import { resolveGaugeKeys, upsertSlots, extendCoverage, markRepair, slotStartOf } from "../services/flowStore";
+import { resolveGaugeKeys, upsertSlots, extendCoverage, markRepair, setMeta, slotStartOf } from "../services/flowStore";
+import { ingestMetaKey } from "../services/flowSync";
 
 const NOW = 1_780_002_000_000;
 const SLOT = 900_000;
@@ -78,6 +79,7 @@ async function seed(gaugeId: string, readings: Array<{ ts: number; cfs?: number;
         temp_f: null, precip_in: null, approved: false,
     })), keys);
     if (covered) await extendCoverage(db, [keys.get(gaugeId)!], slotStartOf(NOW - 30 * DAY));
+    await setMeta(db, ingestMetaKey(gaugeId.split(":")[0]), NOW - 5 * 60_000);
     return keys.get(gaugeId)!;
 }
 
@@ -101,6 +103,13 @@ describe("GET /history", () => {
         liveCalls = [];
         await get("/history?gauges=USGS:03451500&days=1");
         expect(liveCalls).toEqual([]);
+    });
+
+    it("goes live when the provider has not ingested recently", async () => {
+        await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }]);
+        await setMeta(db, ingestMetaKey("USGS"), NOW - 2 * 3_600_000);
+        await get("/history?gauges=USGS:03451500");
+        expect(liveCalls).toEqual(["USGS:03451500"]);
     });
 
     it("goes live while a repair is pending", async () => {

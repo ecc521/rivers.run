@@ -1,4 +1,4 @@
-import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
+import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, BulkUnit, isValidReadingValue } from './provider';
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
@@ -49,6 +49,46 @@ export function parseNWSeries(data: any, observations: any[], minTime: number, m
     return readingMap;
 }
 
+const NWS_CONCURRENCY = 5;
+
+async function forEachSite(siteCodes: string[], fn: (site: string) => Promise<void>): Promise<void> {
+    let index = 0;
+    const worker = async () => {
+        while (index < siteCodes.length) await fn(siteCodes[index++]);
+    };
+    await Promise.all(Array.from({ length: NWS_CONCURRENCY }, worker));
+}
+
+/** Stageflow JSON; undefined when the gauge has none (404); null when the fetch failed. */
+async function fetchStageflow(site: string, env?: any): Promise<any | null | undefined> {
+    const url = `https://api.water.noaa.gov/nwps/v1/gauges/${site}/stageflow`;
+    for (let attempts = 1; attempts <= 3; attempts++) {
+        try {
+            const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 60000);
+            if (res.status === 404) return undefined;
+            if (!res.ok) throw new Error(`NWPS HTTP Error: ${res.status}`);
+            return await res.json();
+        } catch (e: unknown) {
+            if (attempts === 3) {
+                const errorMsg = `NWPS Fetch failed for ${site}`;
+                if (env) await logToD1(env, "WARN", "nws", errorMsg, e);
+                else console.error(errorMsg, e);
+                return null;
+            }
+            await new Promise(r => setTimeout(r, attempts * 2000));
+        }
+    }
+    return null;
+}
+
+function toHistory(site: string, readingMap: Map<number, GaugeReading>): GaugeHistory {
+    const readings = [...readingMap.keys()].sort((a, b) => a - b)
+        .map(ts => readingMap.get(ts)!)
+        .filter(r => Object.keys(r).some(k => k !== 'dateTime' && k !== 'isForecast'));
+    const formatted = formatGaugeName(site, "NWS");
+    return { id: site, name: formatted.name, section: formatted.section, readings, country: "US" };
+}
+
 export const nwsProvider: GaugeProvider = {
     id: "NWS",
     preferredUnits: 'imperial',
@@ -82,79 +122,50 @@ export const nwsProvider: GaugeProvider = {
     async getHistory(siteCodes: string[], startTs: number, endTs?: number, includeForecast?: boolean, env?: any): Promise<Record<string, GaugeHistory>> {
         const maxTime = endTs ?? Date.now();
         const results: Record<string, GaugeHistory> = {};
-        
-        const CONCURRENCY_LIMIT = 5;
-        let index = 0;
 
-        const worker = async () => {
-            while (index < siteCodes.length) {
-                const site = siteCodes[index++];
-                const url = `https://api.water.noaa.gov/nwps/v1/gauges/${site}/stageflow`;
-                let attempts = 0;
-                let success = false;
-                while (!success && attempts <= 2) {
-                    try {
-                        const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 60000); // 60s timeout per NWS gauge
-                        if (!res.ok) {
-                            if (res.status === 404) break;
-                            throw new Error(`NWPS HTTP Error: ${res.status}`);
-                        }
-                        
-                        const data: any = await res.json();
-                        
-                        const readingMap = new Map<number, GaugeReading>();
-                        
-                        // Parse Observed
-                        if (data.observed?.data) {
-                           const parsedObs = parseNWSeries(data.observed, data.observed.data, startTs, maxTime, false);
-                           parsedObs.forEach((v, k) => readingMap.set(k, v));
-                        }
-
-                        // Parse Forecast
-                        if (includeForecast && data.forecast?.data) {
-                           const parsedFcst = parseNWSeries(data.forecast, data.forecast.data, startTs, maxTime, true);
-                           parsedFcst.forEach((v, k) => {
-                               // Overwrite or append forecast
-                               readingMap.set(k, { ...readingMap.get(k), ...v, isForecast: true });
-                           });
-                        }
-
-                        const timestamps = Array.from(readingMap.keys()).sort((a, b) => a - b);
-                        const readings = timestamps
-                            .map(ts => readingMap.get(ts)!)
-                            .filter(r => {
-                                const keys = Object.keys(r);
-                                return keys.some(k => k !== 'dateTime' && k !== 'isForecast');
-                            });
-
-                        const formatted = formatGaugeName(site, "NWS");
-                        results[site] = {
-                            id: site,
-                            name: formatted.name,
-                            section: formatted.section,
-                            readings,
-                            country: "US"
-                        };
-                        success = true;
-                    } catch (_e: unknown) {
-                        attempts++;
-                        if (attempts > 2) {
-                            const errorMsg = `NWPS Fetch failed for ${site}`;
-                            if (env) {
-                                await logToD1(env, "WARN", "nws", errorMsg, _e);
-                            } else {
-                                console.error(errorMsg, _e);
-                            }
-                        } else {
-                            await new Promise(r => setTimeout(r, attempts * 2000));
-                        }
-                    }
-                }
+        await forEachSite(siteCodes, async site => {
+            const data = await fetchStageflow(site, env);
+            if (!data) return;
+            const readingMap = new Map<number, GaugeReading>();
+            if (data.observed?.data) {
+                parseNWSeries(data.observed, data.observed.data, startTs, maxTime, false)
+                    .forEach((v, k) => readingMap.set(k, v));
             }
-        };
-
-        await Promise.all(Array(CONCURRENCY_LIMIT).fill(0).map(() => worker()));
+            if (includeForecast && data.forecast?.data) {
+                parseNWSeries(data.forecast, data.forecast.data, startTs, maxTime, true)
+                    .forEach((v, k) => readingMap.set(k, { ...readingMap.get(k), ...v, isForecast: true }));
+            }
+            results[site] = toHistory(site, readingMap);
+        });
         return results;
+    },
+
+    /**
+     * One unit per gauge: the whole observed series (null if the fetch
+     * failed) and, separately, its forecast rows, so the two never collide.
+     */
+    async *getBulkHistories(siteCodes: string[], env?: any): AsyncGenerator<BulkUnit> {
+        for (let i = 0; i < siteCodes.length; i += NWS_CONCURRENCY) {
+            const batch = siteCodes.slice(i, i + NWS_CONCURRENCY);
+            const fetched = await Promise.all(batch.map(site => fetchStageflow(site, env)));
+            for (let j = 0; j < batch.length; j++) {
+                const site = batch[j];
+                const data = fetched[j];
+                if (data === null) {
+                    yield { unit: site, siteCodes: [site], histories: null };
+                    continue;
+                }
+                const observed = data?.observed?.data
+                    ? parseNWSeries(data.observed, data.observed.data, 0, Date.now(), false) : new Map();
+                const forecast = data?.forecast?.data
+                    ? [...parseNWSeries(data.forecast, data.forecast.data, 0, Date.now(), true).values()] : [];
+                yield {
+                    unit: site, siteCodes: [site],
+                    histories: observed.size > 0 ? { [site]: toHistory(site, observed) } : {},
+                    forecasts: forecast.length > 0 ? { [site]: forecast.toSorted((a, b) => a.dateTime - b.dateTime) } : undefined,
+                };
+            }
+        }
     },
 
     async getSiteListing(siteCodes: string[]): Promise<GaugeSite[]> {

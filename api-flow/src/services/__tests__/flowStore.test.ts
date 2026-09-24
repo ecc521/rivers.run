@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestD1, type TestD1 } from "../../__tests__/helpers/d1Sqlite";
 import {
     resolveGaugeKeys, lookupGaugeKeys, upsertSlots, reduceToSlots, readSeries, readLatest,
-    readHourlySums, readSyncState, readProviderSyncState, extendCoverage, initCoverage,
-    resetProviderCoverage, markRepair, markProviderRepair, clearRepair, getMeta, setMeta,
-    settleRepair, recordBackfillFailure, clearBackfillFailures,
+    readHourlySums, readSyncState, readProviderSyncState, extendCoverage,
+    markRepair, markProviderRepair, clearRepair, getMeta, setMeta,
+    writeCoverage, recordBackfillFailure, clearBackfillFailures,
     countReadings, slotRanges, slotIndexOf, isStorableGaugeId, LATEST_SQL,
     SLOT_MS, SLOTS, RETENTION_MS, FUTURE_SKEW_MS,
     type GaugeDimension, type ObservedReading, type SlotRow,
@@ -274,14 +274,18 @@ describe("sync state", () => {
         expect((await readSyncState(db, ["USGS:1"])).get("USGS:1")!.coverageStart).toBe(NOW - 2 * DAY);
     });
 
-    it("initCoverage sets only missing coverage; reset moves it forward", async () => {
+    it("writeCoverage sets exact values and skips unchanged rows", async () => {
         const keys = await keysFor("EC:1", "EC:2");
-        await extendCoverage(db, [keys.get("EC:1")!], NOW - 5 * DAY);
-        expect(await initCoverage(db, [...keys.values()], NOW - HOUR)).toBe(1);
-        expect(await resetProviderCoverage(db, "EC", NOW - 2 * HOUR)).toBe(1);
+        const [k1, k2] = [keys.get("EC:1")!, keys.get("EC:2")!];
+        const updates = [
+            { gaugeKey: k1, coverageStart: NOW - DAY, repairFrom: null },
+            { gaugeKey: k2, coverageStart: NOW - HOUR, repairFrom: NOW - MIN },
+        ];
+        expect(await writeCoverage(db, updates)).toBe(2);
+        expect(await writeCoverage(db, updates)).toBe(0);
+        expect(await writeCoverage(db, [{ gaugeKey: k2, coverageStart: NOW - HOUR, repairFrom: null }])).toBe(1);
         const state = await readProviderSyncState(db, "EC");
-        expect(state.get("EC:1")!.coverageStart).toBe(NOW - 2 * HOUR);
-        expect(state.get("EC:2")!.coverageStart).toBe(NOW - HOUR);
+        expect(state.get("EC:2")).toMatchObject({ coverageStart: NOW - HOUR, repairFrom: null });
     });
 
     it("markRepair keeps the earliest point and clearRepair needs covering", async () => {
@@ -295,19 +299,6 @@ describe("sync state", () => {
         const state = await readProviderSyncState(db, "USGS");
         expect(state.get("USGS:1")!.repairFrom).toBeNull();
         expect(state.get("USGS:2")!.repairFrom).toBe(NOW - 2 * HOUR);
-    });
-
-    it("settleRepair clears covered repairs and restarts coverage after an unrecoverable gap", async () => {
-        const keys = await keysFor("EC:1", "EC:2");
-        const [k1, k2] = [keys.get("EC:1")!, keys.get("EC:2")!];
-        await extendCoverage(db, [k1, k2], NOW - 5 * DAY);
-        await markRepair(db, [k1], NOW - HOUR);
-        await markRepair(db, [k2], NOW - 2 * DAY);
-        expect(await settleRepair(db, [k1, k2], NOW - DAY)).toBe(2);
-        const state = await readProviderSyncState(db, "EC");
-        expect(state.get("EC:1")).toMatchObject({ coverageStart: NOW - 5 * DAY, repairFrom: null });
-        expect(state.get("EC:2")).toMatchObject({ coverageStart: NOW - DAY, repairFrom: null });
-        expect(await settleRepair(db, [k1, k2], NOW - DAY)).toBe(0);
     });
 
     it("backs off backfill failures exponentially and clears them once", async () => {

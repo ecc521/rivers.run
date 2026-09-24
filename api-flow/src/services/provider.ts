@@ -50,6 +50,17 @@ export interface ProviderCapabilities {
 }
 
 
+/** One independently fetched part of a provider's bulk data. */
+export interface BulkUnit {
+    unit: string;
+    /** Requested site codes this unit may contain. */
+    siteCodes: string[];
+    /** Observations keyed by site code; null when the fetch failed. */
+    histories: Record<string, GaugeHistory> | null;
+    /** Forecast rows keyed by site code, when the source carries them. */
+    forecasts?: Record<string, GaugeReading[]>;
+}
+
 export interface GaugeProvider {
     readonly id: string;
     readonly preferredUnits: 'imperial' | 'metric';
@@ -61,11 +72,12 @@ export interface GaugeProvider {
     getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>>;
 
     /**
-     * Optional: the bulk request behind getLatest, keeping every reading at or
-     * after `sinceTs` instead of only the newest. The history store uses it
-     * for providers whose bulk files carry many hours (Environment Canada).
+     * Optional: every observation the provider's bulk source holds (a whole
+     * EC province file, a whole NWS series), one independently fetched unit
+     * at a time. A unit with `histories: null` failed. The history store uses
+     * this to track coverage per unit.
      */
-    getLatestHistories?(siteCodes: string[], env?: any, sinceTs?: number): Promise<Record<string, GaugeHistory>>;
+    getBulkHistories?(siteCodes: string[], env?: any): AsyncIterable<BulkUnit>;
 
     /** Optional: forecast rows only (isForecast: true), for gauges served from the store. */
     getForecast?(siteCodes: string[], env?: any): Promise<Record<string, GaugeHistory>>;

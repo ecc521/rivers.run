@@ -1,4 +1,4 @@
-import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
+import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, BulkUnit, isValidReadingValue } from './provider';
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
 
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
@@ -133,7 +133,8 @@ function getProvincesForSite(siteID: string): string[] {
     return PREFIX_TO_PROVINCES[provPrefix] || ALL_PROVINCES;
 }
 
-async function fetchCanadianProvince(province: string, startTs: number, endTs: number): Promise<Record<string, GaugeHistory>> {
+/** A province's hourly CSV, or null if the download failed. */
+async function fetchProvinceText(province: string): Promise<string | null> {
     const url = `https://dd.weather.gc.ca/today/hydrometric/csv/${province}/hourly/${province}_hourly_hydrometric.csv`;
     try {
         const res = await fetchWithTimeout(url, {
@@ -142,12 +143,15 @@ async function fetchCanadianProvince(province: string, startTs: number, endTs: n
                 'Accept': 'text/csv, application/csv'
             }
         }, 90000);
-        if (!res.ok) return {};
-        const text = await res.text();
-        return processCanadaCSV(text, startTs, endTs);
+        return res.ok ? await res.text() : null;
     } catch {
-        return {};
+        return null;
     }
+}
+
+async function fetchCanadianProvince(province: string, startTs: number, endTs: number): Promise<Record<string, GaugeHistory>> {
+    const text = await fetchProvinceText(province);
+    return text === null ? {} : processCanadaCSV(text, startTs, endTs);
 }
 
 async function fetchIndividualCanadaGauge(stationID: string, province: string, startTs: number, endTs: number): Promise<GaugeHistory | null> {
@@ -217,37 +221,28 @@ export const ecProvider: GaugeProvider = {
     },
 
     /**
-     * Same province CSVs as getLatest, keeping every reading since `sinceTs`
-     * (default 3h). Each file holds about a day per station, so a missed
-     * cycle can be recovered by widening the window.
+     * Whole province CSVs (about a day of readings each), one province at a
+     * time so only one file is in memory. A failed download yields null.
      */
-    async getLatestHistories(siteCodes: string[], _env?: any, sinceTs?: number): Promise<Record<string, GaugeHistory>> {
-        const startTs = sinceTs ?? Date.now() - 3 * 60 * 60 * 1000;
-        const endTs = Date.now() + 1000 * 60 * 60 * 24; // clock-skew buffer; the store drops future rows
-        const results: Record<string, GaugeHistory> = {};
-
-        if (siteCodes.length <= 10) {
-            const fetches = siteCodes.flatMap(site =>
-                getProvincesForSite(site).map(p => fetchIndividualCanadaGauge(site, p, startTs, endTs)));
-            for (const hist of await Promise.all(fetches)) {
-                if (hist && hist.readings.length > 0) results[hist.id] = hist;
-            }
-            return results;
-        }
-
-        const provincesToFetch = new Set<string>();
-        siteCodes.forEach(code => getProvincesForSite(code).forEach(p => provincesToFetch.add(p)));
-
-        const wanted = new Set(siteCodes);
-        const arr = await Promise.all(
-            Array.from(provincesToFetch).map(p => fetchCanadianProvince(p, startTs, endTs)));
-
-        for (const provData of arr) {
-            for (const [siteCode, hist] of Object.entries(provData)) {
-                if (wanted.has(siteCode) && hist.readings.length > 0) results[siteCode] = hist;
+    async *getBulkHistories(siteCodes: string[], _env?: any): AsyncGenerator<BulkUnit> {
+        const byProvince = new Map<string, string[]>();
+        for (const code of siteCodes) {
+            for (const p of getProvincesForSite(code)) {
+                if (!byProvince.has(p)) byProvince.set(p, []);
+                byProvince.get(p)!.push(code);
             }
         }
-        return results;
+        for (const [province, codes] of byProvince) {
+            const text = await fetchProvinceText(province);
+            if (text === null) {
+                yield { unit: province, siteCodes: codes, histories: null };
+                continue;
+            }
+            const all = processCanadaCSV(text, 0, Date.now() + 1000 * 60 * 60 * 24);
+            const histories: Record<string, GaugeHistory> = {};
+            for (const code of codes) if (all[code]) histories[code] = all[code];
+            yield { unit: province, siteCodes: codes, histories };
+        }
     },
 
     async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, _env?: any): Promise<Record<string, GaugeHistory>> {

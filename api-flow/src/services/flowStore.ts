@@ -583,30 +583,6 @@ export async function extendCoverage(db: D1Database, gaugeKeys: number[], from: 
     `).bind(chunk, from)));
 }
 
-/** Sets coverage_start only where none exists yet. */
-export async function initCoverage(db: D1Database, gaugeKeys: number[], from: number): Promise<number> {
-    if (gaugeKeys.length === 0) return 0;
-    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
-        INSERT INTO gauge_sync_state (gauge_key, coverage_start)
-        SELECT j.value, ?2 FROM json_each(?1) j WHERE true
-        ON CONFLICT(gauge_key) DO UPDATE SET coverage_start = excluded.coverage_start
-        WHERE gauge_sync_state.coverage_start IS NULL
-    `).bind(chunk, from)));
-}
-
-/**
- * Coverage broke: readings are only known complete from `from` onward. Moves
- * coverage_start forward to `from` for every gauge of the provider.
- */
-export async function resetProviderCoverage(db: D1Database, provider: string, from: number): Promise<number> {
-    const res = await db.prepare(`
-        UPDATE gauge_sync_state SET coverage_start = ?2
-         WHERE coverage_start < ?2
-           AND gauge_key IN (SELECT gauge_key FROM gauges WHERE provider = ?1)
-    `).bind(provider, from).run();
-    return writtenOf(res);
-}
-
 /** Records that readings from `from` onward need a refetch. Keeps the earliest. */
 export async function markRepair(db: D1Database, gaugeKeys: number[], from: number): Promise<number> {
     if (gaugeKeys.length === 0) return 0;
@@ -641,30 +617,24 @@ export async function clearRepair(db: D1Database, gaugeKeys: number[], coveredFr
     `).bind(chunk, coveredFrom)));
 }
 
-/**
- * For gauges just fetched with readings complete from `coveredFrom`: a
- * pending repair at or after it is resolved; an older one cannot be repaired,
- * so coverage restarts at `coveredFrom`.
- */
-export async function settleRepair(db: D1Database, gaugeKeys: number[], coveredFrom: number): Promise<number> {
-    if (gaugeKeys.length === 0) return 0;
-    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
-        UPDATE gauge_sync_state
-           SET coverage_start = CASE WHEN repair_from < ?2 THEN MAX(COALESCE(coverage_start, ?2), ?2)
-                                     ELSE coverage_start END,
-               repair_from = NULL
-         WHERE repair_from IS NOT NULL
-           AND gauge_key IN (SELECT value FROM json_each(?1))
-    `).bind(chunk, coveredFrom)));
+export interface CoverageUpdate {
+    gaugeKey: number;
+    coverageStart: number | null;
+    repairFrom: number | null;
 }
 
-/** Resets coverage to `from` for the given gauges where it starts earlier. */
-export async function resetCoverage(db: D1Database, gaugeKeys: number[], from: number): Promise<number> {
-    if (gaugeKeys.length === 0) return 0;
-    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
-        UPDATE gauge_sync_state SET coverage_start = ?2
-         WHERE coverage_start < ?2 AND gauge_key IN (SELECT value FROM json_each(?1))
-    `).bind(chunk, from)));
+/** Sets coverage_start and repair_from exactly; writes only rows that change. */
+export async function writeCoverage(db: D1Database, updates: CoverageUpdate[]): Promise<number> {
+    if (updates.length === 0) return 0;
+    const payload = updates.map(u => ({ k: u.gaugeKey, c: u.coverageStart, r: u.repairFrom }));
+    return runBatch(db, chunkAsJson(payload).map(chunk => db.prepare(`
+        INSERT INTO gauge_sync_state (gauge_key, coverage_start, repair_from)
+        SELECT j.value->>'$.k', j.value->>'$.c', j.value->>'$.r' FROM json_each(?1) j WHERE true
+        ON CONFLICT(gauge_key) DO UPDATE SET
+            coverage_start = excluded.coverage_start, repair_from = excluded.repair_from
+        WHERE gauge_sync_state.coverage_start IS NOT excluded.coverage_start
+           OR gauge_sync_state.repair_from IS NOT excluded.repair_from
+    `).bind(chunk)));
 }
 
 /** A lone backfill fetch for this gauge failed: back off exponentially, capped at a day. */

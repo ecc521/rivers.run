@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createTestD1, type TestD1 } from "../../__tests__/helpers/d1Sqlite";
 import {
-    runIngestCycle, projectSitedata, buildDimensions, historiesToReadings, providerWindow,
-    storeCovers, rowsWrittenByCycle,
+    runIngestCycle, projectSitedata, buildDimensions, historiesToReadings, nextCoverage,
+    storeCovers, rowsWrittenByCycle, FRESH_INGEST_MS,
 } from "../flowSync";
 import { countReadings, readSeries, readProviderSyncState, resolveGaugeKeys, upsertSlots, slotStartOf } from "../flowStore";
 import type { GaugeProvider, GaugeHistory } from "../provider";
@@ -82,33 +82,52 @@ describe("historiesToReadings", () => {
     });
 });
 
-describe("providerWindow", () => {
-    it("widens after misses and flags a gap past 24h", () => {
-        expect(providerWindow(null, NOW)).toEqual({ from: slotStartOf(NOW - 3 * HOUR), gap: false });
-        expect(providerWindow(NOW - 5 * HOUR, NOW).from).toBe(slotStartOf(NOW - 5 * HOUR - 15 * MIN));
-        expect(providerWindow(NOW - 2 * DAY, NOW)).toEqual({ from: slotStartOf(NOW - DAY), gap: true });
+/** A bulk provider stub yielding the given units; `fail` lists units that fail. */
+function bulkProvider(id: string, units: Record<string, Record<string, any[]>>, opts: { fail?: string[]; forecasts?: Record<string, any[]> } = {}) {
+    return stubProvider(id, {
+        async *getBulkHistories(codes: string[]) {
+            for (const [unit, sites] of Object.entries(units)) {
+                const siteCodes = Object.keys(sites).filter(c => codes.includes(c));
+                if (opts.fail?.includes(unit)) { yield { unit, siteCodes, histories: null }; continue; }
+                yield {
+                    unit, siteCodes,
+                    histories: Object.fromEntries(siteCodes.map(c => [c, history(c, sites[c])])),
+                    forecasts: opts.forecasts,
+                };
+            }
+        },
+    } as any);
+}
+
+describe("nextCoverage", () => {
+    it("keeps coverage, starts it on first sight, and restarts it after an unrecoverable gap", () => {
+        const from = NOW - DAY;
+        expect(nextCoverage(undefined, from, null)).toEqual({ coverageStart: from, repairFrom: null });
+        expect(nextCoverage({ coverageStart: NOW - 5 * DAY, repairFrom: null }, from, NOW - HOUR).coverageStart).toBe(NOW - 5 * DAY);
+        expect(nextCoverage({ coverageStart: NOW - 5 * DAY, repairFrom: null }, from, NOW - 2 * DAY).coverageStart).toBe(from);
+        expect(nextCoverage({ coverageStart: NOW - 5 * DAY, repairFrom: NOW - 3 * DAY }, from, null).coverageStart).toBe(from);
+        expect(nextCoverage({ coverageStart: NOW - 5 * DAY, repairFrom: NOW - HOUR }, from, null))
+            .toEqual({ coverageStart: NOW - 5 * DAY, repairFrom: null });
     });
 });
 
 describe("runIngestCycle", () => {
-    it("stores a windowed provider, records coverage, and writes nothing on replay", async () => {
-        const ec = stubProvider("EC", {
-            async getLatestHistories(codes: string[], _env?: any, since?: number) {
-                ec.calls.push(["getLatestHistories", codes, since]);
-                return Object.fromEntries(codes.map(c => [c, history(c, [
-                    { dateTime: NOW - 30 * MIN, cms: 1 }, { dateTime: NOW - 25 * MIN, cms: 1.1 }, { dateTime: NOW - 10 * MIN, cms: 2 },
-                ])]));
-            },
-        });
+    const series = [
+        { dateTime: NOW - 20 * HOUR - 7 * MIN, cms: 0.5 },
+        { dateTime: NOW - 30 * MIN, cms: 1 }, { dateTime: NOW - 25 * MIN, cms: 1.1 }, { dateTime: NOW - 10 * MIN, cms: 2 },
+    ];
+
+    it("stores whole EC units, sets per-gauge coverage, and writes nothing on replay", async () => {
+        const ec = bulkProvider("EC", { AB: { A: series }, BC: { B: series.slice(1) } });
         const registry = { "EC:A": { name: "A" }, "EC:B": { name: "B" } };
 
         const first = await runIngestCycle(makeEnv([]), db, registry, { EC: ec }, NOW);
-        expect(ec.calls[0][2]).toBe(slotStartOf(NOW - 3 * HOUR));
-        expect(await countReadings(db)).toBe(4); // 5-min readings collapse to 15-min slots
-        expect(rowsWrittenByCycle(first)).toMatchObject({ dimensions: 2, providers: 4 });
+        expect(await countReadings(db)).toBe(5); // 5-min readings collapse to 15-min slots
+        expect(rowsWrittenByCycle(first)).toMatchObject({ dimensions: 2, providers: 5 });
 
         const cov = await readProviderSyncState(db, "EC");
-        expect(cov.get("EC:A")!.coverageStart).toBe(slotStartOf(NOW - 3 * HOUR));
+        expect(cov.get("EC:A")!.coverageStart).toBe(slotStartOf(NOW - 20 * HOUR - 7 * MIN) + 15 * MIN);
+        expect(cov.get("EC:B")!.coverageStart).toBe(slotStartOf(NOW - 30 * MIN) + 15 * MIN);
 
         const again = await runIngestCycle(makeEnv([]), db, registry, { EC: ec }, NOW);
         expect(rowsWrittenByCycle(again)).toEqual({
@@ -116,19 +135,26 @@ describe("runIngestCycle", () => {
         });
     });
 
-    it("keeps NWS forecasts in memory and stores only observations", async () => {
-        const nws = stubProvider("NWS", {
-            async getHistory(codes: string[], _s: number, _e?: number, forecast?: boolean) {
-                nws.calls.push(["getHistory", forecast]);
-                return Object.fromEntries(codes.map(c => [c, history(c, [
-                    { dateTime: NOW - 10 * MIN, ft: 3 }, { dateTime: NOW + HOUR, ft: 4, isForecast: true },
-                ])]));
-            },
-        });
+    it("marks a failed unit's gauges for repair and settles them on the next success", async () => {
+        const registry = { "EC:A": {}, "EC:B": {} };
+        await runIngestCycle(makeEnv([]), db, registry, { EC: bulkProvider("EC", { AB: { A: series }, BC: { B: series } }) }, NOW - HOUR);
+        await runIngestCycle(makeEnv([]), db, registry, { EC: bulkProvider("EC", { AB: { A: series }, BC: { B: series } }, { fail: ["BC"] }) }, NOW - 30 * MIN);
+        let state = await readProviderSyncState(db, "EC");
+        expect(state.get("EC:A")!.repairFrom).toBeNull();
+        expect(state.get("EC:B")!.repairFrom).toBe(NOW - HOUR);
+
+        await runIngestCycle(makeEnv([]), db, registry, { EC: bulkProvider("EC", { AB: { A: series }, BC: { B: series } }) }, NOW);
+        state = await readProviderSyncState(db, "EC");
+        expect(state.get("EC:B")).toMatchObject({ repairFrom: null, coverageStart: slotStartOf(NOW - 20 * HOUR - 7 * MIN) + 15 * MIN });
+    });
+
+    it("keeps NWS forecasts apart from observations at the same time", async () => {
+        const nws = bulkProvider("NWS", { XYZ: { XYZ: [{ dateTime: NOW - 10 * MIN, ft: 3 }] } },
+            { forecasts: { XYZ: [{ dateTime: NOW - 10 * MIN, ft: 3.5, isForecast: true }, { dateTime: NOW + HOUR, ft: 4, isForecast: true }] } });
         const stats = await runIngestCycle(makeEnv(["NWS:XYZ"]), db, {}, { NWS: nws }, NOW);
-        expect(nws.calls).toEqual([["getHistory", true]]);
-        expect(stats.forecasts["NWS:XYZ"]).toEqual([{ dateTime: NOW + HOUR, ft: 4, isForecast: true }]);
-        expect(await countReadings(db)).toBe(1);
+        expect(stats.forecasts["NWS:XYZ"]).toHaveLength(2);
+        const stored = await readSeries(db, ["NWS:XYZ"], NOW - HOUR, NOW, NOW);
+        expect(stored["NWS:XYZ"].readings).toEqual([{ dateTime: NOW - 10 * MIN, ft: 3 }]);
     });
 
     it("uses history for linked latest-only gauges and getLatest for the rest", async () => {
@@ -157,11 +183,12 @@ describe("runIngestCycle", () => {
 });
 
 describe("projectSitedata", () => {
+    const row = (gaugeId: string, ts: number, cfs: number) =>
+        ({ gaugeId, ts, off: 0, cfs, ft: null, cms: null, m: null, temp_f: null, precip_in: null, approved: false });
+    const t = slotStartOf(NOW);
+
     it("builds latest, linked windows, forecasts and falls back to the previous entry", async () => {
         const { keys } = await resolveGaugeKeys(db, ["USGS:1", "USGS:2", "UK:9"].map(id => ({ gaugeId: id, provider: id.split(":")[0] })));
-        const row = (gaugeId: string, ts: number, cfs: number) =>
-            ({ gaugeId, ts, off: 0, cfs, ft: null, cms: null, m: null, temp_f: null, precip_in: null, approved: false });
-        const t = slotStartOf(NOW);
         await upsertSlots(db, [row("USGS:1", t - 30 * MIN, 1), row("USGS:1", t - 15 * MIN, 2), row("USGS:1", t, 3), row("USGS:2", t, 5)], keys);
 
         const out = await projectSitedata(db,
@@ -176,30 +203,52 @@ describe("projectSitedata", () => {
         expect(out["UK:9"].readings).toEqual([{ dateTime: t - DAY, cfs: 7 }]);
         expect(out["USGS:1"].name).toBe("One");
     });
+
+    it("uses the newest fetched reading when the store's slot holds an earlier one", async () => {
+        const { keys } = await resolveGaugeKeys(db, [{ gaugeId: "USGS:1", provider: "USGS" }, { gaugeId: "USGS:2", provider: "USGS" }]);
+        await upsertSlots(db, [row("USGS:1", t, 3), row("USGS:2", t, 5)], keys);
+        const fetched = new Map([["USGS:1", { gaugeId: "USGS:1", ts: t + 10 * MIN, cfs: 4 }]]);
+        const out = await projectSitedata(db, { "USGS:1": {}, "USGS:2": {} }, ["USGS:2"], {}, null, NOW, fetched);
+        expect(out["USGS:1"].readings).toEqual([{ dateTime: t + 10 * MIN, cfs: 4 }]);
+        expect(out["USGS:2"].readings).toEqual([{ dateTime: t, cfs: 5 }]);
+    });
+
+    it("keeps dead-prefix linked gauges with their previous readings and skips store-only gauges", async () => {
+        const { keys } = await resolveGaugeKeys(db, [{ gaugeId: "UK:9", provider: "UK" }]);
+        await upsertSlots(db, [row("UK:9", t - HOUR, 1)], keys);
+        const previous = { "virtual:abc": { id: "abc", name: "V", readings: [{ dateTime: 1, cfs: 5 }] } };
+        const out = await projectSitedata(db, { "virtual:abc": { name: "V" } }, ["virtual:abc", "streambeam:x"], {}, previous, NOW);
+        expect(out["virtual:abc"].readings).toEqual([{ dateTime: 1, cfs: 5 }]);
+        expect(out["streambeam:x"]).toBeDefined();
+        expect(out["UK:9"]).toBeUndefined();
+    });
 });
 
 describe("storeCovers", () => {
     const start = NOW - 7 * DAY;
+    const fresh = NOW - 10 * MIN;
     it("requires coverage back to the start and no pending repair", () => {
-        expect(storeCovers("USGS:1", { coverageStart: start - DAY, repairFrom: null }, start)).toBe(true);
-        expect(storeCovers("USGS:1", { coverageStart: start + DAY, repairFrom: null }, start)).toBe(false);
-        expect(storeCovers("USGS:1", { coverageStart: start - DAY, repairFrom: NOW - HOUR }, start)).toBe(false);
-        expect(storeCovers("USGS:1", undefined, start)).toBe(false);
+        expect(storeCovers("USGS:1", { coverageStart: start - DAY, repairFrom: null }, start, fresh, NOW)).toBe(true);
+        expect(storeCovers("USGS:1", { coverageStart: start + DAY, repairFrom: null }, start, fresh, NOW)).toBe(false);
+        expect(storeCovers("USGS:1", { coverageStart: start - DAY, repairFrom: NOW - HOUR }, start, fresh, NOW)).toBe(false);
+        expect(storeCovers("USGS:1", undefined, start, fresh, NOW)).toBe(false);
+    });
+
+    it("requires a fresh ingest", () => {
+        const s = { coverageStart: start - DAY, repairFrom: null };
+        expect(storeCovers("USGS:1", s, start, NOW - FRESH_INGEST_MS - 1, NOW)).toBe(false);
+        expect(storeCovers("USGS:1", s, start, null, NOW)).toBe(false);
     });
 
     it("never serves latest-only providers from the store", () => {
-        expect(storeCovers("UK:1", { coverageStart: 0, repairFrom: null }, start)).toBe(false);
-        expect(storeCovers("EC:1", { coverageStart: 0, repairFrom: null }, start)).toBe(true);
+        expect(storeCovers("UK:1", { coverageStart: 0, repairFrom: null }, start, fresh, NOW)).toBe(false);
+        expect(storeCovers("EC:1", { coverageStart: 0, repairFrom: null }, start, fresh, NOW)).toBe(true);
     });
 });
 
 describe("readSeries integration", () => {
     it("returns stored EC readings after a cycle", async () => {
-        const ec = stubProvider("EC", {
-            async getLatestHistories(codes: string[]) {
-                return Object.fromEntries(codes.map(c => [c, history(c, [{ dateTime: NOW - 10 * MIN, cms: 2 }])]));
-            },
-        });
+        const ec = bulkProvider("EC", { AB: { A: [{ dateTime: NOW - 10 * MIN, cms: 2 }] } });
         await runIngestCycle(makeEnv([]), db, { "EC:A": {} }, { EC: ec }, NOW);
         const series = await readSeries(db, ["EC:A"], NOW - HOUR, NOW, NOW);
         expect(series["EC:A"].readings).toEqual([{ dateTime: NOW - 10 * MIN, cms: 2 }]);
