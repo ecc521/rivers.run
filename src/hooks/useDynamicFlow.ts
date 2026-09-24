@@ -175,9 +175,6 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
             applyUnitSettingsToReadings(readings, settings), forecasts[gaugeId], settings?.flowUnits);
     }
     enriched.gaugeData = { ...(enriched.gaugeData || {}), ...convertedGaugeData };
-    enriched.modelForecasts = Object.fromEntries(Object.entries(forecasts)
-        .filter(([gaugeId]) => dynamicPayload.gaugeData[gaugeId])
-        .map(([gaugeId, f]) => [gaugeId, { issueTime: f.issueTime, reliability: f.reliability }]));
     
     const names = dynamicPayload.gaugeNames;
     if (names && enriched.gauges) {

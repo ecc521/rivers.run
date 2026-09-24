@@ -6,8 +6,8 @@ import {
     parseModelForecast,
     fetchModelForecasts,
     mergeModelForecast,
-    formatForecastAge,
     formatModelFlow,
+    formatModelValue,
     type ModelForecast,
 } from "./modelForecast";
 import type { GaugeReading } from "../types/River";
@@ -19,7 +19,6 @@ const forecast = (overrides: Partial<ModelForecast> = {}): ModelForecast => ({
     issueTime: ISSUE,
     start: ISSUE + HOUR,
     stepMs: HOUR,
-    reliability: "good",
     q10: [900, 880, 860],
     q50: [1040, 1000, 960],
     q90: [1200, 1150, 1100],
@@ -43,15 +42,12 @@ describe("modelForecastChunks", () => {
 });
 
 describe("parseModelForecast", () => {
-    it("accepts a well-formed entry and keeps reliability", () => {
-        const parsed = parseModelForecast({ ...forecast(), units: "cfs", reliability: "poor" });
+    it("accepts a well-formed entry, with stage where present", () => {
+        const parsed = parseModelForecast({ ...forecast(), units: "cfs", reliability: "poor", ft50: [3.1, null, 3.0] });
         expect(parsed?.q50).toEqual([1040, 1000, 960]);
-        expect(parsed?.reliability).toBe("poor");
-    });
-
-    it("maps a missing or unexpected reliability to null", () => {
-        expect(parseModelForecast({ ...forecast(), reliability: null })?.reliability).toBeNull();
-        expect(parseModelForecast({ ...forecast(), reliability: "great" })?.reliability).toBeNull();
+        expect(parsed?.ft50).toEqual([3.1, null, 3.0]);
+        expect(parsed?.ft10).toBeUndefined();
+        expect(parsed).not.toHaveProperty("reliability", "poor");
     });
 
     it("rejects malformed entries", () => {
@@ -133,6 +129,16 @@ describe("mergeModelForecast", () => {
         expect(mergeModelForecast(readings, forecast(), "imperial")[1].cmsModel).toBeUndefined();
     });
 
+    it("adds stage where the forecast has it, and m twins in metric mode", () => {
+        const f = forecast({ ft10: [2.9, 2.8, null], ft50: [3.12, 3.05, null], ft90: [3.4, 3.3, null] });
+        const out = mergeModelForecast(readings, f, "metric");
+        expect(out[1]).toMatchObject({ ftModel: 3.12, ftModelLow: 2.9, ftModelHigh: 3.4 });
+        expect(out[1].mModel).toBeCloseTo(0.951, 3);
+        expect(out[3].ftModel).toBeUndefined();
+        expect(out[3].cfsModel).toBe(960);
+        expect(mergeModelForecast(readings, f)[1].mModel).toBeUndefined();
+    });
+
     it("omits the range where bounds are missing and skips non-numeric values", () => {
         const out = mergeModelForecast([], forecast({ q10: undefined, q50: [100, null as unknown as number, 80] }));
         expect(out.map(r => r.cfsModel)).toEqual([100, 80]);
@@ -141,18 +147,6 @@ describe("mergeModelForecast", () => {
     });
 });
 
-describe("formatForecastAge", () => {
-    const now = ISSUE;
-    it("reads naturally at each scale", () => {
-        expect(formatForecastAge(now - 30_000, now)).toBe("just now");
-        expect(formatForecastAge(now - 25 * 60_000, now)).toBe("25 minutes ago");
-        expect(formatForecastAge(now - HOUR, now)).toBe("1 hour ago");
-        expect(formatForecastAge(now - 5 * HOUR, now)).toBe("5 hours ago");
-        expect(formatForecastAge(now - 30 * HOUR, now)).toBe("1 day ago");
-        expect(formatForecastAge(now - 72 * HOUR, now)).toBe("3 days ago");
-        expect(formatForecastAge(now + HOUR, now)).toBe("just now");
-    });
-});
 
 describe("formatModelFlow", () => {
     it("rounds to 3 significant figures with separators", () => {
@@ -160,6 +154,14 @@ describe("formatModelFlow", () => {
         expect(formatModelFlow(12_345)).toBe("12,300");
         expect(formatModelFlow(29.449)).toBe("29.4");
         expect(formatModelFlow(0)).toBe("0");
+    });
+});
+
+describe("formatModelValue", () => {
+    it("keeps stage to hundredths, even for elevation-datum gauges", () => {
+        expect(formatModelValue(3.1, "ft")).toBe("3.10");
+        expect(formatModelValue(1523.456, "ft")).toBe("1,523.46");
+        expect(formatModelValue(1040, "cfs")).toBe("1,040");
     });
 });
 

@@ -14,15 +14,11 @@ import {
 } from "recharts";
 import type { RiverData, GaugeReading } from "../types/River";
 import { useSettings } from "../context/SettingsContext";
-import { formatForecastAge, formatModelFlow, forecastRowsAsForecast } from "../utils/modelForecast";
+import { formatModelValue, forecastRowsAsForecast } from "../utils/modelForecast";
 
-type ChartRow = GaugeReading & { cfsModelRange?: [number, number]; cmsModelRange?: [number, number] };
-
-const RELIABILITY_TEXT: Record<string, string> = {
-  good: "Reliability at this gauge: Good.",
-  fair: "Reliability at this gauge: Fair.",
-  poor: "Reliability at this gauge: Poor. It has often been off here, so use it with caution.",
-};
+const MODEL_UNITS = ["cfs", "cms", "ft", "m"] as const;
+type ModelUnit = typeof MODEL_UNITS[number];
+type ChartRow = GaugeReading & Partial<Record<`${ModelUnit}ModelRange`, [number, number]>>;
 
 interface Props {
   river: RiverData;
@@ -46,11 +42,11 @@ const getUnit = (dataKey: string) => {
   return "in";
 };
 
-const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, tempKey, precipKey, volumeColor, stageColor, tempColor, precipColor, forecastSource, modelColor, showModel }: any) => {
+const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, tempKey, precipKey, volumeColor, stageColor, tempColor, precipColor, forecastSource, modelColor, showModel, modelKey }: any) => {
   if (active && payload && payload.length) {
     const rowData = payload[0].payload;
     const items: { name: string, value: any, color: string, dataKey: string, text?: string, detail?: string }[] = [];
-    const modelVal = showModel ? rowData[`${flowKey}Model`] : null;
+    const modelVal = showModel ? rowData[`${modelKey}Model`] : null;
     const hasOtherFlow = rowData[flowKey] != null || rowData[`${flowKey}Forecast`] != null
       || rowData[stageKey] != null || rowData[`${stageKey}Forecast`] != null;
 
@@ -82,16 +78,19 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
       });
     }
     if (activeTab === "flow" && modelVal != null) {
-      const unit = getUnit(flowKey);
-      const low = rowData[`${flowKey}ModelLow`];
-      const high = rowData[`${flowKey}ModelHigh`];
+      const fmt = (key: string, v: number) => `${formatModelValue(v, key)} ${getUnit(key)}`;
+      const low = rowData[`${modelKey}ModelLow`];
+      const high = rowData[`${modelKey}ModelHigh`];
+      // The other of flow and stage, when the forecast has both.
+      const otherKey = modelKey === flowKey ? stageKey : flowKey;
+      const other = rowData[`${otherKey}Model`];
       items.push({
         name: "Rivers.run forecast",
         value: modelVal,
         color: modelColor,
-        dataKey: `${flowKey}Model`,
-        text: `${formatModelFlow(modelVal)} ${unit}`,
-        detail: low != null && high != null ? `likely ${formatModelFlow(low)} to ${formatModelFlow(high)} ${unit}` : undefined,
+        dataKey: `${modelKey}Model`,
+        text: fmt(modelKey, modelVal) + (other != null ? ` (${fmt(otherKey, other)})` : ""),
+        detail: low != null && high != null ? `likely ${formatModelValue(low, modelKey)} to ${fmt(modelKey, high)}` : undefined,
       });
     }
     if (activeTab === "temp") {
@@ -182,7 +181,6 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   }, [rawData]);
 
   const hasModelForecast = useMemo(() => rawData.some((d) => d.cfsModel != null), [rawData]);
-  const modelInfo = activeGaugeId ? river.modelForecasts?.[activeGaugeId] : undefined;
 
   const [showForecast, setShowForecast] = useState<boolean>(true);
 
@@ -208,10 +206,13 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
      const rows: ChartRow[] = rawData.filter(d => d.dateTime >= minTime && d.dateTime <= maxTime);
      // Range areas take a [low, high] pair per row.
      return rows.map((d) => {
-       if (d.cfsModelLow == null && d.cmsModelLow == null) return d;
+       if (d.cfsModelLow == null) return d;
        const row: ChartRow = { ...d };
-       if (d.cfsModelLow != null && d.cfsModelHigh != null) row.cfsModelRange = [d.cfsModelLow, d.cfsModelHigh];
-       if (d.cmsModelLow != null && d.cmsModelHigh != null) row.cmsModelRange = [d.cmsModelLow, d.cmsModelHigh];
+       for (const u of MODEL_UNITS) {
+         const low = d[`${u}ModelLow`];
+         const high = d[`${u}ModelHigh`];
+         if (low != null && high != null) row[`${u}ModelRange`] = [low, high];
+       }
        return row;
      });
   }, [rawData, timeRange, showForecast]);
@@ -224,8 +225,13 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   const hasPrecip = data.some((d) => d.precip_in != null || d.precip_mm != null);
 
   const flowKey = data.some((d) => d.cfs != null || d.cfsForecast != null) ? "cfs" : "cms";
-  const showModel = showForecast && data.some((d) => d[`${flowKey}Model`] != null);
   const stageKey = data.some((d) => d.ft != null || d.ftForecast != null) ? "ft" : "m";
+  const isStageThreshold = river.flow?.unit === "ft" || river.flow?.unit === "m";
+  // A river whose levels are in stage gets the forecast on the stage axis, when the gauge has a rating.
+  const modelOnStage = isStageThreshold && data.some((d) => d[`${stageKey}Model`] != null);
+  const modelKey = modelOnStage ? stageKey : flowKey;
+  const modelAxis = modelOnStage ? "right" : "left";
+  const showModel = showForecast && data.some((d) => d[`${modelKey}Model`] != null);
   const tempKey = data.some((d) => d.temp_f != null) ? "temp_f" : "temp_c";
   const precipKey = data.some((d) => d.precip_in != null) ? "precip_in" : "precip_mm";
 
@@ -300,15 +306,14 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
     return digits <= 4 ? 45 : 45 + (digits - 4) * 9;
   };
 
-  const isStageThreshold = river.flow?.unit === "ft" || river.flow?.unit === "m";
   const thresholds = [river.flow?.min, river.flow?.low, river.flow?.mid, river.flow?.high, river.flow?.max];
   const flowAxisWidth = useMemo(
     () => getAxisWidth([...data.map((d) => d[flowKey]), ...data.map((d) => d[`${flowKey}ModelHigh`] ?? d[`${flowKey}Model`]), ...(isStageThreshold ? [] : thresholds)]),
     [data, flowKey, isStageThreshold, river.flow]
   );
   const stageAxisWidth = useMemo(
-    () => getAxisWidth([...data.map((d) => d[stageKey]), ...(isStageThreshold ? thresholds : [])]),
-    [data, stageKey, isStageThreshold, river.flow]
+    () => getAxisWidth([...data.map((d) => d[stageKey]), ...(modelOnStage ? data.map((d) => d[`${stageKey}ModelHigh`] ?? d[`${stageKey}Model`]) : []), ...(isStageThreshold ? thresholds : [])]),
+    [data, stageKey, modelOnStage, isStageThreshold, river.flow]
   );
   const tempAxisWidth = useMemo(() => getAxisWidth(data.map((d) => d[tempKey])), [data, tempKey]);
   const precipAxisWidth = useMemo(() => getAxisWidth(data.map((d) => d[precipKey])), [data, precipKey]);
@@ -529,6 +534,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                         forecastSource={forecastSource}
                         modelColor={modelColor}
                         showModel={showModel}
+                        modelKey={modelKey}
                     />
                 } />
                 <Legend wrapperStyle={{ paddingTop: "20px" }} verticalAlign="bottom" />
@@ -563,11 +569,13 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                       animationDuration={200}
                       connectNulls={true}
                     />
+                    {/* Keyed by unit: recharts draws an empty chart if a mounted series changes axis. */}
                     {showModel && (
                       <Area
-                        yAxisId="left"
+                        key={`model-range-${modelKey}`}
+                        yAxisId={modelAxis}
                         type="monotone"
-                        dataKey={`${flowKey}ModelRange`}
+                        dataKey={`${modelKey}ModelRange`}
                         stroke="none"
                         fill={modelColor}
                         fillOpacity={isDarkMode ? 0.28 : 0.16}
@@ -579,9 +587,10 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                     )}
                     {showModel && (
                       <Line
-                        yAxisId="left"
+                        key={`model-${modelKey}`}
+                        yAxisId={modelAxis}
                         type="monotone"
-                        dataKey={`${flowKey}Model`}
+                        dataKey={`${modelKey}Model`}
                         name="Rivers.run forecast"
                         stroke={modelColor}
                         dot={false}
@@ -717,16 +726,6 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-
-
-
-          {activeTab === "flow" && showModel && modelInfo && (
-            <p style={{ color: "var(--text-secondary)", marginTop: "10px", fontSize: "0.9em", textAlign: "center" }}>
-              <span style={{ color: modelColor, fontWeight: "bold" }}>Rivers.run forecast</span>, updated {formatForecastAge(modelInfo.issueTime)}.
-              {" "}The shaded band is the likely range.
-              {modelInfo.reliability && RELIABILITY_TEXT[modelInfo.reliability] ? ` ${RELIABILITY_TEXT[modelInfo.reliability]}` : ""}
-            </p>
-          )}
 
           {activeTab === "precip" && precipSummary && (
             <p

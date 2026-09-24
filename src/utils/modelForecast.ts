@@ -1,4 +1,4 @@
-import type { GaugeReading, ModelReliability } from "../types/River";
+import type { GaugeReading } from "../types/River";
 
 /**
  * Rivers.run model flow forecasts from the flow API's /forecast route.
@@ -15,13 +15,17 @@ export interface ModelForecast {
     issueTime: number;
     start: number;
     stepMs: number;
-    reliability: ModelReliability;
     q10?: number[];
     q50: number[];
     q90?: number[];
+    /** Stage (ft) by the gauge's USGS rating; null outside the rating's range. */
+    ft10?: (number | null)[];
+    ft50?: (number | null)[];
+    ft90?: (number | null)[];
 }
 
 const CFS_TO_CMS = 0.0283168;
+const FT_TO_M = 0.3048;
 
 /** Gauge ids that can have a model forecast (USGS, and NWS points on a USGS gauge), chunked. */
 export function modelForecastChunks(gaugeIds: string[]): string[][] {
@@ -56,6 +60,7 @@ export function forecastRowsAsForecast(readings: GaugeReading[]): GaugeReading[]
 }
 
 const isNumArray = (v: unknown): v is number[] => Array.isArray(v);
+const stageArray = (v: unknown) => isNumArray(v) ? v as (number | null)[] : undefined;
 
 /** Validates one /forecast entry; anything malformed is dropped. */
 export function parseModelForecast(raw: any): ModelForecast | null {
@@ -63,15 +68,16 @@ export function parseModelForecast(raw: any): ModelForecast | null {
     const { issueTime, start, stepMs, q10, q50, q90 } = raw;
     if (![issueTime, start, stepMs].every(n => typeof n === "number" && Number.isFinite(n))) return null;
     if (stepMs <= 0 || !isNumArray(q50) || q50.length === 0) return null;
-    const reliability = ["good", "fair", "poor", "unknown"].includes(raw.reliability) ? raw.reliability : null;
     return {
         issueTime,
         start,
         stepMs,
-        reliability,
         q10: isNumArray(q10) ? q10 : undefined,
         q50,
         q90: isNumArray(q90) ? q90 : undefined,
+        ft10: stageArray(raw.ft10),
+        ft50: stageArray(raw.ft50),
+        ft90: stageArray(raw.ft90),
     };
 }
 
@@ -106,12 +112,12 @@ export async function fetchModelForecasts(
     return Object.assign({}, ...results);
 }
 
-const toCms = (cfs: number) => Math.round(cfs * CFS_TO_CMS * 1000) / 1000;
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 
 /**
  * Lays a forecast over one gauge's (unit-converted) readings as
- * cfsModel / cfsModelLow / cfsModelHigh, plus cms twins in metric mode.
+ * cfsModel / cfsModelLow / cfsModelHigh and, where the gauge has a rating,
+ * ftModel / ftModelLow / ftModelHigh, plus cms and m twins in metric mode.
  * Hours with no reading become new forecast-only rows.
  */
 export function mergeModelForecast(
@@ -127,35 +133,34 @@ export function mergeModelForecast(
     forecast.q50.forEach((mid, j) => {
         if (!finite(mid)) return;
         const dateTime = forecast.start + j * forecast.stepMs;
-        const low = forecast.q10?.[j];
-        const high = forecast.q90?.[j];
         const row: GaugeReading = { ...(byTime.get(dateTime) ?? { dateTime, isForecast: true }) };
-        row.cfsModel = mid;
-        if (finite(low) && finite(high)) {
-            row.cfsModelLow = low;
-            row.cfsModelHigh = high;
-        }
-        if (metric) {
-            row.cmsModel = toCms(mid);
-            if (finite(low) && finite(high)) {
-                row.cmsModelLow = toCms(low);
-                row.cmsModelHigh = toCms(high);
-            }
+        setModel(row, "cfs", mid, forecast.q10?.[j], forecast.q90?.[j]);
+        if (metric) setModel(row, "cms", mid, forecast.q10?.[j], forecast.q90?.[j], v => round3(v * CFS_TO_CMS));
+        const stage = forecast.ft50?.[j];
+        if (finite(stage)) {
+            setModel(row, "ft", stage, forecast.ft10?.[j], forecast.ft90?.[j]);
+            if (metric) setModel(row, "m", stage, forecast.ft10?.[j], forecast.ft90?.[j], v => round3(v * FT_TO_M));
         }
         byTime.set(dateTime, row);
     });
     return Array.from(byTime.values()).sort((a, b) => a.dateTime - b.dateTime);
 }
 
-/** Plain-language age, e.g. "3 hours ago". */
-export function formatForecastAge(thenMs: number, nowMs: number = Date.now()): string {
-    const mins = Math.max(0, Math.round((nowMs - thenMs) / 60000));
-    if (mins < 2) return "just now";
-    if (mins < 60) return `${mins} minutes ago`;
-    const hours = Math.round(mins / 60);
-    if (hours < 24) return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
-    const days = Math.round(hours / 24);
-    return days === 1 ? "1 day ago" : `${days} days ago`;
+const round3 = (v: number) => Math.round(v * 1000) / 1000;
+
+function setModel(
+    row: GaugeReading,
+    unit: "cfs" | "cms" | "ft" | "m",
+    mid: number,
+    low: number | null | undefined,
+    high: number | null | undefined,
+    convert: (v: number) => number = v => v,
+): void {
+    row[`${unit}Model`] = convert(mid);
+    if (finite(low) && finite(high)) {
+        row[`${unit}ModelLow`] = convert(low);
+        row[`${unit}ModelHigh`] = convert(high);
+    }
 }
 
 /** Rounds to 3 significant figures with thousands separators, e.g. 1,040. */
@@ -163,4 +168,11 @@ export function formatModelFlow(v: number): string {
     if (!finite(v)) return "";
     const rounded = v === 0 ? 0 : Number(v.toPrecision(3));
     return rounded.toLocaleString("en-US", { maximumFractionDigits: 3 });
+}
+
+/** A model value in its unit: stage to 0.01, flow to 3 significant figures. */
+export function formatModelValue(v: number, unit: string): string {
+    if (!finite(v)) return "";
+    if (unit === "ft" || unit === "m") return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return formatModelFlow(v);
 }
