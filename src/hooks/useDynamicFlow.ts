@@ -60,13 +60,9 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
 
         if (allGauges.length === 0) return;
 
-        // The server now stores 28 days, so when we already hold a recent
-        // window we only need what landed since. Previously every river-detail
-        // view re-pulled the full 28 days.
-        //
-        // Planned from the cached payload rather than river.gaugeData: the
-        // latter can be a 3h slice out of sitedata.json, which would make us
-        // ask for a delta while missing most of the window.
+        // With a recent window cached, ask only for what landed since (with
+        // an overlap). Planned from the cached payload, not river.gaugeData,
+        // which can be a 3h slice out of sitedata.json.
         const cachedForDelta = dynamicFlowCache.get(cacheKey);
         const { params, resumeFrom } = planHistoryRequest(allGauges, cachedForDelta);
 

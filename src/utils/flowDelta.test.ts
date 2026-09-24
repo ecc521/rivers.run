@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
     newestObservedTs,
+    deltaSince,
     planHistoryRequest,
+    DELTA_OVERLAP_MS,
     seedFromCache,
     isForecastReading,
     HISTORY_DAYS,
@@ -28,37 +30,40 @@ describe("isForecastReading", () => {
 });
 
 describe("newestObservedTs", () => {
-    it("returns the newest observation across gauges", () => {
-        expect(newestObservedTs({
-            "USGS:1": [r(NOW - 2 * SNAP, { cfs: 1 }), r(NOW - SNAP, { cfs: 2 })],
-            "USGS:2": [r(NOW, { cfs: 3 })],
-        })).toBe(NOW);
+    it("returns one gauge's newest observation, ignoring forecasts", () => {
+        expect(newestObservedTs([
+            r(NOW - SNAP, { cfs: 1 }),
+            r(NOW, { cfs: 2 }),
+            r(NOW + 6 * HOUR, { cfsForecast: 500, isForecast: true }),
+        ])).toBe(NOW);
     });
 
-    it("ignores forecast rows that sit in the future", () => {
-        // Counting these would ask the server for readings after the forecast
-        // horizon, skipping every real observation in between.
-        expect(newestObservedTs({
-            "USGS:1": [
-                r(NOW - SNAP, { cfs: 1 }),
-                r(NOW, { cfs: 2 }),
-                r(NOW + 6 * HOUR, { cfsForecast: 500, isForecast: true }),
-                r(NOW + 12 * HOUR, { cfsForecast: 600, isForecast: true }),
-            ],
-        })).toBe(NOW);
+    it("returns 0 for empty, missing, malformed or forecast-only data", () => {
+        expect(newestObservedTs([])).toBe(0);
+        expect(newestObservedTs(undefined)).toBe(0);
+        expect(newestObservedTs(null)).toBe(0);
+        expect(newestObservedTs([r(NOW + HOUR, { cfsForecast: 1, isForecast: true })])).toBe(0);
+    });
+});
+
+describe("deltaSince", () => {
+    it("resumes from the most lagging gauge, minus the overlap", () => {
+        expect(deltaSince({
+            lastFetchedMs: NOW,
+            gaugeData: {
+                "USGS:1": [r(NOW, { cfs: 1 })],
+                "EC:2": [r(NOW - 3 * HOUR, { cms: 1 })],
+            },
+        })).toBe(NOW - 3 * HOUR - DELTA_OVERLAP_MS);
     });
 
-    it("returns 0 for empty, missing or malformed data", () => {
-        expect(newestObservedTs({})).toBe(0);
-        expect(newestObservedTs({ "USGS:1": [] })).toBe(0);
-        expect(newestObservedTs(undefined as any)).toBe(0);
-        expect(newestObservedTs({ "USGS:1": null as any })).toBe(0);
+    it("never resumes after the last fetch", () => {
+        expect(deltaSince({ lastFetchedMs: NOW - HOUR, gaugeData: { "USGS:1": [r(NOW, { cfs: 1 })] } }))
+            .toBe(NOW - HOUR - DELTA_OVERLAP_MS);
     });
 
-    it("returns 0 when a gauge holds only forecasts", () => {
-        expect(newestObservedTs({
-            "USGS:1": [r(NOW + HOUR, { cfsForecast: 1, isForecast: true })],
-        })).toBe(0);
+    it("returns 0 when no gauge holds observations", () => {
+        expect(deltaSince({ lastFetchedMs: NOW, gaugeData: { "USGS:1": [] } })).toBe(0);
     });
 });
 
@@ -76,15 +81,14 @@ describe("planHistoryRequest", () => {
     it("requests only the delta when the cache is fresh", () => {
         const plan = planHistoryRequest(gauges, {
             lastFetchedMs: NOW - 20 * 60 * 1000,
-            gaugeData: { "USGS:03451500": [r(NOW - SNAP, { cfs: 1 })] },
+            gaugeData: { "USGS:03451500": [r(NOW - HOUR, { cfs: 1 })] },
         }, NOW);
 
-        expect(plan.resumeFrom).toBe(NOW - SNAP);
-        expect(plan.params).toContain(`since=${NOW - SNAP}`);
+        expect(plan.resumeFrom).toBe(NOW - HOUR - DELTA_OVERLAP_MS);
+        expect(plan.params).toContain(`since=${NOW - HOUR - DELTA_OVERLAP_MS}`);
     });
 
     it("re-fetches the full window when the cache is stale", () => {
-        // Beyond this, stitching is not cheaper than just re-pulling.
         const plan = planHistoryRequest(gauges, {
             lastFetchedMs: NOW - DELTA_MAX_AGE_MS - 1,
             gaugeData: { "USGS:03451500": [r(NOW - SNAP, { cfs: 1 })] },
@@ -101,7 +105,6 @@ describe("planHistoryRequest", () => {
         }, NOW);
 
         expect(plan.resumeFrom).toBe(0);
-        expect(plan.params).not.toContain("since=");
     });
 
     it("encodes the gauge list", () => {

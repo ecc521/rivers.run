@@ -3,9 +3,8 @@ import type { GaugeReading } from "../types/River";
 /**
  * Delta-request logic for the flow history API.
  *
- * The server now stores 28 days per gauge, so a river-detail view that already
- * holds a recent window only needs what landed since — previously every view
- * re-pulled the full 28 days.
+ * A river-detail view that already holds a recent window only asks the server
+ * for what landed since, with an overlap for late or revised readings.
  *
  * Kept separate from the hook so the fiddly parts (forecast exclusion,
  * staleness bounds) are testable without React.
@@ -27,32 +26,44 @@ export function isForecastReading(reading: Partial<GaugeReading>): boolean {
         || r.cmsForecast != null || r.mForecast != null;
 }
 
-/**
- * Newest *observed* timestamp across cached gauges — where a delta resumes.
- *
- * Forecast rows are excluded deliberately: they sit in the future, so counting
- * them would ask the server for readings after the forecast horizon and skip
- * every real observation in between.
- */
-export function newestObservedTs(gaugeData: Record<string, GaugeReading[]>): number {
+/** Newest observed timestamp in one gauge's readings, or 0. Forecasts are ignored. */
+export function newestObservedTs(readings: GaugeReading[] | null | undefined): number {
+    if (!Array.isArray(readings)) return 0;
     let newest = 0;
-    for (const readings of Object.values(gaugeData ?? {})) {
-        if (!Array.isArray(readings)) continue;
-        for (let i = readings.length - 1; i >= 0; i--) {
-            const reading = readings[i];
-            if (!reading || typeof reading.dateTime !== "number") continue;
-            if (isForecastReading(reading)) continue;
-            if (reading.dateTime > newest) newest = reading.dateTime;
-            break;
-        }
+    for (const reading of readings) {
+        if (!reading || typeof reading.dateTime !== "number" || isForecastReading(reading)) continue;
+        if (reading.dateTime > newest) newest = reading.dateTime;
     }
     return newest;
+}
+
+/**
+ * Re-request this much before the resume point, so late-arriving readings and
+ * revised values near the edge are picked up.
+ */
+export const DELTA_OVERLAP_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * Where a delta resumes: the oldest of each cached gauge's newest observation
+ * (so a lagging gauge is not skipped), never later than the last fetch, minus
+ * the overlap. Gauges absent from the cache had nothing at lastFetchedMs.
+ */
+export function deltaSince(cached: { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]> }): number {
+    let oldestNewest = cached.lastFetchedMs;
+    let any = false;
+    for (const readings of Object.values(cached.gaugeData ?? {})) {
+        const newest = newestObservedTs(readings);
+        if (newest === 0) continue;
+        any = true;
+        oldestNewest = Math.min(oldestNewest, newest);
+    }
+    return any ? oldestNewest - DELTA_OVERLAP_MS : 0;
 }
 
 export interface DeltaPlan {
     /** Query string for /history. */
     params: string;
-    /** 0 when requesting the full window. */
+    /** The `since` sent, or 0 when requesting the full window. */
     resumeFrom: number;
 }
 
@@ -65,7 +76,7 @@ export function planHistoryRequest(
     now: number = Date.now()
 ): DeltaPlan {
     const fresh = cached && (now - cached.lastFetchedMs) < DELTA_MAX_AGE_MS;
-    const resumeFrom = fresh ? newestObservedTs(cached!.gaugeData) : 0;
+    const resumeFrom = fresh ? deltaSince(cached!) : 0;
 
     const params = new URLSearchParams({
         gauges: gaugeIds.join(","),
