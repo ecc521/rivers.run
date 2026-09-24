@@ -115,7 +115,9 @@ Gzipped JSON:
 | `discharge_n`, `stage_n` | `sites x hours` count of readings in each mean (0 to 4) |
 
 Hour `H` (label `start + i * step_ms`) is the mean of the stored readings with
-`H <= ts < H + 1h`, matching pandas `resample("h").mean()` with left labels. The store
+`H <= ts < H + 1h`, matching pandas `resample("h").mean()` with left labels. Means
+are rounded to 5 significant figures (not fixed decimals, which distort small rivers
+in log space). A full snapshot is about 30 MB of JSON, 8 to 10 MB gzipped. The store
 keeps one reading per 15-minute slot, so a full hour has 4. The last hour is the
 current one and is partial. Sentinels (`<= -999999`) are excluded. Every registry USGS
 gauge is listed, even with no data. In Python:

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { gunzipSync } from "node:zlib";
 import { createTestD1, type TestD1 } from "../../__tests__/helpers/d1Sqlite";
 import { resolveGaugeKeys, upsertSlots } from "../flowStore";
-import { buildUsgsHourlySnapshot, writeUsgsHourlySnapshot, SNAPSHOT_HOURS, SNAPSHOT_KEY } from "../modelSnapshot";
+import { buildUsgsHourlySnapshot, writeUsgsHourlySnapshot, round, SNAPSHOT_HOURS, SNAPSHOT_KEY } from "../modelSnapshot";
 
 const HOUR = 3_600_000;
 const SLOT = 900_000;
@@ -44,6 +44,23 @@ describe("buildUsgsHourlySnapshot", () => {
         expect(snap.discharge_cfs[0].filter(v => v !== null)).toHaveLength(2);
         expect(snap.discharge_cfs[1].every(v => v === null)).toBe(true);
         expect(snap.discharge_n[1].every(v => v === 0)).toBe(true);
+    });
+});
+
+describe("round", () => {
+    it("keeps 5 significant figures at any magnitude", () => {
+        expect(round(0.000123456)).toBe(0.00012346);
+        expect(round(0.0123456)).toBe(0.012346);
+        expect(round(12345.678)).toBe(12346);
+        expect(round(1234567)).toBe(1234600);
+        expect(round(-3.14159)).toBe(-3.1416);
+        expect(round(0)).toBe(0);
+    });
+
+    it("keeps small-river means within 1e-4 in log1p space", () => {
+        for (const v of [0.001, 0.0137, 0.5, 3.33333, 47.777777]) {
+            expect(Math.abs(Math.log1p(round(v)) - Math.log1p(v))).toBeLessThan(1e-4);
+        }
     });
 });
 

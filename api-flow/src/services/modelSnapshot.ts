@@ -38,7 +38,8 @@ export interface HourlyGrid {
     ftN: Uint8Array;
 }
 
-const round = (v: number) => Math.round(v * 1000) / 1000;
+/** 5 significant figures: fixed decimals would distort small rivers in log space. */
+export const round = (v: number) => (v === 0 ? 0 : Number(v.toPrecision(5)));
 
 export async function collectUsgsHourly(db: D1Database, siteIds: string[], now: number): Promise<HourlyGrid> {
     const sites = [...new Set(siteIds)].sort((a, b) => a.localeCompare(b));
