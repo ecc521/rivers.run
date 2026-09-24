@@ -34,7 +34,7 @@ database_id = "bfdbdd5a-5626-4593-98f6-927ba2f682a4"
 # tagged with that repo's commit; see AGENTS.md to update it.
 [[containers]]
 class_name = "FlowModel"
-image = "registry.cloudflare.com/55098d8696658ea1ee4ec73ae57d1741/flow-serving:53daf64"
+image = "registry.cloudflare.com/55098d8696658ea1ee4ec73ae57d1741/flow-serving:78d6d3e"
 max_instances = 1
 instance_type = "standard-2"
 

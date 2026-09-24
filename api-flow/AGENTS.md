@@ -150,7 +150,7 @@ answered by the class's outbound handler from `FLOW_STORAGE`: reads anywhere und
 `model/`, writes only under `model/weather/`, `model/ratings/` and `model/forecasts/`. This needs
 `ContainerProxy` exported from `index.ts`.
 
-Outputs: `model/forecasts/latest.json.gz` (every gauge), `archive/<YYYYMMDDHH>.json.gz`,
+Outputs, overwritten each pass: `model/forecasts/latest.json.gz` (every gauge),
 `summary.json`, and 256 shards `shards/<xx>.json.gz`. A site's shard is FNV-1a 32 of its
 site number mod 256 (`shardOf`, identical to `serving/run.py`). `GET /forecast?gauges=`
 reads the shards (up to 20 ids, forecasts older than 24 h omitted); entries carry
