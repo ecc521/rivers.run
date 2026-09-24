@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { nwsProvider } from "../nws";
 import { ecProvider } from "../canada";
+import { bulkSince } from "../flowSync";
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
@@ -49,5 +50,17 @@ describe("ecProvider.getBulkHistories", () => {
         expect(ab.histories!["05BB001"].readings).toHaveLength(2); // whole file, not a trailing window
         expect(units.filter(u => u.unit !== "AB").every(u => u.histories === null)).toBe(true);
         expect(units.every(u => u.siteCodes.includes("05BB001"))).toBe(true);
+
+        const recent = await collect(ecProvider.getBulkHistories!(["05BB001"], undefined, Date.now() - 3_600_000));
+        expect(recent.find(u => u.unit === "AB")!.histories!["05BB001"].readings).toHaveLength(1);
+    });
+});
+
+describe("bulkSince", () => {
+    const H = 3_600_000, NOW = 1_790_000_000_000;
+    it("overlaps the last success, starts 6 h back on a first run, and never reaches past the file", () => {
+        expect(bulkSince(null, NOW)).toBe(NOW - 6 * H);
+        expect(bulkSince(NOW - 15 * 60_000, NOW)).toBe(NOW - 15 * 60_000 - 3 * H);
+        expect(bulkSince(NOW - 100 * H, NOW)).toBe(NOW - 48 * H);
     });
 });

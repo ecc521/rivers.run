@@ -73,12 +73,13 @@ export interface GaugeProvider {
     getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>>;
 
     /**
-     * Optional: every observation the provider's bulk source holds (a whole
+     * Optional: the observations the provider's bulk source holds (a whole
      * EC province file, a whole NWS series), one independently fetched unit
-     * at a time. A unit with `histories: null` failed. The history store uses
-     * this to track coverage per unit.
+     * at a time, from `since` (epoch ms) where the provider can filter. A unit
+     * with `histories: null` failed. The history store uses this to track
+     * coverage per unit.
      */
-    getBulkHistories?(siteCodes: string[], env?: any): AsyncIterable<BulkUnit>;
+    getBulkHistories?(siteCodes: string[], env?: any, since?: number): AsyncIterable<BulkUnit>;
 
     /** Optional: forecast rows only (isForecast: true), for gauges served from the store. */
     getForecast?(siteCodes: string[], env?: any): Promise<Record<string, GaugeHistory>>;

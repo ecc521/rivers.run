@@ -29,6 +29,10 @@ const PROJECTION_WINDOW_MS = 3 * 60 * 60 * 1000;
 const LATEST_WINDOW_MS = 12 * 60 * 60 * 1000;
 const PROVIDER_TIMEOUT_MS = 600_000;
 const HOUR_MS = 60 * 60 * 1000;
+const BULK_OVERLAP_MS = 3 * HOUR_MS;
+const BULK_FIRST_MS = 6 * HOUR_MS;
+/** EC province files hold about two days. */
+const BULK_MAX_MS = 48 * HOUR_MS;
 /** /history trusts the store only if its provider ingested this recently. */
 export const FRESH_INGEST_MS = 45 * 60 * 1000;
 
@@ -236,9 +240,20 @@ async function ingestUnit(ctx: IngestCtx, prefix: string, u: BulkUnit): Promise<
     return true;
 }
 
+/**
+ * Where a bulk fetch starts: BULK_OVERLAP_MS before the provider's last
+ * success, so each unit's readings reach back past its previous fetch and
+ * coverage stays continuous; BULK_FIRST_MS back on a first run. Parsing only
+ * this much of an EC province file keeps the isolate under its memory limit.
+ */
+export function bulkSince(okAt: number | null, now: number): number {
+    return okAt === null ? now - BULK_FIRST_MS : Math.max(okAt - BULK_OVERLAP_MS, now - BULK_MAX_MS);
+}
+
 async function ingestBulkProvider(ctx: IngestCtx, prefix: string, provider: GaugeProvider, siteCodes: string[]): Promise<void> {
     let anyOk = false;
-    for await (const unit of provider.getBulkHistories!(siteCodes, ctx.env)) {
+    const since = bulkSince(await getMeta(ctx.db, ingestMetaKey(prefix)), ctx.now);
+    for await (const unit of provider.getBulkHistories!(siteCodes, ctx.env, since)) {
         if (await ingestUnit(ctx, prefix, unit)) anyOk = true;
     }
     if (anyOk) ctx.stats.rowsWritten.state += await setMeta(ctx.db, ingestMetaKey(prefix), ctx.now);

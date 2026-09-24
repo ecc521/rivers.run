@@ -81,7 +81,8 @@ and weekly crons also fire at 00:00 and must not start a second ingest):
   is split; a lone failing site backs off (`fail_count`, `retry_at`).
   `FLOW_BACKFILL_MAX_REQUESTS` caps backfill requests per cycle (default 100).
 - EC, NWS: the whole province file or gauge series, one unit at a time
-  (`getBulkHistories`). A failed unit marks its gauges for repair; coverage is set per
+  (`getBulkHistories`); EC parses only readings from 3h before its last success
+  (6h on a first run; `bulkSince`), since whole province files blow the 128 MB limit. A failed unit marks its gauges for repair; coverage is set per
   gauge from its earliest reading and restarts after a gap longer than the unit
   holds. NWS forecast rows go to `sitedata.json`, never the store.
 - UK, IE: latest-only bulk calls; river-linked gauges also fetch 3h of history.

@@ -149,6 +149,20 @@ async function fetchProvinceText(province: string): Promise<string | null> {
     }
 }
 
+/**
+ * A province file's readings from `since` for the given stations, or null if
+ * the download failed. Parsed here so the file text (up to ~20 MB) is garbage
+ * before the caller stores anything.
+ */
+async function fetchProvinceHistories(province: string, codes: string[], since: number): Promise<Record<string, GaugeHistory> | null> {
+    const text = await fetchProvinceText(province);
+    if (text === null) return null;
+    const all = processCanadaCSV(text, since, Date.now() + 1000 * 60 * 60 * 24);
+    const histories: Record<string, GaugeHistory> = {};
+    for (const code of codes) if (all[code]) histories[code] = all[code];
+    return histories;
+}
+
 async function fetchCanadianProvince(province: string, startTs: number, endTs: number): Promise<Record<string, GaugeHistory>> {
     const text = await fetchProvinceText(province);
     return text === null ? {} : processCanadaCSV(text, startTs, endTs);
@@ -224,7 +238,7 @@ export const ecProvider: GaugeProvider = {
      * Whole province CSVs (about a day of readings each), one province at a
      * time so only one file is in memory. A failed download yields null.
      */
-    async *getBulkHistories(siteCodes: string[], _env?: any): AsyncGenerator<BulkUnit> {
+    async *getBulkHistories(siteCodes: string[], _env?: any, since = 0): AsyncGenerator<BulkUnit> {
         const byProvince = new Map<string, string[]>();
         for (const code of siteCodes) {
             for (const p of getProvincesForSite(code)) {
@@ -233,15 +247,7 @@ export const ecProvider: GaugeProvider = {
             }
         }
         for (const [province, codes] of byProvince) {
-            const text = await fetchProvinceText(province);
-            if (text === null) {
-                yield { unit: province, siteCodes: codes, histories: null };
-                continue;
-            }
-            const all = processCanadaCSV(text, 0, Date.now() + 1000 * 60 * 60 * 24);
-            const histories: Record<string, GaugeHistory> = {};
-            for (const code of codes) if (all[code]) histories[code] = all[code];
-            yield { unit: province, siteCodes: codes, histories };
+            yield { unit: province, siteCodes: codes, histories: await fetchProvinceHistories(province, codes, since) };
         }
     },
 
