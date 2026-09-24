@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import type { RiverData, GaugeReading } from "../types/River";
 import { useSettings } from "../context/SettingsContext";
-import { formatForecastAge, formatModelFlow } from "../utils/modelForecast";
+import { formatForecastAge, formatModelFlow, forecastRowsAsForecast } from "../utils/modelForecast";
 
 type ChartRow = GaugeReading & { cfsModelRange?: [number, number]; cmsModelRange?: [number, number] };
 
@@ -153,7 +153,8 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   useEffect(() => {
     setActiveGaugeId(river.gauges?.find((g: any) => g.isPrimary)?.id || river.gauges?.[0]?.id);
   }, [river.id]);
-  const rawData = activeGaugeId && river.gaugeData ? river.gaugeData[activeGaugeId] || [] : [];
+  const gaugeReadings = activeGaugeId && river.gaugeData ? river.gaugeData[activeGaugeId] : undefined;
+  const rawData = useMemo(() => forecastRowsAsForecast(gaugeReadings || []), [gaugeReadings]);
 
   const isGraphStale = useMemo(() => {
      if (rawData.length === 0) return false;

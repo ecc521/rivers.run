@@ -129,6 +129,8 @@ export interface GaugeReading {
   isForecast?: boolean;
   cfsForecast?: number;
   ftForecast?: number;
+  cmsForecast?: number;
+  mForecast?: number;
   forecastSource?: string;
   /** Rivers.run model forecast: median, and the 10th to 90th percentile range. */
   cfsModel?: number;

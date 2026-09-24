@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { gzipSync } from "node:zlib";
-import { handleModelStorage, readForecasts, shardOf, shardKey } from "../flowModel";
+import { handleModelStorage, readForecasts, resolveNwsToUsgs, shardOf, shardKey, NWS_USGS_KEY } from "../flowModel";
 
 /** In-memory R2 with the calls flowModel.ts makes; list pages 2 keys at a time. */
 function memoryBucket() {
@@ -9,7 +9,7 @@ function memoryBucket() {
         data,
         get: vi.fn(async (key: string) => {
             const v = data.get(key);
-            return v ? { body: new Response(v).body } : null;
+            return v ? { body: new Response(v).body, json: async () => JSON.parse(new TextDecoder().decode(v)) } : null;
         }),
         put: vi.fn(async (key: string, value: ArrayBuffer | Uint8Array | string) => {
             data.set(key, typeof value === "string" ? new TextEncoder().encode(value) : new Uint8Array(value as ArrayBuffer));
@@ -83,5 +83,26 @@ describe("readForecasts", () => {
         const out = await readForecasts(bucket as unknown as R2Bucket, ["03451500", "0211139110", "99999999"]);
         expect(Object.keys(out)).toEqual(["03451500"]);
         expect(out["03451500"]).toMatchObject({ issueTime: 1, stepMs: 3_600_000, reliability: "good", obsCfs: 1050, q50: [1000] });
+    });
+});
+
+describe("resolveNwsToUsgs", () => {
+    afterEach(() => { vi.unstubAllGlobals(); });
+
+    it("looks each id up once, remembering misses but not transient failures", async () => {
+        const bucket = memoryBucket();
+        const fetchMock = vi.fn(async (url: string) => {
+            if (url.endsWith("/MARN7")) return Response.json({ lid: "MARN7", usgsId: "03453500" });
+            if (url.endsWith("/NOUS1")) return Response.json({ lid: "NOUS1", usgsId: "" });
+            return new Response("", { status: 503 });
+        });
+        vi.stubGlobal("fetch", fetchMock);
+
+        expect(await resolveNwsToUsgs(bucket as unknown as R2Bucket, ["MARN7", "NOUS1", "DOWN1"])).toEqual({ MARN7: "03453500" });
+        expect(JSON.parse(new TextDecoder().decode(bucket.data.get(NWS_USGS_KEY)))).toEqual({ MARN7: "03453500", NOUS1: null });
+
+        fetchMock.mockClear();
+        expect(await resolveNwsToUsgs(bucket as unknown as R2Bucket, ["MARN7", "NOUS1", "DOWN1"])).toEqual({ MARN7: "03453500" });
+        expect(fetchMock).toHaveBeenCalledTimes(1); // only DOWN1 again
     });
 });

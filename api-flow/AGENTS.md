@@ -145,8 +145,10 @@ answered by the class's outbound handler from `FLOW_STORAGE`: reads anywhere und
 Outputs: `model/forecasts/latest.json.gz` (every gauge), `archive/<YYYYMMDDHH>.json.gz`,
 `summary.json`, and 256 shards `shards/<xx>.json.gz`. A site's shard is FNV-1a 32 of its
 site number mod 256 (`shardOf`, identical to `serving/run.py`). `GET /forecast?gauges=`
-reads the shards (up to 20 USGS ids, forecasts older than 24 h omitted); format in
-flow_predictions `serving/README.md`.
+reads the shards (up to 20 ids, forecasts older than 24 h omitted); format in
+flow_predictions `serving/README.md`. An `NWS:` id gets the forecast of the USGS gauge
+it sits on (entry adds `usgsSite`), from NWPS gauge metadata `usgsId`, cached in
+`model/nws_usgs.json` (misses included) so each id is looked up once.
 
 Local: `wrangler dev` cannot start the container on OrbStack (its egress proxy sidecar
 exits with `setsockoptint: protocol not available`). Run api-flow with

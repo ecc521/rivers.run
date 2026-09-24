@@ -25,7 +25,7 @@ import { readSeries, readSyncState, getMeta } from "./services/flowStore";
 import { isHourlyCycle } from "./services/usgsIngest";
 import { writeUsgsHourlySnapshot } from "./services/modelSnapshot";
 import { syncUsgsReaches } from "./services/usgsReaches";
-import { FlowModel, FORECAST_CRON, MODEL_STORAGE_ORIGIN, handleModelStorage, readForecasts, runForecastModel } from "./services/flowModel";
+import { FlowModel, FORECAST_CRON, MODEL_STORAGE_ORIGIN, handleModelStorage, readForecasts, resolveNwsToUsgs, runForecastModel } from "./services/flowModel";
 import { verifyUnsubscribeToken } from "./utils/unsubscribeToken";
 import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError, renderUnsubscribeServerError } from "./templates/unsubscribeConfirmation";
 
@@ -350,7 +350,7 @@ const forecastRoute = createRoute({
     method: 'get',
     path: '/forecast',
     summary: 'Model flow forecasts',
-    description: 'Latest rivers.run model forecast (hourly q10/q50/q90 cfs, 168 h) for up to 20 USGS gauges. Gauges without a recent forecast are omitted.',
+    description: 'Latest rivers.run model forecast (hourly q10/q50/q90 cfs, 168 h) for up to 20 gauges: USGS ids, or NWS forecast points that sit on a USGS gauge (their entry adds usgsSite). Gauges without a recent forecast are omitted.',
     request: {
         query: z.object({
             gauges: z.string().openapi({ param: { name: 'gauges', in: 'query', required: true }, example: 'USGS:03451500' }),
@@ -366,12 +366,19 @@ app.openapi(forecastRoute, async (c) => {
     const { gauges } = c.req.valid('query');
     const ids = [...new Set(gauges.split(",").map(g => normalizeGaugeId(g.trim())).filter(Boolean))];
     if (ids.length > 20) return c.json({ error: "At most 20 gauges per request" }, 400);
-    const sites = ids.filter(id => id.startsWith("USGS:")).map(id => id.slice(5));
-    const found = await readForecasts(c.env.FLOW_STORAGE, sites);
+    // An NWS forecast point gets the forecast of the USGS gauge it sits on.
+    const nwsToUsgs = await resolveNwsToUsgs(c.env.FLOW_STORAGE, ids.filter(id => id.startsWith("NWS:")).map(id => id.slice(4)));
+    const siteOf = new Map<string, string>();
+    for (const id of ids) {
+        if (id.startsWith("USGS:")) siteOf.set(id, id.slice(5));
+        else if (id.startsWith("NWS:") && nwsToUsgs[id.slice(4)]) siteOf.set(id, nwsToUsgs[id.slice(4)]);
+    }
+    const found = await readForecasts(c.env.FLOW_STORAGE, [...new Set(siteOf.values())]);
     const now = Date.now();
     const out: Record<string, unknown> = {};
-    for (const [site, f] of Object.entries(found)) {
-        if (now - f.issueTime <= MAX_FORECAST_AGE_MS) out[`USGS:${site}`] = f;
+    for (const [id, site] of siteOf) {
+        const f = found[site];
+        if (f && now - f.issueTime <= MAX_FORECAST_AGE_MS) out[id] = id.startsWith("USGS:") ? f : { ...f, usgsSite: site };
     }
     c.header("Cache-Control", "public, max-age=300");
     return c.json(out, 200);

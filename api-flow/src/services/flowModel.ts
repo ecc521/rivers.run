@@ -1,5 +1,6 @@
 import { Container, getContainer } from "@cloudflare/containers";
 import type { Env } from "../index";
+import { fetchWithTimeout, DEFAULT_HEADERS } from "../utils/timeout";
 
 /**
  * The flow forecast model: a Cloudflare Container (image built in the
@@ -161,5 +162,42 @@ export async function readForecasts(bucket: R2Bucket, sites: string[]): Promise<
             };
         }
     }));
+    return out;
+}
+
+/** NWS forecast point id to the USGS site it sits on (null: none), filled on demand. */
+export const NWS_USGS_KEY = "model/nws_usgs.json";
+
+async function lookupNwsUsgs(lid: string): Promise<string | null | undefined> {
+    try {
+        const res = await fetchWithTimeout(`https://api.water.noaa.gov/nwps/v1/gauges/${lid}`, { headers: DEFAULT_HEADERS }, 15000);
+        if (res.status === 404) return null;
+        if (!res.ok) return undefined;
+        const data: any = await res.json();
+        return /^\d{8,15}$/.test(data?.usgsId ?? "") ? data.usgsId : null;
+    } catch {
+        return undefined; // transient: try again on a later request
+    }
+}
+
+/**
+ * USGS site for each NWS forecast point id, from NWPS gauge metadata. Answers
+ * are kept in R2 (including "no USGS site"), so each id is looked up once.
+ */
+export async function resolveNwsToUsgs(bucket: R2Bucket, lids: string[]): Promise<Record<string, string>> {
+    if (lids.length === 0) return {};
+    const obj = await bucket.get(NWS_USGS_KEY);
+    const known: Record<string, string | null> = obj ? await obj.json() : {};
+    const missing = lids.filter(l => !(l in known));
+    let changed = false;
+    await Promise.all(missing.map(async lid => {
+        const usgs = await lookupNwsUsgs(lid);
+        if (usgs !== undefined) { known[lid] = usgs; changed = true; }
+    }));
+    if (changed) {
+        await bucket.put(NWS_USGS_KEY, JSON.stringify(known), { httpMetadata: { contentType: "application/json" } });
+    }
+    const out: Record<string, string> = {};
+    for (const lid of lids) if (known[lid]) out[lid] = known[lid] as string;
     return out;
 }

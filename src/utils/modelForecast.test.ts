@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {
+    forecastRowsAsForecast,
     MODEL_FORECAST_BATCH,
     modelForecastChunks,
     parseModelForecast,
@@ -32,11 +33,11 @@ describe("modelForecastChunks", () => {
     it("keeps only USGS ids, dedupes, and splits into batches of 20", () => {
         const usgs = Array.from({ length: 45 }, (_, i) => `USGS:${String(i).padStart(8, "0")}`);
         const chunks = modelForecastChunks([...usgs, "canada:01AB001", "NWS:ABCD1", usgs[0]]);
-        expect(chunks.map(c => c.length)).toEqual([MODEL_FORECAST_BATCH, MODEL_FORECAST_BATCH, 5]);
-        expect(chunks.flat()).toEqual(usgs);
+        expect(chunks.map(c => c.length)).toEqual([MODEL_FORECAST_BATCH, MODEL_FORECAST_BATCH, 6]);
+        expect(chunks.flat()).toEqual([...usgs, "NWS:ABCD1"]);
     });
 
-    it("returns no chunks when there are no USGS gauges", () => {
+    it("returns no chunks when there are no USGS or NWS gauges", () => {
         expect(modelForecastChunks(["canada:01AB001"])).toEqual([]);
     });
 });
@@ -159,5 +160,25 @@ describe("formatModelFlow", () => {
         expect(formatModelFlow(12_345)).toBe("12,300");
         expect(formatModelFlow(29.449)).toBe("29.4");
         expect(formatModelFlow(0)).toBe("0");
+    });
+});
+
+describe("forecastRowsAsForecast", () => {
+    it("moves values off forecast rows so they never draw as observed", () => {
+        const rows: GaugeReading[] = [
+            { dateTime: 1, cfs: 100, ft: 2 },
+            { dateTime: 2, isForecast: true, forecastSource: "NWS", cfs: 120, ft: 2.2, cfsModel: 110 },
+            { dateTime: 3, isForecast: true, cfsForecast: 130, ftForecast: 2.4 },
+        ];
+        expect(forecastRowsAsForecast(rows)).toEqual([
+            { dateTime: 1, cfs: 100, ft: 2 },
+            { dateTime: 2, isForecast: true, forecastSource: "NWS", cfsForecast: 120, ftForecast: 2.2, cfsModel: 110 },
+            { dateTime: 3, isForecast: true, cfsForecast: 130, ftForecast: 2.4 },
+        ]);
+    });
+
+    it("returns the same array when there is nothing to move", () => {
+        const rows: GaugeReading[] = [{ dateTime: 1, cfs: 100 }, { dateTime: 2, isForecast: true, cfsModel: 90 }];
+        expect(forecastRowsAsForecast(rows)).toBe(rows);
     });
 });

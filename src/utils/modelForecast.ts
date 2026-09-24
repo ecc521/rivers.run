@@ -23,14 +23,36 @@ export interface ModelForecast {
 
 const CFS_TO_CMS = 0.0283168;
 
-/** USGS gauge ids split into request-sized chunks. */
+/** Gauge ids that can have a model forecast (USGS, and NWS points on a USGS gauge), chunked. */
 export function modelForecastChunks(gaugeIds: string[]): string[][] {
-    const usgs = [...new Set(gaugeIds.filter(id => id.toUpperCase().startsWith("USGS:")))];
+    const ids = [...new Set(gaugeIds.filter(id => /^(USGS|NWS):/i.test(id)))];
     const chunks: string[][] = [];
-    for (let i = 0; i < usgs.length; i += MODEL_FORECAST_BATCH) {
-        chunks.push(usgs.slice(i, i + MODEL_FORECAST_BATCH));
+    for (let i = 0; i < ids.length; i += MODEL_FORECAST_BATCH) {
+        chunks.push(ids.slice(i, i + MODEL_FORECAST_BATCH));
     }
     return chunks;
+}
+
+const FORECAST_KEYS = [["cfs", "cfsForecast"], ["ft", "ftForecast"], ["cms", "cmsForecast"], ["m", "mForecast"]] as const;
+
+/**
+ * Forecast rows that carry their values in the observed fields (sitedata.json's
+ * NWS rows do) moved to the *Forecast fields, so charts never draw a forecast
+ * as observed flow.
+ */
+export function forecastRowsAsForecast(readings: GaugeReading[]): GaugeReading[] {
+    if (!readings.some(r => r.isForecast && FORECAST_KEYS.some(([k]) => r[k] != null))) return readings;
+    return readings.map(r => {
+        if (!r.isForecast) return r;
+        const row: GaugeReading = { ...r };
+        for (const [obs, fc] of FORECAST_KEYS) {
+            if (row[obs] != null) {
+                if (row[fc] == null) row[fc] = row[obs];
+                delete row[obs];
+            }
+        }
+        return row;
+    });
 }
 
 const isNumArray = (v: unknown): v is number[] => Array.isArray(v);
