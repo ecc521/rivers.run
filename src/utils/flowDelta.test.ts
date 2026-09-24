@@ -4,6 +4,8 @@ import {
     deltaSince,
     planHistoryRequest,
     DELTA_OVERLAP_MS,
+    trimToWindow,
+    collectReachIds,
     seedFromCache,
     isForecastReading,
     HISTORY_DAYS,
@@ -154,5 +156,21 @@ describe("seedFromCache", () => {
             "USGS:1": [null as any, { foo: 1 } as any, r(NOW, { cfs: 1 })],
         });
         expect([...target["USGS:1"].keys()]).toEqual([NOW]);
+    });
+});
+
+describe("trimToWindow", () => {
+    it("drops observations older than the history window but keeps forecasts", () => {
+        const old = NOW - (HISTORY_DAYS + 1) * 24 * HOUR;
+        const out = trimToWindow([r(old, { cfs: 1 }), r(NOW, { cfs: 2 }), r(NOW + HOUR, { cfsForecast: 3, isForecast: true })], NOW);
+        expect(out.map(x => x.dateTime)).toEqual([NOW, NOW + HOUR]);
+    });
+});
+
+describe("collectReachIds", () => {
+    it("keeps cached reach ids for gauges a delta response omitted", () => {
+        expect(collectReachIds({ "USGS:1": "111", "USGS:2": "222" }, { "USGS:2": { nwmReachId: "999" } }))
+            .toEqual({ "USGS:1": "111", "USGS:2": "999" });
+        expect(collectReachIds(undefined, { "USGS:3": {} })).toEqual({});
     });
 });

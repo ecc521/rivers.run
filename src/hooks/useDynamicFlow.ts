@@ -4,9 +4,14 @@ import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { FLOW_API_URL } from "../services/api";
 import { useSettings } from "../context/SettingsContext";
 import { applyUnitSettingsToReadings } from "../utils/unitConversions";
-import { planHistoryRequest, seedFromCache } from "../utils/flowDelta";
+import { planHistoryRequest, seedFromCache, trimToWindow, collectReachIds } from "../utils/flowDelta";
 
-const dynamicFlowCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, { name: string; section?: string }> }>();
+const dynamicFlowCache = new Map<string, {
+  lastFetchedMs: number;
+  gaugeData: Record<string, GaugeReading[]>;
+  gaugeNames?: Record<string, { name: string; section?: string }>;
+  reachIds?: Record<string, string>;
+}>();
 const activeFetches = new Set<string>();
 
 
@@ -76,15 +81,17 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
         const data = await res.json();
 
         // A delta response only carries new readings, so seed the merge map
-        // with what we already had or the chart would lose its history.
+        // (and names) with what we already had or the chart would lose them.
         if (resumeFrom > 0 && cachedForDelta) {
             seedFromCache(gaugeDataMap, cachedForDelta.gaugeData);
+            Object.assign(siteNameMap, cachedForDelta.gaugeNames ?? {});
         }
+        const reachIds = collectReachIds(resumeFrom > 0 ? cachedForDelta?.reachIds : undefined, data);
         
         for (const [gaugeId, gaugeInfo] of Object.entries(data) as [string, any][]) {
             if (!gaugeDataMap[gaugeId]) gaugeDataMap[gaugeId] = new Map();
             
-            if (gaugeInfo.name && !siteNameMap[gaugeId]) {
+            if (gaugeInfo.name) {
                 siteNameMap[gaugeId] = { name: gaugeInfo.name, section: gaugeInfo.section };
             }
 
@@ -117,28 +124,29 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
                 }
                 
                 const mergedSorted = Array.from(map.values()).sort((a, b) => a.dateTime - b.dateTime);
-                mergedGaugeData[gaugeId] = mergedSorted as GaugeReading[];
+                mergedGaugeData[gaugeId] = trimToWindow(mergedSorted as GaugeReading[]);
             }
 
-            dynamicFlowCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
+            dynamicFlowCache.set(cacheKey, { lastFetchedMs: Date.now(), gaugeData: mergedGaugeData, gaugeNames: siteNameMap, reachIds });
             setDynamicPayload({ gaugeData: mergedGaugeData, gaugeNames: siteNameMap });
         };
 
         // Render historical data instantly!
         updatePayload();
 
-        // Fire asynchronous fetches for NWM forecasts (NOAA reach API)
-        const reachPromises = (Object.entries(data) as [string, any][])
-            .filter(([_, gaugeInfo]) => {
-                if (!gaugeInfo.nwmReachId) return false;
+        // Fire asynchronous fetches for NWM forecasts (NOAA reach API) for
+        // every gauge with a reach, including ones a delta response omitted.
+        const reachPromises = Object.entries(reachIds)
+            .filter(([gaugeId]) => {
+                if (!gaugeDataMap[gaugeId]) return false;
                 // Skip NWM fetch if the gauge already has forecast data from /history (e.g. NWS)
-                const hasForecastsAlready = gaugeInfo.readings?.some(
+                const hasForecastsAlready = (data as any)[gaugeId]?.readings?.some(
                     (r: any) => r.isForecast || r.cfsForecast != null || r.ftForecast != null
                 );
                 return !hasForecastsAlready;
             })
-            .map(async ([gaugeId, gaugeInfo]) => {
-                const url = `https://api.water.noaa.gov/nwps/v1/reaches/${gaugeInfo.nwmReachId}/streamflow`;
+            .map(async ([gaugeId, reachId]) => {
+                const url = `https://api.water.noaa.gov/nwps/v1/reaches/${reachId}/streamflow`;
                 const maxAttempts = 3;
                 try {
                     let noaaRes: Response | undefined;
@@ -178,7 +186,7 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
                         });
                     }
                 } catch (e) {
-                    console.warn(`Failed to fetch NWM forecast for reach ${gaugeInfo.nwmReachId}:`, e);
+                    console.warn(`Failed to fetch NWM forecast for reach ${reachId}:`, e);
                 }
             });
 
