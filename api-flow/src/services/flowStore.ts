@@ -102,9 +102,10 @@ export interface ReduceOptions {
 }
 
 /**
- * Collapses readings to one row per (gauge, slot), keeping the reading closest
- * to the slot start. Readings at the same timestamp are merged. Drops future,
- * expired, empty and leading-edge partial-slot readings.
+ * Collapses readings to one row per (gauge, slot). Each parameter comes from
+ * the reading closest to the slot start that carries it; `off` and `approved`
+ * follow the closest reading overall. Drops future, expired, empty and
+ * leading-edge partial-slot readings.
  */
 export function reduceToSlots(readings: Iterable<ObservedReading>, opts: ReduceOptions): SlotRow[] {
     const horizon = opts.now - RETENTION_MS;
@@ -127,11 +128,15 @@ export function reduceToSlots(readings: Iterable<ObservedReading>, opts: ReduceO
         const key = `${r.gaugeId}|${ts}`;
         const prev = best.get(key);
 
-        if (!prev || off < prev.off) {
+        if (!prev) {
             best.set(key, { gaugeId: r.gaugeId, ts, off, ...values, approved: r.approved === true });
-        } else if (off === prev.off) {
+        } else if (off < prev.off) {
+            const next: SlotRow = { gaugeId: r.gaugeId, ts, off, ...values, approved: r.approved === true };
+            for (const c of VALUE_COLS) if (next[c] === null) next[c] = prev[c];
+            best.set(key, next);
+        } else {
             for (const c of VALUE_COLS) if (prev[c] === null) prev[c] = values[c];
-            prev.approved = prev.approved && r.approved === true;
+            if (off === prev.off) prev.approved = prev.approved && r.approved === true;
         }
     }
 
@@ -247,17 +252,22 @@ export async function lookupGaugeKeys(db: D1Database, gaugeIds: string[]): Promi
 
 // --- READINGS ---
 
-const sameReading = "excluded.ts = gauge_readings.ts AND excluded.off = gauge_readings.off";
+const newer = "excluded.ts > gauge_readings.ts";
+/** New lap: take the incoming row. Same slot: fill gaps from the other reading, preferring the closer one. */
 const mergeCol = (col: string) =>
-    `${col} = CASE WHEN ${sameReading} THEN COALESCE(excluded.${col}, gauge_readings.${col}) ELSE excluded.${col} END`;
+    `${col} = CASE WHEN ${newer} THEN excluded.${col}
+                   WHEN excluded.off <= gauge_readings.off THEN COALESCE(excluded.${col}, gauge_readings.${col})
+                   ELSE COALESCE(gauge_readings.${col}, excluded.${col}) END`;
 const colDiffers = (col: string) =>
     `(excluded.${col} IS NOT NULL AND excluded.${col} IS NOT gauge_readings.${col})`;
+const colFills = (col: string) =>
+    `(gauge_readings.${col} IS NULL AND excluded.${col} IS NOT NULL)`;
 
 /**
- * The ring-buffer upsert. A slot is overwritten by a newer generation (larger
- * ts), by a closer reading in the same slot (smaller off), or by changed
- * values for the same reading, merged column-wise so a partial revision keeps
- * the other parameters. Anything else is a no-op and writes nothing.
+ * The ring-buffer upsert. A slot is rewritten by a newer lap (larger ts), by a
+ * reading closer to the slot start (smaller off, keeping parameters it lacks),
+ * by changed values for the same reading, or by a farther reading that fills
+ * a missing parameter. Anything else is a no-op and writes nothing.
  */
 export const UPSERT_READINGS_SQL = `
     INSERT INTO gauge_readings
@@ -269,17 +279,20 @@ export const UPSERT_READINGS_SQL = `
      WHERE true
     ON CONFLICT(gauge_key, slot) DO UPDATE SET
         ${VALUE_COLS.map(mergeCol).join(",\n        ")},
-        approved = CASE WHEN ${sameReading}
+        approved = CASE WHEN ${newer} OR excluded.off < gauge_readings.off THEN excluded.approved
+                        WHEN excluded.off = gauge_readings.off
                         THEN MAX(excluded.approved, gauge_readings.approved)
-                        ELSE excluded.approved END,
-        ts  = excluded.ts,
-        off = excluded.off
-    WHERE excluded.ts > gauge_readings.ts
+                        ELSE gauge_readings.approved END,
+        off = CASE WHEN ${newer} THEN excluded.off ELSE MIN(excluded.off, gauge_readings.off) END,
+        ts  = excluded.ts
+    WHERE ${newer}
        OR (excluded.ts = gauge_readings.ts AND (
               excluded.off < gauge_readings.off
            OR (excluded.off = gauge_readings.off AND (
                   ${VALUE_COLS.map(colDiffers).join("\n               OR ")}
-               OR excluded.approved > gauge_readings.approved))))
+               OR excluded.approved > gauge_readings.approved))
+           OR (excluded.off > gauge_readings.off AND (
+                  ${VALUE_COLS.map(colFills).join("\n               OR ")}))))
 `;
 
 /**
@@ -324,9 +337,12 @@ const READING_COLS = `g.gauge_id AS gauge_id, r.ts AS ts, r.off AS off, r.cfs AS
                       r.ft AS ft, r.cms AS cms, r.m AS m, r.temp_f AS temp_f,
                       r.precip_in AS precip_in`;
 
-/** Served readings carry the source reading's real time, not the slot start. */
+/** Served timestamps are rounded to 5 minutes, like the live USGS and NWS parsers. */
+export const SERVED_SNAP_MS = 300_000;
+export const servedTime = (ts: number): number => Math.round(ts / SERVED_SNAP_MS) * SERVED_SNAP_MS;
+
 function rowToReading(row: ReadingRow): GaugeReading {
-    const reading: GaugeReading = { dateTime: row.ts + row.off * 1000 };
+    const reading: GaugeReading = { dateTime: servedTime(row.ts + row.off * 1000) };
     for (const c of VALUE_COLS) if (row[c] !== null) (reading as any)[c] = row[c];
     return reading;
 }
@@ -503,20 +519,33 @@ export interface SyncState {
     gaugeKey: number;
     coverageStart: number | null;
     repairFrom: number | null;
+    failCount: number;
+    retryAt: number | null;
 }
+
+const toSyncState = (r: any): SyncState => ({
+    gaugeKey: r.gauge_key,
+    coverageStart: r.coverage_start ?? null,
+    repairFrom: r.repair_from ?? null,
+    failCount: r.fail_count ?? 0,
+    retryAt: r.retry_at ?? null,
+});
+
+const SYNC_COLS = `g.gauge_id AS gauge_id, g.gauge_key AS gauge_key,
+                   s.coverage_start AS coverage_start, s.repair_from AS repair_from,
+                   s.fail_count AS fail_count, s.retry_at AS retry_at`;
 
 /** Sync state for every gauge of one provider, keyed by gauge id. */
 export async function readProviderSyncState(db: D1Database, provider: string): Promise<Map<string, SyncState>> {
     const { results } = await db.prepare(`
-        SELECT g.gauge_id AS gauge_id, g.gauge_key AS gauge_key,
-               s.coverage_start AS coverage_start, s.repair_from AS repair_from
+        SELECT ${SYNC_COLS}
           FROM gauges g
           LEFT JOIN gauge_sync_state s ON s.gauge_key = g.gauge_key
          WHERE g.provider = ?1
     `).bind(provider).all<any>();
     const out = new Map<string, SyncState>();
     for (const r of results ?? []) {
-        out.set(r.gauge_id, { gaugeKey: r.gauge_key, coverageStart: r.coverage_start ?? null, repairFrom: r.repair_from ?? null });
+        out.set(r.gauge_id, toSyncState(r));
     }
     return out;
 }
@@ -527,14 +556,13 @@ export async function readSyncState(db: D1Database, gaugeIds: string[]): Promise
     const ids = gaugeIds.filter(isStorableGaugeId).map(normalizeGaugeId);
     for (const chunk of chunkAsJson(ids)) {
         const { results } = await db.prepare(`
-            SELECT g.gauge_id AS gauge_id, g.gauge_key AS gauge_key,
-                   s.coverage_start AS coverage_start, s.repair_from AS repair_from
+            SELECT ${SYNC_COLS}
               FROM gauges g
               JOIN json_each(?1) j ON g.gauge_id = j.value
               LEFT JOIN gauge_sync_state s ON s.gauge_key = g.gauge_key
         `).bind(chunk).all<any>();
         for (const r of results ?? []) {
-            out.set(r.gauge_id, { gaugeKey: r.gauge_key, coverageStart: r.coverage_start ?? null, repairFrom: r.repair_from ?? null });
+            out.set(r.gauge_id, toSyncState(r));
         }
     }
     return out;
@@ -611,6 +639,53 @@ export async function clearRepair(db: D1Database, gaugeKeys: number[], coveredFr
          WHERE repair_from IS NOT NULL AND repair_from >= ?2
            AND gauge_key IN (SELECT value FROM json_each(?1))
     `).bind(chunk, coveredFrom)));
+}
+
+/**
+ * For gauges just fetched with readings complete from `coveredFrom`: a
+ * pending repair at or after it is resolved; an older one cannot be repaired,
+ * so coverage restarts at `coveredFrom`.
+ */
+export async function settleRepair(db: D1Database, gaugeKeys: number[], coveredFrom: number): Promise<number> {
+    if (gaugeKeys.length === 0) return 0;
+    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
+        UPDATE gauge_sync_state
+           SET coverage_start = CASE WHEN repair_from < ?2 THEN MAX(COALESCE(coverage_start, ?2), ?2)
+                                     ELSE coverage_start END,
+               repair_from = NULL
+         WHERE repair_from IS NOT NULL
+           AND gauge_key IN (SELECT value FROM json_each(?1))
+    `).bind(chunk, coveredFrom)));
+}
+
+/** Resets coverage to `from` for the given gauges where it starts earlier. */
+export async function resetCoverage(db: D1Database, gaugeKeys: number[], from: number): Promise<number> {
+    if (gaugeKeys.length === 0) return 0;
+    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
+        UPDATE gauge_sync_state SET coverage_start = ?2
+         WHERE coverage_start < ?2 AND gauge_key IN (SELECT value FROM json_each(?1))
+    `).bind(chunk, from)));
+}
+
+/** A lone backfill fetch for this gauge failed: back off exponentially, capped at a day. */
+export async function recordBackfillFailure(db: D1Database, gaugeKey: number, now: number): Promise<number> {
+    const res = await db.prepare(`
+        INSERT INTO gauge_sync_state (gauge_key, fail_count, retry_at) VALUES (?1, 1, ?2 + 900000)
+        ON CONFLICT(gauge_key) DO UPDATE SET
+            fail_count = gauge_sync_state.fail_count + 1,
+            retry_at = ?2 + MIN(86400000, 900000 * (1 << MIN(gauge_sync_state.fail_count + 1, 7)))
+    `).bind(gaugeKey, now).run();
+    return writtenOf(res);
+}
+
+/** Clears backfill failure state; writes only rows that had any. */
+export async function clearBackfillFailures(db: D1Database, gaugeKeys: number[]): Promise<number> {
+    if (gaugeKeys.length === 0) return 0;
+    return runBatch(db, chunkAsJson(gaugeKeys).map(chunk => db.prepare(`
+        UPDATE gauge_sync_state SET fail_count = 0, retry_at = NULL
+         WHERE (fail_count <> 0 OR retry_at IS NOT NULL)
+           AND gauge_key IN (SELECT value FROM json_each(?1))
+    `).bind(chunk)));
 }
 
 // --- META ---

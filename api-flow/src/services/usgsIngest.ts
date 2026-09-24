@@ -3,8 +3,9 @@ import { isValidReadingValue } from "./provider";
 import {
     reduceToSlots, upsertSlots, slotStartOf,
     readProviderSyncState, extendCoverage, markRepair, markProviderRepair, clearRepair,
+    recordBackfillFailure, clearBackfillFailures,
     getMeta, setMeta, SLOT_MS, RETENTION_MS,
-    type ObservedReading,
+    type ObservedReading, type SyncState,
 } from "./flowStore";
 
 /**
@@ -34,6 +35,10 @@ export const SITE_DAYS_PER_REQUEST = 100;
 export const PAGE_LIMIT = 20_000;
 export const REQUEST_TIMEOUT_MS = 90_000;
 export const DEFAULT_BACKFILL_REQUESTS = 100;
+/** Page cap per revision sweep; an unfinished sweep holds the cursor. */
+export const MAX_REVISION_PAGES = 120;
+/** A cursor older than this is abandoned for datetime repair of the gap. */
+export const MAX_REVISION_LAG_MS = 24 * 60 * 60 * 1000;
 /** Backfill and revision work stop when X-RateLimit-Remaining falls below this. */
 export const RATE_RESERVE = 300;
 
@@ -151,7 +156,7 @@ export interface UsgsCycleStats {
     windowBatches: number;
     windowFailed: number;
     windowFrom: number;
-    revision: "ran" | "incomplete" | "skipped-budget" | "initialized" | "not-due";
+    revision: "ran" | "incomplete" | "skipped-budget" | "initialized" | "not-due" | "lagged-to-repair";
     revisionBatches: number;
     backfillRequests: number;
     backfillStopped: "done" | "request-cap" | "rate-budget" | null;
@@ -169,6 +174,8 @@ export interface UsgsCycleInput {
     runRevision: boolean;
     backfillRequests?: number;
     deps?: UsgsDeps;
+    /** Filled with the newest reading seen per gauge id, for sitedata.json. */
+    latest?: Map<string, ObservedReading>;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -185,14 +192,39 @@ async function runPool<T>(items: T[], concurrency: number, fn: (item: T) => Prom
     await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
 }
 
-interface FetchOutcome { complete: boolean; pages: number; readings: ObservedReading[] }
+interface FetchOutcome { complete: boolean; stopped: boolean; pages: number; written: number }
 
-async function fetchReadings(url: string, input: UsgsCycleInput, budget: RateBudget): Promise<FetchOutcome> {
+/**
+ * Fetches one request and upserts each page as it arrives, so memory is one
+ * page. `shouldStop` is checked after every page. The guarded upsert makes
+ * the result independent of page order, except which of two duplicate
+ * series wins when they straddle a page boundary.
+ */
+async function fetchAndStore(
+    url: string,
+    input: UsgsCycleInput,
+    budget: RateBudget,
+    windowStart: number,
+    shouldStop?: () => boolean
+): Promise<FetchOutcome> {
     const fetchPages = input.deps?.fetchPages ?? fetchOGCPages;
-    const acc = new FeatureAccumulator();
-    const res = await fetchPages(url, REQUEST_TIMEOUT_MS, input.env, page => acc.add(page));
+    let written = 0;
+    const res = await fetchPages(url, REQUEST_TIMEOUT_MS, input.env, async (page, info) => {
+        if (info.rateRemaining !== null) budget.remaining = info.rateRemaining;
+        const acc = new FeatureAccumulator();
+        acc.add(page);
+        const readings = acc.readings();
+        if (input.latest) {
+            for (const r of readings) {
+                const prev = input.latest.get(r.gaugeId);
+                if (r.ts <= input.now && (!prev || r.ts > prev.ts)) input.latest.set(r.gaugeId, r);
+            }
+        }
+        written += await upsertSlots(input.db, reduceToSlots(readings, { now: input.now, windowStart }), input.keys);
+        return shouldStop ? !shouldStop() : undefined;
+    });
     budget.record(res.pages, res.rateRemaining);
-    return { complete: res.complete, pages: res.pages, readings: acc.readings() };
+    return { complete: res.complete, stopped: res.stopped === true, pages: res.pages, written };
 }
 
 const keysFor = (ids: string[], keys: Map<string, number>) =>
@@ -221,9 +253,8 @@ async function windowSweep(input: UsgsCycleInput, budget: RateBudget, stats: Usg
     stats.windowBatches = batches.length;
 
     await runPool(batches, WINDOW_CONCURRENCY, async ids => {
-        const out = await fetchReadings(buildContinuousUrl(ids, { from: plan.from }), input, budget);
-        const rows = reduceToSlots(out.readings, { now, windowStart: plan.from });
-        stats.rowsWritten.window += await upsertSlots(db, rows, keys);
+        const out = await fetchAndStore(buildContinuousUrl(ids, { from: plan.from }), input, budget, plan.from);
+        stats.rowsWritten.window += out.written;
         const batchKeys = keysFor(ids, keys);
         if (out.complete) {
             stats.rowsWritten.state += await clearRepair(db, batchKeys, plan.from);
@@ -237,12 +268,21 @@ async function windowSweep(input: UsgsCycleInput, budget: RateBudget, stats: Usg
 }
 
 async function revisionSweep(input: UsgsCycleInput, budget: RateBudget, stats: UsgsCycleStats): Promise<void> {
-    const { db, now, keys } = input;
+    const { db, now } = input;
     const cursor = await getMeta(db, META_REVISION_CURSOR);
     if (cursor === null) {
         // Backfill loads history; revisions matter from here on.
         stats.rowsWritten.state += await setMeta(db, META_REVISION_CURSOR, now);
         stats.revision = "initialized";
+        return;
+    }
+    if (now - cursor > MAX_REVISION_LAG_MS) {
+        // Too far behind to catch up by last_modified: refetch the gap by
+        // datetime instead (backfill repairs) and restart the cursor.
+        const from = Math.max(slotStartOf(cursor - REVISION_OVERLAP_MS), slotStartOf(now - RETENTION_MS));
+        stats.rowsWritten.state += await markProviderRepair(db, "USGS", from);
+        stats.rowsWritten.state += await setMeta(db, META_REVISION_CURSOR, now);
+        stats.revision = "lagged-to-repair";
         return;
     }
 
@@ -255,13 +295,16 @@ async function revisionSweep(input: UsgsCycleInput, budget: RateBudget, stats: U
     const from = slotStartOf(now - RETENTION_MS);
     const lastModifiedFrom = cursor - REVISION_OVERLAP_MS;
     let allComplete = true;
+    let pages = 0;
+    const overBudget = () => pages >= MAX_REVISION_PAGES || !budget.allows(1);
+    const afterPage = () => { pages++; return overBudget(); };
     stats.revisionBatches = batches.length;
 
     await runPool(batches, REVISION_CONCURRENCY, async ids => {
-        const out = await fetchReadings(buildContinuousUrl(ids, { from, lastModifiedFrom }), input, budget);
+        if (overBudget()) { allComplete = false; return; }
+        const out = await fetchAndStore(buildContinuousUrl(ids, { from, lastModifiedFrom }), input, budget, from, afterPage);
         if (!out.complete) allComplete = false;
-        const rows = reduceToSlots(out.readings, { now, windowStart: from });
-        stats.rowsWritten.revision += await upsertSlots(db, rows, keys);
+        stats.rowsWritten.revision += out.written;
     });
 
     if (allComplete) {
@@ -282,7 +325,7 @@ export interface BackfillTask {
 
 /** Work still owed, most urgent first: repairs, then 7 days, then 30 days. */
 export function planBackfill(
-    state: Map<string, { gaugeKey: number; coverageStart: number | null; repairFrom: number | null }>,
+    state: Map<string, Pick<SyncState, "gaugeKey" | "coverageStart" | "repairFrom"> & { retryAt?: number | null }>,
     siteIds: string[],
     windowFrom: number,
     now: number
@@ -293,7 +336,7 @@ export function planBackfill(
 
     for (const siteId of siteIds) {
         const s = state.get(`USGS:${siteId}`);
-        if (!s) continue;
+        if (!s || (s.retryAt != null && s.retryAt > now)) continue;
         const base = { siteId, gaugeKey: s.gaugeKey };
         if (s.repairFrom !== null && s.repairFrom < windowFrom) {
             repair.push({ ...base, kind: "repair", from: s.repairFrom, to: windowFrom });
@@ -334,43 +377,47 @@ export function groupTasks(tasks: BackfillTask[]): BackfillTask[][] {
 }
 
 async function backfill(input: UsgsCycleInput, budget: RateBudget, stats: UsgsCycleStats): Promise<void> {
-    const { db, now, keys } = input;
+    const { db, now } = input;
     const cap = input.backfillRequests ?? DEFAULT_BACKFILL_REQUESTS;
     const state = await readProviderSyncState(db, "USGS");
-    const groups = groupTasks(planBackfill(state, input.siteIds, stats.windowFrom, now));
-    if (groups.length === 0) { stats.backfillStopped = "done"; return; }
+    const queue = groupTasks(planBackfill(state, input.siteIds, stats.windowFrom, now));
+    if (queue.length === 0) { stats.backfillStopped = "done"; return; }
 
     let spent = 0;
-    const eligible: BackfillTask[][] = [];
-    for (const g of groups) {
-        if (eligible.length >= cap) break;
-        eligible.push(g);
-    }
+    const worker = async () => {
+        while (queue.length > 0) {
+            if (spent >= cap) { stats.backfillStopped ??= "request-cap"; return; }
+            if (!budget.allows(1)) { stats.backfillStopped = "rate-budget"; return; }
+            const group = queue.shift()!;
 
-    await runPool(eligible, BACKFILL_CONCURRENCY, async group => {
-        if (spent >= cap) { stats.backfillStopped ??= "request-cap"; return; }
-        if (!budget.allows(1)) { stats.backfillStopped = "rate-budget"; return; }
+            const from = Math.min(...group.map(t => t.from));
+            const to = Math.max(...group.map(t => t.to));
+            const out = await fetchAndStore(buildContinuousUrl(group.map(t => t.siteId), { from, to }),
+                input, budget, from, () => !budget.allows(1));
+            spent += out.pages;
+            stats.backfillRequests += out.pages;
+            stats.rowsWritten.backfill += out.written;
 
-        const from = Math.min(...group.map(t => t.from));
-        const to = Math.max(...group.map(t => t.to));
-        const ids = group.map(t => t.siteId);
-        const out = await fetchReadings(buildContinuousUrl(ids, { from, to }), input, budget);
-        spent += out.pages;
-        stats.backfillRequests += out.pages;
-
-        const rows = reduceToSlots(out.readings, { now, windowStart: from });
-        stats.rowsWritten.backfill += await upsertSlots(db, rows, keys);
-        if (!out.complete) return;
-
-        const groupKeys = group.map(t => t.gaugeKey);
-        stats.rowsWritten.state += group[0].kind === "repair"
-            ? await clearRepair(db, groupKeys, from)
-            : await extendCoverage(db, groupKeys, from);
-    });
-
-    if (stats.backfillStopped === null) {
-        stats.backfillStopped = eligible.length < groups.length || spent >= cap ? "request-cap" : "done";
-    }
+            const groupKeys = group.map(t => t.gaugeKey);
+            if (out.complete) {
+                stats.rowsWritten.state += group[0].kind === "repair"
+                    ? await clearRepair(db, groupKeys, from)
+                    : await extendCoverage(db, groupKeys, from);
+                const failed = group.filter(t => (state.get(`USGS:${t.siteId}`)?.failCount ?? 0) > 0);
+                stats.rowsWritten.state += await clearBackfillFailures(db, failed.map(t => t.gaugeKey));
+            } else if (!out.stopped) {
+                // Isolate a bad site: retry halves now, back off a lone failure.
+                if (group.length > 1) {
+                    const mid = Math.ceil(group.length / 2);
+                    queue.unshift(group.slice(0, mid), group.slice(mid));
+                } else {
+                    stats.rowsWritten.state += await recordBackfillFailure(db, group[0].gaugeKey, now);
+                }
+            }
+        }
+    };
+    await Promise.all(Array.from({ length: BACKFILL_CONCURRENCY }, worker));
+    stats.backfillStopped ??= queue.length === 0 ? "done" : "request-cap";
 }
 
 /** True for the cycle in the first quarter hour of each UTC hour. */

@@ -4,6 +4,7 @@ import {
     resolveGaugeKeys, lookupGaugeKeys, upsertSlots, reduceToSlots, readSeries, readLatest,
     readHourlySums, readSyncState, readProviderSyncState, extendCoverage, initCoverage,
     resetProviderCoverage, markRepair, markProviderRepair, clearRepair, getMeta, setMeta,
+    settleRepair, recordBackfillFailure, clearBackfillFailures,
     countReadings, slotRanges, slotIndexOf, isStorableGaugeId, LATEST_SQL,
     SLOT_MS, SLOTS, RETENTION_MS, FUTURE_SKEW_MS,
     type GaugeDimension, type ObservedReading, type SlotRow,
@@ -70,6 +71,15 @@ describe("reduceToSlots", () => {
         expect(rows).toHaveLength(2);
     });
 
+    it("keeps a parameter reported at a different offset in the same slot", () => {
+        const rows = reduceToSlots([
+            { gaugeId: "USGS:1", ts: NOW + 7 * MIN, cfs: 100 },
+            { gaugeId: "USGS:1", ts: NOW, ft: 3 },
+            { gaugeId: "USGS:1", ts: NOW + 9 * MIN, cfs: 999, ft: 9 },
+        ], { now: NOW + HOUR });
+        expect(rows).toEqual([expect.objectContaining({ ts: NOW, off: 0, ft: 3, cfs: 100 })]);
+    });
+
     it("merges parameters reported at the same timestamp", () => {
         const rows = reduceToSlots([r(NOW, { cms: 5, m: undefined }), r(NOW, { cms: undefined, m: 1.5 })], { now: NOW });
         expect(rows).toEqual([expect.objectContaining({ ts: NOW, cms: 5, m: 1.5 })]);
@@ -120,6 +130,19 @@ describe("upsertSlots (ring buffer)", () => {
         expect(stored()[0]).toMatchObject({ off: 0, cfs: 4 });
     });
 
+    it("keeps parameters the closer reading lacks, and fills gaps from farther ones", async () => {
+        const keys = await keysFor("USGS:1");
+        await upsertSlots(db, [row("USGS:1", NOW, { off: 300, cfs: 100, ft: 3 })], keys);
+        expect(await upsertSlots(db, [row("USGS:1", NOW, { off: 0, cfs: 101 })], keys)).toBe(1);
+        expect(stored()[0]).toMatchObject({ off: 0, cfs: 101, ft: 3 });
+
+        const other = await keysFor("USGS:2");
+        await upsertSlots(db, [row("USGS:2", NOW, { off: 0, ft: 3 })], other);
+        expect(await upsertSlots(db, [row("USGS:2", NOW, { off: 420, cfs: 100, ft: 9 })], other)).toBe(1);
+        expect(await upsertSlots(db, [row("USGS:2", NOW, { off: 420, cfs: 100, ft: 9 })], other)).toBe(0);
+        expect(stored()[1]).toMatchObject({ off: 0, cfs: 100, ft: 3 });
+    });
+
     it("merges a partial revision of the same reading and writes once", async () => {
         const keys = await keysFor("USGS:1");
         await upsertSlots(db, [row("USGS:1", NOW, { cfs: 5, ft: 1 })], keys);
@@ -161,18 +184,18 @@ describe("reads", () => {
         expect([...sums.get("USGS:1")!.keys()]).toEqual([NOW]);
     });
 
-    it("readSeries returns real timestamps in order across a wrap", async () => {
+    it("readSeries returns reading times, rounded to 5 minutes, in order across a wrap", async () => {
         const keys = await keysFor("USGS:1");
         const zero = Math.ceil(NOW / SLOT_MS / SLOTS) * SLOTS * SLOT_MS;
         await upsertSlots(db, [
             row("USGS:1", zero, { cfs: 3 }),
-            row("USGS:1", zero - SLOT_MS, { off: 120, cfs: 2 }),
+            row("USGS:1", zero - SLOT_MS, { off: 240, cfs: 2 }),
             row("USGS:1", zero - 2 * SLOT_MS, { cfs: 1 }),
         ], keys);
         const series = await readSeries(db, ["USGS:1"], zero - HOUR, zero, zero);
         expect(series["USGS:1"].readings).toEqual([
             { dateTime: zero - 2 * SLOT_MS, cfs: 1 },
-            { dateTime: zero - SLOT_MS + 120_000, cfs: 2 },
+            { dateTime: zero - SLOT_MS + 300_000, cfs: 2 },
             { dateTime: zero, cfs: 3 },
         ]);
     });
@@ -272,6 +295,30 @@ describe("sync state", () => {
         const state = await readProviderSyncState(db, "USGS");
         expect(state.get("USGS:1")!.repairFrom).toBeNull();
         expect(state.get("USGS:2")!.repairFrom).toBe(NOW - 2 * HOUR);
+    });
+
+    it("settleRepair clears covered repairs and restarts coverage after an unrecoverable gap", async () => {
+        const keys = await keysFor("EC:1", "EC:2");
+        const [k1, k2] = [keys.get("EC:1")!, keys.get("EC:2")!];
+        await extendCoverage(db, [k1, k2], NOW - 5 * DAY);
+        await markRepair(db, [k1], NOW - HOUR);
+        await markRepair(db, [k2], NOW - 2 * DAY);
+        expect(await settleRepair(db, [k1, k2], NOW - DAY)).toBe(2);
+        const state = await readProviderSyncState(db, "EC");
+        expect(state.get("EC:1")).toMatchObject({ coverageStart: NOW - 5 * DAY, repairFrom: null });
+        expect(state.get("EC:2")).toMatchObject({ coverageStart: NOW - DAY, repairFrom: null });
+        expect(await settleRepair(db, [k1, k2], NOW - DAY)).toBe(0);
+    });
+
+    it("backs off backfill failures exponentially and clears them once", async () => {
+        const keys = await keysFor("USGS:1");
+        const k = keys.get("USGS:1")!;
+        await recordBackfillFailure(db, k, NOW);
+        await recordBackfillFailure(db, k, NOW);
+        const s = (await readProviderSyncState(db, "USGS")).get("USGS:1")!;
+        expect(s).toMatchObject({ failCount: 2, retryAt: NOW + 4 * 15 * MIN });
+        expect(await clearBackfillFailures(db, [k])).toBe(1);
+        expect(await clearBackfillFailures(db, [k])).toBe(0);
     });
 
     it("setMeta writes only when the value changes", async () => {

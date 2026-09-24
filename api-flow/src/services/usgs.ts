@@ -125,19 +125,21 @@ export interface OGCPagesResult {
     pages: number;
     /** Last X-RateLimit-Remaining seen, or null if the header was absent. */
     rateRemaining: number | null;
+    /** True when onPage asked to stop early. */
+    stopped?: boolean;
     error?: string;
 }
 
 /**
- * Follows OGC `next` links, handing each page's features to `onPage`.
- * Never throws for HTTP or network failures; `complete` says whether every
- * page arrived. A 429 is not retried, since retrying only burns budget.
+ * Follows OGC `next` links, handing each page's features to `onPage`, which
+ * may return false to stop. Never throws for HTTP or network failures;
+ * `complete` says whether every page arrived. A 429 is not retried.
  */
 export async function fetchOGCPages(
     initialUrl: string,
     timeoutMs: number,
     env: any,
-    onPage: (features: any[]) => void | Promise<void>
+    onPage: (features: any[], info: { rateRemaining: number | null }) => void | boolean | Promise<void | boolean>
 ): Promise<OGCPagesResult> {
     const result: OGCPagesResult = { complete: true, pages: 0, rateRemaining: null };
     let nextUrl: string | null = initialUrl;
@@ -181,9 +183,15 @@ export async function fetchOGCPages(
             }
         }
 
-        await onPage(Array.isArray(data.features) ? data.features : []);
         const nextLink = (data.links || []).find((l: any) => l.rel === 'next');
         nextUrl = nextLink?.href || null;
+        const features = Array.isArray(data.features) ? data.features : [];
+        const keepGoing = await onPage(features, { rateRemaining: result.rateRemaining });
+        if (keepGoing === false && nextUrl) {
+            result.complete = false;
+            result.stopped = true;
+            return result;
+        }
     }
 
     return result;

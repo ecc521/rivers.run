@@ -42,7 +42,9 @@ CREATE TABLE IF NOT EXISTS gauge_readings (
 CREATE TABLE IF NOT EXISTS gauge_sync_state (
     gauge_key      INTEGER PRIMARY KEY,
     coverage_start INTEGER,   /* readings are complete from here to now */
-    repair_from    INTEGER    /* a window fetch failed; refetch from here */
+    repair_from    INTEGER,   /* a fetch failed; refetch from here */
+    fail_count     INTEGER NOT NULL DEFAULT 0,   /* consecutive lone backfill failures */
+    retry_at       INTEGER    /* backfill skips this gauge until then */
 );
 
 /* Small global state: sweep cursors and last-success times. */

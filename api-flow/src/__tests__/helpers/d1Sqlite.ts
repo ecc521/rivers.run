@@ -62,6 +62,11 @@ class SqliteStatement {
     }
 
     async run(): Promise<{ success: true; meta: any }> {
+        return this.runSync();
+    }
+
+    /** Synchronous run, so a batch cannot interleave with other queries. */
+    runSync(): { success: true; meta: any } {
         const stmt = this.db.prepare(this.sql);
         const info = stmt.run(...(this.normalized() as any[]));
         return {
@@ -93,11 +98,12 @@ export function createTestD1(): TestD1 {
             return new SqliteStatement(db, sql) as unknown as D1PreparedStatement;
         },
         async batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {
+            // Like D1, a batch is atomic: it runs without yielding.
             const out: D1Result<T>[] = [];
             db.exec("BEGIN");
             try {
                 for (const s of statements) {
-                    out.push((await (s as any).run()) as D1Result<T>);
+                    out.push((s as any).runSync() as D1Result<T>);
                 }
                 db.exec("COMMIT");
             } catch (e) {

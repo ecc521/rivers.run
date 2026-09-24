@@ -3,7 +3,7 @@ import { createTestD1, type TestD1 } from "../../__tests__/helpers/d1Sqlite";
 import {
     FeatureAccumulator, RateBudget, buildContinuousUrl, planWindow, planBackfill, groupTasks,
     runUsgsCycle, isHourlyCycle, META_REVISION_CURSOR, META_WINDOW_OK,
-    WINDOW_MS, MAX_WINDOW_MS, RATE_RESERVE, SITE_DAYS_PER_REQUEST, SITES_PER_REQUEST,
+    WINDOW_MS, MAX_WINDOW_MS, RATE_RESERVE, SITE_DAYS_PER_REQUEST, SITES_PER_REQUEST, MAX_REVISION_PAGES,
     type UsgsCycleInput,
 } from "../usgsIngest";
 import {
@@ -144,7 +144,7 @@ describe("runUsgsCycle", () => {
     /** Serves features for each requested site across the requested datetime range. */
     function fakeApi(opts: { fail?: (url: string) => boolean; remaining?: number } = {}) {
         const urls: string[] = [];
-        const fetchPages = async (url: string, _t: number, _e: any, onPage: (f: any[]) => void): Promise<OGCPagesResult> => {
+        const fetchPages = async (url: string, _t: number, _e: any, onPage: (f: any[], i: any) => any): Promise<OGCPagesResult> => {
             urls.push(url);
             if (opts.fail?.(url)) return { complete: false, pages: 1, rateRemaining: opts.remaining ?? null, error: "boom" };
             const params = new URL(url).searchParams;
@@ -156,8 +156,16 @@ describe("runUsgsCycle", () => {
             for (const site of sites) {
                 for (let t = from; t <= to; t += 15 * MIN) features.push(feature(site, t, "00060", 100));
             }
-            onPage(features);
-            return { complete: true, pages: 1, rateRemaining: opts.remaining ?? null };
+            // Serve in pages of 50 features, like the real paginated API.
+            let pages = 0;
+            for (let i = 0; i < features.length || i === 0; i += 50) {
+                pages++;
+                const more = i + 50 < features.length;
+                if (await onPage(features.slice(i, i + 50), { rateRemaining: opts.remaining ?? null }) === false && more) {
+                    return { complete: false, stopped: true, pages, rateRemaining: opts.remaining ?? null };
+                }
+            }
+            return { complete: true, pages, rateRemaining: opts.remaining ?? null };
         };
         return { urls, fetchPages };
     }
@@ -237,6 +245,44 @@ describe("runUsgsCycle", () => {
         await setMeta(db, META_REVISION_CURSOR, NOW - HOUR);
         const stats = await run({ api: fakeApi({ remaining: RATE_RESERVE }), runRevision: true, backfillRequests: 0 });
         expect(stats.revision).toBe("skipped-budget");
+    });
+
+    it("caps revision sweep pages, keeps what it stored, and holds the cursor", async () => {
+        const run = await setup(["1", "2", "3"]);
+        await setMeta(db, META_REVISION_CURSOR, NOW - HOUR);
+        const api = fakeApi();
+        const stats = await run({ api, runRevision: true, backfillRequests: 0 });
+        expect(stats.revision).toBe("incomplete");
+        expect(stats.rowsWritten.revision).toBeGreaterThan(0);
+        expect(stats.requests - stats.windowBatches).toBeLessThanOrEqual(MAX_REVISION_PAGES + 4);
+        expect(await getMeta(db, META_REVISION_CURSOR)).toBe(NOW - HOUR);
+    });
+
+    it("abandons a cursor older than a day for datetime repair", async () => {
+        const run = await setup(["1", "2"]);
+        await setMeta(db, META_REVISION_CURSOR, NOW - 3 * DAY);
+        const api = fakeApi();
+        const stats = await run({ api, runRevision: true, backfillRequests: 0 });
+        expect(stats.revision).toBe("lagged-to-repair");
+        expect(api.urls.some(u => u.includes("last_modified"))).toBe(false);
+        expect(await getMeta(db, META_REVISION_CURSOR)).toBe(NOW);
+        const state = await readProviderSyncState(db, "USGS");
+        expect(state.get("USGS:1")!.repairFrom).toBe(NOW - 3 * DAY - 15 * MIN);
+    });
+
+    it("splits a failing backfill group and backs off only the bad site", async () => {
+        const sites = ["1", "2", "3", "4", "5", "6"];
+        const run = await setup(sites);
+        const api = fakeApi({ fail: u => u.includes("USGS-4") && !u.includes(`datetime=${iso(NOW - WINDOW_MS).replace(".000", "")}/..`) });
+        await run({ api });
+        const state = await readProviderSyncState(db, "USGS");
+        for (const id of ["1", "2", "3", "5", "6"]) expect(state.get(`USGS:${id}`)!.coverageStart).not.toBeNull();
+        expect(state.get("USGS:4")).toMatchObject({ coverageStart: null, failCount: 1 });
+        expect(state.get("USGS:4")!.retryAt).toBeGreaterThan(NOW);
+
+        const next = fakeApi();
+        await run({ api: next });
+        expect(next.urls.filter(u => u.includes("USGS-4"))).toHaveLength(1); // window sweep only
     });
 
     it("stores a readable series", async () => {
