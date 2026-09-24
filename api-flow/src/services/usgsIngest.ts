@@ -11,8 +11,9 @@ import {
 /**
  * USGS ingest for every registry gauge, in three parts:
  *
- *  1. Window sweep, every cycle: `datetime=<now-6h>/..`, 200 sites a request.
- *     Re-reading 6h makes a few missed cycles harmless.
+ *  1. Window sweep, every cycle: `datetime=<now-2h>/..`, 200 sites a request,
+ *     widened to the last successful sweep after missed cycles. Late and
+ *     revised readings are the revision sweep's job, so this stays short.
  *  2. Revision sweep, hourly: `last_modified=<cursor>/..` bounded by
  *     `datetime=<now-30d>/..`. One global cursor, advanced only when every
  *     batch completed.
@@ -25,14 +26,15 @@ import {
  */
 
 export const SITES_PER_REQUEST = 200;
-export const WINDOW_MS = 6 * 60 * 60 * 1000;
+export const WINDOW_MS = 2 * 60 * 60 * 1000;
 /** Longest window the sweep widens to after missed cycles; beyond it, repair. */
 export const MAX_WINDOW_MS = 24 * 60 * 60 * 1000;
 export const REVISION_OVERLAP_MS = 15 * 60 * 1000;
 export const PRIORITY_BACKFILL_MS = 7 * 24 * 60 * 60 * 1000;
 /** ~26k features (~10MB) a request at ~260 records per site-day. */
 export const SITE_DAYS_PER_REQUEST = 100;
-export const PAGE_LIMIT = 20_000;
+/** Pages are parsed whole; the isolate has 128 MB, so keep each one a few MB. */
+export const PAGE_LIMIT = 10_000;
 export const REQUEST_TIMEOUT_MS = 90_000;
 export const DEFAULT_BACKFILL_REQUESTS = 100;
 /** Page cap per revision sweep; an unfinished sweep holds the cursor. */
@@ -42,9 +44,9 @@ export const MAX_REVISION_LAG_MS = 24 * 60 * 60 * 1000;
 /** Backfill and revision work stop when X-RateLimit-Remaining falls below this. */
 export const RATE_RESERVE = 300;
 
-const WINDOW_CONCURRENCY = 4;
-const REVISION_CONCURRENCY = 4;
-const BACKFILL_CONCURRENCY = 2;
+const WINDOW_CONCURRENCY = 2;
+const REVISION_CONCURRENCY = 2;
+const BACKFILL_CONCURRENCY = 1;
 const DAY_MS = 86_400_000;
 
 const PROPERTIES = "monitoring_location_id,parameter_code,time,value,approval_status,time_series_id";

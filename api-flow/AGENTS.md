@@ -71,7 +71,7 @@ parameters). Reads use `CROSS JOIN` plus a slot range so they seek the primary k
 **Ingest** (`flowSync.ts`, `usgsIngest.ts`), on the `*/15` trigger only (the daily
 and weekly crons also fire at 00:00 and must not start a second ingest):
 
-- USGS, all registry gauges, 200 sites per request: a `datetime=<now-6h>/..` window
+- USGS, all registry gauges, 200 sites per request: a `datetime=<now-2h>/..` window
   sweep every cycle; an hourly revision sweep (`last_modified` since a global cursor,
   bounded by `datetime=<now-30d>/..`, cursor advanced only if every batch completed);
   and backfill (failed windows first, then 7 days, then 30) chunked to 100 site-days
