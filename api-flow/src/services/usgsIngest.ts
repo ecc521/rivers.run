@@ -185,14 +185,14 @@ async function runPool<T>(items: T[], concurrency: number, fn: (item: T) => Prom
     await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
 }
 
-interface FetchOutcome { complete: boolean; readings: ObservedReading[] }
+interface FetchOutcome { complete: boolean; pages: number; readings: ObservedReading[] }
 
 async function fetchReadings(url: string, input: UsgsCycleInput, budget: RateBudget): Promise<FetchOutcome> {
     const fetchPages = input.deps?.fetchPages ?? fetchOGCPages;
     const acc = new FeatureAccumulator();
     const res = await fetchPages(url, REQUEST_TIMEOUT_MS, input.env, page => acc.add(page));
     budget.record(res.pages, res.rateRemaining);
-    return { complete: res.complete, readings: acc.readings() };
+    return { complete: res.complete, pages: res.pages, readings: acc.readings() };
 }
 
 const keysFor = (ids: string[], keys: Map<string, number>) =>
@@ -354,10 +354,9 @@ async function backfill(input: UsgsCycleInput, budget: RateBudget, stats: UsgsCy
         const from = Math.min(...group.map(t => t.from));
         const to = Math.max(...group.map(t => t.to));
         const ids = group.map(t => t.siteId);
-        const before = budget.requests;
         const out = await fetchReadings(buildContinuousUrl(ids, { from, to }), input, budget);
-        spent += budget.requests - before;
-        stats.backfillRequests += budget.requests - before;
+        spent += out.pages;
+        stats.backfillRequests += out.pages;
 
         const rows = reduceToSlots(out.readings, { now, windowStart: from });
         stats.rowsWritten.backfill += await upsertSlots(db, rows, keys);
