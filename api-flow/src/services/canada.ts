@@ -216,6 +216,46 @@ export const ecProvider: GaugeProvider = {
         return results;
     },
 
+    /**
+     * Same province CSV downloads as getLatest, but returning every reading in
+     * the file instead of only the newest.
+     *
+     * dd.weather.gc.ca serves `*_hourly_hydrometric.csv` — each province file
+     * already contains many hours per station. getLatest parsed all of it and
+     * kept one row. Widening the window to 24h and keeping the rest costs no
+     * extra request and is what makes Canada's stored history gap-proof: a
+     * missed cycle is backfilled by the next one automatically, which is not
+     * true for the latest-only providers.
+     */
+    async getLatestHistories(siteCodes: string[], _env?: any): Promise<Record<string, GaugeHistory>> {
+        const startTs = Date.now() - (1000 * 60 * 60 * 24); // 24h, vs 6h for getLatest
+        const endTs = Date.now() + 1000 * 60 * 60 * 24;     // buffer for clock skew
+        const results: Record<string, GaugeHistory> = {};
+
+        if (siteCodes.length <= 10) {
+            const fetches = siteCodes.flatMap(site =>
+                getProvincesForSite(site).map(p => fetchIndividualCanadaGauge(site, p, startTs, endTs)));
+            for (const hist of await Promise.all(fetches)) {
+                if (hist && hist.readings.length > 0) results[hist.id] = hist;
+            }
+            return results;
+        }
+
+        const provincesToFetch = new Set<string>();
+        siteCodes.forEach(code => getProvincesForSite(code).forEach(p => provincesToFetch.add(p)));
+
+        const wanted = new Set(siteCodes);
+        const arr = await Promise.all(
+            Array.from(provincesToFetch).map(p => fetchCanadianProvince(p, startTs, endTs)));
+
+        for (const provData of arr) {
+            for (const [siteCode, hist] of Object.entries(provData)) {
+                if (wanted.has(siteCode) && hist.readings.length > 0) results[siteCode] = hist;
+            }
+        }
+        return results;
+    },
+
     async getHistory(siteCodes: string[], startTs: number, endTs?: number, _includeForecast?: boolean, _env?: any): Promise<Record<string, GaugeHistory>> {
         const maxTime = endTs ?? Date.now();
         const results: Record<string, GaugeHistory> = {};

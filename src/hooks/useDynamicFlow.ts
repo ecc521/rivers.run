@@ -4,9 +4,11 @@ import { calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { FLOW_API_URL } from "../services/api";
 import { useSettings } from "../context/SettingsContext";
 import { applyUnitSettingsToReadings } from "../utils/unitConversions";
+import { planHistoryRequest, seedFromCache } from "../utils/flowDelta";
 
 const dynamicFlowCache = new Map<string, { lastFetchedMs: number; gaugeData: Record<string, GaugeReading[]>; gaugeNames?: Record<string, { name: string; section?: string }> }>();
 const activeFetches = new Set<string>();
+
 
 /**
  * useDynamicFlow
@@ -58,16 +60,30 @@ export function useDynamicFlow(river: RiverData, dataGeneratedAt?: number | null
 
         if (allGauges.length === 0) return;
 
-        // Fetch 28 days + Forecasts from unified flow API
-        const url = `${FLOW_API_URL}/history?gauges=${allGauges.join(",")}&days=28&forecast=true`;
-        const res = await fetch(url);
-        
+        // The server now stores 28 days, so when we already hold a recent
+        // window we only need what landed since. Previously every river-detail
+        // view re-pulled the full 28 days.
+        //
+        // Planned from the cached payload rather than river.gaugeData: the
+        // latter can be a 3h slice out of sitedata.json, which would make us
+        // ask for a delta while missing most of the window.
+        const cachedForDelta = dynamicFlowCache.get(cacheKey);
+        const { params, resumeFrom } = planHistoryRequest(allGauges, cachedForDelta);
+
+        const res = await fetch(`${FLOW_API_URL}/history?${params}`);
+
         if (!res.ok) {
             const errorText = await res.text();
             throw new Error(`Flow API error: ${res.status} ${errorText}`);
         }
-        
+
         const data = await res.json();
+
+        // A delta response only carries new readings, so seed the merge map
+        // with what we already had or the chart would lose its history.
+        if (resumeFrom > 0 && cachedForDelta) {
+            seedFromCache(gaugeDataMap, cachedForDelta.gaugeData);
+        }
         
         for (const [gaugeId, gaugeInfo] of Object.entries(data) as [string, any][]) {
             if (!gaugeDataMap[gaugeId]) gaugeDataMap[gaugeId] = new Map();
