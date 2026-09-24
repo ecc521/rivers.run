@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { gzipSync } from "node:zlib";
-import { clearNwsUsgsCache, handleModelStorage, readForecasts, readNwsUsgsMap, shardOf, shardKey, syncNwsUsgsMap, NWS_USGS_KEY } from "../flowModel";
+import { Container } from "@cloudflare/containers";
+import { clearNwsUsgsCache, FlowModel, handleModelStorage, readForecasts, readNwsUsgsMap, shardOf, shardKey, syncNwsUsgsMap, NWS_USGS_KEY } from "../flowModel";
 
 /** In-memory R2 with the calls flowModel.ts makes; list pages 2 keys at a time. */
 function memoryBucket() {
@@ -29,6 +30,14 @@ function memoryBucket() {
 
 const call = (bucket: any, method: string, path: string, body?: string) =>
     handleModelStorage(new Request(`http://flow.r2/${path}`, { method, body }), bucket as R2Bucket);
+
+describe("FlowModel outbound handler", () => {
+    it("registers flow.r2 with the containers library, not as a shadowing static field", () => {
+        expect(Object.getOwnPropertyDescriptor(FlowModel, "outboundByHost")).toBeUndefined();
+        const registered = Object.getOwnPropertyDescriptor(Container, "outboundByHost")!.get!.call(FlowModel);
+        expect(Object.keys(registered ?? {})).toEqual(["flow.r2"]);
+    });
+});
 
 describe("shardOf", () => {
     it("matches serving/run.py shard_of (FNV-1a 32 mod 256)", () => {

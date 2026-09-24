@@ -98,9 +98,13 @@ export class FlowModel extends Container<Env> {
         SERVING_SNAPSHOT: `${MODEL_STORAGE_ORIGIN}/model/usgs_hourly.json.gz`,
     };
 
-    static readonly outboundByHost = {
-        [STORAGE_HOST]: (req: Request, env: Env) => handleModelStorage(req, env.FLOW_STORAGE),
-    };
+    // Assigned in a static block, not declared as a static field: a field would shadow the
+    // base class's setter, which is what registers the handler with ContainerProxy.
+    static {
+        this.outboundByHost = {
+            [STORAGE_HOST]: (req: Request, env: Env) => handleModelStorage(req, env.FLOW_STORAGE),
+        };
+    }
 }
 
 export interface ModelRunResult {
