@@ -22,6 +22,8 @@ import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
 import { runIngestCycle, projectSitedata, readLinkedGaugeIds, rowsWrittenByCycle, storeCovers } from "./services/flowSync";
 import { readSeries, readSyncState } from "./services/flowStore";
+import { isHourlyCycle } from "./services/usgsIngest";
+import { writeUsgsHourlySnapshot } from "./services/modelSnapshot";
 import { syncUsgsReaches } from "./services/usgsReaches";
 import { verifyUnsubscribeToken } from "./utils/unsubscribeToken";
 import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError, renderUnsubscribeServerError } from "./templates/unsubscribeConfirmation";
@@ -484,6 +486,19 @@ export default {
                     `rate remaining ${u?.rateRemaining ?? "?"}, errors ${stats.errors}.`,
                     { cycleAt: now, written, usgs: u, providerRows: stats.providerRows });
 
+                if (isHourlyCycle(now)) {
+                    try {
+                        const siteIds = Object.keys(registryMetadata)
+                            .map(normalizeGaugeId)
+                            .filter(id => id.startsWith("USGS:"))
+                            .map(id => id.slice(5));
+                        const snap = await writeUsgsHourlySnapshot(env, env.FLOW_DB, siteIds, now);
+                        await logToD1(env, "INFO", "sync",
+                            `Model snapshot: ${snap.sites} sites, ${snap.jsonBytes} bytes JSON, ${snap.gzBytes} gzipped.`);
+                    } catch (e: any) {
+                        await logToD1(env, "ERROR", "sync", `Model snapshot failed: ${e?.message || e}`);
+                    }
+                }
             } else {
                 mergedData = await performDataSync(env, registryMetadata, providers);
 
