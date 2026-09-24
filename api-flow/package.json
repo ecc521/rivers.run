@@ -11,6 +11,7 @@
     "generate-reaches": "node scripts/generate_reaches.js"
   },
   "dependencies": {
+    "@cloudflare/containers": "^0.3.7",
     "@hono/zod-openapi": "^0.13.0",
     "@scalar/hono-api-reference": "^0.11.4",
     "@types/nodemailer": "^8.0.1",

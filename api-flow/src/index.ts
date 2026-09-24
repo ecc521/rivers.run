@@ -25,6 +25,7 @@ import { readSeries, readSyncState, getMeta } from "./services/flowStore";
 import { isHourlyCycle } from "./services/usgsIngest";
 import { writeUsgsHourlySnapshot } from "./services/modelSnapshot";
 import { syncUsgsReaches } from "./services/usgsReaches";
+import { FlowModel, FORECAST_CRON, MODEL_STORAGE_ORIGIN, handleModelStorage, readForecasts, runForecastModel } from "./services/flowModel";
 import { verifyUnsubscribeToken } from "./utils/unsubscribeToken";
 import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError, renderUnsubscribeServerError } from "./templates/unsubscribeConfirmation";
 
@@ -38,7 +39,16 @@ export interface Env {
     USGS_API_KEY?: string;
     GMAIL_APP_PASSWORD?: string;
     UNSUBSCRIBE_SECRET?: string;
+    /** The forecast model container (services/flowModel.ts). Optional: unbound skips model runs. */
+    FLOW_MODEL?: DurableObjectNamespace<FlowModel>;
 }
+
+export { FlowModel };
+// Required for the container's outbound handler (its R2 bridge) to run.
+export { ContainerProxy } from "@cloudflare/containers";
+
+/** /forecast omits forecasts issued longer ago than this. */
+const MAX_FORECAST_AGE_MS = 24 * 60 * 60 * 1000;
 
 export const providers: Record<string, GaugeProvider> = {
     "USGS": usgsProvider,
@@ -335,6 +345,38 @@ app.openapi(gaugeRoute, async (c) => {
     }
 });
 
+const forecastRoute = createRoute({
+    middleware: [apiKeyFlowMiddleware],
+    method: 'get',
+    path: '/forecast',
+    summary: 'Model flow forecasts',
+    description: 'Latest rivers.run model forecast (hourly q10/q50/q90 cfs, 168 h) for up to 20 USGS gauges. Gauges without a recent forecast are omitted.',
+    request: {
+        query: z.object({
+            gauges: z.string().openapi({ param: { name: 'gauges', in: 'query', required: true }, example: 'USGS:03451500' }),
+        })
+    },
+    responses: {
+        200: { description: 'Forecast map keyed by gauge id', content: { 'application/json': { schema: GenericObjectSchema } } },
+        400: { description: 'Invalid Request', content: { 'application/json': { schema: ErrorSchema } } }
+    }
+});
+
+app.openapi(forecastRoute, async (c) => {
+    const { gauges } = c.req.valid('query');
+    const ids = [...new Set(gauges.split(",").map(g => normalizeGaugeId(g.trim())).filter(Boolean))];
+    if (ids.length > 20) return c.json({ error: "At most 20 gauges per request" }, 400);
+    const sites = ids.filter(id => id.startsWith("USGS:")).map(id => id.slice(5));
+    const found = await readForecasts(c.env.FLOW_STORAGE, sites);
+    const now = Date.now();
+    const out: Record<string, unknown> = {};
+    for (const [site, f] of Object.entries(found)) {
+        if (now - f.issueTime <= MAX_FORECAST_AGE_MS) out[`USGS:${site}`] = f;
+    }
+    c.header("Cache-Control", "public, max-age=300");
+    return c.json(out, 200);
+});
+
 // Unauthenticated one-click unsubscribe target for List-Unsubscribe / List-Unsubscribe-Post
 // (RFC 8058), verifying an HMAC-signed token and flipping the same global
 // `users.notifications_enabled` flag the in-app notification settings toggle uses.
@@ -372,6 +414,20 @@ app.on(["GET", "POST"], "/unsubscribe", async (c) => {
         console.error("Unsubscribe route failed:", e);
         return c.html(renderUnsubscribeServerError(), 500);
     }
+});
+
+/**
+ * Local dev only: the model container's R2 bridge over a normal route, for
+ * running the container with `docker run` (wrangler dev cannot start it on
+ * OrbStack). Point SERVING_STORAGE at http://host.docker.internal:8787/__model-storage/model.
+ */
+app.all("/__model-storage/*", async (c) => {
+    const url = new URL(c.req.url);
+    if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1" && url.hostname !== "host.docker.internal") {
+        return c.text("Not found", 404);
+    }
+    const target = new URL(url.pathname.replace(/^\/__model-storage/, "") + url.search, MODEL_STORAGE_ORIGIN);
+    return handleModelStorage(new Request(target, c.req.raw), c.env.FLOW_STORAGE);
 });
 
 /**
@@ -470,6 +526,21 @@ export default {
     fetch: app.fetch,
 
     async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
+        if (event.cron === FORECAST_CRON) {
+            if (!env.FLOW_MODEL) return;
+            try {
+                const { status, body } = await runForecastModel(env);
+                const s = body?.summary;
+                const msg = s
+                    ? `Model run ${status}: issue ${s.issue}, cycle ${s.cycle}, ${s.served}/${s.basins} gauges, ${s.total_s}s`
+                    : `Model run ${status}`;
+                await logToD1(env, status === 200 ? "INFO" : "ERROR", "model", msg, JSON.stringify(body).slice(0, 4000));
+            } catch (e: any) {
+                await logToD1(env, "ERROR", "model", `Model run failed: ${e?.message || e}`);
+            }
+            return;
+        }
+
         const startTs = Date.now();
         await logToD1(env, "INFO", "sync", `Background sync started. Trigger: ${event.cron || "manual"}`);
 

@@ -28,7 +28,23 @@ database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
 binding = "FLOW_DB"
 database_name = "flow-db"
 database_id = "REPLACE_WITH_FLOW_DB_ID"
-  
+
+# Forecast model container (src/services/flowModel.ts). One instance, run by
+# the hourly FORECAST_CRON; it reaches R2 only through the Worker.
+[[containers]]
+class_name = "FlowModel"
+image = "./container/Dockerfile"
+max_instances = 1
+instance_type = "standard-2"
+
+[[durable_objects.bindings]]
+name = "FLOW_MODEL"
+class_name = "FlowModel"
+
+[[migrations]]
+tag = "v1-flow-model"
+new_sqlite_classes = ["FlowModel"]
+
 [[routes]]
 pattern = "flow.rivers.run"
 custom_domain = true
@@ -39,6 +55,7 @@ cpu_ms = 300000
 
 # Cron triggers for background polling
 # 1. 15-minute gauge polling
-# 2. Weekly full registry recompilation (every Friday)
+# 2. Daily maintenance, and weekly full registry recompilation (every Friday)
+# 3. Hourly forecast model run (FORECAST_CRON in src/index.ts)
 [triggers]
-crons = ["*/15 * * * *", "0 0 * * *", "0 0 * * 5"]
+crons = ["*/15 * * * *", "0 0 * * *", "0 0 * * 5", "10 * * * *"]

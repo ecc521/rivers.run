@@ -26,13 +26,15 @@ token — see `src/utils/unsubscribeToken.ts`. Built on Hono (`OpenAPIHono`). En
 
 ## 2. Cron Operations (`scheduled` handler)
 
-`wrangler.toml` declares three cron triggers, dispatched by `event.cron` in the
+`wrangler.toml` declares four cron triggers, dispatched by `event.cron` in the
 `scheduled` handler:
 
 - `*/15 * * * *` — gauge-state polling every 15 minutes.
 - `0 0 * * *` — daily maintenance.
 - `0 0 * * 5` — weekly full registry recompilation (Friday; `0 0 * * 0` Sunday is used
   in tests).
+- `10 * * * *`: the hourly forecast model run (see "Forecast model" below). It does
+  nothing else and is skipped when `FLOW_MODEL` is unbound.
 
 Note: there is **no** `usage_model = "unbound"` in `wrangler.toml`. Cloudflare Workers
 Standard Pricing now applies extended limits to cron fetch loops automatically, so do
@@ -126,6 +128,33 @@ keeps one reading per 15-minute slot, so a full hour has 4. The last hour is the
 current one and is partial. Sentinels (`<= -999999`) are excluded. Every registry USGS
 gauge is listed, even with no data. In Python:
 `np.array(snap["discharge_cfs"], dtype=float)` turns `null` into `nan`.
+
+### Forecast model (`FLOW_MODEL` container, `services/flowModel.ts`)
+
+The model runs in a Cloudflare Container, one instance, started by the `10 * * * *`
+cron (after the `:00` cycle has written the snapshot). Its image is built in the
+flow_predictions repo (`serving/`, tag `flow-serving`); `container/Dockerfile` only
+does `FROM flow-serving:latest`, so build that image before `wrangler deploy`.
+A pass takes about 1 to 3 minutes and writes to R2 under `model/`.
+
+The container has no R2 credentials. It does plain HTTP to `http://flow.r2/<key>`,
+answered by the class's outbound handler from `FLOW_STORAGE`: reads anywhere under
+`model/`, writes only under `model/weather/` and `model/forecasts/`. This needs
+`ContainerProxy` exported from `index.ts`.
+
+Outputs: `model/forecasts/latest.json.gz` (every gauge), `archive/<YYYYMMDDHH>.json.gz`,
+`summary.json`, and 256 shards `shards/<xx>.json.gz`. A site's shard is FNV-1a 32 of its
+site number mod 256 (`shardOf`, identical to `serving/run.py`). `GET /forecast?gauges=`
+reads the shards (up to 20 USGS ids, forecasts older than 24 h omitted); format in
+flow_predictions `serving/README.md`.
+
+Local: `wrangler dev` cannot start the container on OrbStack (its egress proxy sidecar
+exits with `setsockoptint: protocol not available`). Run api-flow with
+`npx wrangler dev -c api-flow/wrangler.toml --enable-containers=false --local-upstream localhost:8787`
+and the container with `docker run`, pointing `SERVING_STORAGE` at
+`http://host.docker.internal:8787/__model-storage/model` (a localhost-only route over
+the same handler) and `SERVING_SNAPSHOT` at `.../model/usgs_hourly.json.gz`; then
+`curl -X POST localhost:8080/run`.
 
 ## 4. Caching & Return Signatures
 

@@ -40,4 +40,22 @@ describe("scheduled handler", () => {
         await app.scheduled({ cron: "0 0 * * *" }, env, {});
         expect(puts).not.toContain("sitedata.json");
     });
+
+    it("runs only the model container on the forecast cron", async () => {
+        const { puts, env } = makeEnv();
+        const fetchRun = vi.fn(async (req: Request) => {
+            expect(new URL(req.url).pathname).toBe("/run");
+            return Response.json({ summary: { issue: "2026-09-24T15:00Z", cycle: "2026-09-24T06Z", served: 5, basins: 6, total_s: 1 } });
+        });
+        env.FLOW_MODEL = { idFromName: vi.fn(() => "id"), get: vi.fn(() => ({ fetch: fetchRun })) };
+        await app.scheduled({ cron: "10 * * * *" }, env, {});
+        expect(fetchRun).toHaveBeenCalledTimes(1);
+        expect(puts).toEqual([]);
+    });
+
+    it("skips the forecast cron when no container is bound", async () => {
+        const { puts, env } = makeEnv();
+        await app.scheduled({ cron: "10 * * * *" }, env, {});
+        expect(puts).toEqual([]);
+    });
 });
