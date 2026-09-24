@@ -3,6 +3,9 @@ import { readHourlySums } from "./flowStore";
 /**
  * Hourly export of recent USGS discharge and stage for the forecast model.
  * Format is documented in api-flow/AGENTS.md; keep the two in sync.
+ *
+ * Values live in typed arrays and the JSON is streamed through gzip, so a
+ * full snapshot (~30MB of JSON) never exists as one string in memory.
  */
 
 export const SNAPSHOT_KEY = "model/usgs_hourly.json.gz";
@@ -25,49 +28,78 @@ export interface UsgsHourlySnapshot {
     stage_n: number[][];
 }
 
+/** sites x hours grids, row-major. NaN marks a missing mean. */
+export interface HourlyGrid {
+    sites: string[];
+    start: number;
+    cfs: Float64Array;
+    cfsN: Uint8Array;
+    ft: Float64Array;
+    ftN: Uint8Array;
+}
+
 const round = (v: number) => Math.round(v * 1000) / 1000;
 
-export async function buildUsgsHourlySnapshot(
-    db: D1Database,
-    siteIds: string[],
-    now: number
-): Promise<UsgsHourlySnapshot> {
+export async function collectUsgsHourly(db: D1Database, siteIds: string[], now: number): Promise<HourlyGrid> {
     const sites = [...new Set(siteIds)].sort((a, b) => a.localeCompare(b));
     const end = Math.floor(now / HOUR_MS) * HOUR_MS + HOUR_MS;
     const start = end - SNAPSHOT_HOURS * HOUR_MS;
-
-    const snap: UsgsHourlySnapshot = {
-        version: SNAPSHOT_VERSION, generated_at: now, start, hours: SNAPSHOT_HOURS, step_ms: HOUR_MS,
-        sites, discharge_cfs: [], discharge_n: [], stage_ft: [], stage_n: [],
+    const size = sites.length * SNAPSHOT_HOURS;
+    const grid: HourlyGrid = {
+        sites, start,
+        cfs: new Float64Array(size).fill(NaN), cfsN: new Uint8Array(size),
+        ft: new Float64Array(size).fill(NaN), ftN: new Uint8Array(size),
     };
 
     for (let i = 0; i < sites.length; i += SITES_PER_QUERY) {
         const chunk = sites.slice(i, i + SITES_PER_QUERY);
         const sums = await readHourlySums(db, chunk.map(s => `USGS:${s}`), start, end, now);
-        for (const site of chunk) {
-            const perHour = sums.get(`USGS:${site}`);
-            const cfs: Array<number | null> = new Array(SNAPSHOT_HOURS).fill(null);
-            const cfsN: number[] = new Array(SNAPSHOT_HOURS).fill(0);
-            const ft: Array<number | null> = new Array(SNAPSHOT_HOURS).fill(null);
-            const ftN: number[] = new Array(SNAPSHOT_HOURS).fill(0);
-            for (const [hourTs, s] of perHour ?? []) {
-                const idx = (hourTs - start) / HOUR_MS;
-                if (idx < 0 || idx >= SNAPSHOT_HOURS) continue;
-                if (s.cfsN > 0) { cfs[idx] = round(s.cfsSum / s.cfsN); cfsN[idx] = s.cfsN; }
-                if (s.ftN > 0) { ft[idx] = round(s.ftSum / s.ftN); ftN[idx] = s.ftN; }
+        chunk.forEach((site, j) => {
+            for (const [hourTs, s] of sums.get(`USGS:${site}`) ?? []) {
+                const h = (hourTs - start) / HOUR_MS;
+                if (h < 0 || h >= SNAPSHOT_HOURS) continue;
+                const idx = (i + j) * SNAPSHOT_HOURS + h;
+                if (s.cfsN > 0) { grid.cfs[idx] = round(s.cfsSum / s.cfsN); grid.cfsN[idx] = s.cfsN; }
+                if (s.ftN > 0) { grid.ft[idx] = round(s.ftSum / s.ftN); grid.ftN[idx] = s.ftN; }
             }
-            snap.discharge_cfs.push(cfs);
-            snap.discharge_n.push(cfsN);
-            snap.stage_ft.push(ft);
-            snap.stage_n.push(ftN);
-        }
+        });
     }
-    return snap;
+    return grid;
 }
 
-export async function gzip(text: string): Promise<ArrayBuffer> {
-    const stream = new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"));
-    return new Response(stream).arrayBuffer();
+function rowJson(values: Float64Array | Uint8Array, row: number): string {
+    const parts: string[] = new Array(SNAPSHOT_HOURS);
+    for (let h = 0; h < SNAPSHOT_HOURS; h++) {
+        const v = values[row * SNAPSHOT_HOURS + h];
+        parts[h] = Number.isNaN(v) ? "null" : String(v);
+    }
+    return `[${parts.join(",")}]`;
+}
+
+/** The snapshot JSON as a sequence of string parts. */
+export function* snapshotJsonParts(grid: HourlyGrid, now: number): Generator<string> {
+    const header = {
+        version: SNAPSHOT_VERSION, generated_at: now, start: grid.start,
+        hours: SNAPSHOT_HOURS, step_ms: HOUR_MS, sites: grid.sites,
+    };
+    yield JSON.stringify(header).slice(0, -1);
+    const columns: Array<[string, Float64Array | Uint8Array]> = [
+        ["discharge_cfs", grid.cfs], ["discharge_n", grid.cfsN], ["stage_ft", grid.ft], ["stage_n", grid.ftN],
+    ];
+    for (const [name, values] of columns) {
+        yield `,"${name}":[`;
+        for (let row = 0; row < grid.sites.length; row++) {
+            yield (row > 0 ? "," : "") + rowJson(values, row);
+        }
+        yield "]";
+    }
+    yield "}";
+}
+
+/** Parsed snapshot, for tests and debugging. */
+export async function buildUsgsHourlySnapshot(db: D1Database, siteIds: string[], now: number): Promise<UsgsHourlySnapshot> {
+    const grid = await collectUsgsHourly(db, siteIds, now);
+    return JSON.parse([...snapshotJsonParts(grid, now)].join(""));
 }
 
 export async function writeUsgsHourlySnapshot(
@@ -76,12 +108,34 @@ export async function writeUsgsHourlySnapshot(
     siteIds: string[],
     now: number
 ): Promise<{ sites: number; jsonBytes: number; gzBytes: number }> {
-    const snap = await buildUsgsHourlySnapshot(db, siteIds, now);
-    const json = JSON.stringify(snap);
-    const gz = await gzip(json);
+    const grid = await collectUsgsHourly(db, siteIds, now);
+
+    const gzip = new CompressionStream("gzip");
+    const compressed = new Response(gzip.readable).arrayBuffer();
+    const writer = gzip.writable.getWriter();
+    const encoder = new TextEncoder();
+    let jsonBytes = 0;
+    let pending: string[] = [];
+    let pendingLength = 0;
+    const flush = async () => {
+        if (pendingLength === 0) return;
+        await writer.write(encoder.encode(pending.join("")));
+        pending = [];
+        pendingLength = 0;
+    };
+    for (const part of snapshotJsonParts(grid, now)) {
+        jsonBytes += part.length;
+        pending.push(part);
+        pendingLength += part.length;
+        if (pendingLength >= 256_000) await flush();
+    }
+    await flush();
+    await writer.close();
+    const gz = await compressed;
+
     await env.FLOW_STORAGE.put(SNAPSHOT_KEY, gz, {
         httpMetadata: { contentType: "application/gzip" },
-        customMetadata: { version: String(snap.version), generated_at: String(now), start: String(snap.start) },
+        customMetadata: { version: String(SNAPSHOT_VERSION), generated_at: String(now), start: String(grid.start) },
     });
-    return { sites: snap.sites.length, jsonBytes: json.length, gzBytes: gz.byteLength };
+    return { sites: grid.sites.length, jsonBytes, gzBytes: gz.byteLength };
 }

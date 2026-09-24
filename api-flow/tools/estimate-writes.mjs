@@ -5,6 +5,8 @@
 // Usage, from the repo root, after a few local cycles 15 minutes apart:
 //   node api-flow/tools/estimate-writes.mjs
 // The first logged cycle is skipped: it loads the whole window, not one step.
+// Use at least four steady cycles: EC files update hourly, so its writes land
+// in one cycle of four and a mean over a full hour is needed.
 
 import { execFileSync } from "node:child_process";
 
@@ -27,7 +29,7 @@ if (rows.length < 2) {
 }
 
 const recurring = w => w.dimensions + w.providers + w.state + w.usgsWindow;
-const median = xs => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 console.log("cycle (UTC)          dims  providers  state  usgsWindow  usgsRevision  usgsBackfill  revision");
 for (const { at, d } of rows) {
@@ -41,13 +43,13 @@ for (const { at, d } of rows) {
 }
 
 const steady = rows.slice(1);
-const perCycle = median(steady.map(r => recurring(r.d.written)));
+const perCycle = mean(steady.map(r => recurring(r.d.written)));
 const revisions = rows.filter(r => r.d.usgs?.revision === "ran").map(r => r.d.written.usgsRevision);
 const perRevision = revisions.length ? revisions.reduce((a, b) => a + b, 0) / revisions.length : 0;
 const backfill = rows.reduce((a, r) => a + r.d.written.usgsBackfill, 0);
 
 const monthly = perCycle * CYCLES_PER_MONTH + perRevision * HOURS_PER_MONTH;
-console.log(`\nrecurring rows/cycle (median of ${steady.length}): ${perCycle}`);
+console.log(`\nrecurring rows/cycle (mean of ${steady.length}): ${perCycle.toFixed(0)}`);
 console.log(`revision rows/sweep (${revisions.length} measured): ${perRevision.toFixed(0)}`);
 console.log(`projected monthly rows written: ${(monthly / 1e6).toFixed(1)}M`);
 console.log(`one-time backfill rows so far: ${backfill}`);
