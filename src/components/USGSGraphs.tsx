@@ -80,7 +80,10 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
     if (activeTab === "flow" && modelVal != null) {
       // The river's own unit first, then the other of flow and stage when the forecast has both.
       const keys = [modelKey, modelKey === flowKey ? stageKey : flowKey].filter((k) => rowData[`${k}Model`] != null);
-      const value = (k: string) => `${formatModelValue(rowData[`${k}Model`], k)} ${getUnit(k)}`;
+      const value = (k: string) => {
+        const v = rowData[k + "Model"];
+        return `${formatModelValue(v, k)} ${getUnit(k)}`;
+      };
       const range = (k: string) => {
         const low = rowData[`${k}ModelLow`];
         const high = rowData[`${k}ModelHigh`];
@@ -233,13 +236,12 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   const flowKey = data.some((d) => d.cfs != null || d.cfsForecast != null) ? "cfs" : "cms";
   const stageKey = data.some((d) => d.ft != null || d.ftForecast != null) ? "ft" : "m";
   const isStageThreshold = river.flow?.unit === "ft" || river.flow?.unit === "m";
-  // Flow and stage forecasts each continue their own line; the likely range is drawn only
-  // around the unit the river's levels are in (the two ranges would nearly coincide).
+  // Flow and stage forecasts each continue their own line with its likely range. The legend
+  // and tooltip lead with the unit the river's levels are in.
   const showFlowModel = showForecast && data.some((d) => d[`${flowKey}Model`] != null);
   const showStageModel = showForecast && data.some((d) => d[`${stageKey}Model`] != null);
   const modelOnStage = isStageThreshold && showStageModel;
   const modelKey = modelOnStage ? stageKey : flowKey;
-  const modelAxis = modelOnStage ? "right" : "left";
   const showModel = modelOnStage || showFlowModel;
   const tempKey = data.some((d) => d.temp_f != null) ? "temp_f" : "temp_c";
   const precipKey = data.some((d) => d.precip_in != null) ? "precip_in" : "precip_mm";
@@ -585,16 +587,28 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                       animationDuration={200}
                       connectNulls={true}
                     />
-                    {/* Keyed by unit: recharts draws an empty chart if a mounted series changes axis. */}
-                    {showModel && (
+                    {showFlowModel && (
                       <Area
-                        key={`model-range-${modelKey}`}
-                        yAxisId={modelAxis}
+                        yAxisId="left"
                         type="monotone"
-                        dataKey={`${modelKey}ModelRange`}
+                        dataKey={`${flowKey}ModelRange`}
                         stroke="none"
-                        fill={modelOnStage ? stageColor : volumeColor}
-                        fillOpacity={isDarkMode ? 0.2 : 0.16}
+                        fill={volumeColor}
+                        fillOpacity={isDarkMode ? 0.16 : 0.14}
+                        isAnimationActive={false}
+                        connectNulls={true}
+                        activeDot={false}
+                        legendType="none"
+                      />
+                    )}
+                    {showStageModel && (
+                      <Area
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey={`${stageKey}ModelRange`}
+                        stroke="none"
+                        fill={stageColor}
+                        fillOpacity={isDarkMode ? 0.16 : 0.12}
                         isAnimationActive={false}
                         connectNulls={true}
                         activeDot={false}
