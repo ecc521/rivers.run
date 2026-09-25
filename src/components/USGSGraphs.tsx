@@ -43,13 +43,13 @@ const getUnit = (dataKey: string) => {
   return "in";
 };
 
-const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, tempKey, precipKey, volumeColor, stageColor, tempColor, precipColor, forecastSource, showModel, modelKey }: any) => {
+const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, tempKey, precipKey, volumeColor, stageColor, tempColor, precipColor, forecastSource, showModel }: any) => {
   if (active && payload && payload.length) {
     const rowData = payload[0].payload;
     const items: { name: string, value: any, color: string, dataKey: string }[] = [];
     // Hours with a real reading show only the reading; the forecast is for hours without one.
     const hasReading = rowData[flowKey] != null || rowData[stageKey] != null;
-    const modelVal = showModel && !hasReading ? rowData[`${modelKey}Model`] : null;
+    const modelVal = showModel && !hasReading ? (rowData[flowKey + "Model"] ?? rowData[stageKey + "Model"]) : null;
     let forecast: { color: string; value: string; range: string | null }[] = [];
     const hasOtherFlow = rowData[flowKey] != null || rowData[`${flowKey}Forecast`] != null
       || rowData[stageKey] != null || rowData[`${stageKey}Forecast`] != null;
@@ -82,8 +82,8 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
       });
     }
     if (activeTab === "flow" && modelVal != null) {
-      // The river's own unit first, then the other of flow and stage when the forecast has both.
-      const keys = [modelKey, modelKey === flowKey ? stageKey : flowKey].filter((k) => rowData[k + "Model"] != null);
+      // Flow then stage, as in the readings above.
+      const keys = [flowKey, stageKey].filter((k) => rowData[k + "Model"] != null);
       forecast = keys.map((k) => {
         const low = rowData[k + "ModelLow"];
         const high = rowData[k + "ModelHigh"];
@@ -253,7 +253,6 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
   const showFlowModel = showForecast && data.some((d) => d[`${flowKey}Model`] != null);
   const showStageModel = showForecast && data.some((d) => d[`${stageKey}Model`] != null);
   const modelOnStage = isStageThreshold && showStageModel;
-  const modelKey = modelOnStage ? stageKey : flowKey;
   const showModel = modelOnStage || showFlowModel;
   const tempKey = data.some((d) => d.temp_f != null) ? "temp_f" : "temp_c";
   const precipKey = data.some((d) => d.precip_in != null) ? "precip_in" : "precip_mm";
@@ -564,7 +563,6 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                         precipColor={precipColor}
                         forecastSource={forecastSource}
                         showModel={showModel}
-                        modelKey={modelKey}
                     />
                 } />
                 <Legend wrapperStyle={{ paddingTop: "20px" }} verticalAlign="bottom" />
