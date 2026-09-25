@@ -597,66 +597,44 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                       animationDuration={200}
                       connectNulls={true}
                     />
-                    {showFlowModel && (
+                    {[
+                      { show: showFlowModel, yAxisId: "left", key: flowKey, color: volumeColor, opacity: isDarkMode ? 0.16 : 0.14 },
+                      { show: showStageModel, yAxisId: "right", key: stageKey, color: stageColor, opacity: isDarkMode ? 0.16 : 0.12 },
+                    ].map(({ show, yAxisId, key, color, opacity }) => show && (
                       <Area
-                        yAxisId="left"
+                        key={`${key}ModelRange`}
+                        yAxisId={yAxisId}
                         type="monotone"
-                        dataKey={`${flowKey}ModelRange`}
+                        dataKey={`${key}ModelRange`}
                         stroke="none"
-                        fill={volumeColor}
-                        fillOpacity={isDarkMode ? 0.16 : 0.14}
+                        fill={color}
+                        fillOpacity={opacity}
                         isAnimationActive={false}
                         connectNulls={true}
                         activeDot={false}
                         legendType="none"
                       />
-                    )}
-                    {showStageModel && (
-                      <Area
-                        yAxisId="right"
-                        type="monotone"
-                        dataKey={`${stageKey}ModelRange`}
-                        stroke="none"
-                        fill={stageColor}
-                        fillOpacity={isDarkMode ? 0.16 : 0.12}
-                        isAnimationActive={false}
-                        connectNulls={true}
-                        activeDot={false}
-                        legendType="none"
-                      />
-                    )}
-                    {showFlowModel && (
+                    ))}
+                    {[
+                      { show: showFlowModel, yAxisId: "left", key: flowKey, color: volumeColor },
+                      { show: showStageModel, yAxisId: "right", key: stageKey, color: stageColor },
+                    ].map(({ show, yAxisId, key, color }) => show && (
                       <Line
-                        yAxisId="left"
+                        key={`${key}Model`}
+                        yAxisId={yAxisId}
                         type="monotone"
-                        dataKey={`${flowKey}Model`}
+                        dataKey={`${key}Model`}
                         name="Rivers.run forecast"
-                        stroke={volumeColor}
+                        stroke={color}
                         strokeDasharray={modelDash}
                         strokeLinecap="round"
                         dot={false}
                         strokeWidth={3}
                         animationDuration={200}
                         connectNulls={true}
-                        legendType={modelOnStage ? "none" : "plainline"}
+                        legendType="none"
                       />
-                    )}
-                    {showStageModel && (
-                      <Line
-                        yAxisId="right"
-                        type="monotone"
-                        dataKey={`${stageKey}Model`}
-                        name="Rivers.run forecast"
-                        stroke={stageColor}
-                        strokeDasharray={modelDash}
-                        strokeLinecap="round"
-                        dot={false}
-                        strokeWidth={3}
-                        animationDuration={200}
-                        connectNulls={true}
-                        legendType={modelOnStage ? "plainline" : "none"}
-                      />
-                    )}
+                    ))}
                     <Line
                       yAxisId="left"
                       type="monotone"
