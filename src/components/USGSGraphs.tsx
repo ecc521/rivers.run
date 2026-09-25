@@ -19,6 +19,7 @@ import { formatModelValue, forecastRowsAsForecast } from "../utils/modelForecast
 const MODEL_UNITS = ["cfs", "cms", "ft", "m"] as const;
 type ModelUnit = typeof MODEL_UNITS[number];
 type ChartRow = GaugeReading & Partial<Record<`${ModelUnit}ModelRange`, [number, number]>>;
+const MODEL_FIELDS = MODEL_UNITS.flatMap((u) => [`${u}Model`, `${u}ModelLow`, `${u}ModelHigh`] as const);
 
 interface Props {
   river: RiverData;
@@ -45,8 +46,11 @@ const getUnit = (dataKey: string) => {
 const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, tempKey, precipKey, volumeColor, stageColor, tempColor, precipColor, forecastSource, showModel, modelKey }: any) => {
   if (active && payload && payload.length) {
     const rowData = payload[0].payload;
-    const items: { name: string, value: any, color: string, dataKey: string, text?: string, detail?: string }[] = [];
-    const modelVal = showModel ? rowData[`${modelKey}Model`] : null;
+    const items: { name: string, value: any, color: string, dataKey: string }[] = [];
+    // Hours with a real reading show only the reading; the forecast is for hours without one.
+    const hasReading = rowData[flowKey] != null || rowData[stageKey] != null;
+    const modelVal = showModel && !hasReading ? rowData[`${modelKey}Model`] : null;
+    let forecast: { color: string; value: string; range: string | null }[] = [];
     const hasOtherFlow = rowData[flowKey] != null || rowData[`${flowKey}Forecast`] != null
       || rowData[stageKey] != null || rowData[`${stageKey}Forecast`] != null;
 
@@ -79,24 +83,15 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
     }
     if (activeTab === "flow" && modelVal != null) {
       // The river's own unit first, then the other of flow and stage when the forecast has both.
-      const keys = [modelKey, modelKey === flowKey ? stageKey : flowKey].filter((k) => rowData[`${k}Model`] != null);
-      const value = (k: string) => {
-        const v = rowData[k + "Model"];
-        return `${formatModelValue(v, k)} ${getUnit(k)}`;
-      };
-      const range = (k: string) => {
-        const low = rowData[`${k}ModelLow`];
-        const high = rowData[`${k}ModelHigh`];
-        return low != null && high != null ? `${formatModelValue(low, k)}–${formatModelValue(high, k)} ${getUnit(k)}` : null;
-      };
-      const ranges = keys.map(range).filter((r): r is string => r !== null);
-      items.push({
-        name: "Rivers.run forecast",
-        value: modelVal,
-        color: modelKey === flowKey ? volumeColor : stageColor,
-        dataKey: `${modelKey}Model`,
-        text: keys.map(value).join(" · "),
-        detail: ranges.length > 0 ? `likely ${ranges.join(" · ")}` : undefined,
+      const keys = [modelKey, modelKey === flowKey ? stageKey : flowKey].filter((k) => rowData[k + "Model"] != null);
+      forecast = keys.map((k) => {
+        const low = rowData[k + "ModelLow"];
+        const high = rowData[k + "ModelHigh"];
+        return {
+          color: k === flowKey ? volumeColor : stageColor,
+          value: `${formatModelValue(rowData[k + "Model"], k)} ${getUnit(k)}`,
+          range: low != null && high != null ? `(${formatModelValue(low, k)}–${formatModelValue(high, k)})` : null,
+        };
       });
     }
     if (activeTab === "temp") {
@@ -115,6 +110,7 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
       });
     }
 
+    const mutedColor = isDarkMode ? "#94a3b8" : "#475569";
     return (
       <div
         style={{
@@ -125,7 +121,7 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
           border: isDarkMode ? "1px solid #475569" : "1px solid #cbd5e1",
         }}
       >
-        <p style={{ margin: "0 0 5px 0", fontSize: "1.35em", color: isDarkMode ? "#94a3b8" : "#475569" }}>
+        <p style={{ margin: "0 0 5px 0", fontSize: "1.35em", color: mutedColor }}>
           {formatDate(label)}
         </p>
         {items.map((entry: any, index: number) => (
@@ -139,10 +135,21 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
                 opacity: entry.value != null ? 1 : 0.6
             }}
           >
-            {entry.name}: {entry.value != null ? (entry.text ?? `${entry.value} ${getUnit(entry.dataKey)}`) : <span style={{ fontStyle: "italic", fontWeight: "normal" }}>(No Reading)</span>}
-            {entry.detail && <span style={{ display: "block", fontWeight: "normal", fontSize: "0.8em" }}>{entry.detail}</span>}
+            {entry.name}: {entry.value != null ? `${entry.value} ${getUnit(entry.dataKey)}` : <span style={{ fontStyle: "italic", fontWeight: "normal" }}>(No Reading)</span>}
           </p>
         ))}
+        {forecast.length > 0 && (
+          <div style={{ marginTop: items.length > 0 ? "6px" : 0 }}>
+            <p style={{ margin: 0, fontWeight: "bold", fontSize: "1.35em" }}>Rivers.run forecast</p>
+            {forecast.map((f) => (
+              <p key={f.value} style={{ margin: 0, fontWeight: "bold", fontSize: "1.35em", color: f.color }}>
+                {f.value}
+                {f.range && <span style={{ fontWeight: "normal", color: mutedColor }}> {f.range}</span>}
+              </p>
+            ))}
+            <p style={{ margin: "2px 0 0", fontSize: "0.95em", color: mutedColor }}>Forecasts can be incorrect</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -214,8 +221,13 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
      return {
        anchorTime,
        rows: rows.map((d) => {
-         if (d.cfsModelLow == null) return d;
+         if (d.cfsModel == null && d.ftModel == null) return d;
          const row: ChartRow = { ...d };
+         // Forecast hours the gauge has already reported start at the latest reading instead.
+         if (d.dateTime < anchorTime) {
+           for (const f of MODEL_FIELDS) delete row[f];
+           return row;
+         }
          for (const u of MODEL_UNITS) {
            const low = d[`${u}ModelLow`];
            const high = d[`${u}ModelHigh`];
