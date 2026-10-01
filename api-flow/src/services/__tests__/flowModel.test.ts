@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { gzipSync } from "node:zlib";
 import { Container } from "@cloudflare/containers";
-import { clearNwsUsgsCache, FlowModel, handleModelStorage, readForecasts, readNwsUsgsMap, shardOf, shardKey, syncNwsUsgsMap, NWS_USGS_KEY } from "../flowModel";
+import { clearNwsUsgsCache, FlowModel, handleModelStorage, readForecasts, readNwsUsgsMap, runForecastModel, shardOf, shardKey, syncNwsUsgsMap, NWS_USGS_KEY } from "../flowModel";
+
+const containerMocks = vi.hoisted(() => ({ getContainer: vi.fn() }));
+vi.mock("@cloudflare/containers", async importOriginal => ({
+    ...await importOriginal<typeof import("@cloudflare/containers")>(),
+    getContainer: containerMocks.getContainer,
+}));
 
 /** In-memory R2 with the calls flowModel.ts makes; list pages 2 keys at a time. */
 function memoryBucket() {
@@ -36,6 +42,52 @@ describe("FlowModel outbound handler", () => {
         expect(Object.getOwnPropertyDescriptor(FlowModel, "outboundByHost")).toBeUndefined();
         const registered = Object.getOwnPropertyDescriptor(Container, "outboundByHost")!.get!.call(FlowModel);
         expect(Object.keys(registered ?? {})).toEqual(["flow.r2"]);
+    });
+
+    it("destroys rather than SIGTERM-stops an idle container", async () => {
+        const destroy = vi.fn(async () => undefined);
+        await FlowModel.prototype.onActivityExpired.call({ destroy } as any);
+        expect(destroy).toHaveBeenCalledOnce();
+    });
+});
+
+describe("runForecastModel", () => {
+    beforeEach(() => { containerMocks.getContainer.mockReset(); });
+
+    it("destroys the container after consuming a successful response", async () => {
+        const events: string[] = [];
+        const fetch = vi.fn(async () => {
+            events.push("fetch");
+            return {
+                status: 200,
+                text: vi.fn(async () => {
+                    events.push("text");
+                    return JSON.stringify({ summary: { served: 1 } });
+                }),
+            };
+        });
+        const destroy = vi.fn(async () => { events.push("destroy"); });
+        const binding = {};
+        containerMocks.getContainer.mockReturnValue({ fetch, destroy });
+
+        await expect(runForecastModel({ FLOW_MODEL: binding } as any)).resolves.toEqual({
+            status: 200,
+            body: { summary: { served: 1 } },
+        });
+        expect(containerMocks.getContainer).toHaveBeenCalledWith(binding, "national");
+        expect(events).toEqual(["fetch", "text", "destroy"]);
+    });
+
+    it("destroys the container when the model request fails", async () => {
+        const error = new Error("model failed");
+        const destroy = vi.fn(async () => undefined);
+        containerMocks.getContainer.mockReturnValue({
+            fetch: vi.fn(async () => { throw error; }),
+            destroy,
+        });
+
+        await expect(runForecastModel({ FLOW_MODEL: {} } as any)).rejects.toBe(error);
+        expect(destroy).toHaveBeenCalledOnce();
     });
 });
 

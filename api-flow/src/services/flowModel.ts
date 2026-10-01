@@ -91,8 +91,8 @@ export async function handleModelStorage(req: Request, bucket: R2Bucket): Promis
 
 export class FlowModel extends Container<Env> {
     defaultPort = 8080;
-    // Long enough to finish a pass (about 1 to 3 minutes), short of the next hourly run.
-    sleepAfter = "10m";
+    // Explicitly destroyed after every pass; this is only a fallback if that call cannot run.
+    sleepAfter = "1m";
     envVars = {
         SERVING_STORAGE: `${MODEL_STORAGE_ORIGIN}/model`,
         SERVING_SNAPSHOT: `${MODEL_STORAGE_ORIGIN}/model/usgs_hourly.json.gz`,
@@ -105,6 +105,11 @@ export class FlowModel extends Container<Env> {
             [STORAGE_HOST]: (req: Request, env: Env) => handleModelStorage(req, env.FLOW_STORAGE),
         };
     }
+
+    // The image's Python server is PID 1, so SIGTERM-based stop() does not reliably exit.
+    override async onActivityExpired(): Promise<void> {
+        await this.destroy();
+    }
 }
 
 export interface ModelRunResult {
@@ -115,13 +120,19 @@ export interface ModelRunResult {
 /** One hourly pass: weather refresh plus inference, inside the container. */
 export async function runForecastModel(env: Env): Promise<ModelRunResult> {
     if (!env.FLOW_MODEL) throw new Error("FLOW_MODEL is not bound");
-    const res = await getContainer(env.FLOW_MODEL, "national").fetch(
-        new Request(`${CONTAINER_ORIGIN}/run`, { method: "POST" })
-    );
-    const text = await res.text();
-    let body: any = text;
-    try { body = JSON.parse(text); } catch { /* keep the raw text */ }
-    return { status: res.status, body };
+    const container = getContainer(env.FLOW_MODEL, "national");
+    try {
+        const res = await container.fetch(
+            new Request(`${CONTAINER_ORIGIN}/run`, { method: "POST" })
+        );
+        const text = await res.text();
+        let body: any = text;
+        try { body = JSON.parse(text); } catch { /* keep the raw text */ }
+        return { status: res.status, body };
+    } finally {
+        // The completed response is already in Worker memory, so no graceful period is needed.
+        await container.destroy();
+    }
 }
 
 export interface GaugeForecast {

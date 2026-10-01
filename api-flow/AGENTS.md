@@ -144,7 +144,11 @@ npx wrangler containers push flow-serving:<commit>
 ```
 
 then set `image` in `wrangler.toml` to the pushed `registry.cloudflare.com/...` reference.
-A pass takes about 1 to 3 minutes and writes to R2 under `model/`.
+A pass takes about 1 to 3 minutes and writes to R2 under `model/`. The Worker explicitly
+destroys the container after consuming the run response (also on request failure), so
+the instance does not accrue memory and disk charges between hourly runs. Destruction
+uses SIGKILL because the image's Python server is PID 1 and does not handle SIGTERM. Its
+one-minute idle timeout uses the same destruction path as a fallback.
 
 The container has no R2 credentials. It does plain HTTP to `http://flow.r2/<key>`,
 answered by the class's outbound handler from `FLOW_STORAGE`: reads anywhere under
