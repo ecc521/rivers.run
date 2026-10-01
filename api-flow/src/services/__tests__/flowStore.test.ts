@@ -6,7 +6,7 @@ import {
     markRepair, markProviderRepair, clearRepair, getMeta, setMeta,
     writeCoverage, recordBackfillFailure, clearBackfillFailures,
     countReadings, slotRanges, slotIndexOf, isStorableGaugeId, LATEST_SQL,
-    SLOT_MS, SLOTS, RETENTION_MS, FUTURE_SKEW_MS,
+    SLOT_MS, SLOTS, RETENTION_MS, FUTURE_SKEW_MS, emptyUpsertReasonCounts,
     type GaugeDimension, type ObservedReading, type SlotRow,
 } from "../flowStore";
 
@@ -98,6 +98,49 @@ describe("reduceToSlots", () => {
 });
 
 describe("upsertSlots (ring buffer)", () => {
+    it("attributes guarded upsert candidates without adding counter writes", async () => {
+        const ids = Array.from({ length: 9 }, (_, i) => `USGS:${i + 1}`);
+        const keys = await keysFor(...ids);
+        const old = NOW - SLOTS * SLOT_MS;
+        await upsertSlots(db, [
+            row(ids[0], NOW, { cfs: 5 }),
+            row(ids[1], NOW, { cfs: 5 }),
+            row(ids[2], NOW, { cfs: 5 }),
+            row(ids[3], NOW, { cfs: 5 }),
+            row(ids[4], NOW, { off: 300, cfs: 5 }),
+            row(ids[5], NOW, { ft: 2 }),
+            row(ids[6], NOW, { cfs: 5 }),
+            row(ids[7], old, { cfs: 5 }),
+        ], keys);
+
+        const reasons = emptyUpsertReasonCounts();
+        const written = await upsertSlots(db, [
+            row(ids[0], NOW, { cfs: 5 }),                         // unchanged
+            row(ids[1], NOW, { cfs: 6 }),                         // changed value
+            row(ids[2], NOW, { cfs: 5, ft: 2 }),                  // same-time gap fill
+            row(ids[3], NOW, { cfs: 5, approved: true }),         // approval only
+            row(ids[4], NOW, { off: 0, cfs: 5 }),                 // closer reading
+            row(ids[5], NOW, { off: 300, cfs: 5 }),               // farther gap fill
+            row(ids[6], old, { cfs: 6 }),                         // stale ring generation
+            row(ids[7], NOW, { cfs: 6 }),                         // ring replacement
+            row(ids[8], NOW, { cfs: 5 }),                         // new slot
+        ], keys, reasons);
+
+        expect(written).toBe(7);
+        expect(reasons).toEqual({
+            candidates: 9,
+            newSlots: 1,
+            ringReplacements: 1,
+            closerReadings: 1,
+            valueChanges: 1,
+            gapFills: 1,
+            fartherGapFills: 1,
+            approvalOnly: 1,
+            unchanged: 1,
+            stale: 1,
+        });
+    });
+
     it("writes nothing when an identical batch is replayed", async () => {
         const keys = await keysFor("USGS:1", "USGS:2");
         const rows = Array.from({ length: 40 }, (_, i) => row(i % 2 ? "USGS:1" : "USGS:2", NOW - i * SLOT_MS, { cfs: 100 + i, ft: 2 }));

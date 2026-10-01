@@ -234,6 +234,15 @@ describe("runUsgsCycle", () => {
         const api = fakeApi();
         const ok = await run({ api, runRevision: true, backfillRequests: 0 });
         expect(ok.revision).toBe("ran");
+        const reasons = ok.revisionReasons;
+        const classified = reasons.newSlots + reasons.ringReplacements + reasons.closerReadings +
+            reasons.valueChanges + reasons.gapFills + reasons.fartherGapFills +
+            reasons.approvalOnly + reasons.unchanged + reasons.stale;
+        const expectedWrites = reasons.newSlots + reasons.ringReplacements + reasons.closerReadings +
+            reasons.valueChanges + reasons.gapFills + reasons.fartherGapFills + reasons.approvalOnly;
+        expect(reasons.candidates).toBeGreaterThan(0);
+        expect(classified).toBe(reasons.candidates);
+        expect(ok.rowsWritten.revision).toBe(expectedWrites);
         expect(await getMeta(db, META_REVISION_CURSOR)).toBe(NOW);
         const revUrl = api.urls.find(u => u.includes("last_modified"))!;
         expect(decodeURIComponent(revUrl)).toContain(`last_modified=${iso(NOW - HOUR - 15 * MIN).replace(".000", "")}/..`);

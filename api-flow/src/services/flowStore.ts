@@ -94,6 +94,37 @@ const num = (v: unknown): number | null =>
 
 const VALUE_COLS = ["cfs", "ft", "cms", "m", "temp_f", "precip_in"] as const;
 
+/**
+ * Diagnostic attribution for guarded reading upserts. These counters are
+ * accumulated in Worker memory and included in the existing ingest-cycle log;
+ * they never create one database write per observation.
+ */
+export interface UpsertReasonCounts {
+    candidates: number;
+    newSlots: number;
+    ringReplacements: number;
+    closerReadings: number;
+    valueChanges: number;
+    gapFills: number;
+    fartherGapFills: number;
+    approvalOnly: number;
+    unchanged: number;
+    stale: number;
+}
+
+export const emptyUpsertReasonCounts = (): UpsertReasonCounts => ({
+    candidates: 0,
+    newSlots: 0,
+    ringReplacements: 0,
+    closerReadings: 0,
+    valueChanges: 0,
+    gapFills: 0,
+    fartherGapFills: 0,
+    approvalOnly: 0,
+    unchanged: 0,
+    stale: 0,
+});
+
 export interface ReduceOptions {
     now: number;
     /** Fetch window start. Slots starting before it are partial and dropped. */
@@ -291,6 +322,73 @@ export const UPSERT_READINGS_SQL = `
                   ${VALUE_COLS.map(colFills).join("\n               OR ")}))))
 `;
 
+const PAYLOAD_VALUE_COLS: Array<[db: (typeof VALUE_COLS)[number], json: string]> = [
+    ["cfs", "cfs"], ["ft", "ft"], ["cms", "cms"], ["m", "m"],
+    ["temp_f", "tf"], ["precip_in", "pi"],
+];
+const diagnosticValueChanged = PAYLOAD_VALUE_COLS.map(([dbCol]) =>
+    `(i.${dbCol} IS NOT NULL AND r.${dbCol} IS NOT NULL AND i.${dbCol} IS NOT r.${dbCol})`
+).join(" OR ");
+const diagnosticGapFilled = PAYLOAD_VALUE_COLS.map(([dbCol]) =>
+    `(r.${dbCol} IS NULL AND i.${dbCol} IS NOT NULL)`
+).join(" OR ");
+
+/**
+ * Classifies every candidate against its current row without modifying it.
+ * Categories are mutually exclusive and follow the upsert predicate's order.
+ */
+const UPSERT_REASON_SQL = `
+    WITH incoming AS (
+        SELECT CAST(j.value->>'$.k' AS INTEGER) AS k,
+               CAST(j.value->>'$.s' AS INTEGER) AS s,
+               CAST(j.value->>'$.t' AS INTEGER) AS t,
+               CAST(j.value->>'$.o' AS INTEGER) AS o,
+               ${PAYLOAD_VALUE_COLS.map(([dbCol, jsonCol]) =>
+        `CAST(j.value->>'$.${jsonCol}' AS REAL) AS ${dbCol}`).join(",\n               ")},
+               CAST(j.value->>'$.a' AS INTEGER) AS a
+          FROM json_each(?1) j
+    ), reasons AS (
+        SELECT CASE
+                 WHEN r.gauge_key IS NULL THEN 'newSlots'
+                 WHEN i.t > r.ts THEN 'ringReplacements'
+                 WHEN i.t < r.ts THEN 'stale'
+                 WHEN i.o < r.off THEN 'closerReadings'
+                 WHEN i.o = r.off AND (${diagnosticValueChanged}) THEN 'valueChanges'
+                 WHEN i.o = r.off AND (${diagnosticGapFilled}) THEN 'gapFills'
+                 WHEN i.o = r.off AND i.a > r.approved THEN 'approvalOnly'
+                 WHEN i.o > r.off AND (${diagnosticGapFilled}) THEN 'fartherGapFills'
+                 ELSE 'unchanged'
+               END AS reason
+          FROM incoming i
+          LEFT JOIN gauge_readings r ON r.gauge_key = i.k AND r.slot = i.s
+    )
+    SELECT COUNT(*) AS candidates,
+           SUM(reason = 'newSlots') AS newSlots,
+           SUM(reason = 'ringReplacements') AS ringReplacements,
+           SUM(reason = 'closerReadings') AS closerReadings,
+           SUM(reason = 'valueChanges') AS valueChanges,
+           SUM(reason = 'gapFills') AS gapFills,
+           SUM(reason = 'fartherGapFills') AS fartherGapFills,
+           SUM(reason = 'approvalOnly') AS approvalOnly,
+           SUM(reason = 'unchanged') AS unchanged,
+           SUM(reason = 'stale') AS stale
+      FROM reasons
+`;
+
+const REASON_KEYS = Object.keys(emptyUpsertReasonCounts()) as Array<keyof UpsertReasonCounts>;
+
+async function classifyUpsertReasons(
+    db: D1Database,
+    chunks: string[],
+    into: UpsertReasonCounts
+): Promise<void> {
+    for (const chunk of chunks) {
+        const counts = await db.prepare(UPSERT_REASON_SQL).bind(chunk).first<UpsertReasonCounts>();
+        if (!counts) continue;
+        for (const key of REASON_KEYS) into[key] += Number(counts[key] ?? 0);
+    }
+}
+
 /**
  * Writes slot rows. Rows for gauges without a key are skipped.
  * @returns rows D1 reports as written (0 for a pure replay).
@@ -298,7 +396,8 @@ export const UPSERT_READINGS_SQL = `
 export async function upsertSlots(
     db: D1Database,
     rows: SlotRow[],
-    keys: Map<string, number>
+    keys: Map<string, number>,
+    reasons?: UpsertReasonCounts
 ): Promise<number> {
     const payload: Array<Record<string, number | null>> = [];
     for (const r of rows) {
@@ -314,7 +413,9 @@ export async function upsertSlots(
 
     // Primary-key order keeps the clustered B-tree walk monotonic.
     payload.sort((a, b) => (a.k! - b.k!) || (a.s! - b.s!));
-    return runBatch(db, chunkAsJson(payload).map(chunk => db.prepare(UPSERT_READINGS_SQL).bind(chunk)));
+    const chunks = chunkAsJson(payload);
+    if (reasons) await classifyUpsertReasons(db, chunks, reasons);
+    return runBatch(db, chunks.map(chunk => db.prepare(UPSERT_READINGS_SQL).bind(chunk)));
 }
 
 interface ReadingRow {

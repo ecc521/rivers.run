@@ -5,7 +5,8 @@ import {
     readProviderSyncState, extendCoverage, markRepair, markProviderRepair, clearRepair,
     recordBackfillFailure, clearBackfillFailures,
     getMeta, setMeta, SLOT_MS, RETENTION_MS,
-    type ObservedReading, type SyncState,
+    emptyUpsertReasonCounts,
+    type ObservedReading, type SyncState, type UpsertReasonCounts,
 } from "./flowStore";
 
 /**
@@ -163,6 +164,8 @@ export interface UsgsCycleStats {
     backfillRequests: number;
     backfillStopped: "done" | "request-cap" | "rate-budget" | null;
     rowsWritten: { window: number; revision: number; backfill: number; state: number };
+    /** Read-only attribution of revision upsert candidates, accumulated in memory. */
+    revisionReasons: UpsertReasonCounts;
     rateRemaining: number | null;
 }
 
@@ -207,7 +210,8 @@ async function fetchAndStore(
     input: UsgsCycleInput,
     budget: RateBudget,
     windowStart: number,
-    shouldStop?: () => boolean
+    shouldStop?: () => boolean,
+    reasons?: UpsertReasonCounts
 ): Promise<FetchOutcome> {
     const fetchPages = input.deps?.fetchPages ?? fetchOGCPages;
     let written = 0;
@@ -222,7 +226,12 @@ async function fetchAndStore(
                 if (r.ts <= input.now && (!prev || r.ts > prev.ts)) input.latest.set(r.gaugeId, r);
             }
         }
-        written += await upsertSlots(input.db, reduceToSlots(readings, { now: input.now, windowStart }), input.keys);
+        written += await upsertSlots(
+            input.db,
+            reduceToSlots(readings, { now: input.now, windowStart }),
+            input.keys,
+            reasons
+        );
         return shouldStop ? !shouldStop() : undefined;
     });
     budget.record(res.pages, res.rateRemaining);
@@ -304,7 +313,14 @@ async function revisionSweep(input: UsgsCycleInput, budget: RateBudget, stats: U
 
     await runPool(batches, REVISION_CONCURRENCY, async ids => {
         if (overBudget()) { allComplete = false; return; }
-        const out = await fetchAndStore(buildContinuousUrl(ids, { from, lastModifiedFrom }), input, budget, from, afterPage);
+        const out = await fetchAndStore(
+            buildContinuousUrl(ids, { from, lastModifiedFrom }),
+            input,
+            budget,
+            from,
+            afterPage,
+            stats.revisionReasons
+        );
         if (!out.complete) allComplete = false;
         stats.rowsWritten.revision += out.written;
     });
@@ -434,6 +450,7 @@ export async function runUsgsCycle(input: UsgsCycleInput): Promise<UsgsCycleStat
         revision: "not-due", revisionBatches: 0,
         backfillRequests: 0, backfillStopped: null,
         rowsWritten: { window: 0, revision: 0, backfill: 0, state: 0 },
+        revisionReasons: emptyUpsertReasonCounts(),
         rateRemaining: null,
     };
     const siteIds = input.siteIds.filter(id => /^\d+$/.test(id));
