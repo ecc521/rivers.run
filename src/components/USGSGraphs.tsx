@@ -565,7 +565,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                         showModel={showModel}
                     />
                 } />
-                <Legend wrapperStyle={{ paddingTop: "20px" }} verticalAlign="bottom" />
+                <Legend wrapperStyle={{ paddingTop: "20px" }} position="bottom" />
 
                 {activeTab === "flow" && (
                   <>
@@ -793,4 +793,3 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
     </div>
   );
 };
-

@@ -9,7 +9,7 @@
     "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["@cloudflare/workers-types"],
+    "types": ["@cloudflare/workers-types", "node"],
     "noEmit": true
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
