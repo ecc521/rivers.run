@@ -688,7 +688,10 @@ const openApiConfig = {
     ]
 };
 
-if (process.env.NODE_ENV !== 'test') {
+const isTestEnvironment = (globalThis as { process?: { env?: { NODE_ENV?: string } } })
+    .process?.env?.NODE_ENV === 'test';
+
+if (!isTestEnvironment) {
     try {
         const openApiDoc = app.getOpenAPIDocument(openApiConfig);
         if (openApiDoc.paths) {

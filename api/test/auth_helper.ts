@@ -29,7 +29,7 @@ export async function initAuthMock() {
     testPublicKeyJwk.use = "sig";
 
     // Spy on global fetch to return our test JWK
-    vi.spyOn(global, "fetch").mockImplementation(async (url: any) => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: any) => {
         if (typeof url === "string" && url.includes("googleapis.com")) {
             return {
                 json: async () => ({ keys: [testPublicKeyJwk] })
