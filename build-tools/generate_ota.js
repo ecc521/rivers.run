@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,7 +31,7 @@ async function generateOTAData() {
 
   // 1. Zip the dist folder (excluding the ota folder and sourcemaps)
   const output = fs.createWriteStream(UPDATE_ZIP);
-  const archive = archiver('zip', {
+  const archive = new ZipArchive({
     zlib: { level: 9 } // Sets the compression level
   });
 
