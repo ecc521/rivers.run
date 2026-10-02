@@ -15,7 +15,7 @@ afterEach(() => { db.close(); });
 
 const row = (gaugeId: string, ts: number, over: { cfs?: number; ft?: number } = {}) => ({
     gaugeId, ts, off: 0, cfs: over.cfs ?? null, ft: over.ft ?? null, cms: null, m: null,
-    temp_f: null, precip_in: null, approved: false,
+    temp_f: null, precip_in: null,
 });
 
 describe("buildUsgsHourlySnapshot", () => {

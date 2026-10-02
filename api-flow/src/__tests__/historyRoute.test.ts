@@ -76,7 +76,7 @@ async function seed(gaugeId: string, readings: Array<{ ts: number; cfs?: number;
     const { keys } = await resolveGaugeKeys(db, [{ gaugeId, provider: gaugeId.split(":")[0], name: "Stored Gauge" }]);
     await upsertSlots(db, readings.map(r => ({
         gaugeId, ts: r.ts, off: 0, cfs: r.cfs ?? null, ft: r.ft ?? null, cms: null, m: null,
-        temp_f: null, precip_in: null, approved: false,
+        temp_f: null, precip_in: null,
     })), keys);
     if (covered) await extendCoverage(db, [keys.get(gaugeId)!], slotStartOf(NOW - 30 * DAY));
     await setMeta(db, ingestMetaKey(gaugeId.split(":")[0]), NOW - 5 * 60_000);

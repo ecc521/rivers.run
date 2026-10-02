@@ -25,7 +25,7 @@ const dim = (gaugeId: string, over: Partial<GaugeDimension> = {}): GaugeDimensio
 
 const row = (gaugeId: string, ts: number, over: Partial<SlotRow> = {}): SlotRow => ({
     gaugeId, ts, off: 0, cfs: null, ft: null, cms: null, m: null, temp_f: null, precip_in: null,
-    approved: false, ...over,
+    ...over,
 });
 
 async function keysFor(...ids: string[]) {
@@ -104,7 +104,7 @@ describe("upsertSlots (ring buffer)", () => {
         const old = NOW - SLOTS * SLOT_MS;
         await upsertSlots(db, [
             row(ids[0], NOW, { cfs: 5 }),
-            row(ids[1], NOW, { cfs: 5 }),
+            row(ids[1], NOW, { cfs: 5, ft: 1 }),
             row(ids[2], NOW, { cfs: 5 }),
             row(ids[3], NOW, { cfs: 5 }),
             row(ids[4], NOW, { off: 300, cfs: 5 }),
@@ -116,17 +116,17 @@ describe("upsertSlots (ring buffer)", () => {
         const reasons = emptyUpsertReasonCounts();
         const written = await upsertSlots(db, [
             row(ids[0], NOW, { cfs: 5 }),                         // unchanged
-            row(ids[1], NOW, { cfs: 6 }),                         // changed value
+            row(ids[1], NOW, { cfs: 6, ft: 2, temp_f: 50 }),      // changed values plus field addition
             row(ids[2], NOW, { cfs: 5, ft: 2 }),                  // same-time gap fill
-            row(ids[3], NOW, { cfs: 5, approved: true }),         // approval only
+            row(ids[3], NOW, { cfs: 5 }),                         // unchanged duplicate
             row(ids[4], NOW, { off: 0, cfs: 5 }),                 // closer reading
             row(ids[5], NOW, { off: 300, cfs: 5 }),               // farther gap fill
             row(ids[6], old, { cfs: 6 }),                         // stale ring generation
             row(ids[7], NOW, { cfs: 6 }),                         // ring replacement
             row(ids[8], NOW, { cfs: 5 }),                         // new slot
-        ], keys, reasons);
+        ], keys, reasons, NOW);
 
-        expect(written).toBe(7);
+        expect(written).toBe(6);
         expect(reasons).toEqual({
             candidates: 9,
             newSlots: 1,
@@ -135,10 +135,47 @@ describe("upsertSlots (ring buffer)", () => {
             valueChanges: 1,
             gapFills: 1,
             fartherGapFills: 1,
-            approvalOnly: 1,
-            unchanged: 1,
+            unchanged: 2,
             stale: 1,
+            valueChangesByColumn: {
+                cfs: 1, ft: 1, cms: 0, m: 0, temp_f: 0, precip_in: 0,
+            },
+            fieldsAddedByColumn: {
+                cfs: 1, ft: 1, cms: 0, m: 0, temp_f: 1, precip_in: 0,
+            },
+            mixedValueChangeAndFieldAdd: 1,
+            valueChangeAges: {
+                under2Hours: 1, twoTo24Hours: 0, oneTo7Days: 0,
+                sevenTo30Days: 0, over30Days: 0,
+            },
+            examples: [{
+                gaugeId: ids[1], ts: NOW, off: 0,
+                changes: { cfs: [5, 6], ft: [1, 2] },
+            }],
         });
+    });
+
+    it("buckets value-change ages and caps examples", async () => {
+        const ages = [HOUR, 3 * HOUR, 2 * DAY, 8 * DAY, 31 * DAY, 32 * DAY];
+        const ids = ages.map((_, i) => `USGS:${i + 1}`);
+        const keys = await keysFor(...ids);
+        await upsertSlots(db, ages.map((age, i) => row(ids[i], NOW - age, { cfs: 1 })), keys);
+
+        const reasons = emptyUpsertReasonCounts();
+        await upsertSlots(
+            db,
+            ages.map((age, i) => row(ids[i], NOW - age, { cfs: 2 })),
+            keys,
+            reasons,
+            NOW
+        );
+
+        expect(reasons.valueChangeAges).toEqual({
+            under2Hours: 1, twoTo24Hours: 1, oneTo7Days: 1,
+            sevenTo30Days: 1, over30Days: 2,
+        });
+        expect(reasons.examples).toHaveLength(5);
+        expect(reasons.valueChangesByColumn.cfs).toBe(6);
     });
 
     it("writes nothing when an identical batch is replayed", async () => {
@@ -192,13 +229,6 @@ describe("upsertSlots (ring buffer)", () => {
         expect(await upsertSlots(db, [row("USGS:1", NOW, { cfs: 7 })], keys)).toBe(1);
         expect(stored()[0]).toMatchObject({ cfs: 7, ft: 1 });
         expect(await upsertSlots(db, [row("USGS:1", NOW, { cfs: 7 })], keys)).toBe(0);
-    });
-
-    it("writes when approval flips, and not when it would flip back", async () => {
-        const keys = await keysFor("USGS:1");
-        await upsertSlots(db, [row("USGS:1", NOW, { cfs: 5 })], keys);
-        expect(await upsertSlots(db, [row("USGS:1", NOW, { cfs: 5, approved: true })], keys)).toBe(1);
-        expect(await upsertSlots(db, [row("USGS:1", NOW, { cfs: 5, approved: false })], keys)).toBe(0);
     });
 
     it("skips gauges without a key", async () => {

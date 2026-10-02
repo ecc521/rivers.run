@@ -21,7 +21,7 @@ const iso = (t: number) => new Date(t).toISOString();
 const feature = (site: string, t: number, param: string, value: string | number, extra: Record<string, unknown> = {}) => ({
     properties: {
         monitoring_location_id: `USGS-${site}`, parameter_code: param, time: iso(t),
-        value: String(value), approval_status: "Provisional", time_series_id: "a", ...extra,
+        value: String(value), time_series_id: "a", ...extra,
     },
 });
 
@@ -29,7 +29,7 @@ describe("FeatureAccumulator", () => {
     it("groups parameters by site and timestamp", () => {
         const acc = new FeatureAccumulator();
         acc.add([feature("1", NOW, "00060", 100), feature("1", NOW, "00065", 2.5), feature("1", NOW, "00010", 10)]);
-        expect(acc.readings()).toEqual([{ gaugeId: "USGS:1", ts: NOW, cfs: 100, ft: 2.5, temp_f: 50, approved: false }]);
+        expect(acc.readings()).toEqual([{ gaugeId: "USGS:1", ts: NOW, cfs: 100, ft: 2.5, temp_f: 50 }]);
     });
 
     it("drops sentinels and invalid values", () => {
@@ -55,13 +55,6 @@ describe("FeatureAccumulator", () => {
         expect(acc.readings()[0].temp_f).toBe(55);
     });
 
-    it("marks a reading approved only when every record is", () => {
-        const acc = new FeatureAccumulator();
-        acc.add([feature("1", NOW, "00060", 1, { approval_status: "Approved" }), feature("2", NOW, "00060", 1, { approval_status: "Approved" }),
-            feature("2", NOW, "00065", 1)]);
-        const byId = Object.fromEntries(acc.readings().map(r => [r.gaugeId, r.approved]));
-        expect(byId).toEqual({ "USGS:1": true, "USGS:2": false });
-    });
 });
 
 describe("RateBudget", () => {
@@ -80,7 +73,7 @@ describe("buildContinuousUrl", () => {
         const url = buildContinuousUrl(["1", "2"], { from: NOW - DAY, lastModifiedFrom: NOW - HOUR });
         expect(url).toContain("monitoring_location_id=USGS-1,USGS-2");
         expect(url).toContain("skipGeometry=true");
-        expect(url).toContain("properties=monitoring_location_id,parameter_code,time,value,approval_status,time_series_id");
+        expect(url).toContain("properties=monitoring_location_id,parameter_code,time,value,time_series_id");
         expect(url).toContain(`datetime=${iso(NOW - DAY).replace(".000", "")}/..`);
         expect(url).toContain(`last_modified=${iso(NOW - HOUR).replace(".000", "")}/..`);
     });
@@ -237,9 +230,9 @@ describe("runUsgsCycle", () => {
         const reasons = ok.revisionReasons;
         const classified = reasons.newSlots + reasons.ringReplacements + reasons.closerReadings +
             reasons.valueChanges + reasons.gapFills + reasons.fartherGapFills +
-            reasons.approvalOnly + reasons.unchanged + reasons.stale;
+            reasons.unchanged + reasons.stale;
         const expectedWrites = reasons.newSlots + reasons.ringReplacements + reasons.closerReadings +
-            reasons.valueChanges + reasons.gapFills + reasons.fartherGapFills + reasons.approvalOnly;
+            reasons.valueChanges + reasons.gapFills + reasons.fartherGapFills;
         expect(reasons.candidates).toBeGreaterThan(0);
         expect(classified).toBe(reasons.candidates);
         expect(ok.rowsWritten.revision).toBe(expectedWrites);

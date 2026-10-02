@@ -221,7 +221,7 @@ describe("runIngestCycle", () => {
 
 describe("projectSitedata", () => {
     const row = (gaugeId: string, ts: number, cfs: number) =>
-        ({ gaugeId, ts, off: 0, cfs, ft: null, cms: null, m: null, temp_f: null, precip_in: null, approved: false });
+        ({ gaugeId, ts, off: 0, cfs, ft: null, cms: null, m: null, temp_f: null, precip_in: null });
     const t = slotStartOf(NOW);
 
     it("builds latest, linked windows, forecasts and falls back to the previous entry", async () => {

@@ -100,8 +100,9 @@ Known gaps, not yet handled:
 
 - A value USGS deletes stays stored: upserts never null a column, and a missing
   record is indistinguishable from an unchanged one.
-- `approved` is unreliable (a partial revision or duplicate series can set it from
-  one parameter's record). Nothing reads it yet.
+- The legacy `approved` column remains in `gauge_readings` with its default value so
+  removing it does not require a table rebuild. Ingest no longer requests, stores, or
+  updates approval status because no reader consumes it.
 
 `node api-flow/tools/estimate-writes.mjs` projects monthly rows written from the
 per-cycle counts logged in local `worker_logs`. Measure whole hours, since EC and

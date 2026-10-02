@@ -50,7 +50,7 @@ const REVISION_CONCURRENCY = 2;
 const BACKFILL_CONCURRENCY = 1;
 const DAY_MS = 86_400_000;
 
-const PROPERTIES = "monitoring_location_id,parameter_code,time,value,approval_status,time_series_id";
+const PROPERTIES = "monitoring_location_id,parameter_code,time,value,time_series_id";
 
 export const META_WINDOW_OK = "usgs_window_ok_at";
 export const META_REVISION_CURSOR = "usgs_revision_cursor";
@@ -107,7 +107,7 @@ export class FeatureAccumulator {
             const key = `${site}|${ts}`;
             let pending = this.byKey.get(key);
             if (!pending) {
-                pending = { reading: { gaugeId: `USGS:${site}`, ts, approved: true }, series: new Map(), tempFromF: false };
+                pending = { reading: { gaugeId: `USGS:${site}`, ts }, series: new Map(), tempFromF: false };
                 this.byKey.set(key, pending);
             }
 
@@ -123,7 +123,6 @@ export class FeatureAccumulator {
             if (prevSid !== undefined && prevSid <= sid) continue;
             pending.series.set(target, sid);
             (pending.reading as any)[target] = value;
-            if (p.approval_status !== "Approved") pending.reading.approved = false;
         }
     }
 
@@ -230,7 +229,8 @@ async function fetchAndStore(
             input.db,
             reduceToSlots(readings, { now: input.now, windowStart }),
             input.keys,
-            reasons
+            reasons,
+            input.now
         );
         return shouldStop ? !shouldStop() : undefined;
     });

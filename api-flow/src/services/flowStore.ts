@@ -44,7 +44,6 @@ export interface ObservedReading {
     m?: number;
     temp_f?: number;
     precip_in?: number;
-    approved?: boolean;
 }
 
 /** One ring-buffer row: the chosen reading for a (gauge, slot). */
@@ -60,7 +59,6 @@ export interface SlotRow {
     m: number | null;
     temp_f: number | null;
     precip_in: number | null;
-    approved: boolean;
 }
 
 const DEAD_PREFIXES = new Set(["streambeam", "virtual"]);
@@ -107,10 +105,34 @@ export interface UpsertReasonCounts {
     valueChanges: number;
     gapFills: number;
     fartherGapFills: number;
-    approvalOnly: number;
     unchanged: number;
     stale: number;
+    valueChangesByColumn: Record<DiagnosticValueColumn, number>;
+    fieldsAddedByColumn: Record<DiagnosticValueColumn, number>;
+    mixedValueChangeAndFieldAdd: number;
+    valueChangeAges: {
+        under2Hours: number;
+        twoTo24Hours: number;
+        oneTo7Days: number;
+        sevenTo30Days: number;
+        over30Days: number;
+    };
+    examples: UpsertChangeExample[];
 }
+
+export type DiagnosticValueColumn = (typeof VALUE_COLS)[number];
+
+export interface UpsertChangeExample {
+    gaugeId: string;
+    ts: number;
+    off: number;
+    /** Only non-null -> different non-null cells are included. */
+    changes: Partial<Record<DiagnosticValueColumn, [number, number]>>;
+}
+
+const emptyColumnCounts = (): Record<DiagnosticValueColumn, number> => ({
+    cfs: 0, ft: 0, cms: 0, m: 0, temp_f: 0, precip_in: 0,
+});
 
 export const emptyUpsertReasonCounts = (): UpsertReasonCounts => ({
     candidates: 0,
@@ -120,9 +142,16 @@ export const emptyUpsertReasonCounts = (): UpsertReasonCounts => ({
     valueChanges: 0,
     gapFills: 0,
     fartherGapFills: 0,
-    approvalOnly: 0,
     unchanged: 0,
     stale: 0,
+    valueChangesByColumn: emptyColumnCounts(),
+    fieldsAddedByColumn: emptyColumnCounts(),
+    mixedValueChangeAndFieldAdd: 0,
+    valueChangeAges: {
+        under2Hours: 0, twoTo24Hours: 0, oneTo7Days: 0,
+        sevenTo30Days: 0, over30Days: 0,
+    },
+    examples: [],
 });
 
 export interface ReduceOptions {
@@ -133,8 +162,8 @@ export interface ReduceOptions {
 
 /**
  * Collapses readings to one row per (gauge, slot). Each parameter comes from
- * the reading closest to the slot start that carries it; `off` and `approved`
- * follow the closest reading overall. Drops future, expired, empty and
+ * the reading closest to the slot start that carries it; `off` follows the
+ * closest reading overall. Drops future, expired, empty and
  * leading-edge partial-slot readings.
  */
 export function reduceToSlots(readings: Iterable<ObservedReading>, opts: ReduceOptions): SlotRow[] {
@@ -159,14 +188,13 @@ export function reduceToSlots(readings: Iterable<ObservedReading>, opts: ReduceO
         const prev = best.get(key);
 
         if (!prev) {
-            best.set(key, { gaugeId: r.gaugeId, ts, off, ...values, approved: r.approved === true });
+            best.set(key, { gaugeId: r.gaugeId, ts, off, ...values });
         } else if (off < prev.off) {
-            const next: SlotRow = { gaugeId: r.gaugeId, ts, off, ...values, approved: r.approved === true };
+            const next: SlotRow = { gaugeId: r.gaugeId, ts, off, ...values };
             for (const c of VALUE_COLS) if (next[c] === null) next[c] = prev[c];
             best.set(key, next);
         } else {
             for (const c of VALUE_COLS) if (prev[c] === null) prev[c] = values[c];
-            if (off === prev.off) prev.approved = prev.approved && r.approved === true;
         }
     }
 
@@ -298,18 +326,14 @@ const colFills = (col: string) =>
  */
 export const UPSERT_READINGS_SQL = `
     INSERT INTO gauge_readings
-          (gauge_key, slot, ts, off, cfs, ft, cms, m, temp_f, precip_in, approved)
+          (gauge_key, slot, ts, off, cfs, ft, cms, m, temp_f, precip_in)
     SELECT j.value->>'$.k', j.value->>'$.s', j.value->>'$.t', j.value->>'$.o',
            j.value->>'$.cfs', j.value->>'$.ft', j.value->>'$.cms', j.value->>'$.m',
-           j.value->>'$.tf', j.value->>'$.pi', j.value->>'$.a'
+           j.value->>'$.tf', j.value->>'$.pi'
       FROM json_each(?1) j
      WHERE true
     ON CONFLICT(gauge_key, slot) DO UPDATE SET
         ${VALUE_COLS.map(mergeCol).join(",\n        ")},
-        approved = CASE WHEN ${newer} OR excluded.off < gauge_readings.off THEN excluded.approved
-                        WHEN excluded.off = gauge_readings.off
-                        THEN MAX(excluded.approved, gauge_readings.approved)
-                        ELSE gauge_readings.approved END,
         off = CASE WHEN ${newer} THEN excluded.off ELSE MIN(excluded.off, gauge_readings.off) END,
         ts  = excluded.ts
     WHERE ${newer}
@@ -317,7 +341,7 @@ export const UPSERT_READINGS_SQL = `
               excluded.off < gauge_readings.off
            OR (excluded.off = gauge_readings.off AND (
                   ${VALUE_COLS.map(colDiffers).join("\n               OR ")}
-               OR excluded.approved > gauge_readings.approved))
+               ))
            OR (excluded.off > gauge_readings.off AND (
                   ${VALUE_COLS.map(colFills).join("\n               OR ")}))))
 `;
@@ -332,6 +356,13 @@ const diagnosticValueChanged = PAYLOAD_VALUE_COLS.map(([dbCol]) =>
 const diagnosticGapFilled = PAYLOAD_VALUE_COLS.map(([dbCol]) =>
     `(r.${dbCol} IS NULL AND i.${dbCol} IS NOT NULL)`
 ).join(" OR ");
+const diagnosticColumnFlags = PAYLOAD_VALUE_COLS.map(([dbCol]) =>
+    `i.t = r.ts AND i.o = r.off AND i.${dbCol} IS NOT NULL AND r.${dbCol} IS NOT NULL AND i.${dbCol} IS NOT r.${dbCol} AS vc_${dbCol},
+               i.t = r.ts AND r.${dbCol} IS NULL AND i.${dbCol} IS NOT NULL AS fa_${dbCol}`
+).join(",\n               ");
+const anyValueChangeFlag = VALUE_COLS.map(col => `vc_${col}`).join(" OR ");
+const anyFieldAddedFlag = VALUE_COLS.map(col => `fa_${col}`).join(" OR ");
+const MAX_CHANGE_EXAMPLES = 5;
 
 /**
  * Classifies every candidate against its current row without modifying it.
@@ -344,23 +375,26 @@ const UPSERT_REASON_SQL = `
                CAST(j.value->>'$.t' AS INTEGER) AS t,
                CAST(j.value->>'$.o' AS INTEGER) AS o,
                ${PAYLOAD_VALUE_COLS.map(([dbCol, jsonCol]) =>
-        `CAST(j.value->>'$.${jsonCol}' AS REAL) AS ${dbCol}`).join(",\n               ")},
-               CAST(j.value->>'$.a' AS INTEGER) AS a
+        `CAST(j.value->>'$.${jsonCol}' AS REAL) AS ${dbCol}`).join(",\n               ")}
           FROM json_each(?1) j
-    ), reasons AS (
-        SELECT CASE
+    ), classified AS (
+        SELECT g.gauge_id, i.t, i.o,
+               ${PAYLOAD_VALUE_COLS.map(([dbCol]) =>
+        `r.${dbCol} AS old_${dbCol}, i.${dbCol} AS new_${dbCol}`).join(",\n               ")},
+               ${diagnosticColumnFlags},
+               CASE
                  WHEN r.gauge_key IS NULL THEN 'newSlots'
                  WHEN i.t > r.ts THEN 'ringReplacements'
                  WHEN i.t < r.ts THEN 'stale'
                  WHEN i.o < r.off THEN 'closerReadings'
                  WHEN i.o = r.off AND (${diagnosticValueChanged}) THEN 'valueChanges'
                  WHEN i.o = r.off AND (${diagnosticGapFilled}) THEN 'gapFills'
-                 WHEN i.o = r.off AND i.a > r.approved THEN 'approvalOnly'
                  WHEN i.o > r.off AND (${diagnosticGapFilled}) THEN 'fartherGapFills'
                  ELSE 'unchanged'
                END AS reason
           FROM incoming i
           LEFT JOIN gauge_readings r ON r.gauge_key = i.k AND r.slot = i.s
+          LEFT JOIN gauges g ON g.gauge_key = i.k
     )
     SELECT COUNT(*) AS candidates,
            SUM(reason = 'newSlots') AS newSlots,
@@ -369,23 +403,71 @@ const UPSERT_REASON_SQL = `
            SUM(reason = 'valueChanges') AS valueChanges,
            SUM(reason = 'gapFills') AS gapFills,
            SUM(reason = 'fartherGapFills') AS fartherGapFills,
-           SUM(reason = 'approvalOnly') AS approvalOnly,
            SUM(reason = 'unchanged') AS unchanged,
-           SUM(reason = 'stale') AS stale
-      FROM reasons
+           SUM(reason = 'stale') AS stale,
+           ${VALUE_COLS.map(col => `SUM(vc_${col}) AS valueChanges_${col}`).join(",\n           ")},
+           ${VALUE_COLS.map(col => `SUM(fa_${col}) AS fieldsAdded_${col}`).join(",\n           ")},
+           SUM((${anyValueChangeFlag}) AND (${anyFieldAddedFlag})) AS mixedValueChangeAndFieldAdd,
+           SUM(reason = 'valueChanges' AND (?2 - t) < 7200000) AS age_under2Hours,
+           SUM(reason = 'valueChanges' AND (?2 - t) >= 7200000 AND (?2 - t) < 86400000) AS age_twoTo24Hours,
+           SUM(reason = 'valueChanges' AND (?2 - t) >= 86400000 AND (?2 - t) < 604800000) AS age_oneTo7Days,
+           SUM(reason = 'valueChanges' AND (?2 - t) >= 604800000 AND (?2 - t) < 2592000000) AS age_sevenTo30Days,
+           SUM(reason = 'valueChanges' AND (?2 - t) >= 2592000000) AS age_over30Days,
+           (SELECT json_group_array(json_object(
+                       'gaugeId', gauge_id, 'ts', t, 'off', o,
+                       'cfs', CASE WHEN vc_cfs THEN json_array(old_cfs, new_cfs) END,
+                       'ft', CASE WHEN vc_ft THEN json_array(old_ft, new_ft) END,
+                       'cms', CASE WHEN vc_cms THEN json_array(old_cms, new_cms) END,
+                       'm', CASE WHEN vc_m THEN json_array(old_m, new_m) END,
+                       'temp_f', CASE WHEN vc_temp_f THEN json_array(old_temp_f, new_temp_f) END,
+                       'precip_in', CASE WHEN vc_precip_in THEN json_array(old_precip_in, new_precip_in) END))
+              FROM (SELECT * FROM classified WHERE reason = 'valueChanges'
+                    ORDER BY gauge_id, t LIMIT ${MAX_CHANGE_EXAMPLES})) AS examples
+      FROM classified
 `;
 
-const REASON_KEYS = Object.keys(emptyUpsertReasonCounts()) as Array<keyof UpsertReasonCounts>;
+const REASON_KEYS = [
+    "candidates", "newSlots", "ringReplacements", "closerReadings", "valueChanges",
+    "gapFills", "fartherGapFills", "unchanged", "stale",
+] as const;
+
+const parseExamples = (raw: unknown): UpsertChangeExample[] => {
+    if (typeof raw !== "string") return [];
+    const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
+    return parsed.map(item => {
+        const changes: UpsertChangeExample["changes"] = {};
+        for (const col of VALUE_COLS) {
+            const pair = item[col];
+            if (Array.isArray(pair) && pair.length === 2) {
+                changes[col] = [Number(pair[0]), Number(pair[1])];
+            }
+        }
+        return {
+            gaugeId: String(item.gaugeId), ts: Number(item.ts), off: Number(item.off), changes,
+        };
+    });
+};
 
 async function classifyUpsertReasons(
     db: D1Database,
     chunks: string[],
-    into: UpsertReasonCounts
+    into: UpsertReasonCounts,
+    now: number
 ): Promise<void> {
     for (const chunk of chunks) {
-        const counts = await db.prepare(UPSERT_REASON_SQL).bind(chunk).first<UpsertReasonCounts>();
+        const counts = await db.prepare(UPSERT_REASON_SQL).bind(chunk, now).first<Record<string, unknown>>();
         if (!counts) continue;
         for (const key of REASON_KEYS) into[key] += Number(counts[key] ?? 0);
+        for (const col of VALUE_COLS) {
+            into.valueChangesByColumn[col] += Number(counts[`valueChanges_${col}`] ?? 0);
+            into.fieldsAddedByColumn[col] += Number(counts[`fieldsAdded_${col}`] ?? 0);
+        }
+        into.mixedValueChangeAndFieldAdd += Number(counts.mixedValueChangeAndFieldAdd ?? 0);
+        for (const key of Object.keys(into.valueChangeAges) as Array<keyof typeof into.valueChangeAges>) {
+            into.valueChangeAges[key] += Number(counts[`age_${key}`] ?? 0);
+        }
+        const remaining = MAX_CHANGE_EXAMPLES - into.examples.length;
+        if (remaining > 0) into.examples.push(...parseExamples(counts.examples).slice(0, remaining));
     }
 }
 
@@ -397,7 +479,8 @@ export async function upsertSlots(
     db: D1Database,
     rows: SlotRow[],
     keys: Map<string, number>,
-    reasons?: UpsertReasonCounts
+    reasons?: UpsertReasonCounts,
+    diagnosticNow: number = Date.now()
 ): Promise<number> {
     const payload: Array<Record<string, number | null>> = [];
     for (const r of rows) {
@@ -406,7 +489,6 @@ export async function upsertSlots(
         payload.push({
             k, s: slotIndexOf(r.ts), t: r.ts, o: r.off,
             cfs: r.cfs, ft: r.ft, cms: r.cms, m: r.m, tf: r.temp_f, pi: r.precip_in,
-            a: r.approved ? 1 : 0,
         });
     }
     if (payload.length === 0) return 0;
@@ -414,7 +496,7 @@ export async function upsertSlots(
     // Primary-key order keeps the clustered B-tree walk monotonic.
     payload.sort((a, b) => (a.k! - b.k!) || (a.s! - b.s!));
     const chunks = chunkAsJson(payload);
-    if (reasons) await classifyUpsertReasons(db, chunks, reasons);
+    if (reasons) await classifyUpsertReasons(db, chunks, reasons, diagnosticNow);
     return runBatch(db, chunks.map(chunk => db.prepare(UPSERT_READINGS_SQL).bind(chunk)));
 }
 
