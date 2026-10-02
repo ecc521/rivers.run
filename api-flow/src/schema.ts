@@ -16,14 +16,14 @@ export const ReadingSchema = z.object({
   precip_mm: z.number().optional().openapi({ example: 6.35, description: 'Precipitation in millimeters' }),
   isForecast: z.boolean().optional().openapi({ example: true, description: 'Whether this point represents a forecasted value' }),
   forecastSource: z.string().optional().openapi({ example: 'NWS', description: 'Source of the forecast' })
-}).openapi({ type: 'object', description: 'A single sensor reading' });
+}).openapi({ description: 'A single sensor reading' });
 
 export const HistorySchema = z.object({
   id: z.string().openapi({ example: "USGS:03451500" }),
   name: z.string().optional().openapi({ example: "French Broad River at Marshall, NC" }),
   section: z.string().optional().openapi({ example: "Section 9" }),
   readings: z.array(ReadingSchema),
-}).openapi({ type: 'object', description: 'Historical readings for a gauge' });
+}).openapi({ description: 'Historical readings for a gauge' });
 
 export const SiteSchema = z.object({
   id: z.string().openapi({ example: "USGS:03451500" }),
@@ -31,18 +31,16 @@ export const SiteSchema = z.object({
   lat: z.number().openapi({ example: 35.79 }),
   lon: z.number().openapi({ example: -82.68 }),
   section: z.string().optional().openapi({ example: "Section 9" })
-}).openapi({ type: 'object', description: 'Metadata for a gauge site' });
+}).openapi({ description: 'Metadata for a gauge site' });
 
 export const ErrorSchema = z.object({
   error: z.string().openapi({ example: "Invalid Request" })
-}).openapi({ type: 'object', description: 'Error response' });
+}).openapi({ description: 'Error response' });
 
 export const GenericObjectSchema = z.object({}).passthrough().openapi({ 
-  type: 'object',
   description: 'A generic JSON object'
 });
 
 export const GenericArraySchema = z.array(GenericObjectSchema).openapi({ 
-  type: 'array',
   description: 'A generic JSON array'
 });

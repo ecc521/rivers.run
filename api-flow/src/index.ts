@@ -60,6 +60,7 @@ export const providers: Record<string, GaugeProvider> = {
 };
 
 const app = new OpenAPIHono<{ Bindings: Env }>();
+export { app };
 
 // Middlewares
 app.use("*", cors({

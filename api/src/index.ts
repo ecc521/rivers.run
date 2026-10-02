@@ -32,8 +32,8 @@ type Variables = {
 
 const app = new OpenAPIHono<{ Bindings: Bindings, Variables: Variables }>();
 
-const GenericObjectSchema = z.object({}).passthrough().openapi({ type: 'object' });
-const GenericArraySchema = z.array(GenericObjectSchema).openapi({ type: 'array' });
+const GenericObjectSchema = z.object({}).passthrough();
+const GenericArraySchema = z.array(GenericObjectSchema);
 
 
 
@@ -83,7 +83,7 @@ const getRiversRoute = createRoute({
     description: 'Returns the full list of rivers, including tags and gauges.',
     responses: {
         200: {
-            content: { 'application/json': { schema: z.array(RiverSchema).openapi({ type: 'array' }) } },
+            content: { 'application/json': { schema: z.array(RiverSchema) } },
             description: 'The list of rivers',
         },
         304: { description: 'Not Modified (If-None-Match matched the current dataset version)' },
@@ -226,7 +226,7 @@ const getRiverRoute = createRoute({
     },
     responses: {
         200: { content: { 'application/json': { schema: RiverSchema } }, description: 'The river object' },
-        404: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'River not found' }
+        404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'River not found' }
     }
 });
 
@@ -341,10 +341,10 @@ const deleteRiverRoute = createRoute({
         })
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Deleted' },
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' },
         401: { description: 'Unauthorized' },
         403: { description: 'Forbidden' },
-        404: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'River not found' }
+        404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'River not found' }
     }
 });
 
@@ -388,7 +388,7 @@ const updateRiverRoute = createRoute({
         body: { content: { 'application/json': { schema: RiverEditorPayload } } }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), timestamp: z.number() }).openapi({ type: 'object' }) } }, description: 'Updated' },
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), timestamp: z.number() }) } }, description: 'Updated' },
         400: { description: 'Validation Error' },
         401: { description: 'Unauthorized' },
         403: { description: 'Forbidden' }
@@ -486,7 +486,7 @@ const suggestRiverRoute = createRoute({
         body: { content: { 'application/json': { schema: RiverEditorPayload } } }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Suggestion submitted' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Suggestion submitted' }
     }
 });
 
@@ -765,7 +765,7 @@ const resolveSuggestionRoute = createRoute({
         body: { content: { 'application/json': { schema: AdminResolutionSchema } } }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), message: z.string() }).openapi({ type: 'object' }) } }, description: 'Resolved' },
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), message: z.string() }) } }, description: 'Resolved' },
         404: { description: 'Not found' }
     }
 });
@@ -1030,7 +1030,7 @@ const updateUserSettingsRoute = createRoute({
     security: [{ bearerAuth: [] }],
     request: { body: { content: { 'application/json': { schema: UserSettingsSchema } } } },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' }
     }
 });
 
@@ -1094,7 +1094,7 @@ const deleteUserRoute = createRoute({
     summary: 'Delete your own account',
     security: [{ bearerAuth: [] }],
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Deleted' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' }
     }
 });
 
@@ -1293,8 +1293,8 @@ const createListRoute = createRoute({
     security: [{ bearerAuth: [] }],
     request: { body: { content: { 'application/json': { schema: CommunityListSchema } } } },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), id: z.string().optional() }).openapi({ type: 'object' }) } }, description: 'Created' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Forbidden' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean(), id: z.string().optional() }) } }, description: 'Created' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' }
     }
 });
 
@@ -1361,8 +1361,8 @@ const updateListRoute = createRoute({
         body: { content: { 'application/json': { schema: CommunityListSchema } } } 
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Forbidden' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' }
     }
 });
 
@@ -1453,7 +1453,7 @@ const deleteListRoute = createRoute({
         })
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Deleted' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' }
     }
 });
 
@@ -1560,8 +1560,8 @@ const getSubscriptionsRoute = createRoute({
                 'application/json': { 
                     schema: z.object({ 
                         subscriptions: z.array(z.string()),
-                        notificationStates: z.record(z.boolean()).optional()
-                    }).openapi({ type: 'object' }) 
+                        notificationStates: z.record(z.string(), z.boolean()).optional()
+                    })
                 } 
             }, 
             description: 'Subscriptions' 
@@ -1588,7 +1588,7 @@ const updateSubscriptionsRoute = createRoute({
     security: [{ bearerAuth: [] }],
     request: { body: { content: { 'application/json': { schema: SubscriptionPayloadSchema } } } },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' }
     }
 });
 
@@ -1640,13 +1640,13 @@ const toggleSubNotificationRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         enabled: z.boolean()
-                    }).openapi({ type: 'object' })
+                    })
                 }
             }
         }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Updated' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Updated' }
     }
 });
 
@@ -1685,9 +1685,9 @@ const updateUserRoleRoute = createRoute({
         body: { content: { 'application/json': { schema: RoleUpdatePayload } } }
     },
     responses: { 
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Role updated' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Hierarchy violation' },
-        404: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'User not found' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Role updated' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Hierarchy violation' },
+        404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'User not found' }
     }
 });
 
@@ -1807,7 +1807,7 @@ const deleteAdminUserRoute = createRoute({
         })
     },
     responses: { 
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Deleted' },
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Deleted' },
         403: { description: 'Hierarchy violation' },
         404: { description: 'User not found' }
     }
@@ -1860,7 +1860,7 @@ const adminSendEmailRoute = createRoute({
         }
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Email sent' },
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Email sent' },
         403: { description: 'Unauthorized' }
     }
 });
@@ -1904,8 +1904,8 @@ const createReportRoute = createRoute({
     security: [{ bearerAuth: [] }, {}],
     request: { body: { content: { 'application/json': { schema: UserReportPayload } } } },
     responses: { 
-        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Reported' },
-        403: { content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } }, description: 'Forbidden' }
+        200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Reported' },
+        403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' }
     }
 });
 
@@ -1985,7 +1985,7 @@ const resolveReportRoute = createRoute({
             })
         })
     },
-    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } }, description: 'Resolved' } }
+    responses: { 200: { content: { 'application/json': { schema: z.object({ success: z.boolean() }) } }, description: 'Resolved' } }
 });
 
 app.openapi(resolveReportRoute, async (c) => {
@@ -2005,7 +2005,7 @@ const generateSyncCodeRoute = createRoute({
     security: [{ bearerAuth: [] }],
     request: { body: { content: { 'application/json': { schema: z.object({ listId: z.string() }) } } } },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ code: z.string(), expiresAt: z.number() }).openapi({ type: 'object' }) } }, description: 'Generated' },
+        200: { content: { 'application/json': { schema: z.object({ code: z.string(), expiresAt: z.number() }) } }, description: 'Generated' },
         404: { description: 'List not found' }
     }
 });
@@ -2043,7 +2043,7 @@ const resolveSyncCodeRoute = createRoute({
         })
     },
     responses: {
-        200: { content: { 'application/json': { schema: z.object({ listId: z.string() }).openapi({ type: 'object' }) } }, description: 'Resolved' },
+        200: { content: { 'application/json': { schema: z.object({ listId: z.string() }) } }, description: 'Resolved' },
         404: { description: 'Invalid or expired code' }
     }
 });
@@ -2108,7 +2108,7 @@ const listApiKeysRoute = createRoute({
             description: 'List of developer API keys'
         },
         401: {
-            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            content: { 'application/json': { schema: z.object({ error: z.string() }) } },
             description: 'Unauthorized'
         }
     }
@@ -2141,13 +2141,13 @@ const createApiKeyRoute = createRoute({
     responses: {
         200: {
             content: { 'application/json': { schema: z.object({
-                raw_key: z.string().openapi({ type: 'string', description: 'The plaintext API key to copy' }),
+                raw_key: z.string().openapi({ description: 'The plaintext API key to copy' }),
                 key: ApiKeySchema
-            }).openapi({ type: 'object' }) } },
+            }) } },
             description: 'Newly created API key details'
         },
         401: {
-            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            content: { 'application/json': { schema: z.object({ error: z.string() }) } },
             description: 'Unauthorized'
         }
     }
@@ -2211,15 +2211,15 @@ const revokeApiKeyRoute = createRoute({
     },
     responses: {
         200: {
-            content: { 'application/json': { schema: z.object({ success: z.boolean() }).openapi({ type: 'object' }) } },
+            content: { 'application/json': { schema: z.object({ success: z.boolean() }) } },
             description: 'Key successfully revoked'
         },
         401: {
-            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            content: { 'application/json': { schema: z.object({ error: z.string() }) } },
             description: 'Unauthorized'
         },
         404: {
-            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            content: { 'application/json': { schema: z.object({ error: z.string() }) } },
             description: 'Key not found'
         }
     }
@@ -2254,7 +2254,7 @@ const getApiUsageRoute = createRoute({
             description: 'Daily usage logs'
         },
         401: {
-            content: { 'application/json': { schema: z.object({ error: z.string() }).openapi({ type: 'object' }) } },
+            content: { 'application/json': { schema: z.object({ error: z.string() }) } },
             description: 'Unauthorized'
         }
     }
