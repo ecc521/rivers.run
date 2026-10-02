@@ -161,8 +161,8 @@ export default defineConfig({
     // `cd` into them separately.
     projects: [
       { extends: true, test: { name: 'web' } },
-      'api/vitest.config.ts',
-      'api-flow/vitest.config.ts',
+      'api/vitest.config.mts',
+      'api-flow/vitest.config.mts',
     ],
   },
 })
