@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Map, { Source, Layer, Popup, Marker } from "react-map-gl/maplibre";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import type { LineString } from "geojson";
 import { getDownloadedRegions, getOfflineMapSource } from "../utils/offlineMapEngine";
 import { Protocol, PMTiles, FileSource } from "pmtiles";
 import type { RiverData } from "../types/River";
@@ -240,7 +241,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     const [isNavigating, setIsNavigating] = useState(false);
     const [isAutoCenter, setIsAutoCenter] = useState(false);
     const [navDestination, setNavDestination] = useState<[number, number] | null>(null);
-    const [navRoute, setNavRoute] = useState<GeoJSON.LineString | null>(null);
+    const [navRoute, setNavRoute] = useState<LineString | null>(null);
     const [showUserLocationPopup, setShowUserLocationPopup] = useState(false);
     const [navDestinationPlace, setNavDestinationPlace] = useState<any>(null);
     const [pinnedPlace, setPinnedPlace] = useState<MapSearchResult | null>(null);
@@ -250,7 +251,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     // Stable reference — used as a dep inside NavigationPanel's useCallback/useEffect chain.
     // Must not change on every render or it causes a routing re-trigger loop.
-    const handleRouteCalculated = useCallback((route: GeoJSON.LineString | null) => {
+    const handleRouteCalculated = useCallback((route: LineString | null) => {
         setNavRoute(route);
         if (route && mapRef.current) {
             setIsAutoCenter(false);
@@ -688,7 +689,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         if (!hybridProtocolAdded) {
             maplibregl.addProtocol("hybrid", async (params, abortController) => {
                 const match = /hybrid:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params.url);
-                if (!match) return { data: null };
+                if (!match) throw new Error(`Invalid hybrid tile URL: ${params.url}`);
                 const z = parseInt(match[1], 10);
                 const x = parseInt(match[2], 10);
                 const y = parseInt(match[3], 10);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { LineString } from 'geojson';
 import type { RoutingRequest, RoutingResponse, RoutingInstruction, RoutingSummary } from '../workers/valhallaRoutingTypes';
 import { getDownloadedRegions, fetchMapRegions, downloadMapRegion, type MapRegion } from '../utils/offlineMapEngine';
 import RouteWorker from '../workers/valhallaRouting.worker.ts?worker';
@@ -11,7 +12,7 @@ interface NavigationPanelProps {
     endCoord: [number, number] | null;   // [lng, lat]
     destinationRiver?: import('../types/River').RiverData | null;
     destinationPlace?: import('./MapSearchbar').MapSearchResult | null;
-    onRouteCalculated: (route: GeoJSON.LineString | null) => void;
+    onRouteCalculated: (route: LineString | null) => void;
     isManualStart?: boolean;
     onRequestManualStart?: () => void;
     onUseCurrentLocation?: () => void;
