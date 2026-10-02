@@ -496,16 +496,19 @@ export default function RiverEditor() {
 
   const handleSelectVersion = (_log: any, index: number, allLogs: any[]) => {
     if (!liveData) return;
-    const historical = reconstructHistoricalState(liveData, allLogs, index);
+    const historical = {
+      ...reconstructHistoricalState(liveData, allLogs, index),
+      updated_at: _log.changed_at,
+    };
     
     // Calculate the state AFTER the edit, which is unwound up to index - 1
-    const stateAfterEdit = index > 0 
+    const reconstructedAfterEdit = index > 0
       ? reconstructHistoricalState(liveData, allLogs, index - 1)
       : liveData;
-
-    // Injected for UI display consistency
-    (historical as any).updated_at = _log.changed_at;
-    (stateAfterEdit as any).updated_at = index > 0 ? allLogs[index - 1].changed_at : undefined;
+    const stateAfterEdit = {
+      ...reconstructedAfterEdit,
+      updated_at: index > 0 ? allLogs[index - 1].changed_at : undefined,
+    };
     
     setComparisonData({ historical, stateAfterEdit, logIndex: index, allLogs, _log });
   };

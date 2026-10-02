@@ -42,6 +42,7 @@ export default defineConfig([
       'react-hooks/rules-of-hooks': 'off',
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/purity': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
       'no-empty': 'off',
       'sonarjs/cognitive-complexity': 'warn',
       'sonarjs/no-nested-conditional': 'warn',
@@ -91,5 +92,21 @@ export default defineConfig([
         },
       ],
     }
+  },
+  {
+    // Exact numeric assertions and test organization are intentional in fixtures.
+    files: [
+      'src/**/*.test.{ts,tsx}',
+      'src/**/__tests__/**/*.{ts,tsx}',
+      'api/src/**/*.test.{ts,tsx}',
+      'api/src/**/__tests__/**/*.{ts,tsx}',
+      'api-flow/src/**/*.test.{ts,tsx}',
+      'api-flow/src/**/__tests__/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'sonarjs/no-floating-point-equality': 'off',
+      'sonarjs/parameterized-tests': 'off',
+      'sonarjs/prefer-specific-assertions': 'off',
+    },
   },
 ])

@@ -303,13 +303,6 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         }
     }, [isNavigating]); // intentional: navDestination/location are read from closure at fire time, not tracked
 
-    useEffect(() => {
-        if (isNavigating && isAutoCenter && location.latitude && location.longitude && mapRef.current) {
-            mapRef.current.flyTo({ center: [location.longitude, location.latitude], zoom: Math.max(mapZoom, 14), duration: 500 });
-        }
-    }, [isNavigating, isAutoCenter, location.latitude, location.longitude]);
-
-
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -325,6 +318,12 @@ export const SharedMap: React.FC<SharedMapProps> = ({
 
     const [mapCenter, setMapCenter] = useState<[number, number]>(mapInitialCenter);
     const [mapZoom, setMapZoom] = useState<number>(mapInitialZoom);
+
+    useEffect(() => {
+        if (isNavigating && isAutoCenter && location.latitude && location.longitude && mapRef.current) {
+            mapRef.current.flyTo({ center: [location.longitude, location.latitude], zoom: Math.max(mapZoom, 14), duration: 500 });
+        }
+    }, [isNavigating, isAutoCenter, location.latitude, location.longitude, mapZoom]);
 
     // Stable references for the click handler to prevent Re-rendering 10k markers!
     const focusRiverRef = React.useRef(focusRiver);

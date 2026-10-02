@@ -167,13 +167,18 @@ export function formatGaugeName(name: string): { name: string; section?: string 
         // Check if the section starts with a direction and if name ends with a distance
         const lowerSection = section.toLowerCase();
         if (lowerSection.startsWith('upstream') || lowerSection.startsWith('downstream') || lowerSection.startsWith('en aval') || lowerSection.startsWith('en amont')) {
-            // eslint-disable-next-line sonarjs/slow-regex
-            const distancePattern = /(?:at|à|a)?\s*[\d.]+\s*(?:mi|km|miles|kilometers)\s*$/i;
-            const distanceMatch = distancePattern.exec(gaugeName);
-            if (distanceMatch) {
-                const distance = distanceMatch[0];
-                gaugeName = gaugeName.substring(0, gaugeName.length - distance.length).trim();
-                section = distance.trim() + " " + section;
+            const words = gaugeName.trim().split(/\s+/);
+            const unit = words[words.length - 1]?.toLowerCase();
+            const distanceValue = words[words.length - 2];
+            const distanceUnits = new Set(['miles', 'kilometers', 'mi', 'km']);
+            if (unit && distanceUnits.has(unit) && distanceValue && Number.isFinite(Number(distanceValue))) {
+                const possiblePrefix = words[words.length - 3]?.toLowerCase();
+                const distanceStart = possiblePrefix && ['at', 'à', 'a'].includes(possiblePrefix)
+                    ? words.length - 3
+                    : words.length - 2;
+                const distance = words.slice(distanceStart).join(' ');
+                gaugeName = words.slice(0, distanceStart).join(' ');
+                section = distance + " " + section;
             }
         }
 
