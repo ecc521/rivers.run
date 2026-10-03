@@ -42,7 +42,7 @@ not re-add it.
 
 ## 3. Flow History Store (`FLOW_DB`)
 
-30 days of observations for every gauge live in `flow-db`, a D1 database kept separate
+Up to 30 days of observations accumulated through routine ingest live in `flow-db`, a D1 database kept separate
 from `rivers-db` so ingest never contends with user CRUD. The binding is optional in
 code: unbound, the worker uses the old stateless path (`performDataSync`). Schema:
 `migrations/2026-08-01_flow_history_store.sql`, applied to the production database on
@@ -54,31 +54,77 @@ npx wrangler d1 create flow-db
 npx wrangler d1 execute flow-db --remote --config api-flow/wrangler.toml --file api-flow/migrations/2026-08-01_flow_history_store.sql
 ```
 
-**Ring buffer.** `gauge_readings` has one row per (gauge, 15-minute slot), with
-`slot = floor(ts / 15 min) mod 3072` (32 days). A new reading overwrites the slot's
-previous lap, so retention needs no DELETEs (D1 bills deleted rows as writes). Every
-read must filter `ts >= now - 30d`. A slot keeps the reading closest to its start
-(parameters it lacks are filled from other readings in the slot). `ts` is the slot
-start; `off` is the source reading's offset in seconds. Served readings use
-`ts + off` rounded to 5 minutes, the same convention as the live USGS and NWS parsers.
+**Hourly ring buffer.** `gauge_reading_hours` has one row per (gauge, hour),
+with `slot = floor(ts / 1h) mod 768` (32 days). Each nullable `q0`–`q3` JSON
+array retains one 15-minute reading as `[off, cfs, ft, cms, m, temp_f, precip_in]`.
+A new hour lap clears the previous lap's quarters, so retention needs no DELETEs.
+Within a quarter, the closest reading wins and missing parameters are filled as before.
+`gauge_reading_slots` expands the quarters for readers, retaining the original slot
+start and source offset. Queries constrain its physical `hour_slot` so SQLite seeks
+the hourly primary key before expanding readings. Served timestamps remain
+`ts + off` rounded to 5 minutes. All reads filter to the 30-day horizon.
+
+Before deploying this Worker, use `tools/hourly-migration.mjs` to apply
+`migrations/2026-10-02_hourly_flow_history.sql` in bounded batches.
+It seeds only the most recent eight days of old readings into hourly rows and retains the original
+`gauge_readings` table untouched for rollback. Reapplying it cannot overwrite
+new hourly data. The old table is an archive after cutover, not a live read path;
+removing it is a separate maintenance decision. The `hourly_seed_from` metadata
+key freezes the eight-day copy boundary; coverage and repair markers are clamped to
+that boundary so older requests use the provider. Pause ingest and drain in-flight
+cycles before copying and switching the Worker. Cron changes can take 15 minutes
+to propagate; wait for propagation and completion of the last active cycle.
+
+The migration runner copies 20 gauges per query through the legacy primary key,
+verifies every retained quarter and numeric field with symmetric `EXCEPT`, and
+checkpoints `hourly_copy_through` after each verified batch. API calls are paced
+350 ms apart, with bounded retries honoring `Retry-After` on rate limits or server
+errors. It verifies all batches
+again before changing coverage, then writes `hourly_migration_complete`. A failed
+run resumes without rewriting verified hours. The `--report` path saves original
+sync state for rollback; keep it outside the checkout. Do not run the migration
+again after new hourly ingest begins: old readings become stale.
+
+```bash
+node api-flow/tools/hourly-migration.mjs --remote --paused \
+  --account <account-id> --database <flow-db-id> \
+  --oauth-config <wrangler-oauth-config> --report <artifact-path>
+```
+
+Use `--local-file <sqlite-path>` instead of remote credentials to rehearse. Only
+push `main` after the production copy and coverage verification pass. The existing
+GitHub workflow deploys the Worker and restores the configured cron triggers.
+If deployment fails before the Flow Worker switches, restore saved coverage and
+cron triggers before returning to old ingest. After new ingest begins, rollback
+must reconcile new hourly observations into the old table before reverting.
+
+`upsertSlots` groups all quarters of a gauge-hour before splitting bounded JSON
+batches. Four new observations or four revisions in one batch cost one row write;
+separate provider pages or later cycles may still update that hour again. This
+preserves bounded ingest memory and every 15-minute value, without downsampling.
 
 **Guarded writes.** D1 bills rows written, so every upsert (`flowStore.ts`) has a
 `WHERE` that makes an unchanged row a no-op. Replaying a batch must write 0 rows;
 tests assert this. `gauge_sync_state` and `sync_meta` are also only written on change.
 Bulk writes pass one JSON parameter through `json_each` (D1 allows 100 bound
-parameters). Reads use `CROSS JOIN` plus a slot range so they seek the primary key.
+parameters). Reads use `CROSS JOIN` plus an hour-slot range so they seek the primary key.
 
 **Ingest** (`flowSync.ts`, `usgsIngest.ts`), on the `*/15` trigger only (the daily
 and weekly crons also fire at 00:00 and must not start a second ingest):
 
 - USGS, all registry gauges, 200 sites per request: a `datetime=<now-2h>/..` window
   sweep every cycle; an hourly revision sweep (`last_modified` since a global cursor,
-  bounded by `datetime=<now-30d>/..`, cursor advanced only if every batch completed);
-  and backfill (failed windows first, then 7 days, then 30) chunked to 100 site-days
+  bounded by `datetime=<now-8d>/..`, cursor advanced only if every batch completed);
+  and backfill (failed windows first, then eight days of prediction history) chunked to 100 site-days
   per request. Pages are upserted as they arrive. Backfill and revisions stop when
   `X-RateLimit-Remaining` falls below 300; a revision sweep also stops at 120 pages,
   and a cursor more than a day old becomes datetime repair. A failing backfill group
-  is split; a lone failing site backs off (`fail_count`, `retry_at`).
+  is split; a lone failing site backs off (`fail_count`, `retry_at`). No automatic
+  history fill or revision repair extends beyond eight days (192 hours, shared with
+  the model snapshot). When an unresolved gap ages out, coverage moves forward past
+  that gap before repair is bounded. Continuous older history remains usable and
+  grows naturally up to 30 days; history requests outside coverage fetch live from
+  the provider and do not persist an on-demand backfill.
   `FLOW_BACKFILL_MAX_REQUESTS` caps backfill requests per cycle (default 100).
 - EC, NWS: the whole province file or gauge series, one unit at a time
   (`getBulkHistories`); EC parses only readings from 3h before its last success
@@ -100,13 +146,8 @@ Known gaps, not yet handled:
 
 - A value USGS deletes stays stored: upserts never null a column, and a missing
   record is indistinguishable from an unchanged one.
-- The legacy `approved` column remains in `gauge_readings` with its default value so
-  removing it does not require a table rebuild. Ingest no longer requests, stores, or
-  updates approval status because no reader consumes it.
-
-`node api-flow/tools/estimate-writes.mjs` projects monthly rows written from the
-per-cycle counts logged in local `worker_logs`. Measure whole hours, since EC and
-UK write in one cycle of four. Workers Paid includes 50M rows written a month.
+- The legacy `approved` column remains only in the archived `gauge_readings` table.
+  Hourly storage has no approval field; ingest neither requests nor stores approval status.
 
 ### Model snapshot (`model/usgs_hourly.json.gz` in R2)
 
@@ -126,8 +167,8 @@ Gzipped JSON:
 Hour `H` (label `start + i * step_ms`) is the mean of the stored readings with
 `H <= ts < H + 1h`, matching pandas `resample("h").mean()` with left labels. Means
 are rounded to 5 significant figures (not fixed decimals, which distort small rivers
-in log space). A full snapshot is about 30 MB of JSON, 8 to 10 MB gzipped. The store
-keeps one reading per 15-minute slot, so a full hour has 4. The last hour is the
+in log space). A full snapshot is about 30 MB of JSON, 8 to 10 MB gzipped. The hourly store
+retains one reading per 15-minute quarter, so a full hour has 4. The last hour is the
 current one and is partial. Sentinels (`<= -999999`) are excluded. Every registry USGS
 gauge is listed, even with no data. In Python:
 `np.array(snap["discharge_cfs"], dtype=float)` turns `null` into `nan`.

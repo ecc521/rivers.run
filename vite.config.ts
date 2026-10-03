@@ -152,7 +152,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom', // Better for React/DOM testing than plain node
-    exclude: ['node_modules', 'dist', '.git', 'api', 'api-flow', 'functions', 'tests'],
+    exclude: ['node_modules', 'dist', '.git', '.claude/**', 'api', 'api-flow', 'functions', 'tests'],
     // api/ and api-flow/ need `environment: 'node'` (they're Workers, not
     // DOM code) — a single Vitest run can't mix environments in one project,
     // so they're declared as separate projects here instead. This makes

@@ -7,8 +7,8 @@ import {
     type UsgsCycleInput,
 } from "../usgsIngest";
 import {
-    resolveGaugeKeys, readProviderSyncState, readSeries, getMeta, setMeta, extendCoverage,
-    slotStartOf, RETENTION_MS,
+    resolveGaugeKeys, readProviderSyncState, readSeries, getMeta, setMeta, extendCoverage, markRepair,
+    slotStartOf, RETENTION_MS, PREDICTION_HISTORY_MS,
 } from "../flowStore";
 import type { OGCPagesResult } from "../usgs";
 
@@ -94,25 +94,24 @@ describe("backfill planning", () => {
     const state = (coverageStart: number | null, repairFrom: number | null = null, gaugeKey = 1) =>
         ({ gaugeKey, coverageStart, repairFrom });
 
-    it("orders repair, then the 7-day hindcast, then the rest of 30 days", () => {
+    it("orders repairs before prediction warmup, without scheduling older history", () => {
         const tasks = planBackfill(new Map([
             ["USGS:full", state(NOW - 10 * DAY, null, 1)],
             ["USGS:cold", state(null, null, 2)],
             ["USGS:rep", state(NOW - 40 * DAY, NOW - DAY, 3)],
             ["USGS:done", state(NOW - 31 * DAY, null, 4)],
         ]), ["full", "cold", "rep", "done"], NOW - WINDOW_MS, NOW);
-        expect(tasks.map(t => `${t.kind}:${t.siteId}`)).toEqual(["repair:rep", "recent:cold", "full:full"]);
-        expect(tasks[1]).toMatchObject({ from: slotStartOf(NOW - 7 * DAY), to: NOW });
-        expect(tasks[2]).toMatchObject({ from: slotStartOf(NOW - RETENTION_MS), to: NOW - 10 * DAY });
+        expect(tasks.map(t => `${t.kind}:${t.siteId}`)).toEqual(["repair:rep", "recent:cold"]);
+        expect(tasks[1]).toMatchObject({ from: slotStartOf(NOW - PREDICTION_HISTORY_MS), to: NOW });
     });
 
     it("groups tasks by kind within the site-day budget", () => {
         const recent = Array.from({ length: 40 }, (_, i) => ({ siteId: `${i}`, gaugeKey: i, kind: "recent" as const, from: NOW - 7 * DAY, to: NOW }));
-        const full = [{ siteId: "x", gaugeKey: 99, kind: "full" as const, from: NOW - 30 * DAY, to: NOW - 7 * DAY }];
-        const groups = groupTasks([...recent, ...full]);
+        const repair = [{ siteId: "x", gaugeKey: 99, kind: "repair" as const, from: NOW - DAY, to: NOW - WINDOW_MS }];
+        const groups = groupTasks([...recent, ...repair]);
         const perGroup = Math.floor(SITE_DAYS_PER_REQUEST / 7);
         expect(groups[0]).toHaveLength(perGroup);
-        expect(groups.at(-1)).toEqual(full);
+        expect(groups.at(-1)).toEqual(repair);
         expect(groups.flat()).toHaveLength(41);
     });
 
@@ -175,13 +174,13 @@ describe("runUsgsCycle", () => {
         const run = await setup(["1", "2"]);
         const first = await run({ api: fakeApi() });
         expect(first.windowBatches).toBe(1);
-        expect(first.rowsWritten.window).toBe(2 * (WINDOW_MS / (15 * MIN) + 1));
-        // The 7-day hindcast comes first; the rest of 30 days next cycle.
+        expect(first.rowsWritten.window).toBe(2 * (WINDOW_MS / HOUR + 1));
+        // Warm up only the eight-day model input. Subsequent cycles do not deepen it.
         let state = await readProviderSyncState(db, "USGS");
-        expect(state.get("USGS:1")!.coverageStart).toBe(slotStartOf(NOW - 7 * DAY));
+        expect(state.get("USGS:1")!.coverageStart).toBe(slotStartOf(NOW - PREDICTION_HISTORY_MS));
         await run({ api: fakeApi() });
         state = await readProviderSyncState(db, "USGS");
-        expect(state.get("USGS:1")!.coverageStart).toBe(slotStartOf(NOW - RETENTION_MS));
+        expect(state.get("USGS:1")!.coverageStart).toBe(slotStartOf(NOW - PREDICTION_HISTORY_MS));
 
         const replay = await run({ api: fakeApi() });
         expect(replay.rowsWritten).toEqual({ window: 0, revision: 0, backfill: 0, state: 0 });
@@ -227,19 +226,10 @@ describe("runUsgsCycle", () => {
         const api = fakeApi();
         const ok = await run({ api, runRevision: true, backfillRequests: 0 });
         expect(ok.revision).toBe("ran");
-        const reasons = ok.revisionReasons;
-        const classified = reasons.newSlots + reasons.ringReplacements + reasons.closerReadings +
-            reasons.valueChanges + reasons.gapFills + reasons.fartherGapFills +
-            reasons.unchanged + reasons.stale;
-        const expectedWrites = reasons.newSlots + reasons.ringReplacements + reasons.closerReadings +
-            reasons.valueChanges + reasons.gapFills + reasons.fartherGapFills;
-        expect(reasons.candidates).toBeGreaterThan(0);
-        expect(classified).toBe(reasons.candidates);
-        expect(ok.rowsWritten.revision).toBe(expectedWrites);
         expect(await getMeta(db, META_REVISION_CURSOR)).toBe(NOW);
         const revUrl = api.urls.find(u => u.includes("last_modified"))!;
         expect(decodeURIComponent(revUrl)).toContain(`last_modified=${iso(NOW - HOUR - 15 * MIN).replace(".000", "")}/..`);
-        expect(decodeURIComponent(revUrl)).toContain(`datetime=${iso(slotStartOf(NOW - RETENTION_MS)).replace(".000", "")}/..`);
+        expect(decodeURIComponent(revUrl)).toContain(`datetime=${iso(slotStartOf(NOW - PREDICTION_HISTORY_MS)).replace(".000", "")}/..`);
     });
 
     it("skips the revision sweep when the budget cannot cover it", async () => {
@@ -250,7 +240,7 @@ describe("runUsgsCycle", () => {
     });
 
     it("caps revision sweep pages, keeps what it stored, and holds the cursor", async () => {
-        const run = await setup(["1", "2", "3"]);
+        const run = await setup(Array.from({ length: 9 }, (_, i) => String(i + 1)));
         await setMeta(db, META_REVISION_CURSOR, NOW - HOUR);
         const api = fakeApi();
         const stats = await run({ api, runRevision: true, backfillRequests: 0 });
@@ -270,6 +260,30 @@ describe("runUsgsCycle", () => {
         expect(await getMeta(db, META_REVISION_CURSOR)).toBe(NOW);
         const state = await readProviderSyncState(db, "USGS");
         expect(state.get("USGS:1")!.repairFrom).toBe(NOW - 3 * DAY - 15 * MIN);
+    });
+
+    it.each(["repair", "window", "revision"])("expires an old %s gap and repairs only prediction history", async (source) => {
+        const run = await setup(["1"]);
+        await extendCoverage(db, [1], NOW - 30 * DAY);
+        if (source === "repair") await markRepair(db, [1], NOW - 12 * DAY);
+        if (source === "window") await setMeta(db, META_WINDOW_OK, NOW - 12 * DAY);
+        if (source === "revision") await setMeta(db, META_REVISION_CURSOR, NOW - 12 * DAY);
+        await run({ api: fakeApi(), runRevision: source === "revision", backfillRequests: 0 });
+        const floor = slotStartOf(NOW - PREDICTION_HISTORY_MS);
+        expect((await readProviderSyncState(db, "USGS")).get("USGS:1")).toMatchObject({ coverageStart: floor, repairFrom: floor });
+        const api = fakeApi();
+        await run({ api });
+        expect((await readProviderSyncState(db, "USGS")).get("USGS:1")).toMatchObject({ coverageStart: floor, repairFrom: null });
+        for (const url of api.urls) expect(Date.parse(new URL(url).searchParams.get("datetime")!.split("/")[0])).toBeGreaterThanOrEqual(floor);
+    });
+
+    it("preserves naturally accumulated older coverage when there is no abandoned gap", async () => {
+        const run = await setup(["1"]);
+        await extendCoverage(db, [1], NOW - 20 * DAY);
+        const api = fakeApi();
+        const stats = await run({ api });
+        expect(stats.backfillRequests).toBe(0);
+        expect((await readProviderSyncState(db, "USGS")).get("USGS:1")!.coverageStart).toBe(NOW - 20 * DAY);
     });
 
     it("splits a failing backfill group and backs off only the bad site", async () => {

@@ -20,7 +20,7 @@ import { normalizeGaugeId } from "./utils/formatting";
 import { generateSitemap } from "./services/sitemap";
 import { processNotifications } from "./services/notifications";
 import { performDataSync } from "./services/syncScheduler";
-import { runIngestCycle, projectSitedata, readLinkedGaugeIds, rowsWrittenByCycle, storeCovers, ingestMetaKey } from "./services/flowSync";
+import { runIngestCycle, projectSitedata, readLinkedGaugeIds, storeCovers, ingestMetaKey } from "./services/flowSync";
 import { readSeries, readSyncState, getMeta } from "./services/flowStore";
 import { isHourlyCycle } from "./services/usgsIngest";
 import { writeUsgsHourlySnapshot } from "./services/modelSnapshot";
@@ -502,16 +502,13 @@ async function ingestToStore(env: Env, db: D1Database, registryMetadata: Record<
     }
     const merged = await projectSitedata(db, registryMetadata, linkedIds, stats.forecasts, previous, now, stats.latest, stats.fetched);
 
-    const written = rowsWrittenByCycle(stats);
     const u = stats.usgs;
     await logToD1(env, "INFO", "sync",
         `Store ingest in ${((Date.now() - now) / 1000).toFixed(1)}s: ` +
-        `rows written ${Object.values(written).reduce((a, b) => a + b, 0)}, ` +
         `USGS requests ${u?.requests ?? 0} (window ${u?.windowBatches ?? 0} batches, ` +
         `${u?.windowFailed ?? 0} failed; revision ${u?.revision ?? "n/a"}; ` +
         `backfill ${u?.backfillRequests ?? 0} ${u?.backfillStopped ?? ""}), ` +
-        `rate remaining ${u?.rateRemaining ?? "?"}, errors ${stats.errors}.`,
-        { cycleAt: now, written, usgs: u, providerRows: stats.providerRows });
+        `rate remaining ${u?.rateRemaining ?? "?"}, errors ${stats.errors}.`);
     return merged;
 }
 

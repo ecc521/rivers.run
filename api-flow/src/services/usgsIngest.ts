@@ -2,11 +2,10 @@ import { fetchOGCPages, USGS_API_BASE, PARAMETER_CODES } from "./usgs";
 import { isValidReadingValue } from "./provider";
 import {
     reduceToSlots, upsertSlots, slotStartOf,
-    readProviderSyncState, extendCoverage, markRepair, markProviderRepair, clearRepair,
+    readProviderSyncState, extendCoverage, markRepair, markProviderRepair, clearRepair, limitRepairHistory,
     recordBackfillFailure, clearBackfillFailures,
-    getMeta, setMeta, SLOT_MS, RETENTION_MS,
-    emptyUpsertReasonCounts,
-    type ObservedReading, type SyncState, type UpsertReasonCounts,
+    getMeta, setMeta, SLOT_MS, PREDICTION_HISTORY_MS,
+    type ObservedReading, type SyncState,
 } from "./flowStore";
 
 /**
@@ -16,10 +15,10 @@ import {
  *     widened to the last successful sweep after missed cycles. Late and
  *     revised readings are the revision sweep's job, so this stays short.
  *  2. Revision sweep, hourly: `last_modified=<cursor>/..` bounded by
- *     `datetime=<now-30d>/..`. One global cursor, advanced only when every
+ *     `datetime=<now-8d>/..`. One global cursor, advanced only when every
  *     batch completed.
- *  3. Backfill: repair of failed windows, then cold gauges to 7 days (the
- *     model's hindcast), then to 30 days. Chunked by site-days and capped per
+ *  3. Backfill: repair of failed windows, then cold gauges to 8 days (the
+ *     model input plus slack). Chunked by site-days and capped per
  *     cycle and by the API's remaining rate budget.
  *
  * All of it goes through the guarded ring-buffer upsert, so re-reading
@@ -31,7 +30,7 @@ export const WINDOW_MS = 2 * 60 * 60 * 1000;
 /** Longest window the sweep widens to after missed cycles; beyond it, repair. */
 export const MAX_WINDOW_MS = 24 * 60 * 60 * 1000;
 export const REVISION_OVERLAP_MS = 15 * 60 * 1000;
-export const PRIORITY_BACKFILL_MS = 7 * 24 * 60 * 60 * 1000;
+export const PRIORITY_BACKFILL_MS = PREDICTION_HISTORY_MS;
 /** ~26k features (~10MB) a request at ~260 records per site-day. */
 export const SITE_DAYS_PER_REQUEST = 100;
 /** Pages are parsed whole; the isolate has 128 MB, so keep each one a few MB. */
@@ -163,8 +162,6 @@ export interface UsgsCycleStats {
     backfillRequests: number;
     backfillStopped: "done" | "request-cap" | "rate-budget" | null;
     rowsWritten: { window: number; revision: number; backfill: number; state: number };
-    /** Read-only attribution of revision upsert candidates, accumulated in memory. */
-    revisionReasons: UpsertReasonCounts;
     rateRemaining: number | null;
 }
 
@@ -209,8 +206,7 @@ async function fetchAndStore(
     input: UsgsCycleInput,
     budget: RateBudget,
     windowStart: number,
-    shouldStop?: () => boolean,
-    reasons?: UpsertReasonCounts
+    shouldStop?: () => boolean
 ): Promise<FetchOutcome> {
     const fetchPages = input.deps?.fetchPages ?? fetchOGCPages;
     let written = 0;
@@ -228,9 +224,7 @@ async function fetchAndStore(
         written += await upsertSlots(
             input.db,
             reduceToSlots(readings, { now: input.now, windowStart }),
-            input.keys,
-            reasons,
-            input.now
+            input.keys
         );
         return shouldStop ? !shouldStop() : undefined;
     });
@@ -249,16 +243,19 @@ export function planWindow(okAt: number | null, now: number): { from: number; re
     if (resume >= normal) return { from: normal, repairFrom: null };
     const floor = slotStartOf(now - MAX_WINDOW_MS);
     if (resume >= floor) return { from: resume, repairFrom: null };
-    return { from: floor, repairFrom: Math.max(resume, slotStartOf(now - RETENTION_MS)) };
+    return { from: floor, repairFrom: Math.max(resume, slotStartOf(now - PREDICTION_HISTORY_MS)) };
 }
 
 async function windowSweep(input: UsgsCycleInput, budget: RateBudget, stats: UsgsCycleStats): Promise<void> {
     const { db, now, keys } = input;
-    const plan = planWindow(await getMeta(db, META_WINDOW_OK), now);
+    const okAt = await getMeta(db, META_WINDOW_OK);
+    const plan = planWindow(okAt, now);
     stats.windowFrom = plan.from;
     if (plan.repairFrom !== null) {
-        stats.rowsWritten.state += await markProviderRepair(db, "USGS", plan.repairFrom);
+        stats.rowsWritten.state += await markProviderRepair(db, "USGS", Math.min(plan.repairFrom, slotStartOf(okAt! - REVISION_OVERLAP_MS)));
     }
+
+    stats.rowsWritten.state += await limitRepairHistory(db, "USGS", slotStartOf(now - PREDICTION_HISTORY_MS));
 
     const batches = chunk(input.siteIds, SITES_PER_REQUEST);
     stats.windowBatches = batches.length;
@@ -290,8 +287,9 @@ async function revisionSweep(input: UsgsCycleInput, budget: RateBudget, stats: U
     if (now - cursor > MAX_REVISION_LAG_MS) {
         // Too far behind to catch up by last_modified: refetch the gap by
         // datetime instead (backfill repairs) and restart the cursor.
-        const from = Math.max(slotStartOf(cursor - REVISION_OVERLAP_MS), slotStartOf(now - RETENTION_MS));
+        const from = slotStartOf(cursor - REVISION_OVERLAP_MS);
         stats.rowsWritten.state += await markProviderRepair(db, "USGS", from);
+        stats.rowsWritten.state += await limitRepairHistory(db, "USGS", slotStartOf(now - PREDICTION_HISTORY_MS));
         stats.rowsWritten.state += await setMeta(db, META_REVISION_CURSOR, now);
         stats.revision = "lagged-to-repair";
         return;
@@ -303,7 +301,7 @@ async function revisionSweep(input: UsgsCycleInput, budget: RateBudget, stats: U
         return;
     }
 
-    const from = slotStartOf(now - RETENTION_MS);
+    const from = slotStartOf(now - PREDICTION_HISTORY_MS);
     const lastModifiedFrom = cursor - REVISION_OVERLAP_MS;
     let allComplete = true;
     let pages = 0;
@@ -318,8 +316,7 @@ async function revisionSweep(input: UsgsCycleInput, budget: RateBudget, stats: U
             input,
             budget,
             from,
-            afterPage,
-            stats.revisionReasons
+            afterPage
         );
         if (!out.complete) allComplete = false;
         stats.rowsWritten.revision += out.written;
@@ -336,12 +333,12 @@ async function revisionSweep(input: UsgsCycleInput, budget: RateBudget, stats: U
 export interface BackfillTask {
     siteId: string;
     gaugeKey: number;
-    kind: "repair" | "recent" | "full";
+    kind: "repair" | "recent";
     from: number;
     to: number;
 }
 
-/** Work still owed, most urgent first: repairs, then 7 days, then 30 days. */
+/** Work still owed, most urgent first: repairs, then the eight-day prediction window. */
 export function planBackfill(
     state: Map<string, Pick<SyncState, "gaugeKey" | "coverageStart" | "repairFrom"> & { retryAt?: number | null }>,
     siteIds: string[],
@@ -349,26 +346,23 @@ export function planBackfill(
     now: number
 ): BackfillTask[] {
     const recentTarget = slotStartOf(now - PRIORITY_BACKFILL_MS);
-    const fullTarget = slotStartOf(now - RETENTION_MS);
-    const repair: BackfillTask[] = [], recent: BackfillTask[] = [], full: BackfillTask[] = [];
+    const repair: BackfillTask[] = [], recent: BackfillTask[] = [];
 
     for (const siteId of siteIds) {
         const s = state.get(`USGS:${siteId}`);
         if (!s || (s.retryAt != null && s.retryAt > now)) continue;
         const base = { siteId, gaugeKey: s.gaugeKey };
         if (s.repairFrom !== null && s.repairFrom < windowFrom) {
-            repair.push({ ...base, kind: "repair", from: s.repairFrom, to: windowFrom });
+            repair.push({ ...base, kind: "repair", from: Math.max(s.repairFrom, recentTarget), to: windowFrom });
         }
         const cov = s.coverageStart;
         if (cov === null || cov > recentTarget) {
             recent.push({ ...base, kind: "recent", from: recentTarget, to: cov ?? now });
-        } else if (cov > fullTarget) {
-            full.push({ ...base, kind: "full", from: fullTarget, to: cov });
         }
     }
 
     const byTo = (a: BackfillTask, b: BackfillTask) => (b.to - a.to) || (a.from - b.from);
-    return [...repair.sort(byTo), ...recent.sort(byTo), ...full.sort(byTo)];
+    return [...repair.sort(byTo), ...recent.sort(byTo)];
 }
 
 /** Groups tasks of one kind into requests of at most SITE_DAYS_PER_REQUEST. */
@@ -450,7 +444,6 @@ export async function runUsgsCycle(input: UsgsCycleInput): Promise<UsgsCycleStat
         revision: "not-due", revisionBatches: 0,
         backfillRequests: 0, backfillStopped: null,
         rowsWritten: { window: 0, revision: 0, backfill: 0, state: 0 },
-        revisionReasons: emptyUpsertReasonCounts(),
         rateRemaining: null,
     };
     const siteIds = input.siteIds.filter(id => /^\d+$/.test(id));

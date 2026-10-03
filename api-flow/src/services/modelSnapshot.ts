@@ -1,4 +1,4 @@
-import { readHourlySums } from "./flowStore";
+import { readHourlySums, PREDICTION_HISTORY_MS } from "./flowStore";
 
 /**
  * Hourly export of recent USGS discharge and stage for the forecast model.
@@ -9,7 +9,7 @@ import { readHourlySums } from "./flowStore";
  */
 
 export const SNAPSHOT_KEY = "model/usgs_hourly.json.gz";
-export const SNAPSHOT_HOURS = 192;
+export const SNAPSHOT_HOURS = PREDICTION_HISTORY_MS / 3_600_000;
 export const SNAPSHOT_VERSION = 1;
 const HOUR_MS = 3_600_000;
 const SITES_PER_QUERY = 500;

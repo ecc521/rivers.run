@@ -6,7 +6,7 @@ import {
     markRepair, markProviderRepair, clearRepair, getMeta, setMeta,
     writeCoverage, recordBackfillFailure, clearBackfillFailures,
     countReadings, slotRanges, slotIndexOf, isStorableGaugeId, LATEST_SQL,
-    SLOT_MS, SLOTS, RETENTION_MS, FUTURE_SKEW_MS, emptyUpsertReasonCounts,
+    SLOT_MS, SLOTS, RETENTION_MS, FUTURE_SKEW_MS,
     type GaugeDimension, type ObservedReading, type SlotRow,
 } from "../flowStore";
 
@@ -32,7 +32,7 @@ async function keysFor(...ids: string[]) {
     return (await resolveGaugeKeys(db, ids.map(id => dim(id)))).keys;
 }
 
-const stored = () => db.query("SELECT slot, ts, off, cfs, ft FROM gauge_readings ORDER BY gauge_key, slot");
+const stored = () => db.query("SELECT slot, ts, off, cfs, ft FROM gauge_reading_slots ORDER BY gauge_key, slot");
 
 describe("gauge id filtering", () => {
     it("rejects dead prefixes and ids without a provider", () => {
@@ -98,90 +98,10 @@ describe("reduceToSlots", () => {
 });
 
 describe("upsertSlots (ring buffer)", () => {
-    it("attributes guarded upsert candidates without adding counter writes", async () => {
-        const ids = Array.from({ length: 9 }, (_, i) => `USGS:${i + 1}`);
-        const keys = await keysFor(...ids);
-        const old = NOW - SLOTS * SLOT_MS;
-        await upsertSlots(db, [
-            row(ids[0], NOW, { cfs: 5 }),
-            row(ids[1], NOW, { cfs: 5, ft: 1 }),
-            row(ids[2], NOW, { cfs: 5 }),
-            row(ids[3], NOW, { cfs: 5 }),
-            row(ids[4], NOW, { off: 300, cfs: 5 }),
-            row(ids[5], NOW, { ft: 2 }),
-            row(ids[6], NOW, { cfs: 5 }),
-            row(ids[7], old, { cfs: 5 }),
-        ], keys);
-
-        const reasons = emptyUpsertReasonCounts();
-        const written = await upsertSlots(db, [
-            row(ids[0], NOW, { cfs: 5 }),                         // unchanged
-            row(ids[1], NOW, { cfs: 6, ft: 2, temp_f: 50 }),      // changed values plus field addition
-            row(ids[2], NOW, { cfs: 5, ft: 2 }),                  // same-time gap fill
-            row(ids[3], NOW, { cfs: 5 }),                         // unchanged duplicate
-            row(ids[4], NOW, { off: 0, cfs: 5 }),                 // closer reading
-            row(ids[5], NOW, { off: 300, cfs: 5 }),               // farther gap fill
-            row(ids[6], old, { cfs: 6 }),                         // stale ring generation
-            row(ids[7], NOW, { cfs: 6 }),                         // ring replacement
-            row(ids[8], NOW, { cfs: 5 }),                         // new slot
-        ], keys, reasons, NOW);
-
-        expect(written).toBe(6);
-        expect(reasons).toEqual({
-            candidates: 9,
-            newSlots: 1,
-            ringReplacements: 1,
-            closerReadings: 1,
-            valueChanges: 1,
-            gapFills: 1,
-            fartherGapFills: 1,
-            unchanged: 2,
-            stale: 1,
-            valueChangesByColumn: {
-                cfs: 1, ft: 1, cms: 0, m: 0, temp_f: 0, precip_in: 0,
-            },
-            fieldsAddedByColumn: {
-                cfs: 1, ft: 1, cms: 0, m: 0, temp_f: 1, precip_in: 0,
-            },
-            mixedValueChangeAndFieldAdd: 1,
-            valueChangeAges: {
-                under2Hours: 1, twoTo24Hours: 0, oneTo7Days: 0,
-                sevenTo30Days: 0, over30Days: 0,
-            },
-            examples: [{
-                gaugeId: ids[1], ts: NOW, off: 0,
-                changes: { cfs: [5, 6], ft: [1, 2] },
-            }],
-        });
-    });
-
-    it("buckets value-change ages and caps examples", async () => {
-        const ages = [HOUR, 3 * HOUR, 2 * DAY, 8 * DAY, 31 * DAY, 32 * DAY];
-        const ids = ages.map((_, i) => `USGS:${i + 1}`);
-        const keys = await keysFor(...ids);
-        await upsertSlots(db, ages.map((age, i) => row(ids[i], NOW - age, { cfs: 1 })), keys);
-
-        const reasons = emptyUpsertReasonCounts();
-        await upsertSlots(
-            db,
-            ages.map((age, i) => row(ids[i], NOW - age, { cfs: 2 })),
-            keys,
-            reasons,
-            NOW
-        );
-
-        expect(reasons.valueChangeAges).toEqual({
-            under2Hours: 1, twoTo24Hours: 1, oneTo7Days: 1,
-            sevenTo30Days: 1, over30Days: 2,
-        });
-        expect(reasons.examples).toHaveLength(5);
-        expect(reasons.valueChangesByColumn.cfs).toBe(6);
-    });
-
     it("writes nothing when an identical batch is replayed", async () => {
         const keys = await keysFor("USGS:1", "USGS:2");
         const rows = Array.from({ length: 40 }, (_, i) => row(i % 2 ? "USGS:1" : "USGS:2", NOW - i * SLOT_MS, { cfs: 100 + i, ft: 2 }));
-        expect(await upsertSlots(db, rows, keys)).toBe(40);
+        expect(await upsertSlots(db, rows, keys)).toBe(21);
         expect(await upsertSlots(db, rows, keys)).toBe(0);
     });
 
@@ -239,7 +159,7 @@ describe("upsertSlots (ring buffer)", () => {
         const ids = Array.from({ length: 500 }, (_, i) => `USGS:${i}`);
         const keys = await keysFor(...ids);
         const rows = ids.flatMap(id => Array.from({ length: 24 }, (_, i) => row(id, NOW - i * SLOT_MS, { cfs: i })));
-        expect(await upsertSlots(db, rows, keys)).toBe(12_000);
+        expect(await upsertSlots(db, rows, keys)).toBe(3500);
     });
 });
 
@@ -306,9 +226,9 @@ describe("query plans", () => {
         db.query(`EXPLAIN QUERY PLAN ${sql}`, ...params).map((r: any) => r.detail as string);
 
     it("latest-per-gauge seeks readings by primary key", () => {
-        const details = plan(LATEST_SQL, 0, 10, 0);
-        expect(details.some(d => /SEARCH r USING PRIMARY KEY/.test(d))).toBe(true);
-        expect(details.some(d => /^SCAN r\b/.test(d))).toBe(false);
+        const details = plan(LATEST_SQL, 0, 10, 0, NOW);
+        expect(details.some(d => /SEARCH h USING PRIMARY KEY/.test(d))).toBe(true);
+        expect(details.some(d => /^SCAN h\b/.test(d))).toBe(false);
     });
 });
 

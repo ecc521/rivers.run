@@ -20,7 +20,8 @@ const D1_MAX_BOUND_PARAMS = 100;
 
 const MIGRATION = (() => {
     const here = dirname(fileURLToPath(import.meta.url));
-    return readFileSync(join(here, "../../../migrations/2026-08-01_flow_history_store.sql"), "utf8");
+    return ["2026-08-01_flow_history_store.sql", "2026-10-02_hourly_flow_history.sql"]
+        .map(file => readFileSync(join(here, "../../../migrations", file), "utf8")).join("\n");
 })();
 
 class SqliteStatement {

@@ -4,8 +4,9 @@ import { normalizeGaugeId } from "../utils/formatting";
 /**
  * Persistence for the flow history store (`FLOW_DB`).
  *
- * `gauge_readings` is a ring buffer: each gauge has SLOTS fixed 15-minute
- * slots, and a new reading overwrites the slot's previous generation. Nothing
+ * `gauge_reading_hours` is a ring buffer: each gauge has 768 hourly rows,
+ * each retaining four independent 15-minute readings. A new lap overwrites
+ * the hour's previous generation. Nothing
  * is ever deleted, and every read filters on `ts` so expired slots are
  * invisible.
  *
@@ -17,6 +18,10 @@ import { normalizeGaugeId } from "../utils/formatting";
 export const SLOT_MS = 15 * 60 * 1000;
 /** 32 days of slots: two days of slack beyond RETENTION_MS. */
 export const SLOTS = 32 * 96;
+export const HOUR_MS = 4 * SLOT_MS;
+export const HOUR_SLOTS = SLOTS / 4;
+/** Eight days cover the 168-hour model input plus issue-time and ingest slack. */
+export const PREDICTION_HISTORY_MS = 192 * 60 * 60 * 1000;
 export const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 /** Readings further in the future than this are dropped as bad clocks. */
 export const FUTURE_SKEW_MS = 5 * 60 * 1000;
@@ -91,68 +96,6 @@ const num = (v: unknown): number | null =>
     typeof v === "number" && Number.isFinite(v) ? v : null;
 
 const VALUE_COLS = ["cfs", "ft", "cms", "m", "temp_f", "precip_in"] as const;
-
-/**
- * Diagnostic attribution for guarded reading upserts. These counters are
- * accumulated in Worker memory and included in the existing ingest-cycle log;
- * they never create one database write per observation.
- */
-export interface UpsertReasonCounts {
-    candidates: number;
-    newSlots: number;
-    ringReplacements: number;
-    closerReadings: number;
-    valueChanges: number;
-    gapFills: number;
-    fartherGapFills: number;
-    unchanged: number;
-    stale: number;
-    valueChangesByColumn: Record<DiagnosticValueColumn, number>;
-    fieldsAddedByColumn: Record<DiagnosticValueColumn, number>;
-    mixedValueChangeAndFieldAdd: number;
-    valueChangeAges: {
-        under2Hours: number;
-        twoTo24Hours: number;
-        oneTo7Days: number;
-        sevenTo30Days: number;
-        over30Days: number;
-    };
-    examples: UpsertChangeExample[];
-}
-
-export type DiagnosticValueColumn = (typeof VALUE_COLS)[number];
-
-export interface UpsertChangeExample {
-    gaugeId: string;
-    ts: number;
-    off: number;
-    /** Only non-null -> different non-null cells are included. */
-    changes: Partial<Record<DiagnosticValueColumn, [number, number]>>;
-}
-
-const emptyColumnCounts = (): Record<DiagnosticValueColumn, number> => ({
-    cfs: 0, ft: 0, cms: 0, m: 0, temp_f: 0, precip_in: 0,
-});
-
-export const emptyUpsertReasonCounts = (): UpsertReasonCounts => ({
-    candidates: 0,
-    newSlots: 0,
-    ringReplacements: 0,
-    closerReadings: 0,
-    valueChanges: 0,
-    gapFills: 0,
-    fartherGapFills: 0,
-    unchanged: 0,
-    stale: 0,
-    valueChangesByColumn: emptyColumnCounts(),
-    fieldsAddedByColumn: emptyColumnCounts(),
-    mixedValueChangeAndFieldAdd: 0,
-    valueChangeAges: {
-        under2Hours: 0, twoTo24Hours: 0, oneTo7Days: 0,
-        sevenTo30Days: 0, over30Days: 0,
-    },
-    examples: [],
-});
 
 export interface ReduceOptions {
     now: number;
@@ -307,197 +250,85 @@ export async function lookupGaugeKeys(db: D1Database, gaugeIds: string[]): Promi
 
 // --- READINGS ---
 
-const newer = "excluded.ts > gauge_readings.ts";
-/** New lap: take the incoming row. Same slot: fill gaps from the other reading, preferring the closer one. */
-const mergeCol = (col: string) =>
-    `${col} = CASE WHEN ${newer} THEN excluded.${col}
-                   WHEN excluded.off <= gauge_readings.off THEN COALESCE(excluded.${col}, gauge_readings.${col})
-                   ELSE COALESCE(gauge_readings.${col}, excluded.${col}) END`;
-const colDiffers = (col: string) =>
-    `(excluded.${col} IS NOT NULL AND excluded.${col} IS NOT gauge_readings.${col})`;
-const colFills = (col: string) =>
-    `(gauge_readings.${col} IS NULL AND excluded.${col} IS NOT NULL)`;
+type PackedReading = [number, ...(number | null)[]];
 
-/**
- * The ring-buffer upsert. A slot is rewritten by a newer lap (larger ts), by a
- * reading closer to the slot start (smaller off, keeping parameters it lacks),
- * by changed values for the same reading, or by a farther reading that fills
- * a missing parameter. Anything else is a no-op and writes nothing.
- */
+const QUARTERS = ["q0", "q1", "q2", "q3"] as const;
+const incoming = (q: string, i: number) => `json_extract(excluded.${q}, '$[${i}]')`;
+const previous = (q: string, i: number) => `json_extract(gauge_reading_hours.${q}, '$[${i}]')`;
+
+const mergedValues = (q: string) => VALUE_COLS.map((_, i) =>
+    `CASE WHEN ${incoming(q, 0)} <= ${previous(q, 0)}
+        THEN COALESCE(${incoming(q, i + 1)}, ${previous(q, i + 1)})
+        ELSE COALESCE(${previous(q, i + 1)}, ${incoming(q, i + 1)}) END`).join(",");
+const changedValues = (q: string) => VALUE_COLS.map((_, i) =>
+    `(${incoming(q, i + 1)} IS NOT NULL AND ${incoming(q, i + 1)} IS NOT ${previous(q, i + 1)})`).join(" OR ");
+const filledValues = (q: string) => VALUE_COLS.map((_, i) =>
+    `(${previous(q, i + 1)} IS NULL AND ${incoming(q, i + 1)} IS NOT NULL)`).join(" OR ");
+
+/** Merge each quarter independently; replacing an hour clears all old-lap quarters. */
+const mergeQuarter = (q: string) => `CASE
+    WHEN excluded.ts > gauge_reading_hours.ts THEN excluded.${q}
+    WHEN excluded.${q} IS NULL THEN gauge_reading_hours.${q}
+    WHEN gauge_reading_hours.${q} IS NULL THEN excluded.${q}
+    ELSE json_array(MIN(${incoming(q, 0)}, ${previous(q, 0)}), ${mergedValues(q)}) END`;
+
+// Compare numeric cells, not JSON text: 1 and 1.0 are the same reading.
+const quarterChanged = (q: string) => `(excluded.${q} IS NOT NULL AND (
+    gauge_reading_hours.${q} IS NULL
+    OR ${incoming(q, 0)} < ${previous(q, 0)}
+    OR (${incoming(q, 0)} = ${previous(q, 0)} AND (${changedValues(q)}))
+    OR (${incoming(q, 0)} > ${previous(q, 0)} AND (${filledValues(q)}))))`;
+
 export const UPSERT_READINGS_SQL = `
-    INSERT INTO gauge_readings
-          (gauge_key, slot, ts, off, cfs, ft, cms, m, temp_f, precip_in)
-    SELECT j.value->>'$.k', j.value->>'$.s', j.value->>'$.t', j.value->>'$.o',
-           j.value->>'$.cfs', j.value->>'$.ft', j.value->>'$.cms', j.value->>'$.m',
-           j.value->>'$.tf', j.value->>'$.pi'
-      FROM json_each(?1) j
-     WHERE true
+    INSERT INTO gauge_reading_hours (gauge_key, slot, ts, q0, q1, q2, q3)
+    SELECT j.value->>'$.k', j.value->>'$.s', j.value->>'$.t',
+           j.value->>'$.q0', j.value->>'$.q1', j.value->>'$.q2', j.value->>'$.q3'
+      FROM json_each(?1) j WHERE true
     ON CONFLICT(gauge_key, slot) DO UPDATE SET
-        ${VALUE_COLS.map(mergeCol).join(",\n        ")},
-        off = CASE WHEN ${newer} THEN excluded.off ELSE MIN(excluded.off, gauge_readings.off) END,
-        ts  = excluded.ts
-    WHERE ${newer}
-       OR (excluded.ts = gauge_readings.ts AND (
-              excluded.off < gauge_readings.off
-           OR (excluded.off = gauge_readings.off AND (
-                  ${VALUE_COLS.map(colDiffers).join("\n               OR ")}
-               ))
-           OR (excluded.off > gauge_readings.off AND (
-                  ${VALUE_COLS.map(colFills).join("\n               OR ")}))))
+        ts = excluded.ts,
+        ${QUARTERS.map(q => `${q} = ${mergeQuarter(q)}`).join(",")}
+    WHERE excluded.ts > gauge_reading_hours.ts
+       OR (excluded.ts = gauge_reading_hours.ts AND (${QUARTERS.map(quarterChanged).join(" OR ")}))
 `;
 
-const PAYLOAD_VALUE_COLS: Array<[db: (typeof VALUE_COLS)[number], json: string]> = [
-    ["cfs", "cfs"], ["ft", "ft"], ["cms", "cms"], ["m", "m"],
-    ["temp_f", "tf"], ["precip_in", "pi"],
-];
-const diagnosticValueChanged = PAYLOAD_VALUE_COLS.map(([dbCol]) =>
-    `(i.${dbCol} IS NOT NULL AND r.${dbCol} IS NOT NULL AND i.${dbCol} IS NOT r.${dbCol})`
-).join(" OR ");
-const diagnosticGapFilled = PAYLOAD_VALUE_COLS.map(([dbCol]) =>
-    `(r.${dbCol} IS NULL AND i.${dbCol} IS NOT NULL)`
-).join(" OR ");
-const diagnosticColumnFlags = PAYLOAD_VALUE_COLS.map(([dbCol]) =>
-    `i.t = r.ts AND i.o = r.off AND i.${dbCol} IS NOT NULL AND r.${dbCol} IS NOT NULL AND i.${dbCol} IS NOT r.${dbCol} AS vc_${dbCol},
-               i.t = r.ts AND r.${dbCol} IS NULL AND i.${dbCol} IS NOT NULL AS fa_${dbCol}`
-).join(",\n               ");
-const anyValueChangeFlag = VALUE_COLS.map(col => `vc_${col}`).join(" OR ");
-const anyFieldAddedFlag = VALUE_COLS.map(col => `fa_${col}`).join(" OR ");
-const MAX_CHANGE_EXAMPLES = 5;
-
-/**
- * Classifies every candidate against its current row without modifying it.
- * Categories are mutually exclusive and follow the upsert predicate's order.
- */
-const UPSERT_REASON_SQL = `
-    WITH incoming AS (
-        SELECT CAST(j.value->>'$.k' AS INTEGER) AS k,
-               CAST(j.value->>'$.s' AS INTEGER) AS s,
-               CAST(j.value->>'$.t' AS INTEGER) AS t,
-               CAST(j.value->>'$.o' AS INTEGER) AS o,
-               ${PAYLOAD_VALUE_COLS.map(([dbCol, jsonCol]) =>
-        `CAST(j.value->>'$.${jsonCol}' AS REAL) AS ${dbCol}`).join(",\n               ")}
-          FROM json_each(?1) j
-    ), classified AS (
-        SELECT g.gauge_id, i.t, i.o,
-               ${PAYLOAD_VALUE_COLS.map(([dbCol]) =>
-        `r.${dbCol} AS old_${dbCol}, i.${dbCol} AS new_${dbCol}`).join(",\n               ")},
-               ${diagnosticColumnFlags},
-               CASE
-                 WHEN r.gauge_key IS NULL THEN 'newSlots'
-                 WHEN i.t > r.ts THEN 'ringReplacements'
-                 WHEN i.t < r.ts THEN 'stale'
-                 WHEN i.o < r.off THEN 'closerReadings'
-                 WHEN i.o = r.off AND (${diagnosticValueChanged}) THEN 'valueChanges'
-                 WHEN i.o = r.off AND (${diagnosticGapFilled}) THEN 'gapFills'
-                 WHEN i.o > r.off AND (${diagnosticGapFilled}) THEN 'fartherGapFills'
-                 ELSE 'unchanged'
-               END AS reason
-          FROM incoming i
-          LEFT JOIN gauge_readings r ON r.gauge_key = i.k AND r.slot = i.s
-          LEFT JOIN gauges g ON g.gauge_key = i.k
-    )
-    SELECT COUNT(*) AS candidates,
-           SUM(reason = 'newSlots') AS newSlots,
-           SUM(reason = 'ringReplacements') AS ringReplacements,
-           SUM(reason = 'closerReadings') AS closerReadings,
-           SUM(reason = 'valueChanges') AS valueChanges,
-           SUM(reason = 'gapFills') AS gapFills,
-           SUM(reason = 'fartherGapFills') AS fartherGapFills,
-           SUM(reason = 'unchanged') AS unchanged,
-           SUM(reason = 'stale') AS stale,
-           ${VALUE_COLS.map(col => `SUM(vc_${col}) AS valueChanges_${col}`).join(",\n           ")},
-           ${VALUE_COLS.map(col => `SUM(fa_${col}) AS fieldsAdded_${col}`).join(",\n           ")},
-           SUM((${anyValueChangeFlag}) AND (${anyFieldAddedFlag})) AS mixedValueChangeAndFieldAdd,
-           SUM(reason = 'valueChanges' AND (?2 - t) < 7200000) AS age_under2Hours,
-           SUM(reason = 'valueChanges' AND (?2 - t) >= 7200000 AND (?2 - t) < 86400000) AS age_twoTo24Hours,
-           SUM(reason = 'valueChanges' AND (?2 - t) >= 86400000 AND (?2 - t) < 604800000) AS age_oneTo7Days,
-           SUM(reason = 'valueChanges' AND (?2 - t) >= 604800000 AND (?2 - t) < 2592000000) AS age_sevenTo30Days,
-           SUM(reason = 'valueChanges' AND (?2 - t) >= 2592000000) AS age_over30Days,
-           (SELECT json_group_array(json_object(
-                       'gaugeId', gauge_id, 'ts', t, 'off', o,
-                       'cfs', CASE WHEN vc_cfs THEN json_array(old_cfs, new_cfs) END,
-                       'ft', CASE WHEN vc_ft THEN json_array(old_ft, new_ft) END,
-                       'cms', CASE WHEN vc_cms THEN json_array(old_cms, new_cms) END,
-                       'm', CASE WHEN vc_m THEN json_array(old_m, new_m) END,
-                       'temp_f', CASE WHEN vc_temp_f THEN json_array(old_temp_f, new_temp_f) END,
-                       'precip_in', CASE WHEN vc_precip_in THEN json_array(old_precip_in, new_precip_in) END))
-              FROM (SELECT * FROM classified WHERE reason = 'valueChanges'
-                    ORDER BY gauge_id, t LIMIT ${MAX_CHANGE_EXAMPLES})) AS examples
-      FROM classified
-`;
-
-const REASON_KEYS = [
-    "candidates", "newSlots", "ringReplacements", "closerReadings", "valueChanges",
-    "gapFills", "fartherGapFills", "unchanged", "stale",
-] as const;
-
-const parseExamples = (raw: unknown): UpsertChangeExample[] => {
-    if (typeof raw !== "string") return [];
-    const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
-    return parsed.map(item => {
-        const changes: UpsertChangeExample["changes"] = {};
-        for (const col of VALUE_COLS) {
-            const pair = item[col];
-            if (Array.isArray(pair) && pair.length === 2) {
-                changes[col] = [Number(pair[0]), Number(pair[1])];
-            }
-        }
-        return {
-            gaugeId: String(item.gaugeId), ts: Number(item.ts), off: Number(item.off), changes,
-        };
-    });
-};
-
-async function classifyUpsertReasons(
-    db: D1Database,
-    chunks: string[],
-    into: UpsertReasonCounts,
-    now: number
-): Promise<void> {
-    for (const chunk of chunks) {
-        const counts = await db.prepare(UPSERT_REASON_SQL).bind(chunk, now).first<Record<string, unknown>>();
-        if (!counts) continue;
-        for (const key of REASON_KEYS) into[key] += Number(counts[key] ?? 0);
-        for (const col of VALUE_COLS) {
-            into.valueChangesByColumn[col] += Number(counts[`valueChanges_${col}`] ?? 0);
-            into.fieldsAddedByColumn[col] += Number(counts[`fieldsAdded_${col}`] ?? 0);
-        }
-        into.mixedValueChangeAndFieldAdd += Number(counts.mixedValueChangeAndFieldAdd ?? 0);
-        for (const key of Object.keys(into.valueChangeAges) as Array<keyof typeof into.valueChangeAges>) {
-            into.valueChangeAges[key] += Number(counts[`age_${key}`] ?? 0);
-        }
-        const remaining = MAX_CHANGE_EXAMPLES - into.examples.length;
-        if (remaining > 0) into.examples.push(...parseExamples(counts.examples).slice(0, remaining));
-    }
-}
-
-/**
- * Writes slot rows. Rows for gauges without a key are skipped.
- * @returns rows D1 reports as written (0 for a pure replay).
- */
+/** Writes each gauge-hour once per batch, preserving every 15-minute reading. */
 export async function upsertSlots(
     db: D1Database,
     rows: SlotRow[],
-    keys: Map<string, number>,
-    reasons?: UpsertReasonCounts,
-    diagnosticNow: number = Date.now()
+    keys: Map<string, number>
 ): Promise<number> {
-    const payload: Array<Record<string, number | null>> = [];
+    const hours = new Map<string, { k: number; s: number; t: number; q0: PackedReading | null; q1: PackedReading | null; q2: PackedReading | null; q3: PackedReading | null }>();
     for (const r of rows) {
         const k = keys.get(normalizeGaugeId(r.gaugeId));
         if (k === undefined) continue;
-        payload.push({
-            k, s: slotIndexOf(r.ts), t: r.ts, o: r.off,
-            cfs: r.cfs, ft: r.ft, cms: r.cms, m: r.m, tf: r.temp_f, pi: r.precip_in,
-        });
+        const t = Math.floor(r.ts / HOUR_MS) * HOUR_MS;
+        const key = `${k}:${t}`;
+        let hour = hours.get(key);
+        if (!hour) {
+            hour = { k, s: Math.floor(t / HOUR_MS) % HOUR_SLOTS, t, q0: null, q1: null, q2: null, q3: null };
+            hours.set(key, hour);
+        }
+        const q = QUARTERS[Math.floor((r.ts - t) / SLOT_MS)];
+        const values = [r.off, ...VALUE_COLS.map(c => r[c])] as PackedReading;
+        const prev = hour[q];
+        if (!prev) hour[q] = values;
+        else {
+            const closer = values[0] <= prev[0];
+            hour[q] = [Math.min(values[0], prev[0]), ...VALUE_COLS.map((_, i) =>
+                closer ? values[i + 1] ?? prev[i + 1] : prev[i + 1] ?? values[i + 1])];
+        }
     }
-    if (payload.length === 0) return 0;
+    const payload = [...hours.values()].sort((a, b) => (a.k - b.k) || (a.s - b.s) || (a.t - b.t));
+    return runBatch(db, chunkAsJson(payload).map(chunk => db.prepare(UPSERT_READINGS_SQL).bind(chunk)));
+}
 
-    // Primary-key order keeps the clustered B-tree walk monotonic.
-    payload.sort((a, b) => (a.k! - b.k!) || (a.s! - b.s!));
-    const chunks = chunkAsJson(payload);
-    if (reasons) await classifyUpsertReasons(db, chunks, reasons, diagnosticNow);
-    return runBatch(db, chunks.map(chunk => db.prepare(UPSERT_READINGS_SQL).bind(chunk)));
+/** Physical hour ranges; the expanded view retains a direct hour_slot key for seeks. */
+export function hourSlotRanges(start: number, end: number): Array<[number, number]> {
+    const first = Math.floor(start / HOUR_MS), last = Math.floor(end / HOUR_MS);
+    if (last < first) return [];
+    if (last - first + 1 >= HOUR_SLOTS) return [[0, HOUR_SLOTS - 1]];
+    const a = first % HOUR_SLOTS, b = last % HOUR_SLOTS;
+    return a <= b ? [[a, b]] : [[a, HOUR_SLOTS - 1], [0, b]];
 }
 
 interface ReadingRow {
@@ -545,15 +376,15 @@ export async function readSeries(
     const start = slotStartOf(Math.max(startTs, now - RETENTION_MS));
     const rows: ReadingRow[] = [];
     for (const chunk of chunkAsJson(ids)) {
-        for (const [a, b] of slotRanges(start, endTs)) {
+        for (const [a, b] of hourSlotRanges(start, endTs)) {
             // CROSS JOIN pins gauges as the outer loop so readings are a
             // primary-key seek per gauge, never a table scan.
             const { results } = await db.prepare(`
                 SELECT ${READING_COLS}
                   FROM gauges g
                   JOIN json_each(?1) j ON g.gauge_id = j.value
-                 CROSS JOIN gauge_readings r
-                    ON r.gauge_key = g.gauge_key AND r.slot BETWEEN ?2 AND ?3
+                 CROSS JOIN gauge_reading_slots r
+                    ON r.gauge_key = g.gauge_key AND r.hour_slot BETWEEN ?2 AND ?3
                  WHERE r.ts >= ?4 AND r.ts <= ?5
             `).bind(chunk, a, b, start, endTs).all<ReadingRow>();
             for (const row of results ?? []) rows.push(row);
@@ -613,9 +444,9 @@ export const LATEST_SQL = `
     SELECT g.gauge_id AS gauge_id, MAX(r.ts) AS ts, r.off AS off, r.cfs AS cfs,
            r.ft AS ft, r.cms AS cms, r.m AS m, r.temp_f AS temp_f, r.precip_in AS precip_in
       FROM gauges g
-     CROSS JOIN gauge_readings r
-        ON r.gauge_key = g.gauge_key AND r.slot BETWEEN ?1 AND ?2
-     WHERE r.ts >= ?3
+     CROSS JOIN gauge_reading_slots r
+        ON r.gauge_key = g.gauge_key AND r.hour_slot BETWEEN ?1 AND ?2
+     WHERE r.ts >= ?3 AND r.ts <= ?4
      GROUP BY g.gauge_key
 `;
 
@@ -626,8 +457,8 @@ export async function readLatest(
 ): Promise<Record<string, GaugeReading>> {
     const start = slotStartOf(now - windowMs);
     const best = new Map<string, ReadingRow>();
-    for (const [a, b] of slotRanges(start, now)) {
-        const { results } = await db.prepare(LATEST_SQL).bind(a, b, start).all<ReadingRow>();
+    for (const [a, b] of hourSlotRanges(start, now)) {
+        const { results } = await db.prepare(LATEST_SQL).bind(a, b, start, now).all<ReadingRow>();
         for (const row of results ?? []) {
             const prev = best.get(row.gauge_id);
             if (!prev || row.ts > prev.ts) best.set(row.gauge_id, row);
@@ -658,7 +489,7 @@ export async function readHourlySums(
     // Clip to retention; a partially clipped hour still reports its count.
     startHourTs = Math.max(startHourTs, slotStartOf(now - RETENTION_MS));
     for (const chunk of chunkAsJson(ids)) {
-        for (const [a, b] of slotRanges(startHourTs, endHourTs - 1)) {
+        for (const [a, b] of hourSlotRanges(startHourTs, endHourTs - 1)) {
             const { results } = await db.prepare(`
                 SELECT g.gauge_id AS gauge_id, r.ts / 3600000 AS h,
                        SUM(CASE WHEN r.cfs > -999999 THEN r.cfs END) AS cfs_sum,
@@ -667,8 +498,8 @@ export async function readHourlySums(
                        COUNT(CASE WHEN r.ft > -999999 THEN r.ft END) AS ft_n
                   FROM gauges g
                   JOIN json_each(?1) j ON g.gauge_id = j.value
-                 CROSS JOIN gauge_readings r
-                    ON r.gauge_key = g.gauge_key AND r.slot BETWEEN ?2 AND ?3
+                 CROSS JOIN gauge_reading_slots r
+                    ON r.gauge_key = g.gauge_key AND r.hour_slot BETWEEN ?2 AND ?3
                  WHERE r.ts >= ?4 AND r.ts < ?5
                  GROUP BY g.gauge_id, h
             `).bind(chunk, a, b, startHourTs, endHourTs).all<any>();
@@ -785,6 +616,19 @@ export async function markProviderRepair(db: D1Database, provider: string, from:
     return writtenOf(res);
 }
 
+/** Abandon older repair gaps without claiming continuous coverage across them. */
+export async function limitRepairHistory(db: D1Database, provider: string, from: number): Promise<number> {
+    const res = await db.prepare(`
+        UPDATE gauge_sync_state
+           SET coverage_start = CASE WHEN coverage_start IS NULL THEN NULL
+                                     ELSE MAX(coverage_start, ?2) END,
+               repair_from = ?2
+         WHERE repair_from < ?2
+           AND gauge_key IN (SELECT gauge_key FROM gauges WHERE provider = ?1)
+    `).bind(provider, from).run();
+    return writtenOf(res);
+}
+
 /** Clears repair_from where a completed fetch starting at `coveredFrom` covers it. */
 export async function clearRepair(db: D1Database, gaugeKeys: number[], coveredFrom: number): Promise<number> {
     if (gaugeKeys.length === 0) return 0;
@@ -852,6 +696,6 @@ export async function setMeta(db: D1Database, key: string, value: number): Promi
 }
 
 export async function countReadings(db: D1Database): Promise<number> {
-    const row = await db.prepare(`SELECT COUNT(*) AS n FROM gauge_readings`).first<{ n: number }>();
+    const row = await db.prepare(`SELECT COUNT(*) AS n FROM gauge_reading_slots`).first<{ n: number }>();
     return row?.n ?? 0;
 }

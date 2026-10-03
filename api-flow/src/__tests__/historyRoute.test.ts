@@ -105,6 +105,18 @@ describe("GET /history", () => {
         expect(liveCalls).toEqual([]);
     });
 
+    it("serves prediction history locally and older history live without persisting an on-demand backfill", async () => {
+        const key = await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }], false);
+        await extendCoverage(db, [key], NOW - 8 * DAY);
+        await get("/history?gauges=USGS:03451500&days=7");
+        expect(liveCalls).toEqual([]);
+        const before = db.query("SELECT * FROM gauge_reading_hours");
+        await get("/history?gauges=USGS:03451500&days=14");
+        expect(liveCalls).toEqual(["USGS:03451500"]);
+        expect(db.query("SELECT * FROM gauge_reading_hours")).toEqual(before);
+        expect(db.query("SELECT coverage_start FROM gauge_sync_state")).toEqual([{ coverage_start: NOW - 8 * DAY }]);
+    });
+
     it("goes live when the provider has not ingested recently", async () => {
         await seed("USGS:03451500", [{ ts: NOW, cfs: 120 }]);
         await setMeta(db, ingestMetaKey("USGS"), NOW - 2 * 3_600_000);
