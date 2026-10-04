@@ -25,6 +25,7 @@ import { readSeries, readSyncState, getMeta } from "./services/flowStore";
 import { isHourlyCycle } from "./services/usgsIngest";
 import { writeUsgsHourlySnapshot } from "./services/modelSnapshot";
 import { FlowModel, FORECAST_CRON, MODEL_STORAGE_ORIGIN, NWS_USGS_KEY, handleModelStorage, readForecasts, readNwsUsgsMap, runForecastModel, syncNwsUsgsMap } from "./services/flowModel";
+import { handleEmailEvents } from "./services/emailEvents";
 import { verifyUnsubscribeToken } from "./utils/unsubscribeToken";
 import { renderUnsubscribeConfirmation, renderUnsubscribeConfirmPrompt, renderUnsubscribeError, renderUnsubscribeServerError } from "./templates/unsubscribeConfirmation";
 
@@ -36,7 +37,8 @@ export interface Env {
     /** Optional per-cycle cap on USGS backfill requests (e.g. for local runs). */
     FLOW_BACKFILL_MAX_REQUESTS?: string;
     USGS_API_KEY?: string;
-    GMAIL_APP_PASSWORD?: string;
+    /** Cloudflare Email Sending binding (`send_email`). Unbound, emails are skipped with a warning. */
+    EMAIL?: SendEmail;
     UNSUBSCRIBE_SECRET?: string;
     /** The forecast model container (services/flowModel.ts). Optional: unbound skips model runs. */
     FLOW_MODEL?: DurableObjectNamespace<FlowModel>;
@@ -536,6 +538,8 @@ async function recoverFromPreviousSitedata(env: Env, mergedData: Record<string, 
 export default {
     fetch: app.fetch,
 
+    queue: handleEmailEvents,
+
     async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
         if (event.cron === FORECAST_CRON) {
             if (!env.FLOW_MODEL) return;
@@ -638,7 +642,7 @@ export default {
                 await logToD1(env, "INFO", "sync", `Successfully updated sitedata.json (${Object.keys(mergedData).length} gauges).`);
 
                 // 2. Process Notifications
-                await processNotifications(env, mergedData, _ctx);
+                await processNotifications(env, mergedData);
             }
 
             // 3. Update Sitemap

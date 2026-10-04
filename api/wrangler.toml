@@ -18,6 +18,10 @@ database_id = "d52e56f5-d59f-4e59-b2e0-7b8b7a8dde71"
 binding = "FLOW_STORAGE"
 bucket_name = "flowdata"
   
+# Cloudflare Email Sending (transactional notices); see src/email.ts.
+[[send_email]]
+name = "EMAIL"
+
 [[routes]]
 pattern = "api.rivers.run"
 custom_domain = true

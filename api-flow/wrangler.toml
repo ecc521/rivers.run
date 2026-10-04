@@ -29,6 +29,17 @@ binding = "FLOW_DB"
 database_name = "flow-db"
 database_id = "bfdbdd5a-5626-4593-98f6-927ba2f682a4"
 
+# Cloudflare Email Sending. The sender domain (rivers.run) must be onboarded in the dashboard.
+[[send_email]]
+name = "EMAIL"
+
+# Bounce and complaint events from Email Sending, delivered to the `email-events` queue
+# (see services/emailEvents.ts). The queue must exist before this worker is deployed.
+[[queues.consumers]]
+queue = "email-events"
+max_batch_size = 10
+max_retries = 3
+
 # Forecast model container (src/services/flowModel.ts). One instance, run by
 # the hourly FORECAST_CRON; it reaches R2 only through the Worker. The image is
 # built in flow_predictions (serving/) and pushed to Cloudflare's registry,

@@ -225,16 +225,28 @@ the same handler; it and `/seed-local-r2` need `LOCAL_DEV_ROUTES=1` in `.dev.var
 - The sync includes a resiliency pass: a gauge with no recent reading keeps its
   readings from the existing `sitedata.json`, so the payload never regresses to empty.
 
-## 5. Required Secrets
+## 5. Email (Cloudflare Email Sending)
+
+Digest email goes out through the `EMAIL` `send_email` binding as
+`notifications@rivers.run` (`src/email.ts`); `api/` has its own binding for admin
+notices. Setup that lives outside the repo: onboard `rivers.run` under Email Sending in
+the dashboard, and create the `email-events` queue (`npx wrangler queues create email-events`)
+before deploying, since `wrangler.toml` declares this worker as its consumer. Subscribe
+the queue to the sending domain's events in the dashboard.
+
+- Sends run 10 at a time. A failed send retries an hour later instead of skipping the
+  user's day; a suppressed recipient (`E_RECIPIENT_SUPPRESSED`) is not retried.
+- `services/emailEvents.ts` consumes bounce and complaint events and sets
+  `users.notifications_enabled = 0` for hard bounces and complaints only. Soft bounces
+  (full mailbox, throttling) never disable anyone.
+
+## 6. Required Secrets
 
 Cloudflare Worker secrets are never listed in `wrangler.toml` (that file only holds
 bindings/config) - so if this worker is ever redeployed from scratch, these need to be
 set explicitly, since there's nothing else in the repo that will tell you they're missing
 (code guards them and fails silently rather than crashing):
 
-- `GMAIL_APP_PASSWORD` — Gmail app password for `email.rivers.run@gmail.com`, used by
-  `src/email.ts` to send the digest email. `api/` sends its own separate emails and
-  needs its own independently-set copy of this same secret.
 - `UNSUBSCRIBE_SECRET` — HMAC signing key for one-click unsubscribe tokens
   (`src/utils/unsubscribeToken.ts`). Rotating or losing this invalidates every
   unsubscribe link already sent in past digest emails.

@@ -37,20 +37,12 @@ Entry point: `src/index.ts`. Deployed to `api.rivers.run`.
   UI at `/docs` (i.e. `api.rivers.run/docs`), configured near the bottom of
   `src/index.ts`. Keep new endpoints documented so the spec stays complete.
 
-## 4. Required Secrets
+## 4. Email
 
-Cloudflare Worker secrets are never listed in `wrangler.toml` - if this worker is ever
-redeployed from scratch, set this explicitly:
-
-- `GMAIL_APP_PASSWORD` — Gmail app password for `email.rivers.run@gmail.com`, used by
-  `src/email.ts` for transactional emails (suggestion/report notices, admin messages).
-  `api-flow/` sends its own separate emails and needs its own independently-set copy.
-
-Set with `wrangler secret put GMAIL_APP_PASSWORD --config api/wrangler.toml`, always
-passing `--config` explicitly - this repo has multiple `wrangler.toml`/`wrangler.jsonc`
-files (this one, `api-flow/wrangler.toml`, and the root `wrangler.jsonc` for the
-frontend static site) and `wrangler` does not reliably resolve to the one matching your
-current directory.
+Transactional notices (suggestion and report alerts, admin messages) go out through the
+`EMAIL` `send_email` binding as `notifications@rivers.run` (`src/email.ts`). No secrets are
+needed; the sender domain must be onboarded under Email Sending in the Cloudflare
+dashboard. Bounce and complaint handling lives in `api-flow` (see its AGENTS.md).
 
 ## Commands
 

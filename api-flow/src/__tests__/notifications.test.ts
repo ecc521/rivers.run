@@ -7,8 +7,9 @@ import { verifyUnsubscribeToken } from '../utils/unsubscribeToken';
 import * as registry from '../services/gaugeRegistry';
 import { usgsProvider } from '../services/usgs';
 
-// Mock the email dispatcher so we don't actually try to send SMTP emails
+// Mock the email dispatcher so we don't actually send emails
 vi.mock('../email', () => ({
+    RECIPIENT_SUPPRESSED: 'E_RECIPIENT_SUPPRESSED',
     sendEmail: vi.fn().mockResolvedValue({ success: true })
 }));
 
@@ -166,6 +167,56 @@ describe('Daily Digest Notification Engine', () => {
         expect(emailArgs.to).toBe('runner@example.com');
         expect(emailArgs.html).toContain('Running River');
         expect(emailArgs.html).toContain('<strong>Running:</strong>');
+    });
+
+    describe('failed sends', () => {
+        const runningRow = {
+            user_id: 'user_R', list_id: 'list_R', list_title: 'List R', email: 'runner@example.com',
+            notifications_time_of_day: '10:00', river_id: 'river_r', name: 'Running River', section: null,
+            flow_min: 500, flow_max: 1000, flow_unit: 'cfs', gauges: JSON.stringify([{ id: 'USGS:2' }]),
+            custom_min: null, custom_max: null, custom_units: null
+        };
+        const running = { "USGS:2": { id: "USGS:2", name: "G", lat: 0, lon: 0, readings: [{ cfs: 750, timestamp: Date.now() }] } };
+
+        function recordNoneUntil(mockEnv: ReturnType<typeof createMockCloudflareEnv>) {
+            const writes: number[] = [];
+            const original = mockEnv.DB.prepare.getMockImplementation()!;
+            mockEnv.DB.prepare.mockImplementation((query: string) => {
+                const stmt = original(query);
+                const bind = stmt.bind;
+                stmt.bind = vi.fn((...args: any[]) => {
+                    if (query.includes("UPDATE users SET notifications_none_until")) writes.push(args[0]);
+                    return bind(...args);
+                });
+                return stmt;
+            });
+            return writes;
+        }
+
+        it('retries within the hour instead of skipping the day when the send fails', async () => {
+            vi.mocked(sendEmail).mockResolvedValueOnce({ success: false, error: 'throttled' });
+            const mockEnv = createMockCloudflareEnv([runningRow], running);
+            const writes = recordNoneUntil(mockEnv);
+            const before = Math.floor(Date.now() / 1000);
+
+            await apiFlow.scheduled(dummyEvent as any, mockEnv as any, mockCtx as any);
+
+            expect(writes).toHaveLength(1);
+            expect(writes[0]).toBeGreaterThanOrEqual(before + 3600);
+            expect(writes[0]).toBeLessThanOrEqual(before + 3600 + 5);
+        });
+
+        it('does not retry a suppressed recipient', async () => {
+            vi.mocked(sendEmail).mockResolvedValueOnce({ success: false, error: 'suppressed', code: 'E_RECIPIENT_SUPPRESSED' });
+            const mockEnv = createMockCloudflareEnv([runningRow], running);
+            const writes = recordNoneUntil(mockEnv);
+            const before = Math.floor(Date.now() / 1000);
+
+            await apiFlow.scheduled(dummyEvent as any, mockEnv as any, mockCtx as any);
+
+            expect(writes).toHaveLength(1);
+            expect(writes[0]).toBeGreaterThan(before + 3600 + 60);
+        });
     });
 
     it('Test C: Customized Alert Thresholds', async () => {

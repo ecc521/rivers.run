@@ -13,12 +13,10 @@
     "@hono/zod-openapi": "^1.6.3",
     "@scalar/hono-api-reference": "^0.12.8",
     "hono": "^4.13.12",
-    "nodemailer": "^10.0.13",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261001.1",
-    "@types/nodemailer": "^8.0.2",
     "vitest": "^5.0.3",
     "wrangler": "^4.146.0"
   }

@@ -1,5 +1,5 @@
 import type { Env } from "../index";
-import { sendEmail } from "../email";
+import { sendEmail, RECIPIENT_SUPPRESSED } from "../email";
 import { normalizeGaugeId } from "../utils/formatting";
 import { signUnsubscribeToken, buildUnsubscribeUrl } from "../utils/unsubscribeToken";
 import { logToD1 } from "../utils/logger";
@@ -255,7 +255,11 @@ export function calculateNextTriggerTime(timeOfDay: string, nowMs: number): numb
     return Math.floor(target.getTime() / 1000);
 }
 
-export async function processNotifications(env: Env, mergedData: Record<string, any>, ctx: ExecutionContext) {
+/** Emails sent at once; Cloudflare rate-limits bursts and each send is a subrequest. */
+const SEND_CONCURRENCY = 10;
+const SEND_RETRY_DELAY_S = 60 * 60;
+
+export async function processNotifications(env: Env, mergedData: Record<string, any>) {
     console.log("Processing Daily Digest Notifications...");
     try {
         const nowMs = Date.now();
@@ -267,8 +271,9 @@ export async function processNotifications(env: Env, mergedData: Record<string, 
             await logToD1(env, "WARN", "email", "Digest emails sending without List-Unsubscribe headers: Missing UNSUBSCRIBE_SECRET secret.");
         }
 
+        interface Pending { userId: string; email: string; subject: string; html: string; headers?: Record<string, string>; nextTrigger: number }
+        const pending: Pending[] = [];
         const updates: any[] = [];
-        const emailsPromises: Promise<any>[] = [];
 
         for (const [userId, userObj] of usersMap.entries()) {
             const listSummaries: ListSummary[] = [];
@@ -290,21 +295,29 @@ export async function processNotifications(env: Env, mergedData: Record<string, 
             }
 
             const emailData = buildDigestEmailBody({ lists: listSummaries }, unsubscribeUrl);
+            const nextTrigger = calculateNextTriggerTime(userObj.timeOfDay, nowMs);
 
             if (emailData) {
-                emailsPromises.push(
-                    sendEmail({ env, to: userObj.email, subject: emailData.subject, html: emailData.html, headers })
-                );
+                pending.push({ userId, email: userObj.email, subject: emailData.subject, html: emailData.html, headers, nextTrigger });
+            } else {
+                updates.push(env.DB.prepare("UPDATE users SET notifications_none_until = ? WHERE user_id = ?").bind(nextTrigger, userId));
             }
-
-            const nextTimestamp = calculateNextTriggerTime(userObj.timeOfDay, nowMs);
-            updates.push(env.DB.prepare("UPDATE users SET notifications_none_until = ? WHERE user_id = ?").bind(nextTimestamp, userId));
         }
 
-        if (emailsPromises.length > 0) {
-            ctx.waitUntil(Promise.all(emailsPromises));
+        // A failed send is retried after SEND_RETRY_DELAY_S instead of skipping the user's day.
+        // A suppressed recipient is not retried: Cloudflare already decided to stop mailing them.
+        for (let i = 0; i < pending.length; i += SEND_CONCURRENCY) {
+            const chunk = pending.slice(i, i + SEND_CONCURRENCY);
+            const results = await Promise.all(chunk.map(p =>
+                sendEmail({ env, to: p.email, subject: p.subject, html: p.html, headers: p.headers })));
+            chunk.forEach((p, idx) => {
+                const r = results[idx];
+                const retry = !r.success && r.code !== RECIPIENT_SUPPRESSED;
+                const next = retry ? currentTime + SEND_RETRY_DELAY_S : p.nextTrigger;
+                updates.push(env.DB.prepare("UPDATE users SET notifications_none_until = ? WHERE user_id = ?").bind(next, p.userId));
+            });
         }
-        
+
         if (updates.length > 0) {
             // Throttle maximum batches to 100 sequentially to prevent hitting maximum statement limits on massive D1 runs
             for (let i = 0; i < updates.length; i += 100) {

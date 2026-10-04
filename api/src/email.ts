@@ -1,39 +1,21 @@
-import nodemailer from 'nodemailer';
 import { logToD1 } from './utils/logger';
 
-/**
- * Sends a generic transactional email using the dedicated rivers.run Gmail account.
- * Cloudflare Workers must be running with `nodejs_compat` enabled to access net/tls required by nodemailer.
- */
-export async function sendEmail({ env, to, subject, text, html }: { env: any, to: string, subject: string, text?: string, html?: string }) {
-    if (!env || !env.GMAIL_APP_PASSWORD) {
-        await logToD1(env, "WARN", "email", "Emails not configured: Missing GMAIL_APP_PASSWORD secret.");
+const EMAIL_FROM = { name: 'Rivers.run', email: 'notifications@rivers.run' };
+
+/** Sends a transactional email through the Cloudflare Email Sending binding (`EMAIL`). */
+export async function sendEmail({ env, to, subject, text, html }: { env: any, to: string | string[], subject: string, text?: string, html?: string }) {
+    if (!env?.EMAIL) {
+        await logToD1(env, "WARN", "email", "Emails not configured: Missing EMAIL send_email binding.");
         return { success: false, error: "Missing config" };
     }
 
-    const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            user: 'email.rivers.run@gmail.com',
-            pass: env.GMAIL_APP_PASSWORD
-        }
-    });
-
+    const recipients = (Array.isArray(to) ? to : to.split(',')).map(a => a.trim()).filter(Boolean);
     try {
-        const info = await transporter.sendMail({
-            from: '"Rivers.run" <email.rivers.run@gmail.com>',
-            to,
-            subject,
-            text,
-            html
-        });
-        await logToD1(env, "INFO", "email", `Email sent to ${to}: ${info.messageId}`);
+        const info = await env.EMAIL.send({ from: EMAIL_FROM, to: recipients, subject, text, html });
+        await logToD1(env, "INFO", "email", `Email sent to ${recipients.join(', ')}: ${info.messageId}`);
         return { success: true, messageId: info.messageId };
     } catch (e: any) {
-        await logToD1(env, "ERROR", "email", `Nodemailer failure to ${to}`, e.message);
-        console.error("Nodemailer routing failure on Cloudflare Worker:", e);
-        return { success: false, error: e.message };
+        await logToD1(env, "ERROR", "email", `Email failure to ${recipients.join(', ')}`, `${e?.code ?? 'unknown'}: ${e?.message}`);
+        return { success: false, error: e?.message ?? String(e) };
     }
 }

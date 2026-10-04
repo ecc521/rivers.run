@@ -1,35 +1,28 @@
-import nodemailer from 'nodemailer';
 import { logToD1 } from './utils/logger';
 
-export async function sendEmail({ env, to, subject, html, headers }: { env: any, to: string, subject: string, html: string, headers?: Record<string, string> }) {
-    if (!env || !env.GMAIL_APP_PASSWORD) {
-        await logToD1(env, "WARN", "email", "Emails not configured: Missing GMAIL_APP_PASSWORD secret.");
+export const EMAIL_FROM = { name: 'Rivers.run', email: 'notifications@rivers.run' };
+
+export type SendEmailResult =
+    | { success: true; messageId: string }
+    | { success: false; error: string; code?: string };
+
+/** Cloudflare throws this when the recipient is on the account suppression list. */
+export const RECIPIENT_SUPPRESSED = 'E_RECIPIENT_SUPPRESSED';
+
+export async function sendEmail({ env, to, subject, html, headers }: { env: any, to: string, subject: string, html: string, headers?: Record<string, string> }): Promise<SendEmailResult> {
+    if (!env?.EMAIL) {
+        await logToD1(env, "WARN", "email", "Emails not configured: Missing EMAIL send_email binding.");
         return { success: false, error: "Missing config" };
     }
 
-    const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            user: 'email.rivers.run@gmail.com',
-            pass: env.GMAIL_APP_PASSWORD
-        }
-    });
-
     try {
-        const info = await transporter.sendMail({
-            from: '"Rivers.run" <email.rivers.run@gmail.com>',
-            to,
-            subject,
-            html,
-            headers
-        });
-        await logToD1(env, "INFO", "email", `Email sent to ${to}: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
+        const { messageId } = await env.EMAIL.send({ from: EMAIL_FROM, to, subject, html, headers });
+        await logToD1(env, "INFO", "email", `Email sent to ${to}: ${messageId}`);
+        return { success: true, messageId };
     } catch (e: any) {
-        await logToD1(env, "ERROR", "email", `Nodemailer failure to ${to}`, e.message);
-        console.error("Nodemailer routing failure on Cloudflare Worker:", e);
-        return { success: false, error: e.message };
+        const code: string | undefined = e?.code;
+        const level = code === RECIPIENT_SUPPRESSED ? "WARN" : "ERROR";
+        await logToD1(env, level, "email", `Email failure to ${to}`, `${code ?? 'unknown'}: ${e?.message}`);
+        return { success: false, error: e?.message ?? String(e), code };
     }
 }
