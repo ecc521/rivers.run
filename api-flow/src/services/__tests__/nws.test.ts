@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { parseNWSeries, nwsProvider } from '../nws';
+import { parseNWSeries, nwsProvider, observedReading } from '../nws';
 
 describe('NWS Service', () => {
     describe('parseNWSeries', () => {
@@ -108,34 +108,50 @@ describe('NWS Service', () => {
         });
     });
 
-    describe('nwsProvider.getFullSiteListing', () => {
-        it('should fetch and format NWS gauge list', async () => {
-            globalThis.fetch = vi.fn().mockResolvedValue({
-                ok: true,
-                json: async () => ({
-                    gauges: [
-                        {
-                            identifier: 'clvv2',
-                            name: 'CLEAR LAKE AT LAKEPORT',
-                            latitude: 39.04,
-                            longitude: -122.91
-                        },
-                        {
-                            identifier: 'sumw2',
-                            name: 'Snoqualmie River at Snoqualmie',
-                            latitude: 47.53,
-                            longitude: -121.82
-                        }
-                    ]
-                })
-            });
+    describe('bulk gauge list', () => {
+        const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+        const gauge = (lid: string, over: Record<string, unknown> = {}) => ({
+            lid, name: 'Swannanoa River at Biltmore', latitude: 35.57, longitude: -82.5, state: { abbreviation: 'NC' },
+            status: { observed: { primary: 2.5, primaryUnit: 'ft', secondary: 1.2, secondaryUnit: 'kcfs', validTime: hoursAgo(1) } },
+            ...over,
+        });
+        const mockList = (...gauges: object[]) => {
+            globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => JSON.stringify({ gauges }) });
+        };
 
-            const result = await nwsProvider.getFullSiteListing?.();
-            expect(result).toHaveLength(2);
-            expect(result![0].name).toBe('Clear Lake');
-            expect(result![0].section).toBe('At Lakeport');
-            expect(result![1].name).toBe('Snoqualmie River');
-            expect(result![1].section).toBe('At Snoqualmie');
+        it('reads stage and flow from the latest observation, ignoring sentinels', () => {
+            expect(observedReading(gauge('A'))).toMatchObject({ ft: 2.5, cfs: 1200 });
+            const noFlow = gauge('B', { status: { observed: { primary: 2.5, primaryUnit: 'ft', secondary: -999, secondaryUnit: 'kcfs', validTime: hoursAgo(1) } } });
+            const reading = observedReading(noFlow);
+            expect(reading?.ft).toBe(2.5);
+            expect(reading?.cfs).toBeUndefined();
+            expect(observedReading(gauge('C', { status: { observed: { validTime: '0001-01-01T00:00:00Z' } } }))).toBeNull();
+            expect(observedReading({})).toBeNull();
+        });
+
+        it('lists the NC river gauges observed recently, using a bounding box', async () => {
+            mockList(
+                gauge('SWNN7'),
+                gauge('OLDN7', { status: { observed: { primary: 1, primaryUnit: 'ft', validTime: hoursAgo(24 * 5) } } }),
+                gauge('NEVN7', { status: { observed: { validTime: '0001-01-01T00:00:00Z' } } }),
+                gauge('GAGA1', { state: { abbreviation: 'GA' } }),
+                gauge('TIDN7', { name: 'Pamlico Sound at Avon (in MLLW)' }),
+                gauge('DAMN7', { status: { observed: { primary: 1920.4, primaryUnit: 'ft', validTime: hoursAgo(1) } } }),
+            );
+            const result = await nwsProvider.getFullSiteListing!();
+            expect(result.map(s => s.id)).toEqual(['SWNN7']);
+            expect(result[0]).toMatchObject({ name: 'Swannanoa River', section: 'At Biltmore', state: 'NC', country: 'US', lat: 35.57, lon: -82.5 });
+            const url = String((globalThis.fetch as any).mock.calls[0][0]);
+            expect(url).toContain('bbox.xmin=');
+            expect(url).not.toMatch(/gauges$/);
+        });
+
+        it('getLatest answers from one bulk request, case-insensitively, without per-gauge calls', async () => {
+            mockList(gauge('SWNN7'), gauge('OTHER'));
+            const latest = await nwsProvider.getLatest(['swnn7', 'MISSING']);
+            expect(Object.keys(latest)).toEqual(['swnn7']);
+            expect(latest.swnn7).toMatchObject({ ft: 2.5, cfs: 1200 });
+            expect(globalThis.fetch).toHaveBeenCalledOnce();
         });
     });
 });

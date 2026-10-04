@@ -156,6 +156,17 @@ describe("runIngestCycle", () => {
         expect(stored["NWS:XYZ"].readings).toEqual([{ dateTime: NOW - 10 * MIN, ft: 3 }]);
     });
 
+    it("stores linked NWS gauges from their series and takes unlinked ones from the bulk latest, unstored", async () => {
+        const nws = bulkProvider("NWS", { LINK: { LINK: [{ dateTime: NOW - 10 * MIN, ft: 3 }] }, FREE: { FREE: [{ dateTime: NOW - 10 * MIN, ft: 9 }] } });
+        const stats = await runIngestCycle(makeEnv(["NWS:LINK"]), db, { "NWS:LINK": {}, "NWS:FREE": {} }, { NWS: nws }, NOW);
+
+        expect(nws.calls).toEqual([["getLatest", ["FREE"]]]);
+        expect(stats.latest.get("NWS:FREE")).toMatchObject({ gaugeId: "NWS:FREE", cfs: 10 });
+        const stored = await readSeries(db, ["NWS:LINK", "NWS:FREE"], NOW - HOUR, NOW, NOW);
+        expect(stored["NWS:LINK"].readings).toEqual([{ dateTime: NOW - 10 * MIN, ft: 3 }]);
+        expect(stored["NWS:FREE"]).toBeUndefined();
+    });
+
     it("uses history for linked latest-only gauges and getLatest for the rest", async () => {
         const ie = stubProvider("IE");
         await runIngestCycle(makeEnv(["IE:L"]), db, { "IE:L": {}, "IE:R": {} }, { IE: ie }, NOW);

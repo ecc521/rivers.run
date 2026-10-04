@@ -1161,6 +1161,7 @@ const GaugeItem: React.FC<{
         <option value="USGS">USGS</option>
         <option value="EC">Environment Canada (EC)</option>
         <option value="NWS">NWS / Weather.gov</option>
+        <option value="FIMAN">FIMAN (NC)</option>
         <option value="USACE">USACE Dam</option>
       </select>
 
@@ -1173,6 +1174,7 @@ const GaugeItem: React.FC<{
           placeholder={(() => {
             if (agency === "USGS") return "e.g., 01646500";
             if (agency === "EC") return "e.g., 08MA002";
+            if (agency === "FIMAN") return "e.g., 1850";
             return "e.g., LINC2";
           })()}
           value={code} 
