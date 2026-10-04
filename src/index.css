@@ -847,6 +847,14 @@ Those include name,section,skill,quality, and flow info*/
     text-align:center;
 }
 
+/* Placeholder while a page's data or code loads. Filling the viewport keeps the
+   footer below the fold so it doesn't jump when real content arrives (CLS).
+   flow-root stops the heading's margin from collapsing through and offsetting the box. */
+.page-loading {
+    min-height: 100vh;
+    display: flow-root;
+}
+
 .gaugesBelow {
 	text-align: center !important;
 	background-color: #e06af4 !important; /*A lightish purple.*/

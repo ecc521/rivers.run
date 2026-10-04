@@ -344,13 +344,13 @@ const Home: React.FC = () => {
 
   if (loading)
     return (
-      <div className="page-content center">
+      <div className="page-content center page-loading">
         <h2>{t("home.loadingData")}</h2>
       </div>
     );
   if (error)
     return (
-      <div className="page-content center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '15px' }}>
+      <div className="page-content center page-loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
         <h2 style={{ marginBottom: "5px" }}>{t("home.downloadFailed")}</h2>
         <p style={{ color: "var(--text-muted)", marginTop: 0 }}>{t("home.connectInternet")}</p>
         <button 
@@ -806,7 +806,7 @@ const Home: React.FC = () => {
       </div>
 
       {isRiverOverlay && (
-        <React.Suspense fallback={<div className="page-content center"><h2>{t("home.loadingRiver")}</h2></div>}>
+        <React.Suspense fallback={<div className="page-content center page-loading"><h2>{t("home.loadingRiver")}</h2></div>}>
            <LazyRiverPage />
         </React.Suspense>
       )}

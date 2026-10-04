@@ -28,13 +28,13 @@ const MapPage: React.FC = () => {
 
   if (loading)
     return (
-      <div className="page-content center">
+      <div className="page-content center page-loading">
         <h2>{t("mapPage.loading")}</h2>
       </div>
     );
   if (error)
     return (
-      <div className="page-content center">
+      <div className="page-content center page-loading">
         <h2>{t("mapPage.error", { error })}</h2>
       </div>
     );

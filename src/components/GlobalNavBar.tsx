@@ -6,6 +6,16 @@ import { AuthModal } from "./AuthModal";
 import { ProfileMenu } from "./ProfileMenu";
 import { isDev } from "../services/api";
 
+const signInButtonStyle: React.CSSProperties = {
+  padding: "8px 16px",
+  borderRadius: "6px",
+  border: "none",
+  backgroundColor: "#3b82f6",
+  color: "white",
+  cursor: "pointer",
+  fontWeight: 600,
+};
+
 const GlobalNavBar: React.FC = () => {
   const { t } = useTranslation();
   const { user, loading, isAdmin, isAuthModalOpen, setAuthModalOpen } = useAuth();
@@ -175,7 +185,12 @@ const GlobalNavBar: React.FC = () => {
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: "auto" }}>
           <div className="nav-auth">
-          {loading && <span style={{ color: "#94a3b8" }}>{t("nav.loading")}</span>}
+          {/* Invisible copy of the Sign In button so the nav doesn't resize once auth resolves */}
+          {loading && (
+            <button aria-hidden="true" tabIndex={-1} style={{ ...signInButtonStyle, visibility: "hidden" }}>
+              {t("nav.signIn")}
+            </button>
+          )}
           {!loading && user && (
             <div
               className="user-profile"
@@ -219,15 +234,7 @@ const GlobalNavBar: React.FC = () => {
               onClick={() => {
                 setAuthModalOpen(true);
               }}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "6px",
-                border: "none",
-                backgroundColor: "#3b82f6",
-                color: "white",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
+              style={signInButtonStyle}
             >
               {t("nav.signIn")}
             </button>

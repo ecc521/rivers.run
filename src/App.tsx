@@ -5,12 +5,12 @@ import { ModalProvider } from "./context/ModalContext";
 import { ListsProvider } from "./context/ListsContext";
 import GlobalNavBar from "./components/GlobalNavBar";
 import Home from "./pages/Home";
-import MapPage from "./pages/MapPage";
 import SettingsPage from "./pages/Settings";
 import ListsPage from "./pages/ListsPage";
 
 import { useEffect, Suspense, lazy } from "react";
 
+const MapPage = lazy(() => import("./pages/MapPage"));
 const Clubs = lazy(() => import("./pages/Clubs"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const DeveloperPage = lazy(() => import("./pages/Developer"));
@@ -208,22 +208,22 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/river/:id/:slug?" element={<Home />} />
                         <Route path="/gauge/:id/:slug?" element={<Home />} />
-                        <Route path="/map" element={<MapPage />} />
+                        <Route path="/map" element={<Suspense fallback={<div className="page-content center page-loading" />}><MapPage /></Suspense>} />
                         <Route path="/lists" element={<ListsPage />} />
                         <Route path="/lists/:id/:slug?" element={<Home />} />
-                        <Route path="/clubs" element={<Suspense fallback={<div className="page-content center"><h2>Loading Clubs...</h2></div>}><Clubs /></Suspense>} />
+                        <Route path="/clubs" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Clubs...</h2></div>}><Clubs /></Suspense>} />
                         <Route path="/favorites" element={<ListsPage />} />
-                        <Route path="/faq" element={<Suspense fallback={<div className="page-content center"><h2>Loading FAQ...</h2></div>}><FAQ /></Suspense>} />
+                        <Route path="/faq" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading FAQ...</h2></div>}><FAQ /></Suspense>} />
                         <Route path="/settings" element={<SettingsPage />} />
-                        <Route path="/api" element={<Suspense fallback={<div className="page-content center"><h2>Loading API Docs...</h2></div>}><DeveloperPage /></Suspense>} />
-                        <Route path="/create" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
-                        <Route path="/edit/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
-                        <Route path="/admin" element={<Suspense fallback={<div className="page-content center"><h2>Loading Admin...</h2></div>}><AdminQueue /></Suspense>} />
-                        <Route path="/suggest/:riverId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
-                        <Route path="/review/:queueId" element={<Suspense fallback={<div className="page-content center"><h2>Loading Interface...</h2></div>}><RiverEditor /></Suspense>} />
-                        <Route path="/terms" element={<Suspense fallback={<div className="page-content center"><h2>Loading...</h2></div>}><TermsOfService /></Suspense>} />
-                        <Route path="/privacy" element={<Suspense fallback={<div className="page-content center"><h2>Loading...</h2></div>}><PrivacyPolicy /></Suspense>} />
-                        <Route path="/disclaimer" element={<Suspense fallback={<div className="page-content center"><h2>Loading...</h2></div>}><Disclaimer /></Suspense>} />
+                        <Route path="/api" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading API Docs...</h2></div>}><DeveloperPage /></Suspense>} />
+                        <Route path="/create" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
+                        <Route path="/edit/:riverId" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
+                        <Route path="/admin" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Admin...</h2></div>}><AdminQueue /></Suspense>} />
+                        <Route path="/suggest/:riverId" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
+                        <Route path="/review/:queueId" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Interface...</h2></div>}><RiverEditor /></Suspense>} />
+                        <Route path="/terms" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading...</h2></div>}><TermsOfService /></Suspense>} />
+                        <Route path="/privacy" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading...</h2></div>}><PrivacyPolicy /></Suspense>} />
+                        <Route path="/disclaimer" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading...</h2></div>}><Disclaimer /></Suspense>} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </ErrorBoundary>
