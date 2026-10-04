@@ -2,7 +2,7 @@
 
 Rivers.run is an offline-first PWA for whitewater paddlers (kayakers, rafters). It
 consolidates user-curated river descriptions and access points with live streamgage
-data (USGS, Environment Canada, UK, Ireland/OPW, NWS). **Offline access is a core
+data (USGS, Environment Canada, UK, Ireland/OPW, NWS) and USACE dam releases. **Offline access is a core
 requirement** — assume users may load the app before losing cell service deep in a
 river gorge, so caching and graceful offline behavior matter. Do not assume users
 have technical knowledge.

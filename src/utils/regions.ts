@@ -124,7 +124,7 @@ export function getCountryFromPrefix(gaugeId: string): CountryCode | null {
   if (!gaugeId || !gaugeId.includes(":")) return null;
   const prefix = gaugeId.split(":")[0].toUpperCase();
 
-  if (prefix === "USGS" || prefix === "NWS") return "US";
+  if (prefix === "USGS" || prefix === "NWS" || prefix === "USACE") return "US";
   if (prefix === "EC" || prefix === "CANADA") return "CA";
   if (prefix === "EA" || prefix === "UK") return "GB";
   if (prefix === "IE") return "IE";

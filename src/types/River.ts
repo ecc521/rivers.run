@@ -83,7 +83,7 @@ export interface RiverData {
   /** Flag used by the map to identify instances that just represent standalone gauge sensors instead of actual valid river runs */
   isGauge?: boolean;
 
-  /** Flag indicating the latest gauge reading is older than the 3H staleness threshold */
+  /** Flag indicating the latest gauge reading is older than the provider-specific staleness threshold (see utils/staleness.ts) */
   isReadingStale?: boolean;
   
   updatedAt?: number; // Unix timestamp

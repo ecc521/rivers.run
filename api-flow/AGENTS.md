@@ -10,7 +10,7 @@ against the same D1 database `api/` uses, bound independently in this worker's o
 with no login, per RFC 8058 one-click unsubscribe) and is instead gated by an HMAC-signed
 token — see `src/utils/unsubscribeToken.ts`. Built on Hono (`OpenAPIHono`). Entry point:
 `src/index.ts`. Deployed to `flow.rivers.run`. Provider integrations live in
-`src/services/` (USGS, Canada, UK, Ireland, NWS).
+`src/services/` (USGS, Canada, UK, Ireland, NWS, USACE).
 
 ## 1. CORS Proxying & Network Constraints
 
@@ -135,6 +135,8 @@ and weekly crons also fire at 00:00 and must not start a second ingest):
   UK is fetched every cycle but stored only on the hourly cycle (`isHourlyCycle`),
   one reading per gauge per hour, to save D1 writes. `sitedata.json` takes UK
   readings from the fetch, falling back to the store.
+- USACE: latest-only like UK, but never stored (`FETCH_ONLY_PROVIDERS`). See
+  "USACE dams" below.
 
 `/history` and `/gauge` serve from the store only when `gauge_sync_state` says it
 covers the whole request with no pending repair (USGS after backfill, EC/NWS from
@@ -148,6 +150,30 @@ Known gaps, not yet handled:
   record is indistinguishable from an unchanged one.
 - The legacy `approved` column remains only in the archived `gauge_readings` table.
   Hourly storage has no approval field; ingest neither requests nor stores approval status.
+
+### USACE dams (`services/usace.ts`)
+
+Two gauges per dam. `USACE:<district>.<code>` (e.g. `USACE:LRH.Summersville`,
+"Summersville Lake (Outflow)") has release as `cfs`, the river stage just below the
+dam ("Stage Tailwater", about 140 dams) as `ft`, and the district's projected releases
+as forecast rows (`forecastSource: "USACE"`). `USACE:<district>.<code>.Lake` ("... (Lake
+Level)") has pool elevation as `ft`; the frontend labels it "Lake Level" and gives it
+no map marker, since it sits on the outflow gauge.
+
+- Latest values for every dam come from one request to the Access2Water reporting
+  API (`water.usace.army.mil/cda/reporting/providers/projects?fmt=geojson`), the
+  undocumented API behind the public USACE site. That is the whole per-cycle cost.
+- `/history` fetches release and elevation history (capped at 7 days) from the same
+  API, and projected releases from the CWMS Data API, live on each request.
+- The daily cron (or any cron when it is missing) rebuilds `usace/sites.json` in R2:
+  each dam's series ids, plus its projected-release series where one exists (about
+  120 of 590 dams; many districts publish none). Forecast names differ by district,
+  so candidates come from each office's catalog and must show data past now. The
+  catalog's own `last-update`/`latest-time` extents are not maintained reliably and
+  are never used, and `/timeseries/recent` returns a database error for some series,
+  so a failed batch is checked per series.
+- A registry without any `USACE:` entries gets them on the next cron instead of
+  waiting for the weekly recompile.
 
 ### Model snapshot (`model/usgs_hourly.json.gz` in R2)
 

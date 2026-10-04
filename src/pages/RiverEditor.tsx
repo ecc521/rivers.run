@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useId } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { fetchAPI } from "../services/api";
 import ReactQuill from "react-quill-new";
@@ -21,6 +21,8 @@ import { reconstructHistoricalState } from "../utils/historyUtils";
 import { RiverExpansion } from "../components/RiverExpansion";
 import { useSEO } from "../hooks/useSEO";
 import type { RiverData } from "../types/River";
+import { useRivers } from "../hooks/useRivers";
+import { buildUsaceDamOptions, matchUsaceDam, parseUsaceGauge, usaceGaugeId, type UsaceGaugeKind } from "../utils/usaceGauges";
 
 export default function RiverEditor() {
   const { riverId, queueId } = useParams();
@@ -1150,27 +1152,103 @@ const GaugeItem: React.FC<{
       <select 
         style={{ padding: '8px', boxSizing: 'border-box' }}
         value={agency}
-        onChange={(e) => onUpdate({ id: `${e.target.value}:${code}` })}
+        onChange={(e) => {
+          // USACE dam codes and station numbers are not interchangeable, so switching to or from USACE starts empty.
+          const next = e.target.value;
+          onUpdate({ id: `${next}:${next === "USACE" || agency === "USACE" ? "" : code}` });
+        }}
       >
         <option value="USGS">USGS</option>
         <option value="EC">Environment Canada (EC)</option>
         <option value="NWS">NWS / Weather.gov</option>
+        <option value="USACE">USACE Dam</option>
       </select>
 
-      <input 
-        type="text" 
-        style={{ flex: 1, padding: '8px', boxSizing: 'border-box' }} 
-        placeholder={(() => {
-          if (agency === "USGS") return "e.g., 01646500";
-          if (agency === "EC") return "e.g., 08MA002";
-          return "e.g., LINC2";
-        })()} 
-        value={code} 
-        onChange={(e) => onUpdate({ id: `${agency}:${e.target.value}` })}
-      />
+      {agency === "USACE" ? (
+        <UsaceGaugePicker gaugeId={gauge.id} onChange={(id) => onUpdate({ id })} />
+      ) : (
+        <input
+          type="text"
+          style={{ flex: 1, padding: '8px', boxSizing: 'border-box' }}
+          placeholder={(() => {
+            if (agency === "USGS") return "e.g., 01646500";
+            if (agency === "EC") return "e.g., 08MA002";
+            return "e.g., LINC2";
+          })()}
+          value={code} 
+          onChange={(e) => onUpdate({ id: `${agency}:${e.target.value}` })}
+        />
+      )}
       <button 
         onClick={onDelete} 
         style={{ backgroundColor: 'var(--danger)', color: 'white', border: 'none', padding: '8px', cursor: 'pointer' }}>Delete</button>
+    </div>
+  );
+};
+
+/**
+ * Picks a USACE dam by name and which of its gauges to use: release (outflow, with
+ * tailwater stage and projected releases) or lake level. Saves the same ids as typing
+ * them, e.g. "USACE:LRH.Summersville" or "USACE:LRH.Summersville.Lake".
+ */
+const UsaceGaugePicker: React.FC<{ gaugeId: string; onChange: (id: string) => void }> = ({ gaugeId, onChange }) => {
+  const { rivers, loading } = useRivers();
+  const options = useMemo(() => buildUsaceDamOptions(rivers.filter(r => r.isGauge)), [rivers]);
+  const listId = useId();
+  const parsed = parseUsaceGauge(gaugeId);
+  const current = parsed ? options.find(o => o.dam === parsed.dam) : undefined;
+  const kind: UsaceGaugeKind = parsed?.kind ?? "release";
+
+  // Text being typed, kept only while the row's gauge id is the one it was typed for:
+  // rows are keyed by index, so after a delete this instance shows the next gauge.
+  const [typed, setTyped] = useState<{ forId: string; text: string } | null>(null);
+  const text = typed && typed.forId === gaugeId ? typed.text : (current?.label ?? parsed?.dam ?? "");
+  const unmatched = text.trim() !== "" && (options.length > 0 ? !current : !parsed);
+
+  const onText = (value: string) => {
+    const match = matchUsaceDam(options, value);
+    const typedCode = value.trim().replace(/^USACE:/, "");
+    // A typed code says which gauge it means ("...Summersville.Lake"); a picked name starts on release.
+    const wantKind = parseUsaceGauge(`USACE:${typedCode}`)?.kind ?? "release";
+    // Unmatched text stays in the id, so validation blocks saving anything that is not a dam
+    // code (and a typed code still works before the dam list loads). An empty row is dropped
+    // on save like any blank gauge.
+    let nextId = `USACE:${typedCode}`;
+    if (match) {
+      const pickedKind = match.kinds.includes(wantKind) ? wantKind : match.kinds[0];
+      nextId = usaceGaugeId(match.dam, pickedKind);
+    }
+    setTyped({ forId: nextId, text: value });
+    if (nextId !== gaugeId) onChange(nextId);
+  };
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <input
+          type="text"
+          list={listId}
+          aria-label="USACE dam"
+          style={{ flex: 1, minWidth: 0, padding: '8px', boxSizing: 'border-box' }}
+          placeholder={loading && options.length === 0 ? "Loading dams..." : "Search dams, e.g. Summersville Lake"}
+          value={text}
+          onChange={(e) => onText(e.target.value)}
+        />
+        <datalist id={listId}>
+          {options.map(o => <option key={o.dam} value={o.label} />)}
+        </datalist>
+        <select
+          aria-label="USACE gauge"
+          style={{ padding: '8px', boxSizing: 'border-box' }}
+          value={kind}
+          disabled={!parsed}
+          onChange={(e) => parsed && onChange(usaceGaugeId(parsed.dam, e.target.value as UsaceGaugeKind))}
+        >
+          <option value="release" disabled={!!current && !current.kinds.includes("release")}>Release (outflow)</option>
+          <option value="lake" disabled={!!current && !current.kinds.includes("lake")}>Lake level</option>
+        </select>
+      </div>
+      {unmatched && <span style={{ fontSize: '12px', color: 'var(--danger)' }}>Pick a dam from the list.</span>}
     </div>
   );
 };

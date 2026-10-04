@@ -4,6 +4,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { LineString } from "geojson";
 import { getDownloadedRegions, getOfflineMapSource } from "../utils/offlineMapEngine";
+import { isUsaceLakeGauge } from "../utils/usaceGauges";
 import { Protocol, PMTiles, FileSource } from "pmtiles";
 import type { RiverData } from "../types/River";
 import { calculateColor } from "../utils/flowInfoCalculations";
@@ -798,7 +799,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
         buildStyle();
     }, []);
 
-    const gauges = useMemo(() => globalMarkers.filter((pt: any) => pt.river.isGauge), [globalMarkers]);
+    // A USACE lake gauge sits on its dam's outflow gauge; only the outflow gets a marker.
+    const gauges = useMemo(() => globalMarkers.filter((pt: any) => pt.river.isGauge && !isUsaceLakeGauge(pt.river.id)), [globalMarkers]);
     const nonGauges = useMemo(() => globalMarkers.filter((pt: any) => !pt.river.isGauge), [globalMarkers]);
 
     const gaugesGeoJson = useMemo<any>(() => ({

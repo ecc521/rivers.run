@@ -2,7 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiFlow from '../index';
 
 vi.mock('../services/gaugeRegistry', () => ({
-    compileGaugeRegistry: vi.fn().mockResolvedValue({})
+    compileGaugeRegistry: vi.fn().mockResolvedValue({}),
+    refreshProviderListing: vi.fn()
+}));
+
+vi.mock('../services/usace', () => ({
+    usaceProvider: { getLatest: vi.fn().mockResolvedValue({}), getFullSiteListing: vi.fn() },
+    syncUsaceSites: vi.fn().mockResolvedValue({ sites: 0, forecasts: 0 }),
+    USACE_SITES_KEY: 'usace/sites.json'
 }));
 
 // Mock providers to avoid actual network calls during full sync tests

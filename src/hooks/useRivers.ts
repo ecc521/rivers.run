@@ -7,6 +7,8 @@ import { applyUnitSettings, applyUnitSettingsToReadings } from "../utils/unitCon
 import { computeSearchCache } from "../utils/SearchFilters";
 
 import { deriveRegionMap, getCountryFromPrefix } from "../utils/regions";
+import { getStaleThresholdMs } from "../utils/staleness";
+import { usaceSiblingId } from "../utils/usaceGauges";
 
 interface UseRiversResult {
   rivers: RiverData[];
@@ -91,10 +93,10 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
 
   if (gaugeRecord && gaugeRecord.readings && gaugeRecord.readings.length > 0) {
     const rawLatest = gaugeRecord.readings[gaugeRecord.readings.length - 1];
-    
-    // 2-hour relative staleness rule: Reading must be within 2 hours of the sync generation
+
+    // Relative staleness rule: reading must be within threshold of the sync generation
     const readingAgeFromSync = (flowData.generatedAt || Date.now()) - rawLatest.dateTime;
-    if (readingAgeFromSync > 2 * 60 * 60 * 1000) {
+    if (readingAgeFromSync > getStaleThresholdMs(activeGaugeId)) {
         river.isReadingStale = true;
     }
 
@@ -137,15 +139,15 @@ const enrichRiver = (river: any, _index: number, flowData: any, settings: any) =
   return river;
 };
 
-const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): RiverData | null => {
+const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any, flowData: Record<string, any> = {}): RiverData | null => {
    const gData: any = gaugeData;
    if (!gData.readings || gData.readings.length === 0) return null;
 
    const rawLatest = gData.readings[gData.readings.length - 1];
 
-   // 2-hour relative staleness rule
+   // Relative staleness rule
    const readingAgeFromSync = (gaugeData.generatedAt || Date.now()) - rawLatest.dateTime;
-   const isStale = readingAgeFromSync > 2 * 60 * 60 * 1000;
+   const isStale = readingAgeFromSync > getStaleThresholdMs(gaugeId);
 
    const latest = applyUnitSettings(rawLatest, settings);
    const { flowUnits } = settings;
@@ -186,6 +188,14 @@ const buildStandaloneGauge = (gaugeId: string, gaugeData: any, settings: any): R
        skill: "?" // Standalone gauges have no rated skill
    } as unknown as RiverData;
    computeSearchCache(standaloneGauge);
+   // A USACE dam's outflow and lake gauges share one page: each lists the other as a
+   // second gauge. Added after the search cache so searches match only the gauge itself.
+   const siblingId = usaceSiblingId(gaugeId);
+   const sibling = siblingId ? flowData[siblingId] : undefined;
+   if (siblingId && sibling) {
+       standaloneGauge.gauges.push({ id: siblingId, isPrimary: false, name: String(sibling.name || siblingId), section: String(sibling.section || "") });
+       standaloneGauge.gaugeData![siblingId] = sibling.readings ?? [];
+   }
    return standaloneGauge;
 };
 
@@ -311,7 +321,7 @@ export const useRivers = (): UseRiversResult => {
           const standaloneGauges: RiverData[] = [];
           for (const [gaugeId, gaugeData] of Object.entries(flowData)) {
               if (gaugeId === "generatedAt") continue;
-              const standaloneGauge = buildStandaloneGauge(gaugeId, gaugeData, settings);
+              const standaloneGauge = buildStandaloneGauge(gaugeId, gaugeData, settings, flowData);
               if (standaloneGauge) standaloneGauges.push(standaloneGauge);
           }
           processedData = [...processedData, ...standaloneGauges];

@@ -20,6 +20,8 @@ const MODEL_UNITS = ["cfs", "cms", "ft", "m"] as const;
 type ModelUnit = typeof MODEL_UNITS[number];
 type ChartRow = GaugeReading & Partial<Record<`${ModelUnit}ModelRange`, [number, number]>>;
 const MODEL_FIELDS = MODEL_UNITS.flatMap((u) => [`${u}Model`, `${u}ModelLow`, `${u}ModelHigh`] as const);
+import { getStaleThresholdMs } from "../utils/staleness";
+import { isUsaceLakeGauge } from "../utils/usaceGauges";
 
 interface Props {
   river: RiverData;
@@ -43,7 +45,11 @@ const getUnit = (dataKey: string) => {
   return "in";
 };
 
-const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, tempKey, precipKey, volumeColor, stageColor, tempColor, precipColor, forecastSource, showModel }: any) => {
+/** Names for forecast rows by source, in the tooltip and the legend. */
+const FORECAST_FLOW_TOOLTIP: Record<string, string> = { NWS: "NWS Forecast", USACE: "Projected Release" };
+const FORECAST_FLOW_LEGEND: Record<string, string> = { NWS: "NWS forecast", USACE: "Projected release" };
+
+const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey, stageKey, tempKey, precipKey, volumeColor, stageColor, tempColor, precipColor, forecastSource, showModel, stageName }: any) => {
   if (active && payload && payload.length) {
     const rowData = payload[0].payload;
     const items: { name: string, value: any, color: string, dataKey: string }[] = [];
@@ -62,11 +68,11 @@ const CustomTooltip = ({ active, payload, label, isDarkMode, activeTab, flowKey,
       const stageVal = rowData[stageKey] ?? rowData[`${stageKey}Forecast`];
 
       const flowLabel = isForecastFlow 
-        ? (forecastSource === "NWS" ? "NWS Forecast" : "Forecasted Flow")
+        ? (FORECAST_FLOW_TOOLTIP[forecastSource] ?? "Forecasted Flow")
         : "Flow";
       const stageLabel = isForecastStage 
         ? (forecastSource === "NWS" ? "NWS Forecast" : "Forecasted Stage")
-        : "Stage";
+        : stageName;
 
       items.push({ 
         name: flowLabel, 
@@ -166,6 +172,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
     setActiveGaugeId(river.gauges?.find((g: any) => g.isPrimary)?.id || river.gauges?.[0]?.id);
   }, [river.id]);
   const gaugeReadings = activeGaugeId && river.gaugeData ? river.gaugeData[activeGaugeId] : undefined;
+  const stageName = isUsaceLakeGauge(activeGaugeId) ? "Lake Level" : "Stage";
   const rawData = useMemo(() => forecastRowsAsForecast(gaugeReadings || []), [gaugeReadings]);
 
   const isGraphStale = useMemo(() => {
@@ -179,11 +186,11 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
          }
      }
      if (!latestActualReading) return false;
-     
-     // 2-hour relative staleness rule: Reading must be within 2 hours of the sync generation
+
+     // Relative staleness rule: reading must be within threshold of the sync generation
      const syncTime = dataGeneratedAt || Date.now();
-     return (syncTime - latestActualReading.dateTime) > 2 * 60 * 60 * 1000;
-  }, [rawData, dataGeneratedAt]);
+     return (syncTime - latestActualReading.dateTime) > getStaleThresholdMs(activeGaugeId);
+  }, [rawData, dataGeneratedAt, activeGaugeId]);
 
   const hasForecastData = useMemo(() => {
     return rawData.some((d: any) => d.cfsForecast != null || d.ftForecast != null || d.forecast === true);
@@ -413,7 +420,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
               })();
               return (
                 <option key={g.id} value={g.id}>
-                  {label} {g.isPrimary ? "(Primary)" : ""}
+                  {label} {g.isPrimary && !river.isGauge ? "(Primary)" : ""}
                 </option>
               );
             })}
@@ -562,6 +569,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                         tempColor={tempColor}
                         precipColor={precipColor}
                         forecastSource={forecastSource}
+                        stageName={stageName}
                         showModel={showModel}
                     />
                 } />
@@ -639,7 +647,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                       yAxisId="left"
                       type="monotone"
                       dataKey={`${flowKey}Forecast`}
-                      name={forecastSource === "NWS" ? "NWS forecast" : "Forecast"}
+                      name={(forecastSource && FORECAST_FLOW_LEGEND[forecastSource]) || "Forecast"}
                       stroke={volumeColor}
                       strokeDasharray={nwsDash}
                       dot={false}
@@ -653,7 +661,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                       yAxisId="right"
                       type="monotone"
                       dataKey={stageKey}
-                      name={stageKey === "ft" ? "Stage (ft)" : "Stage (m)"}
+                      name={`${stageName} (${stageKey})`}
                       stroke={stageColor}
                       dot={false}
                       strokeWidth={4}

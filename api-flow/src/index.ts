@@ -10,10 +10,11 @@ import { nwsProvider } from "./services/nws";
 import { ecProvider } from "./services/canada";
 import { ukProvider } from "./services/uk";
 import { irelandProvider } from "./services/ireland";
+import { usaceProvider, syncUsaceSites, USACE_SITES_KEY } from "./services/usace";
 import { GaugeProvider, GaugeHistory, Units } from "./services/provider";
 import { HistorySchema, ErrorSchema, GenericObjectSchema } from "./schema";
 import { toUnitSystemHistory } from "./utils/units";
-import { compileGaugeRegistry } from "./services/gaugeRegistry";
+import { compileGaugeRegistry, refreshProviderListing } from "./services/gaugeRegistry";
 import { withTimeout } from "./utils/timeout";
 import { stringifyJSONObject } from "./utils/stream";
 import { normalizeGaugeId } from "./utils/formatting";
@@ -58,7 +59,8 @@ export const providers: Record<string, GaugeProvider> = {
     "NWS": nwsProvider,
     "EC": ecProvider,
     "UK": ukProvider,
-    "IE": irelandProvider
+    "IE": irelandProvider,
+    "USACE": usaceProvider
 };
 
 const app = new OpenAPIHono<{ Bindings: Env }>();
@@ -592,6 +594,26 @@ export default {
                 } catch (_e) {
                     console.error("CRITICAL: Registry compilation failed or timed out.", _e);
                 }
+            }
+
+            // A registry compiled before USACE existed gets its dams now rather than at the weekly recompile.
+            if (!needsRecompile && !Object.keys(registryMetadata).some(k => k.startsWith("USACE:"))) {
+                await refreshProviderListing(env, registryMetadata, usaceProvider);
+                if (Object.keys(registryMetadata).some(k => k.startsWith("USACE:"))) {
+                    await env.FLOW_STORAGE.put("gauge_registry.json", stringifyJSONObject(registryMetadata), {
+                        httpMetadata: { contentType: "application/json" }
+                    });
+                }
+            }
+
+            // USACE series ids and projected-release series: daily, or at once when missing.
+            try {
+                if (isDailyMaintenance || !(await env.FLOW_STORAGE.head(USACE_SITES_KEY))) {
+                    const { sites, forecasts } = await syncUsaceSites(env);
+                    await logToD1(env, "INFO", "registry", `USACE sites: ${sites} gauges, ${forecasts} with projected releases.`);
+                }
+            } catch (e: any) {
+                await logToD1(env, "WARN", "registry", `USACE site sync failed: ${e?.message || e}`);
             }
 
             // NWS forecast point -> USGS site for /forecast: daily, or at once when missing.

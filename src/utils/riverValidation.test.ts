@@ -123,4 +123,14 @@ describe("riverValidation", () => {
     expect(res.errors).toContain("Gauges must be an array.");
     expect(res.errors).toContain("Access points must be an array.");
   });
+
+  it("requires a complete USACE dam code", () => {
+    const base = { id: "r1", name: "Gauley", countries: "US" };
+    const errorsFor = (id: string) => validateRiver({ ...base, gauges: [{ id, isPrimary: true }] }).errors
+      .filter(e => e.startsWith("USACE"));
+    expect(errorsFor("USACE:LRH.Summersville")).toEqual([]);
+    expect(errorsFor("USACE:LRH.Summersville.Lake")).toEqual([]);
+    expect(errorsFor("USACE:Bull")).toEqual(["USACE gauge 'Bull' doesn't match a dam. Pick one from the list."]);
+    expect(errorsFor("USACE:BullShoalsDam,AR")).toHaveLength(1);
+  });
 });

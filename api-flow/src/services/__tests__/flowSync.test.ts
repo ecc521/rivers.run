@@ -201,6 +201,18 @@ describe("runIngestCycle", () => {
         expect(await countReadings(db)).toBe(5);
     });
 
+    it("fetches USACE for sitedata.json but never stores it, even on the hourly cycle", async () => {
+        const usace = stubProvider("USACE");
+        const registry = { "USACE:LRH.A": {}, "USACE:LRH.B": {} };
+        for (const at of [NOW, slotStartOf(NOW - 20 * MIN) + HOUR + 5 * MIN]) {
+            const stats = await runIngestCycle(makeEnv(["USACE:LRH.A"]), db, registry, { USACE: usace }, at);
+            expect(stats.providerRows.USACE).toBe(0);
+            expect(stats.latest.get("USACE:LRH.B")).toMatchObject({ cfs: 10 });
+            expect(stats.fetched).toEqual([expect.objectContaining({ gaugeId: "USACE:LRH.A", cfs: 20 })]);
+        }
+        expect(await countReadings(db)).toBe(0);
+    });
+
     it("hands every USGS gauge to the USGS sweeps in one list", async () => {
         await runIngestCycle(makeEnv(["USGS:2"]), db, { "USGS:1": {}, "USGS:2": {} }, { USGS: stubProvider("USGS") }, NOW,
             { backfillRequests: 7 });

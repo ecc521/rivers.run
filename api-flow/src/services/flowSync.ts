@@ -20,6 +20,7 @@ import { runUsgsCycle, isHourlyCycle, META_WINDOW_OK, type UsgsCycleStats } from
  *  - UK, IE: latest-only bulk calls; linked gauges also get a 3h history.
  *    UK is fetched every cycle but stored only on the hourly cycle, one
  *    reading per gauge per hour; sitedata.json uses the fetch directly.
+ *  - USACE: latest-only like UK, but never stored.
  */
 
 const LINKED_HISTORY_MS = 3 * 60 * 60 * 1000;
@@ -41,6 +42,9 @@ export const BULK_PROVIDERS = new Set(["EC", "NWS"]);
 
 /** Latest-only providers stored only on the hourly cycle, one reading per gauge per hour. */
 export const HOURLY_STORE_PROVIDERS = new Set(["UK"]);
+
+/** Latest-only providers never stored: sitedata.json uses the fetch, graphs fetch live. */
+export const FETCH_ONLY_PROVIDERS = new Set(["USACE"]);
 
 /** The sync_meta key holding a provider's last successful ingest. */
 export const ingestMetaKey = (prefix: string) => prefix === "USGS" ? META_WINDOW_OK : `ok_at:${prefix}`;
@@ -74,7 +78,7 @@ export interface SyncStats {
     forecasts: Record<string, GaugeReading[]>;
     /** Newest reading fetched this cycle per gauge id, for sitedata.json. */
     latest: Map<string, ObservedReading>;
-    /** Linked-gauge history fetched this cycle for HOURLY_STORE_PROVIDERS, for sitedata.json. */
+    /** Linked-gauge history fetched this cycle for HOURLY_STORE_PROVIDERS and FETCH_ONLY_PROVIDERS, for sitedata.json. */
     fetched: ObservedReading[];
 }
 
@@ -272,7 +276,8 @@ function oneRowPerHour(rows: SlotRow[]): SlotRow[] {
 
 /**
  * Latest-only providers: bulk latest for all, plus 3h of history for linked
- * gauges. HOURLY_STORE_PROVIDERS fetch every cycle but write only hourly.
+ * gauges. HOURLY_STORE_PROVIDERS fetch every cycle but write only hourly;
+ * FETCH_ONLY_PROVIDERS never write.
  */
 async function ingestLatestOnly(
     ctx: IngestCtx, prefix: string, provider: GaugeProvider, group: { linked: string[]; registry: string[] }
@@ -291,9 +296,9 @@ async function ingestLatestOnly(
     }
     noteLatest(stats.latest, readings, now);
     let rows = reduceToSlots(readings, { now });
-    if (HOURLY_STORE_PROVIDERS.has(prefix)) {
+    if (HOURLY_STORE_PROVIDERS.has(prefix) || FETCH_ONLY_PROVIDERS.has(prefix)) {
         for (let i = 0; i < linkedReadings; i++) stats.fetched.push(readings[i]);
-        rows = isHourlyCycle(now) ? oneRowPerHour(rows) : [];
+        rows = isHourlyCycle(now) && !FETCH_ONLY_PROVIDERS.has(prefix) ? oneRowPerHour(rows) : [];
     }
     const written = await upsertSlots(db, rows, keys);
     stats.providerRows[prefix] = written;

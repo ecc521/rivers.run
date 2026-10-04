@@ -17,6 +17,7 @@ import { getCountryName, getRiverCountries } from "../utils/regions";
 import { getSkillFull } from "../utils/skillTranslations";
 import type { RiverData } from "../types/River";
 import { useTranslation } from "react-i18next";
+import { usaceSiblingId } from "../utils/usaceGauges";
 
 
 const RiverPage: React.FC = () => {
@@ -602,7 +603,8 @@ const RiverPage: React.FC = () => {
 
             const allNearby = rivers
               .filter(r => {
-                if (r.id === river.id) return false;
+                // A USACE dam's other gauge is already on this page.
+                if (r.id === river.id || r.id === usaceSiblingId(river.id)) return false;
                 
                 // Skill filter: +1 / -2
                 const s = r.skill || "";

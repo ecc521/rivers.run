@@ -14,7 +14,14 @@ vi.mock('../email', () => ({
 }));
 
 vi.mock('../services/gaugeRegistry', () => ({
-    compileGaugeRegistry: vi.fn().mockResolvedValue({})
+    compileGaugeRegistry: vi.fn().mockResolvedValue({}),
+    refreshProviderListing: vi.fn()
+}));
+
+vi.mock('../services/usace', () => ({
+    usaceProvider: { getLatest: vi.fn().mockResolvedValue({}), getFullSiteListing: vi.fn() },
+    syncUsaceSites: vi.fn().mockResolvedValue({ sites: 0, forecasts: 0 }),
+    USACE_SITES_KEY: 'usace/sites.json'
 }));
 
 vi.mock('../services/usgs', () => ({

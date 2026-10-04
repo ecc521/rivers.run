@@ -4,6 +4,7 @@ import { ecProvider } from './canada';
 import { ukProvider } from './uk';
 import { irelandProvider } from './ireland';
 import { nwsProvider } from './nws';
+import { usaceProvider } from './usace';
 import { logToD1 } from '../utils/logger';
 import { normalizeGaugeId } from '../utils/formatting';
 import type { Env } from '../index';
@@ -12,7 +13,8 @@ const providers: GaugeProvider[] = [
     usgsProvider,
     ecProvider,
     ukProvider,
-    irelandProvider
+    irelandProvider,
+    usaceProvider
 ];
 
 /**
@@ -26,37 +28,7 @@ export async function compileGaugeRegistry(env: Env, existingRegistry: Record<st
     await logToD1(env, "INFO", "registry", "Starting registry compilation across all providers...");
 
     for (const provider of providers) {
-        if (provider.getFullSiteListing) {
-            try {
-                // 1. Attempt to fetch new site list
-                const newSites = await provider.getFullSiteListing(env);
-                
-                // 2. SUCCESS: Clear old entries for this provider and replace with new ones.
-                // Guard: never wipe existing entries if the new listing is empty — treat as a
-                // silent failure so the catch block's preserve logic applies instead.
-                if (newSites.length === 0) throw new Error(`${provider.id}: getFullSiteListing returned 0 sites`);
-                const prefix = `${provider.id}:`;
-                Object.keys(gaugeRegistry).forEach(k => {
-                    if (k.startsWith(prefix)) delete gaugeRegistry[k];
-                });
-
-                for (const site of newSites) {
-                    const fullId = `${prefix}${site.id}`;
-                    gaugeRegistry[fullId] = {
-                        ...site,
-                        id: fullId
-                    };
-                }
-                await logToD1(env, "INFO", "registry", `Updated ${provider.id}: ${newSites.length} gauges found.`);
-            } catch (e: any) {
-                // 3. FAILURE: Log and KEEP the existing entries for this provider
-                const providerPrefix = provider.id + ":";
-                const existingCount = Object.keys(gaugeRegistry).filter(k => k.startsWith(providerPrefix)).length;
-                await logToD1(env, "WARN", "registry", `Failed to refresh ${provider.id}. Preserving ${existingCount} existing entries. Error: ${e.message || e}`);
-            }
-        } else {
-            console.log(`- Provider ${provider.id} does not support full site listing.`);
-        }
+        await refreshProviderListing(env, gaugeRegistry, provider);
     }
 
     // 4. Fetch NWS gauges that are actively used by rivers to avoid loading/polling all NWS sites
@@ -103,4 +75,31 @@ export async function compileGaugeRegistry(env: Env, existingRegistry: Record<st
     }
 
     return gaugeRegistry;
+}
+
+/**
+ * Replaces one provider's registry entries with its full site listing. On failure,
+ * or an empty listing, the existing entries are kept so a temporary outage loses nothing.
+ */
+export async function refreshProviderListing(env: Env, gaugeRegistry: Record<string, GaugeSite>, provider: GaugeProvider): Promise<void> {
+    if (!provider.getFullSiteListing) {
+        console.log(`- Provider ${provider.id} does not support full site listing.`);
+        return;
+    }
+    const prefix = `${provider.id}:`;
+    try {
+        const newSites = await provider.getFullSiteListing(env);
+        if (newSites.length === 0) throw new Error(`${provider.id}: getFullSiteListing returned 0 sites`);
+        Object.keys(gaugeRegistry).forEach(k => {
+            if (k.startsWith(prefix)) delete gaugeRegistry[k];
+        });
+        for (const site of newSites) {
+            const fullId = `${prefix}${site.id}`;
+            gaugeRegistry[fullId] = { ...site, id: fullId };
+        }
+        await logToD1(env, "INFO", "registry", `Updated ${provider.id}: ${newSites.length} gauges found.`);
+    } catch (e: any) {
+        const existingCount = Object.keys(gaugeRegistry).filter(k => k.startsWith(prefix)).length;
+        await logToD1(env, "WARN", "registry", `Failed to refresh ${provider.id}. Preserving ${existingCount} existing entries. Error: ${e.message || e}`);
+    }
 }

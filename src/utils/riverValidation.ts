@@ -5,6 +5,8 @@
  * Backend Mirror: functions/src/services/riverValidation.ts
  */
 
+import { USACE_CODE_PATTERN } from "./usaceGauges";
+
 export interface RiverValidationResult {
   isValid: boolean;
   errors: string[];
@@ -81,6 +83,9 @@ export function validateRiver(river: any): RiverValidationResult {
            const code = parts[1];
            if (agency === 'USGS' && !/^\d+$/.test(code)) {
              errors.push(`USGS Gauge ID '${g.id}' is invalid. The code must be purely numeric.`);
+           }
+           if (agency === 'USACE' && !USACE_CODE_PATTERN.test(g.id.slice('USACE:'.length))) {
+             errors.push(`USACE gauge '${code}' doesn't match a dam. Pick one from the list.`);
            }
          }
        }

@@ -276,7 +276,7 @@ export function normalizeGaugeId(val: string): string {
         const [prefix, id] = cleaned.split(":");
         const lower = prefix.toLowerCase();
         const normalizedPrefix = GAUGE_PREFIX_ALIASES[lower]
-            ?? (["USGS", "NWS", "EC", "UK", "IE"].find(p => p.toLowerCase() === lower))
+            ?? (["USGS", "NWS", "EC", "UK", "IE", "USACE"].find(p => p.toLowerCase() === lower))
             ?? prefix;
         return `${normalizedPrefix}:${id}`;
     }
