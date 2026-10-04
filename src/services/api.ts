@@ -28,8 +28,10 @@ export const isDev = import.meta.env.DEV || isDevHost || isDevAPI;
  */
 export async function fetchAPI(endpoint: string, options: RequestInit = {}, userOverride?: any) {
     const user = userOverride || auth.currentUser;
+    // Content-Type only when there's a body: on a GET it would force a CORS preflight
+    // round trip before every request.
     const headers: Record<string, string> = {
-        "Content-Type": "application/json",
+        ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...options.headers as any
     };
 

@@ -47,7 +47,10 @@ app.use("*", cors({
     // listed here, the browser hides these headers from JS on this cross-origin response
     // entirely, so a header comparison would always find nothing to compare and silently
     // treat the response as unchanged.
-    exposeHeaders: ["ETag", "Content-Length"]
+    exposeHeaders: ["ETag", "Content-Length"],
+    // Lets browsers reuse a preflight instead of repeating it before every request.
+    // Chrome caps this at 2 hours, Firefox at 24.
+    maxAge: 86400,
 }));
 
 // Explicit no-store for auth-gated/always-live endpoints, rather than relying on absent-header defaults.
