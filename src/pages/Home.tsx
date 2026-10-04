@@ -342,12 +342,6 @@ const Home: React.FC = () => {
     ));
   }, [filteredRivers, displayCount, isDarkMode, isColorBlindMode]);
 
-  if (loading)
-    return (
-      <div className="page-content center page-loading">
-        <h2>{t("home.loadingData")}</h2>
-      </div>
-    );
   if (error)
     return (
       <div className="page-content center page-loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
@@ -532,20 +526,9 @@ const Home: React.FC = () => {
             </button>
           </div>
         )}
+        {/* Pinned to the bottom of the screen so it can appear and disappear without moving the list */}
         {isGlobalStale && (
-          <div style={{ 
-            backgroundColor: "var(--warning-bg)", 
-            color: "var(--warning-text)", 
-            padding: "12px", 
-            textAlign: "center", 
-            borderRadius: "8px", 
-            marginBottom: "15px",
-            border: "1px solid var(--warning)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "10px"
-          }}>
+          <div className="stale-data-bar" role="status">
             <span>
               {t("home.lastSynced", { mins: dataGeneratedAt ? Math.round((Date.now() - dataGeneratedAt) / 60000) : "?" })}
             </span>
@@ -775,7 +758,10 @@ const Home: React.FC = () => {
       {/* Rivers List */}
       <div id="Rivers">
         <TopBar setQuery={setSearchQuery} filteredRivers={filteredRivers} />
-        {filteredRivers.length === 0 && (
+        {loading && (
+          <div className="list-loading">{t("home.loadingData")}</div>
+        )}
+        {!loading && filteredRivers.length === 0 && (
           <div className="empty-state-view">
             <div className="empty-state-icon">
                 {emptyStateIcon}
