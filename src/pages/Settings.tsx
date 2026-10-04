@@ -12,10 +12,12 @@ import type { MapRegion, DownloadedRegionState } from "../utils/offlineMapEngine
 import { useModal } from "../context/ModalContext";
 import { InteractiveUSMap } from "../components/InteractiveUSMap";
 import { useLocation } from "react-router-dom";
+import { useSEO } from "../hooks/useSEO";
 
 const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const location = useLocation();
+  useSEO({ title: "Settings", noindex: true });
 
   useEffect(() => {
     if (location.hash === '#offline-maps') {

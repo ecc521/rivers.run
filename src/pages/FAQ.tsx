@@ -67,7 +67,7 @@ const FAQItem: React.FC<{ question: string; children: React.ReactNode }> = ({
 const FAQ: React.FC = () => {
   const { t } = useTranslation();
   const { isDarkMode } = useSettings();
-  useSEO({ title: t("faq.title"), description: "Frequently Asked Questions about Rivers.run" });
+  useSEO({ title: t("faq.title"), description: "Answers to common questions about Rivers.run: using the app offline, what the flow colors mean, how gauges work, adding rivers, and managing your lists." });
   return (
     <div
       className="page-content"

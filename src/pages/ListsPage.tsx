@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useCommunityLists } from "../hooks/useCommunityLists";
 import { useLists, type UserList } from "../context/ListsContext";
 import { useAuth } from "../context/AuthContext";
@@ -62,7 +62,12 @@ const ListsPage: React.FC = () => {
     initialDescription: ""
   });
 
-  useSEO({ title: t("listsPage.title"), description: t("listsPage.seoDesc") });
+  const isFavorites = useLocation().pathname === "/favorites";
+  useSEO({
+    title: isFavorites ? "My Favorites" : t("listsPage.title"),
+    description: t("listsPage.seoDesc"),
+    noindex: isFavorites
+  });
 
 
 

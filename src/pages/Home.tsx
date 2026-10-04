@@ -11,7 +11,8 @@ import { useRivers } from "../hooks/useRivers";
 import { useLists, type UserList } from "../context/ListsContext";
 import { useAuth } from "../context/AuthContext";
 import { ListEditorModal } from "../components/ListEditorModal";
-import { getShareBaseUrl } from "../utils/url";
+import { getShareBaseUrl, getListShareUrl } from "../utils/url";
+import { buildListDescription } from "../utils/seo";
 import { Capacitor } from "@capacitor/core";
 import {
   calculateColor,
@@ -38,10 +39,6 @@ import { DEFAULT_STATE_MAP, getCountryName } from "../utils/regions";
 const LazyRiverPage = React.lazy(() => import("./RiverPage"));
 
 const Home: React.FC = () => {
-  useSEO({
-    title: "Whitewater Gauge Maps & Flow Data",
-    description: "Real-time whitewater flow data, gauge maps, and river running status for over 250 rivers in the US, UK, Ireland, and Canada."
-  });
   const { t } = useTranslation();
   const { isDarkMode, isColorBlindMode, homePageDefaultSearch, updateSetting } = useSettings();
   const { alert } = useModal();
@@ -54,6 +51,21 @@ const Home: React.FC = () => {
   const isRiverOverlay = !isListOverlay && !!decodedId;
 
   const [sharedList, setSharedList] = useState<UserList | null>(null);
+
+  // River overlays set their own head via RiverPage.
+  useSEO(
+    isListOverlay
+      ? {
+          title: sharedList?.title ?? "Paddling List",
+          description: buildListDescription(sharedList),
+          canonical: sharedList ? getListShareUrl(sharedList) : undefined,
+        }
+      : {
+          title: "Whitewater Gauge Maps & Flow Data",
+          description: "Real-time whitewater flow data, gauge maps, and river running status for over 250 rivers in the US, UK, Ireland, and Canada.",
+          skip: isRiverOverlay,
+        }
+  );
   const [showListModal, setShowListModal] = useState(false);
   const [listEditorMode, setListEditorMode] = useState<"shared" | "copy">("shared");
   const { createList, myLists } = useLists();

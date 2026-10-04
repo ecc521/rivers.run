@@ -3,7 +3,7 @@ import { LegalLayout } from "./LegalLayout";
 
 const TermsOfService: React.FC = () => {
   return (
-    <LegalLayout title="Terms and Conditions">
+    <LegalLayout title="Terms and Conditions" description="The terms and conditions for using Rivers.run, including user-contributed content, acceptable use, data accuracy, and limits of liability for paddlers.">
       <p>These terms and conditions ("Terms", "Agreement") are an agreement between the operator of Rivers.run, acting as an individual ("Rivers.run", "us", "we" or "our"), and you ("User", "you" or "your"). This Agreement sets forth the general terms and conditions of your use of the{" "}
       <a href="/" style={{ color: "var(--primary)", textDecoration: "none" }}>rivers.run</a> website, mobile applications, and any of its related products or services (collectively, "Services").</p>
       

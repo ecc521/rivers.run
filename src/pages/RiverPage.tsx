@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useRivers } from "../hooks/useRivers";
 import { RiverExpansion } from "../components/RiverExpansion";
 import { useSEO } from "../hooks/useSEO";
+import { buildRiverTitle, buildRiverDescription, buildRiverCanonical } from "../utils/seo";
 import { useDynamicFlow } from "../hooks/useDynamicFlow";
 import { calculateColor, calculateRelativeFlow } from "../utils/flowInfoCalculations";
 import { useSettings } from "../context/SettingsContext";
@@ -147,11 +148,9 @@ const RiverPage: React.FC = () => {
   };
 
   useSEO({
-    title: river ? `${river.name} - ${river.section}` : t("riverPage.riverNotFound"),
-    description: river 
-      ? `Detailed flow info, running status, and description for ${river.name} (${river.section}) in ${river.states || 'the USA'}.` 
-      : undefined,
-    canonical: river ? `https://rivers.run/${river.isGauge ? 'gauge' : 'river'}/${river.id}` : undefined,
+    title: river ? buildRiverTitle(river) : t("riverPage.riverNotFound"),
+    description: river ? buildRiverDescription(river) : undefined,
+    canonical: river ? buildRiverCanonical(river) : undefined,
     noindex: !!error || (!loading && !river)
   });
 

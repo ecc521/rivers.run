@@ -1,7 +1,17 @@
 import { useEffect } from "react";
 
-export function useSEO({ title, description, canonical, noindex }: { title?: string; description?: string; canonical?: string; noindex?: boolean }) {
+interface SEOOptions {
+  title?: string;
+  description?: string;
+  canonical?: string;
+  noindex?: boolean;
+  /** Leave the head untouched, e.g. when a child component owns it. */
+  skip?: boolean;
+}
+
+export function useSEO({ title, description, canonical, noindex, skip }: SEOOptions) {
   useEffect(() => {
+    if (skip) return;
     // 1. Update Title
     if (title) {
        document.title = `${title} | Rivers.run`;
@@ -57,5 +67,5 @@ export function useSEO({ title, description, canonical, noindex }: { title?: str
        if (title) document.title = "Rivers.run - Whitewater Gauge Maps & Flow Data";
        if (noindex && robotsEl) robotsEl.remove();
     };
-  }, [title, description, canonical, noindex]);
+  }, [title, description, canonical, noindex, skip]);
 }

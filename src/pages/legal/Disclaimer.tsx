@@ -3,7 +3,7 @@ import { LegalLayout } from "./LegalLayout";
 
 const Disclaimer: React.FC = () => {
   return (
-    <LegalLayout title="Disclaimer">
+    <LegalLayout title="Disclaimer" description="Whitewater is dangerous. Read the Rivers.run disclaimer about the accuracy of flow data, river descriptions, and your responsibility for safe paddling decisions.">
       <p>This site has user generated content. <strong>No guarantee can be made for the accuracy of completeness of content.
       Your use of this content is AT YOUR OWN RISK.</strong></p>
       

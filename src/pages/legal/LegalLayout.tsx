@@ -1,11 +1,14 @@
 import React from "react";
+import { useSEO } from "../../hooks/useSEO";
 
 interface LegalLayoutProps {
   title: string;
+  description: string;
   children: React.ReactNode;
 }
 
-export const LegalLayout: React.FC<LegalLayoutProps> = ({ title, children }) => {
+export const LegalLayout: React.FC<LegalLayoutProps> = ({ title, description, children }) => {
+  useSEO({ title, description });
   return (
     <div className="page-content" style={{ maxWidth: "800px", margin: "0 auto", padding: "40px 20px" }}>
       <div className="settings-card" style={{ padding: "40px" }}>

@@ -3,9 +3,14 @@ import { useLocation } from "../hooks/useLocation";
 import { useRivers } from "../hooks/useRivers";
 import { SharedMap } from "../components/SharedMap";
 import { useTranslation } from "react-i18next";
+import { useSEO } from "../hooks/useSEO";
 
 const MapPage: React.FC = () => {
   const { t } = useTranslation();
+  useSEO({
+    title: "Whitewater River & Gauge Map",
+    description: "Interactive map of whitewater rivers and streamgages across the US, UK, Ireland, and Canada, colored by live flow so you can see what is running near you."
+  });
   const location = useLocation();
   const { rivers, loading: riversLoading, error: riversError } = useRivers();
   const [loading, setLoading] = useState(rivers.length === 0);

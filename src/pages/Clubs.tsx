@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useSEO } from "../hooks/useSEO";
 
 const ClubSection: React.FC<{
   title: string;
@@ -64,6 +65,10 @@ const ClubSection: React.FC<{
 };
 
 const Clubs: React.FC = () => {
+  useSEO({
+    title: "Whitewater Paddling Clubs",
+    description: "Find whitewater paddling clubs and organizations, learn how to get involved, and see how clubs can use Rivers.run lists to share trips and river conditions."
+  });
   return (
     <div
       className="page-content"

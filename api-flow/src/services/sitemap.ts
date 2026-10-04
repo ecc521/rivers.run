@@ -29,7 +29,7 @@ export async function generateSitemap(env: Env, registryMetadata: Record<string,
         let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 
         // Static Routes
-        const staticRoutes = ['', '/map', '/lists', '/clubs', '/favorites', '/faq', '/settings', '/terms', '/privacy', '/disclaimer'];
+        const staticRoutes = ['', '/map', '/lists', '/clubs', '/faq', '/terms', '/privacy', '/disclaimer'];
         for (const route of staticRoutes) {
             const p = (route === '' || route === '/map') ? '1.0' : '0.8';
             xml += `  <url>\n    <loc>${SITE_URL}${route}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${p}</priority>\n  </url>\n`;

@@ -3,7 +3,7 @@ import { LegalLayout } from "./LegalLayout";
 
 const PrivacyPolicy: React.FC = () => {
   return (
-    <LegalLayout title="Privacy Policy">
+    <LegalLayout title="Privacy Policy" description="How Rivers.run collects, uses, and protects your information, including account data, location access, and analytics, and the choices you have.">
       <h2>Information We Collect or Store</h2>
       <p>If you choose to create an account, Rivers.run stores the profile information you provide or authorize (such as your email address, display name, and profile picture). We also store your account preferences and saved favorite rivers. If you use the app as a guest without creating an account, Rivers.run does not directly store any personal information about you.</p>
 
