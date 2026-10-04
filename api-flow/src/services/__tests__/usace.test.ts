@@ -36,7 +36,8 @@ function mockFetch(routes: Array<[string, (url: string) => any]>) {
         calls.push(url);
         const route = routes.find(([match]) => url.includes(match));
         if (!route) throw new Error(`unexpected fetch ${url}`);
-        return { ok: true, json: async () => route[1](url) } as any;
+        const body = route[1](url);
+        return { ok: true, json: async () => body, text: async () => JSON.stringify(body) } as any;
     }) as any;
     return calls;
 }
@@ -173,5 +174,33 @@ describe('usaceProvider', () => {
         expect(Object.keys(result)).toEqual(['LRH.Summersville.Lake']);
         expect(result['LRH.Summersville.Lake'].readings).toEqual([{ dateTime: NOW - HOUR, ft: 1636 }]);
         expect(calls.some(u => u.includes('cwms-data'))).toBe(false);
+    });
+
+    it('shares graph responses through the edge cache and refetches nothing on a hit', async () => {
+        const store = new Map<string, Response>();
+        (globalThis as any).caches = {
+            default: {
+                match: async (key: string) => store.get(key)?.clone(),
+                put: async (key: string, res: Response) => { store.set(key, res); },
+            },
+        };
+        try {
+            const calls = mockFetch([
+                ['/reporting/providers/lrh/timeseries', () => ({ values: [[iso(NOW - DAY), 2800], [iso(NOW - HOUR), 2842]] })],
+                ['/cwms-data/timeseries?', () => ({ values: [[NOW + HOUR, 400, 0]] })],
+            ]);
+            const first = await usaceProvider.getHistory(['LRH.Summersville'], NOW - 28 * DAY, undefined, true, {});
+            const fetched = calls.length;
+            expect(fetched).toBe(3); // release, tailwater stage, forecast
+
+            // A later delta request in the same quarter hour reads the cached week and trims it.
+            const delta = await usaceProvider.getHistory(['LRH.Summersville'], NOW - 2 * HOUR, undefined, true, {});
+            expect(calls.length).toBe(fetched);
+            expect(first['LRH.Summersville'].readings.map(r => r.dateTime)).toEqual([NOW - DAY, NOW - HOUR, NOW + HOUR]);
+            expect(delta['LRH.Summersville'].readings.map(r => r.dateTime)).toEqual([NOW - HOUR, NOW + HOUR]);
+            expect([...store.values()].every(r => r.headers.get('Cache-Control') === 'max-age=600')).toBe(true);
+        } finally {
+            delete (globalThis as any).caches;
+        }
     });
 });

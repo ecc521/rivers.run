@@ -164,7 +164,10 @@ no map marker, since it sits on the outflow gauge.
   API (`water.usace.army.mil/cda/reporting/providers/projects?fmt=geojson`), the
   undocumented API behind the public USACE site. That is the whole per-cycle cost.
 - `/history` fetches release and elevation history (capped at 7 days) from the same
-  API, and projected releases from the CWMS Data API, live on each request.
+  API, and projected releases from the CWMS Data API. Both go through the Cloudflare
+  cache for 10 minutes (`edgeCachedJson`): windows are rounded to the quarter hour so
+  viewers of a dam share one entry, and a clean copy is stored because the reporting
+  API's session cookie keeps Cloudflare from caching the subrequest itself.
 - The daily cron (or any cron when it is missing) rebuilds `usace/sites.json` in R2:
   each dam's series ids, plus its projected-release series where one exists (about
   120 of 590 dams; many districts publish none). Forecast names differ by district,

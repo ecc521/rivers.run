@@ -34,6 +34,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** Graphs show recent releases leading into the forecast; older history is not needed. */
 const MAX_HISTORY_MS = 7 * DAY_MS;
 const FORECAST_HORIZON_MS = 30 * DAY_MS;
+const QUARTER_HOUR_MS = 15 * 60 * 1000;
+/** Graph requests share upstream responses for this long, per Cloudflare location. */
+const EDGE_CACHE_SECONDS = 600;
 const SITES_CACHE_MS = 60 * 60 * 1000;
 
 interface A2WSeries {
@@ -314,27 +317,61 @@ async function loadSites(env?: any): Promise<Record<string, UsaceSite>> {
     return sites;
 }
 
-/** Values of one reporting API series; gaps come back as null. */
-async function fetchSeries(provider: string, tsId: string, start: number, end: number): Promise<Array<[number, number | null]>> {
-    const params = new URLSearchParams({ name: tsId, begin: new Date(start).toISOString(), end: new Date(end).toISOString() });
-    const res = await fetchWithTimeout(`${A2W_BASE}/providers/${provider.toLowerCase()}/timeseries?${params}`, { headers: DEFAULT_HEADERS }, 30000);
-    if (!res.ok) throw new Error(`USACE reporting API error ${res.status} for ${tsId}`);
-    const data: any = await res.json();
-    return (data.values ?? [])
-        .map(([t, v]: [string, number | null]) => [new Date(t).getTime(), v] as [number, number | null])
-        .filter(([t]: [number, number | null]) => !isNaN(t));
+/**
+ * Upstream JSON for graph requests, shared through the Cloudflare cache. The reporting
+ * API sets a session cookie on every response, which keeps Cloudflare from caching the
+ * subrequest itself, so a clean copy is stored explicitly. Callers round their time
+ * windows to the quarter hour so concurrent viewers of a dam hit the same key.
+ */
+async function edgeCachedJson(url: string, timeoutMs: number): Promise<any> {
+    const cache: Cache | undefined = (globalThis as any).caches?.default;
+    const hit = cache ? await cache.match(url) : undefined;
+    if (hit) return hit.json();
+    const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, timeoutMs);
+    if (!res.ok) throw new Error(`USACE API error ${res.status} for ${url}`);
+    const body = await res.text();
+    if (cache) {
+        await cache.put(url, new Response(body, {
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': `max-age=${EDGE_CACHE_SECONDS}` },
+        }));
+    }
+    return JSON.parse(body);
 }
 
-/** Projected releases after `after`, as forecast rows. */
+const floorQuarter = (t: number) => Math.floor(t / QUARTER_HOUR_MS) * QUARTER_HOUR_MS;
+const ceilQuarter = (t: number) => Math.ceil(t / QUARTER_HOUR_MS) * QUARTER_HOUR_MS;
+
+/**
+ * Values of one reporting API series from `start`; gaps come back as null. Always fetches
+ * the full week ending at the next quarter hour, so every request for a dam in that
+ * quarter shares one cached response.
+ */
+async function fetchSeries(provider: string, tsId: string, start: number, end: number): Promise<Array<[number, number | null]>> {
+    const windowEnd = ceilQuarter(end);
+    const params = new URLSearchParams({
+        name: tsId,
+        begin: new Date(windowEnd - MAX_HISTORY_MS).toISOString(),
+        end: new Date(windowEnd).toISOString(),
+    });
+    const data = await edgeCachedJson(`${A2W_BASE}/providers/${provider.toLowerCase()}/timeseries?${params}`, 30000);
+    return (data.values ?? [])
+        .map(([t, v]: [string, number | null]) => [new Date(t).getTime(), v] as [number, number | null])
+        .filter(([t]: [number, number | null]) => !isNaN(t) && t >= start && t <= end);
+}
+
+/** Projected releases after `after`, as forecast rows, from a quarter-hour window shared through the cache. */
 async function fetchForecastRows(forecast: { office: string; tsId: string }, after: number, now: number): Promise<GaugeReading[]> {
-    const data = await cdaJson('/timeseries', {
+    // Two days back covers dams that report once a day, whose last observation can be most of a day old.
+    const windowStart = floorQuarter(now) - 2 * DAY_MS;
+    const params = new URLSearchParams({
         office: forecast.office,
         name: forecast.tsId,
         unit: 'EN',
-        begin: new Date(after).toISOString(),
-        end: new Date(now + FORECAST_HORIZON_MS).toISOString(),
+        begin: new Date(windowStart).toISOString(),
+        end: new Date(floorQuarter(now) + FORECAST_HORIZON_MS).toISOString(),
         'page-size': '5000',
-    }, 30000);
+    });
+    const data = await edgeCachedJson(`${CDA_BASE}/timeseries?${params}`, 30000);
     return (data.values ?? [])
         .filter(([t, v]: [number, number]) => t > after && isValidReadingValue(v, 'cfs'))
         .map(([t, v]: [number, number]) => ({ dateTime: t, cfs: Math.round(v * 100) / 100, isForecast: true, forecastSource: 'USACE' }));
