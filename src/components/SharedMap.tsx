@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Map, { Source, Layer, Popup, Marker } from "react-map-gl/maplibre";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import type { LineString } from "geojson";
 import { getDownloadedRegions, getOfflineMapSource } from "../utils/offlineMapEngine";
 import { Protocol, PMTiles, FileSource } from "pmtiles";
@@ -34,6 +35,10 @@ import { SystemBars } from '@capacitor/core';
 import { KeepAwake } from '@capacitor-community/keep-awake';
 
 // Global protocol state
+// MapLibre 6 looks for its worker next to its own chunk, which Vite never emits
+// (the SPA fallback then serves index.html). Bundle it and point MapLibre at it.
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
+
 let pmtilesProtocolAdded = false;
 // Global protocol state
 let hybridProtocolAdded = false;
