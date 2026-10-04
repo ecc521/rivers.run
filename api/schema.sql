@@ -178,6 +178,8 @@ CREATE TABLE users (
     notifications_enabled INTEGER DEFAULT 1,
     notifications_none_until INTEGER DEFAULT 0,
     notifications_time_of_day TEXT DEFAULT '08:00',
+    soft_bounce_count INTEGER NOT NULL DEFAULT 0,  -- consecutive soft bounces, drives digest backoff
+    soft_bounce_at INTEGER NOT NULL DEFAULT 0,     -- Unix seconds of the last counted soft bounce
     alerts_review_queue INTEGER DEFAULT 0,
     updated_at INTEGER NOT NULL  -- Unix seconds, e.g. Math.floor(Date.now() / 1000)
 );
