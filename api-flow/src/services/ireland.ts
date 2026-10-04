@@ -7,6 +7,8 @@ import { logToD1 } from '../utils/logger';
  * Ireland (WaterLevel.ie / OPW) Gauge Data Service
  */
 
+const LEVEL_SENSOR = "0001";
+
 const normalizeStationId = (ref: string) => ref.slice(-5);
 
 const REGION_MAP: Record<number, string> = {
@@ -46,7 +48,7 @@ export const irelandProvider: GaugeProvider = {
                 // Map of normalized ID to properties
                 const stationMap = new Map<string, any>();
                 for (const f of features) {
-                    if (f.properties?.station_ref) {
+                    if (f.properties?.station_ref && f.properties.sensor_ref === LEVEL_SENSOR) {
                         stationMap.set(normalizeStationId(f.properties.station_ref), f.properties);
                     }
                 }

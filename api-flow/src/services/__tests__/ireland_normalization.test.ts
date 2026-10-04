@@ -60,7 +60,7 @@ describe('Ireland OPW Service - Normalization & Mapping', () => {
     });
 
     describe('irelandProvider.getLatest', () => {
-         it('should match normalized IDs from GeoJSON', async () => {
+         it('should match normalized IDs and ignore non-level sensors', async () => {
             const mockGeoJson = {
                 type: "FeatureCollection",
                 features: [
@@ -68,8 +68,18 @@ describe('Ireland OPW Service - Normalization & Mapping', () => {
                         type: "Feature",
                         properties: {
                             station_ref: "0000001041",
+                            sensor_ref: "0001",
                             datetime: "2026-04-20T23:30:00Z",
                             value: "0.377"
+                        }
+                    },
+                    {
+                        type: "Feature",
+                        properties: {
+                            station_ref: "0000001041",
+                            sensor_ref: "0002",
+                            datetime: "2026-04-20T23:30:00Z",
+                            value: "11.2"
                         }
                     }
                 ]

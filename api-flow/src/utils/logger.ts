@@ -2,6 +2,11 @@ import type { Env } from "../index";
 
 export type LogLevel = 'INFO' | 'WARN' | 'ERROR';
 
+// JSON.stringify turns an Error into {}, so keep its fields.
+function errorReplacer(_key: string, value: unknown) {
+    return value instanceof Error ? { name: value.name, message: value.message, cause: value.cause } : value;
+}
+
 export async function logToD1(
     env: Env, 
     level: LogLevel, 
@@ -12,7 +17,7 @@ export async function logToD1(
     const timestamp = Math.floor(Date.now() / 1000);
     let detailsStr: string | null = null;
     if (details) {
-        detailsStr = typeof details === 'string' ? details : JSON.stringify(details);
+        detailsStr = typeof details === 'string' ? details : JSON.stringify(details, errorReplacer);
     }
 
     console.log(`[${level}] [${component}] ${message}`);
