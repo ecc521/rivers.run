@@ -1,5 +1,5 @@
 import { z } from "@hono/zod-openapi";
-import { normalizeGaugeId } from "./utils/formatting";
+import { normalizeGaugeId, isGaugeStyleId, GAUGE_STYLE_ID_MESSAGE } from "./utils/formatting";
 import { validateCountries, validateStates } from "./utils/regions";
 
 // Shared schemas; Hono infers OpenAPI types from their Zod definitions.
@@ -32,7 +32,7 @@ export const FlowThresholdsSchema = z.object({
 }).openapi({ description: 'Flow thresholds for a river' });
 
 export const RiverEditorPayload = z.object({
-  id: limitString(100),
+  id: limitString(100).refine((val) => !val || !isGaugeStyleId(val), GAUGE_STYLE_ID_MESSAGE),
   name: requiredString(100),
   section: requiredString(100),
   countries: requiredString(50),
