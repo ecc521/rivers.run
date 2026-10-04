@@ -6,6 +6,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     alias: {
+      'cloudflare:sockets': fileURLToPath(new URL('./src/__tests__/helpers/cloudflareSockets.ts', import.meta.url)),
       'cloudflare:workers': fileURLToPath(new URL('./src/__tests__/helpers/cloudflareWorkers.ts', import.meta.url)),
     },
   },

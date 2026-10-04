@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { irelandProvider } from '../ireland';
+import { rawHttpsGet } from '../../utils/rawHttpsGet';
+
+vi.mock('../../utils/rawHttpsGet', () => ({ rawHttpsGet: vi.fn() }));
+
+const geoJsonResponse = (body: unknown) => Response.json(body);
 
 describe('Ireland OPW Service - Normalization & Mapping', () => {
     beforeEach(() => {
@@ -40,10 +45,7 @@ describe('Ireland OPW Service - Normalization & Mapping', () => {
                 ]
             };
 
-            globalThis.fetch = vi.fn().mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve(mockGeoJson)
-            });
+            vi.mocked(rawHttpsGet).mockResolvedValue(geoJsonResponse(mockGeoJson));
 
             const result = await irelandProvider.getFullSiteListing!();
             
@@ -85,12 +87,11 @@ describe('Ireland OPW Service - Normalization & Mapping', () => {
                 ]
             };
 
-            globalThis.fetch = vi.fn().mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve(mockGeoJson)
-            });
+            vi.mocked(rawHttpsGet).mockResolvedValue(geoJsonResponse(mockGeoJson));
 
             const result = await irelandProvider.getLatest(['01041']);
+
+            expect(rawHttpsGet).toHaveBeenCalledWith('waterlevel.ie', '/geojson/latest/', expect.any(Object), expect.any(Number));
             
             expect(result['01041']).toBeDefined();
             expect(result['01041'].m).toBe(0.377);

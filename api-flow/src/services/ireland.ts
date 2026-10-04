@@ -2,10 +2,19 @@ import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingVal
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
+import { rawHttpsGet } from '../utils/rawHttpsGet';
 
 /**
  * Ireland (WaterLevel.ie / OPW) Gauge Data Service
  */
+
+/**
+ * waterlevel.ie answers /geojson/latest/ with 400 "Contradictory scheme headers"
+ * whenever the request carries `X-Forwarded-Proto: https`, which the Workers edge adds
+ * to every fetch() and cannot be overridden. A raw TLS socket sends only our headers.
+ */
+const fetchLatestGeoJson = (timeoutMs: number) =>
+    rawHttpsGet("waterlevel.ie", "/geojson/latest/", { "User-Agent": DEFAULT_HEADERS["User-Agent"], "Accept": "application/json" }, timeoutMs);
 
 const LEVEL_SENSOR = "0001";
 
@@ -39,8 +48,8 @@ export const irelandProvider: GaugeProvider = {
 
         while (!success && attempts <= MAX_RETRIES) {
             try {
-                const res = await fetchWithTimeout("https://waterlevel.ie/geojson/latest/", { headers: DEFAULT_HEADERS }, 60000);
-                if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status}`);
+                const res = await fetchLatestGeoJson(60000);
+                if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status} ${(await res.text()).slice(0, 200)}`);
                 
                 const data: any = await res.json();
                 const features = data.features || [];
@@ -158,7 +167,6 @@ export const irelandProvider: GaugeProvider = {
 
     async getFullSiteListing(): Promise<GaugeSite[]> {
         console.log("Ireland Provider: Fetching full site listing...");
-        const url = "https://waterlevel.ie/geojson/latest/";
         const results: GaugeSite[] = [];
         
         let success = false;
@@ -167,8 +175,8 @@ export const irelandProvider: GaugeProvider = {
 
         while (!success && attempts <= MAX_RETRIES) {
             try {
-                const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // Increased to 90s timeout for Ireland site listing
-                if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status}`);
+                const res = await fetchLatestGeoJson(90000); // Increased to 90s timeout for Ireland site listing
+                if (!res.ok) throw new Error(`Ireland OPW API Error: ${res.status} ${(await res.text()).slice(0, 200)}`);
                 
                 const data: any = await res.json();
                 const features = data.features || [];
