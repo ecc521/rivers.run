@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   signInWithPopup,
+  browserPopupRedirectResolver,
   GoogleAuthProvider,
   OAuthProvider,
   signInWithEmailAndPassword,
@@ -12,7 +13,7 @@ import {
   type AuthCredential
 } from "firebase/auth";
 import { logEvent } from "firebase/analytics";
-import { auth, analytics } from "../firebase";
+import { auth, analyticsReady } from "../firebase";
 import { Capacitor } from "@capacitor/core";
 import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 import { FirebaseAnalytics } from "@capacitor-firebase/analytics";
@@ -51,8 +52,10 @@ function logAuthFallback(code: string, provider: string) {
   const params = { code, provider };
   if (Capacitor.isNativePlatform()) {
     FirebaseAnalytics.logEvent({ name: "auth_fallback_error", params }).catch(() => {});
-  } else if (analytics) {
-    logEvent(analytics, "auth_fallback_error", params);
+  } else {
+    analyticsReady.then((analytics) => {
+      if (analytics) logEvent(analytics, "auth_fallback_error", params);
+    });
   }
 }
 
@@ -175,7 +178,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       } else {
         // Standard web login
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        await signInWithPopup(auth, provider, browserPopupRedirectResolver);
       }
 
       await finishPendingLink();
@@ -228,7 +231,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         // Adding scopes usually required for full Apple sign-in payload
         provider.addScope('email');
         provider.addScope('name');
-        await signInWithPopup(auth, provider);
+        await signInWithPopup(auth, provider, browserPopupRedirectResolver);
       }
 
       await finishPendingLink();

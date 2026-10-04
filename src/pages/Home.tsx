@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { RiverItem } from "../components/RiverItem";
 import { TopBar } from "../components/TopBar";
-import { SearchOverlay } from "../components/SearchOverlay";
 
 import { useLocation } from "../hooks/useLocation";
 import { ViewSelector } from "../components/ViewSelector";
@@ -10,7 +9,6 @@ import { fetchAPI } from "../services/api";
 import { useRivers } from "../hooks/useRivers";
 import { useLists, type UserList } from "../context/ListsContext";
 import { useAuth } from "../context/AuthContext";
-import { ListEditorModal } from "../components/ListEditorModal";
 import { getShareBaseUrl, getListShareUrl } from "../utils/url";
 import { buildListDescription } from "../utils/seo";
 import { Capacitor } from "@capacitor/core";
@@ -37,6 +35,8 @@ import { DEFAULT_STATE_MAP, getCountryName } from "../utils/regions";
 
 
 const LazyRiverPage = React.lazy(() => import("./RiverPage"));
+const SearchOverlay = React.lazy(() => import("../components/SearchOverlay").then(m => ({ default: m.SearchOverlay })));
+const ListEditorModal = React.lazy(() => import("../components/ListEditorModal").then(m => ({ default: m.ListEditorModal })));
 
 const Home: React.FC = () => {
   const { t } = useTranslation();
@@ -745,14 +745,18 @@ const Home: React.FC = () => {
          </div>
       )}
 
-      <SearchOverlay
-        isOpen={isAdvancedSearchOpen}
-        onClose={() => {
-          setIsAdvancedSearchOpen(false);
-        }}
-        query={searchQuery}
-        setQuery={setSearchQuery}
-      />
+      {isAdvancedSearchOpen && (
+        <React.Suspense fallback={null}>
+          <SearchOverlay
+            isOpen={isAdvancedSearchOpen}
+            onClose={() => {
+              setIsAdvancedSearchOpen(false);
+            }}
+            query={searchQuery}
+            setQuery={setSearchQuery}
+          />
+        </React.Suspense>
+      )}
 
       <div
         id="legend"
@@ -812,35 +816,37 @@ const Home: React.FC = () => {
       )}
 
       {showListModal && sharedList && (
-         <ListEditorModal
-            isOpen={showListModal}
-            mode={listEditorMode}
-            initialTitle={listEditorMode === "copy" ? `Clone of ${sharedList.title}` : sharedList.title}
-            initialDescription={sharedList.description}
-            targetList={sharedList}
-            onClose={() => {
-              setShowListModal(false);
-              navigate(`/?list=${sharedList.id}`);
-            }}
-            onSave={async (title, description) => {
-               try {
-                  await createList(title, description, false, sharedList.rivers);
-                  await alert("List cloned successfully! It is now in 'My Lists'.");
-                  setShowListModal(false);
-                  navigate(`/lists`);
-               } catch (e: any) {
-                  await alert(e.message);
-               }
-            }}
-            onCopySharedList={async (_list) => {
-               const limit = isModerator ? 500 : 20;
-               if (myLists.length >= limit) {
-                  await alert(`You have reached the limit of ${limit} custom lists. You cannot clone another list until you delete one of your own.`);
-                  return;
-               }
-               setListEditorMode("copy");
-            }}
-         />
+         <React.Suspense fallback={null}>
+           <ListEditorModal
+              isOpen={showListModal}
+              mode={listEditorMode}
+              initialTitle={listEditorMode === "copy" ? `Clone of ${sharedList.title}` : sharedList.title}
+              initialDescription={sharedList.description}
+              targetList={sharedList}
+              onClose={() => {
+                setShowListModal(false);
+                navigate(`/?list=${sharedList.id}`);
+              }}
+              onSave={async (title, description) => {
+                 try {
+                    await createList(title, description, false, sharedList.rivers);
+                    await alert("List cloned successfully! It is now in 'My Lists'.");
+                    setShowListModal(false);
+                    navigate(`/lists`);
+                 } catch (e: any) {
+                    await alert(e.message);
+                 }
+              }}
+              onCopySharedList={async (_list) => {
+                 const limit = isModerator ? 500 : 20;
+                 if (myLists.length >= limit) {
+                    await alert(`You have reached the limit of ${limit} custom lists. You cannot clone another list until you delete one of your own.`);
+                    return;
+                 }
+                 setListEditorMode("copy");
+              }}
+           />
+         </React.Suspense>
       )}
     </div>
   );

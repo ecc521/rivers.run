@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense, lazy } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
-import { AuthModal } from "./AuthModal";
-import { ProfileMenu } from "./ProfileMenu";
 import { isDev } from "../services/api";
+
+const AuthModal = lazy(() => import("./AuthModal").then(m => ({ default: m.AuthModal })));
+const ProfileMenu = lazy(() => import("./ProfileMenu").then(m => ({ default: m.ProfileMenu })));
 
 const signInButtonStyle: React.CSSProperties = {
   padding: "8px 16px",
@@ -226,7 +227,7 @@ const GlobalNavBar: React.FC = () => {
                 )}
               </div>
 
-              {isDropdownOpen && <ProfileMenu user={user} setIsDropdownOpen={setIsDropdownOpen} />}
+              {isDropdownOpen && <Suspense fallback={null}><ProfileMenu user={user} setIsDropdownOpen={setIsDropdownOpen} /></Suspense>}
             </div>
           )}
           {!loading && !user && (
@@ -244,12 +245,16 @@ const GlobalNavBar: React.FC = () => {
       </div>
       </nav>
 
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => {
-          setAuthModalOpen(false);
-        }}
-      />
+      {isAuthModalOpen && (
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => {
+              setAuthModalOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
     </>
   );
 };

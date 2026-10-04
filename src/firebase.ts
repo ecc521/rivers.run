@@ -1,6 +1,11 @@
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth, initializeAuth, indexedDBLocalPersistence } from "firebase/auth";
+import type { Analytics } from "firebase/analytics";
+import {
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+} from "firebase/auth";
 import { Capacitor } from "@capacitor/core";
 
 export const firebaseConfig = {
@@ -14,15 +19,27 @@ export const firebaseConfig = {
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
-// Explicitly bypass JS Web Analytics on Native since @capacitor-firebase/analytics provides native iOS/Android hooks 
-// automatically and JS Analytics incorrectly defaults to DOM/browsers.
-export const analytics = (typeof window !== "undefined" && !Capacitor.isNativePlatform()) 
-  ? getAnalytics(app) 
-  : null;
+// Web analytics loads once the page has finished loading so it stays off the startup
+// path. Native builds skip it: @capacitor-firebase/analytics hooks into the native SDKs.
+export const analyticsReady: Promise<Analytics | null> =
+  typeof window === "undefined" || Capacitor.isNativePlatform()
+    ? Promise.resolve(null)
+    : new Promise((resolve) => {
+        const start = () =>
+          setTimeout(() => {
+            import("firebase/analytics")
+              .then(({ getAnalytics }) => resolve(getAnalytics(app)))
+              .catch(() => resolve(null));
+          }, 1000);
+        if (document.readyState === "complete") start();
+        else window.addEventListener("load", start, { once: true });
+      });
 
-// Explicitly initialize auth for native platforms to prevent gapi.iframes default browser loading
-export const auth = Capacitor.isNativePlatform() 
-  ? initializeAuth(app, { persistence: indexedDBLocalPersistence }) 
-  : getAuth(app);
-
-
+// Same persistence as getAuth(), minus the popup/redirect resolver. getAuth() would load
+// a hidden iframe from firebaseapp.com on every page view; the resolver is instead passed
+// to signInWithPopup() when someone actually signs in.
+export const auth = Capacitor.isNativePlatform()
+  ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
+  : initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+    });

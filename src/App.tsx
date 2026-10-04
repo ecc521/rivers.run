@@ -5,11 +5,11 @@ import { ModalProvider } from "./context/ModalContext";
 import { ListsProvider } from "./context/ListsContext";
 import GlobalNavBar from "./components/GlobalNavBar";
 import Home from "./pages/Home";
-import SettingsPage from "./pages/Settings";
-import ListsPage from "./pages/ListsPage";
 
 import { useEffect, Suspense, lazy } from "react";
 
+const SettingsPage = lazy(() => import("./pages/Settings"));
+const ListsPage = lazy(() => import("./pages/ListsPage"));
 const MapPage = lazy(() => import("./pages/MapPage"));
 const Clubs = lazy(() => import("./pages/Clubs"));
 const FAQ = lazy(() => import("./pages/FAQ"));
@@ -209,12 +209,12 @@ function App() {
                         <Route path="/river/:id/:slug?" element={<Home />} />
                         <Route path="/gauge/:id/:slug?" element={<Home />} />
                         <Route path="/map" element={<Suspense fallback={<div className="page-content center page-loading" />}><MapPage /></Suspense>} />
-                        <Route path="/lists" element={<ListsPage />} />
+                        <Route path="/lists" element={<Suspense fallback={<div className="page-content center page-loading" />}><ListsPage /></Suspense>} />
                         <Route path="/lists/:id/:slug?" element={<Home />} />
                         <Route path="/clubs" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Clubs...</h2></div>}><Clubs /></Suspense>} />
-                        <Route path="/favorites" element={<ListsPage />} />
+                        <Route path="/favorites" element={<Suspense fallback={<div className="page-content center page-loading" />}><ListsPage /></Suspense>} />
                         <Route path="/faq" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading FAQ...</h2></div>}><FAQ /></Suspense>} />
-                        <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/settings" element={<Suspense fallback={<div className="page-content center page-loading" />}><SettingsPage /></Suspense>} />
                         <Route path="/api" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading API Docs...</h2></div>}><DeveloperPage /></Suspense>} />
                         <Route path="/create" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
                         <Route path="/edit/:riverId" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
