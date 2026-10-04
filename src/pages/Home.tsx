@@ -75,7 +75,7 @@ const Home: React.FC = () => {
      if (isListOverlay && decodedId) {
         const fetchSharedList = async () => {
              try {
-                const data = await fetchAPI(`/lists/${decodedId}`);
+                const data = await fetchAPI(`/lists/${decodedId}`, { auth: false });
                 if (data) {
                    setSharedList(data as UserList);
                    setListEditorMode("shared");
@@ -214,7 +214,7 @@ const Home: React.FC = () => {
         if (!hadCache) setLoading(true);
 
         try {
-            const data = await fetchAPI(`/lists/${targetListId}`);
+            const data = await fetchAPI(`/lists/${targetListId}`, { auth: false });
             if (data) {
                setSearchQuery((prev) => ({ ...prev, listId: targetListId, listData: data.rivers || [] }));
                setListTitle(data.title);

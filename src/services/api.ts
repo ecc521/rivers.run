@@ -24,10 +24,12 @@ export const isDev = import.meta.env.DEV || isDevHost || isDevAPI;
 
 
 /**
- * Authenticated JSON Fetcher for Cloudflare D1 API
+ * Authenticated JSON Fetcher for Cloudflare D1 API.
+ * Pass `auth: false` for public endpoints: the token adds a CORS preflight and
+ * often a token refresh round trip before the request can start.
  */
-export async function fetchAPI(endpoint: string, options: RequestInit = {}, userOverride?: any) {
-    const user = userOverride || auth.currentUser;
+export async function fetchAPI(endpoint: string, { auth: withAuth = true, ...options }: RequestInit & { auth?: boolean } = {}, userOverride?: any) {
+    const user = withAuth ? userOverride || auth.currentUser : null;
     // Content-Type only when there's a body: on a GET it would force a CORS preflight
     // round trip before every request.
     const headers: Record<string, string> = {

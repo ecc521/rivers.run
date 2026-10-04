@@ -302,7 +302,7 @@ export const useRivers = (): UseRiversResult => {
 
       try {
         const [data, flowData] = await Promise.all([
-          fetchAPI("/rivers"),
+          fetchAPI("/rivers", { auth: false }),
           fetchFlowData().catch(e => {
             console.warn("Failed to fetch flow data, continuing with offline/placeholder state:", e);
             return null;
