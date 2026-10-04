@@ -110,6 +110,22 @@ describe('FIMAN provider', () => {
         expect(result['25530'].readings).toHaveLength(1);
     });
 
+    it('getHistory fetches at most 5 gauges at a time', async () => {
+        let inFlight = 0;
+        let peak = 0;
+        globalThis.fetch = vi.fn().mockImplementation(async () => {
+            inFlight++;
+            peak = Math.max(peak, inFlight);
+            await new Promise(r => setTimeout(r, 2));
+            inFlight--;
+            return { ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ ...feedProps(), historical: [] })) };
+        });
+        const codes = Array.from({ length: 20 }, (_, i) => `G${i}`);
+        const result = await fimanProvider.getHistory(codes, 0, 1);
+        expect(Object.keys(result)).toHaveLength(20);
+        expect(peak).toBe(5);
+    });
+
     it('getHistory leaves out a gauge whose fetch fails', async () => {
         mockFetch({}, false, 403);
         vi.spyOn(console, 'warn').mockImplementation(() => {});

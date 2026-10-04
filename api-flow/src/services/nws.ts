@@ -3,6 +3,7 @@ import { formatStateCode, formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
 import { edgeCachedJson } from '../utils/edgeCache';
+import { forEachLimited } from '../utils/concurrency';
 
 // Internal helper for mapping NWPS data arrays to GaugeReadings (exported for testing)
 export function parseNWSeries(data: any, observations: any[], minTime: number, maxTime: number, isForecast: boolean): Map<number, GaugeReading> {
@@ -52,13 +53,7 @@ export function parseNWSeries(data: any, observations: any[], minTime: number, m
 
 const NWS_CONCURRENCY = 5;
 
-async function forEachSite(siteCodes: string[], fn: (site: string) => Promise<void>): Promise<void> {
-    let index = 0;
-    const worker = async () => {
-        while (index < siteCodes.length) await fn(siteCodes[index++]);
-    };
-    await Promise.all(Array.from({ length: NWS_CONCURRENCY }, worker));
-}
+const forEachSite = (siteCodes: string[], fn: (site: string) => Promise<void>) => forEachLimited(siteCodes, NWS_CONCURRENCY, fn);
 
 /** Stageflow JSON; undefined when the gauge has none (404); null when the fetch failed. */
 async function fetchStageflow(site: string, env?: any): Promise<any | null | undefined> {

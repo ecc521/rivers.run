@@ -298,6 +298,42 @@ and the container with `docker run`, pointing `SERVING_STORAGE` at
 the same handler; it and `/seed-local-r2` need `LOCAL_DEV_ROUTES=1` in `.dev.vars`) and `SERVING_SNAPSHOT` at `.../model/usgs_hourly.json.gz`; then
 `curl -X POST localhost:8080/run`.
 
+### Memory budget
+
+A Worker isolate has 128 MB. The registry (about 17k gauges) and the cycle's own state
+leave roughly 50 MB for everything else that is alive at once, and the hourly model
+snapshot (about 30 MB of JSON) is the largest single consumer. A bulk provider is a
+response body held as text and again as a parsed object, so it costs up to twice its size.
+
+Measured with `tools/heap-probe.mjs` (parsed objects retained):
+
+| Payload | Size | Retained |
+|---|---|---|
+| FIMAN feed, all 882 gauges | 1.7 MB | 1.4 MB |
+| NWS bounding box (NC, about 1,070 gauges) | 1.0 MB | 0.9 MB |
+| One FIMAN gauge history | 0.1 MB | about 0.2 MB |
+| The registry as an object | | about 5 MB |
+
+Rules for providers:
+
+- Keep only the fields you use (`fetchFeed`, `fetchMapGauges`) and drop the response.
+- Bound fan-out with `forEachLimited` (`utils/concurrency.ts`) so memory held at once
+  tracks the limit, not the gauge count. A FIMAN gauge's response holds 30 days of
+  history, but ingest keeps 3 hours, so hold the filtered readings and drop the rest
+  before starting the next gauge.
+- Request counts, not memory, are what grow with linked gauges: each linked FIMAN gauge
+  is one cached request per cycle. A river can link at most 10 gauges
+  (`MAX_GAUGES_PER_RIVER`), matching the 10 per `/history` request.
+- A new bulk source should be measured before it ships:
+
+```bash
+node --expose-gc api-flow/tools/heap-probe.mjs                       # fetches live (FIMAN may need saved files, see the script header)
+node --expose-gc api-flow/tools/heap-probe.mjs --fiman feed.json --gauge gauge.json --nws box.json --histories 100
+```
+
+  Nationwide NWS (an estimated 15 to 20 MB per cycle across 15 to 25 box requests) is
+  the case to measure first; process boxes one at a time and keep only needed fields.
+
 ## 4. Caching & Return Signatures
 
 - Endpoints return statically shaped `{ [gaugeId]: { readings: [...] } }` payloads that

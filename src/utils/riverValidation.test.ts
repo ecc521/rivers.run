@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateRiver } from "./riverValidation";
+import { validateRiver, MAX_GAUGES_PER_RIVER } from "./riverValidation";
 
 describe("riverValidation", () => {
   it("rejects purely null or undefined river profiles", () => {
@@ -84,6 +84,15 @@ describe("riverValidation", () => {
       });
       expect(res.isValid).toBe(false);
       expect(res.errors).toContain("At most ONE gauge can be marked as primary.");
+  });
+
+  it("rejects a river with more gauges than the flow API serves at once", () => {
+    const gauges = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `USGS:${String(i).padStart(8, "0")}` }));
+    const base = { id: "many_gauges", name: "Many", countries: "United States" };
+    expect(validateRiver({ ...base, gauges: gauges(MAX_GAUGES_PER_RIVER) }).errors).not.toContain(`A river can have at most ${MAX_GAUGES_PER_RIVER} gauges (it has ${MAX_GAUGES_PER_RIVER}).`);
+    const res = validateRiver({ ...base, gauges: gauges(MAX_GAUGES_PER_RIVER + 1) });
+    expect(res.isValid).toBe(false);
+    expect(res.errors).toContain(`A river can have at most ${MAX_GAUGES_PER_RIVER} gauges (it has ${MAX_GAUGES_PER_RIVER + 1}).`);
   });
 
   it("passes validation cleanly and yields warnings appropriately when object is big but safely formatted", () => {

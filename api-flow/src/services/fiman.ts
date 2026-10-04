@@ -2,6 +2,7 @@ import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingVal
 import { edgeCachedJson } from '../utils/edgeCache';
 import { logToD1 } from '../utils/logger';
 import { formatGaugeName } from '../utils/formatting';
+import { forEachLimited } from '../utils/concurrency';
 
 /**
  * NC Flood Inundation Mapping and Alert Network (FIMAN, fiman.nc.gov), the state's
@@ -27,6 +28,8 @@ const MAX_HISTORY_MS = 30 * 24 * 60 * 60 * 1000;
 /** The feed and per-gauge history are shared between callers for this long, per Cloudflare location. */
 const FEED_CACHE_SECONDS = 120;
 const HISTORY_CACHE_SECONDS = 300;
+/** A gauge's response is about 0.2 MB parsed; this many at once keeps the cycle's memory flat however many gauges rivers link. */
+const HISTORY_CONCURRENCY = 5;
 
 const MONTHS: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
 
@@ -131,7 +134,7 @@ export const fimanProvider: GaugeProvider = {
         const start = Math.max(startTs, end - MAX_HISTORY_MS);
         const results: Record<string, GaugeHistory> = {};
 
-        await Promise.all(siteCodes.map(async (code) => {
+        await forEachLimited(siteCodes, HISTORY_CONCURRENCY, async (code) => {
             try {
                 const gauge = await edgeCachedJson(`${FIMAN_BASE}/gauges/${encodeURIComponent(code)}`, {
                     timeoutMs: 30000, ttlSeconds: HISTORY_CACHE_SECONDS, label: 'FIMAN',
@@ -161,7 +164,7 @@ export const fimanProvider: GaugeProvider = {
                 const msg = `FIMAN history fetch failed for ${code}`;
                 if (env?.DB) await logToD1(env, 'WARN', 'fiman', msg, e); else console.warn(msg, e);
             }
-        }));
+        });
         return results;
     },
 

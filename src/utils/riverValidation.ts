@@ -7,6 +7,9 @@
 
 import { USACE_CODE_PATTERN } from "./usaceGauges";
 
+/** The flow API serves at most this many gauges per request (api-flow `/history`), so a river's page cannot load more. */
+export const MAX_GAUGES_PER_RIVER = 10;
+
 export interface RiverValidationResult {
   isValid: boolean;
   errors: string[];
@@ -90,6 +93,10 @@ export function validateRiver(river: any): RiverValidationResult {
          }
        }
     }
+  }
+
+  if (gauges.length > MAX_GAUGES_PER_RIVER) {
+    errors.push(`A river can have at most ${MAX_GAUGES_PER_RIVER} gauges (it has ${gauges.length}).`);
   }
 
   const primaryCount = gauges.filter((g: any) => g.isPrimary).length;
