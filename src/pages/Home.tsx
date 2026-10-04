@@ -787,7 +787,9 @@ const Home: React.FC = () => {
             </div>
           </div>
         )}
-        {renderedRiverItems}
+        {/* `loading` trails the rivers data by a render; drawing rows under the
+            placeholder in that frame makes them jump up once it clears. */}
+        {!loading && renderedRiverItems}
         </div>
       </div>
 
