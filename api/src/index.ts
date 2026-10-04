@@ -17,7 +17,7 @@ import {
 import { sendEmail } from "./email";
 import { logToD1 } from "./utils/logger";
 import { generateRawKey, hashKey } from "./utils/apiKey";
-import { normalizeGaugeId } from "./utils/formatting";
+import { normalizeGaugeId, isGaugeStyleId, GAUGE_STYLE_ID_MESSAGE } from "./utils/formatting";
 
 
 
@@ -399,6 +399,7 @@ const updateRiverRoute = createRoute({
 app.openapi(updateRiverRoute, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
+    if (isGaugeStyleId(id)) return c.json({ error: GAUGE_STYLE_ID_MESSAGE }, 400);
     
     const body = await c.req.json();
     const validated = RiverEditorPayload.parse(body); // Fails explicitly throwing ZodError if bloated
@@ -494,6 +495,7 @@ const suggestRiverRoute = createRoute({
 app.openapi(suggestRiverRoute, async (c) => {
     const id = c.req.param("id");
     const user = c.get("user");
+    if (isGaugeStyleId(id)) return c.json({ error: GAUGE_STYLE_ID_MESSAGE }, 400);
     
     let authorId = user.user_id;
     if (authorId === "anonymous") {
@@ -880,6 +882,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
     // 6. Merging logic
     const finalPayload = { ...proposed, ...admin_overrides };
     const validated = RiverEditorPayload.parse(finalPayload); // Fails safely if Overrides break caps
+    if (isGaugeStyleId(suggestion.river_id as string)) return c.json({ error: GAUGE_STYLE_ID_MESSAGE }, 400);
 
     // Atomic promotion to rivers DB
     const batch = [];

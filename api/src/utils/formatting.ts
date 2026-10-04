@@ -12,3 +12,13 @@ export function normalizeGaugeId(val: string): string {
     }
     return cleaned;
 }
+
+/**
+ * Gauge IDs are provider-prefixed ("USGS:0123"), so a colon marks an ID as a
+ * gauge. River IDs must not collide with the standalone gauge pages.
+ */
+export function isGaugeStyleId(id: string | undefined): boolean {
+    return !!id && id.includes(":");
+}
+
+export const GAUGE_STYLE_ID_MESSAGE = "River IDs cannot look like gauge IDs (no ':')";

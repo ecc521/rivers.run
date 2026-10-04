@@ -48,4 +48,31 @@ describe("API Core Validation and Payload Checks", () => {
          // 400 Bad Request due to Zod validation failure
          expect(res.status).toBe(400); 
     });
+    it("should reject gauge-style river IDs", async () => {
+         const adminToken = await createTestJwt("test-admin-validator");
+         for (const id of ["USGS:05436500", "usgs:05436500", "NWS:ABCD1"]) {
+             const res = await app.request(`/rivers/${encodeURIComponent(id)}`, {
+                 method: "PUT",
+                 headers: { "Content-Type": "application/json", Authorization: adminToken },
+                 body: JSON.stringify({ id })
+             }, { DB: mockDB } as any);
+             expect(res.status).toBe(400);
+             const suggest = await app.request(`/rivers/${encodeURIComponent(id)}/suggest`, {
+                 method: "POST",
+                 headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify({ id })
+             }, { DB: mockDB } as any);
+             expect(suggest.status).toBe(400);
+         }
+    });
+
+    it("should reject a gauge-style id in the body even when the path id is fine", async () => {
+         const adminToken = await createTestJwt("test-admin-validator");
+         const res = await app.request("/rivers/abc123", {
+             method: "PUT",
+             headers: { "Content-Type": "application/json", Authorization: adminToken },
+             body: JSON.stringify({ id: "USGS:05436500" })
+         }, { DB: mockDB } as any);
+         expect(res.status).toBe(400);
+    });
 });
