@@ -3,9 +3,25 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+
+// MapLibre 6 loads maplibre-gl-worker.mjs, which imports ./maplibre-gl-shared.mjs by
+// relative path. Vite can't see that import, so emit both side by side, unhashed.
+const maplibreWorkerFiles = ['maplibre-gl-worker.mjs', 'maplibre-gl-shared.mjs']
+const emitMaplibreWorker = () => ({
+  name: 'emit-maplibre-worker',
+  apply: 'build' as const,
+  generateBundle(this: any) {
+    const dist = createRequire(import.meta.url).resolve('maplibre-gl/package.json').replace('package.json', 'dist/')
+    for (const file of maplibreWorkerFiles) {
+      this.emitFile({ type: 'asset', fileName: `maplibre/${file}`, source: readFileSync(dist + file) })
+    }
+  },
+})
 
 export default defineConfig({
-  plugins: [react(), VitePWA({
+  plugins: [react(), emitMaplibreWorker(), VitePWA({
     registerType: 'prompt',
     injectRegister: 'auto',
     // Disable SW in development so we don't trip over aggressive caching
@@ -13,7 +29,7 @@ export default defineConfig({
       enabled: false,
     },
     workbox: {
-      globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,pmtiles,json,woff2}'],
+      globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,webp,pmtiles,json,woff2}'],
       maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       runtimeCaching: [
         // Explicit allowlist, not a wildcard — Workbox caches by URL only (ignores
@@ -142,6 +158,11 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
+  },
+  // Dev serves MapLibre from its dist folder, beside the maplibre-gl-worker.mjs it loads by
+  // relative URL; pre-bundling would move it to .vite/deps where the worker 404s.
+  optimizeDeps: {
+    exclude: ['maplibre-gl'],
   },
   worker: {
     format: 'iife',
