@@ -104,6 +104,12 @@ export interface GaugeProvider {
 }
 
 /**
+ * Whether a stage looks like a river's. Above this a "stage" is usually a lake or dam
+ * elevation, which gauges report in feet above sea level; real river stages stay far lower.
+ */
+export const isRiverStageFt = (ft: number): boolean => ft >= -10 && ft <= 40;
+
+/**
  * Validates a reading value from a provider.
  * Filters out common error codes and sentinels:
  * - Flow (cfs/cms): Filters <= -900,000 (USGS -999,999 or NWS -999kcfs)

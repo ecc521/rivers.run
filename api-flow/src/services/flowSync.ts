@@ -43,8 +43,14 @@ export const BULK_PROVIDERS = new Set(["EC", "NWS"]);
 /** Latest-only providers stored only on the hourly cycle, one reading per gauge per hour. */
 export const HOURLY_STORE_PROVIDERS = new Set(["UK"]);
 
+/**
+ * Bulk-history providers whose unlinked registry gauges are latest-only and never stored:
+ * the list-wide latest values are one request, but their series are one request per gauge.
+ */
+export const UNLINKED_LATEST_ONLY_PROVIDERS = new Set(["NWS"]);
+
 /** Latest-only providers never stored: sitedata.json uses the fetch, graphs fetch live. */
-export const FETCH_ONLY_PROVIDERS = new Set(["USACE"]);
+export const FETCH_ONLY_PROVIDERS = new Set(["USACE", "FIMAN"]);
 
 /** The sync_meta key holding a provider's last successful ingest. */
 export const ingestMetaKey = (prefix: string) => prefix === "USGS" ? META_WINDOW_OK : `ok_at:${prefix}`;
@@ -263,6 +269,16 @@ async function ingestBulkProvider(ctx: IngestCtx, prefix: string, provider: Gaug
     if (anyOk) ctx.stats.rowsWritten.state += await setMeta(ctx.db, ingestMetaKey(prefix), ctx.now);
 }
 
+/** Latest readings of gauges that are never stored: only sitedata.json carries them. */
+async function ingestUnstoredLatest(ctx: IngestCtx, prefix: string, provider: GaugeProvider, siteCodes: string[]): Promise<void> {
+    const latest = await provider.getLatest(siteCodes, ctx.env);
+    noteLatest(ctx.stats.latest, latestAsReadings(prefix, latest), ctx.now);
+}
+
+const latestAsReadings = (prefix: string, latest: Record<string, GaugeReading>): ObservedReading[] =>
+    historiesToReadings(prefix, Object.fromEntries(Object.entries(latest).map(([id, reading]) =>
+        [id, { id, name: "", readings: [reading] } as GaugeHistory])));
+
 /** Per gauge and hour, the row closest to the hour start. */
 function oneRowPerHour(rows: SlotRow[]): SlotRow[] {
     const best = new Map<string, SlotRow>();
@@ -290,9 +306,7 @@ async function ingestLatestOnly(
     if (group.linked.length > 0) push(await provider.getHistory(group.linked, now - LINKED_HISTORY_MS, now, false, env));
     const linkedReadings = readings.length;
     if (group.registry.length > 0) {
-        const latest = await provider.getLatest(group.registry, env);
-        push(Object.fromEntries(Object.entries(latest).map(([id, reading]) =>
-            [id, { id, name: "", readings: [reading] } as GaugeHistory])));
+        for (const r of latestAsReadings(prefix, await provider.getLatest(group.registry, env))) readings.push(r);
     }
     noteLatest(stats.latest, readings, now);
     let rows = reduceToSlots(readings, { now });
@@ -349,7 +363,11 @@ export async function runIngestCycle(
                         latest: stats.latest,
                     });
                 } else if (providers[prefix].getBulkHistories) {
-                    await ingestBulkProvider(ctx, prefix, providers[prefix], [...group.linked, ...group.registry]);
+                    const latestOnlyUnlinked = UNLINKED_LATEST_ONLY_PROVIDERS.has(prefix);
+                    await ingestBulkProvider(ctx, prefix, providers[prefix], latestOnlyUnlinked ? group.linked : [...group.linked, ...group.registry]);
+                    if (latestOnlyUnlinked && group.registry.length > 0) {
+                        await ingestUnstoredLatest(ctx, prefix, providers[prefix], group.registry);
+                    }
                 } else {
                     await ingestLatestOnly(ctx, prefix, providers[prefix], group);
                 }

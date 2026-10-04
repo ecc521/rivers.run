@@ -1,7 +1,8 @@
-import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, BulkUnit, isValidReadingValue } from './provider';
+import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, BulkUnit, isValidReadingValue, isRiverStageFt } from './provider';
 import { formatStateCode, formatGaugeName } from '../utils/formatting';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
+import { edgeCachedJson } from '../utils/edgeCache';
 
 // Internal helper for mapping NWPS data arrays to GaugeReadings (exported for testing)
 export function parseNWSeries(data: any, observations: any[], minTime: number, maxTime: number, isForecast: boolean): Map<number, GaugeReading> {
@@ -89,6 +90,47 @@ function toHistory(site: string, readingMap: Map<number, GaugeReading>): GaugeHi
     return { id: site, name: formatted.name, section: formatted.section, readings, country: "US" };
 }
 
+const NWPS_BASE = 'https://api.water.noaa.gov/nwps/v1';
+/**
+ * Regions whose gauges are listed on the map without a river linking them. The unbounded
+ * NWPS gauge list times out, so the list is fetched per box; a box returns every gauge in
+ * it with its latest observation (about 1 MB for this one), and only MAP_STATES are kept.
+ * To add a region, add its box and state.
+ */
+const MAP_BOXES = [{ xmin: -84.5, ymin: 33.7, xmax: -75.3, ymax: 36.7 }];
+const MAP_STATES = new Set(['NC']);
+const BULK_CACHE_SECONDS = 120;
+/** A gauge not observed for this long is left off the map. */
+const MAX_LISTING_AGE_MS = 3 * 24 * 60 * 60 * 1000;
+
+/** Every gauge in the map regions, with its latest observation. One request per box, shared through the cache. */
+async function fetchMapGauges(): Promise<any[]> {
+    const byLid = new Map<string, any>();
+    for (const box of MAP_BOXES) {
+        const params = new URLSearchParams({
+            'bbox.xmin': String(box.xmin), 'bbox.ymin': String(box.ymin),
+            'bbox.xmax': String(box.xmax), 'bbox.ymax': String(box.ymax), srid: 'EPSG_4326',
+        });
+        const data = await edgeCachedJson(`${NWPS_BASE}/gauges?${params}`, { timeoutMs: 90000, ttlSeconds: BULK_CACHE_SECONDS, label: 'NWPS' });
+        for (const g of data.gauges ?? []) {
+            if (g?.lid && MAP_STATES.has(g.state?.abbreviation)) byLid.set(String(g.lid).toUpperCase(), g);
+        }
+    }
+    return [...byLid.values()];
+}
+
+/** Tide gauges, which NWPS names by their water body or datum, are no use on a river map. */
+const TIDAL_NAME = /\b(?:mllw|sound|atlantic coast|intracoastal|channel|bay|inlet|harbor)\b/i;
+
+/** The latest observation NWPS carries on a gauge in the list, or null when it has none with a value. */
+export function observedReading(gauge: any): GaugeReading | null {
+    const o = gauge?.status?.observed;
+    if (!o?.validTime || String(o.validTime).startsWith('0')) return null;
+    const parsed = parseNWSeries({ primaryUnits: o.primaryUnit, secondaryUnits: o.secondaryUnit }, [o], 0, Date.now() + 3_600_000, false);
+    const reading = [...parsed.values()][0];
+    return reading && Object.keys(reading).some(k => k !== 'dateTime') ? reading : null;
+}
+
 export const nwsProvider: GaugeProvider = {
     id: "NWS",
     preferredUnits: 'imperial',
@@ -97,17 +139,15 @@ export const nwsProvider: GaugeProvider = {
         hasSiteListing: true
     },
 
-    async getLatest(siteCodes: string[], env?: any): Promise<Record<string, GaugeReading>> {
-        // Fetch 3 hours to ensure we get at least one recent reading
-        const histories = await this.getHistory(siteCodes, Date.now() - 10800000, Date.now(), false, env);
+    /** Latest values for gauges in the map regions, from the bulk list (no per-gauge requests). */
+    async getLatest(siteCodes: string[]): Promise<Record<string, GaugeReading>> {
+        const requested = new Map(siteCodes.map(code => [code.toUpperCase(), code]));
         const results: Record<string, GaugeReading> = {};
-        
-        Object.entries(histories).forEach(([id, history]) => {
-            if (history.readings.length > 0) {
-                results[id] = history.readings[history.readings.length - 1];
-            }
-        });
-        
+        for (const gauge of await fetchMapGauges()) {
+            const code = requested.get(String(gauge.lid).toUpperCase());
+            const reading = code ? observedReading(gauge) : null;
+            if (code && reading) results[code] = reading;
+        }
         return results;
     },
 
@@ -203,38 +243,28 @@ export const nwsProvider: GaugeProvider = {
          return results;
      },
 
+     /** River gauges in the map regions observed in the last few days: not tidal, and not a lake or dam elevation. */
      async getFullSiteListing(): Promise<GaugeSite[]> {
-         console.log("NWS Provider: Fetching full site listing...");
-         const url = "https://api.water.noaa.gov/nwps/v1/gauges";
-         const results: GaugeSite[] = [];
-         
-         try {
-             const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, 90000); // 90s timeout for NWS full list
-             if (!res.ok) throw new Error(`NWS NWPS API Error: ${res.status}`);
-             
-             const data: any = await res.json();
-             const items = data.gauges || [];
-             
-             for (const item of items) {
-                 if (item.identifier && item.latitude !== undefined && item.longitude !== undefined) {
-                     const formatted = formatGaugeName(item.name || item.identifier, "NWS");
-                     results.push({
-                         id: item.identifier,
-                         name: formatted.name,
-                         section: formatted.section,
-                         lat: item.latitude,
-                         lon: item.longitude,
-                         state: formatStateCode(item.state?.abbreviation, "NWS"),
-                         country: "US"
-                     });
-                 }
-             }
-         } catch (e) {
-             console.error("NWS Provider: Full site listing failed", e);
-             throw e;
-         }
-         
-         return results;
+         const now = Date.now();
+         return (await fetchMapGauges())
+             .filter(g => now - Date.parse(g.status?.observed?.validTime ?? '') <= MAX_LISTING_AGE_MS)
+             .filter(g => !TIDAL_NAME.test(g.name ?? ''))
+             .filter(g => {
+                 const ft = observedReading(g)?.ft;
+                 return ft === undefined || isRiverStageFt(ft);
+             })
+             .map(g => {
+                 const formatted = formatGaugeName(g.name || g.lid, "NWS");
+                 return {
+                     id: String(g.lid).toUpperCase(),
+                     name: formatted.name,
+                     section: formatted.section,
+                     lat: g.latitude,
+                     lon: g.longitude,
+                     state: formatStateCode(g.state?.abbreviation, "NWS"),
+                     country: "US",
+                 };
+             })
+             .filter(site => typeof site.lat === 'number' && typeof site.lon === 'number');
      }
  };
-

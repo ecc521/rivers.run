@@ -3,7 +3,9 @@ import apiFlow from '../index';
 
 vi.mock('../services/gaugeRegistry', () => ({
     compileGaugeRegistry: vi.fn().mockResolvedValue({}),
-    refreshProviderListing: vi.fn()
+    refreshProviderListing: vi.fn(),
+    refreshNwsListing: vi.fn(),
+    refreshFimanListing: vi.fn()
 }));
 
 vi.mock('../services/usace', () => ({

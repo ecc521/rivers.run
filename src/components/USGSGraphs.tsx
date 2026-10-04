@@ -371,6 +371,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
             if (type === 'usgs') link = `https://waterdata.usgs.gov/monitoring-location/${id}/#parameterCode=00060,00065,00010,00011,00045&period=P7D`;
             else if (type === 'canada' || type === 'ec') link = `https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=${id}`;
             else if (type === 'nws') link = `https://water.noaa.gov/gauges/${id}`;
+            else if (type === 'fiman') link = `https://fiman.nc.gov/?id=${id}`;
         }
       }
 

@@ -1,6 +1,7 @@
 import { GaugeProvider, GaugeReading, GaugeHistory, GaugeSite, isValidReadingValue } from './provider';
 import { fetchWithTimeout, DEFAULT_HEADERS } from '../utils/timeout';
 import { logToD1 } from '../utils/logger';
+import { edgeCachedJson as sharedEdgeCachedJson } from '../utils/edgeCache';
 
 /**
  * U.S. Army Corps of Engineers dams, as two gauges per dam:
@@ -317,26 +318,8 @@ async function loadSites(env?: any): Promise<Record<string, UsaceSite>> {
     return sites;
 }
 
-/**
- * Upstream JSON for graph requests, shared through the Cloudflare cache. The reporting
- * API sets a session cookie on every response, which keeps Cloudflare from caching the
- * subrequest itself, so a clean copy is stored explicitly. Callers round their time
- * windows to the quarter hour so concurrent viewers of a dam hit the same key.
- */
-async function edgeCachedJson(url: string, timeoutMs: number): Promise<any> {
-    const cache: Cache | undefined = (globalThis as any).caches?.default;
-    const hit = cache ? await cache.match(url) : undefined;
-    if (hit) return hit.json();
-    const res = await fetchWithTimeout(url, { headers: DEFAULT_HEADERS }, timeoutMs);
-    if (!res.ok) throw new Error(`USACE API error ${res.status} for ${url}`);
-    const body = await res.text();
-    if (cache) {
-        await cache.put(url, new Response(body, {
-            headers: { 'Content-Type': 'application/json', 'Cache-Control': `max-age=${EDGE_CACHE_SECONDS}` },
-        }));
-    }
-    return JSON.parse(body);
-}
+const edgeCachedJson = (url: string, timeoutMs: number) =>
+    sharedEdgeCachedJson(url, { timeoutMs, ttlSeconds: EDGE_CACHE_SECONDS, label: 'USACE' });
 
 const floorQuarter = (t: number) => Math.floor(t / QUARTER_HOUR_MS) * QUARTER_HOUR_MS;
 const ceilQuarter = (t: number) => Math.ceil(t / QUARTER_HOUR_MS) * QUARTER_HOUR_MS;

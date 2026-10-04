@@ -10,11 +10,12 @@ import { nwsProvider } from "./services/nws";
 import { ecProvider } from "./services/canada";
 import { ukProvider } from "./services/uk";
 import { irelandProvider } from "./services/ireland";
+import { fimanProvider } from "./services/fiman";
 import { usaceProvider, syncUsaceSites, USACE_SITES_KEY } from "./services/usace";
 import { GaugeProvider, GaugeHistory, Units } from "./services/provider";
 import { HistorySchema, ErrorSchema, GenericObjectSchema } from "./schema";
 import { toUnitSystemHistory } from "./utils/units";
-import { compileGaugeRegistry, refreshProviderListing } from "./services/gaugeRegistry";
+import { compileGaugeRegistry, refreshProviderListing, refreshNwsListing, refreshFimanListing } from "./services/gaugeRegistry";
 import { withTimeout } from "./utils/timeout";
 import { stringifyJSONObject } from "./utils/stream";
 import { normalizeGaugeId } from "./utils/formatting";
@@ -60,7 +61,8 @@ export const providers: Record<string, GaugeProvider> = {
     "EC": ecProvider,
     "UK": ukProvider,
     "IE": irelandProvider,
-    "USACE": usaceProvider
+    "USACE": usaceProvider,
+    "FIMAN": fimanProvider
 };
 
 const app = new OpenAPIHono<{ Bindings: Env }>();
@@ -596,13 +598,26 @@ export default {
                 }
             }
 
-            // A registry compiled before USACE existed gets its dams now rather than at the weekly recompile.
-            if (!needsRecompile && !Object.keys(registryMetadata).some(k => k.startsWith("USACE:"))) {
-                await refreshProviderListing(env, registryMetadata, usaceProvider);
-                if (Object.keys(registryMetadata).some(k => k.startsWith("USACE:"))) {
-                    await env.FLOW_STORAGE.put("gauge_registry.json", stringifyJSONObject(registryMetadata), {
-                        httpMetadata: { contentType: "application/json" }
-                    });
+            // A registry compiled before USACE or FIMAN existed gets their sites now rather than
+            // at the weekly recompile. NWS and FIMAN are also re-listed daily, since their coverage
+            // by other networks and their sensors' health change.
+            if (!needsRecompile) {
+                const refreshes = [
+                    { prefix: "USACE:", due: false, refresh: () => refreshProviderListing(env, registryMetadata, usaceProvider) },
+                    { prefix: "NWS:", due: isDailyMaintenance, refresh: () => refreshNwsListing(env, registryMetadata) },
+                    { prefix: "FIMAN:", due: isDailyMaintenance, refresh: () => refreshFimanListing(env, registryMetadata) },
+                ];
+                const countOf = (prefix: string) => Object.keys(registryMetadata).filter(k => k.startsWith(prefix)).length;
+                for (const { prefix, due, refresh } of refreshes) {
+                    const before = countOf(prefix);
+                    if (!due && before > 0) continue;
+                    await refresh();
+                    const after = countOf(prefix);
+                    if (after > 0 && (due || after !== before)) {
+                        await env.FLOW_STORAGE.put("gauge_registry.json", stringifyJSONObject(registryMetadata), {
+                            httpMetadata: { contentType: "application/json" }
+                        });
+                    }
                 }
             }
 
@@ -680,7 +695,6 @@ export default {
             // runs out of memory or time.
             if (snapshotSites && env.FLOW_DB) {
                 // Drop the registry (~15k gauges) before building the snapshot.
-                // eslint-disable-next-line sonarjs/no-dead-store
                 registryMetadata = {};
                 try {
                     const snap = await writeUsgsHourlySnapshot(env, env.FLOW_DB, snapshotSites, snapshotAt);
