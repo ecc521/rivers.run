@@ -75,12 +75,79 @@ export function parseHistoryTime(text: unknown): number | null {
 /** Town of Cary gauges are named by stream initials ("SC: Seabrook US"). */
 const STREAM_PREFIXES: Record<string, string> = { SC: 'Swift Creek', WC: 'Walnut Creek', CC: 'Crabtree Creek' };
 
+const WATER_WORDS = new Set(['creek', 'cr', 'ck', 'crk', 'river', 'riv', 'rvr', 'rv', 'r', 'fork', 'fk', 'branch', 'br', 'run', 'brook', 'prong']);
+const ROAD_WORDS = new Set([
+    'rd', 'road', 'st', 'street', 'ave', 'avenue', 'dr', 'drive', 'ln', 'lane', 'blvd', 'boulevard', 'hwy', 'highway', 'pkwy', 'parkway',
+    'bridge', 'bypass', 'way', 'ct', 'court', 'cir', 'circle', 'trl', 'trail',
+    'intake', 'hatchery', 'causeway', 'ramp', 'marina', 'pier', 'dock', 'ferry',
+]);
+const HIGHWAY_END = /\b(?:US|NC|SR|I)[ -]?\d+[A-Z]?$/i;
+
+function lastWord(s: string): string {
+    const words = s.trim().split(' ');
+    if (words.length > 1 && words[words.length - 1].length <= 2 && !isNaN(Number(words[words.length - 1]))) words.pop();
+    const last = words[words.length - 1].toLowerCase();
+    return last.endsWith('.') ? last.slice(0, -1) : last;
+}
+const endsInWater = (s: string) => WATER_WORDS.has(lastWord(s));
+const endsInRoad = (s: string) => ROAD_WORDS.has(lastWord(s)) || HIGHWAY_END.test(s.trim());
+
+/** Splits at the first separator, matched without regard to case. A bare "/" counts only with no spaces beside it. */
+function splitOn(text: string, separator: string): [string, string] | null {
+    const lower = text.toLowerCase();
+    let i = lower.indexOf(separator);
+    while (separator === '/' && i !== -1 && (lower[i - 1] === ' ' || lower[i + 1] === ' ' || i === 0 || i === lower.length - 1)) {
+        i = lower.indexOf(separator, i + 1);
+    }
+    return i === -1 ? null : [text.slice(0, i), text.slice(i + separator.length)];
+}
+
+/** "Locks Creek - Cedar Creek Rd" gets "at"; a road-first pair is swapped; anything else is null. */
+function reorderDashed(l: string, r: string): string | null {
+    if (endsInWater(l) && endsInRoad(r)) return `${l} at ${r}`;
+    return endsInRoad(l) && endsInWater(r) ? `${r} at ${l}` : null;
+}
+
+/**
+ * Rewrites a FIMAN name as "waterbody at place". Names that already read that way, and
+ * any whose two sides don't clearly look like a waterbody and a road or landmark, are
+ * returned as they came: "Bunches Creek Rd at Raven Fork" and "River Road over Barnards
+ * Creek" are swapped, and "Mud Creek/Hendersonville" or "Locks Creek - Cedar Creek Rd"
+ * get "at".
+ */
+export function reorderName(text: string): string {
+    for (const separator of [' at ', ' over ']) {
+        const parts = splitOn(text, separator);
+        if (parts) return endsInRoad(parts[0]) && endsInWater(parts[1]) ? `${parts[1]} at ${parts[0]}` : text;
+    }
+
+    const dashed = splitOn(text, ' - ');
+    if (dashed) return reorderDashed(...dashed) ?? text;
+
+    const slashed = splitOn(text, '/');
+    if (slashed && endsInWater(slashed[0]) && !endsInWater(slashed[1])) return `${slashed[0]} at ${slashed[1]}`;
+    return text;
+}
+
+/** "US 221" is a highway, which the shared formatter would read as "upstream"; a trailing period is left from "R." or "Rd.". */
+function tidy(part: string | undefined, hadHighwayUs: boolean): string | undefined {
+    if (part === undefined) return part;
+    const fixed = hadHighwayUs ? part.replace(/\bUpstream(?=\s?\d)/g, 'US') : part;
+    return fixed.replace(/\.$/, '');
+}
+
 /** A name and section in the house style, e.g. "Eastfork Pigeon River at Cruso Rd" as "Eastfork Pigeon River" and "Cruso Road". */
 export function displayName(raw: unknown, fallback: string): { name: string; section?: string } {
     let text = String(raw ?? '').replace(/\s+/g, ' ').trim();
     text = text.replace(/^([A-Z]{2}):\s*/, (match, stream: string) => (STREAM_PREFIXES[stream] ? `${STREAM_PREFIXES[stream]} at ` : match));
-    text = text.replace(/@/g, ' at ').replace(/\s+/g, ' ');
-    return text ? formatGaugeName(text, 'FIMAN') : { name: fallback };
+    text = reorderName(text.replace(/@/g, ' at ').replace(/\s+/g, ' ').trim());
+    if (!text) return { name: fallback };
+    const { name, section } = formatGaugeName(text, 'FIMAN');
+    const hadHighwayUs = /\bUS\s?\d/i.test(text);
+    const result: { name: string; section?: string } = { name: tidy(name, hadHighwayUs)! };
+    const cleanSection = tidy(section, hadHighwayUs);
+    if (cleanSection) result.section = cleanSection;
+    return result;
 }
 
 /** Out-of-state gauges have the state in the county ("Danville VA"); everything else is NC. */

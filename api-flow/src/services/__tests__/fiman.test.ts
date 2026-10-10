@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     fimanProvider, easternToUtcMs, parseLastUpdate, parseHistoryTime, stageOffset, latestReading,
-    displayName, isMapEligible,
+    displayName, isMapEligible, reorderName,
 } from '../fiman';
 import { dropCoveredSites } from '../../utils/geo';
 import type { GaugeSite } from '../provider';
@@ -203,5 +203,37 @@ describe('FIMAN coverage and names', () => {
         expect(displayName('SC: Seabrook US', 'x').name).toMatch(/^Swift Creek/);
         expect(displayName('FLAT CREEK @ US70, Black Mountain', 'x').name).toMatch(/^Flat Creek/);
         expect(displayName('  ', 'fallback')).toEqual({ name: 'fallback' });
+    });
+
+    it('puts the waterbody first when a feed name lists the road or landmark first', () => {
+        expect(displayName('Bunches Creek Rd @ Raven Fork', 'x')).toEqual({ name: 'Raven Fork', section: 'At Bunches Creek Road' });
+        expect(displayName('Tribal Hatchery @ Straight Fork', 'x')).toEqual({ name: 'Straight Fork', section: 'At Tribal Hatchery' });
+        expect(displayName('Water Intake at Lumber River', 'x')).toEqual({ name: 'Lumber River', section: 'At Water Intake' });
+        expect(displayName('River Road over Barnards Creek', 'x')).toEqual({ name: 'Barnards Creek', section: 'At River Road' });
+        expect(displayName('Greenville Loop Road over Hewletts Creek', 'x')).toEqual({ name: 'Hewletts Creek', section: 'At Greenville Loop Road' });
+    });
+
+    it('reads dashes and slashes as "at" only between a waterbody and a place', () => {
+        expect(displayName('Locks Creek - Cedar Creek Rd.', 'x')).toEqual({ name: 'Locks Creek', section: 'At Cedar Creek Road' });
+        expect(displayName('Beaver Creek 2 - Louise St.', 'x')).toEqual({ name: 'Beaver Creek 2', section: 'At Louise St' });
+        expect(displayName('Mud Creek/Hendersonville', 'x')).toEqual({ name: 'Mud Creek', section: 'At Hendersonville' });
+        expect(displayName('Nottely River/Cook Bridge', 'x')).toEqual({ name: 'Nottely River', section: 'At Cook Bridge' });
+    });
+
+    it('keeps US highways and drops the period left by abbreviations', () => {
+        expect(displayName('N Fork Catawba River/Us 221 N', 'x')).toEqual({ name: 'North Fork Catawba River', section: 'At US 221 North' });
+        expect(displayName('FLAT CREEK @ US70, Black Mountain', 'x')).toEqual({ name: 'Flat Creek', section: 'At US70, Black Mountain' });
+        expect(displayName('French Broad R. at Craven St', 'x')).toEqual({ name: 'French Broad River', section: 'At Craven St' });
+    });
+
+    it('leaves names alone unless both sides clearly fit', () => {
+        const untouched = [
+            'Bridge Creek at US15', 'Blanket Cr @Lasater Mill Pond', 'Marsh Causeway @ NC 615', 'Smiths Creek - Upper',
+            'Wilmington - Cape Fear R nr US 17/76', 'Neuse R at Cherry Branch Ferry Terminal', 'Little River/Sparta Bridge Creek',
+            'Morrisville - Cedar Fork District Park', 'North Toe River Between Plumtree/Frank', 'Snowbird Creek N/Milltown',
+        ];
+        for (const raw of untouched) expect(reorderName(raw)).toBe(raw);
+        expect(displayName('SC: Seabrook US', 'x')).toEqual({ name: 'Swift Creek', section: 'At Seabrook Upstream' });
+        expect(displayName('Wilson Creek near Edgemont', 'x')).toEqual({ name: 'Wilson Creek', section: 'Near Edgemont' });
     });
 });
