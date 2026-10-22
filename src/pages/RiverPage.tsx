@@ -156,7 +156,7 @@ const RiverPage: React.FC = () => {
 
   if (loading && rivers.length === 0) {
     return (
-      <div className="page-content center">
+      <div className="page-content center page-loading">
         <h2>{t("riverPage.loadingData")}</h2>
       </div>
     );

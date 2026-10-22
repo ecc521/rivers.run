@@ -19,10 +19,8 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
   const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
-     // We intentionally default to false and defer the map initialization by ~50ms. 
-     // Leaflet calculates synchronous bounding box sizes during DOM insertion, 
-     // which blocks the main thread thread and makes navigation feel "janky".
-     // This allows the River UI overlay to paint instantly first.
+     // Defer map initialization so the river content can paint first.
+     // The wrapper reserves the map's height throughout this delay.
      const timer = setTimeout(() => setShowMap(true), 50);
      return () => clearTimeout(timer);
   }, []);
@@ -51,9 +49,8 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
                  {displayRiver.accessPoints.length} Access {displayRiver.accessPoints.length === 1 ? 'Point' : 'Points'} displayed on map
                </h4>
             ) : (
-               <>
+               <div style={{ height: "350px", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", marginBottom: "15px" }}>
                  {showMap ? (
-                   <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", marginBottom: "15px" }}>
                      <SharedMap
                         focusRiver={displayRiver}
                         initialCenter={clickedPoint || [displayRiver.accessPoints[0].lat, displayRiver.accessPoints[0].lon]}
@@ -62,27 +59,25 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
                         hideSearchBar
                         skipLocationRequest={true}
                      />
-                   </div>
                  ) : (
                      <button
                        onClick={() => setShowMap(true)}
                        style={{
                          display: 'block',
                          width: '100%',
+                         height: '100%',
                          padding: '12px',
                          backgroundColor: 'var(--surface-hover)',
-                         border: '1px solid var(--border)',
-                         borderRadius: '8px',
+                         border: 'none',
                          color: 'var(--primary)',
                          fontWeight: 600,
-                         marginBottom: '15px',
                          cursor: 'pointer'
                        }}
                      >
                        Load Mini Map ({displayRiver.accessPoints.length} Access {displayRiver.accessPoints.length === 1 ? 'Point' : 'Points'})
                      </button>
                  )}
-               </>
+               </div>
             )}
           </div>
         )}
