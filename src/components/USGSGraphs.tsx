@@ -458,8 +458,10 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
             )}
 
             {/* Forecast Switch */}
-            {!hasNoData && (hasForecastData || hasModelForecast) && (
-                <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", backgroundColor: "var(--surface-hover)", marginLeft: "auto" }}>
+            {/* Reserve the forecast control's space while history and models load,
+                so its arrival doesn't wrap the toolbar and move the chart. */}
+            {!hasNoData && (
+                <div style={{ display: "flex", visibility: hasForecastData || hasModelForecast ? "visible" : "hidden", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", backgroundColor: "var(--surface-hover)", marginLeft: "auto" }}>
                     <button 
                         onClick={() => setShowForecast(!showForecast)}
                         style={{ padding: "8px 12px", border: "none", cursor: "pointer", fontWeight: "bold", backgroundColor: showForecast ? "var(--primary)" : "transparent", color: showForecast ? "#fff" : "var(--text)" }}
@@ -480,7 +482,7 @@ export const USGSGraphs: React.FC<Props> = ({ river, dataGeneratedAt, onScrub })
                         color: "var(--text)",
                         cursor: "pointer",
                         fontWeight: "bold",
-                        marginLeft: (!hasNoData && (hasForecastData || hasModelForecast)) ? "0" : "auto"
+                        marginLeft: "0"
                     }}
                 >
                     <option value={1}>1 Day</option>

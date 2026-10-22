@@ -36,6 +36,7 @@ a:hover {
     /* Theme Variables for general UI (Clubs page, panels, etc) */
     --surface: #ffffff;
     --surface-hover: #f8fafc;
+    --map-loading-bg: #cccccc;
     --text: #1e293b;
     --text-secondary: #475569;
     --border: #e2e8f0;
@@ -1013,6 +1014,7 @@ Those include name,section,skill,quality, and flow info*/
     /* Dark Mode Theme Variables */
     --surface: #1e293b;
     --surface-hover: #0f172a;
+    --map-loading-bg: #3c3c3c;
     --text: #f8fafc;
     --text-secondary: #cbd5e1;
     --border: #334155;

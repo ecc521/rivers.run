@@ -60,22 +60,20 @@ export const RiverExpansion: React.FC<RiverExpansionProps> = ({ river, isMapOver
                         skipLocationRequest={true}
                      />
                  ) : (
-                     <button
-                       onClick={() => setShowMap(true)}
+                     <div
+                       role="status"
                        style={{
-                         display: 'block',
+                         display: 'flex',
+                         alignItems: 'center',
+                         justifyContent: 'center',
                          width: '100%',
                          height: '100%',
-                         padding: '12px',
-                         backgroundColor: 'var(--surface-hover)',
-                         border: 'none',
-                         color: 'var(--primary)',
-                         fontWeight: 600,
-                         cursor: 'pointer'
+                         backgroundColor: 'var(--map-loading-bg)',
+                         color: 'var(--text-muted)'
                        }}
                      >
-                       Load Mini Map ({displayRiver.accessPoints.length} Access {displayRiver.accessPoints.length === 1 ? 'Point' : 'Points'})
-                     </button>
+                       Loading map…
+                     </div>
                  )}
                </div>
             )}

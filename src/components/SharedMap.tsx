@@ -215,7 +215,7 @@ export const SharedMap: React.FC<SharedMapProps> = ({
     hideSearchBar = false,
     skipLocationRequest = false
 }) => {
-    const { isColorBlindMode, isDarkMode } = useSettings();
+    const { isColorBlindMode } = useSettings();
     const { rivers } = useRivers();
     const { isRiverInQuickList } = useLists();
     const location = useLocation();
@@ -950,7 +950,8 @@ export const SharedMap: React.FC<SharedMapProps> = ({
                 top: isFullScreen ? 0 : "auto",
                 left: isFullScreen ? 0 : "auto",
                 zIndex: isFullScreen ? 1000 : 1,
-                backgroundColor: isDarkMode ? "#000" : "#fff"  // Prevent native fullscreen from having clear/black background dynamically
+                // Match the basemap background before its style and tiles arrive.
+                backgroundColor: "var(--map-loading-bg)"
             }}
         >
             <style>
