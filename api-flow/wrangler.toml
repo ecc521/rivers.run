@@ -46,7 +46,7 @@ max_retries = 3
 # tagged with that repo's commit; see AGENTS.md to update it.
 [[containers]]
 class_name = "FlowModel"
-image = "registry.cloudflare.com/55098d8696658ea1ee4ec73ae57d1741/flow-serving:12ed7c9"
+image = "registry.cloudflare.com/55098d8696658ea1ee4ec73ae57d1741/flow-serving:27d09a7"
 max_instances = 1
 instance_type = "standard-2"
 
