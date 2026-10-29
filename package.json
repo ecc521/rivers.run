@@ -58,7 +58,7 @@
     "@capacitor/android": "^8.5.2",
     "@capacitor/cli": "^8.5.2",
     "@capacitor/ios": "^8.5.2",
-    "@cloudflare/vite-plugin": "^1.62.4",
+    "@cloudflare/vite-plugin": "^1.66.0",
     "@cloudflare/workers-types": "^5.20261001.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
@@ -84,7 +84,7 @@
     "vite": "^8.3.2",
     "vite-plugin-pwa": "^1.3.0",
     "vitest": "^5.0.3",
-    "wrangler": "^4.146.0"
+    "wrangler": "^4.154.0"
   },
   "browserslist": [
     "ios_saf >= 15",
