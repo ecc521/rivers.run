@@ -1,4 +1,4 @@
-import { readHourlySums, PREDICTION_HISTORY_MS } from "./flowStore";
+import { readHourlySums, retryOverloaded, sleep, PREDICTION_HISTORY_MS } from "./flowStore";
 
 /**
  * Hourly export of recent USGS discharge and stage for the forecast model.
@@ -51,10 +51,16 @@ export async function collectUsgsHourly(db: D1Database, siteIds: string[], now: 
         cfs: new Float64Array(size).fill(NaN), cfsN: new Uint8Array(size),
         ft: new Float64Array(size).fill(NaN), ftN: new Uint8Array(size),
     };
+    let paceMs = 0;
 
     for (let i = 0; i < sites.length; i += SITES_PER_QUERY) {
         const chunk = sites.slice(i, i + SITES_PER_QUERY);
-        const sums = await readHourlySums(db, chunk.map(s => `USGS:${s}`), start, end, now);
+        // Idle as long as each query ran, so the snapshot holds at most about half of D1's
+        // 10 s load window and ingest still gets through.
+        if (i > 0) await sleep(paceMs);
+        const t0 = Date.now();
+        const sums = await retryOverloaded(() => readHourlySums(db, chunk.map(s => `USGS:${s}`), start, end, now));
+        paceMs = Date.now() - t0;
         chunk.forEach((site, j) => {
             for (const [hourTs, s] of sums.get(`USGS:${site}`) ?? []) {
                 const h = (hourTs - start) / HOUR_MS;

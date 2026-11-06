@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { gunzipSync } from "node:zlib";
 import { createTestD1, type TestD1 } from "../../__tests__/helpers/d1Sqlite";
-import { resolveGaugeKeys, upsertSlots } from "../flowStore";
+import { resolveGaugeKeys, upsertSlots, retryOverloaded } from "../flowStore";
 import { buildUsgsHourlySnapshot, writeUsgsHourlySnapshot, round, SNAPSHOT_HOURS, SNAPSHOT_KEY } from "../modelSnapshot";
 
 const HOUR = 3_600_000;
@@ -44,6 +44,29 @@ describe("buildUsgsHourlySnapshot", () => {
         expect(snap.discharge_cfs[0].filter(v => v !== null)).toHaveLength(2);
         expect(snap.discharge_cfs[1].every(v => v === null)).toBe(true);
         expect(snap.discharge_n[1].every(v => v === 0)).toBe(true);
+    });
+});
+
+describe("retryOverloaded", () => {
+    const overloaded = () => new Error("D1_ERROR: D1 DB is overloaded. Too many resources consumed within a 10 second window");
+
+    it("retries D1 overload errors, then gives up", async () => {
+        let calls = 0;
+        const flaky = async () => {
+            calls++;
+            if (calls < 3) throw overloaded();
+            return "ok";
+        };
+        await expect(retryOverloaded(flaky, 3, 0)).resolves.toBe("ok");
+        calls = 0;
+        await expect(retryOverloaded(async () => { calls++; throw overloaded(); }, 3, 0)).rejects.toThrow(/overloaded/);
+        expect(calls).toBe(3);
+    });
+
+    it("does not retry other errors", async () => {
+        let calls = 0;
+        await expect(retryOverloaded(async () => { calls++; throw new Error("no such table"); }, 3, 0)).rejects.toThrow();
+        expect(calls).toBe(1);
     });
 });
 

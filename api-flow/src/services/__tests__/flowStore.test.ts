@@ -5,9 +5,9 @@ import {
     readHourlySums, readSyncState, readProviderSyncState, extendCoverage,
     markRepair, markProviderRepair, clearRepair, getMeta, setMeta,
     writeCoverage, recordBackfillFailure, clearBackfillFailures,
-    countReadings, slotRanges, slotIndexOf, isStorableGaugeId, LATEST_SQL,
-    SLOT_MS, SLOTS, RETENTION_MS, FUTURE_SKEW_MS,
-    type GaugeDimension, type ObservedReading, type SlotRow,
+    countReadings, slotRanges, slotIndexOf, slotStartOf, hourSlotRanges, isStorableGaugeId, LATEST_SQL,
+    HOURLY_SUMS_SQL, SLOT_MS, SLOTS, RETENTION_MS, FUTURE_SKEW_MS,
+    type GaugeDimension, type ObservedReading, type SlotRow, type HourlySums,
 } from "../flowStore";
 
 // Hour-aligned so slot and hour expectations can be written against NOW.
@@ -219,6 +219,78 @@ describe("reads", () => {
         expect(sums.get(NOW - HOUR)).toEqual({ cfsSum: 30, cfsN: 2, ftSum: 4, ftN: 2 });
         expect(sums.get(NOW)).toEqual({ cfsSum: 5, cfsN: 1, ftSum: 0, ftN: 0 });
     });
+
+    it("readHourlySums counts only the quarters inside a clipped hour", async () => {
+        const keys = await keysFor("USGS:1");
+        await upsertSlots(db, [0, 1, 2, 3].map(q => row("USGS:1", NOW - HOUR + q * SLOT_MS, { cfs: 10 ** q })), keys);
+        const sums = await readHourlySums(db, ["USGS:1"], NOW - HOUR + 2 * SLOT_MS, NOW, NOW);
+        expect(sums.get("USGS:1")!.get(NOW - HOUR)).toEqual({ cfsSum: 1100, cfsN: 2, ftSum: 0, ftN: 0 });
+    });
+
+    it("readHourlySums matches per-reading aggregation across a ring wrap", async () => {
+        // The per-reading form readHourlySums replaced, over the expanded view.
+        const reference = (ids: string, a: number, b: number, start: number, end: number) => db.query(`
+            SELECT g.gauge_id AS gauge_id, r.ts / 3600000 AS h,
+                   SUM(CASE WHEN r.cfs > -999999 THEN r.cfs END) AS cfs_sum,
+                   COUNT(CASE WHEN r.cfs > -999999 THEN r.cfs END) AS cfs_n,
+                   SUM(CASE WHEN r.ft > -999999 THEN r.ft END) AS ft_sum,
+                   COUNT(CASE WHEN r.ft > -999999 THEN r.ft END) AS ft_n
+              FROM gauges g JOIN json_each(?1) j ON g.gauge_id = j.value
+             CROSS JOIN gauge_reading_slots r ON r.gauge_key = g.gauge_key AND r.hour_slot BETWEEN ?2 AND ?3
+             WHERE r.ts >= ?4 AND r.ts < ?5
+             GROUP BY g.gauge_id, h`, ids, a, b, start, end) as any[];
+
+        const zero = Math.ceil(NOW / SLOT_MS / SLOTS) * SLOTS * SLOT_MS; // slot 0
+        const now = zero + 5 * HOUR + 20 * MIN;
+        const ids = ["USGS:1", "USGS:2", "USGS:3"];
+        const keys = await keysFor(...ids);
+        let seed = 7;
+        const rand = () => {
+            seed = (seed * 1_103_515_245 + 12_345) % 2 ** 31;
+            return seed / 2 ** 31;
+        };
+        const pick = () => {
+            const r = rand();
+            if (r < 0.2) return null;
+            if (r < 0.3) return -999999;
+            return Math.round(rand() * 1e5) / 100;
+        };
+        const rows: SlotRow[] = [];
+        for (const id of ids) {
+            for (let ts = slotStartOf(now - 30 * HOUR); ts <= now; ts += SLOT_MS) {
+                if (rand() < 0.15) continue;
+                rows.push(row(id, ts, { off: Math.floor(rand() * 900), cfs: pick(), ft: pick() }));
+            }
+        }
+        await upsertSlots(db, rows, keys);
+
+        const start = slotStartOf(now - 26 * HOUR) + SLOT_MS;
+        const end = Math.floor(now / HOUR) * HOUR + HOUR;
+        const got = await readHourlySums(db, ids, start, end, now);
+        const want = new Map<string, Map<number, HourlySums>>();
+        for (const [a, b] of hourSlotRanges(start, end - 1)) {
+            for (const r of reference(JSON.stringify(ids), a, b, start, end)) {
+                if (!r.cfs_n && !r.ft_n) continue;
+                if (!want.has(r.gauge_id)) want.set(r.gauge_id, new Map());
+                want.get(r.gauge_id)!.set(r.h * HOUR, {
+                    cfsSum: r.cfs_sum ?? 0, cfsN: r.cfs_n, ftSum: r.ft_sum ?? 0, ftN: r.ft_n,
+                });
+            }
+        }
+        expect(want.get("USGS:1")!.size).toBeGreaterThan(20);
+        expect(got.size).toBe(want.size);
+        for (const [id, hours] of want) {
+            const byTime = (a: number, b: number) => a - b;
+            expect([...got.get(id)!.keys()].sort(byTime)).toEqual([...hours.keys()].sort(byTime));
+            for (const [h, s] of hours) {
+                const g = got.get(id)!.get(h)!;
+                expect(g.cfsN).toBe(s.cfsN);
+                expect(g.ftN).toBe(s.ftN);
+                expect(g.cfsSum).toBeCloseTo(s.cfsSum, 6);
+                expect(g.ftSum).toBeCloseTo(s.ftSum, 6);
+            }
+        }
+    });
 });
 
 describe("query plans", () => {
@@ -227,6 +299,12 @@ describe("query plans", () => {
 
     it("latest-per-gauge seeks readings by primary key", () => {
         const details = plan(LATEST_SQL, 0, 10, 0, NOW);
+        expect(details.some(d => /SEARCH h USING PRIMARY KEY/.test(d))).toBe(true);
+        expect(details.some(d => /^SCAN h\b/.test(d))).toBe(false);
+    });
+
+    it("hourly sums seek hours by primary key", () => {
+        const details = plan(HOURLY_SUMS_SQL, '["USGS:1"]', 0, 10, 0, NOW);
         expect(details.some(d => /SEARCH h USING PRIMARY KEY/.test(d))).toBe(true);
         expect(details.some(d => /^SCAN h\b/.test(d))).toBe(false);
     });

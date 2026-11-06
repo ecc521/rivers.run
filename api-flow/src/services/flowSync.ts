@@ -4,7 +4,7 @@ import { logToD1 } from "../utils/logger";
 import { normalizeGaugeId } from "../utils/formatting";
 import { withTimeout } from "../utils/timeout";
 import {
-    resolveGaugeKeys, upsertSlots, reduceToSlots, readSeries, readLatest, readSyncState,
+    resolveGaugeKeys, upsertSlots, reduceToSlots, readSeries, readLatest, readSyncState, retryOverloaded,
     markRepair, writeCoverage, getMeta, setMeta, slotStartOf, servedTime, isStorableGaugeId, rowToReading,
     SLOT_MS, type GaugeDimension, type ObservedReading, type CoverageUpdate, type SlotRow,
 } from "./flowStore";
@@ -454,7 +454,7 @@ export async function projectSitedata(
         merged[gaugeId] ??= { id: gaugeId.includes(":") ? gaugeId.split(":")[1] : gaugeId, name: "", readings: [] };
     }
 
-    const newest = await readLatest(db, LATEST_WINDOW_MS, now);
+    const newest = await retryOverloaded(() => readLatest(db, LATEST_WINDOW_MS, now));
     for (const [gaugeId, r] of fetchedLatest) {
         const served = toServedReading(r);
         if (!newest[gaugeId] || served.dateTime >= newest[gaugeId].dateTime) newest[gaugeId] = served;
@@ -465,7 +465,7 @@ export async function projectSitedata(
 
     const storable = linked.filter(isStorableGaugeId);
     if (storable.length > 0) {
-        const series = await readSeries(db, storable, now - PROJECTION_WINDOW_MS, now, now);
+        const series = await retryOverloaded(() => readSeries(db, storable, now - PROJECTION_WINDOW_MS, now, now));
         const fetched = servedWindows(fetchedSeries, now);
         for (const gaugeId of storable) {
             const e = merged[gaugeId];

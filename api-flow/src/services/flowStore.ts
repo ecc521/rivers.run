@@ -473,9 +473,48 @@ export interface HourlySums {
     cfsSum: number; cfsN: number; ftSum: number; ftN: number;
 }
 
+export const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+/** D1 sheds load per 10 s window ("D1 DB is overloaded"); wait the window out and retry. */
+export async function retryOverloaded<T>(fn: () => Promise<T>, attempts = 3, waitMs = 10_000): Promise<T> {
+    for (let i = 1; ; i++) {
+        try {
+            return await fn();
+        } catch (e: any) {
+            if (i >= attempts || !/overloaded/i.test(String(e?.message ?? e))) throw e;
+            await sleep(waitMs);
+        }
+    }
+}
+
+// One row per stored hour, quarters read straight from q0..q3. Expanding them through the
+// gauge_reading_slots view (json_each plus every column) reads 9x the rows and takes about
+// twice the D1 time, enough for the hourly model snapshot to trip D1's overload limit.
+const quarterValue = (i: number, col: number) =>
+    `CASE WHEN h.ts + ${i * SLOT_MS} >= ?4 AND h.ts + ${i * SLOT_MS} < ?5 THEN json_extract(h.q${i}, '$[${col}]') END`;
+// Multi-argument MAX is NULL when any argument is, so this drops nulls and sentinels with one reference.
+const quarterSum = (col: number) =>
+    [0, 1, 2, 3].map(i => `IFNULL(NULLIF(MAX(${quarterValue(i, col)}, -999999), -999999), 0)`).join(" + ");
+const quarterCount = (col: number) =>
+    [0, 1, 2, 3].map(i => `IFNULL(${quarterValue(i, col)} > -999999, 0)`).join(" + ");
+const CFS_COL = 1 + VALUE_COLS.indexOf("cfs");
+const FT_COL = 1 + VALUE_COLS.indexOf("ft");
+
+export const HOURLY_SUMS_SQL = `
+    SELECT g.gauge_id AS gauge_id, h.ts / ${HOUR_MS} AS h,
+           ${quarterSum(CFS_COL)} AS cfs_sum, ${quarterCount(CFS_COL)} AS cfs_n,
+           ${quarterSum(FT_COL)} AS ft_sum, ${quarterCount(FT_COL)} AS ft_n
+      FROM gauges g
+      JOIN json_each(?1) j ON g.gauge_id = j.value
+     CROSS JOIN gauge_reading_hours h
+        ON h.gauge_key = g.gauge_key AND h.slot BETWEEN ?2 AND ?3
+     WHERE h.ts > ?4 - ${HOUR_MS} AND h.ts < ?5
+`;
+
 /**
  * Per-hour sums and counts of cfs and ft for hours in [startHourTs, endHourTs).
- * Keyed by gauge id, then by hour start (ms). USGS sentinels are excluded.
+ * Keyed by gauge id, then by hour start (ms). USGS sentinels are excluded, and hours
+ * with neither value are omitted.
  */
 export async function readHourlySums(
     db: D1Database,
@@ -490,20 +529,10 @@ export async function readHourlySums(
     startHourTs = Math.max(startHourTs, slotStartOf(now - RETENTION_MS));
     for (const chunk of chunkAsJson(ids)) {
         for (const [a, b] of hourSlotRanges(startHourTs, endHourTs - 1)) {
-            const { results } = await db.prepare(`
-                SELECT g.gauge_id AS gauge_id, r.ts / 3600000 AS h,
-                       SUM(CASE WHEN r.cfs > -999999 THEN r.cfs END) AS cfs_sum,
-                       COUNT(CASE WHEN r.cfs > -999999 THEN r.cfs END) AS cfs_n,
-                       SUM(CASE WHEN r.ft > -999999 THEN r.ft END) AS ft_sum,
-                       COUNT(CASE WHEN r.ft > -999999 THEN r.ft END) AS ft_n
-                  FROM gauges g
-                  JOIN json_each(?1) j ON g.gauge_id = j.value
-                 CROSS JOIN gauge_reading_slots r
-                    ON r.gauge_key = g.gauge_key AND r.hour_slot BETWEEN ?2 AND ?3
-                 WHERE r.ts >= ?4 AND r.ts < ?5
-                 GROUP BY g.gauge_id, h
-            `).bind(chunk, a, b, startHourTs, endHourTs).all<any>();
+            const { results } = await db.prepare(HOURLY_SUMS_SQL)
+                .bind(chunk, a, b, startHourTs, endHourTs).all<any>();
             for (const row of results ?? []) {
+                if (!row.cfs_n && !row.ft_n) continue;
                 let perHour = out.get(row.gauge_id);
                 if (!perHour) {
                     perHour = new Map();

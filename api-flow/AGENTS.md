@@ -109,6 +109,13 @@ tests assert this. `gauge_sync_state` and `sync_meta` are also only written on c
 Bulk writes pass one JSON parameter through `json_each` (D1 allows 100 bound
 parameters). Reads use `CROSS JOIN` plus an hour-slot range so they seek the primary key.
 
+**D1 burst limit.** flow-db rejects work with `D1 DB is overloaded. Too many resources
+consumed within a 10 second window` when queries run back to back for several seconds.
+Since 2026-11-03 this killed every hourly model snapshot. Keep bulk reads off the
+`gauge_reading_slots` view where hour rows suffice (`readHourlySums` reads `q0`..`q3`
+directly, about half the D1 time and a ninth of the rows), pace long read loops (the
+snapshot idles as long as each query ran), and wrap cycle reads in `retryOverloaded`.
+
 **Ingest** (`flowSync.ts`, `usgsIngest.ts`), on the `*/15` trigger only (the daily
 and weekly crons also fire at 00:00 and must not start a second ingest):
 
