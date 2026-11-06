@@ -106,7 +106,7 @@ describe('FIMAN provider', () => {
                 { value: 1723.04, at: '2026-10-04T14:45:00', code: '00065' },
             ],
         });
-        const result = await fimanProvider.getHistory(['25530'], Date.UTC(2026, 9, 4, 16));
+        const result = await fimanProvider.getHistory(['25530'], Date.UTC(2026, 9, 4, 16), Date.UTC(2026, 9, 5));
         expect(result['25530'].readings).toHaveLength(1);
     });
 
