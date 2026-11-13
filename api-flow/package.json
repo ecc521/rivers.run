@@ -13,7 +13,7 @@
     "@cloudflare/containers": "^0.3.7",
     "@hono/zod-openapi": "^1.6.3",
     "@scalar/hono-api-reference": "^0.12.8",
-    "hono": "^4.13.12",
+    "hono": "^4.13.18",
     "zod": "^4.6.5"
   },
   "devDependencies": {
