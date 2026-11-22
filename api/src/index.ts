@@ -17,7 +17,7 @@ import {
 import { sendEmail } from "./email";
 import { logToD1 } from "./utils/logger";
 import { generateRawKey, hashKey } from "./utils/apiKey";
-import { normalizeGaugeId, isGaugeStyleId, GAUGE_STYLE_ID_MESSAGE } from "./utils/formatting";
+import { normalizeGaugeId, isGaugeStyleId, GAUGE_STYLE_ID_MESSAGE, escapeHtml, redactAuditPatch } from "./utils/formatting";
 
 
 
@@ -301,6 +301,7 @@ app.openapi(getRiverHistoryRoute, async (c) => {
         if (!isAdmin) {
             delete entry.changed_by;
             delete entry.email;
+            entry.diff_patch = JSON.stringify(redactAuditPatch(diffObj));
             
             if (isAnonContributor) {
                 entry.editor_name = "Anonymous Paddler";
@@ -817,16 +818,16 @@ app.openapi(resolveSuggestionRoute, async (c) => {
                 noteHtml = `
                     <div style="margin: 20px 0; padding: 15px; background-color: #f8fafc; border-left: 4px solid ${isAccepted ? '#10b981' : '#ef4444'}; color: #334155;">
                         <strong style="display: block; margin-bottom: 5px;">Moderator Note:</strong>
-                        ${admin_notes.replace(/\n/g, '<br>')}
+                        ${escapeHtml(admin_notes).replace(/\n/g, '<br>')}
                     </div>
                 `;
             }
 
-            const restoreLink = `https://rivers.run/edit/${suggestion.river_id}?restore=${id}`;
+            const restoreLink = escapeHtml(`https://rivers.run/edit/${encodeURIComponent(String(suggestion.river_id))}?restore=${encodeURIComponent(String(id))}`);
             const footer = `
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;">
                 <p style="font-size: 12px; color: #64748b; line-height: 1.6;">
-                    <strong>Reference ID:</strong> #${id}<br>
+                    <strong>Reference ID:</strong> #${escapeHtml(id)}<br>
                     This is an automated notification from Rivers.run. Responses to this message will be sent to the server administrator. 
                 </p>
             `;
@@ -835,7 +836,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
                 <div style="font-family: sans-serif; max-width: 600px; line-height: 1.5; color: #1e293b;">
                     <h2 style="color: ${isAccepted ? '#059669' : '#b91c1c'};">Submission ${isAccepted ? 'Accepted' : 'Declined'}</h2>
                     <p>Hello,</p>
-                    <p>Your submission for <strong>${riverName}</strong> has been <strong>${statusLabel}</strong> by a moderator.</p>
+                    <p>Your submission for <strong>${escapeHtml(riverName)}</strong> has been <strong>${statusLabel}</strong> by a moderator.</p>
                     
                     ${noteHtml}
 
@@ -844,7 +845,7 @@ app.openapi(resolveSuggestionRoute, async (c) => {
                         <p>You may edit and resubmit your suggestion here:</p>
                         <p><a href="${restoreLink}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Restore & Edit Submission</a></p>
                     ` : `
-                        <p>Your changes are now live on <a href="https://rivers.run/river/${suggestion.river_id}">rivers.run</a>. Thank you for contributing to the community!</p>
+                        <p>Your changes are now live on <a href="https://rivers.run/river/${escapeHtml(encodeURIComponent(String(suggestion.river_id)))}">rivers.run</a>. Thank you for contributing to the community!</p>
                     `}
 
                     ${footer}
@@ -1433,7 +1434,7 @@ app.openapi(updateListRoute, async (c) => {
                 to: ownerRow.email,
                 subject: `Your list "${validated.title}" was modified by an administrator`,
                 text: `Hi${greeting},\n\nAn administrator has made changes to your list "${validated.title}" on rivers.run.\n\nIf you have questions, please contact us.\n\n— The rivers.run team`,
-                html: `<p>Hi${greeting},</p><p>An administrator has made changes to your list <strong>${validated.title}</strong> on rivers.run.</p><p>If you have questions, please contact us.</p><p>— The rivers.run team</p>`
+                html: `<p>Hi${escapeHtml(greeting)},</p><p>An administrator has made changes to your list <strong>${escapeHtml(validated.title)}</strong> on rivers.run.</p><p>If you have questions, please contact us.</p><p>— The rivers.run team</p>`
             });
         }
     }
@@ -1888,7 +1889,7 @@ app.openapi(adminSendEmailRoute, async (c) => {
         to,
         subject,
         text: body + adminFooterText,
-        html: `<div style="font-family: sans-serif; white-space: pre-wrap; color: #1e293b;">${body}</div>` + adminFooterHtml
+        html: `<div style="font-family: sans-serif; white-space: pre-wrap; color: #1e293b;">${escapeHtml(body)}</div>` + adminFooterHtml
     });
 
 

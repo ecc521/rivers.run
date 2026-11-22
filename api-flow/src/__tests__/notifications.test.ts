@@ -467,12 +467,26 @@ describe('Notification Helpers (Pure Unit Tests)', () => {
             expect(summary.running[0]).toContain('250 cfs');
             expect(summary.low).toHaveLength(0);
         });
+
+        it('escapes river names and sections in digest items', () => {
+            const rivers = [{ ...createRiver('<b>Bad</b>', 100, 500), section: 'A & B', gauges: [{ id: 'USGS:A' }] }];
+            const summary = evaluateRiverConditions(rivers, { 'USGS:A': { readings: [{ value: 250 }] } });
+            expect(summary.running[0]).toContain('&lt;b&gt;Bad&lt;/b&gt; (A &amp; B)');
+            expect(summary.running[0]).not.toContain('<b>');
+        });
     });
 
     describe('buildDigestEmailBody', () => {
         it('returns null if there are no active running/high rivers', () => {
             const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: [], runningNames: [], low: ['<li>River</li>'] }] }, null);
             expect(result).toBeNull();
+        });
+
+        it('escapes list titles so user text cannot inject HTML', () => {
+            const result = buildDigestEmailBody({ lists: [{ listId: 'l"1', listTitle: '<img src=x onerror=alert(1)>Mine', high: [], running: ['<li>R1</li>'], runningNames: ['R1'], low: [] }] }, null);
+            expect(result?.html).toContain('&lt;img src=x onerror=alert(1)&gt;Mine');
+            expect(result?.html).not.toContain('<img');
+            expect(result?.html).toContain('?list=l%221');
         });
 
         it('returns null for empty lists', () => {
@@ -515,7 +529,7 @@ describe('Notification Helpers (Pure Unit Tests)', () => {
         it('includes a distinct "unsubscribe from all" link when a signed URL is provided', () => {
             const unsubscribeUrl = 'https://flow.rivers.run/unsubscribe?uid=user_1&iat=1700000000&sig=abc123';
             const result = buildDigestEmailBody({ lists: [{ listId: 'l1', listTitle: 'My List', high: [], running: ['<li>R1</li>'], runningNames: ['R1'], low: [] }] }, unsubscribeUrl);
-            expect(result?.html).toContain(`href="${unsubscribeUrl}"`);
+            expect(result?.html).toContain(`href="${unsubscribeUrl.replace(/&/g, '&amp;')}"`);
             expect(result?.html).toContain('Unsubscribe from all notifications');
         });
 

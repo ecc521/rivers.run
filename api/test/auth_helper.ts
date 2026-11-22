@@ -45,6 +45,7 @@ export async function createTestJwt(userId: string) {
         user_id: userId,
         aud: "rivers-run",
         iss: "https://securetoken.google.com/rivers-run",
+        iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 3600
     };
 

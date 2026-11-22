@@ -3,6 +3,7 @@ import { sendEmail, RECIPIENT_SUPPRESSED } from "../email";
 import { normalizeGaugeId } from "../utils/formatting";
 import { signUnsubscribeToken, buildUnsubscribeUrl } from "../utils/unsubscribeToken";
 import { logToD1 } from "../utils/logger";
+import { escapeHtml } from "../utils/html";
 
 export interface RiverCondition {
     id: string;
@@ -183,9 +184,9 @@ export function evaluateRiverConditions(rivers: RiverCondition[], mergedData: Re
         if (reading === undefined || isNaN(reading)) continue;
 
         const displayName = river.name + (river.section ? ` (${river.section})` : '');
-        const unitSuffix = river.unit ? ` ${river.unit}` : '';
+        const unitSuffix = river.unit ? ` ${escapeHtml(river.unit)}` : '';
         const riverUrl = getRiverUrl(river.id, river.name, river.section);
-        const link = `<a href="${riverUrl}">${displayName}</a>`;
+        const link = `<a href="${escapeHtml(riverUrl)}">${escapeHtml(displayName)}</a>`;
 
         if (river.min !== null && river.max !== null) {
             if (reading > river.max) high.push(`<li>${link}: ${reading}${unitSuffix} (Too High)</li>`);
@@ -221,8 +222,8 @@ export function buildDigestEmailBody(summary: DigestSummary, unsubscribeUrl: str
 
     let html = `<html><body>`;
     for (const list of lists) {
-        const listUrl = `https://rivers.run/?list=${list.listId}`;
-        html += `<h3><a href="${listUrl}">${list.listTitle}</a></h3>`;
+        const listUrl = `https://rivers.run/?list=${encodeURIComponent(list.listId)}`;
+        html += `<h3><a href="${escapeHtml(listUrl)}">${escapeHtml(list.listTitle)}</a></h3>`;
         if (list.high.length > 0) html += `<strong>Too High:</strong><ul>${list.high.join('')}</ul>`;
         if (list.running.length > 0) html += `<strong>Running:</strong><ul>${list.running.join('')}</ul>`;
         if (list.low.length > 0) html += `<strong>Too Low:</strong><ul>${list.low.join('')}</ul>`;
@@ -236,7 +237,7 @@ export function buildDigestEmailBody(summary: DigestSummary, unsubscribeUrl: str
     html += `<p style="margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">`;
     html += `<a href="https://rivers.run/lists" style="color:#3b82f6;text-decoration:none;">Manage your notifications</a>`;
     if (unsubscribeUrl) {
-        html += ` &nbsp;·&nbsp; <a href="${unsubscribeUrl}" style="color:#64748b;text-decoration:none;">Unsubscribe from all notifications</a>`;
+        html += ` &nbsp;·&nbsp; <a href="${escapeHtml(unsubscribeUrl)}" style="color:#64748b;text-decoration:none;">Unsubscribe from all notifications</a>`;
     }
     html += `</p></body></html>`;
 
