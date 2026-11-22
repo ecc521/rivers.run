@@ -80,3 +80,17 @@ describe("escapeHtml", () => {
         expect(escapeHtml(42)).toBe("42");
     });
 });
+
+describe("GET /my-submissions/{id}", () => {
+    it("returns only the draft, without submitter identity", async () => {
+        const row = {
+            suggestion_id: 7,
+            suggested_by: "IP: 203.0.113.9",
+            proposed_changes: JSON.stringify({ name: "Test River", submitterEmail: "a@example.com" }),
+        };
+        const DB = { prepare: () => ({ bind: () => ({ first: async () => row }) }) };
+        const res = await app.request("/my-submissions/7", {}, { DB } as any);
+        expect(res.status).toBe(200);
+        expect(await res.json()).toEqual({ proposed_changes: { name: "Test River" } });
+    });
+});

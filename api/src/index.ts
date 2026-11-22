@@ -610,13 +610,14 @@ const getMySuggestionRoute = createRoute({
 
 app.openapi(getMySuggestionRoute, async (c) => {
     const id = c.req.param("id");
-    const result = await c.env.DB.prepare("SELECT * FROM river_suggestions WHERE suggestion_id = ?").bind(id).first();
+    const result = await c.env.DB.prepare("SELECT proposed_changes FROM river_suggestions WHERE suggestion_id = ?").bind(id).first();
     if (!result) return c.json({ error: "Submission not found" }, 404);
-    
-    return c.json({
-        ...result,
-        proposed_changes: typeof result.proposed_changes === 'string' ? JSON.parse(result.proposed_changes) : result.proposed_changes
-    });
+
+    // Sequential IDs make this readable by anyone, so return only the draft itself:
+    // no submitter UID, IP or email.
+    const proposed = typeof result.proposed_changes === 'string' ? JSON.parse(result.proposed_changes) : result.proposed_changes;
+    if (proposed && typeof proposed === 'object') delete (proposed as any).submitterEmail;
+    return c.json({ proposed_changes: proposed });
 });
 
 const getAdminSuggestionRoute = createRoute({
