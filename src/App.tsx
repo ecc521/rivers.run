@@ -14,6 +14,7 @@ const MapPage = lazy(() => import("./pages/MapPage"));
 const Clubs = lazy(() => import("./pages/Clubs"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const DeveloperPage = lazy(() => import("./pages/Developer"));
+const ForecastsPage = lazy(() => import("./pages/Forecasts"));
 const TermsOfService = lazy(() => import("./pages/legal/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
 const Disclaimer = lazy(() => import("./pages/legal/Disclaimer"));
@@ -216,6 +217,7 @@ function App() {
                         <Route path="/faq" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading FAQ...</h2></div>}><FAQ /></Suspense>} />
                         <Route path="/settings" element={<Suspense fallback={<div className="page-content center page-loading" />}><SettingsPage /></Suspense>} />
                         <Route path="/api" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading API Docs...</h2></div>}><DeveloperPage /></Suspense>} />
+                        <Route path="/forecasts" element={<Suspense fallback={<div className="page-content center page-loading"></div>}><ForecastsPage /></Suspense>} />
                         <Route path="/create" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
                         <Route path="/edit/:riverId" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Editor...</h2></div>}><RiverEditor /></Suspense>} />
                         <Route path="/admin" element={<Suspense fallback={<div className="page-content center page-loading"><h2>Loading Admin...</h2></div>}><AdminQueue /></Suspense>} />

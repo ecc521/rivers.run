@@ -24,6 +24,7 @@ const GlobalNavBar: React.FC = () => {
   const [isNavMoreOpen, setIsNavMoreOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [imgError, setImgError] = useState(false);
+  const showApiAndForecasts = windowWidth > 800;
 
   // Profile Dropdown click-outside ref
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -100,7 +101,12 @@ const GlobalNavBar: React.FC = () => {
             {windowWidth > 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.clubs")}</Link>}
             {windowWidth > 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.faq")}</Link>}
             {windowWidth > 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.settings")}</Link>}
-            {windowWidth > 720 && <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.api")}</Link>}
+            {showApiAndForecasts && (
+              <>
+                <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.api")}</Link>
+                <Link to="/forecasts" style={{ color: "#cbd5e1", textDecoration: "none" }}>{t("nav.forecasts")}</Link>
+              </>
+            )}
           </div>
 
           <div style={{ display: "flex", gap: "20px", alignItems: "center", marginLeft: "auto", marginRight: "10px" }}>
@@ -156,7 +162,12 @@ const GlobalNavBar: React.FC = () => {
                      {windowWidth <= 510 && <Link to="/clubs" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.clubs")}</Link>}
                      {windowWidth <= 580 && <Link to="/faq" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.faq")}</Link>}
                      {windowWidth <= 650 && <Link to="/settings" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.settings")}</Link>}
-                     {windowWidth <= 720 && <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.api")}</Link>}
+                     {!showApiAndForecasts && (
+                       <>
+                         <Link to="/api" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.api")}</Link>
+                         <Link to="/forecasts" style={{ color: "#cbd5e1", textDecoration: "none" }} onClick={() => setIsNavMoreOpen(false)}>{t("nav.forecasts")}</Link>
+                       </>
+                     )}
                      
                      {windowWidth <= 860 && (
                         <hr style={{ borderColor: "#334155", width: "100%", margin: 0 }} />
